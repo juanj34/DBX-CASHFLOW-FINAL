@@ -14,6 +14,7 @@ export const MapContainer = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [mapStyle, setMapStyle] = useState<"satellite" | "streets">("streets");
   const [zonesVisible, setZonesVisible] = useState(true);
   const [hotspotsVisible, setHotspotsVisible] = useState(true);
@@ -57,13 +58,16 @@ export const MapContainer = () => {
       "top-right"
     );
 
-    map.current.on("load", () => {
+    const add3DBuildingsLayer = () => {
       if (!map.current) return;
 
       const layers = map.current.getStyle().layers;
       const labelLayerId = layers.find(
         (layer) => layer.type === "symbol" && layer.layout?.["text-field"]
       )?.id;
+
+      // Check if layer already exists
+      if (map.current.getLayer("3d-buildings")) return;
 
       map.current.addLayer(
         {
@@ -98,6 +102,17 @@ export const MapContainer = () => {
         },
         labelLayerId
       );
+    };
+
+    map.current.on("load", () => {
+      add3DBuildingsLayer();
+      setMapLoaded(true);
+    });
+
+    // Handle style changes
+    map.current.on("style.load", () => {
+      add3DBuildingsLayer();
+      setMapLoaded(true);
     });
 
     return () => {
@@ -105,18 +120,23 @@ export const MapContainer = () => {
     };
   }, [mapboxToken]);
 
-  // Add zones to map
-  useEffect(() => {
-    if (!map.current || !zones || zonesLoading) return;
+  // Function to add zones to map
+  const addZonesToMap = () => {
+    if (!map.current || !zones || zonesLoading || !mapLoaded) return;
 
     zones.forEach((zone) => {
       const sourceId = `zone-${zone.id}`;
       const fillLayerId = `zone-fill-${zone.id}`;
       const outlineLayerId = `zone-outline-${zone.id}`;
 
+      // Remove existing layers if they exist
       if (map.current!.getSource(sourceId)) {
-        map.current!.removeLayer(fillLayerId);
-        map.current!.removeLayer(outlineLayerId);
+        if (map.current!.getLayer(fillLayerId)) {
+          map.current!.removeLayer(fillLayerId);
+        }
+        if (map.current!.getLayer(outlineLayerId)) {
+          map.current!.removeLayer(outlineLayerId);
+        }
         map.current!.removeSource(sourceId);
       }
 
@@ -160,7 +180,12 @@ export const MapContainer = () => {
         if (map.current) map.current.getCanvas().style.cursor = "";
       });
     });
-  }, [zones, zonesLoading, zonesVisible]);
+  };
+
+  // Add zones to map when data and map are ready
+  useEffect(() => {
+    addZonesToMap();
+  }, [zones, zonesLoading, mapLoaded, zonesVisible]);
 
   // Toggle zones visibility
   useEffect(() => {
@@ -181,7 +206,7 @@ export const MapContainer = () => {
 
   // Add hotspots to map
   useEffect(() => {
-    if (!map.current || !hotspots || hotspotsLoading) return;
+    if (!map.current || !hotspots || hotspotsLoading || !mapLoaded) return;
 
     // Clear existing markers
     markersRef.current.forEach((marker) => marker.remove());
@@ -217,11 +242,11 @@ export const MapContainer = () => {
 
       markersRef.current.push(marker);
     });
-  }, [hotspots, hotspotsLoading, hotspotsVisible, categoryVisibility]);
+  }, [hotspots, hotspotsLoading, hotspotsVisible, categoryVisibility, mapLoaded]);
 
   // Add projects to map
   useEffect(() => {
-    if (!map.current || !projects || projectsLoading) return;
+    if (!map.current || !projects || projectsLoading || !mapLoaded) return;
 
     if (!projectsVisible) return;
 
@@ -255,7 +280,7 @@ export const MapContainer = () => {
 
       markersRef.current.push(marker);
     });
-  }, [projects, projectsLoading, projectsVisible]);
+  }, [projects, projectsLoading, projectsVisible, mapLoaded]);
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
@@ -286,6 +311,7 @@ export const MapContainer = () => {
         <button
           onClick={() => {
             setMapStyle("streets");
+            setMapLoaded(false);
             map.current?.setStyle("mapbox://styles/mapbox/light-v11");
           }}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${
@@ -299,6 +325,7 @@ export const MapContainer = () => {
         <button
           onClick={() => {
             setMapStyle("satellite");
+            setMapLoaded(false);
             map.current?.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
           }}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${

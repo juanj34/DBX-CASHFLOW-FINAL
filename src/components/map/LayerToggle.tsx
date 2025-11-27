@@ -1,6 +1,7 @@
-import { Layers } from "lucide-react";
+import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Layers, ChevronDown, ChevronUp } from "lucide-react";
 
 interface LayerToggleProps {
   zonesVisible: boolean;
@@ -23,6 +24,8 @@ export const LayerToggle = ({
   onProjectsToggle,
   onCategoryToggle,
 }: LayerToggleProps) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   const categories = [
     { id: "landmark", label: "Landmarks", color: "#2563EB" },
     { id: "metro", label: "Metro", color: "#9333EA" },
@@ -31,63 +34,84 @@ export const LayerToggle = ({
     { id: "shopping", label: "Shopping", color: "#10B981" },
     { id: "hotel", label: "Hotels", color: "#6366F1" },
   ];
+
   return (
-    <div className="absolute bottom-4 left-4 glass-panel rounded-lg p-4 space-y-3 w-48">
-      <div className="flex items-center gap-2 mb-3">
-        <Layers className="h-4 w-4" />
-        <span className="text-sm font-medium">Map Layers</span>
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <Label htmlFor="zones-toggle" className="text-sm">Zones</Label>
-        <Switch
-          id="zones-toggle"
-          checked={zonesVisible}
-          onCheckedChange={onZonesToggle}
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="hotspots-toggle" className="text-sm font-medium">Hotspots</Label>
-          <Switch
-            id="hotspots-toggle"
-            checked={hotspotsVisible}
-            onCheckedChange={onHotspotsToggle}
-          />
+    <div className="absolute bottom-4 left-4 glass-panel rounded-lg overflow-hidden w-48">
+      {/* Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-smooth"
+      >
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4" />
+          <span className="text-sm font-medium">Map Layers</span>
         </div>
-        
-        {hotspotsVisible && (
-          <div className="pl-2 space-y-2 border-l-2 border-border/50">
-            {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <Label htmlFor={`${category.id}-toggle`} className="text-xs">
-                    {category.label}
-                  </Label>
-                </div>
-                <Switch
-                  id={`${category.id}-toggle`}
-                  checked={categoryVisibility[category.id]}
-                  onCheckedChange={(checked) => onCategoryToggle(category.id, checked)}
-                />
-              </div>
-            ))}
-          </div>
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4" />
+        ) : (
+          <ChevronUp className="w-4 h-4" />
         )}
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <Label htmlFor="projects-toggle" className="text-sm">Projects</Label>
-        <Switch
-          id="projects-toggle"
-          checked={projectsVisible}
-          onCheckedChange={onProjectsToggle}
-        />
+      </button>
+
+      {/* Content */}
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        } overflow-hidden`}
+      >
+        <div className="px-4 pb-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="zones-toggle" className="text-sm">Zones</Label>
+            <Switch
+              id="zones-toggle"
+              checked={zonesVisible}
+              onCheckedChange={onZonesToggle}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="hotspots-toggle" className="text-sm font-medium">Hotspots</Label>
+              <Switch
+                id="hotspots-toggle"
+                checked={hotspotsVisible}
+                onCheckedChange={onHotspotsToggle}
+              />
+            </div>
+            
+            {hotspotsVisible && (
+              <div className="pl-2 space-y-2 border-l-2 border-border/50">
+                {categories.map((category) => (
+                  <div key={category.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <Label htmlFor={`${category.id}-toggle`} className="text-xs">
+                        {category.label}
+                      </Label>
+                    </div>
+                    <Switch
+                      id={`${category.id}-toggle`}
+                      checked={categoryVisibility[category.id]}
+                      onCheckedChange={(checked) => onCategoryToggle(category.id, checked)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="projects-toggle" className="text-sm">Projects</Label>
+            <Switch
+              id="projects-toggle"
+              checked={projectsVisible}
+              onCheckedChange={onProjectsToggle}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
