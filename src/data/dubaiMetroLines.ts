@@ -11,41 +11,36 @@ export const dubaiMetroLines: MetroLine[] = [
     name: "Red Line",
     color: "#EF4444",
     coordinates: [
-      // Rashidiya to UAE Exchange/Expo 2020 (west direction)
-      [55.3865, 25.2711], // Rashidiya
-      [55.3645, 25.2531], // Airport Terminal 3
-      [55.3514, 25.2528], // Airport Terminal 1
-      [55.3365, 25.2516], // GGICO
-      [55.3281, 25.2517], // Deira City Centre
-      [55.3156, 25.2561], // Al Nahda
-      [55.3047, 25.2589], // Stadium
-      [55.2965, 25.2628], // Al Qiyadah
-      [55.2874, 25.2680], // Abu Hail
-      [55.2789, 25.2721], // Abu Baker Al Siddique
-      [55.2708, 25.2751], // Salah Al Din
-      [55.2624, 25.2789], // Union (interchange)
-      [55.2553, 25.2658], // BurJuman
-      [55.2471, 25.2575], // Al Jafiliya
-      [55.2394, 25.2485], // World Trade Centre
-      [55.2318, 25.2402], // Emirates Towers
-      [55.2241, 25.2325], // Financial Centre
-      [55.2164, 25.2243], // Burj Khalifa/Dubai Mall
-      [55.2021, 25.2104], // Business Bay
-      [55.1883, 25.1958], // Noor Bank
-      [55.1742, 25.1809], // First Abu Dhabi Bank
-      [55.1603, 25.1664], // Mall of the Emirates
-      [55.1462, 25.1516], // Sharaf DG
-      [55.1321, 25.1369], // Dubai Internet City
-      [55.1183, 25.1224], // Nakheel
-      [55.1137, 25.1098], // Damac Properties
-      [55.1094, 25.0973], // Dubai Marina
-      [55.1052, 25.0848], // Jumeirah Lakes Towers
-      [55.1009, 25.0724], // Nakheel Harbour & Tower
-      [55.0967, 25.0599], // Ibn Battuta
-      [55.0924, 25.0474], // Energy
-      [55.0882, 25.0350], // Jebel Ali
-      [55.0840, 25.0225], // UAE Exchange
-      [55.0667, 25.0100], // Expo 2020
+      [55.3914, 25.2300], // Centrepoint (Rashidiya)
+      [55.3695, 25.2520], // Emirates
+      [55.3569, 25.2453], // Airport Terminal 3
+      [55.3435, 25.2510], // Airport Terminal 1
+      [55.3363, 25.2520], // GGICO
+      [55.3304, 25.2547], // Deira City Centre
+      [55.3197, 25.2614], // Al Rigga
+      [55.3139, 25.2661], // Union (interchange)
+      [55.3042, 25.2547], // BurJuman (interchange)
+      [55.2977, 25.2452], // ADCB
+      [55.2903, 25.2349], // Al Jafiliya
+      [55.2823, 25.2232], // World Trade Centre
+      [55.2793, 25.2178], // Emirates Towers
+      [55.2755, 25.2108], // Financial Centre
+      [55.2694, 25.2014], // Burj Khalifa/Dubai Mall
+      [55.2604, 25.1913], // Business Bay
+      [55.2424, 25.1723], // Al Safa
+      [55.2261, 25.1535], // Noor Bank
+      [55.2103, 25.1346], // First Abu Dhabi Bank
+      [55.2005, 25.1212], // Mall of the Emirates
+      [55.1878, 25.1095], // Sharaf DG
+      [55.1689, 25.0976], // Dubai Internet City
+      [55.1570, 25.0880], // Nakheel
+      [55.1450, 25.0790], // Dubai Media City
+      [55.1387, 25.0709], // DMCC
+      [55.1290, 25.0655], // Sobha Realty
+      [55.1175, 25.0468], // Ibn Battuta
+      [55.1013, 25.0264], // Energy
+      [55.1525, 25.0305], // Al Furjan (Route 2020)
+      [55.1462, 24.9636], // Expo 2020
     ],
   },
   {
@@ -53,27 +48,23 @@ export const dubaiMetroLines: MetroLine[] = [
     name: "Green Line",
     color: "#22C55E",
     coordinates: [
-      // Etisalat to Creek (south direction)
-      [55.3650, 25.3176], // Etisalat
-      [55.3578, 25.3089], // Al Nahda
-      [55.3506, 25.3002], // Al Qusais
-      [55.3434, 25.2915], // Dubai Airport Free Zone
-      [55.3362, 25.2828], // Al Twar
-      [55.3247, 25.2741], // Stadium
-      [55.3132, 25.2654], // Al Qiyadah
-      [55.3017, 25.2589], // Abu Hail
-      [55.2902, 25.2568], // Salah Al Din
-      [55.2787, 25.2625], // Union (interchange)
-      [55.2672, 25.2682], // Baniyas Square
-      [55.2614, 25.2709], // Palm Deira
-      [55.2556, 25.2737], // Al Ras
-      [55.2498, 25.2764], // Al Ghubaiba
-      [55.2440, 25.2654], // Al Fahidi
-      [55.2382, 25.2544], // BurJuman
-      [55.2324, 25.2434], // Oud Metha
-      [55.2266, 25.2324], // Dubai Healthcare City
-      [55.2208, 25.2214], // Al Jadaf
-      [55.2150, 25.2104], // Creek
+      [55.3977, 25.2810], // Etisalat by e&
+      [55.3850, 25.2750], // Al Nahda
+      [55.3720, 25.2685], // Al Qusais
+      [55.3590, 25.2620], // Dubai Airport Free Zone
+      [55.3450, 25.2580], // Al Twar
+      [55.3330, 25.2560], // Stadium
+      [55.3230, 25.2590], // Al Qiyadah
+      [55.3139, 25.2661], // Union (interchange)
+      [55.3017, 25.2761], // Gold Souq
+      [55.2965, 25.2810], // Al Ras
+      [55.2905, 25.2735], // Al Ghubaiba
+      [55.2960, 25.2620], // Al Fahidi
+      [55.3042, 25.2547], // BurJuman (interchange)
+      [55.3110, 25.2420], // Oud Metha
+      [55.3190, 25.2300], // Dubai Healthcare City
+      [55.3270, 25.2180], // Al Jadaf
+      [55.3350, 25.2060], // Creek
     ],
   },
 ];
