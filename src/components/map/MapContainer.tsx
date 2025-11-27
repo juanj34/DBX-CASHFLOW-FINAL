@@ -18,6 +18,14 @@ export const MapContainer = () => {
   const [zonesVisible, setZonesVisible] = useState(true);
   const [hotspotsVisible, setHotspotsVisible] = useState(true);
   const [projectsVisible, setProjectsVisible] = useState(true);
+  const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({
+    landmark: true,
+    metro: true,
+    attraction: true,
+    restaurant: true,
+    shopping: true,
+    hotel: true,
+  });
   
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
@@ -181,7 +189,12 @@ export const MapContainer = () => {
 
     if (!hotspotsVisible) return;
 
-    hotspots.forEach((hotspot) => {
+    // Filter hotspots by visible categories
+    const visibleHotspots = hotspots.filter(
+      (hotspot) => categoryVisibility[hotspot.category]
+    );
+
+    visibleHotspots.forEach((hotspot) => {
       const el = document.createElement("div");
       el.className = "hotspot-marker";
       el.style.width = "30px";
@@ -204,7 +217,7 @@ export const MapContainer = () => {
 
       markersRef.current.push(marker);
     });
-  }, [hotspots, hotspotsLoading, hotspotsVisible]);
+  }, [hotspots, hotspotsLoading, hotspotsVisible, categoryVisibility]);
 
   // Add projects to map
   useEffect(() => {
@@ -303,9 +316,13 @@ export const MapContainer = () => {
         zonesVisible={zonesVisible}
         hotspotsVisible={hotspotsVisible}
         projectsVisible={projectsVisible}
+        categoryVisibility={categoryVisibility}
         onZonesToggle={setZonesVisible}
         onHotspotsToggle={setHotspotsVisible}
         onProjectsToggle={setProjectsVisible}
+        onCategoryToggle={(category, visible) => 
+          setCategoryVisibility((prev) => ({ ...prev, [category]: visible }))
+        }
       />
 
       {/* Info cards */}
