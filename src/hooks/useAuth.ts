@@ -35,10 +35,14 @@ export const useAuth = () => {
 export const useAdminRole = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const checkAdminRole = async () => {
+      if (authLoading) {
+        return;
+      }
+      
       if (!user) {
         setIsAdmin(false);
         setLoading(false);
@@ -57,7 +61,7 @@ export const useAdminRole = () => {
     };
 
     checkAdminRole();
-  }, [user]);
+  }, [user, authLoading]);
 
   return { isAdmin, loading };
 };
