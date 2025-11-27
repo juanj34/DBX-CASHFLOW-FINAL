@@ -8,6 +8,7 @@ import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
 import { LayerToggle } from "./LayerToggle";
+import { dubaiMetroLines } from "@/data/dubaiMetroLines";
 
 export const MapContainer = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -19,6 +20,7 @@ export const MapContainer = () => {
   const [zonesVisible, setZonesVisible] = useState(true);
   const [hotspotsVisible, setHotspotsVisible] = useState(true);
   const [projectsVisible, setProjectsVisible] = useState(true);
+  const [metroVisible, setMetroVisible] = useState(true);
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({
     landmark: true,
     metro: true,
@@ -182,10 +184,60 @@ export const MapContainer = () => {
     });
   };
 
+  // Function to add metro lines to map
+  const addMetroLinesToMap = () => {
+    if (!map.current || !mapLoaded) return;
+
+    dubaiMetroLines.forEach((line) => {
+      const sourceId = `metro-${line.id}`;
+      const layerId = `metro-line-${line.id}`;
+
+      // Remove existing layers if they exist
+      if (map.current!.getSource(sourceId)) {
+        if (map.current!.getLayer(layerId)) {
+          map.current!.removeLayer(layerId);
+        }
+        map.current!.removeSource(sourceId);
+      }
+
+      map.current!.addSource(sourceId, {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          properties: {},
+          geometry: {
+            type: "LineString",
+            coordinates: line.coordinates,
+          },
+        },
+      });
+
+      map.current!.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": line.color,
+          "line-width": 4,
+          "line-opacity": metroVisible ? 1 : 0,
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+      });
+    });
+  };
+
   // Add zones to map when data and map are ready
   useEffect(() => {
     addZonesToMap();
   }, [zones, zonesLoading, mapLoaded, zonesVisible]);
+
+  // Add metro lines to map when ready
+  useEffect(() => {
+    addMetroLinesToMap();
+  }, [mapLoaded, metroVisible]);
 
   // Toggle zones visibility
   useEffect(() => {
@@ -203,6 +255,19 @@ export const MapContainer = () => {
       }
     });
   }, [zonesVisible, zones]);
+
+  // Toggle metro lines visibility
+  useEffect(() => {
+    if (!map.current) return;
+
+    dubaiMetroLines.forEach((line) => {
+      const layerId = `metro-line-${line.id}`;
+      
+      if (map.current!.getLayer(layerId)) {
+        map.current!.setPaintProperty(layerId, "line-opacity", metroVisible ? 1 : 0);
+      }
+    });
+  }, [metroVisible]);
 
   // Add hotspots to map
   useEffect(() => {
@@ -343,10 +408,12 @@ export const MapContainer = () => {
         zonesVisible={zonesVisible}
         hotspotsVisible={hotspotsVisible}
         projectsVisible={projectsVisible}
+        metroLinesVisible={metroVisible}
         categoryVisibility={categoryVisibility}
         onZonesToggle={setZonesVisible}
         onHotspotsToggle={setHotspotsVisible}
         onProjectsToggle={setProjectsVisible}
+        onMetroLinesToggle={setMetroVisible}
         onCategoryToggle={(category, visible) => 
           setCategoryVisibility((prev) => ({ ...prev, [category]: visible }))
         }
