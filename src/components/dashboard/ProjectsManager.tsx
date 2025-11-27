@@ -36,7 +36,7 @@ const ProjectsManager = () => {
   const fetchProjects = async () => {
     const { data, error } = await supabase
       .from("projects")
-      .select("*, hotspots(*)")
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -79,7 +79,7 @@ const ProjectsManager = () => {
   };
 
   const filteredProjects = projects.filter((project) =>
-    project.hotspots?.title.toLowerCase().includes(searchQuery.toLowerCase())
+    project.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -123,7 +123,7 @@ const ProjectsManager = () => {
             ) : (
               filteredProjects.map((project) => (
                 <TableRow key={project.id}>
-                  <TableCell className="font-medium">{project.hotspots?.title}</TableCell>
+                  <TableCell className="font-medium">{project.name || "Unnamed Project"}</TableCell>
                   <TableCell>{project.developer || "—"}</TableCell>
                   <TableCell>
                     {project.starting_price

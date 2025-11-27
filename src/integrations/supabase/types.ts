@@ -135,10 +135,14 @@ export type Database = {
             | null
           created_at: string
           delivery_date: string | null
+          description: string | null
           developer: string | null
-          hotspot_id: string
+          hotspot_id: string | null
           id: string
+          latitude: number | null
           launch_date: string | null
+          longitude: number | null
+          name: string | null
           price_per_sqft: number | null
           starting_price: number | null
           unit_types: string[] | null
@@ -151,10 +155,14 @@ export type Database = {
             | null
           created_at?: string
           delivery_date?: string | null
+          description?: string | null
           developer?: string | null
-          hotspot_id: string
+          hotspot_id?: string | null
           id?: string
+          latitude?: number | null
           launch_date?: string | null
+          longitude?: number | null
+          name?: string | null
           price_per_sqft?: number | null
           starting_price?: number | null
           unit_types?: string[] | null
@@ -167,10 +175,14 @@ export type Database = {
             | null
           created_at?: string
           delivery_date?: string | null
+          description?: string | null
           developer?: string | null
-          hotspot_id?: string
+          hotspot_id?: string | null
           id?: string
+          latitude?: number | null
           launch_date?: string | null
+          longitude?: number | null
+          name?: string | null
           price_per_sqft?: number | null
           starting_price?: number | null
           unit_types?: string[] | null
