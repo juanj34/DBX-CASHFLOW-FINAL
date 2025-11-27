@@ -34,6 +34,7 @@ export const DrawingCanvas = ({
   const polygonDotsRef = useRef<Circle[]>([]);
   const tempPolygonRef = useRef<Polygon | null>(null);
   const laserTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
   const activeColorRef = useRef(activeColor);
   const brushSizeRef = useRef(brushSize);
 
@@ -77,7 +78,15 @@ export const DrawingCanvas = ({
     saveHistory();
 
     return () => {
+      isMountedRef.current = false;
+      
+      // Clear laser timeout
+      if (laserTimeoutRef.current) {
+        clearTimeout(laserTimeoutRef.current);
+      }
+      
       window.removeEventListener('resize', handleResize);
+      fabricCanvasRef.current = null;
       canvas.dispose();
     };
   }, []);
@@ -98,6 +107,8 @@ export const DrawingCanvas = ({
     canvas.on('object:removed', saveHistory);
 
     return () => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
       canvas.off('object:added', handleObjectAdded);
       canvas.off('object:modified', saveHistory);
       canvas.off('object:removed', saveHistory);
@@ -106,7 +117,7 @@ export const DrawingCanvas = ({
 
   const saveHistory = () => {
     const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !isMountedRef.current) return;
 
     const json = JSON.stringify(canvas.toJSON());
     
@@ -137,7 +148,7 @@ export const DrawingCanvas = ({
     if (undoTrigger === 0) return;
     
     const canvas = fabricCanvasRef.current;
-    if (!canvas || historyIndexRef.current <= 0) return;
+    if (!canvas || !isMountedRef.current || historyIndexRef.current <= 0) return;
 
     historyIndexRef.current--;
     const state = historyRef.current[historyIndexRef.current];
@@ -152,7 +163,7 @@ export const DrawingCanvas = ({
     if (redoTrigger === 0) return;
     
     const canvas = fabricCanvasRef.current;
-    if (!canvas || historyIndexRef.current >= historyRef.current.length - 1) return;
+    if (!canvas || !isMountedRef.current || historyIndexRef.current >= historyRef.current.length - 1) return;
 
     historyIndexRef.current++;
     const state = historyRef.current[historyIndexRef.current];
@@ -167,7 +178,7 @@ export const DrawingCanvas = ({
     if (clearTrigger === 0) return;
     
     const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !isMountedRef.current) return;
 
     canvas.clear();
     canvas.backgroundColor = null;
@@ -187,7 +198,7 @@ export const DrawingCanvas = ({
     if (screenshotTrigger === 0) return;
     
     const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !isMountedRef.current) return;
 
     const dataUrl = canvas.toDataURL({
       format: 'png',
@@ -249,6 +260,8 @@ export const DrawingCanvas = ({
     canvas.on('mouse:down', handleMouseDown);
 
     return () => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
       canvas.off('mouse:down', handleMouseDown);
     };
   }, [activeTool]);
@@ -470,15 +483,19 @@ export const DrawingCanvas = ({
     }
 
     laserTimeoutRef.current = setTimeout(() => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas || !isMountedRef.current) return;
+      
       const fadeOut = () => {
+        if (!fabricCanvasRef.current || !isMountedRef.current) return;
         const currentOpacity = dot.opacity || 1;
         if (currentOpacity > 0) {
           dot.set({ opacity: currentOpacity - 0.05 });
-          canvas.renderAll();
+          fabricCanvasRef.current.renderAll();
           requestAnimationFrame(fadeOut);
         } else {
-          canvas.remove(dot);
-          canvas.renderAll();
+          fabricCanvasRef.current.remove(dot);
+          fabricCanvasRef.current.renderAll();
         }
       };
       fadeOut();
@@ -504,6 +521,8 @@ export const DrawingCanvas = ({
     canvas.on('mouse:dblclick', handleDblClick);
 
     return () => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
       canvas.off('mouse:dblclick', handleDblClick);
     };
   }, [activeTool]);
