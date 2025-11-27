@@ -86,8 +86,19 @@ export const DrawingCanvas = ({
       }
       
       window.removeEventListener('resize', handleResize);
+      
+      // Clear all objects first to avoid DOM conflicts
+      canvas.clear();
+      
+      // Dispose of Fabric canvas (removes event listeners and internal state)
+      try {
+        canvas.dispose();
+      } catch (e) {
+        // Ignore disposal errors during unmount
+        console.warn('Canvas disposal warning:', e);
+      }
+      
       fabricCanvasRef.current = null;
-      canvas.dispose();
     };
   }, []);
 
