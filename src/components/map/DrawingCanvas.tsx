@@ -87,15 +87,24 @@ export const DrawingCanvas = ({
       
       window.removeEventListener('resize', handleResize);
       
-      // Clear all objects first to avoid DOM conflicts
-      canvas.clear();
+      // Remove all Fabric objects to let Fabric clean up its internal state
+      const objects = canvas.getObjects();
+      objects.forEach(obj => {
+        try {
+          canvas.remove(obj);
+        } catch (e) {
+          // Ignore removal errors
+        }
+      });
       
-      // Dispose of Fabric canvas (removes event listeners and internal state)
+      // Remove all event listeners before disposing
+      canvas.off();
+      
+      // Dispose without touching DOM - let React handle DOM removal
       try {
         canvas.dispose();
       } catch (e) {
         // Ignore disposal errors during unmount
-        console.warn('Canvas disposal warning:', e);
       }
       
       fabricCanvasRef.current = null;
