@@ -3,12 +3,17 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
-import { Loader2 } from "lucide-react";
+import { Loader2, Presentation } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
 import { LayerToggle } from "./LayerToggle";
 import { dubaiMetroLines } from "@/data/dubaiMetroLines";
+import { DrawingCanvas } from "./DrawingCanvas";
+import { DrawingToolbar } from "./DrawingToolbar";
+import { DrawingTool } from "@/types/drawing";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export const MapContainer = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -33,6 +38,18 @@ export const MapContainer = () => {
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  
+  // Drawing state
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [activeTool, setActiveTool] = useState<DrawingTool>('freehand');
+  const [activeColor, setActiveColor] = useState('#EF4444');
+  const [brushSize, setBrushSize] = useState(3);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [clearTrigger, setClearTrigger] = useState(0);
+  const [undoTrigger, setUndoTrigger] = useState(0);
+  const [redoTrigger, setRedoTrigger] = useState(0);
+  const [screenshotTrigger, setScreenshotTrigger] = useState(0);
   
   const { data: mapboxToken, isLoading: tokenLoading } = useMapboxToken();
   const { data: zones, isLoading: zonesLoading } = useZones();
@@ -418,6 +435,66 @@ export const MapContainer = () => {
           setCategoryVisibility((prev) => ({ ...prev, [category]: visible }))
         }
       />
+
+      {/* Presentation mode toggle */}
+      <div className="absolute top-24 right-6 z-[999]">
+        <Button
+          variant={presentationMode ? "default" : "outline"}
+          size="lg"
+          onClick={() => {
+            setPresentationMode(!presentationMode);
+            toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled");
+          }}
+          className="glass-panel border-border/40 shadow-lg"
+        >
+          <Presentation className="w-5 h-5 mr-2" />
+          {presentationMode ? "Exit Presentation" : "Presentation Mode"}
+        </Button>
+      </div>
+
+      {/* Drawing overlay */}
+      {presentationMode && (
+        <>
+          <DrawingCanvas
+            activeTool={activeTool}
+            activeColor={activeColor}
+            brushSize={brushSize}
+            onHistoryChange={(canUndo, canRedo) => {
+              setCanUndo(canUndo);
+              setCanRedo(canRedo);
+            }}
+            onClear={() => {}}
+            clearTrigger={clearTrigger}
+            undoTrigger={undoTrigger}
+            redoTrigger={redoTrigger}
+            screenshotTrigger={screenshotTrigger}
+            onScreenshotReady={(dataUrl) => {
+              const link = document.createElement('a');
+              link.download = `map-screenshot-${Date.now()}.png`;
+              link.href = dataUrl;
+              link.click();
+              toast.success("Screenshot exported!");
+            }}
+          />
+          <DrawingToolbar
+            activeTool={activeTool}
+            activeColor={activeColor}
+            brushSize={brushSize}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onToolChange={setActiveTool}
+            onColorChange={setActiveColor}
+            onBrushSizeChange={setBrushSize}
+            onUndo={() => setUndoTrigger(prev => prev + 1)}
+            onRedo={() => setRedoTrigger(prev => prev + 1)}
+            onClear={() => {
+              setClearTrigger(prev => prev + 1);
+              toast("Drawing cleared");
+            }}
+            onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
+          />
+        </>
+      )}
 
       {/* Info cards */}
       {selectedZone && (
