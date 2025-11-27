@@ -20,7 +20,7 @@ export const BrushSizeControl = ({ size, onChange }: BrushSizeControlProps) => {
           <Paintbrush className="w-4 h-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-48 glass-panel border-border/40">
+      <PopoverContent side="left" className="w-48 glass-panel border-border/40">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Brush Size</span>

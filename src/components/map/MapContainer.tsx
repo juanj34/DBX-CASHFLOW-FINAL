@@ -51,10 +51,23 @@ export const MapContainer = () => {
   const [redoTrigger, setRedoTrigger] = useState(0);
   const [screenshotTrigger, setScreenshotTrigger] = useState(0);
   
+  
   const { data: mapboxToken, isLoading: tokenLoading } = useMapboxToken();
   const { data: zones, isLoading: zonesLoading } = useZones();
   const { data: hotspots, isLoading: hotspotsLoading } = useHotspots();
   const { data: projects, isLoading: projectsLoading } = useProjects();
+
+  // Handle ESC key to exit presentation mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && presentationMode) {
+        setPresentationMode(false);
+        toast("Presentation mode disabled");
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [presentationMode]);
 
   // Initialize map
   useEffect(() => {
@@ -437,18 +450,17 @@ export const MapContainer = () => {
       />
 
       {/* Presentation mode toggle */}
-      <div className="absolute top-24 right-6 z-[999]">
+      <div className="fixed bottom-6 right-20 z-[999]">
         <Button
           variant={presentationMode ? "default" : "outline"}
-          size="lg"
+          size="icon"
           onClick={() => {
             setPresentationMode(!presentationMode);
             toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled");
           }}
-          className="glass-panel border-border/40 shadow-lg"
+          className="glass-panel border-border/40 shadow-lg hover:shadow-xl transition-shadow"
         >
-          <Presentation className="w-5 h-5 mr-2" />
-          {presentationMode ? "Exit Presentation" : "Presentation Mode"}
+          <Presentation className="w-4 h-4" />
         </Button>
       </div>
 
@@ -492,6 +504,10 @@ export const MapContainer = () => {
               toast("Drawing cleared");
             }}
             onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
+            onClose={() => {
+              setPresentationMode(false);
+              toast("Presentation mode disabled");
+            }}
           />
         </>
       )}
