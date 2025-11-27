@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Circle, Line, Polygon, IText, FabricObject, Point } from "fabric";
+import { Canvas as FabricCanvas, Circle, Line, Polygon, IText, FabricObject, Point, PencilBrush } from "fabric";
 import { DrawingTool } from "@/types/drawing";
 
 interface DrawingCanvasProps {
@@ -33,11 +33,6 @@ export const DrawingCanvas = ({
   const polygonPointsRef = useRef<Point[]>([]);
   const polygonDotsRef = useRef<Circle[]>([]);
   const tempPolygonRef = useRef<Polygon | null>(null);
-  const distanceLineRef = useRef<Line | null>(null);
-  const distancePointARef = useRef<Circle | null>(null);
-  const distanceStateRef = useRef<'idle' | 'settingPointB'>('idle');
-  const distanceTextRef = useRef<IText | null>(null);
-  const distanceStartPointRef = useRef<Point | null>(null);
   const laserTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeColorRef = useRef(activeColor);
   const brushSizeRef = useRef(brushSize);
@@ -61,10 +56,10 @@ export const DrawingCanvas = ({
       backgroundColor: null,
     });
 
-    if (canvas.freeDrawingBrush) {
-      canvas.freeDrawingBrush.color = activeColor;
-      canvas.freeDrawingBrush.width = brushSize;
-    }
+    // Explicitly create PencilBrush for Fabric.js v6
+    canvas.freeDrawingBrush = new PencilBrush(canvas);
+    canvas.freeDrawingBrush.color = activeColor;
+    canvas.freeDrawingBrush.width = brushSize;
 
     fabricCanvasRef.current = canvas;
 
@@ -93,7 +88,7 @@ export const DrawingCanvas = ({
     if (!canvas) return;
 
     const handleObjectAdded = () => {
-      if (activeTool !== 'polygon' && activeTool !== 'distance') {
+      if (activeTool !== 'polygon') {
         saveHistory();
       }
     };
@@ -181,11 +176,6 @@ export const DrawingCanvas = ({
     polygonPointsRef.current = [];
     polygonDotsRef.current = [];
     tempPolygonRef.current = null;
-    distanceStateRef.current = 'idle';
-    distanceLineRef.current = null;
-    distancePointARef.current = null;
-    distanceTextRef.current = null;
-    distanceStartPointRef.current = null;
     
     historyRef.current = [];
     historyIndexRef.current = -1;
@@ -223,30 +213,18 @@ export const DrawingCanvas = ({
     polygonDotsRef.current.forEach(dot => canvas.remove(dot));
     polygonDotsRef.current = [];
 
-    // Reset distance tool
-    if (distanceLineRef.current) {
-      canvas.remove(distanceLineRef.current);
-      distanceLineRef.current = null;
-    }
-    if (distancePointARef.current) {
-      canvas.remove(distancePointARef.current);
-      distancePointARef.current = null;
-    }
-    if (distanceTextRef.current) {
-      canvas.remove(distanceTextRef.current);
-      distanceTextRef.current = null;
-    }
-    distanceStateRef.current = 'idle';
-
     canvas.isDrawingMode = activeTool === 'freehand' || activeTool === 'highlighter';
     canvas.selection = activeTool === 'select';
 
-    if (canvas.freeDrawingBrush) {
-      canvas.freeDrawingBrush.color = activeTool === 'highlighter' 
-        ? activeColor + '4D' // 30% opacity
-        : activeColor;
-      canvas.freeDrawingBrush.width = activeTool === 'highlighter' ? brushSize * 3 : brushSize;
+    // Always ensure brush exists and is configured
+    if (!canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush = new PencilBrush(canvas);
     }
+
+    canvas.freeDrawingBrush.color = activeTool === 'highlighter' 
+      ? activeColorRef.current + '4D' // 30% opacity
+      : activeColorRef.current;
+    canvas.freeDrawingBrush.width = activeTool === 'highlighter' ? brushSizeRef.current * 3 : brushSizeRef.current;
 
     // Mouse event handlers
     const handleMouseDown = (e: any) => {
@@ -261,8 +239,6 @@ export const DrawingCanvas = ({
         handleTextClick(pointer);
       } else if (activeTool === 'eraser') {
         handleEraserClick(e);
-      } else if (activeTool === 'distance') {
-        handleDistanceStart(pointer);
       } else if (activeTool === 'circle') {
         handleCircleStart(pointer);
       } else if (activeTool === 'laser') {
@@ -270,22 +246,25 @@ export const DrawingCanvas = ({
       }
     };
 
-    const handleMouseMove = (e: any) => {
-      if (!e.pointer) return;
-      
-      if (activeTool === 'distance' && distanceLineRef.current) {
-        updateDistanceLine(e.pointer);
-      }
-    };
-
     canvas.on('mouse:down', handleMouseDown);
-    canvas.on('mouse:move', handleMouseMove);
 
     return () => {
       canvas.off('mouse:down', handleMouseDown);
-      canvas.off('mouse:move', handleMouseMove);
     };
-  }, [activeTool, activeColor, brushSize]);
+  }, [activeTool]);
+
+  // Separate effect for color/brush updates (doesn't reset tool states)
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || !canvas.freeDrawingBrush) return;
+
+    canvas.freeDrawingBrush.color = activeTool === 'highlighter' 
+      ? activeColor + '4D' 
+      : activeColor;
+    canvas.freeDrawingBrush.width = activeTool === 'highlighter' 
+      ? brushSize * 3 
+      : brushSize;
+  }, [activeColor, brushSize, activeTool]);
 
   const handlePolygonClick = (pointer: Point) => {
     const canvas = fabricCanvasRef.current;
@@ -407,124 +386,6 @@ export const DrawingCanvas = ({
     if (!canvas || !e.target) return;
 
     canvas.remove(e.target);
-    canvas.renderAll();
-  };
-
-  const handleDistanceStart = (pointer: Point) => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    // If setting point A (idle state)
-    if (distanceStateRef.current === 'idle') {
-      // Store the start point
-      distanceStartPointRef.current = new Point(pointer.x, pointer.y);
-      
-      // Create point A marker
-      const pointA = new Circle({
-        left: pointer.x - 6,
-        top: pointer.y - 6,
-        radius: 6,
-        fill: activeColorRef.current,
-        stroke: 'white',
-        strokeWidth: 2,
-        selectable: false,
-      });
-      canvas.add(pointA);
-      distancePointARef.current = pointA;
-
-      // Create initial line
-      const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-        stroke: activeColorRef.current,
-        strokeWidth: 2,
-        strokeDashArray: [5, 5],
-        selectable: false,
-      });
-      canvas.add(line);
-      distanceLineRef.current = line;
-      
-      distanceStateRef.current = 'settingPointB';
-      canvas.renderAll();
-    } 
-    // If setting point B
-    else if (distanceStateRef.current === 'settingPointB' && distanceLineRef.current) {
-      // Finalize the measurement
-      const line = distanceLineRef.current;
-      line.set({ 
-        selectable: true,
-        strokeDashArray: [] // Make solid
-      });
-      
-      // Create point B marker
-      const pointB = new Circle({
-        left: pointer.x - 6,
-        top: pointer.y - 6,
-        radius: 6,
-        fill: activeColorRef.current,
-        stroke: 'white',
-        strokeWidth: 2,
-        selectable: false,
-      });
-      canvas.add(pointB);
-
-      if (distanceTextRef.current) {
-        distanceTextRef.current.set({ selectable: true });
-      }
-
-      // Reset state
-      distanceStateRef.current = 'idle';
-      distanceLineRef.current = null;
-      distancePointARef.current = null;
-      distanceTextRef.current = null;
-      distanceStartPointRef.current = null;
-      
-      saveHistory();
-      canvas.renderAll();
-    }
-  };
-
-  const updateDistanceLine = (pointer: Point) => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas || !distanceLineRef.current || !distanceStartPointRef.current || distanceStateRef.current !== 'settingPointB') return;
-
-    const line = distanceLineRef.current;
-    const startPoint = distanceStartPointRef.current;
-    
-    // Update line endpoint
-    line.set({ 
-      x2: pointer.x - startPoint.x,
-      y2: pointer.y - startPoint.y
-    });
-
-    // Calculate distance
-    const distance = Math.sqrt(
-      Math.pow(pointer.x - startPoint.x, 2) +
-      Math.pow(pointer.y - startPoint.y, 2)
-    );
-
-    const distanceInMeters = (distance * 10).toFixed(0); // Approximate scale
-
-    // Remove old text if exists
-    if (distanceTextRef.current) {
-      canvas.remove(distanceTextRef.current);
-    }
-
-    // Calculate midpoint
-    const midX = (startPoint.x + pointer.x) / 2;
-    const midY = (startPoint.y + pointer.y) / 2;
-
-    // Create new text
-    const text = new IText(`${distanceInMeters}m`, {
-      left: midX,
-      top: midY - 20,
-      fill: activeColorRef.current,
-      fontSize: 16,
-      fontFamily: 'Inter, sans-serif',
-      backgroundColor: 'white',
-      selectable: false,
-    });
-
-    distanceTextRef.current = text;
-    canvas.add(text);
     canvas.renderAll();
   };
 

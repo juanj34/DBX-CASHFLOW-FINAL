@@ -456,7 +456,7 @@ export const MapContainer = () => {
           size="icon"
           onClick={() => {
             setPresentationMode(!presentationMode);
-            toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled");
+            toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled - Press ESC to exit");
           }}
           className="glass-panel border-border/40 shadow-lg hover:shadow-xl transition-shadow"
         >
