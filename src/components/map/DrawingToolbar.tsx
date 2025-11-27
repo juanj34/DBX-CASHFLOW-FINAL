@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   MousePointer2, 
+  Pencil,
   Pentagon, 
   MoveRight, 
   Type, 
@@ -60,6 +61,7 @@ export const DrawingToolbar = ({
 
   const tools = [
     { id: 'select' as DrawingTool, icon: MousePointer2, label: 'Select' },
+    { id: 'freehand' as DrawingTool, icon: Pencil, label: 'Marker' },
     { id: 'polygon' as DrawingTool, icon: Pentagon, label: 'Polygon' },
     { id: 'arrow' as DrawingTool, icon: MoveRight, label: 'Arrow' },
     { id: 'text' as DrawingTool, icon: Type, label: 'Text' },
