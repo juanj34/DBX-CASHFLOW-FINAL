@@ -37,7 +37,7 @@ export const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-3 glass-panel border-border/40">
+      <PopoverContent side="left" className="w-auto p-3 glass-panel border-border/40">
         <div className="grid grid-cols-3 gap-2">
           {PRESET_COLORS.map((preset) => (
             <button

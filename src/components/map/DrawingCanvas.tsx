@@ -31,8 +31,11 @@ export const DrawingCanvas = ({
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number>(-1);
   const polygonPointsRef = useRef<Point[]>([]);
+  const polygonDotsRef = useRef<Circle[]>([]);
   const tempPolygonRef = useRef<Polygon | null>(null);
   const distanceLineRef = useRef<Line | null>(null);
+  const distancePointARef = useRef<Circle | null>(null);
+  const distanceStateRef = useRef<'idle' | 'settingPointB'>('idle');
   const distanceTextRef = useRef<IText | null>(null);
   const laserTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -192,16 +195,25 @@ export const DrawingCanvas = ({
       canvas.remove(tempPolygonRef.current);
       tempPolygonRef.current = null;
     }
+    
+    // Clean up polygon dots
+    polygonDotsRef.current.forEach(dot => canvas.remove(dot));
+    polygonDotsRef.current = [];
 
     // Reset distance tool
     if (distanceLineRef.current) {
       canvas.remove(distanceLineRef.current);
       distanceLineRef.current = null;
     }
+    if (distancePointARef.current) {
+      canvas.remove(distancePointARef.current);
+      distancePointARef.current = null;
+    }
     if (distanceTextRef.current) {
       canvas.remove(distanceTextRef.current);
       distanceTextRef.current = null;
     }
+    distanceStateRef.current = 'idle';
 
     canvas.isDrawingMode = activeTool === 'freehand' || activeTool === 'highlighter';
     canvas.selection = activeTool === 'select';
@@ -257,6 +269,19 @@ export const DrawingCanvas = ({
     if (!canvas) return;
 
     polygonPointsRef.current.push(new Point(pointer.x, pointer.y));
+
+    // Add visual dot at click point
+    const dot = new Circle({
+      left: pointer.x - 6,
+      top: pointer.y - 6,
+      radius: 6,
+      fill: activeColor,
+      stroke: 'white',
+      strokeWidth: 2,
+      selectable: false,
+    });
+    canvas.add(dot);
+    polygonDotsRef.current.push(dot);
 
     if (tempPolygonRef.current) {
       canvas.remove(tempPolygonRef.current);
@@ -366,42 +391,70 @@ export const DrawingCanvas = ({
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
 
-    if (distanceLineRef.current) {
-      canvas.remove(distanceLineRef.current);
-      distanceLineRef.current = null;
-    }
-    if (distanceTextRef.current) {
-      canvas.remove(distanceTextRef.current);
-      distanceTextRef.current = null;
-    }
+    // If setting point A (idle state)
+    if (distanceStateRef.current === 'idle') {
+      // Create point A marker
+      const pointA = new Circle({
+        left: pointer.x - 6,
+        top: pointer.y - 6,
+        radius: 6,
+        fill: activeColor,
+        stroke: 'white',
+        strokeWidth: 2,
+        selectable: false,
+      });
+      canvas.add(pointA);
+      distancePointARef.current = pointA;
 
-    const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-      stroke: activeColor,
-      strokeWidth: 2,
-      strokeDashArray: [5, 5],
-      selectable: false,
-    });
+      // Create initial line
+      const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+        stroke: activeColor,
+        strokeWidth: 2,
+        strokeDashArray: [5, 5],
+        selectable: false,
+      });
+      canvas.add(line);
+      distanceLineRef.current = line;
+      
+      distanceStateRef.current = 'settingPointB';
+      canvas.renderAll();
+    } 
+    // If setting point B
+    else if (distanceStateRef.current === 'settingPointB' && distanceLineRef.current) {
+      // Finalize the measurement
+      const line = distanceLineRef.current;
+      line.set({ selectable: true });
+      
+      // Create point B marker
+      const pointB = new Circle({
+        left: pointer.x - 6,
+        top: pointer.y - 6,
+        radius: 6,
+        fill: activeColor,
+        stroke: 'white',
+        strokeWidth: 2,
+        selectable: false,
+      });
+      canvas.add(pointB);
 
-    distanceLineRef.current = line;
-    canvas.add(line);
-
-    const handleUp = () => {
-      if (distanceLineRef.current) {
-        distanceLineRef.current.set({ selectable: true });
-      }
       if (distanceTextRef.current) {
         distanceTextRef.current.set({ selectable: true });
       }
-      canvas.off('mouse:up', handleUp);
-      saveHistory();
-    };
 
-    canvas.on('mouse:up', handleUp);
+      // Reset state
+      distanceStateRef.current = 'idle';
+      distanceLineRef.current = null;
+      distancePointARef.current = null;
+      distanceTextRef.current = null;
+      
+      saveHistory();
+      canvas.renderAll();
+    }
   };
 
   const updateDistanceLine = (pointer: Point) => {
     const canvas = fabricCanvasRef.current;
-    if (!canvas || !distanceLineRef.current) return;
+    if (!canvas || !distanceLineRef.current || distanceStateRef.current !== 'settingPointB') return;
 
     const line = distanceLineRef.current;
     const coords = line.calcLinePoints();
