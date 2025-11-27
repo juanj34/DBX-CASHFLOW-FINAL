@@ -12,7 +12,6 @@ import {
   Undo2,
   Redo2,
   Trash2,
-  Ruler,
   CircleDot,
   Target,
   Download,
@@ -66,7 +65,6 @@ export const DrawingToolbar = ({
     { id: 'arrow' as DrawingTool, icon: MoveRight, label: 'Arrow' },
     { id: 'text' as DrawingTool, icon: Type, label: 'Text' },
     { id: 'highlighter' as DrawingTool, icon: Highlighter, label: 'Highlight' },
-    { id: 'distance' as DrawingTool, icon: Ruler, label: 'Distance' },
     { id: 'circle' as DrawingTool, icon: CircleDot, label: 'Circle' },
     { id: 'laser' as DrawingTool, icon: Target, label: 'Laser' },
     { id: 'eraser' as DrawingTool, icon: Eraser, label: 'Eraser' },
@@ -88,9 +86,9 @@ export const DrawingToolbar = ({
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="h-10 w-10 hover:bg-destructive/10 hover:text-destructive"
+                className="h-10 w-10 bg-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">

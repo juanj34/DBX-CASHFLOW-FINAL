@@ -6,7 +6,6 @@ export type DrawingTool =
   | 'text' 
   | 'highlighter' 
   | 'eraser'
-  | 'distance'
   | 'circle'
   | 'laser';
 
