@@ -7,10 +7,12 @@ interface LayerToggleProps {
   zonesVisible: boolean;
   hotspotsVisible: boolean;
   projectsVisible: boolean;
+  metroLinesVisible: boolean;
   categoryVisibility: Record<string, boolean>;
   onZonesToggle: (visible: boolean) => void;
   onHotspotsToggle: (visible: boolean) => void;
   onProjectsToggle: (visible: boolean) => void;
+  onMetroLinesToggle: (visible: boolean) => void;
   onCategoryToggle: (category: string, visible: boolean) => void;
 }
 
@@ -18,10 +20,12 @@ export const LayerToggle = ({
   zonesVisible,
   hotspotsVisible,
   projectsVisible,
+  metroLinesVisible,
   categoryVisibility,
   onZonesToggle,
   onHotspotsToggle,
   onProjectsToggle,
+  onMetroLinesToggle,
   onCategoryToggle,
 }: LayerToggleProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -67,6 +71,30 @@ export const LayerToggle = ({
               checked={zonesVisible}
               onCheckedChange={onZonesToggle}
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="metro-toggle" className="text-sm font-medium">Metro Lines</Label>
+              <Switch
+                id="metro-toggle"
+                checked={metroLinesVisible}
+                onCheckedChange={onMetroLinesToggle}
+              />
+            </div>
+            
+            {metroLinesVisible && (
+              <div className="pl-2 space-y-1 border-l-2 border-border/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-1 rounded-full" style={{ backgroundColor: "#EF4444" }} />
+                  <span className="text-xs text-muted-foreground">Red Line</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-1 rounded-full" style={{ backgroundColor: "#22C55E" }} />
+                  <span className="text-xs text-muted-foreground">Green Line</span>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">
