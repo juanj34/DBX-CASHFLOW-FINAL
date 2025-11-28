@@ -397,8 +397,37 @@ export const MapContainer = () => {
     );
   }
 
+  const handleMapContainerClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // No cerrar si el clic fue en un marker (hotspot o proyecto)
+    if (target.classList.contains('hotspot-marker') || 
+        target.classList.contains('project-marker') ||
+        target.closest('.hotspot-marker') ||
+        target.closest('.project-marker')) {
+      return;
+    }
+    
+    // No cerrar si el clic fue en una tarjeta de info
+    if (target.closest('[data-info-card]')) {
+      return;
+    }
+    
+    // No cerrar si el clic fue en un control del mapa
+    if (target.closest('.mapboxgl-ctrl') ||
+        target.closest('.glass-panel') ||
+        target.closest('button')) {
+      return;
+    }
+    
+    // Cerrar todas las tarjetas
+    setSelectedZone(null);
+    setSelectedHotspot(null);
+    setSelectedProject(null);
+  };
+
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full overflow-hidden" onClick={handleMapContainerClick}>
       <div ref={mapContainer} className="absolute inset-0" />
 
       {/* Map style toggle */}
@@ -450,7 +479,7 @@ export const MapContainer = () => {
       />
 
       {/* Presentation mode toggle */}
-      <div className="fixed bottom-6 right-20 z-[999]">
+      <div className="fixed bottom-6 right-6 z-[999]">
         <Button
           variant={presentationMode ? "default" : "outline"}
           size="icon"

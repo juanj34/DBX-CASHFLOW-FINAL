@@ -74,7 +74,7 @@ export const DrawingToolbar = ({
     <TooltipProvider>
       <div 
         className={cn(
-          "fixed bottom-6 right-6 z-[1001] glass-panel border border-border/40 rounded-2xl p-2 transition-all duration-300",
+          "fixed bottom-6 right-20 z-[1001] glass-panel border border-border/40 rounded-2xl p-2 transition-all duration-300",
           isExpanded ? "w-auto" : "w-14"
         )}
       >
@@ -83,13 +83,13 @@ export const DrawingToolbar = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
                 onClick={onClose}
-                className="h-10 w-full flex items-center justify-center gap-2 font-semibold"
+                className="h-10 w-full flex items-center justify-center gap-2 font-semibold bg-white hover:bg-gray-100 border-gray-300"
               >
-                <X className="w-4 h-4" />
-                <span>Exit</span>
+                <X className="w-4 h-4 text-black" />
+                <span className="text-black">Exit</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
