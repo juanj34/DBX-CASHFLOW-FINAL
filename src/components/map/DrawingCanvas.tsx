@@ -26,7 +26,8 @@ export const DrawingCanvas = ({
   screenshotTrigger,
   onScreenshotReady,
 }: DrawingCanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number>(-1);
@@ -48,9 +49,16 @@ export const DrawingCanvas = ({
   }, [brushSize]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!wrapperRef.current) return;
 
-    const canvas = new FabricCanvas(canvasRef.current, {
+    // Create canvas element dynamically - React won't manage it directly
+    const canvasElement = document.createElement('canvas');
+    canvasElement.style.position = 'absolute';
+    canvasElement.style.inset = '0';
+    wrapperRef.current.appendChild(canvasElement);
+    canvasRef.current = canvasElement;
+
+    const canvas = new FabricCanvas(canvasElement, {
       width: window.innerWidth,
       height: window.innerHeight,
       selection: activeTool === 'select',
@@ -87,27 +95,15 @@ export const DrawingCanvas = ({
       
       window.removeEventListener('resize', handleResize);
       
-      // Remove all Fabric objects to let Fabric clean up its internal state
-      const objects = canvas.getObjects();
-      objects.forEach(obj => {
-        try {
-          canvas.remove(obj);
-        } catch (e) {
-          // Ignore removal errors
-        }
-      });
-      
-      // Remove all event listeners before disposing
+      // Clear canvas content and remove event listeners
+      // DO NOT call dispose() - it conflicts with React's DOM management
+      canvas.clear();
       canvas.off();
       
-      // Dispose without touching DOM - let React handle DOM removal
-      try {
-        canvas.dispose();
-      } catch (e) {
-        // Ignore disposal errors during unmount
-      }
-      
       fabricCanvasRef.current = null;
+      canvasRef.current = null;
+      
+      // React will automatically remove wrapperRef.current and its children
     };
   }, []);
 
@@ -548,8 +544,8 @@ export const DrawingCanvas = ({
   }, [activeTool]);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
+      ref={wrapperRef}
       className="absolute inset-0 pointer-events-auto"
       style={{ zIndex: 1000 }}
     />

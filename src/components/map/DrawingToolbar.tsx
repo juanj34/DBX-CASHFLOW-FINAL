@@ -79,20 +79,21 @@ export const DrawingToolbar = ({
         )}
       >
         <div className="flex flex-col gap-1">
-          {/* Close button */}
+          {/* Exit button - always visible */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
+                variant="destructive"
+                size="sm"
                 onClick={onClose}
-                className="h-10 w-10 bg-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="h-10 w-full flex items-center justify-center gap-2 font-semibold"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
+                <span>Exit</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
-              <p>Close (ESC)</p>
+              <p>Exit Presentation Mode (ESC)</p>
             </TooltipContent>
           </Tooltip>
 
