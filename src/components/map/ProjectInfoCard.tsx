@@ -31,7 +31,7 @@ const getStatusColor = (status?: string) => {
 
 export const ProjectInfoCard = ({ project, onClose }: ProjectInfoCardProps) => {
   return (
-    <Card className="absolute top-4 right-4 w-80 max-h-[80vh] overflow-y-auto shadow-lg z-10">
+    <Card className="absolute top-4 right-4 w-80 max-h-[80vh] overflow-y-auto shadow-lg z-10" data-info-card>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <div className="space-y-1">
           <CardTitle className="text-xl">{project.name || "Untitled Project"}</CardTitle>
