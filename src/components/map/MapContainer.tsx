@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
-import { Loader2, Presentation, Building2 } from "lucide-react";
+import { Loader2, Presentation, Building2, X } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -251,8 +251,12 @@ export const MapContainer = () => {
     if (!map.current || !mapLoaded || mapStyle !== 'streets') return;
     
     const updateBuildings = () => {
-      if (map.current && map.current.getStyle()?.name?.includes('Standard')) {
-        map.current.setConfigProperty('basemap', 'show3dObjects', buildings3DVisible);
+      if (map.current) {
+        try {
+          map.current.setConfigProperty('basemap', 'show3dObjects', buildings3DVisible);
+        } catch (e) {
+          console.warn('Could not set 3D buildings config:', e);
+        }
       }
     };
 
@@ -459,68 +463,70 @@ export const MapContainer = () => {
         </Button>
       </div>
 
-      {/* Presentation mode toggle */}
-      <div className="fixed bottom-6 right-6 z-[999]">
+      {/* Presentation panel - full right side */}
+      <div className="fixed top-0 right-0 bottom-0 z-[1100] flex items-center">
+        {/* Toggle button - positioned to left of panel */}
         <Button
-          variant={presentationMode ? "default" : "outline"}
+          variant="outline"
           size="icon"
           onClick={() => {
             setPresentationMode(!presentationMode);
             toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled - Press ESC to exit");
           }}
-          className="glass-panel border-border/40 shadow-lg hover:shadow-xl transition-shadow"
+          className="glass-panel -mr-1"
         >
-          <Presentation className="w-4 h-4" />
+          {presentationMode ? <X className="w-4 h-4" /> : <Presentation className="w-4 h-4" />}
         </Button>
+        
+        {/* Panel - only visible when presentation mode is on */}
+        {presentationMode && (
+          <>
+            {/* Drawing canvas overlay */}
+            <DrawingCanvas
+              activeTool={activeTool}
+              activeColor={activeColor}
+              brushSize={brushSize}
+              onHistoryChange={(canUndo, canRedo) => {
+                setCanUndo(canUndo);
+                setCanRedo(canRedo);
+              }}
+              onClear={() => {}}
+              clearTrigger={clearTrigger}
+              undoTrigger={undoTrigger}
+              redoTrigger={redoTrigger}
+              screenshotTrigger={screenshotTrigger}
+              onScreenshotReady={(dataUrl) => {
+                const link = document.createElement('a');
+                link.download = `map-screenshot-${Date.now()}.png`;
+                link.href = dataUrl;
+                link.click();
+                toast.success("Screenshot exported!");
+              }}
+            />
+            
+            {/* Toolbar panel */}
+            <div className="h-full glass-panel border-l border-border/40 p-2 flex flex-col items-center justify-center overflow-y-auto">
+              <DrawingToolbar
+                activeTool={activeTool}
+                activeColor={activeColor}
+                brushSize={brushSize}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onToolChange={setActiveTool}
+                onColorChange={setActiveColor}
+                onBrushSizeChange={setBrushSize}
+                onUndo={() => setUndoTrigger(prev => prev + 1)}
+                onRedo={() => setRedoTrigger(prev => prev + 1)}
+                onClear={() => {
+                  setClearTrigger(prev => prev + 1);
+                  toast("Drawing cleared");
+                }}
+                onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
+              />
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Drawing overlay */}
-      {presentationMode && (
-        <>
-          <DrawingCanvas
-            activeTool={activeTool}
-            activeColor={activeColor}
-            brushSize={brushSize}
-            onHistoryChange={(canUndo, canRedo) => {
-              setCanUndo(canUndo);
-              setCanRedo(canRedo);
-            }}
-            onClear={() => {}}
-            clearTrigger={clearTrigger}
-            undoTrigger={undoTrigger}
-            redoTrigger={redoTrigger}
-            screenshotTrigger={screenshotTrigger}
-            onScreenshotReady={(dataUrl) => {
-              const link = document.createElement('a');
-              link.download = `map-screenshot-${Date.now()}.png`;
-              link.href = dataUrl;
-              link.click();
-              toast.success("Screenshot exported!");
-            }}
-          />
-          <DrawingToolbar
-            activeTool={activeTool}
-            activeColor={activeColor}
-            brushSize={brushSize}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            onToolChange={setActiveTool}
-            onColorChange={setActiveColor}
-            onBrushSizeChange={setBrushSize}
-            onUndo={() => setUndoTrigger(prev => prev + 1)}
-            onRedo={() => setRedoTrigger(prev => prev + 1)}
-            onClear={() => {
-              setClearTrigger(prev => prev + 1);
-              toast("Drawing cleared");
-            }}
-            onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
-            onClose={() => {
-              setPresentationMode(false);
-              toast("Presentation mode disabled");
-            }}
-          />
-        </>
-      )}
 
       {/* Info cards */}
       {selectedZone && (
