@@ -27,6 +27,7 @@ export const MapContainer = () => {
   const [hotspotsVisible, setHotspotsVisible] = useState(true);
   const [projectsVisible, setProjectsVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
+  const [buildings3DVisible, setBuildings3DVisible] = useState(true);
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({
     landmark: true,
     metro: true,
@@ -300,6 +301,19 @@ export const MapContainer = () => {
     });
   }, [metroVisible]);
 
+  // Toggle 3D buildings visibility
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    if (map.current.getLayer("3d-buildings")) {
+      map.current.setLayoutProperty(
+        "3d-buildings",
+        "visibility",
+        buildings3DVisible ? "visible" : "none"
+      );
+    }
+  }, [buildings3DVisible, mapLoaded]);
+
   // Add hotspots to map
   useEffect(() => {
     if (!map.current || !hotspots || hotspotsLoading || !mapLoaded) return;
@@ -477,11 +491,13 @@ export const MapContainer = () => {
         hotspotsVisible={hotspotsVisible}
         projectsVisible={projectsVisible}
         metroLinesVisible={metroVisible}
+        buildings3DVisible={buildings3DVisible}
         categoryVisibility={categoryVisibility}
         onZonesToggle={setZonesVisible}
         onHotspotsToggle={setHotspotsVisible}
         onProjectsToggle={setProjectsVisible}
         onMetroLinesToggle={setMetroVisible}
+        onBuildings3DToggle={setBuildings3DVisible}
         onCategoryToggle={(category, visible) => 
           setCategoryVisibility((prev) => ({ ...prev, [category]: visible }))
         }

@@ -8,11 +8,13 @@ interface LayerToggleProps {
   hotspotsVisible: boolean;
   projectsVisible: boolean;
   metroLinesVisible: boolean;
+  buildings3DVisible: boolean;
   categoryVisibility: Record<string, boolean>;
   onZonesToggle: (visible: boolean) => void;
   onHotspotsToggle: (visible: boolean) => void;
   onProjectsToggle: (visible: boolean) => void;
   onMetroLinesToggle: (visible: boolean) => void;
+  onBuildings3DToggle: (visible: boolean) => void;
   onCategoryToggle: (category: string, visible: boolean) => void;
 }
 
@@ -21,11 +23,13 @@ export const LayerToggle = ({
   hotspotsVisible,
   projectsVisible,
   metroLinesVisible,
+  buildings3DVisible,
   categoryVisibility,
   onZonesToggle,
   onHotspotsToggle,
   onProjectsToggle,
   onMetroLinesToggle,
+  onBuildings3DToggle,
   onCategoryToggle,
 }: LayerToggleProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -70,6 +74,15 @@ export const LayerToggle = ({
               id="zones-toggle"
               checked={zonesVisible}
               onCheckedChange={onZonesToggle}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="buildings-toggle" className="text-sm">3D Buildings</Label>
+            <Switch
+              id="buildings-toggle"
+              checked={buildings3DVisible}
+              onCheckedChange={onBuildings3DToggle}
             />
           </div>
 
