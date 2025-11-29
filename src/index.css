@@ -164,3 +164,16 @@ All colors MUST be HSL.
 .mapboxgl-ctrl-geocoder .suggestions > li > a:hover {
   background-color: rgba(37, 99, 235, 0.1);
 }
+
+/* Make Mapbox controls visible above DrawingCanvas in presentation mode */
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-top-left,
+.mapboxgl-ctrl-bottom-right,
+.mapboxgl-ctrl-bottom-left {
+  z-index: 1060 !important;
+}
+
+.mapboxgl-ctrl-group {
+  position: relative;
+  z-index: 1060 !important;
+}

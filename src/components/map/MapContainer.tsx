@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
-import { Loader2, Presentation, Building2, X } from "lucide-react";
+import { Loader2, Presentation, Building2, X, LogOut } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -15,13 +16,14 @@ import { SearchBar } from "./SearchBar";
 import { DrawingTool } from "@/types/drawing";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { MapHeader } from "./MapHeader";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MapContainerProps {
   userRole: string | null;
 }
 
 export const MapContainer = ({ userRole }: MapContainerProps) => {
+  const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const hotspotMarkersRef = useRef<mapboxgl.Marker[]>([]);
@@ -426,7 +428,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
       <div ref={mapContainer} className="absolute inset-0" />
 
       {/* Map controls row */}
-      <div className="absolute top-4 left-4 flex items-center gap-3">
+      <div className="absolute top-4 left-4 flex items-center gap-3 z-[1060]">
         {/* Map style toggle */}
         <div className="glass-panel rounded-lg p-1 flex gap-1">
           <button
@@ -466,24 +468,21 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
       </div>
 
       {/* Layer toggle */}
-      <LayerToggle
-        zonesVisible={zonesVisible}
-        hotspotsVisible={hotspotsVisible}
-        projectsVisible={projectsVisible}
-        metroLinesVisible={metroVisible}
-        onZonesToggle={setZonesVisible}
-        onHotspotsToggle={setHotspotsVisible}
-        onProjectsToggle={setProjectsVisible}
-        onMetroLinesToggle={setMetroVisible}
-      />
-
-      {/* Menu/Logout panel - below LayerToggle */}
-      <div className="absolute left-4 z-10" style={{ bottom: 'calc(4rem + 240px)' }}>
-        <MapHeader userRole={userRole} onClose={() => {}} />
+      <div className="absolute bottom-4 left-4 z-[1060]">
+        <LayerToggle
+          zonesVisible={zonesVisible}
+          hotspotsVisible={hotspotsVisible}
+          projectsVisible={projectsVisible}
+          metroLinesVisible={metroVisible}
+          onZonesToggle={setZonesVisible}
+          onHotspotsToggle={setHotspotsVisible}
+          onProjectsToggle={setProjectsVisible}
+          onMetroLinesToggle={setMetroVisible}
+        />
       </div>
 
-      {/* Quick controls - positioned to the right of menu */}
-      <div className="absolute bottom-4 left-56 flex flex-col gap-2">
+      {/* Quick controls - positioned to the right of LayerToggle */}
+      <div className="absolute bottom-4 left-56 flex flex-col gap-2 z-[1060]">
         {/* 3D Buildings toggle button */}
         <Button
           variant={buildings3DVisible ? "default" : "outline"}
@@ -495,6 +494,20 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           <Building2 className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Simple Logout button - bottom right */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={async () => {
+          await supabase.auth.signOut();
+          navigate("/login");
+        }}
+        className="absolute bottom-4 right-4 z-[1060] glass-panel gap-2"
+      >
+        <LogOut className="w-4 h-4" />
+        Logout
+      </Button>
 
       {/* Drawing canvas - full screen overlay when presentation mode is active */}
       {presentationMode && (
