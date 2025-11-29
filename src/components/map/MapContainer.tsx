@@ -28,6 +28,7 @@ export const MapContainer = () => {
   const [projectsVisible, setProjectsVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
   const [buildings3DVisible, setBuildings3DVisible] = useState(true);
+  const [lightPreset, setLightPreset] = useState<'dawn' | 'day' | 'dusk' | 'night'>('day');
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({
     landmark: true,
     metro: true,
@@ -79,7 +80,7 @@ export const MapContainer = () => {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/standard",
       center: [55.2708, 25.2048],
       zoom: 11,
       pitch: 45,
@@ -92,60 +93,20 @@ export const MapContainer = () => {
       "top-right"
     );
 
-    const add3DBuildingsLayer = () => {
-      if (!map.current) return;
-
-      const layers = map.current.getStyle().layers;
-      const labelLayerId = layers.find(
-        (layer) => layer.type === "symbol" && layer.layout?.["text-field"]
-      )?.id;
-
-      // Check if layer already exists
-      if (map.current.getLayer("3d-buildings")) return;
-
-      map.current.addLayer(
-        {
-          id: "3d-buildings",
-          source: "composite",
-          "source-layer": "building",
-          filter: ["==", "extrude", "true"],
-          type: "fill-extrusion",
-          minzoom: 15,
-          paint: {
-            "fill-extrusion-color": "#aaa",
-            "fill-extrusion-height": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              15,
-              0,
-              15.05,
-              ["get", "height"],
-            ],
-            "fill-extrusion-base": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              15,
-              0,
-              15.05,
-              ["get", "min_height"],
-            ],
-            "fill-extrusion-opacity": 0.6,
-          },
-        },
-        labelLayerId
-      );
-    };
-
     map.current.on("load", () => {
-      add3DBuildingsLayer();
+      // Configure lighting for Mapbox Standard style
+      if (map.current?.getStyle()?.name?.includes('Standard')) {
+        map.current.setConfigProperty('basemap', 'lightPreset', lightPreset);
+      }
       setMapLoaded(true);
     });
 
     // Handle style changes
     map.current.on("style.load", () => {
-      add3DBuildingsLayer();
+      // Configure lighting for Mapbox Standard style
+      if (map.current?.getStyle()?.name?.includes('Standard')) {
+        map.current.setConfigProperty('basemap', 'lightPreset', lightPreset);
+      }
       setMapLoaded(true);
     });
 
@@ -301,11 +262,15 @@ export const MapContainer = () => {
     });
   }, [metroVisible]);
 
-  // Toggle 3D buildings visibility
+  // Toggle 3D buildings visibility (for Standard style, use show-place-labels config)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
     
-    if (map.current.getLayer("3d-buildings")) {
+    // For Standard style, control 3D buildings via config
+    if (map.current?.getStyle()?.name?.includes('Standard')) {
+      map.current.setConfigProperty('basemap', 'show3dObjects', buildings3DVisible);
+    } else if (map.current.getLayer("3d-buildings")) {
+      // Fallback for satellite style with custom 3D layer
       map.current.setLayoutProperty(
         "3d-buildings",
         "visibility",
@@ -313,6 +278,15 @@ export const MapContainer = () => {
       );
     }
   }, [buildings3DVisible, mapLoaded]);
+
+  // Update light preset
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    if (map.current?.getStyle()?.name?.includes('Standard')) {
+      map.current.setConfigProperty('basemap', 'lightPreset', lightPreset);
+    }
+  }, [lightPreset, mapLoaded]);
 
   // Add hotspots to map
   useEffect(() => {
@@ -453,7 +427,7 @@ export const MapContainer = () => {
             onClick={() => {
               setMapStyle("streets");
               setMapLoaded(false);
-              map.current?.setStyle("mapbox://styles/mapbox/light-v11");
+              map.current?.setStyle("mapbox://styles/mapbox/standard");
             }}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${
               mapStyle === "streets"
@@ -492,12 +466,15 @@ export const MapContainer = () => {
         projectsVisible={projectsVisible}
         metroLinesVisible={metroVisible}
         buildings3DVisible={buildings3DVisible}
+        lightPreset={lightPreset}
+        mapStyle={mapStyle}
         categoryVisibility={categoryVisibility}
         onZonesToggle={setZonesVisible}
         onHotspotsToggle={setHotspotsVisible}
         onProjectsToggle={setProjectsVisible}
         onMetroLinesToggle={setMetroVisible}
         onBuildings3DToggle={setBuildings3DVisible}
+        onLightPresetChange={setLightPreset}
         onCategoryToggle={(category, visible) => 
           setCategoryVisibility((prev) => ({ ...prev, [category]: visible }))
         }

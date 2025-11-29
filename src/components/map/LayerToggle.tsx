@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Layers, ChevronDown, ChevronUp } from "lucide-react";
 
 interface LayerToggleProps {
@@ -9,12 +10,15 @@ interface LayerToggleProps {
   projectsVisible: boolean;
   metroLinesVisible: boolean;
   buildings3DVisible: boolean;
+  lightPreset: 'dawn' | 'day' | 'dusk' | 'night';
+  mapStyle: 'satellite' | 'streets';
   categoryVisibility: Record<string, boolean>;
   onZonesToggle: (visible: boolean) => void;
   onHotspotsToggle: (visible: boolean) => void;
   onProjectsToggle: (visible: boolean) => void;
   onMetroLinesToggle: (visible: boolean) => void;
   onBuildings3DToggle: (visible: boolean) => void;
+  onLightPresetChange: (preset: 'dawn' | 'day' | 'dusk' | 'night') => void;
   onCategoryToggle: (category: string, visible: boolean) => void;
 }
 
@@ -24,12 +28,15 @@ export const LayerToggle = ({
   projectsVisible,
   metroLinesVisible,
   buildings3DVisible,
+  lightPreset,
+  mapStyle,
   categoryVisibility,
   onZonesToggle,
   onHotspotsToggle,
   onProjectsToggle,
   onMetroLinesToggle,
   onBuildings3DToggle,
+  onLightPresetChange,
   onCategoryToggle,
 }: LayerToggleProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -85,6 +92,24 @@ export const LayerToggle = ({
               onCheckedChange={onBuildings3DToggle}
             />
           </div>
+
+          {/* Light Preset selector - only for Streets/Standard style */}
+          {mapStyle === "streets" && (
+            <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+              <Label htmlFor="light-preset" className="text-sm">Lighting</Label>
+              <Select value={lightPreset} onValueChange={onLightPresetChange}>
+                <SelectTrigger id="light-preset" className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dawn">🌅 Dawn</SelectItem>
+                  <SelectItem value="day">☀️ Day</SelectItem>
+                  <SelectItem value="dusk">🌇 Dusk</SelectItem>
+                  <SelectItem value="night">🌙 Night</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
