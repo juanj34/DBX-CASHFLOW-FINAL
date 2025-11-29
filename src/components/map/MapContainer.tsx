@@ -15,8 +15,13 @@ import { SearchBar } from "./SearchBar";
 import { DrawingTool } from "@/types/drawing";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { MapHeader } from "./MapHeader";
 
-export const MapContainer = () => {
+interface MapContainerProps {
+  userRole: string | null;
+}
+
+export const MapContainer = ({ userRole }: MapContainerProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const hotspotMarkersRef = useRef<mapboxgl.Marker[]>([]);
@@ -63,6 +68,29 @@ export const MapContainer = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [presentationMode]);
+
+  // Freeze/unfreeze map based on presentation mode
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    if (presentationMode) {
+      // Disable all map interactions
+      map.current.dragPan.disable();
+      map.current.scrollZoom.disable();
+      map.current.boxZoom.disable();
+      map.current.keyboard.disable();
+      map.current.doubleClickZoom.disable();
+      map.current.touchZoomRotate.disable();
+    } else {
+      // Re-enable all map interactions
+      map.current.dragPan.enable();
+      map.current.scrollZoom.enable();
+      map.current.boxZoom.enable();
+      map.current.keyboard.enable();
+      map.current.doubleClickZoom.enable();
+      map.current.touchZoomRotate.enable();
+    }
+  }, [presentationMode, mapLoaded]);
 
   // Initialize map
   useEffect(() => {
@@ -449,7 +477,12 @@ export const MapContainer = () => {
         onMetroLinesToggle={setMetroVisible}
       />
 
-      {/* Quick controls - positioned to the right of LayerToggle */}
+      {/* Menu/Logout panel - below LayerToggle */}
+      <div className="absolute left-4 z-10" style={{ bottom: 'calc(4rem + 240px)' }}>
+        <MapHeader userRole={userRole} onClose={() => {}} />
+      </div>
+
+      {/* Quick controls - positioned to the right of menu */}
       <div className="absolute bottom-4 left-56 flex flex-col gap-2">
         {/* 3D Buildings toggle button */}
         <Button
@@ -463,9 +496,34 @@ export const MapContainer = () => {
         </Button>
       </div>
 
-      {/* Presentation panel - full right side */}
+      {/* Drawing canvas - full screen overlay when presentation mode is active */}
+      {presentationMode && (
+        <DrawingCanvas
+          activeTool={activeTool}
+          activeColor={activeColor}
+          brushSize={brushSize}
+          onHistoryChange={(canUndo, canRedo) => {
+            setCanUndo(canUndo);
+            setCanRedo(canRedo);
+          }}
+          onClear={() => {}}
+          clearTrigger={clearTrigger}
+          undoTrigger={undoTrigger}
+          redoTrigger={redoTrigger}
+          screenshotTrigger={screenshotTrigger}
+          onScreenshotReady={(dataUrl) => {
+            const link = document.createElement('a');
+            link.download = `map-screenshot-${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            toast.success("Screenshot exported!");
+          }}
+        />
+      )}
+
+      {/* Presentation toolbar - right side panel */}
       <div className="fixed top-0 right-0 bottom-0 z-[1100] flex items-center">
-        {/* Toggle button - positioned to left of panel */}
+        {/* Toggle button - higher z-index so it's always clickable */}
         <Button
           variant="outline"
           size="icon"
@@ -473,58 +531,32 @@ export const MapContainer = () => {
             setPresentationMode(!presentationMode);
             toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled - Press ESC to exit");
           }}
-          className="glass-panel -mr-1"
+          className="glass-panel -mr-1 z-[1200]"
         >
           {presentationMode ? <X className="w-4 h-4" /> : <Presentation className="w-4 h-4" />}
         </Button>
         
-        {/* Panel - only visible when presentation mode is on */}
+        {/* Toolbar panel - only visible when presentation mode is on */}
         {presentationMode && (
-          <>
-            {/* Drawing canvas overlay */}
-            <DrawingCanvas
+          <div className="h-full glass-panel border-l border-border/40 p-2 flex flex-col items-center justify-center overflow-y-auto">
+            <DrawingToolbar
               activeTool={activeTool}
               activeColor={activeColor}
               brushSize={brushSize}
-              onHistoryChange={(canUndo, canRedo) => {
-                setCanUndo(canUndo);
-                setCanRedo(canRedo);
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onToolChange={setActiveTool}
+              onColorChange={setActiveColor}
+              onBrushSizeChange={setBrushSize}
+              onUndo={() => setUndoTrigger(prev => prev + 1)}
+              onRedo={() => setRedoTrigger(prev => prev + 1)}
+              onClear={() => {
+                setClearTrigger(prev => prev + 1);
+                toast("Drawing cleared");
               }}
-              onClear={() => {}}
-              clearTrigger={clearTrigger}
-              undoTrigger={undoTrigger}
-              redoTrigger={redoTrigger}
-              screenshotTrigger={screenshotTrigger}
-              onScreenshotReady={(dataUrl) => {
-                const link = document.createElement('a');
-                link.download = `map-screenshot-${Date.now()}.png`;
-                link.href = dataUrl;
-                link.click();
-                toast.success("Screenshot exported!");
-              }}
+              onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
             />
-            
-            {/* Toolbar panel */}
-            <div className="h-full glass-panel border-l border-border/40 p-2 flex flex-col items-center justify-center overflow-y-auto">
-              <DrawingToolbar
-                activeTool={activeTool}
-                activeColor={activeColor}
-                brushSize={brushSize}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onToolChange={setActiveTool}
-                onColorChange={setActiveColor}
-                onBrushSizeChange={setBrushSize}
-                onUndo={() => setUndoTrigger(prev => prev + 1)}
-                onRedo={() => setRedoTrigger(prev => prev + 1)}
-                onClear={() => {
-                  setClearTrigger(prev => prev + 1);
-                  toast("Drawing cleared");
-                }}
-                onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
-              />
-            </div>
-          </>
+          </div>
         )}
       </div>
 

@@ -546,8 +546,8 @@ export const DrawingCanvas = ({
   return (
     <div
       ref={wrapperRef}
-      className="absolute inset-0 pointer-events-auto"
-      style={{ zIndex: 1000 }}
+      className="fixed inset-0 pointer-events-auto"
+      style={{ zIndex: 1050 }}
     />
   );
 };
