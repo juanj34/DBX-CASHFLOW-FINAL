@@ -125,3 +125,42 @@ All colors MUST be HSL.
     transition: var(--transition-smooth);
   }
 }
+
+/* Custom Mapbox Geocoder styles to match app design */
+.mapboxgl-ctrl-geocoder-wrapper .mapboxgl-ctrl-geocoder {
+  min-width: 240px;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: inherit;
+}
+
+.mapboxgl-ctrl-geocoder--input {
+  font-size: 14px;
+  padding: 8px 12px 8px 36px;
+  height: 38px;
+}
+
+.mapboxgl-ctrl-geocoder--input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.mapboxgl-ctrl-geocoder .suggestions {
+  border-radius: 0 0 8px 8px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+}
+
+.mapboxgl-ctrl-geocoder .suggestions > li > a {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.mapboxgl-ctrl-geocoder .suggestions > .active > a,
+.mapboxgl-ctrl-geocoder .suggestions > li > a:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+}
