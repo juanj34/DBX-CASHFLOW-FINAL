@@ -14,16 +14,11 @@ import {
   Trash2,
   CircleDot,
   Target,
-  Download,
-  ChevronRight,
-  ChevronLeft,
-  X
+  Download
 } from "lucide-react";
 import { DrawingTool } from "@/types/drawing";
 import { ColorPicker } from "./ColorPicker";
 import { BrushSizeControl } from "./BrushSizeControl";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface DrawingToolbarProps {
   activeTool: DrawingTool;
@@ -38,7 +33,6 @@ interface DrawingToolbarProps {
   onRedo: () => void;
   onClear: () => void;
   onScreenshot: () => void;
-  onClose: () => void;
 }
 
 export const DrawingToolbar = ({
@@ -54,9 +48,7 @@ export const DrawingToolbar = ({
   onRedo,
   onClear,
   onScreenshot,
-  onClose,
 }: DrawingToolbarProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
 
   const tools = [
     { id: 'select' as DrawingTool, icon: MousePointer2, label: 'Select' },
@@ -72,158 +64,106 @@ export const DrawingToolbar = ({
 
   return (
     <TooltipProvider>
-      <div 
-        className={cn(
-          "fixed bottom-6 right-20 z-[1001] glass-panel border border-border/40 rounded-2xl p-2 transition-all duration-300",
-          isExpanded ? "w-auto" : "w-14"
-        )}
-      >
-        <div className="flex flex-col gap-1">
-          {/* Exit button - always visible */}
-          <Tooltip>
+      <div className="flex flex-col gap-1 items-center">
+        {/* Drawing tools */}
+        {tools.map((tool) => (
+          <Tooltip key={tool.id}>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={onClose}
-                className="h-10 w-full flex items-center justify-center gap-2 font-semibold bg-white hover:bg-gray-100 border-gray-300"
-              >
-                <X className="w-4 h-4 text-black" />
-                <span className="text-black">Exit</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Exit Presentation Mode (ESC)</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Collapse toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
+                variant={activeTool === tool.id ? "default" : "ghost"}
                 size="icon"
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="h-10 w-10 hover:bg-accent/50"
+                onClick={() => onToolChange(tool.id)}
+                className="h-10 w-10"
               >
-                {isExpanded ? (
-                  <ChevronRight className="w-4 h-4" />
-                ) : (
-                  <ChevronLeft className="w-4 h-4" />
-                )}
+                <tool.icon className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
-              <p>{isExpanded ? "Collapse" : "Expand"}</p>
+              <p>{tool.label}</p>
             </TooltipContent>
           </Tooltip>
+        ))}
 
-          {isExpanded && (
-            <>
-              <Separator className="my-1" />
+        <Separator className="my-1 w-8" />
 
-              {/* Drawing tools */}
-              {tools.map((tool) => (
-                <Tooltip key={tool.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={activeTool === tool.id ? "default" : "ghost"}
-                      size="icon"
-                      onClick={() => onToolChange(tool.id)}
-                      className="h-10 w-10"
-                    >
-                      <tool.icon className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    <p>{tool.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+        {/* Color picker */}
+        <ColorPicker color={activeColor} onChange={onColorChange} />
 
-            <Separator className="my-1" />
+        {/* Brush size */}
+        <BrushSizeControl size={brushSize} onChange={onBrushSizeChange} />
 
-            {/* Color picker */}
-            <ColorPicker color={activeColor} onChange={onColorChange} />
+        <Separator className="my-1 w-8" />
 
-            {/* Brush size */}
-            <BrushSizeControl size={brushSize} onChange={onBrushSizeChange} />
+        {/* History controls */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="h-10 w-10"
+            >
+              <Undo2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Undo (Ctrl+Z)</p>
+          </TooltipContent>
+        </Tooltip>
 
-              <Separator className="my-1" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="h-10 w-10"
+            >
+              <Redo2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Redo (Ctrl+Y)</p>
+          </TooltipContent>
+        </Tooltip>
 
-              {/* History controls */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onUndo}
-                    disabled={!canUndo}
-                    className="h-10 w-10"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Undo (Ctrl+Z)</p>
-                </TooltipContent>
-              </Tooltip>
+        <Separator className="my-1 w-8" />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onRedo}
-                    disabled={!canRedo}
-                    className="h-10 w-10"
-                  >
-                    <Redo2 className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Redo (Ctrl+Y)</p>
-                </TooltipContent>
-              </Tooltip>
+        {/* Screenshot */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onScreenshot}
+              className="h-10 w-10"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Export Screenshot</p>
+          </TooltipContent>
+        </Tooltip>
 
-              <Separator className="my-1" />
-
-              {/* Screenshot */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onScreenshot}
-                    className="h-10 w-10"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Export Screenshot</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Clear all */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClear}
-                    className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Clear All</p>
-                </TooltipContent>
-              </Tooltip>
-            </>
-          )}
-        </div>
+        {/* Clear all */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClear}
+              className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Clear All</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </TooltipProvider>
   );
