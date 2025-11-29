@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
-import { Loader2, Presentation } from "lucide-react";
+import { Loader2, Presentation, Building2, Sun, Moon } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -28,15 +28,7 @@ export const MapContainer = () => {
   const [projectsVisible, setProjectsVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
   const [buildings3DVisible, setBuildings3DVisible] = useState(true);
-  const [lightPreset, setLightPreset] = useState<'dawn' | 'day' | 'dusk' | 'night'>('day');
-  const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({
-    landmark: true,
-    metro: true,
-    attraction: true,
-    restaurant: true,
-    shopping: true,
-    hotel: true,
-  });
+  const [lightPreset, setLightPreset] = useState<'day' | 'night'>('day');
   
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
@@ -298,12 +290,7 @@ export const MapContainer = () => {
 
     if (!hotspotsVisible) return;
 
-    // Filter hotspots by visible categories
-    const visibleHotspots = hotspots.filter(
-      (hotspot) => categoryVisibility[hotspot.category]
-    );
-
-    visibleHotspots.forEach((hotspot) => {
+    hotspots.forEach((hotspot) => {
       const el = document.createElement("div");
       el.className = "hotspot-marker";
       el.style.width = "30px";
@@ -326,7 +313,7 @@ export const MapContainer = () => {
 
       markersRef.current.push(marker);
     });
-  }, [hotspots, hotspotsLoading, hotspotsVisible, categoryVisibility, mapLoaded]);
+  }, [hotspots, hotspotsLoading, hotspotsVisible, mapLoaded]);
 
   // Add projects to map
   useEffect(() => {
@@ -465,20 +452,38 @@ export const MapContainer = () => {
         hotspotsVisible={hotspotsVisible}
         projectsVisible={projectsVisible}
         metroLinesVisible={metroVisible}
-        buildings3DVisible={buildings3DVisible}
-        lightPreset={lightPreset}
-        mapStyle={mapStyle}
-        categoryVisibility={categoryVisibility}
         onZonesToggle={setZonesVisible}
         onHotspotsToggle={setHotspotsVisible}
         onProjectsToggle={setProjectsVisible}
         onMetroLinesToggle={setMetroVisible}
-        onBuildings3DToggle={setBuildings3DVisible}
-        onLightPresetChange={setLightPreset}
-        onCategoryToggle={(category, visible) => 
-          setCategoryVisibility((prev) => ({ ...prev, [category]: visible }))
-        }
       />
+
+      {/* Quick controls - positioned to the right of LayerToggle */}
+      <div className="absolute bottom-4 left-56 flex flex-col gap-2">
+        {/* 3D Buildings toggle button */}
+        <Button
+          variant={buildings3DVisible ? "default" : "outline"}
+          size="icon"
+          onClick={() => setBuildings3DVisible(!buildings3DVisible)}
+          className="glass-panel"
+          title="Toggle 3D Buildings"
+        >
+          <Building2 className="w-4 h-4" />
+        </Button>
+        
+        {/* Day/Night toggle button (only in Streets mode) */}
+        {mapStyle === "streets" && (
+          <Button
+            variant={lightPreset === 'day' ? "default" : "outline"}
+            size="icon"
+            onClick={() => setLightPreset(lightPreset === 'day' ? 'night' : 'day')}
+            className="glass-panel"
+            title={lightPreset === 'day' ? "Switch to Night" : "Switch to Day"}
+          >
+            {lightPreset === 'day' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
+        )}
+      </div>
 
       {/* Presentation mode toggle */}
       <div className="fixed bottom-6 right-6 z-[999]">

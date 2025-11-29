@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Layers, User, LogOut, LayoutDashboard } from "lucide-react";
+import { MapPin, LogOut, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -41,11 +41,6 @@ export const MapHeader = ({ userRole }: MapHeaderProps) => {
             Dashboard
           </Button>
         )}
-        
-        <Button variant="outline" size="sm" className="gap-2">
-          <Layers className="w-4 h-4" />
-          Layers
-        </Button>
 
         <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
           <LogOut className="w-4 h-4" />
