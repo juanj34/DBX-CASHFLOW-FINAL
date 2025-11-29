@@ -11,6 +11,7 @@ import { LayerToggle } from "./LayerToggle";
 import { dubaiMetroLines } from "@/data/dubaiMetroLines";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { DrawingToolbar } from "./DrawingToolbar";
+import { SearchBar } from "./SearchBar";
 import { DrawingTool } from "@/types/drawing";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -430,36 +431,44 @@ export const MapContainer = () => {
     <div className="relative w-full h-full overflow-hidden" onClick={handleMapContainerClick}>
       <div ref={mapContainer} className="absolute inset-0" />
 
-      {/* Map style toggle */}
-      <div className="absolute top-4 left-4 glass-panel rounded-lg p-1 flex gap-1">
-        <button
-          onClick={() => {
-            setMapStyle("streets");
-            setMapLoaded(false);
-            map.current?.setStyle("mapbox://styles/mapbox/light-v11");
-          }}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${
-            mapStyle === "streets"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Streets
-        </button>
-        <button
-          onClick={() => {
-            setMapStyle("satellite");
-            setMapLoaded(false);
-            map.current?.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
-          }}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${
-            mapStyle === "satellite"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Satellite
-        </button>
+      {/* Map controls row */}
+      <div className="absolute top-4 left-4 flex items-center gap-3">
+        {/* Map style toggle */}
+        <div className="glass-panel rounded-lg p-1 flex gap-1">
+          <button
+            onClick={() => {
+              setMapStyle("streets");
+              setMapLoaded(false);
+              map.current?.setStyle("mapbox://styles/mapbox/light-v11");
+            }}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${
+              mapStyle === "streets"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Streets
+          </button>
+          <button
+            onClick={() => {
+              setMapStyle("satellite");
+              setMapLoaded(false);
+              map.current?.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
+            }}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-smooth ${
+              mapStyle === "satellite"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Satellite
+          </button>
+        </div>
+        
+        {/* Search bar */}
+        {mapLoaded && mapboxToken && (
+          <SearchBar map={map.current} mapboxToken={mapboxToken} />
+        )}
       </div>
 
       {/* Layer toggle */}
