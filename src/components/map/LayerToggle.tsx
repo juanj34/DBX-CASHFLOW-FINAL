@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Layers, ChevronDown, ChevronUp } from "lucide-react";
+import { Layers, ChevronDown, ChevronUp, MapIcon, Train, MapPin, Building2 } from "lucide-react";
 
 interface LayerToggleProps {
   zonesVisible: boolean;
@@ -52,7 +52,10 @@ export const LayerToggle = ({
       >
         <div className="px-4 pb-4 space-y-3">
           <div className="flex items-center justify-between">
-            <Label htmlFor="zones-toggle" className="text-sm">Zones</Label>
+            <div className="flex items-center gap-2">
+              <MapIcon className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="zones-toggle" className="text-sm">Zones</Label>
+            </div>
             <Switch
               id="zones-toggle"
               checked={zonesVisible}
@@ -61,7 +64,10 @@ export const LayerToggle = ({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="metro-toggle" className="text-sm">Metro Lines</Label>
+            <div className="flex items-center gap-2">
+              <Train className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="metro-toggle" className="text-sm">Metro Lines</Label>
+            </div>
             <Switch
               id="metro-toggle"
               checked={metroLinesVisible}
@@ -70,7 +76,10 @@ export const LayerToggle = ({
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="hotspots-toggle" className="text-sm">Hotspots</Label>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="hotspots-toggle" className="text-sm">Hotspots</Label>
+            </div>
             <Switch
               id="hotspots-toggle"
               checked={hotspotsVisible}
@@ -79,7 +88,10 @@ export const LayerToggle = ({
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="projects-toggle" className="text-sm">Projects</Label>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <Label htmlFor="projects-toggle" className="text-sm">Projects</Label>
+            </div>
             <Switch
               id="projects-toggle"
               checked={projectsVisible}

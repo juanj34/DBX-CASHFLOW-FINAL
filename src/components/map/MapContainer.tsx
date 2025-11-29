@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
-import { Loader2, Presentation, Building2, Sun, Moon } from "lucide-react";
+import { Loader2, Presentation, Building2 } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -19,7 +19,8 @@ import { toast } from "sonner";
 export const MapContainer = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const hotspotMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const projectMarkersRef = useRef<mapboxgl.Marker[]>([]);
   
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapStyle, setMapStyle] = useState<"satellite" | "streets">("streets");
@@ -28,7 +29,6 @@ export const MapContainer = () => {
   const [projectsVisible, setProjectsVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
   const [buildings3DVisible, setBuildings3DVisible] = useState(true);
-  const [lightPreset, setLightPreset] = useState<'day' | 'night'>('day');
   
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
@@ -86,19 +86,11 @@ export const MapContainer = () => {
     );
 
     map.current.on("load", () => {
-      // Configure lighting for Mapbox Standard style
-      if (map.current?.getStyle()?.name?.includes('Standard')) {
-        map.current.setConfigProperty('basemap', 'lightPreset', lightPreset);
-      }
       setMapLoaded(true);
     });
 
     // Handle style changes
     map.current.on("style.load", () => {
-      // Configure lighting for Mapbox Standard style
-      if (map.current?.getStyle()?.name?.includes('Standard')) {
-        map.current.setConfigProperty('basemap', 'lightPreset', lightPreset);
-      }
       setMapLoaded(true);
     });
 
@@ -254,41 +246,32 @@ export const MapContainer = () => {
     });
   }, [metroVisible]);
 
-  // Toggle 3D buildings visibility (for Standard style, use show-place-labels config)
+  // Toggle 3D buildings visibility
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current || !mapLoaded || mapStyle !== 'streets') return;
     
-    // For Standard style, control 3D buildings via config
-    if (map.current?.getStyle()?.name?.includes('Standard')) {
-      map.current.setConfigProperty('basemap', 'show3dObjects', buildings3DVisible);
-    } else if (map.current.getLayer("3d-buildings")) {
-      // Fallback for satellite style with custom 3D layer
-      map.current.setLayoutProperty(
-        "3d-buildings",
-        "visibility",
-        buildings3DVisible ? "visible" : "none"
-      );
-    }
-  }, [buildings3DVisible, mapLoaded]);
+    const updateBuildings = () => {
+      if (map.current && map.current.getStyle()?.name?.includes('Standard')) {
+        map.current.setConfigProperty('basemap', 'show3dObjects', buildings3DVisible);
+      }
+    };
 
-  // Update light preset
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-    
-    if (map.current?.getStyle()?.name?.includes('Standard')) {
-      map.current.setConfigProperty('basemap', 'lightPreset', lightPreset);
+    if (map.current.isStyleLoaded()) {
+      updateBuildings();
+    } else {
+      map.current.once('style.load', updateBuildings);
     }
-  }, [lightPreset, mapLoaded]);
+  }, [buildings3DVisible, mapLoaded, mapStyle]);
 
   // Add hotspots to map
   useEffect(() => {
-    if (!map.current || !hotspots || hotspotsLoading || !mapLoaded) return;
+    if (!map.current || !mapLoaded) return;
 
-    // Clear existing markers
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
+    // Clear existing hotspot markers
+    hotspotMarkersRef.current.forEach((marker) => marker.remove());
+    hotspotMarkersRef.current = [];
 
-    if (!hotspotsVisible) return;
+    if (!hotspotsVisible || !hotspots || hotspotsLoading) return;
 
     hotspots.forEach((hotspot) => {
       const el = document.createElement("div");
@@ -311,15 +294,19 @@ export const MapContainer = () => {
         setSelectedProject(null);
       });
 
-      markersRef.current.push(marker);
+      hotspotMarkersRef.current.push(marker);
     });
   }, [hotspots, hotspotsLoading, hotspotsVisible, mapLoaded]);
 
   // Add projects to map
   useEffect(() => {
-    if (!map.current || !projects || projectsLoading || !mapLoaded) return;
+    if (!map.current || !mapLoaded) return;
 
-    if (!projectsVisible) return;
+    // Clear existing project markers
+    projectMarkersRef.current.forEach((marker) => marker.remove());
+    projectMarkersRef.current = [];
+
+    if (!projectsVisible || !projects || projectsLoading) return;
 
     projects.forEach((project) => {
       if (!project.latitude || !project.longitude) return;
@@ -349,7 +336,7 @@ export const MapContainer = () => {
         setSelectedHotspot(null);
       });
 
-      markersRef.current.push(marker);
+      projectMarkersRef.current.push(marker);
     });
   }, [projects, projectsLoading, projectsVisible, mapLoaded]);
 
@@ -470,19 +457,6 @@ export const MapContainer = () => {
         >
           <Building2 className="w-4 h-4" />
         </Button>
-        
-        {/* Day/Night toggle button (only in Streets mode) */}
-        {mapStyle === "streets" && (
-          <Button
-            variant={lightPreset === 'day' ? "default" : "outline"}
-            size="icon"
-            onClick={() => setLightPreset(lightPreset === 'day' ? 'night' : 'day')}
-            className="glass-panel"
-            title={lightPreset === 'day' ? "Switch to Night" : "Switch to Day"}
-          >
-            {lightPreset === 'day' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
-        )}
       </div>
 
       {/* Presentation mode toggle */}
