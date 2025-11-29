@@ -56,18 +56,17 @@ const Map = () => {
   };
 
   return (
-    <div 
-      className="h-screen w-screen flex flex-col overflow-hidden"
-      onMouseMove={handleMouseMove}
-    >
-      {/* Header with auto-hide */}
+    <div className="h-screen w-screen relative overflow-hidden">
+      {/* Map fills entire screen */}
+      <MapContainer />
+
+      {/* Compact header overlay on right side */}
       <div 
-        className={`transition-transform duration-300 z-10 ${
-          headerVisible ? 'translate-y-0' : '-translate-y-full'
+        className={`absolute top-4 right-4 z-20 transition-transform duration-300 ${
+          headerVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
-        onMouseLeave={() => setHeaderVisible(false)}
       >
-        <MapHeader userRole={userRole} />
+        <MapHeader userRole={userRole} onClose={() => setHeaderVisible(false)} />
       </div>
 
       {/* Small toggle button when header is hidden */}
@@ -75,17 +74,13 @@ const Map = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 left-2 z-20 glass-panel"
+          className="absolute top-4 right-4 z-20 glass-panel"
           onClick={() => setHeaderVisible(true)}
-          title="Show header"
+          title="Show menu"
         >
-          <ChevronDown className="w-4 h-4" />
+          <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
         </Button>
       )}
-
-      <div className="flex-1 relative">
-        <MapContainer />
-      </div>
     </div>
   );
 };
