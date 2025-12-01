@@ -4,7 +4,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
-import { Loader2, Presentation, Building2, X, LogOut } from "lucide-react";
+import { Loader2, Presentation, Building2, X, LogOut, MapPinned, Route } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -37,6 +37,8 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const [projectsVisible, setProjectsVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
   const [buildings3DVisible, setBuildings3DVisible] = useState(true);
+  const [placesVisible, setPlacesVisible] = useState(true);
+  const [roadsVisible, setRoadsVisible] = useState(true);
   
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
@@ -280,14 +282,47 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
 
   // Toggle 3D buildings visibility
   useEffect(() => {
-    if (!map.current || !mapLoaded || mapStyle !== 'streets') return;
+    if (!map.current || !mapLoaded) return;
     
     const updateBuildings = () => {
-      if (map.current) {
+      if (!map.current) return;
+      
+      if (mapStyle === 'streets') {
+        // Standard style - usar setConfigProperty
         try {
           map.current.setConfigProperty('basemap', 'show3dObjects', buildings3DVisible);
         } catch (e) {
           console.warn('Could not set 3D buildings config:', e);
+        }
+      } else {
+        // Satellite-streets - usar layer de extrusión manual
+        const layerId = '3d-buildings-layer';
+        
+        if (buildings3DVisible) {
+          // Agregar layer si no existe
+          if (!map.current.getLayer(layerId)) {
+            map.current.addLayer({
+              'id': layerId,
+              'source': 'composite',
+              'source-layer': 'building',
+              'filter': ['==', 'extrude', 'true'],
+              'type': 'fill-extrusion',
+              'minzoom': 15,
+              'paint': {
+                'fill-extrusion-color': '#aaa',
+                'fill-extrusion-height': ['get', 'height'],
+                'fill-extrusion-base': ['get', 'min_height'],
+                'fill-extrusion-opacity': 0.6
+              }
+            });
+          } else {
+            map.current.setLayoutProperty(layerId, 'visibility', 'visible');
+          }
+        } else {
+          // Ocultar layer si existe
+          if (map.current.getLayer(layerId)) {
+            map.current.setLayoutProperty(layerId, 'visibility', 'none');
+          }
         }
       }
     };
@@ -298,6 +333,80 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
       map.current.once('style.load', updateBuildings);
     }
   }, [buildings3DVisible, mapLoaded, mapStyle]);
+
+  // Toggle places/POI labels visibility
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    const togglePlaces = () => {
+      if (!map.current) return;
+      
+      if (mapStyle === 'streets') {
+        try {
+          map.current.setConfigProperty('basemap', 'showPlaceLabels', placesVisible);
+          map.current.setConfigProperty('basemap', 'showPointOfInterestLabels', placesVisible);
+        } catch (e) {
+          console.warn('Could not toggle places:', e);
+        }
+      } else {
+        // Satellite - iterar sobre layers
+        const style = map.current.getStyle();
+        if (!style?.layers) return;
+        
+        style.layers.forEach(layer => {
+          if (layer.type === 'symbol' && 
+              (layer.id.includes('poi') || layer.id.includes('place') || 
+               (layer.id.includes('label') && !layer.id.includes('road')))) {
+            try {
+              map.current!.setLayoutProperty(layer.id, 'visibility', placesVisible ? 'visible' : 'none');
+            } catch (e) {}
+          }
+        });
+      }
+    };
+
+    if (map.current.isStyleLoaded()) {
+      togglePlaces();
+    } else {
+      map.current.once('style.load', togglePlaces);
+    }
+  }, [placesVisible, mapLoaded, mapStyle]);
+
+  // Toggle road labels visibility
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    const toggleRoads = () => {
+      if (!map.current) return;
+      
+      if (mapStyle === 'streets') {
+        try {
+          map.current.setConfigProperty('basemap', 'showRoadLabels', roadsVisible);
+          map.current.setConfigProperty('basemap', 'showTransitLabels', roadsVisible);
+        } catch (e) {
+          console.warn('Could not toggle roads:', e);
+        }
+      } else {
+        // Satellite - iterar sobre layers de road
+        const style = map.current.getStyle();
+        if (!style?.layers) return;
+        
+        style.layers.forEach(layer => {
+          if (layer.type === 'symbol' && layer.id.includes('road')) {
+            try {
+              map.current!.setLayoutProperty(layer.id, 'visibility', roadsVisible ? 'visible' : 'none');
+            } catch (e) {}
+          }
+        });
+      }
+    };
+
+    if (map.current.isStyleLoaded()) {
+      toggleRoads();
+    } else {
+      map.current.once('style.load', toggleRoads);
+    }
+  }, [roadsVisible, mapLoaded, mapStyle]);
 
   // Add hotspots to map
   useEffect(() => {
@@ -499,7 +608,29 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           className="glass-panel"
           title="Toggle 3D Buildings"
         >
-          <Building2 className="w-4 h-4" />
+          <Building2 className={`w-4 h-4 ${buildings3DVisible ? 'text-white' : 'text-blue-500'}`} />
+        </Button>
+        
+        {/* Places/POI toggle button */}
+        <Button
+          variant={placesVisible ? "default" : "outline"}
+          size="icon"
+          onClick={() => setPlacesVisible(!placesVisible)}
+          className="glass-panel"
+          title="Toggle Places & Labels"
+        >
+          <MapPinned className={`w-4 h-4 ${placesVisible ? 'text-white' : 'text-amber-500'}`} />
+        </Button>
+        
+        {/* Roads toggle button */}
+        <Button
+          variant={roadsVisible ? "default" : "outline"}
+          size="icon"
+          onClick={() => setRoadsVisible(!roadsVisible)}
+          className="glass-panel"
+          title="Toggle Road Labels"
+        >
+          <Route className={`w-4 h-4 ${roadsVisible ? 'text-white' : 'text-emerald-500'}`} />
         </Button>
       </div>
 
