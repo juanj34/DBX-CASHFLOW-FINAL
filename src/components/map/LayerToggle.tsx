@@ -27,7 +27,7 @@ export const LayerToggle = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="absolute bottom-4 left-4 glass-panel rounded-lg overflow-hidden w-48">
+    <div className="glass-panel rounded-lg overflow-hidden w-48">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}

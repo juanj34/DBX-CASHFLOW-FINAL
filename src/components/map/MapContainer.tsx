@@ -606,8 +606,9 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         )}
       </div>
 
-      {/* Layer toggle */}
-      <div className="absolute bottom-4 left-4 z-[1060]">
+      {/* Container for Map Layers and Quick Controls - aligned at bottom */}
+      <div className="absolute bottom-4 left-4 flex flex-row items-end gap-3 z-[1060]">
+        {/* Layer toggle panel */}
         <LayerToggle
           zonesVisible={zonesVisible}
           hotspotsVisible={hotspotsVisible}
@@ -618,10 +619,9 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           onProjectsToggle={setProjectsVisible}
           onMetroLinesToggle={setMetroVisible}
         />
-      </div>
 
-      {/* Quick controls - horizontal layout to the right of LayerToggle */}
-      <div className="absolute bottom-4 left-56 flex flex-row gap-2 z-[1060]">
+        {/* Quick controls - same height as LayerToggle header */}
+        <div className="flex flex-row gap-2 glass-panel rounded-lg p-2">
         {/* 3D Buildings toggle button */}
         <Button
           variant="outline"
@@ -675,6 +675,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
             )}
           </div>
         </Button>
+        </div>
       </div>
 
       {/* Simple Logout button - bottom right */}
