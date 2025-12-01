@@ -36,9 +36,18 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const [hotspotsVisible, setHotspotsVisible] = useState(true);
   const [projectsVisible, setProjectsVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
-  const [buildings3DVisible, setBuildings3DVisible] = useState(true);
-  const [placesVisible, setPlacesVisible] = useState(true);
-  const [roadsVisible, setRoadsVisible] = useState(true);
+  const [buildings3DVisible, setBuildings3DVisible] = useState(() => {
+    const saved = localStorage.getItem('map-buildings3d-visible');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [placesVisible, setPlacesVisible] = useState(() => {
+    const saved = localStorage.getItem('map-places-visible');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [roadsVisible, setRoadsVisible] = useState(() => {
+    const saved = localStorage.getItem('map-roads-visible');
+    return saved !== null ? saved === 'true' : true;
+  });
   
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
@@ -96,6 +105,19 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
       map.current.touchZoomRotate.enable();
     }
   }, [presentationMode, mapLoaded]);
+
+  // Save settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('map-buildings3d-visible', String(buildings3DVisible));
+  }, [buildings3DVisible]);
+
+  useEffect(() => {
+    localStorage.setItem('map-places-visible', String(placesVisible));
+  }, [placesVisible]);
+
+  useEffect(() => {
+    localStorage.setItem('map-roads-visible', String(roadsVisible));
+  }, [roadsVisible]);
 
   // Initialize map
   useEffect(() => {
@@ -598,39 +620,60 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         />
       </div>
 
-      {/* Quick controls - positioned to the right of LayerToggle */}
-      <div className="absolute bottom-4 left-56 flex flex-col gap-2 z-[1060]">
+      {/* Quick controls - horizontal layout to the right of LayerToggle */}
+      <div className="absolute bottom-4 left-56 flex flex-row gap-2 z-[1060]">
         {/* 3D Buildings toggle button */}
         <Button
-          variant={buildings3DVisible ? "default" : "outline"}
+          variant="outline"
           size="icon"
           onClick={() => setBuildings3DVisible(!buildings3DVisible)}
-          className="glass-panel"
-          title="Toggle 3D Buildings"
+          className={`glass-panel bg-white hover:bg-gray-50 ${!buildings3DVisible ? 'opacity-40' : ''}`}
+          title={buildings3DVisible ? "Hide 3D Buildings" : "Show 3D Buildings"}
         >
-          <Building2 className={`w-4 h-4 ${buildings3DVisible ? 'text-white' : 'text-blue-500'}`} />
+          <div className="relative">
+            <Building2 className="w-4 h-4 text-gray-800" />
+            {!buildings3DVisible && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-0.5 bg-red-500 rotate-45 rounded-full" />
+              </div>
+            )}
+          </div>
         </Button>
         
         {/* Places/POI toggle button */}
         <Button
-          variant={placesVisible ? "default" : "outline"}
+          variant="outline"
           size="icon"
           onClick={() => setPlacesVisible(!placesVisible)}
-          className="glass-panel"
-          title="Toggle Places & Labels"
+          className={`glass-panel bg-white hover:bg-gray-50 ${!placesVisible ? 'opacity-40' : ''}`}
+          title={placesVisible ? "Hide Places & Labels" : "Show Places & Labels"}
         >
-          <MapPinned className={`w-4 h-4 ${placesVisible ? 'text-white' : 'text-amber-500'}`} />
+          <div className="relative">
+            <MapPinned className="w-4 h-4 text-gray-800" />
+            {!placesVisible && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-0.5 bg-red-500 rotate-45 rounded-full" />
+              </div>
+            )}
+          </div>
         </Button>
         
         {/* Roads toggle button */}
         <Button
-          variant={roadsVisible ? "default" : "outline"}
+          variant="outline"
           size="icon"
           onClick={() => setRoadsVisible(!roadsVisible)}
-          className="glass-panel"
-          title="Toggle Road Labels"
+          className={`glass-panel bg-white hover:bg-gray-50 ${!roadsVisible ? 'opacity-40' : ''}`}
+          title={roadsVisible ? "Hide Road Labels" : "Show Road Labels"}
         >
-          <Route className={`w-4 h-4 ${roadsVisible ? 'text-white' : 'text-emerald-500'}`} />
+          <div className="relative">
+            <Route className="w-4 h-4 text-gray-800" />
+            {!roadsVisible && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-0.5 bg-red-500 rotate-45 rounded-full" />
+              </div>
+            )}
+          </div>
         </Button>
       </div>
 
