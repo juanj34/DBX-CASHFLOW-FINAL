@@ -28,6 +28,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const hotspotMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const projectMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const justClickedFeatureRef = useRef(false);
   
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapStyle, setMapStyle] = useState<"satellite" | "streets">("streets");
@@ -176,6 +177,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
       });
 
       map.current!.on("click", fillLayerId, () => {
+        justClickedFeatureRef.current = true;
         setSelectedZone(zone);
         setSelectedHotspot(null);
         setSelectedProject(null);
@@ -395,6 +397,12 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   }
 
   const handleMapContainerClick = (e: React.MouseEvent) => {
+    // Si acabamos de hacer clic en un feature de Mapbox, ignorar
+    if (justClickedFeatureRef.current) {
+      justClickedFeatureRef.current = false;
+      return;
+    }
+    
     const target = e.target as HTMLElement;
     
     // No cerrar si el clic fue en un marker (hotspot o proyecto)
