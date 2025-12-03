@@ -15,11 +15,19 @@ interface Message {
   images?: string[];
 }
 
+interface SearchResult {
+  projects: Array<{ id: string; name: string; description?: string; developer?: string }>;
+  hotspots: Array<{ id: string; title: string; category: string; description?: string }>;
+}
+
 interface AIResponse {
-  type: "message" | "preview" | "clarification" | "request_coordinates";
+  type: "message" | "preview" | "update_preview" | "clarification" | "request_coordinates" | "search_results";
   message: string;
   itemType?: "project" | "hotspot";
   data?: any;
+  originalData?: any;
+  results?: SearchResult;
+  query?: string;
   missingFields?: string[];
 }
 
@@ -34,7 +42,9 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [needsCoordinates, setNeedsCoordinates] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +76,7 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
     setInput("");
     setFiles([]);
     setIsLoading(true);
+    setSearchResults(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-assistant", {
@@ -85,6 +96,15 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
       if (response.type === "preview") {
         setPreviewData(response.data);
+        setIsEditing(false);
+        setNeedsCoordinates(false);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: response.message },
+        ]);
+      } else if (response.type === "update_preview") {
+        setPreviewData(response.data);
+        setIsEditing(true);
         setNeedsCoordinates(false);
         setMessages((prev) => [
           ...prev,
@@ -93,6 +113,12 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
       } else if (response.type === "request_coordinates") {
         setPreviewData(response.data);
         setNeedsCoordinates(true);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: response.message },
+        ]);
+      } else if (response.type === "search_results") {
+        setSearchResults(response.results || null);
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: response.message },
@@ -123,14 +149,16 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   const handleConfirm = async (data: any) => {
     setIsLoading(true);
     try {
+      const action = isEditing ? "update" : "confirm";
       const { data: result, error } = await supabase.functions.invoke("ai-assistant", {
-        body: { action: "confirm", data },
+        body: { action, data },
       });
 
       if (error) throw error;
 
       toast.success(result.message);
       setPreviewData(null);
+      setIsEditing(false);
       setNeedsCoordinates(false);
       setMessages((prev) => [
         ...prev,
@@ -146,11 +174,19 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
   const handleCancel = () => {
     setPreviewData(null);
+    setIsEditing(false);
     setNeedsCoordinates(false);
+    setSearchResults(null);
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: "Operación cancelada. ¿En qué más puedo ayudarte?" },
     ]);
+  };
+
+  const handleSelectSearchResult = (item: any, type: "project" | "hotspot") => {
+    const displayName = type === "project" ? item.name : item.title;
+    setSearchResults(null);
+    setInput(`Editar ${type === "project" ? "proyecto" : "hotspot"} con ID ${item.id}: ${displayName}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -178,7 +214,7 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="font-medium">¡Hola! Soy tu asistente de IA</p>
                 <p className="text-sm mt-2">
-                  Puedo ayudarte a agregar proyectos y hotspots. 
+                  Puedo ayudarte a agregar y editar proyectos y hotspots. 
                   Escribe una descripción o sube un brochure.
                 </p>
               </div>
@@ -234,6 +270,54 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
               </div>
             )}
 
+            {/* Search Results */}
+            {searchResults && (
+              <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm font-medium">Resultados encontrados:</p>
+                {searchResults.projects.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Proyectos:</p>
+                    {searchResults.projects.map((p) => (
+                      <Button
+                        key={p.id}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-left h-auto py-2"
+                        onClick={() => handleSelectSearchResult(p, "project")}
+                      >
+                        <div>
+                          <p className="font-medium">{p.name}</p>
+                          {p.developer && <p className="text-xs text-muted-foreground">{p.developer}</p>}
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                {searchResults.hotspots.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Hotspots:</p>
+                    {searchResults.hotspots.map((h) => (
+                      <Button
+                        key={h.id}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-left h-auto py-2"
+                        onClick={() => handleSelectSearchResult(h, "hotspot")}
+                      >
+                        <div>
+                          <p className="font-medium">{h.title}</p>
+                          <p className="text-xs text-muted-foreground">{h.category}</p>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setSearchResults(null)}>
+                  Cerrar
+                </Button>
+              </div>
+            )}
+
             {/* Preview Card */}
             {previewData && (
               <PreviewCard
@@ -242,6 +326,7 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                 onCancel={handleCancel}
                 needsCoordinates={needsCoordinates}
                 isLoading={isLoading}
+                isEditing={isEditing}
               />
             )}
           </div>

@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Edit2, MapPin, Building2, Landmark } from "lucide-react";
+import { Check, X, Edit2, MapPin, Building2, Landmark, RefreshCw } from "lucide-react";
 
 interface ProjectData {
   type: "project";
+  id?: string;
   name: string;
   location?: string;
   latitude: number;
@@ -25,6 +26,7 @@ interface ProjectData {
 
 interface HotspotData {
   type: "hotspot";
+  id?: string;
   title: string;
   location?: string;
   latitude: number;
@@ -42,6 +44,7 @@ interface PreviewCardProps {
   onEdit?: (data: PreviewData) => void;
   needsCoordinates?: boolean;
   isLoading?: boolean;
+  isEditing?: boolean;
 }
 
 const formatPrice = (price?: number) => {
@@ -63,7 +66,7 @@ const categoryLabels: Record<string, string> = {
   other: "Other",
 };
 
-const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLoading }: PreviewCardProps) => {
+const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLoading, isEditing }: PreviewCardProps) => {
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
 
@@ -73,7 +76,6 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
     
     if (isNaN(lat) || isNaN(lng)) return;
     
-    // Validate Dubai bounds roughly
     if (lat < 24.7 || lat > 25.6 || lng < 54.9 || lng > 56.5) {
       alert("Las coordenadas deben estar dentro de Dubai/UAE");
       return;
@@ -87,7 +89,7 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
   const hotspotData = data as HotspotData;
 
   return (
-    <Card className="border-primary/50 shadow-lg">
+    <Card className={`shadow-lg ${isEditing ? "border-amber-500/50" : "border-primary/50"}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -98,9 +100,17 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
             )}
             {isProject ? projectData.name : hotspotData.title}
           </CardTitle>
-          <Badge variant={isProject ? "default" : "secondary"}>
-            {isProject ? "Proyecto" : categoryLabels[hotspotData.category] || hotspotData.category}
-          </Badge>
+          <div className="flex gap-1">
+            {isEditing && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Editando
+              </Badge>
+            )}
+            <Badge variant={isProject ? "default" : "secondary"}>
+              {isProject ? "Proyecto" : categoryLabels[hotspotData.category] || hotspotData.category}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 
@@ -112,7 +122,7 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
             <p className="font-medium">{data.location || "Ubicación extraída"}</p>
             {!needsCoordinates && (
               <p className="text-xs text-muted-foreground">
-                {data.latitude.toFixed(6)}, {data.longitude.toFixed(6)}
+                {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
               </p>
             )}
           </div>
@@ -223,11 +233,11 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
             <Button
               onClick={() => onConfirm(data)}
               disabled={isLoading}
-              className="flex-1"
+              className={`flex-1 ${isEditing ? "bg-amber-600 hover:bg-amber-700" : ""}`}
               size="sm"
             >
               <Check className="h-4 w-4 mr-1" />
-              Confirmar
+              {isEditing ? "Actualizar" : "Crear"}
             </Button>
             {onEdit && (
               <Button
