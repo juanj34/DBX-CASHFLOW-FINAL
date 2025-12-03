@@ -37,7 +37,10 @@ export const useProjects = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select(`
+          *,
+          developer_info:developers(name, logo_url)
+        `)
         .not("latitude", "is", null)
         .not("longitude", "is", null);
       
