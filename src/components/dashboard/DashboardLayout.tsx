@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, Map, MapPin, Building2 } from "lucide-react";
+import { LogOut, Map, MapPin, Building2, Sparkles } from "lucide-react";
 import ZonesManager from "./ZonesManager";
 import HotspotsManager from "./HotspotsManager";
 import ProjectsManager from "./ProjectsManager";
+import AIChatPanel from "./AIChatPanel";
 
 type ActiveTab = "zones" | "hotspots" | "projects";
 
 const DashboardLayout = () => {
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("zones");
+  const [showAIChat, setShowAIChat] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -58,10 +60,22 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 relative">
         {activeTab === "zones" && <ZonesManager />}
         {activeTab === "hotspots" && <HotspotsManager />}
         {activeTab === "projects" && <ProjectsManager />}
+
+        {/* Floating AI Button */}
+        <Button
+          onClick={() => setShowAIChat(true)}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+          size="icon"
+        >
+          <Sparkles className="h-6 w-6" />
+        </Button>
+
+        {/* AI Chat Panel */}
+        <AIChatPanel open={showAIChat} onOpenChange={setShowAIChat} />
       </main>
     </div>
   );
