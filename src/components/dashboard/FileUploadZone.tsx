@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { Upload, X, FileText, Image } from "lucide-react";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { Upload, X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FileUploadZoneProps {
@@ -7,6 +7,7 @@ interface FileUploadZoneProps {
   files: FileWithPreview[];
   onRemoveFile: (index: number) => void;
   disabled?: boolean;
+  acceptPaste?: boolean;
 }
 
 export interface FileWithPreview {
@@ -18,14 +19,19 @@ export interface FileWithPreview {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
-const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled }: FileUploadZoneProps) => {
+const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, acceptPaste = true }: FileUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const processFiles = useCallback(async (fileList: FileList | File[]) => {
     const newFiles: FileWithPreview[] = [];
     
     for (const file of Array.from(fileList)) {
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      // For pasted images, check if it's an image type
+      const isImage = file.type.startsWith("image/");
+      const isPdf = file.type === "application/pdf";
+      
+      if (!isImage && !isPdf) {
         console.warn(`Tipo de archivo no soportado: ${file.type}`);
         continue;
       }
@@ -44,7 +50,7 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled }: File
       newFiles.push({
         file,
         preview,
-        type: file.type === "application/pdf" ? "pdf" : "image",
+        type: isPdf ? "pdf" : "image",
       });
     }
 
@@ -52,6 +58,32 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled }: File
       onFilesSelected(newFiles);
     }
   }, [onFilesSelected]);
+
+  // Ctrl+V paste handler
+  useEffect(() => {
+    if (!acceptPaste || disabled) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        processFiles(imageFiles);
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [acceptPaste, disabled, processFiles]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -78,7 +110,7 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled }: File
   }, [processFiles]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" ref={containerRef}>
       {/* Drop zone */}
       <div
         onDrop={handleDrop}
@@ -105,7 +137,7 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled }: File
             <span className="text-muted-foreground"> o arrastra archivos</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            PDF, JPG, PNG (máx 10MB)
+            PDF, JPG, PNG (máx 10MB) • Ctrl+V para pegar
           </p>
         </div>
       </div>

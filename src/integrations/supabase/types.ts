@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      developers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          founded_year: number | null
+          headquarters: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          occupancy_rate: number | null
+          on_time_delivery_rate: number | null
+          projects_launched: number | null
+          units_sold: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          founded_year?: number | null
+          headquarters?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          occupancy_rate?: number | null
+          on_time_delivery_rate?: number | null
+          projects_launched?: number | null
+          units_sold?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          founded_year?: number | null
+          headquarters?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          occupancy_rate?: number | null
+          on_time_delivery_rate?: number | null
+          projects_launched?: number | null
+          units_sold?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -137,8 +185,10 @@ export type Database = {
           delivery_date: string | null
           description: string | null
           developer: string | null
+          developer_id: string | null
           hotspot_id: string | null
           id: string
+          image_url: string | null
           latitude: number | null
           launch_date: string | null
           longitude: number | null
@@ -157,8 +207,10 @@ export type Database = {
           delivery_date?: string | null
           description?: string | null
           developer?: string | null
+          developer_id?: string | null
           hotspot_id?: string | null
           id?: string
+          image_url?: string | null
           latitude?: number | null
           launch_date?: string | null
           longitude?: number | null
@@ -177,8 +229,10 @@ export type Database = {
           delivery_date?: string | null
           description?: string | null
           developer?: string | null
+          developer_id?: string | null
           hotspot_id?: string | null
           id?: string
+          image_url?: string | null
           latitude?: number | null
           launch_date?: string | null
           longitude?: number | null
@@ -189,6 +243,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "developers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_hotspot_id_fkey"
             columns: ["hotspot_id"]

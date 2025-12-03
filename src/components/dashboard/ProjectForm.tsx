@@ -18,10 +18,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
+import { optimizeImage, PROJECT_IMAGE_CONFIG } from "@/lib/imageUtils";
 
 interface ProjectFormProps {
   project?: any;
@@ -34,6 +35,7 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: mapboxToken } = useMapboxToken();
 
   const [formData, setFormData] = useState({
@@ -41,6 +43,7 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
     description: project?.description || "",
     latitude: project?.latitude || "25.2048",
     longitude: project?.longitude || "55.2708",
+    developer_id: project?.developer_id || "",
     developer: project?.developer || "",
     starting_price: project?.starting_price || "",
     price_per_sqft: project?.price_per_sqft || "",
@@ -48,9 +51,44 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
     unit_types: project?.unit_types?.join(", ") || "",
     launch_date: project?.launch_date || "",
     delivery_date: project?.delivery_date || "",
-    construction_status: project?.construction_status || "planning",
+    construction_status: project?.construction_status || "off_plan",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(project?.image_url || null);
+  const [developers, setDevelopers] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Fetch developers for dropdown
+  useEffect(() => {
+    const fetchDevelopers = async () => {
+      const { data } = await supabase.from("developers").select("id, name, logo_url").order("name");
+      setDevelopers(data || []);
+    };
+    fetchDevelopers();
+  }, []);
+
+  // Paste handler for images
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+            break;
+          }
+        }
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
@@ -106,6 +144,55 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
     }
   }, [formData.latitude, formData.longitude]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(project?.image_url || null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return project?.image_url || null;
+
+    try {
+      const optimized = await optimizeImage(imageFile, PROJECT_IMAGE_CONFIG);
+      const fileName = `${Date.now()}-${formData.name.replace(/\s+/g, "-").toLowerCase()}.webp`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("project-images")
+        .upload(fileName, optimized, { contentType: "image/webp" });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("project-images")
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.name) {
       toast({
@@ -127,45 +214,51 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
 
     setSaving(true);
 
-    const projectData = {
-      name: formData.name,
-      description: formData.description || null,
-      latitude: parseFloat(formData.latitude),
-      longitude: parseFloat(formData.longitude),
-      developer: formData.developer || null,
-      starting_price: formData.starting_price ? parseFloat(formData.starting_price) : null,
-      price_per_sqft: formData.price_per_sqft ? parseFloat(formData.price_per_sqft) : null,
-      areas_from: formData.areas_from ? parseInt(formData.areas_from) : null,
-      unit_types: formData.unit_types
-        ? formData.unit_types.split(",").map((t) => t.trim())
-        : null,
-      launch_date: formData.launch_date || null,
-      delivery_date: formData.delivery_date || null,
-      construction_status: formData.construction_status,
-      hotspot_id: project?.hotspot_id || null,
-    };
+    try {
+      const imageUrl = await uploadImage();
 
-    let error;
-    if (project) {
-      ({ error } = await supabase.from("projects").update(projectData).eq("id", project.id));
-    } else {
-      ({ error } = await supabase.from("projects").insert(projectData));
-    }
+      const projectData = {
+        name: formData.name,
+        description: formData.description || null,
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+        developer_id: formData.developer_id || null,
+        developer: formData.developer || null,
+        image_url: imageUrl,
+        starting_price: formData.starting_price ? parseFloat(formData.starting_price) : null,
+        price_per_sqft: formData.price_per_sqft ? parseFloat(formData.price_per_sqft) : null,
+        areas_from: formData.areas_from ? parseInt(formData.areas_from) : null,
+        unit_types: formData.unit_types
+          ? formData.unit_types.split(",").map((t) => t.trim())
+          : null,
+        launch_date: formData.launch_date || null,
+        delivery_date: formData.delivery_date || null,
+        construction_status: formData.construction_status as any,
+        hotspot_id: project?.hotspot_id || null,
+      };
 
-    setSaving(false);
+      let error;
+      if (project) {
+        ({ error } = await supabase.from("projects").update(projectData).eq("id", project.id));
+      } else {
+        ({ error } = await supabase.from("projects").insert(projectData));
+      }
 
-    if (error) {
-      toast({
-        title: "Error saving project",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+      if (error) throw error;
+
       toast({
         title: "Project saved",
         description: `Project has been successfully ${project ? "updated" : "created"}.`,
       });
       onSaved();
+    } catch (error: any) {
+      toast({
+        title: "Error saving project",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -177,6 +270,44 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Project Image */}
+          <div className="space-y-2">
+            <Label>Project Image (800x450px recomendado, 16:9)</Label>
+            <div className="flex items-start gap-4">
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Project preview"
+                    className="w-48 h-28 object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-48 h-28 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Click o Ctrl+V</span>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Project Name *</Label>
             <Input
@@ -229,12 +360,43 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
             </p>
           </div>
 
+          {/* Developer Selection */}
           <div className="space-y-2">
-            <Label htmlFor="developer">Developer</Label>
+            <Label htmlFor="developer_id">Developer</Label>
+            <Select
+              value={formData.developer_id}
+              onValueChange={(value) => {
+                const dev = developers.find(d => d.id === value);
+                setFormData({ 
+                  ...formData, 
+                  developer_id: value,
+                  developer: dev?.name || ""
+                });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a developer" />
+              </SelectTrigger>
+              <SelectContent>
+                {developers.map((dev) => (
+                  <SelectItem key={dev.id} value={dev.id}>
+                    <div className="flex items-center gap-2">
+                      {dev.logo_url && (
+                        <img src={dev.logo_url} alt="" className="w-5 h-5 object-contain" />
+                      )}
+                      {dev.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Or enter manually:
+            </p>
             <Input
               id="developer"
               value={formData.developer}
-              onChange={(e) => setFormData({ ...formData, developer: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, developer: e.target.value, developer_id: "" })}
               placeholder="e.g., Emaar Properties"
             />
           </div>
@@ -320,10 +482,9 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="planning">Planning</SelectItem>
+                <SelectItem value="off_plan">Off Plan</SelectItem>
                 <SelectItem value="under_construction">Under Construction</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="ready_to_move">Ready to Move</SelectItem>
+                <SelectItem value="ready">Ready</SelectItem>
               </SelectContent>
             </Select>
           </div>
