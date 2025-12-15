@@ -245,14 +245,27 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         },
       });
 
+      // Determine dash pattern based on status
+      const getDashArray = (status: string): number[] => {
+        switch (status) {
+          case "future":
+            return [4, 2]; // Dashed for under construction
+          case "proposed":
+            return [1, 2]; // Dotted for proposed
+          default:
+            return [1]; // Solid for operational
+        }
+      };
+
       map.current!.addLayer({
         id: layerId,
         type: "line",
         source: sourceId,
         paint: {
           "line-color": line.color,
-          "line-width": 4,
+          "line-width": line.status === "operational" ? 4 : 3,
           "line-opacity": metroVisible ? 1 : 0,
+          "line-dasharray": getDashArray(line.status),
         },
         layout: {
           "line-cap": "round",
