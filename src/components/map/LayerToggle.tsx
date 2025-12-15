@@ -63,16 +63,39 @@ export const LayerToggle = ({
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Train className="w-4 h-4 text-muted-foreground" />
-              <Label htmlFor="metro-toggle" className="text-sm">Metro Lines</Label>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Train className="w-4 h-4 text-muted-foreground" />
+                <Label htmlFor="metro-toggle" className="text-sm">Metro Lines</Label>
+              </div>
+              <Switch
+                id="metro-toggle"
+                checked={metroLinesVisible}
+                onCheckedChange={onMetroLinesToggle}
+              />
             </div>
-            <Switch
-              id="metro-toggle"
-              checked={metroLinesVisible}
-              onCheckedChange={onMetroLinesToggle}
-            />
+            {/* Metro Lines Legend */}
+            {metroLinesVisible && (
+              <div className="ml-6 space-y-1 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 bg-[#EF4444]" />
+                  <span className="text-muted-foreground">Red</span>
+                  <div className="w-6 h-0.5 bg-[#22C55E]" />
+                  <span className="text-muted-foreground">Green</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 bg-[#3B82F6]" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #3B82F6 0px, #3B82F6 4px, transparent 4px, transparent 6px)' }} />
+                  <span className="text-muted-foreground">Blue (2029)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 bg-[#F59E0B]" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #F59E0B 0px, #F59E0B 2px, transparent 2px, transparent 4px)' }} />
+                  <span className="text-muted-foreground">Gold</span>
+                  <div className="w-6 h-0.5 bg-[#8B5CF6]" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6 0px, #8B5CF6 2px, transparent 2px, transparent 4px)' }} />
+                  <span className="text-muted-foreground">Purple</span>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center justify-between">
