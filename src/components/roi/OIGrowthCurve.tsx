@@ -291,16 +291,6 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
               {formatCurrencyShort(handoverScenario.exitPrice, currency, rate)}
             </text>
 
-            {/* ROE label */}
-            <text
-              x={xScale(handoverScenario.exitMonths)}
-              y={yScale(handoverScenario.exitPrice) + 41}
-              fill="#9ca3af"
-              fontSize="9"
-              textAnchor="middle"
-            >
-              ROE: {handoverScenario.trueROE.toFixed(0)}%
-            </text>
           </g>
 
           {/* Starting point */}
