@@ -9,6 +9,7 @@ import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
 import { LayerToggle } from "./LayerToggle";
+import { QuickNavigate } from "./QuickNavigate";
 import { dubaiMetroLines } from "@/data/dubaiMetroLines";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { DrawingToolbar } from "./DrawingToolbar";
@@ -704,6 +705,11 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         <LogOut className="w-4 h-4" />
         Logout
       </Button>
+
+      {/* Quick Navigate Panel */}
+      {!presentationMode && (
+        <QuickNavigate map={map.current} />
+      )}
 
       {/* Drawing canvas - full screen overlay when presentation mode is active */}
       {presentationMode && (
