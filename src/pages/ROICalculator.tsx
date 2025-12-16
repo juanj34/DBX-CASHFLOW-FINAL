@@ -18,9 +18,9 @@ const ROICalculator = () => {
     bookingMonth: 1,
     bookingYear: 2025,
     handoverMonth: 6,
-    handoverYear: 2027,
+    handoverYear: 2028,
     resaleThresholdPercent: 40,
-    siHoldingMonths: 24,
+    oiHoldingMonths: 30,
   });
 
   const calculations = useROICalculations(inputs);

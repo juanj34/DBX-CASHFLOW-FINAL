@@ -86,7 +86,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
 
           {/* Booking Date */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Booking Date (OI Purchase)</label>
+            <label className="text-sm text-gray-400">Booking Date (OI Entry)</label>
             <div className="flex gap-3">
               <Select
                 value={String(inputs.bookingMonth)}
@@ -123,7 +123,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
 
           {/* Handover Date */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Handover Date (Construction Complete)</label>
+            <label className="text-sm text-gray-400">Handover Date (HO Entry)</label>
             <div className="flex gap-3">
               <Select
                 value={String(inputs.handoverMonth)}
@@ -158,6 +158,28 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
             </div>
           </div>
 
+          {/* OI Holding Period */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-400">OI Holding Period (months)</label>
+              <Input
+                type="number"
+                value={inputs.oiHoldingMonths}
+                onChange={(e) => handleNumberChange('oiHoldingMonths', e.target.value, 6, 120)}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+              />
+            </div>
+            <Slider
+              value={[inputs.oiHoldingMonths]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, oiHoldingMonths: value }))}
+              min={6}
+              max={120}
+              step={3}
+              className="roi-slider-lime"
+            />
+            <div className="text-xs text-gray-500 text-right">OI sells to SI after {inputs.oiHoldingMonths} months</div>
+          </div>
+
           {/* Rental Yield Percent */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -178,9 +200,6 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               step={0.5}
               className="roi-slider-cyan"
             />
-            <div className="text-xs text-gray-500 text-right">
-              Market Rate: {inputs.rentalYieldPercent}%
-            </div>
           </div>
 
           {/* Resale Threshold / OI Equity */}
@@ -226,27 +245,6 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               max={25}
               step={0.5}
               className="roi-slider-lime"
-            />
-          </div>
-
-          {/* SI Holding Period */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">SI Holding Period (months)</label>
-              <Input
-                type="number"
-                value={inputs.siHoldingMonths}
-                onChange={(e) => handleNumberChange('siHoldingMonths', e.target.value, 6, 120)}
-                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#00EAFF] font-mono text-sm"
-              />
-            </div>
-            <Slider
-              value={[inputs.siHoldingMonths]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, siHoldingMonths: value }))}
-              min={6}
-              max={120}
-              step={6}
-              className="roi-slider-cyan"
             />
           </div>
         </div>
