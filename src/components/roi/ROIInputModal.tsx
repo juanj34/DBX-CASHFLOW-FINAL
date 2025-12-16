@@ -87,30 +87,32 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               className="roi-slider-cyan"
             />
             <div className="text-xs text-gray-500 text-right">
-              Annual Rent: {formatAED(inputs.basePrice * (inputs.rentalYieldPercent / 100))}
+              Year 1 Rent: {formatAED(inputs.basePrice * (inputs.rentalYieldPercent / 100))}
             </div>
           </div>
 
-          {/* Equity Percent */}
+          {/* Resale Threshold / OI Equity */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Payment Plan / Equity %</label>
+              <label className="text-sm text-gray-400">Resale Threshold % (OI Equity)</label>
               <Input
                 type="number"
-                value={inputs.equityPercent}
-                onChange={(e) => handleNumberChange('equityPercent', e.target.value, 10, 100)}
+                value={inputs.resaleThresholdPercent}
+                onChange={(e) => handleNumberChange('resaleThresholdPercent', e.target.value, 10, 100)}
                 className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#FF00FF] font-mono text-sm"
               />
             </div>
             <Slider
-              value={[inputs.equityPercent]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, equityPercent: value }))}
+              value={[inputs.resaleThresholdPercent]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, resaleThresholdPercent: value }))}
               min={10}
               max={100}
               step={5}
               className="roi-slider-pink"
             />
-            <div className="text-xs text-gray-500 text-right">{inputs.equityPercent}% / {100 - inputs.equityPercent}%</div>
+            <div className="text-xs text-gray-500 text-right">
+              OI deploys {formatAED(inputs.basePrice * (inputs.resaleThresholdPercent / 100))} to resell
+            </div>
           </div>
 
           {/* Appreciation Rate */}
@@ -159,44 +161,22 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
           {/* SI Holding Period */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">SI Holding Period (years)</label>
+              <label className="text-sm text-gray-400">SI Holding Period (months)</label>
               <Input
                 type="number"
-                value={inputs.siHoldingYears}
-                onChange={(e) => handleNumberChange('siHoldingYears', e.target.value, 1, 10)}
+                value={inputs.siHoldingMonths}
+                onChange={(e) => handleNumberChange('siHoldingMonths', e.target.value, 6, 120)}
                 className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#00EAFF] font-mono text-sm"
               />
             </div>
             <Slider
-              value={[inputs.siHoldingYears]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, siHoldingYears: value }))}
-              min={1}
-              max={10}
-              step={1}
+              value={[inputs.siHoldingMonths]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, siHoldingMonths: value }))}
+              min={6}
+              max={120}
+              step={6}
               className="roi-slider-cyan"
             />
-          </div>
-
-          {/* Resale Threshold */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Resale Threshold %</label>
-              <Input
-                type="number"
-                value={inputs.resaleThresholdPercent}
-                onChange={(e) => handleNumberChange('resaleThresholdPercent', e.target.value, 10, 100)}
-                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#FF00FF] font-mono text-sm"
-              />
-            </div>
-            <Slider
-              value={[inputs.resaleThresholdPercent]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, resaleThresholdPercent: value }))}
-              min={10}
-              max={100}
-              step={5}
-              className="roi-slider-pink"
-            />
-            <div className="text-xs text-gray-500 text-right">OI can sell after {inputs.resaleThresholdPercent}% paid</div>
           </div>
         </div>
 
