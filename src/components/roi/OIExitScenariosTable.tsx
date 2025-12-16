@@ -70,18 +70,18 @@ export const OIExitScenariosTable = ({ scenarios, currency }: OIExitScenariosTab
               ))}
             </tr>
             <tr>
-              <td className="px-4 py-3 text-sm text-gray-400">Rental Yield</td>
+              <td className="px-4 py-3 text-sm text-gray-400">ROE Anualizado</td>
               {scenarios.map(s => (
                 <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-white font-mono">
-                  {s.rentalYield.toFixed(2)}%
+                  {s.annualizedROE.toFixed(1)}%/yr
                 </td>
               ))}
             </tr>
             <tr>
-              <td className="px-4 py-3 text-sm text-gray-400">Years to Pay</td>
+              <td className="px-4 py-3 text-sm text-gray-400">Profit/Mes</td>
               {scenarios.map(s => (
                 <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-white font-mono">
-                  {s.yearsToPay.toFixed(1)}
+                  {formatCurrency(s.profitPerMonth, currency)}
                 </td>
               ))}
             </tr>

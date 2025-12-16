@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Rocket } from "lucide-react";
+import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIExitScenariosTable } from "@/components/roi/OIExitScenariosTable";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
-import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
+import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
 
 const OICalculator = () => {
@@ -37,6 +37,16 @@ const OICalculator = () => {
   });
 
   const calculations = useOICalculations(inputs);
+  const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
+
+  // Find best ROE scenario (not necessarily first or last)
+  const bestROEScenario = calculations.scenarios.reduce<OIExitScenario | null>(
+    (best, current) => (!best || current.roe > best.roe ? current : best),
+    null
+  );
+
+  // Find handover scenario (100%)
+  const handoverScenario = calculations.scenarios.find(s => s.exitPercent === 100);
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
@@ -142,30 +152,90 @@ const OICalculator = () => {
                 </div>
 
                 {/* Best ROE Highlight */}
-                {calculations.scenarios.length > 0 && (
+                {bestROEScenario && (
                   <div className="p-4 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl">
-                    <div className="text-xs text-[#CCFF00] mb-1">Best ROE ({calculations.scenarios[0].exitPercent}% Exit)</div>
+                    <div className="text-xs text-[#CCFF00] mb-1">Best ROE ({bestROEScenario.exitPercent}% Exit)</div>
                     <div className="text-2xl font-bold text-[#CCFF00] font-mono">
-                      {calculations.scenarios[0].roe.toFixed(1)}%
+                      {bestROEScenario.roe.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      Profit: {formatCurrency(calculations.scenarios[0].profit, currency)}
+                      Profit: {formatCurrency(bestROEScenario.profit, currency)} en {bestROEScenario.exitMonths} meses
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      ROE Anualizado: {bestROEScenario.annualizedROE.toFixed(1)}%/año
                     </div>
                   </div>
                 )}
 
                 {/* 100% Exit */}
-                {calculations.scenarios.length > 0 && (
+                {handoverScenario && (
                   <div className="p-4 bg-[#0d1117] rounded-xl">
                     <div className="text-xs text-gray-400 mb-1">ROE at Handover (100%)</div>
                     <div className="text-xl font-bold text-white font-mono">
-                      {calculations.scenarios[calculations.scenarios.length - 1].roe.toFixed(1)}%
+                      {handoverScenario.roe.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Profit: {formatCurrency(calculations.scenarios[calculations.scenarios.length - 1].profit, currency)}
+                      Profit: {formatCurrency(handoverScenario.profit, currency)}
                     </div>
                   </div>
                 )}
+
+                {/* Hold Analysis - Collapsible */}
+                <div className="border border-[#2a3142] rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setHoldAnalysisOpen(!holdAnalysisOpen)}
+                    className="w-full p-4 flex items-center justify-between bg-[#0d1117] hover:bg-[#161b26] transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Home className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-300">If You HOLD After Handover</span>
+                    </div>
+                    {holdAnalysisOpen ? (
+                      <ChevronUp className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+                  {holdAnalysisOpen && (
+                    <div className="p-4 space-y-3 bg-[#0d1117]/50">
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-400">Capital Total Invertido</span>
+                        <span className="text-sm text-white font-mono">
+                          {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-400">Valor al Handover</span>
+                        <span className="text-sm text-white font-mono">
+                          {formatCurrency(calculations.holdAnalysis.propertyValueAtHandover, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-400">Renta Anual Estimada</span>
+                        <span className="text-sm text-[#CCFF00] font-mono">
+                          {formatCurrency(calculations.holdAnalysis.annualRent, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-400">Rental Yield vs Inversión</span>
+                        <span className="text-sm text-white font-mono">
+                          {calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(2)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-400">Años para Recuperar</span>
+                        <span className="text-sm text-white font-mono">
+                          {calculations.holdAnalysis.yearsToBreakEven.toFixed(1)} años
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-[#2a3142]">
+                        <p className="text-xs text-gray-500">
+                          💡 Si vendes al {bestROEScenario?.exitPercent}%, tu ROE es {bestROEScenario?.roe.toFixed(1)}% con solo {formatCurrency(bestROEScenario?.equityDeployed || 0, currency)} de capital
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Navigation to Full Calculator */}
