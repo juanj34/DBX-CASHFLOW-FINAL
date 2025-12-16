@@ -105,11 +105,15 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
   // Additional payments handlers
   const addAdditionalPayment = () => {
     const newId = `additional-${Date.now()}`;
+    // Inherit paymentPercent from last payment, or default to 2.5% if none exist
+    const lastPaymentPercent = inputs.additionalPayments.length > 0 
+      ? inputs.additionalPayments[inputs.additionalPayments.length - 1].paymentPercent 
+      : 2.5;
     setInputs(prev => ({
       ...prev,
       additionalPayments: [
         ...prev.additionalPayments,
-        { id: newId, type: 'time', triggerValue: 6, paymentPercent: 0 }
+        { id: newId, type: 'time', triggerValue: 6, paymentPercent: lastPaymentPercent }
       ]
     }));
   };
