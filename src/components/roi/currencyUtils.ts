@@ -1,25 +1,30 @@
-export type Currency = 'AED' | 'USD';
+export type Currency = 'AED' | 'USD' | 'EUR' | 'GBP' | 'COP';
 
-export const DEFAULT_RATE = 3.67;
-
-export const formatCurrency = (value: number, currency: Currency, rate: number = DEFAULT_RATE) => {
-  if (currency === 'USD') {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: 'USD',
-      maximumFractionDigits: 0 
-    }).format(value / rate);
-  }
-  return new Intl.NumberFormat('en-AE', { 
-    style: 'currency', 
-    currency: 'AED',
-    maximumFractionDigits: 0 
-  }).format(value);
+export const CURRENCY_CONFIG: Record<Currency, { symbol: string; locale: string; flag: string; name: string }> = {
+  AED: { symbol: 'AED', locale: 'en-AE', flag: '🇦🇪', name: 'Dirham' },
+  USD: { symbol: '$', locale: 'en-US', flag: '🇺🇸', name: 'US Dollar' },
+  EUR: { symbol: '€', locale: 'de-DE', flag: '🇪🇺', name: 'Euro' },
+  GBP: { symbol: '£', locale: 'en-GB', flag: '🇬🇧', name: 'British Pound' },
+  COP: { symbol: 'COP', locale: 'es-CO', flag: '🇨🇴', name: 'Peso Colombiano' },
 };
 
-export const formatCurrencyShort = (value: number, currency: Currency, rate: number = DEFAULT_RATE) => {
-  const converted = currency === 'USD' ? value / rate : value;
-  const symbol = currency === 'USD' ? '$' : '';
+export const DEFAULT_RATE = 1; // Rate is now relative to AED
+
+export const formatCurrency = (value: number, currency: Currency, rate: number = 1) => {
+  const config = CURRENCY_CONFIG[currency];
+  const converted = currency === 'AED' ? value : value * rate;
+  
+  return new Intl.NumberFormat(config.locale, { 
+    style: 'currency', 
+    currency: currency,
+    maximumFractionDigits: 0 
+  }).format(converted);
+};
+
+export const formatCurrencyShort = (value: number, currency: Currency, rate: number = 1) => {
+  const converted = currency === 'AED' ? value : value * rate;
+  const config = CURRENCY_CONFIG[currency];
+  const symbol = currency === 'AED' ? '' : config.symbol;
   
   if (converted >= 1000000) {
     return `${symbol}${(converted / 1000000).toFixed(1)}M`;
