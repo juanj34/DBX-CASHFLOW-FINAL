@@ -211,9 +211,19 @@ export const ExitScenariosCards = ({
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Wallet className="w-3 h-3" />
-                  Amount Paid
+                  Payments
                 </span>
-                <span className="text-sm text-white font-mono">{formatCurrency(scenario.amountPaid, currency, rate)}</span>
+                <span className="text-sm text-gray-300 font-mono">{formatCurrency(scenario.amountPaid, currency, rate)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">+ Entry Costs</span>
+                <span className="text-sm text-gray-300 font-mono">{formatCurrency(scenario.entryCosts, currency, rate)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center border-t border-[#2a3142] pt-1">
+                <span className="text-xs text-gray-400 font-medium">= Total Capital</span>
+                <span className="text-sm text-white font-mono font-medium">{formatCurrency(scenario.amountPaid + scenario.entryCosts, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
