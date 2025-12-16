@@ -16,9 +16,9 @@ const OICalculator = () => {
     basePrice: 800000,
     rentalYieldPercent: 8.5,
     appreciationRate: 10,
-    bookingMonth: 1,
+    bookingQuarter: 1, // Q1
     bookingYear: 2025,
-    handoverMonth: 6,
+    handoverQuarter: 2, // Q2
     handoverYear: 2028,
     minimumExitThreshold: 30,
     paymentMilestones: [
@@ -133,7 +133,7 @@ const OICalculator = () => {
                     {calculations.totalMonths} months
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {inputs.bookingMonth}/{inputs.bookingYear} → {inputs.handoverMonth}/{inputs.handoverYear}
+                    Q{inputs.bookingQuarter}/{inputs.bookingYear} → Q{inputs.handoverQuarter}/{inputs.handoverYear}
                   </div>
                 </div>
 

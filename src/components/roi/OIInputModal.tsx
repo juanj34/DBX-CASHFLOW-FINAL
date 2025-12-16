@@ -16,19 +16,11 @@ interface OIInputModalProps {
   currency: Currency;
 }
 
-const months = [
-  { value: 1, label: 'Jan' },
-  { value: 2, label: 'Feb' },
-  { value: 3, label: 'Mar' },
-  { value: 4, label: 'Apr' },
-  { value: 5, label: 'May' },
-  { value: 6, label: 'Jun' },
-  { value: 7, label: 'Jul' },
-  { value: 8, label: 'Aug' },
-  { value: 9, label: 'Sep' },
-  { value: 10, label: 'Oct' },
-  { value: 11, label: 'Nov' },
-  { value: 12, label: 'Dec' },
+const quarters = [
+  { value: 1, label: 'Q1 (Jan-Mar)' },
+  { value: 2, label: 'Q2 (Apr-Jun)' },
+  { value: 3, label: 'Q3 (Jul-Sep)' },
+  { value: 4, label: 'Q4 (Oct-Dec)' },
 ];
 
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
@@ -190,16 +182,16 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             <label className="text-sm text-gray-400">Booking Date (OI Entry)</label>
             <div className="flex gap-3">
               <Select
-                value={String(inputs.bookingMonth)}
-                onValueChange={(value) => setInputs(prev => ({ ...prev, bookingMonth: parseInt(value) }))}
+                value={String(inputs.bookingQuarter)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, bookingQuarter: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Month" />
+                  <SelectValue placeholder="Quarter" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                  {months.map(m => (
-                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
-                      {m.label}
+                  {quarters.map(q => (
+                    <SelectItem key={q.value} value={String(q.value)} className="text-white hover:bg-[#2a3142]">
+                      {q.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -227,16 +219,16 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             <label className="text-sm text-gray-400">Handover Date</label>
             <div className="flex gap-3">
               <Select
-                value={String(inputs.handoverMonth)}
-                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverMonth: parseInt(value) }))}
+                value={String(inputs.handoverQuarter)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverQuarter: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Month" />
+                  <SelectValue placeholder="Quarter" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                  {months.map(m => (
-                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
-                      {m.label}
+                  {quarters.map(q => (
+                    <SelectItem key={q.value} value={String(q.value)} className="text-white hover:bg-[#2a3142]">
+                      {q.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
