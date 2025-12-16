@@ -74,10 +74,10 @@ export const useROICalculations = (inputs: ROIInputs): ROICalculations => {
   const siProfit = siExitPrice - siEntryPrice;
   const siROE = (siProfit / siEquity) * 100;
   
-  // SI rental yield: market rate
-  const siAnnualRent = siEntryPrice * (rentalYieldPercent / 100);
-  const siRentalYield = rentalYieldPercent;
-  const siYearsToPay = siEntryPrice / siAnnualRent;
+  // SI rental yield: rent at exit (appreciated) / SI entry price
+  const rentAtSIExit = siExitPrice * (rentalYieldPercent / 100);
+  const siRentalYield = (rentAtSIExit / siEntryPrice) * 100;
+  const siYearsToPay = siEntryPrice / rentAtSIExit;
 
   // HO (Home Owner) - End user buying at handover
   const hoEntryPrice = siExitPrice;
