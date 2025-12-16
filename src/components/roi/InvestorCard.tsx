@@ -1,4 +1,4 @@
-import { Rocket, Shield, Home, TrendingUp, Wallet, BadgePercent } from "lucide-react";
+import { Rocket, Shield, Home, TrendingUp, TrendingDown, Wallet, BadgePercent } from "lucide-react";
 import { InvestorMetrics } from "./useROICalculations";
 
 type InvestorType = 'oi' | 'si' | 'ho';
@@ -50,7 +50,7 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} bg-[#1a1f2e] border ${borderColor} p-5`}>
       {/* Header */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div 
@@ -83,29 +83,31 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
         )}
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
+      {/* Main Metrics - Entry/Exit/Profit */}
+      <div className="space-y-3 mb-4">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-            <TrendingUp className="w-3.5 h-3.5" />
-            Property Value
+            <TrendingDown className="w-3.5 h-3.5" />
+            Entry Price
           </div>
-          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.propertyValue)}</p>
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-            <Wallet className="w-3.5 h-3.5" />
-            Equity Deployed
-          </div>
-          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.equityInvested)}</p>
+          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.entryPrice)}</p>
         </div>
 
         {!isHO && (
-          <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+              <TrendingUp className="w-3.5 h-3.5" />
+              Exit Price
+            </div>
+            <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.exitPrice)}</p>
+          </div>
+        )}
+
+        {!isHO && (
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
               <BadgePercent className="w-3.5 h-3.5" />
-              Projected Profit
+              Profit
             </div>
             <p className="font-semibold font-mono text-sm" style={{ color: metrics.projectedProfit > 0 ? color : '#6b7280' }}>
               {metrics.projectedProfit > 0 ? '+' : ''}{formatAED(metrics.projectedProfit)}
@@ -113,32 +115,24 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
           </div>
         )}
 
-        <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-            <Home className="w-3.5 h-3.5" />
-            Rental Yield
+            <Wallet className="w-3.5 h-3.5" />
+            Equity Deployed
           </div>
-          <p className="text-white font-semibold font-mono text-sm">{metrics.rentalYield.toFixed(2)}%</p>
+          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.equityInvested)}</p>
         </div>
-
-        {isHO && (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-              <BadgePercent className="w-3.5 h-3.5" />
-              Years to Pay
-            </div>
-            <p className="font-semibold font-mono text-sm" style={{ color }}>
-              {metrics.yearsToPay.toFixed(1)} yrs
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* Bottom stat */}
-      <div className="mt-5 pt-4 border-t border-[#2a3142]">
+      {/* Bottom stats */}
+      <div className="pt-3 border-t border-[#2a3142] space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-400">Years to Pay Price</span>
-          <span className="font-mono font-semibold" style={{ color }}>{metrics.yearsToPay.toFixed(1)} yrs</span>
+          <span className="text-xs text-gray-400">Rental Yield</span>
+          <span className="font-mono font-semibold text-sm" style={{ color }}>{metrics.rentalYield.toFixed(2)}%</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-gray-400">Years to Pay</span>
+          <span className="font-mono font-semibold text-sm" style={{ color }}>{metrics.yearsToPay.toFixed(1)} yrs</span>
         </div>
       </div>
 

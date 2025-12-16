@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2 } from "lucide-react";
 import { ROIInputs } from "./useROICalculations";
 
@@ -19,6 +20,23 @@ const formatAED = (value: number) => {
     maximumFractionDigits: 0 
   }).format(value);
 };
+
+const months = [
+  { value: 1, label: 'Jan' },
+  { value: 2, label: 'Feb' },
+  { value: 3, label: 'Mar' },
+  { value: 4, label: 'Apr' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'Jun' },
+  { value: 7, label: 'Jul' },
+  { value: 8, label: 'Aug' },
+  { value: 9, label: 'Sep' },
+  { value: 10, label: 'Oct' },
+  { value: 11, label: 'Nov' },
+  { value: 12, label: 'Dec' },
+];
+
+const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
 export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInputModalProps) => {
   const handleNumberChange = (field: keyof ROIInputs, value: string, min: number, max: number) => {
@@ -66,6 +84,80 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
             <div className="text-xs text-gray-500 text-right">{formatAED(inputs.basePrice)}</div>
           </div>
 
+          {/* Booking Date */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">Booking Date (OI Purchase)</label>
+            <div className="flex gap-3">
+              <Select
+                value={String(inputs.bookingMonth)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, bookingMonth: parseInt(value) }))}
+              >
+                <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                  {months.map(m => (
+                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={String(inputs.bookingYear)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, bookingYear: parseInt(value) }))}
+              >
+                <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                  {years.map(y => (
+                    <SelectItem key={y} value={String(y)} className="text-white hover:bg-[#2a3142]">
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Handover Date */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">Handover Date (Construction Complete)</label>
+            <div className="flex gap-3">
+              <Select
+                value={String(inputs.handoverMonth)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverMonth: parseInt(value) }))}
+              >
+                <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                  {months.map(m => (
+                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={String(inputs.handoverYear)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverYear: parseInt(value) }))}
+              >
+                <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                  {years.map(y => (
+                    <SelectItem key={y} value={String(y)} className="text-white hover:bg-[#2a3142]">
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Rental Yield Percent */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -87,7 +179,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               className="roi-slider-cyan"
             />
             <div className="text-xs text-gray-500 text-right">
-              Year 1 Rent: {formatAED(inputs.basePrice * (inputs.rentalYieldPercent / 100))}
+              Market Rate: {inputs.rentalYieldPercent}%
             </div>
           </div>
 
@@ -134,27 +226,6 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               max={25}
               step={0.5}
               className="roi-slider-lime"
-            />
-          </div>
-
-          {/* OI Holding Period */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">OI Holding Period (months)</label>
-              <Input
-                type="number"
-                value={inputs.holdingPeriodMonths}
-                onChange={(e) => handleNumberChange('holdingPeriodMonths', e.target.value, 6, 60)}
-                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#00EAFF] font-mono text-sm"
-              />
-            </div>
-            <Slider
-              value={[inputs.holdingPeriodMonths]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, holdingPeriodMonths: value }))}
-              min={6}
-              max={60}
-              step={3}
-              className="roi-slider-cyan"
             />
           </div>
 
