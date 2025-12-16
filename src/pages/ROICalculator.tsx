@@ -6,6 +6,7 @@ import { ROIInputModal } from "@/components/roi/ROIInputModal";
 import { GrowthCurve } from "@/components/roi/GrowthCurve";
 import { InvestorCard } from "@/components/roi/InvestorCard";
 import { MetricsPanel } from "@/components/roi/MetricsPanel";
+import { YearlyProjectionTable } from "@/components/roi/YearlyProjectionTable";
 import { useROICalculations, ROIInputs } from "@/components/roi/useROICalculations";
 
 const ROICalculator = () => {
@@ -13,11 +14,10 @@ const ROICalculator = () => {
   const [inputs, setInputs] = useState<ROIInputs>({
     basePrice: 800000,
     rentalYieldPercent: 8.5,
-    equityPercent: 50,
     appreciationRate: 10,
     holdingPeriodMonths: 24,
     resaleThresholdPercent: 40,
-    siHoldingYears: 2,
+    siHoldingMonths: 24,
   });
 
   const calculations = useROICalculations(inputs);
@@ -123,6 +123,9 @@ const ROICalculator = () => {
                 </table>
               </div>
             </div>
+
+            {/* 10-Year Projection Table */}
+            <YearlyProjectionTable projections={calculations.yearlyProjections} />
           </div>
 
           {/* Right Column - Metrics Panel */}

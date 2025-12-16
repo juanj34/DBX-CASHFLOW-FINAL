@@ -1,11 +1,10 @@
 export interface ROIInputs {
   basePrice: number;
   rentalYieldPercent: number;
-  equityPercent: number;
   appreciationRate: number;
   holdingPeriodMonths: number;
-  resaleThresholdPercent: number;
-  siHoldingYears: number;
+  resaleThresholdPercent: number; // This IS the OI equity deployed
+  siHoldingMonths: number;
 }
 
 export interface InvestorMetrics {
@@ -17,44 +16,71 @@ export interface InvestorMetrics {
   yearsToPay: number;
 }
 
+export interface YearlyProjection {
+  year: number;
+  propertyValue: number;
+  annualRent: number;
+  isHandover: boolean;
+  isSIExit: boolean;
+}
+
 export interface ROICalculations {
   oi: InvestorMetrics;
   si: InvestorMetrics;
   ho: InvestorMetrics;
+  yearlyProjections: YearlyProjection[];
 }
 
 export const useROICalculations = (inputs: ROIInputs): ROICalculations => {
-  const { basePrice, rentalYieldPercent, equityPercent, appreciationRate, holdingPeriodMonths, siHoldingYears } = inputs;
-
-  // Calculate annual rent from rental yield percentage
-  const annualRent = basePrice * (rentalYieldPercent / 100);
+  const { basePrice, rentalYieldPercent, appreciationRate, holdingPeriodMonths, resaleThresholdPercent, siHoldingMonths } = inputs;
 
   // OI (Opportunity Investor) - Buys off-plan early
   const oiEntryPrice = basePrice;
-  const oiEquity = basePrice * (equityPercent / 100);
+  const oiEquity = basePrice * (resaleThresholdPercent / 100); // Equity = resale threshold
   const holdingYears = holdingPeriodMonths / 12;
   const oiExitPrice = basePrice * Math.pow(1 + appreciationRate / 100, holdingYears);
   const oiProfit = oiExitPrice - oiEntryPrice;
   const oiROE = (oiProfit / oiEquity) * 100;
-  const oiRentalYield = (annualRent / oiEntryPrice) * 100;
-  const oiYearsToPay = oiEntryPrice / annualRent;
+  const oiAnnualRent = oiEntryPrice * (rentalYieldPercent / 100);
+  const oiRentalYield = rentalYieldPercent; // Same as input since rent is % of value
+  const oiYearsToPay = oiEntryPrice / oiAnnualRent;
 
   // SI (Security Investor) - Buys from OI
   const siEntryPrice = oiExitPrice;
   const siEquity = siEntryPrice; // 100% cash
+  const siHoldingYears = siHoldingMonths / 12;
   const siExitPrice = siEntryPrice * Math.pow(1 + appreciationRate / 100, siHoldingYears);
   const siProfit = siExitPrice - siEntryPrice;
   const siROE = (siProfit / siEquity) * 100;
-  const siRentalYield = (annualRent / siEntryPrice) * 100;
-  const siYearsToPay = siEntryPrice / annualRent;
+  const siAnnualRent = siEntryPrice * (rentalYieldPercent / 100);
+  const siRentalYield = rentalYieldPercent;
+  const siYearsToPay = siEntryPrice / siAnnualRent;
 
   // HO (Home Owner) - End user buying later
   const hoEntryPrice = siExitPrice;
   const hoEquity = hoEntryPrice;
   const hoProfit = 0; // Not selling
   const hoROE = 0;
-  const hoRentalYield = (annualRent / hoEntryPrice) * 100;
-  const hoYearsToPay = hoEntryPrice / annualRent;
+  const hoAnnualRent = hoEntryPrice * (rentalYieldPercent / 100);
+  const hoRentalYield = rentalYieldPercent;
+  const hoYearsToPay = hoEntryPrice / hoAnnualRent;
+
+  // Calculate 10-year projections
+  const handoverYear = Math.ceil(holdingPeriodMonths / 12);
+  const siExitYear = handoverYear + Math.ceil(siHoldingMonths / 12);
+  
+  const yearlyProjections: YearlyProjection[] = [];
+  for (let year = 1; year <= 10; year++) {
+    const propertyValue = basePrice * Math.pow(1 + appreciationRate / 100, year);
+    const annualRent = propertyValue * (rentalYieldPercent / 100); // Rent is % of current value
+    yearlyProjections.push({
+      year,
+      propertyValue,
+      annualRent,
+      isHandover: year === handoverYear,
+      isSIExit: year === siExitYear,
+    });
+  }
 
   return {
     oi: {
@@ -81,5 +107,6 @@ export const useROICalculations = (inputs: ROIInputs): ROICalculations => {
       rentalYield: hoRentalYield,
       yearsToPay: hoYearsToPay,
     },
+    yearlyProjections,
   };
 };

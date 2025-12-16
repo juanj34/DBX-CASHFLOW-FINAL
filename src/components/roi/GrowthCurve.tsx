@@ -128,8 +128,8 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
             <span className="text-white font-semibold">{formatAED(calculations.oi.equityInvested)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">Plan:</span>
-            <span className="text-white font-semibold">{inputs.equityPercent}/{100 - inputs.equityPercent}</span>
+            <span className="text-gray-400">Threshold:</span>
+            <span className="text-white font-semibold">{inputs.resaleThresholdPercent}%</span>
           </div>
         </div>
       </div>
