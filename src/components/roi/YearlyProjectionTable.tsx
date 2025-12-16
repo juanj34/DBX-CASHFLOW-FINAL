@@ -26,7 +26,7 @@ export const YearlyProjectionTable = ({ projections }: YearlyProjectionTableProp
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Year</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Property Value</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Annual Rent</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Event</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#2a3142]">
@@ -38,19 +38,26 @@ export const YearlyProjectionTable = ({ projections }: YearlyProjectionTableProp
                     ? "bg-[#CCFF00]/10" 
                     : p.isSIExit 
                       ? "bg-[#00EAFF]/10" 
-                      : ""
+                      : p.isConstruction
+                        ? "bg-[#2a3142]/30"
+                        : ""
                 }
               >
                 <td className="px-4 py-3 text-sm font-mono text-white">
-                  {p.year}
+                  {p.calendarYear}
                 </td>
                 <td className="px-4 py-3 text-sm text-right font-mono text-white">
                   {formatAED(p.propertyValue)}
                 </td>
-                <td className="px-4 py-3 text-sm text-right font-mono text-white">
-                  {formatAED(p.annualRent)}
+                <td className={`px-4 py-3 text-sm text-right font-mono ${p.isConstruction ? 'text-gray-500' : 'text-white'}`}>
+                  {p.annualRent !== null ? formatAED(p.annualRent) : '—'}
                 </td>
                 <td className="px-4 py-3 text-center">
+                  {p.isConstruction && !p.isHandover && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#2a3142] text-gray-400">
+                      Construction
+                    </span>
+                  )}
                   {p.isHandover && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#CCFF00]/20 text-[#CCFF00]">
                       OI → SI Handover

@@ -15,7 +15,10 @@ const ROICalculator = () => {
     basePrice: 800000,
     rentalYieldPercent: 8.5,
     appreciationRate: 10,
-    holdingPeriodMonths: 24,
+    bookingMonth: 1,
+    bookingYear: 2025,
+    handoverMonth: 6,
+    handoverYear: 2027,
     resaleThresholdPercent: 40,
     siHoldingMonths: 24,
   });
@@ -84,10 +87,16 @@ const ROICalculator = () => {
                   </thead>
                   <tbody className="divide-y divide-[#2a3142]">
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Property Value</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.oi.propertyValue)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.si.propertyValue)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.ho.propertyValue)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">Entry Price</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.oi.entryPrice)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.si.entryPrice)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.ho.entryPrice)}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-sm text-gray-400">Exit Price</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.oi.exitPrice)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.si.exitPrice)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">Equity Invested</td>
@@ -99,13 +108,13 @@ const ROICalculator = () => {
                       <td className="px-4 py-3 text-sm text-gray-400">Projected Profit</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">+{new Intl.NumberFormat('en-AE').format(calculations.oi.projectedProfit)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">+{new Intl.NumberFormat('en-AE').format(calculations.si.projectedProfit)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">-</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">ROE</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">{calculations.oi.roe.toFixed(1)}%</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">{calculations.si.roe.toFixed(1)}%</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">-</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">Rental Yield</td>

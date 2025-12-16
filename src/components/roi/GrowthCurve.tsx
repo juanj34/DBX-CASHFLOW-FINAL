@@ -14,7 +14,7 @@ const formatAED = (value: number) => {
 };
 
 export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
-  const holdingMonths = inputs.holdingPeriodMonths;
+  const holdingMonths = calculations.holdingPeriodMonths;
   
   // Calculate positions for the stepped curve (percentage based)
   const oiPosition = { x: 15, y: 80 };
@@ -27,6 +27,10 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
   
   const si2hoControl1 = { x: siPosition.x + 15, y: siPosition.y };
   const si2hoControl2 = { x: hoPosition.x - 15, y: hoPosition.y };
+
+  // Calculate dates for labels
+  const handoverYear = inputs.handoverYear;
+  const siExitYear = handoverYear + Math.ceil(inputs.siHoldingMonths / 12);
 
   return (
     <div className="relative w-full h-[450px] bg-[#0d1117] rounded-2xl border border-[#2a3142] overflow-hidden">
@@ -110,6 +114,7 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       >
         <span className="text-xl font-bold text-[#CCFF00]">OI</span>
         <Rocket className="w-4 h-4 text-[#CCFF00] rotate-45" />
+        <span className="text-[10px] text-gray-400 mt-1">{inputs.bookingYear}</span>
       </div>
       
       {/* OI Info Card - Bottom left */}
@@ -121,15 +126,19 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
         <div className="space-y-1.5 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
-            <span className="text-white font-semibold">{formatAED(inputs.basePrice)}</span>
+            <span className="text-white font-semibold">{formatAED(calculations.oi.entryPrice)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">Equity:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.oi.equityInvested)}</span>
+            <span className="text-gray-400">Exit:</span>
+            <span className="text-white font-semibold">{formatAED(calculations.oi.exitPrice)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">Threshold:</span>
-            <span className="text-white font-semibold">{inputs.resaleThresholdPercent}%</span>
+            <span className="text-gray-400">Profit:</span>
+            <span className="text-[#CCFF00] font-semibold">+{formatAED(calculations.oi.projectedProfit)}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-gray-400">ROE:</span>
+            <span className="text-[#CCFF00] font-semibold">{calculations.oi.roe.toFixed(0)}%</span>
           </div>
         </div>
       </div>
@@ -141,6 +150,7 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       >
         <span className="text-xl font-bold text-[#00EAFF]">SI</span>
         <Shield className="w-4 h-4 text-[#00EAFF]" />
+        <span className="text-[10px] text-gray-400 mt-1">{handoverYear}</span>
       </div>
 
       {/* SI Info Card - Center right of point */}
@@ -151,16 +161,20 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
         <div className="text-[10px] font-bold text-[#00EAFF] mb-2 tracking-wider">SECURITY</div>
         <div className="space-y-1.5 text-[11px]">
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">Value:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.oi.propertyValue)}</span>
+            <span className="text-gray-400">Entry:</span>
+            <span className="text-white font-semibold">{formatAED(calculations.si.entryPrice)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">OI Profit:</span>
-            <span className="text-[#CCFF00] font-semibold">+{formatAED(calculations.oi.projectedProfit)}</span>
+            <span className="text-gray-400">Exit:</span>
+            <span className="text-white font-semibold">{formatAED(calculations.si.exitPrice)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">OI ROE:</span>
-            <span className="text-[#CCFF00] font-semibold">{calculations.oi.roe.toFixed(0)}%</span>
+            <span className="text-gray-400">Profit:</span>
+            <span className="text-[#00EAFF] font-semibold">+{formatAED(calculations.si.projectedProfit)}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-gray-400">ROE:</span>
+            <span className="text-[#00EAFF] font-semibold">{calculations.si.roe.toFixed(0)}%</span>
           </div>
         </div>
       </div>
@@ -172,6 +186,7 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       >
         <span className="text-xl font-bold text-[#FF00FF]">HO</span>
         <Home className="w-4 h-4 text-[#FF00FF]" />
+        <span className="text-[10px] text-gray-400 mt-1">{siExitYear}</span>
       </div>
 
       {/* HO Info Card - Top right */}
@@ -182,8 +197,8 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
         <div className="text-[10px] font-bold text-[#FF00FF] mb-2 tracking-wider">HOME OWNER</div>
         <div className="space-y-1.5 text-[11px]">
           <div className="flex justify-between gap-3">
-            <span className="text-gray-400">Value:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.ho.propertyValue)}</span>
+            <span className="text-gray-400">Entry:</span>
+            <span className="text-white font-semibold">{formatAED(calculations.ho.entryPrice)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Yield:</span>
