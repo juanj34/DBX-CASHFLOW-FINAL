@@ -10,9 +10,9 @@ export interface OIInputs {
   basePrice: number;
   rentalYieldPercent: number;
   appreciationRate: number;
-  bookingQuarter: number; // 1-4 (Q1, Q2, Q3, Q4)
+  bookingMonth: number; // 1-12
   bookingYear: number;
-  handoverQuarter: number; // 1-4
+  handoverMonth: number; // 1-12
   handoverYear: number;
   
   // NEW: Restructured Payment Plan
@@ -20,8 +20,8 @@ export interface OIInputs {
   preHandoverPercent: number;       // Total pre-handover % from preset (e.g., 30 in 30/70)
   additionalPayments: PaymentMilestone[]; // Additional payments between downpayment and handover
   
-  // Entry Costs (simplified)
-  dldFeePercent: number;
+  // Entry Costs (simplified - DLD fixed at 4%)
+  eoiFee: number; // EOI / Booking fee (default 50000), part of downpayment
   oqoodFee: number; // Fixed amount
 }
 
@@ -64,6 +64,9 @@ export interface OICalculations {
   holdAnalysis: OIHoldAnalysis;
   totalEntryCosts: number;
 }
+
+// DLD Fee is always 4%
+const DLD_FEE_PERCENT = 4;
 
 // Calculate equity deployed at exit based on new payment structure
 const calculateEquityAtExit = (
@@ -116,31 +119,26 @@ const countTotalInstallments = (inputs: OIInputs): number => {
   return 1 + additionalCount + 1; // 1 for downpayment + additionals + 1 for handover
 };
 
-// Convert quarter to mid-quarter month: Q1→2, Q2→5, Q3→8, Q4→11
-const quarterToMonth = (quarter: number): number => {
-  const monthMap: Record<number, number> = { 1: 2, 2: 5, 3: 8, 4: 11 };
-  return monthMap[quarter] || 2;
-};
-
 export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const { 
     basePrice, 
     rentalYieldPercent, 
     appreciationRate, 
-    bookingQuarter, 
+    bookingMonth, 
     bookingYear, 
-    handoverQuarter, 
+    handoverMonth, 
     handoverYear, 
-    dldFeePercent,
     oqoodFee,
+    eoiFee,
   } = inputs;
 
-  // Calculate entry costs (paid at booking)
-  const totalEntryCosts = (basePrice * dldFeePercent / 100) + oqoodFee;
+  // Calculate entry costs (paid at booking) - DLD fixed at 4%
+  const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
+  const totalEntryCosts = dldFeeAmount + oqoodFee;
 
-  // Calculate total construction period from booking to handover (using mid-quarter months)
-  const bookingDate = new Date(bookingYear, quarterToMonth(bookingQuarter) - 1);
-  const handoverDate = new Date(handoverYear, quarterToMonth(handoverQuarter) - 1);
+  // Calculate total construction period from booking to handover
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const handoverDate = new Date(handoverYear, handoverMonth - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
   // Generate scenarios at key time points (every 6 months + handover)

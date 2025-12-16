@@ -17,16 +17,16 @@ const OICalculator = () => {
     basePrice: 800000,
     rentalYieldPercent: 8.5,
     appreciationRate: 10,
-    bookingQuarter: 1, // Q1
+    bookingMonth: 1, // January
     bookingYear: 2025,
-    handoverQuarter: 2, // Q2
+    handoverMonth: 6, // June
     handoverYear: 2028,
     // Restructured payment plan
     downpaymentPercent: 20,        // 20% at booking
     preHandoverPercent: 20,        // 20/80 split (20% pre-handover, 80% handover)
     additionalPayments: [],        // No additional payments for 20/80
-    // Entry Costs (simplified)
-    dldFeePercent: 4,
+    // Entry Costs (simplified - DLD fixed at 4%)
+    eoiFee: 50000, // EOI / Booking fee
     oqoodFee: 5000,
   });
 
@@ -44,6 +44,9 @@ const OICalculator = () => {
 
   // Find handover scenario
   const handoverScenario = calculations.scenarios.find(s => s.exitMonths === calculations.totalMonths);
+
+  // Month names for display
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
@@ -145,7 +148,7 @@ const OICalculator = () => {
                     {calculations.totalMonths} months
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Q{inputs.bookingQuarter}/{inputs.bookingYear} → Q{inputs.handoverQuarter}/{inputs.handoverYear}
+                    {monthNames[inputs.bookingMonth - 1]} {inputs.bookingYear} → {monthNames[inputs.handoverMonth - 1]} {inputs.handoverYear}
                   </div>
                 </div>
 
@@ -170,7 +173,7 @@ const OICalculator = () => {
                     -{formatCurrency(calculations.totalEntryCosts, currency)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    DLD {inputs.dldFeePercent}% + Oqood {formatCurrency(inputs.oqoodFee, currency)}
+                    DLD 4% + Oqood {formatCurrency(inputs.oqoodFee, currency)}
                   </div>
                 </div>
 

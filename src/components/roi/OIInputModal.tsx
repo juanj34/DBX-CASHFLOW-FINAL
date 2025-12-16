@@ -16,11 +16,19 @@ interface OIInputModalProps {
   currency: Currency;
 }
 
-const quarters = [
-  { value: 1, label: 'Q1 (Jan-Mar)' },
-  { value: 2, label: 'Q2 (Apr-Jun)' },
-  { value: 3, label: 'Q3 (Jul-Sep)' },
-  { value: 4, label: 'Q4 (Oct-Dec)' },
+const months = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
 ];
 
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
@@ -76,7 +84,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
     }
   };
 
-  const handleFixedFeeChange = (field: 'oqoodFee', value: string) => {
+  const handleFixedFeeChange = (field: 'oqoodFee' | 'eoiFee', value: string) => {
     const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num >= 0) {
       const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
@@ -173,21 +181,21 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             <div className="text-xs text-gray-500 text-right">{formatCurrency(inputs.basePrice, currency)}</div>
           </div>
 
-          {/* Booking Date */}
+          {/* Booking Date - Month/Year */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400">Booking Date (OI Entry)</label>
             <div className="flex gap-3">
               <Select
-                value={String(inputs.bookingQuarter)}
-                onValueChange={(value) => setInputs(prev => ({ ...prev, bookingQuarter: parseInt(value) }))}
+                value={String(inputs.bookingMonth)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, bookingMonth: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Quarter" />
+                  <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                  {quarters.map(q => (
-                    <SelectItem key={q.value} value={String(q.value)} className="text-white hover:bg-[#2a3142]">
-                      {q.label}
+                  {months.map(m => (
+                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
+                      {m.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -210,21 +218,21 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Handover Date */}
+          {/* Handover Date - Month/Year */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400">Handover Date</label>
             <div className="flex gap-3">
               <Select
-                value={String(inputs.handoverQuarter)}
-                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverQuarter: parseInt(value) }))}
+                value={String(inputs.handoverMonth)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverMonth: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Quarter" />
+                  <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                  {quarters.map(q => (
-                    <SelectItem key={q.value} value={String(q.value)} className="text-white hover:bg-[#2a3142]">
-                      {q.label}
+                  {months.map(m => (
+                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
+                      {m.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -247,26 +255,34 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Entry Costs Section */}
+          {/* Entry Costs Section - Simplified */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <label className="text-sm text-gray-400 font-medium">Entry Costs (At Booking)</label>
             
             <div className="space-y-3">
+              {/* EOI Fee */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">DLD Fee %</span>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[inputs.dldFeePercent]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, dldFeePercent: value }))}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    className="w-24 roi-slider-lime"
+                <span className="text-xs text-gray-500">EOI / Booking Fee</span>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                    {currency === 'USD' ? '$' : 'AED'}
+                  </span>
+                  <Input
+                    type="text"
+                    value={currency === 'USD' ? Math.round(inputs.eoiFee / AED_TO_USD) : inputs.eoiFee}
+                    onChange={(e) => handleFixedFeeChange('eoiFee', e.target.value)}
+                    className="w-28 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs pl-10"
                   />
-                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.dldFeePercent}%</span>
                 </div>
               </div>
+
+              {/* DLD Fee - Fixed at 4% */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">DLD Fee (fixed)</span>
+                <span className="text-xs text-white font-mono">4% = {formatCurrency(inputs.basePrice * 0.04, currency)}</span>
+              </div>
               
+              {/* Oqood Fee */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500">Oqood Fee</span>
                 <div className="relative">
@@ -322,6 +338,9 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               <div className="flex items-center gap-2 text-[#CCFF00]">
                 <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold">1</div>
                 <span className="text-sm font-medium">DOWNPAYMENT (Booking - Month 0)</span>
+              </div>
+              <div className="text-xs text-gray-500 mb-2">
+                💡 EOI ({formatCurrency(inputs.eoiFee, currency)}) is part of this
               </div>
               <div className="flex items-center justify-between gap-4">
                 <Slider
