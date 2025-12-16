@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -5,21 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2 } from "lucide-react";
 import { ROIInputs } from "./useROICalculations";
+import { Currency, formatCurrency, AED_TO_USD } from "./currencyUtils";
 
 interface ROIInputModalProps {
   inputs: ROIInputs;
   setInputs: React.Dispatch<React.SetStateAction<ROIInputs>>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  currency: Currency;
 }
-
-const formatAED = (value: number) => {
-  return new Intl.NumberFormat('en-AE', { 
-    style: 'currency', 
-    currency: 'AED',
-    maximumFractionDigits: 0 
-  }).format(value);
-};
 
 const months = [
   { value: 1, label: 'Jan' },
@@ -38,13 +33,54 @@ const months = [
 
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
-export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInputModalProps) => {
+export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: ROIInputModalProps) => {
+  // Local state for the base price input to allow free typing
+  const [basePriceInput, setBasePriceInput] = useState(
+    currency === 'USD' 
+      ? Math.round(inputs.basePrice / AED_TO_USD).toString()
+      : inputs.basePrice.toString()
+  );
+
   const handleNumberChange = (field: keyof ROIInputs, value: string, min: number, max: number) => {
     const num = parseFloat(value);
     if (!isNaN(num)) {
       setInputs(prev => ({ ...prev, [field]: Math.min(Math.max(num, min), max) }));
     }
   };
+
+  const handleBasePriceChange = (value: string) => {
+    // Allow free typing - just update local state
+    setBasePriceInput(value);
+  };
+
+  const handleBasePriceBlur = () => {
+    // On blur, clamp the value and update
+    const num = parseFloat(basePriceInput.replace(/[^0-9.-]/g, ''));
+    if (!isNaN(num) && num > 0) {
+      // Convert to AED if needed
+      const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
+      const clamped = Math.min(Math.max(aedValue, 500000), 10000000);
+      setInputs(prev => ({ ...prev, basePrice: clamped }));
+      // Update display value
+      setBasePriceInput(
+        currency === 'USD' 
+          ? Math.round(clamped / AED_TO_USD).toString()
+          : clamped.toString()
+      );
+    } else {
+      // Reset to current valid value
+      setBasePriceInput(
+        currency === 'USD' 
+          ? Math.round(inputs.basePrice / AED_TO_USD).toString()
+          : inputs.basePrice.toString()
+      );
+    }
+  };
+
+  // Update local state when currency changes
+  const displayBasePrice = currency === 'USD' 
+    ? Math.round(inputs.basePrice / AED_TO_USD)
+    : inputs.basePrice;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,22 +102,35 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm text-gray-400">Base Property Price</label>
-              <Input
-                type="number"
-                value={inputs.basePrice}
-                onChange={(e) => handleNumberChange('basePrice', e.target.value, 500000, 10000000)}
-                className="w-32 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                  {currency === 'USD' ? '$' : 'AED'}
+                </span>
+                <Input
+                  type="text"
+                  value={basePriceInput}
+                  onChange={(e) => handleBasePriceChange(e.target.value)}
+                  onBlur={handleBasePriceBlur}
+                  className="w-36 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm pl-12"
+                />
+              </div>
             </div>
             <Slider
               value={[inputs.basePrice]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, basePrice: value }))}
+              onValueChange={([value]) => {
+                setInputs(prev => ({ ...prev, basePrice: value }));
+                setBasePriceInput(
+                  currency === 'USD' 
+                    ? Math.round(value / AED_TO_USD).toString()
+                    : value.toString()
+                );
+              }}
               min={500000}
               max={10000000}
               step={50000}
               className="roi-slider-lime"
             />
-            <div className="text-xs text-gray-500 text-right">{formatAED(inputs.basePrice)}</div>
+            <div className="text-xs text-gray-500 text-right">{formatCurrency(inputs.basePrice, currency)}</div>
           </div>
 
           {/* Booking Date */}
@@ -222,7 +271,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               className="roi-slider-pink"
             />
             <div className="text-xs text-gray-500 text-right">
-              OI deploys {formatAED(inputs.basePrice * (inputs.resaleThresholdPercent / 100))} to resell
+              OI deploys {formatCurrency(inputs.basePrice * (inputs.resaleThresholdPercent / 100), currency)} to resell
             </div>
           </div>
 

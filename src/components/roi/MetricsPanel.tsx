@@ -1,12 +1,14 @@
 import { ROICalculations, ROIInputs } from "./useROICalculations";
 import { TrendingUp, Clock } from "lucide-react";
+import { Currency, formatCurrency } from "./currencyUtils";
 
 interface MetricsPanelProps {
   calculations: ROICalculations;
   inputs: ROIInputs;
+  currency: Currency;
 }
 
-export const MetricsPanel = ({ calculations, inputs }: MetricsPanelProps) => {
+export const MetricsPanel = ({ calculations, inputs, currency }: MetricsPanelProps) => {
   return (
     <div className="space-y-6">
       {/* Rental Yields Comparison */}

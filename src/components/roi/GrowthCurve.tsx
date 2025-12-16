@@ -1,19 +1,14 @@
 import { Rocket, Shield, Home } from "lucide-react";
 import { ROICalculations, ROIInputs } from "./useROICalculations";
+import { Currency, formatCurrencyShort } from "./currencyUtils";
 
 interface GrowthCurveProps {
   calculations: ROICalculations;
   inputs: ROIInputs;
+  currency: Currency;
 }
 
-const formatAED = (value: number) => {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  }
-  return `${(value / 1000).toFixed(0)}K`;
-};
-
-export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
+export const GrowthCurve = ({ calculations, inputs, currency }: GrowthCurveProps) => {
   const oiHoldingMonths = calculations.oiHoldingMonths;
   
   // Adjusted positions to keep everything inside the graph
@@ -126,15 +121,15 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
         <div className="space-y-1 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.oi.entryPrice)}</span>
+            <span className="text-white font-semibold">{formatCurrencyShort(calculations.oi.entryPrice, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Exit:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.oi.exitPrice)}</span>
+            <span className="text-white font-semibold">{formatCurrencyShort(calculations.oi.exitPrice, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Profit:</span>
-            <span className="text-[#CCFF00] font-semibold">+{formatAED(calculations.oi.projectedProfit)}</span>
+            <span className="text-[#CCFF00] font-semibold">+{formatCurrencyShort(calculations.oi.projectedProfit, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">ROE:</span>
@@ -162,15 +157,15 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
         <div className="space-y-1 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.si.entryPrice)}</span>
+            <span className="text-white font-semibold">{formatCurrencyShort(calculations.si.entryPrice, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Exit:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.si.exitPrice)}</span>
+            <span className="text-white font-semibold">{formatCurrencyShort(calculations.si.exitPrice, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Profit:</span>
-            <span className="text-[#00EAFF] font-semibold">+{formatAED(calculations.si.projectedProfit)}</span>
+            <span className="text-[#00EAFF] font-semibold">+{formatCurrencyShort(calculations.si.projectedProfit, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">ROE:</span>
@@ -179,10 +174,10 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
         </div>
       </div>
 
-      {/* HO Point Label */}
+      {/* HO Point Label - Moved up to be visible */}
       <div 
         className="absolute flex flex-col items-center"
-        style={{ right: '14%', top: '10%' }}
+        style={{ right: '16%', top: '4%' }}
       >
         <span className="text-xl font-bold text-[#FF00FF]">HO</span>
         <Home className="w-4 h-4 text-[#FF00FF]" />
@@ -192,13 +187,13 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       {/* HO Info Card - Below HO point */}
       <div 
         className="absolute bg-[#0d1117]/95 border border-[#FF00FF]/50 rounded-lg p-3 min-w-[120px]"
-        style={{ right: '2%', top: '10%' }}
+        style={{ right: '2%', top: '18%' }}
       >
         <div className="text-[10px] font-bold text-[#FF00FF] mb-2 tracking-wider">HOME OWNER</div>
         <div className="space-y-1 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
-            <span className="text-white font-semibold">{formatAED(calculations.ho.entryPrice)}</span>
+            <span className="text-white font-semibold">{formatCurrencyShort(calculations.ho.entryPrice, currency)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Yield:</span>

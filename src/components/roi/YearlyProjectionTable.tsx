@@ -1,18 +1,12 @@
 import { YearlyProjection } from "./useROICalculations";
+import { Currency, formatCurrency } from "./currencyUtils";
 
 interface YearlyProjectionTableProps {
   projections: YearlyProjection[];
+  currency: Currency;
 }
 
-const formatAED = (value: number) => {
-  return new Intl.NumberFormat('en-AE', { 
-    style: 'currency', 
-    currency: 'AED',
-    maximumFractionDigits: 0 
-  }).format(value);
-};
-
-export const YearlyProjectionTable = ({ projections }: YearlyProjectionTableProps) => {
+export const YearlyProjectionTable = ({ projections, currency }: YearlyProjectionTableProps) => {
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-[#2a3142]">
@@ -47,10 +41,10 @@ export const YearlyProjectionTable = ({ projections }: YearlyProjectionTableProp
                   {p.calendarYear}
                 </td>
                 <td className="px-4 py-3 text-sm text-right font-mono text-white">
-                  {formatAED(p.propertyValue)}
+                  {formatCurrency(p.propertyValue, currency)}
                 </td>
                 <td className={`px-4 py-3 text-sm text-right font-mono ${p.isConstruction ? 'text-gray-500' : 'text-white'}`}>
-                  {p.annualRent !== null ? formatAED(p.annualRent) : '—'}
+                  {p.annualRent !== null ? formatCurrency(p.annualRent, currency) : '—'}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {p.isConstruction && !p.isHandover && (
