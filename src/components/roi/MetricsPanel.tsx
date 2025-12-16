@@ -49,11 +49,15 @@ export const MetricsPanel = ({ calculations, inputs }: MetricsPanelProps) => {
         <div className="space-y-4">
           <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
             <span className="text-gray-400 text-sm">OI Holding Period</span>
-            <span className="text-white font-mono font-semibold">{calculations.holdingPeriodMonths} months</span>
+            <span className="text-white font-mono font-semibold">{calculations.oiHoldingMonths} months</span>
           </div>
           <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
             <span className="text-gray-400 text-sm">SI Holding Period</span>
-            <span className="text-white font-mono font-semibold">{inputs.siHoldingMonths} months</span>
+            <span className="text-white font-mono font-semibold">{calculations.siHoldingMonths} months</span>
+          </div>
+          <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
+            <span className="text-gray-400 text-sm">Total Period</span>
+            <span className="text-white font-mono font-semibold">{calculations.totalMonths} months</span>
           </div>
           <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
             <span className="text-gray-400 text-sm">Appreciation Rate</span>

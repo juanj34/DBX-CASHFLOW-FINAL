@@ -14,23 +14,24 @@ const formatAED = (value: number) => {
 };
 
 export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
-  const holdingMonths = calculations.holdingPeriodMonths;
+  const oiHoldingMonths = calculations.oiHoldingMonths;
   
-  // Calculate positions for the stepped curve (percentage based)
-  const oiPosition = { x: 15, y: 80 };
-  const siPosition = { x: 50, y: 45 };
-  const hoPosition = { x: 85, y: 15 };
+  // Adjusted positions to keep everything inside the graph
+  const oiPosition = { x: 12, y: 75 };
+  const siPosition = { x: 50, y: 50 };
+  const hoPosition = { x: 88, y: 25 };
 
-  // Control points for bezier curves (creates natural growth curve)
+  // Control points for bezier curves
   const oi2siControl1 = { x: oiPosition.x + 15, y: oiPosition.y };
   const oi2siControl2 = { x: siPosition.x - 15, y: siPosition.y };
   
   const si2hoControl1 = { x: siPosition.x + 15, y: siPosition.y };
   const si2hoControl2 = { x: hoPosition.x - 15, y: hoPosition.y };
 
-  // Calculate dates for labels
-  const handoverYear = inputs.handoverYear;
-  const siExitYear = handoverYear + Math.ceil(inputs.siHoldingMonths / 12);
+  // Calculate years for labels
+  const oiYear = inputs.bookingYear;
+  const siYear = inputs.bookingYear + Math.ceil(inputs.oiHoldingMonths / 12);
+  const hoYear = inputs.handoverYear;
 
   return (
     <div className="relative w-full h-[450px] bg-[#0d1117] rounded-2xl border border-[#2a3142] overflow-hidden">
@@ -100,30 +101,29 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       <div 
         className="absolute text-xs text-[#CCFF00] font-medium"
         style={{ 
-          left: '30%', 
-          top: '55%' 
+          left: '28%', 
+          top: '58%' 
         }}
       >
-        <span className="italic">{holdingMonths} MONTHS</span>
+        <span className="italic">{oiHoldingMonths} MONTHS</span>
       </div>
 
       {/* OI Point Label */}
       <div 
         className="absolute flex flex-col items-center"
-        style={{ left: `${oiPosition.x - 3}%`, top: `${oiPosition.y - 18}%` }}
+        style={{ left: '8%', top: '52%' }}
       >
         <span className="text-xl font-bold text-[#CCFF00]">OI</span>
         <Rocket className="w-4 h-4 text-[#CCFF00] rotate-45" />
-        <span className="text-[10px] text-gray-400 mt-1">{inputs.bookingYear}</span>
       </div>
       
       {/* OI Info Card - Bottom left */}
       <div 
-        className="absolute bg-[#0d1117]/95 border border-[#CCFF00]/50 rounded-lg p-3 min-w-[130px]"
-        style={{ left: '2%', bottom: '4%' }}
+        className="absolute bg-[#0d1117]/95 border border-[#CCFF00]/50 rounded-lg p-3 min-w-[120px]"
+        style={{ left: '2%', bottom: '8%' }}
       >
         <div className="text-[10px] font-bold text-[#CCFF00] mb-2 tracking-wider">OPPORTUNITY</div>
-        <div className="space-y-1.5 text-[11px]">
+        <div className="space-y-1 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
             <span className="text-white font-semibold">{formatAED(calculations.oi.entryPrice)}</span>
@@ -146,20 +146,20 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       {/* SI Point Label */}
       <div 
         className="absolute flex flex-col items-center"
-        style={{ left: `${siPosition.x - 3}%`, top: `${siPosition.y - 18}%` }}
+        style={{ left: '46%', top: '32%' }}
       >
         <span className="text-xl font-bold text-[#00EAFF]">SI</span>
         <Shield className="w-4 h-4 text-[#00EAFF]" />
-        <span className="text-[10px] text-gray-400 mt-1">{handoverYear}</span>
+        <span className="text-[10px] text-gray-400 mt-1">{siYear}</span>
       </div>
 
-      {/* SI Info Card - Center right of point */}
+      {/* SI Info Card - Right of SI point */}
       <div 
-        className="absolute bg-[#0d1117]/95 border border-[#00EAFF]/50 rounded-lg p-3 min-w-[130px]"
-        style={{ left: '55%', top: '32%' }}
+        className="absolute bg-[#0d1117]/95 border border-[#00EAFF]/50 rounded-lg p-3 min-w-[120px]"
+        style={{ left: '54%', top: '38%' }}
       >
         <div className="text-[10px] font-bold text-[#00EAFF] mb-2 tracking-wider">SECURITY</div>
-        <div className="space-y-1.5 text-[11px]">
+        <div className="space-y-1 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
             <span className="text-white font-semibold">{formatAED(calculations.si.entryPrice)}</span>
@@ -182,20 +182,20 @@ export const GrowthCurve = ({ calculations, inputs }: GrowthCurveProps) => {
       {/* HO Point Label */}
       <div 
         className="absolute flex flex-col items-center"
-        style={{ left: `${hoPosition.x - 3}%`, top: `${hoPosition.y - 18}%` }}
+        style={{ right: '14%', top: '10%' }}
       >
         <span className="text-xl font-bold text-[#FF00FF]">HO</span>
         <Home className="w-4 h-4 text-[#FF00FF]" />
-        <span className="text-[10px] text-gray-400 mt-1">{siExitYear}</span>
+        <span className="text-[10px] text-gray-400 mt-1">{hoYear}</span>
       </div>
 
-      {/* HO Info Card - Top right */}
+      {/* HO Info Card - Below HO point */}
       <div 
-        className="absolute bg-[#0d1117]/95 border border-[#FF00FF]/50 rounded-lg p-3 min-w-[130px]"
-        style={{ right: '2%', top: '4%' }}
+        className="absolute bg-[#0d1117]/95 border border-[#FF00FF]/50 rounded-lg p-3 min-w-[120px]"
+        style={{ right: '2%', top: '10%' }}
       >
         <div className="text-[10px] font-bold text-[#FF00FF] mb-2 tracking-wider">HOME OWNER</div>
-        <div className="space-y-1.5 text-[11px]">
+        <div className="space-y-1 text-[11px]">
           <div className="flex justify-between gap-3">
             <span className="text-gray-400">Entry:</span>
             <span className="text-white font-semibold">{formatAED(calculations.ho.entryPrice)}</span>
