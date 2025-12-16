@@ -9,9 +9,9 @@ interface OIGrowthCurveProps {
 }
 
 export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveProps) => {
-  const { scenarios, basePrice } = calculations;
+  const { scenarios, basePrice, totalMonths } = calculations;
   
-  // Get the 100% exit scenario for max values
+  // Get the handover scenario for max values
   const maxScenario = scenarios[scenarios.length - 1];
   const maxValue = maxScenario.exitPrice * 1.1; // Add 10% padding
 
@@ -22,15 +22,15 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
-  // Scale functions
-  const xScale = (percent: number) => padding.left + (percent / 100) * chartWidth;
+  // Scale functions - now based on months
+  const xScale = (months: number) => padding.left + (months / totalMonths) * chartWidth;
   const yScale = (value: number) => padding.top + chartHeight - ((value - basePrice * 0.9) / (maxValue - basePrice * 0.9)) * chartHeight;
 
   // Generate curve path
   const generateCurvePath = () => {
     const points: { x: number; y: number }[] = [
       { x: 0, y: basePrice }, // Starting point
-      ...scenarios.map(s => ({ x: s.exitPercent, y: s.exitPrice }))
+      ...scenarios.map(s => ({ x: s.exitMonths, y: s.exitPrice }))
     ];
     
     // Create smooth bezier curve
@@ -49,6 +49,9 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
     return path;
   };
 
+  // X-axis time labels
+  const timeLabels = [0, Math.round(totalMonths * 0.25), Math.round(totalMonths * 0.5), Math.round(totalMonths * 0.75), totalMonths];
+
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 relative overflow-hidden">
       {/* Background grid */}
@@ -65,19 +68,19 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
             <Rocket className="w-5 h-5 text-[#CCFF00]" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">OI Price Appreciation</h3>
-            <p className="text-xs text-gray-400">Exit value at different construction stages</p>
+            <h3 className="font-semibold text-white">Price Appreciation Over Time</h3>
+            <p className="text-xs text-gray-400">Exit value at different time points</p>
           </div>
         </div>
 
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="mt-4">
           {/* Grid lines */}
-          {[0, 25, 50, 75, 100].map(percent => (
+          {timeLabels.map(months => (
             <line
-              key={`grid-v-${percent}`}
-              x1={xScale(percent)}
+              key={`grid-v-${months}`}
+              x1={xScale(months)}
               y1={padding.top}
-              x2={xScale(percent)}
+              x2={xScale(months)}
               y2={height - padding.bottom}
               stroke="#2a3142"
               strokeWidth="1"
@@ -86,16 +89,16 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
           ))}
 
           {/* X-axis labels */}
-          {[0, 25, 50, 75, 100].map(percent => (
+          {timeLabels.map(months => (
             <text
-              key={`label-${percent}`}
-              x={xScale(percent)}
+              key={`label-${months}`}
+              x={xScale(months)}
               y={height - padding.bottom + 20}
               fill="#6b7280"
               fontSize="12"
               textAnchor="middle"
             >
-              {percent}%
+              {months}mo
             </text>
           ))}
 
@@ -107,7 +110,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
             fontSize="12"
             textAnchor="middle"
           >
-            Construction Progress
+            Months from Booking
           </text>
 
           {/* Base price line */}
@@ -152,10 +155,10 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
 
           {/* Exit point markers */}
           {scenarios.map((scenario, index) => (
-            <g key={scenario.exitPercent}>
+            <g key={scenario.exitMonths}>
               {/* Point circle */}
               <circle
-                cx={xScale(scenario.exitPercent)}
+                cx={xScale(scenario.exitMonths)}
                 cy={yScale(scenario.exitPrice)}
                 r="8"
                 fill="#0f172a"
@@ -163,7 +166,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
                 strokeWidth="2"
               />
               <circle
-                cx={xScale(scenario.exitPercent)}
+                cx={xScale(scenario.exitMonths)}
                 cy={yScale(scenario.exitPrice)}
                 r="4"
                 fill="#CCFF00"
@@ -171,7 +174,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
 
               {/* Value label - alternate above/below */}
               <text
-                x={xScale(scenario.exitPercent)}
+                x={xScale(scenario.exitMonths)}
                 y={yScale(scenario.exitPrice) + (index % 2 === 0 ? -18 : 25)}
                 fill="#CCFF00"
                 fontSize="11"
@@ -184,13 +187,13 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
 
               {/* ROE label */}
               <text
-                x={xScale(scenario.exitPercent)}
+                x={xScale(scenario.exitMonths)}
                 y={yScale(scenario.exitPrice) + (index % 2 === 0 ? -5 : 38)}
                 fill="#9ca3af"
                 fontSize="9"
                 textAnchor="middle"
               >
-                ROE: {scenario.roe.toFixed(0)}%
+                ROE: {scenario.trueROE.toFixed(0)}%
               </text>
             </g>
           ))}

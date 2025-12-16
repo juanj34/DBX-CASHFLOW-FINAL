@@ -14,7 +14,6 @@ export interface OIInputs {
   bookingYear: number;
   handoverQuarter: number; // 1-4
   handoverYear: number;
-  minimumExitThreshold: number;
   
   // NEW: Restructured Payment Plan
   downpaymentPercent: number;       // Fixed downpayment at booking (default 20%)
@@ -24,25 +23,17 @@ export interface OIInputs {
   // Entry Costs (simplified)
   dldFeePercent: number;
   oqoodFee: number; // Fixed amount
-  // Exit Costs (simplified)
-  nocFee: number;
 }
 
 export interface OIExitScenario {
-  exitPercent: number;
   exitMonths: number;
   exitPrice: number;
   equityDeployed: number;
   profit: number;
   roe: number;
   annualizedROE: number;
-  profitPerMonth: number;
   amountPaidSoFar: number;
-  amountLeftToPay: number;
-  installmentsPaid: number;
-  installmentsLeft: number;
   entryCosts: number;
-  exitCosts: number;
   totalCapitalDeployed: number;
   trueProfit: number;
   trueROE: number;
@@ -140,10 +131,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     bookingYear, 
     handoverQuarter, 
     handoverYear, 
-    minimumExitThreshold,
     dldFeePercent,
     oqoodFee,
-    nocFee,
   } = inputs;
 
   // Calculate entry costs (paid at booking)
@@ -154,22 +143,24 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const handoverDate = new Date(handoverYear, quarterToMonth(handoverQuarter) - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-  // Total installments
-  const totalInstallments = countTotalInstallments(inputs);
+  // Generate scenarios at key time points (every 6 months + handover)
+  const exitMonthsOptions: number[] = [];
+  for (let m = 6; m <= totalMonths; m += 6) {
+    exitMonthsOptions.push(m);
+  }
+  if (!exitMonthsOptions.includes(totalMonths)) {
+    exitMonthsOptions.push(totalMonths);
+  }
 
-  // Exit percentages: 10% increments, filtered by minimum threshold
-  const allExitPercentages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-  const validExitPercentages = allExitPercentages.filter(p => p >= minimumExitThreshold);
-
-  const scenarios: OIExitScenario[] = validExitPercentages.map(exitPercent => {
-    const exitMonths = Math.round((exitPercent / 100) * totalMonths);
+  const scenarios: OIExitScenario[] = exitMonthsOptions.map(exitMonths => {
+    const exitPercent = (exitMonths / totalMonths) * 100;
     const exitYears = exitMonths / 12;
 
     // Property value at exit (appreciated)
     const exitPrice = basePrice * Math.pow(1 + appreciationRate / 100, exitYears);
 
     // Equity deployed using new calculation
-    const { equity: equityDeployed, installmentsPaid } = calculateEquityAtExit(
+    const { equity: equityDeployed } = calculateEquityAtExit(
       exitPercent, 
       inputs, 
       totalMonths, 
@@ -178,20 +169,15 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
 
     // Payment status
     const amountPaidSoFar = equityDeployed;
-    const amountLeftToPay = basePrice - equityDeployed;
-    const installmentsLeft = totalInstallments - installmentsPaid;
 
     // Entry costs (already paid)
     const entryCosts = totalEntryCosts;
 
-    // Exit costs (simplified - only NOC fee)
-    const exitCosts = nocFee;
-
     // Profit is appreciation
     const profit = exitPrice - basePrice;
 
-    // True profit after all costs
-    const trueProfit = profit - entryCosts - exitCosts;
+    // True profit after entry costs only (no exit costs)
+    const trueProfit = profit - entryCosts;
 
     // Total capital deployed = equity + entry costs
     const totalCapitalDeployed = equityDeployed + entryCosts;
@@ -204,26 +190,17 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
 
     // Annualized ROE
     const yearsHeld = exitMonths / 12;
-    const annualizedROE = yearsHeld > 0 ? roe / yearsHeld : 0;
-
-    // Profit per month
-    const profitPerMonth = exitMonths > 0 ? profit / exitMonths : 0;
+    const annualizedROE = yearsHeld > 0 ? trueROE / yearsHeld : 0;
 
     return {
-      exitPercent,
       exitMonths,
       exitPrice,
       equityDeployed,
       profit,
       roe,
       annualizedROE,
-      profitPerMonth,
       amountPaidSoFar,
-      amountLeftToPay,
-      installmentsPaid,
-      installmentsLeft,
       entryCosts,
-      exitCosts,
       totalCapitalDeployed,
       trueProfit,
       trueROE,
