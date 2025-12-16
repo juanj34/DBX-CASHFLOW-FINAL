@@ -76,7 +76,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
     }
   };
 
-  const handleFixedFeeChange = (field: 'oqoodFee' | 'nocFee', value: string) => {
+  const handleFixedFeeChange = (field: 'oqoodFee', value: string) => {
     const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num >= 0) {
       const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
@@ -284,49 +284,6 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Exit Costs Section */}
-          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
-            <label className="text-sm text-gray-400 font-medium">Exit Costs (When Selling)</label>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">NOC Fee</span>
-              <div className="relative">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                  {currency === 'USD' ? '$' : 'AED'}
-                </span>
-                <Input
-                  type="text"
-                  value={currency === 'USD' ? Math.round(inputs.nocFee / AED_TO_USD) : inputs.nocFee}
-                  onChange={(e) => handleFixedFeeChange('nocFee', e.target.value)}
-                  className="w-28 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs pl-10"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Minimum Exit Threshold */}
-          <div className="space-y-2 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Minimum Exit Threshold</label>
-              <Input
-                type="number"
-                value={inputs.minimumExitThreshold}
-                onChange={(e) => handleNumberChange('minimumExitThreshold', e.target.value, 10, 100)}
-                className="w-20 h-8 text-right bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
-              />
-            </div>
-            <Slider
-              value={[inputs.minimumExitThreshold]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, minimumExitThreshold: value }))}
-              min={10}
-              max={100}
-              step={10}
-              className="roi-slider-lime"
-            />
-            <div className="text-xs text-gray-500">
-              Developer allows resale at {inputs.minimumExitThreshold}% construction
-            </div>
-          </div>
 
           {/* PAYMENT PLAN SECTION - NEW STRUCTURE */}
           <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
