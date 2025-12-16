@@ -2,7 +2,7 @@ import { useState } from "react";
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Slider } from "@/components/ui/slider";
-import { TrendingUp, Calendar, Wallet, Target, Edit2 } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Edit2, Tag } from "lucide-react";
 
 interface ExitScenario {
   months: number;
@@ -91,12 +91,11 @@ const calculateScenario = (
   };
 };
 
-// Convert months to readable date
-const monthsToDate = (months: number, bookingQuarter: number, bookingYear: number): string => {
-  const baseMonth = (bookingQuarter - 1) * 3 + 2;
-  const totalMonthsFromJan = baseMonth + months;
-  const yearOffset = Math.floor(totalMonthsFromJan / 12);
-  const month = totalMonthsFromJan % 12 || 12;
+// Convert months to readable date using booking month/year
+const monthsToDate = (months: number, bookingMonth: number, bookingYear: number): string => {
+  const totalMonthsFromJan = bookingMonth + months;
+  const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
+  const month = ((totalMonthsFromJan - 1) % 12) + 1;
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
 };
@@ -174,7 +173,7 @@ export const ExitScenariosCards = ({
                 <span className="text-lg font-bold font-mono">{scenario.months} months</span>
               </div>
               <div className="text-xs text-gray-500 ml-6">
-                {monthsToDate(scenario.months, inputs.bookingQuarter, inputs.bookingYear)}
+                {monthsToDate(scenario.months, inputs.bookingMonth, inputs.bookingYear)}
               </div>
             </div>
 
@@ -198,6 +197,15 @@ export const ExitScenariosCards = ({
 
             {/* Metrics */}
             <div className="space-y-2">
+              {/* Original Price - NEW */}
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <Tag className="w-3 h-3" />
+                  Original
+                </span>
+                <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency)}</span>
+              </div>
+              
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Wallet className="w-3 h-3" />

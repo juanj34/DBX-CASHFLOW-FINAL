@@ -8,39 +8,32 @@ interface PaymentBreakdownProps {
   totalMonths: number;
 }
 
-// Convert quarter to readable date string
-const quarterToDateString = (quarter: number, year: number): string => {
-  const monthNames: Record<number, string> = {
-    1: 'Feb',
-    2: 'May',
-    3: 'Aug',
-    4: 'Nov'
-  };
-  return `${monthNames[quarter]} ${year}`;
+// Convert booking month/year to readable date string
+const monthToDateString = (month: number, year: number): string => {
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${monthNames[month - 1]} ${year}`;
 };
 
 // Estimate date from months after booking
-const estimateDateFromMonths = (months: number, bookingQuarter: number, bookingYear: number): string => {
-  const baseMonth = (bookingQuarter - 1) * 3 + 2; // Q1→2, Q2→5, etc.
-  const totalMonths = baseMonth + months;
-  const yearOffset = Math.floor(totalMonths / 12);
-  const month = totalMonths % 12 || 12;
+const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYear: number): string => {
+  const totalMonthsFromJan = bookingMonth + months;
+  const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
+  const month = ((totalMonthsFromJan - 1) % 12) + 1;
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
 };
 
-// Estimate date from construction percentage
-const estimateDateFromConstruction = (percent: number, totalMonths: number, bookingQuarter: number, bookingYear: number): string => {
-  const months = Math.round((percent / 100) * totalMonths);
-  return estimateDateFromMonths(months, bookingQuarter, bookingYear);
-};
+// DLD Fee is always 4%
+const DLD_FEE_PERCENT = 4;
 
 export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreakdownProps) => {
-  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, dldFeePercent, oqoodFee, bookingQuarter, bookingYear, handoverQuarter, handoverYear } = inputs;
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverMonth, handoverYear } = inputs;
 
   // Calculate amounts
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
-  const dldFeeAmount = basePrice * dldFeePercent / 100;
+  const eoiFeeActual = Math.min(eoiFee, downpaymentAmount); // EOI can't exceed downpayment
+  const restOfDownpayment = downpaymentAmount - eoiFeeActual;
+  const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
   
@@ -83,16 +76,20 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[#CCFF00]">
             <Calendar className="w-4 h-4" />
-            <span className="text-sm font-medium">AT BOOKING ({quarterToDateString(bookingQuarter, bookingYear)})</span>
+            <span className="text-sm font-medium">AT BOOKING ({monthToDateString(bookingMonth, bookingYear)})</span>
           </div>
           
           <div className="pl-6 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">Downpayment ({downpaymentPercent}%)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(downpaymentAmount, currency)}</span>
+              <span className="text-sm text-gray-300">EOI / Booking Fee</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">DLD Fee ({dldFeePercent}%)</span>
+              <span className="text-sm text-gray-300">Rest of Downpayment ({downpaymentPercent}% - EOI)</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-300">DLD Fee (4%)</span>
               <span className="text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency)}</span>
             </div>
             <div className="flex justify-between items-center">
@@ -117,17 +114,20 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
             <div className="pl-6 space-y-2">
               {sortedAdditionalPayments.map((payment, index) => {
                 const amount = basePrice * payment.paymentPercent / 100;
-                const dateStr = payment.type === 'time' 
-                  ? estimateDateFromMonths(payment.triggerValue, bookingQuarter, bookingYear)
-                  : estimateDateFromConstruction(payment.triggerValue, totalMonths, bookingQuarter, bookingYear);
-                const triggerLabel = payment.type === 'time'
+                const isTimeBased = payment.type === 'time';
+                const triggerLabel = isTimeBased
                   ? `Month ${payment.triggerValue}`
                   : `${payment.triggerValue}% construction`;
+                
+                // Only show date for time-based payments
+                const dateStr = isTimeBased 
+                  ? estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear)
+                  : null;
                 
                 return (
                   <div key={payment.id} className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      {payment.type === 'time' ? (
+                      {isTimeBased ? (
                         <Clock className="w-3 h-3 text-gray-500" />
                       ) : (
                         <Building2 className="w-3 h-3 text-gray-500" />
@@ -135,7 +135,9 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
                       <span className="text-sm text-gray-300">
                         {payment.paymentPercent}% @ {triggerLabel}
                       </span>
-                      <span className="text-xs text-gray-500">({dateStr})</span>
+                      {dateStr && (
+                        <span className="text-xs text-gray-500">({dateStr})</span>
+                      )}
                     </div>
                     <span className="text-sm text-white font-mono">{formatCurrency(amount, currency)}</span>
                   </div>
@@ -155,7 +157,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-cyan-400">
             <Home className="w-4 h-4" />
-            <span className="text-sm font-medium">AT HANDOVER ({quarterToDateString(handoverQuarter, handoverYear)})</span>
+            <span className="text-sm font-medium">AT HANDOVER ({monthToDateString(handoverMonth, handoverYear)})</span>
           </div>
           
           <div className="pl-6 space-y-2">
