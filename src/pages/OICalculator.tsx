@@ -19,8 +19,8 @@ const OICalculator = () => {
     appreciationRate: 10,
     bookingMonth: 1, // January
     bookingYear: 2025,
-    handoverMonth: 6, // June
-    handoverYear: 2028,
+    handoverQuarter: 4, // Q4
+    handoverYear: 2027,
     // Restructured payment plan
     downpaymentPercent: 20,        // 20% at booking
     preHandoverPercent: 20,        // 20/80 split (20% pre-handover, 80% handover)
@@ -148,7 +148,7 @@ const OICalculator = () => {
                     {calculations.totalMonths} months
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {monthNames[inputs.bookingMonth - 1]} {inputs.bookingYear} → {monthNames[inputs.handoverMonth - 1]} {inputs.handoverYear}
+                    {monthNames[inputs.bookingMonth - 1]} {inputs.bookingYear} → Q{inputs.handoverQuarter} {inputs.handoverYear}
                   </div>
                 </div>
 

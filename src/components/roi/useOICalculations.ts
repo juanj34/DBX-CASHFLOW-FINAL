@@ -12,7 +12,7 @@ export interface OIInputs {
   appreciationRate: number;
   bookingMonth: number; // 1-12
   bookingYear: number;
-  handoverMonth: number; // 1-12
+  handoverQuarter: number; // 1, 2, 3, 4 (Q1, Q2, Q3, Q4)
   handoverYear: number;
   
   // NEW: Restructured Payment Plan
@@ -67,6 +67,17 @@ export interface OICalculations {
 
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
+
+// Convert quarter to mid-month for calculations
+export const quarterToMonth = (quarter: number): number => {
+  const quarterMidMonths: Record<number, number> = {
+    1: 2,  // Q1 → February
+    2: 5,  // Q2 → May
+    3: 8,  // Q3 → August
+    4: 11  // Q4 → November
+  };
+  return quarterMidMonths[quarter] || 2;
+};
 
 // Calculate equity deployed at exit based on new payment structure
 const calculateEquityAtExit = (
@@ -126,7 +137,7 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     appreciationRate, 
     bookingMonth, 
     bookingYear, 
-    handoverMonth, 
+    handoverQuarter, 
     handoverYear, 
     oqoodFee,
     eoiFee,
@@ -135,6 +146,9 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Calculate entry costs (paid at booking) - DLD fixed at 4%
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const totalEntryCosts = dldFeeAmount + oqoodFee;
+
+  // Convert handover quarter to month for calculations
+  const handoverMonth = quarterToMonth(handoverQuarter);
 
   // Calculate total construction period from booking to handover
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
