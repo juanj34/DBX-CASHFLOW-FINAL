@@ -4,9 +4,10 @@ import { Currency, formatCurrency } from "./currencyUtils";
 interface OIYearlyProjectionTableProps {
   projections: OIYearlyProjection[];
   currency: Currency;
+  rate: number;
 }
 
-export const OIYearlyProjectionTable = ({ projections, currency }: OIYearlyProjectionTableProps) => {
+export const OIYearlyProjectionTable = ({ projections, currency, rate }: OIYearlyProjectionTableProps) => {
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-[#2a3142]">
@@ -37,11 +38,11 @@ export const OIYearlyProjectionTable = ({ projections, currency }: OIYearlyProje
                   {proj.calendarYear}
                 </td>
                 <td className="px-4 py-3 text-sm text-right text-white font-mono">
-                  {formatCurrency(proj.propertyValue, currency)}
+                  {formatCurrency(proj.propertyValue, currency, rate)}
                 </td>
                 <td className="px-4 py-3 text-sm text-right font-mono">
                   {proj.annualRent ? (
-                    <span className="text-[#CCFF00]">{formatCurrency(proj.annualRent, currency)}</span>
+                    <span className="text-[#CCFF00]">{formatCurrency(proj.annualRent, currency, rate)}</span>
                   ) : (
                     <span className="text-gray-500">—</span>
                   )}

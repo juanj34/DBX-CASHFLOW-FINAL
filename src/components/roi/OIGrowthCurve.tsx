@@ -7,9 +7,10 @@ interface OIGrowthCurveProps {
   inputs: OIInputs;
   currency: Currency;
   exitScenarios: [number, number, number];
+  rate: number;
 }
 
-export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios }: OIGrowthCurveProps) => {
+export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, rate }: OIGrowthCurveProps) => {
   const { scenarios, basePrice, totalMonths } = calculations;
   
   // Get the handover scenario for max values
@@ -148,7 +149,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios }:
             textAnchor="end"
             dominantBaseline="middle"
           >
-            Base: {formatCurrencyShort(basePrice, currency)}
+            Base: {formatCurrencyShort(basePrice, currency, rate)}
           </text>
 
           {/* Growth curve */}
@@ -221,7 +222,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios }:
                 textAnchor="middle"
                 fontFamily="monospace"
               >
-                {formatCurrencyShort(scenario.exitPrice, currency)}
+                {formatCurrencyShort(scenario.exitPrice, currency, rate)}
               </text>
 
               {/* ROE label */}
@@ -287,7 +288,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios }:
               textAnchor="middle"
               fontFamily="monospace"
             >
-              {formatCurrencyShort(handoverScenario.exitPrice, currency)}
+              {formatCurrencyShort(handoverScenario.exitPrice, currency, rate)}
             </text>
 
             {/* ROE label */}
