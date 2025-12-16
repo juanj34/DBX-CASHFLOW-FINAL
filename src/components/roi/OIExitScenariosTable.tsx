@@ -38,6 +38,22 @@ export const OIExitScenariosTable = ({ scenarios, currency }: OIExitScenariosTab
               ))}
             </tr>
             <tr>
+              <td className="px-4 py-3 text-sm text-gray-400">Amount Paid</td>
+              {scenarios.map(s => (
+                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-white font-mono">
+                  {formatCurrency(s.amountPaidSoFar, currency)}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="px-4 py-3 text-sm text-gray-400">Amount Left</td>
+              {scenarios.map(s => (
+                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-gray-400 font-mono">
+                  {formatCurrency(s.amountLeftToPay, currency)}
+                </td>
+              ))}
+            </tr>
+            <tr>
               <td className="px-4 py-3 text-sm text-gray-400">Exit Price</td>
               {scenarios.map(s => (
                 <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-white font-mono">
@@ -46,15 +62,23 @@ export const OIExitScenariosTable = ({ scenarios, currency }: OIExitScenariosTab
               ))}
             </tr>
             <tr>
-              <td className="px-4 py-3 text-sm text-gray-400">Equity Deployed</td>
+              <td className="px-4 py-3 text-sm text-gray-400">Entry Costs</td>
               {scenarios.map(s => (
-                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-white font-mono">
-                  {formatCurrency(s.equityDeployed, currency)}
+                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-red-400 font-mono">
+                  -{formatCurrency(s.entryCosts, currency)}
                 </td>
               ))}
             </tr>
             <tr>
-              <td className="px-4 py-3 text-sm text-gray-400">Profit</td>
+              <td className="px-4 py-3 text-sm text-gray-400">Exit Costs</td>
+              {scenarios.map(s => (
+                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-red-400 font-mono">
+                  -{formatCurrency(s.exitCosts, currency)}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="px-4 py-3 text-sm text-gray-400">Gross Profit</td>
               {scenarios.map(s => (
                 <td key={s.exitPercent} className="px-4 py-3 text-sm text-center font-mono text-[#CCFF00]">
                   +{formatCurrency(s.profit, currency)}
@@ -62,10 +86,26 @@ export const OIExitScenariosTable = ({ scenarios, currency }: OIExitScenariosTab
               ))}
             </tr>
             <tr className="bg-[#CCFF00]/5">
-              <td className="px-4 py-3 text-sm font-medium text-[#CCFF00]">ROE</td>
+              <td className="px-4 py-3 text-sm font-medium text-[#CCFF00]">True Profit</td>
               {scenarios.map(s => (
                 <td key={s.exitPercent} className="px-4 py-3 text-sm text-center font-mono font-bold text-[#CCFF00]">
+                  {s.trueProfit >= 0 ? '+' : ''}{formatCurrency(s.trueProfit, currency)}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <td className="px-4 py-3 text-sm text-gray-400">Gross ROE</td>
+              {scenarios.map(s => (
+                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center text-white font-mono">
                   {s.roe.toFixed(1)}%
+                </td>
+              ))}
+            </tr>
+            <tr className="bg-[#CCFF00]/10">
+              <td className="px-4 py-3 text-sm font-medium text-[#CCFF00]">True ROE</td>
+              {scenarios.map(s => (
+                <td key={s.exitPercent} className="px-4 py-3 text-sm text-center font-mono font-bold text-[#CCFF00]">
+                  {s.trueROE.toFixed(1)}%
                 </td>
               ))}
             </tr>
