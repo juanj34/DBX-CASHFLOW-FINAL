@@ -34,14 +34,23 @@ const OICalculator = () => {
       { constructionPercent: 90, paymentPercent: 0 },
       { constructionPercent: 100, paymentPercent: 70 },
     ],
+    // Entry Costs
+    dldFeePercent: 4,
+    oqoodFeePercent: 4,
+    adminFee: 5000,
+    buyerAgentPercent: 0,
+    // Exit Costs
+    nocFee: 2000,
+    transferFeePercent: 2,
+    sellerAgentPercent: 0,
   });
 
   const calculations = useOICalculations(inputs);
   const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
 
-  // Find best ROE scenario (not necessarily first or last)
+  // Find best TRUE ROE scenario (accounting for costs)
   const bestROEScenario = calculations.scenarios.reduce<OIExitScenario | null>(
-    (best, current) => (!best || current.roe > best.roe ? current : best),
+    (best, current) => (!best || current.trueROE > best.trueROE ? current : best),
     null
   );
 
@@ -151,18 +160,29 @@ const OICalculator = () => {
                   </div>
                 </div>
 
+                {/* Entry Costs Summary */}
+                <div className="p-4 bg-[#0d1117] rounded-xl">
+                  <div className="text-xs text-gray-400 mb-1">Total Entry Costs</div>
+                  <div className="text-xl font-bold text-red-400 font-mono">
+                    -{formatCurrency(calculations.totalEntryCosts, currency)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    DLD {inputs.dldFeePercent}% + Oqood {inputs.oqoodFeePercent}% + Admin
+                  </div>
+                </div>
+
                 {/* Best ROE Highlight */}
                 {bestROEScenario && (
                   <div className="p-4 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl">
-                    <div className="text-xs text-[#CCFF00] mb-1">Best ROE ({bestROEScenario.exitPercent}% Exit)</div>
+                    <div className="text-xs text-[#CCFF00] mb-1">Best True ROE ({bestROEScenario.exitPercent}% Exit)</div>
                     <div className="text-2xl font-bold text-[#CCFF00] font-mono">
-                      {bestROEScenario.roe.toFixed(1)}%
+                      {bestROEScenario.trueROE.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      Profit: {formatCurrency(bestROEScenario.profit, currency)} en {bestROEScenario.exitMonths} meses
+                      True Profit: {formatCurrency(bestROEScenario.trueProfit, currency)} en {bestROEScenario.exitMonths} meses
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      ROE Anualizado: {bestROEScenario.annualizedROE.toFixed(1)}%/año
+                      Capital Deployed: {formatCurrency(bestROEScenario.totalCapitalDeployed, currency)}
                     </div>
                   </div>
                 )}
@@ -170,12 +190,15 @@ const OICalculator = () => {
                 {/* 100% Exit */}
                 {handoverScenario && (
                   <div className="p-4 bg-[#0d1117] rounded-xl">
-                    <div className="text-xs text-gray-400 mb-1">ROE at Handover (100%)</div>
+                    <div className="text-xs text-gray-400 mb-1">True ROE at Handover (100%)</div>
                     <div className="text-xl font-bold text-white font-mono">
-                      {handoverScenario.roe.toFixed(1)}%
+                      {handoverScenario.trueROE.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Profit: {formatCurrency(handoverScenario.profit, currency)}
+                      True Profit: {formatCurrency(handoverScenario.trueProfit, currency)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Exit Costs: {formatCurrency(handoverScenario.exitCosts, currency)}
                     </div>
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -73,7 +73,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
     const num = parseFloat(basePriceInput.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num > 0) {
       const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
-      const clamped = Math.min(Math.max(aedValue, 500000), 10000000);
+      const clamped = Math.min(Math.max(aedValue, 500000), 50000000);
       setInputs(prev => ({ ...prev, basePrice: clamped }));
       setBasePriceInput(
         currency === 'USD' 
@@ -101,6 +101,14 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
           : m
       )
     }));
+  };
+
+  const handleFixedFeeChange = (field: 'adminFee' | 'nocFee', value: string) => {
+    const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
+    if (!isNaN(num) && num >= 0) {
+      const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
+      setInputs(prev => ({ ...prev, [field]: aedValue }));
+    }
   };
 
   return (
@@ -147,7 +155,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 );
               }}
               min={500000}
-              max={10000000}
+              max={50000000}
               step={50000}
               className="roi-slider-lime"
             />
@@ -225,6 +233,115 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Entry Costs Section */}
+          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <label className="text-sm text-gray-400 font-medium">Entry Costs (At Booking)</label>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">DLD Fee %</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.dldFeePercent]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, dldFeePercent: value }))}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    className="w-24 roi-slider-lime"
+                  />
+                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.dldFeePercent}%</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Oqood Fee %</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.oqoodFeePercent]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, oqoodFeePercent: value }))}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    className="w-24 roi-slider-lime"
+                  />
+                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.oqoodFeePercent}%</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Admin Fee</span>
+                <Input
+                  type="text"
+                  value={currency === 'USD' ? Math.round(inputs.adminFee / AED_TO_USD) : inputs.adminFee}
+                  onChange={(e) => handleFixedFeeChange('adminFee', e.target.value)}
+                  className="w-24 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Buyer Agent %</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.buyerAgentPercent]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, buyerAgentPercent: value }))}
+                    min={0}
+                    max={5}
+                    step={0.5}
+                    className="w-24 roi-slider-lime"
+                  />
+                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.buyerAgentPercent}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Exit Costs Section */}
+          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <label className="text-sm text-gray-400 font-medium">Exit Costs (When Selling)</label>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">NOC Fee</span>
+                <Input
+                  type="text"
+                  value={currency === 'USD' ? Math.round(inputs.nocFee / AED_TO_USD) : inputs.nocFee}
+                  onChange={(e) => handleFixedFeeChange('nocFee', e.target.value)}
+                  className="w-24 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Transfer Fee %</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.transferFeePercent]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, transferFeePercent: value }))}
+                    min={0}
+                    max={5}
+                    step={0.5}
+                    className="w-24 roi-slider-lime"
+                  />
+                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.transferFeePercent}%</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Seller Agent %</span>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.sellerAgentPercent]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, sellerAgentPercent: value }))}
+                    min={0}
+                    max={5}
+                    step={0.5}
+                    className="w-24 roi-slider-lime"
+                  />
+                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.sellerAgentPercent}%</span>
+                </div>
+              </div>
             </div>
           </div>
 
