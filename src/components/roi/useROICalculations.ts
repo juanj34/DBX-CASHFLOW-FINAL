@@ -69,7 +69,7 @@ export const useROICalculations = (inputs: ROIInputs): ROICalculations => {
 
   // SI (Security Investor) - Buys from OI
   const siEntryPrice = oiExitPrice;
-  const siEquity = siEntryPrice; // 100% cash
+  const siEquity = oiEquity + oiProfit; // SI pays OI: what OI paid + OI's profit
   const siExitPrice = siEntryPrice * Math.pow(1 + appreciationRate / 100, siHoldingYears);
   const siProfit = siExitPrice - siEntryPrice;
   const siROE = (siProfit / siEquity) * 100;
