@@ -21,14 +21,10 @@ const OICalculator = () => {
     handoverQuarter: 2, // Q2
     handoverYear: 2028,
     minimumExitThreshold: 30,
-    paymentMilestones: [
-      { id: '1', type: 'construction', triggerValue: 0, paymentPercent: 10, label: 'Booking' },
-      { id: '2', type: 'time', triggerValue: 7, paymentPercent: 2.5, label: '7 months' },
-      { id: '3', type: 'time', triggerValue: 15, paymentPercent: 2.5, label: '15 months' },
-      { id: '4', type: 'construction', triggerValue: 50, paymentPercent: 2.5, label: '50% construction' },
-      { id: '5', type: 'construction', triggerValue: 70, paymentPercent: 2.5, label: '70% construction' },
-      { id: '6', type: 'construction', triggerValue: 100, paymentPercent: 80, label: 'Handover' },
-    ],
+    // NEW: Restructured payment plan
+    downpaymentPercent: 20,        // 20% at booking
+    preHandoverPercent: 20,        // 20/80 split (20% pre-handover, 80% handover)
+    additionalPayments: [],        // No additional payments for 20/80
     // Entry Costs (simplified)
     dldFeePercent: 4,
     oqoodFee: 5000,
@@ -114,6 +110,16 @@ const OICalculator = () => {
                   <div className="text-xs text-gray-400 mb-1">Base Property Price</div>
                   <div className="text-xl font-bold text-white font-mono">
                     {formatCurrency(inputs.basePrice, currency)}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[#0d1117] rounded-xl">
+                  <div className="text-xs text-gray-400 mb-1">Payment Plan</div>
+                  <div className="text-xl font-bold text-[#CCFF00] font-mono">
+                    {inputs.preHandoverPercent}/{100 - inputs.preHandoverPercent}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Downpayment: {inputs.downpaymentPercent}% + {inputs.additionalPayments.length} additional
                   </div>
                 </div>
 

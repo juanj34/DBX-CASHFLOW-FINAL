@@ -15,7 +15,12 @@ export interface OIInputs {
   handoverQuarter: number; // 1-4
   handoverYear: number;
   minimumExitThreshold: number;
-  paymentMilestones: PaymentMilestone[];
+  
+  // NEW: Restructured Payment Plan
+  downpaymentPercent: number;       // Fixed downpayment at booking (default 20%)
+  preHandoverPercent: number;       // Total pre-handover % from preset (e.g., 30 in 30/70)
+  additionalPayments: PaymentMilestone[]; // Additional payments between downpayment and handover
+  
   // Entry Costs (simplified)
   dldFeePercent: number;
   oqoodFee: number; // Fixed amount
@@ -69,23 +74,29 @@ export interface OICalculations {
   totalEntryCosts: number;
 }
 
-// Calculate equity deployed at exit based on flexible milestones
+// Calculate equity deployed at exit based on new payment structure
 const calculateEquityAtExit = (
   exitPercent: number,
-  milestones: PaymentMilestone[],
+  inputs: OIInputs,
   totalMonths: number,
   basePrice: number
 ): { equity: number; installmentsPaid: number } => {
   const exitMonth = (exitPercent / 100) * totalMonths;
+  const handoverPercent = 100 - inputs.preHandoverPercent;
   
   let equity = 0;
   let installmentsPaid = 0;
   
-  milestones.forEach(m => {
+  // 1. Downpayment - always triggered at month 0
+  equity += basePrice * inputs.downpaymentPercent / 100;
+  installmentsPaid++;
+  
+  // 2. Additional payments (between downpayment and handover)
+  inputs.additionalPayments.forEach(m => {
     let triggered = false;
     
     if (m.type === 'time') {
-      // Time-based: triggered if we've passed that month
+      // Time-based: triggered if we've passed that month (absolute from booking)
       triggered = m.triggerValue <= exitMonth;
     } else {
       // Construction-based: triggered if construction reached that %
@@ -98,12 +109,20 @@ const calculateEquityAtExit = (
     }
   });
   
+  // 3. Handover payment - only if exiting at 100%
+  if (exitPercent >= 100) {
+    equity += basePrice * handoverPercent / 100;
+    installmentsPaid++;
+  }
+  
   return { equity, installmentsPaid };
 };
 
-// Count total installments with payments
-const countTotalInstallments = (milestones: PaymentMilestone[]): number => {
-  return milestones.filter(m => m.paymentPercent > 0).length;
+// Count total installments
+const countTotalInstallments = (inputs: OIInputs): number => {
+  // Downpayment + additional payments with amount > 0 + handover
+  const additionalCount = inputs.additionalPayments.filter(m => m.paymentPercent > 0).length;
+  return 1 + additionalCount + 1; // 1 for downpayment + additionals + 1 for handover
 };
 
 // Convert quarter to mid-quarter month: Q1→2, Q2→5, Q3→8, Q4→11
@@ -122,7 +141,6 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     handoverQuarter, 
     handoverYear, 
     minimumExitThreshold,
-    paymentMilestones,
     dldFeePercent,
     oqoodFee,
     nocFee,
@@ -136,8 +154,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const handoverDate = new Date(handoverYear, quarterToMonth(handoverQuarter) - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-  // Total installments with payments
-  const totalInstallments = countTotalInstallments(paymentMilestones);
+  // Total installments
+  const totalInstallments = countTotalInstallments(inputs);
 
   // Exit percentages: 10% increments, filtered by minimum threshold
   const allExitPercentages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -150,10 +168,10 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     // Property value at exit (appreciated)
     const exitPrice = basePrice * Math.pow(1 + appreciationRate / 100, exitYears);
 
-    // Equity deployed using flexible milestone calculation
+    // Equity deployed using new calculation
     const { equity: equityDeployed, installmentsPaid } = calculateEquityAtExit(
       exitPercent, 
-      paymentMilestones, 
+      inputs, 
       totalMonths, 
       basePrice
     );

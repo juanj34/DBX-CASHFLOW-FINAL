@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2 } from "lucide-react";
+import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home } from "lucide-react";
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
 import { Currency, formatCurrency, AED_TO_USD } from "./currencyUtils";
 
@@ -25,33 +25,8 @@ const quarters = [
 
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
-// Preset payment plans
-const presets = {
-  '20/80': [
-    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 20, label: 'Booking' },
-    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 80, label: 'Handover' },
-  ],
-  '30/70': [
-    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 30, label: 'Booking' },
-    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 70, label: 'Handover' },
-  ],
-  '40/60': [
-    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 40, label: 'Booking' },
-    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 60, label: 'Handover' },
-  ],
-  '50/50': [
-    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 50, label: 'Booking' },
-    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 50, label: 'Handover' },
-  ],
-  '60/40': [
-    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 60, label: 'Booking' },
-    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 40, label: 'Handover' },
-  ],
-  '80/20': [
-    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 80, label: 'Booking' },
-    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 20, label: 'Handover' },
-  ],
-};
+// Presets only set the pre-handover/handover split
+const presetSplits = ['20/80', '30/70', '40/60', '50/50', '60/40', '80/20'];
 
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
   const [basePriceInput, setBasePriceInput] = useState(
@@ -60,8 +35,14 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
       : inputs.basePrice.toString()
   );
 
-  // Calculate total payment percentage
-  const totalPayment = inputs.paymentMilestones.reduce((sum, m) => sum + m.paymentPercent, 0);
+  // Calculate totals for validation
+  const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
+  const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+  const handoverPercent = 100 - inputs.preHandoverPercent;
+  const remainingToDistribute = inputs.preHandoverPercent - inputs.downpaymentPercent - additionalPaymentsTotal;
+  
+  const isValidPreHandover = Math.abs(preHandoverTotal - inputs.preHandoverPercent) < 0.01;
+  const totalPayment = preHandoverTotal + handoverPercent;
   const isValidTotal = Math.abs(totalPayment - 100) < 0.01;
 
   const handleNumberChange = (field: keyof OIInputs, value: string, min: number, max: number) => {
@@ -103,36 +84,39 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
     }
   };
 
-  // Payment milestone handlers
-  const applyPreset = (presetKey: keyof typeof presets) => {
+  // Apply preset split (only changes preHandoverPercent, clears additional payments)
+  const applyPreset = (split: string) => {
+    const [preHandover] = split.split('/').map(Number);
     setInputs(prev => ({
       ...prev,
-      paymentMilestones: presets[presetKey].map((p, i) => ({ ...p, id: `preset-${i}` }))
+      preHandoverPercent: preHandover,
+      additionalPayments: [] // Clear additional payments when changing preset
     }));
   };
 
-  const addMilestone = () => {
-    const newId = `milestone-${Date.now()}`;
+  // Additional payments handlers
+  const addAdditionalPayment = () => {
+    const newId = `additional-${Date.now()}`;
     setInputs(prev => ({
       ...prev,
-      paymentMilestones: [
-        ...prev.paymentMilestones,
-        { id: newId, type: 'construction', triggerValue: 0, paymentPercent: 0 }
+      additionalPayments: [
+        ...prev.additionalPayments,
+        { id: newId, type: 'time', triggerValue: 6, paymentPercent: 0 }
       ]
     }));
   };
 
-  const removeMilestone = (id: string) => {
+  const removeAdditionalPayment = (id: string) => {
     setInputs(prev => ({
       ...prev,
-      paymentMilestones: prev.paymentMilestones.filter(m => m.id !== id)
+      additionalPayments: prev.additionalPayments.filter(m => m.id !== id)
     }));
   };
 
-  const updateMilestone = (id: string, field: keyof PaymentMilestone, value: any) => {
+  const updateAdditionalPayment = (id: string, field: keyof PaymentMilestone, value: any) => {
     setInputs(prev => ({
       ...prev,
-      paymentMilestones: prev.paymentMilestones.map(m =>
+      additionalPayments: prev.additionalPayments.map(m =>
         m.id === id ? { ...m, [field]: value } : m
       )
     }));
@@ -263,7 +247,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Entry Costs Section (Simplified) */}
+          {/* Entry Costs Section */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <label className="text-sm text-gray-400 font-medium">Entry Costs (At Booking)</label>
             
@@ -300,7 +284,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Exit Costs Section (Simplified) */}
+          {/* Exit Costs Section */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <label className="text-sm text-gray-400 font-medium">Exit Costs (When Selling)</label>
             
@@ -344,151 +328,233 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Payment Plan Section */}
-          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+          {/* PAYMENT PLAN SECTION - NEW STRUCTURE */}
+          <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400 font-medium">Payment Plan</label>
-              <div className={`flex items-center gap-1.5 text-xs ${isValidTotal ? 'text-green-400' : 'text-amber-400'}`}>
-                {isValidTotal ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                ) : (
-                  <AlertCircle className="w-3.5 h-3.5" />
-                )}
-                Total: {totalPayment}%
-              </div>
+              <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Payment Plan
+              </label>
             </div>
             
-            {/* Preset Buttons */}
-            <div className="flex flex-wrap gap-2">
-              {Object.keys(presets).map((key) => (
-                <Button
-                  key={key}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => applyPreset(key as keyof typeof presets)}
-                  className="h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white px-3"
-                >
-                  {key}
-                </Button>
-              ))}
-            </div>
-
-            {/* Helper text */}
-            <div className="text-xs text-gray-500 px-1">
-              💡 Time-based: absolute months from booking (e.g., 7 = month 7, not +7)
-            </div>
-
-            {/* Dynamic Payment List */}
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {inputs.paymentMilestones.map((milestone, index) => (
-                <div key={milestone.id} className="flex items-center gap-2 p-2 bg-[#1a1f2e] rounded-lg">
-                  {/* Type Selector */}
-                  <Select
-                    value={milestone.type}
-                    onValueChange={(value: 'time' | 'construction') => updateMilestone(milestone.id, 'type', value)}
-                  >
-                    <SelectTrigger className="w-[100px] h-7 text-xs bg-[#0d1117] border-[#2a3142]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                      <SelectItem value="time" className="text-white hover:bg-[#2a3142]">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>Time</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="construction" className="text-white hover:bg-[#2a3142]">
-                        <div className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />
-                          <span>Const.</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {/* Trigger Value */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-500" title={milestone.type === 'time' ? 'Months from booking date' : 'Construction %'}>
-                      {milestone.type === 'time' ? 'Mo:' : 'At:'}
-                    </span>
-                    <Input
-                      type="number"
-                      value={milestone.triggerValue}
-                      onChange={(e) => updateMilestone(milestone.id, 'triggerValue', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-14 h-7 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
-                      min={0}
-                      max={milestone.type === 'construction' ? 100 : 120}
-                    />
-                    <span className="text-xs text-gray-500">
-                      {milestone.type === 'construction' ? '%' : ''}
-                    </span>
-                  </div>
-
-                  {/* Payment Percent */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-500">Pay:</span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={milestone.paymentPercent}
-                      onChange={(e) => {
-                        const value = parseFloat(e.target.value);
-                        if (!isNaN(value)) {
-                          updateMilestone(milestone.id, 'paymentPercent', Math.min(100, Math.max(0, value)));
-                        } else if (e.target.value === '' || e.target.value === '.') {
-                          updateMilestone(milestone.id, 'paymentPercent', 0);
-                        }
-                      }}
-                      className="w-16 h-7 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
-                    />
-                    <span className="text-xs text-gray-500">%</span>
-                  </div>
-
-                  {/* Delete Button */}
+            {/* Preset Split Buttons */}
+            <div className="space-y-2">
+              <label className="text-xs text-gray-500">Pre-Handover / Handover Split</label>
+              <div className="flex flex-wrap gap-2">
+                {presetSplits.map((split) => (
                   <Button
+                    key={split}
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeMilestone(milestone.id)}
-                    className="h-7 w-7 text-gray-500 hover:text-red-400 hover:bg-red-400/10"
-                    disabled={inputs.paymentMilestones.length <= 1}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyPreset(split)}
+                    className={`h-7 text-xs border-[#2a3142] px-3 ${
+                      inputs.preHandoverPercent === parseInt(split.split('/')[0])
+                        ? 'bg-[#CCFF00]/20 border-[#CCFF00]/50 text-[#CCFF00]'
+                        : 'text-gray-300 hover:bg-[#2a3142] hover:text-white'
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    {split}
                   </Button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Add Payment Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addMilestone}
-              className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Add Payment
-            </Button>
-
-            {!isValidTotal && (
-              <div className="text-xs text-amber-400">
-                ⚠️ Total must equal 100% (currently {totalPayment}%)
+            {/* DOWNPAYMENT - Fixed first payment */}
+            <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
+              <div className="flex items-center gap-2 text-[#CCFF00]">
+                <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold">1</div>
+                <span className="text-sm font-medium">DOWNPAYMENT (Booking - Month 0)</span>
               </div>
-            )}
+              <div className="flex items-center justify-between gap-4">
+                <Slider
+                  value={[inputs.downpaymentPercent]}
+                  onValueChange={([value]) => setInputs(prev => ({ ...prev, downpaymentPercent: value }))}
+                  min={5}
+                  max={Math.min(50, inputs.preHandoverPercent)}
+                  step={1}
+                  className="flex-1 roi-slider-lime"
+                />
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={inputs.downpaymentPercent}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        setInputs(prev => ({ 
+                          ...prev, 
+                          downpaymentPercent: Math.min(Math.max(value, 5), prev.preHandoverPercent) 
+                        }));
+                      }
+                    }}
+                    className="w-16 h-7 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+                  />
+                  <span className="text-xs text-gray-400">%</span>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">
+                {formatCurrency(inputs.basePrice * inputs.downpaymentPercent / 100, currency)}
+              </div>
+            </div>
+
+            {/* ADDITIONAL PAYMENTS */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-gray-500">Additional Payments (Pre-Handover)</label>
+                <div className={`text-xs ${remainingToDistribute > 0 ? 'text-amber-400' : remainingToDistribute < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  {remainingToDistribute > 0 ? `${remainingToDistribute.toFixed(1)}% remaining` : 
+                   remainingToDistribute < 0 ? `${Math.abs(remainingToDistribute).toFixed(1)}% exceeded` : 
+                   '✓ Distributed'}
+                </div>
+              </div>
+              
+              <div className="text-xs text-gray-500 px-1 mb-2">
+                💡 Time = absolute months from booking (e.g., 7 = month 7)
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {inputs.additionalPayments.map((payment, index) => (
+                  <div key={payment.id} className="flex items-center gap-2 p-2 bg-[#1a1f2e] rounded-lg">
+                    <div className="w-5 h-5 rounded-full bg-[#2a3142] flex items-center justify-center text-xs text-gray-400">
+                      {index + 2}
+                    </div>
+                    
+                    {/* Type Selector */}
+                    <Select
+                      value={payment.type}
+                      onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
+                    >
+                      <SelectTrigger className="w-[90px] h-7 text-xs bg-[#0d1117] border-[#2a3142]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                        <SelectItem value="time" className="text-white hover:bg-[#2a3142]">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>Time</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="construction" className="text-white hover:bg-[#2a3142]">
+                          <div className="flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            <span>Const.</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Trigger Value */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 w-6">
+                        {payment.type === 'time' ? 'Mo:' : 'At:'}
+                      </span>
+                      <Input
+                        type="number"
+                        value={payment.triggerValue}
+                        onChange={(e) => updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-14 h-7 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
+                      />
+                      {payment.type === 'construction' && <span className="text-xs text-gray-500">%</span>}
+                    </div>
+
+                    {/* Payment Percent */}
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={payment.paymentPercent}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          if (!isNaN(value)) {
+                            updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, value)));
+                          }
+                        }}
+                        className="w-14 h-7 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
+                      />
+                      <span className="text-xs text-gray-400">%</span>
+                    </div>
+
+                    {/* Remove Button */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeAdditionalPayment(payment.id)}
+                      className="h-7 w-7 text-gray-500 hover:text-red-400 hover:bg-red-400/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addAdditionalPayment}
+                className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Add Payment
+              </Button>
+            </div>
+
+            {/* HANDOVER - Automatic */}
+            <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Home className="w-4 h-4" />
+                  <span className="text-sm">HANDOVER (100% Construction)</span>
+                </div>
+                <div className="text-lg font-bold text-white font-mono">
+                  {handoverPercent}%
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">
+                Automatic: {formatCurrency(inputs.basePrice * handoverPercent / 100, currency)}
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="border-t border-[#2a3142] pt-3 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">Pre-Handover:</span>
+                <span className={`font-mono ${isValidPreHandover ? 'text-green-400' : 'text-amber-400'}`}>
+                  {preHandoverTotal.toFixed(1)}% / {inputs.preHandoverPercent}%
+                  {isValidPreHandover && ' ✓'}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">Handover:</span>
+                <span className="text-white font-mono">{handoverPercent}% (auto)</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]">
+                <span className="text-sm text-gray-300">TOTAL:</span>
+                <div className={`flex items-center gap-1.5 ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
+                  {isValidTotal ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4" />
+                  )}
+                  <span className="font-mono font-bold">{totalPayment.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Rental Yield Percent */}
+          {/* Rental Yield */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm text-gray-400">Rental Yield %</label>
               <Input
                 type="number"
+                step="0.1"
                 value={inputs.rentalYieldPercent}
                 onChange={(e) => handleNumberChange('rentalYieldPercent', e.target.value, 0, 20)}
                 className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
-                step={0.5}
               />
             </div>
             <Slider
@@ -504,13 +570,13 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
           {/* Appreciation Rate */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Appreciation Rate (CAGR) %</label>
+              <label className="text-sm text-gray-400">Appreciation Rate (CAGR %)</label>
               <Input
                 type="number"
+                step="0.5"
                 value={inputs.appreciationRate}
                 onChange={(e) => handleNumberChange('appreciationRate', e.target.value, 0, 30)}
                 className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
-                step={0.5}
               />
             </div>
             <Slider
@@ -525,7 +591,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
           {/* Apply Button */}
           <Button 
-            onClick={() => onOpenChange(false)}
+            onClick={() => onOpenChange(false)} 
             className="w-full bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
           >
             Apply Parameters
