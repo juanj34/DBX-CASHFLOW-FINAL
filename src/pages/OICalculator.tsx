@@ -22,27 +22,18 @@ const OICalculator = () => {
     handoverYear: 2028,
     minimumExitThreshold: 30,
     paymentMilestones: [
-      { constructionPercent: 0, paymentPercent: 10 },
-      { constructionPercent: 10, paymentPercent: 5 },
-      { constructionPercent: 20, paymentPercent: 5 },
-      { constructionPercent: 30, paymentPercent: 5 },
-      { constructionPercent: 40, paymentPercent: 5 },
-      { constructionPercent: 50, paymentPercent: 0 },
-      { constructionPercent: 60, paymentPercent: 0 },
-      { constructionPercent: 70, paymentPercent: 0 },
-      { constructionPercent: 80, paymentPercent: 0 },
-      { constructionPercent: 90, paymentPercent: 0 },
-      { constructionPercent: 100, paymentPercent: 70 },
+      { id: '1', type: 'construction', triggerValue: 0, paymentPercent: 10, label: 'Booking' },
+      { id: '2', type: 'time', triggerValue: 7, paymentPercent: 2.5, label: '7 months' },
+      { id: '3', type: 'time', triggerValue: 15, paymentPercent: 2.5, label: '15 months' },
+      { id: '4', type: 'construction', triggerValue: 50, paymentPercent: 2.5, label: '50% construction' },
+      { id: '5', type: 'construction', triggerValue: 70, paymentPercent: 2.5, label: '70% construction' },
+      { id: '6', type: 'construction', triggerValue: 100, paymentPercent: 80, label: 'Handover' },
     ],
-    // Entry Costs
+    // Entry Costs (simplified)
     dldFeePercent: 4,
-    oqoodFeePercent: 4,
-    adminFee: 5000,
-    buyerAgentPercent: 0,
-    // Exit Costs
+    oqoodFee: 5000,
+    // Exit Costs (simplified)
     nocFee: 2000,
-    transferFeePercent: 2,
-    sellerAgentPercent: 0,
   });
 
   const calculations = useOICalculations(inputs);
@@ -167,7 +158,7 @@ const OICalculator = () => {
                     -{formatCurrency(calculations.totalEntryCosts, currency)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    DLD {inputs.dldFeePercent}% + Oqood {inputs.oqoodFeePercent}% + Admin
+                    DLD {inputs.dldFeePercent}% + Oqood {formatCurrency(inputs.oqoodFee, currency)}
                   </div>
                 </div>
 
