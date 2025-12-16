@@ -1,4 +1,4 @@
-import { Rocket, Target } from "lucide-react";
+import { Rocket, Home } from "lucide-react";
 import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
 
@@ -6,18 +6,15 @@ interface OIGrowthCurveProps {
   calculations: OICalculations;
   inputs: OIInputs;
   currency: Currency;
+  exitScenarios: [number, number, number];
 }
 
-export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveProps) => {
+export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios }: OIGrowthCurveProps) => {
   const { scenarios, basePrice, totalMonths } = calculations;
   
   // Get the handover scenario for max values
   const maxScenario = scenarios[scenarios.length - 1];
   const maxValue = maxScenario.exitPrice * 1.1; // Add 10% padding
-
-  // Find the best ROE scenario
-  const bestROEScenario = scenarios.reduce((best, current) => 
-    current.trueROE > best.trueROE ? current : best, scenarios[0]);
 
   // SVG dimensions
   const width = 700;
@@ -55,6 +52,22 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
 
   // X-axis time labels
   const timeLabels = [0, Math.round(totalMonths * 0.25), Math.round(totalMonths * 0.5), Math.round(totalMonths * 0.75), totalMonths];
+
+  // Find scenarios to display: Exit 1, 2, 3 + Handover
+  const getExitScenarioData = (exitMonth: number) => {
+    return scenarios.find(s => s.exitMonths === exitMonth) || scenarios.reduce((prev, curr) => 
+      Math.abs(curr.exitMonths - exitMonth) < Math.abs(prev.exitMonths - exitMonth) ? curr : prev
+    );
+  };
+
+  const exitMarkersData = exitScenarios.map((month, index) => ({
+    scenario: getExitScenarioData(month),
+    label: `Exit ${index + 1}`,
+    isHandover: false
+  }));
+
+  // Add handover marker
+  const handoverScenario = scenarios.find(s => s.exitMonths === totalMonths) || scenarios[scenarios.length - 1];
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 relative overflow-hidden">
@@ -157,108 +170,137 @@ export const OIGrowthCurve = ({ calculations, inputs, currency }: OIGrowthCurveP
             opacity="0.2"
           />
 
-          {/* Exit point markers */}
-          {scenarios.map((scenario, index) => {
-            const isBestROE = scenario.exitMonths === bestROEScenario.exitMonths;
-            
-            return (
-              <g key={scenario.exitMonths}>
-                {/* Best ROE special marker */}
-                {isBestROE && (
-                  <>
-                    {/* Outer glow ring */}
-                    <circle
-                      cx={xScale(scenario.exitMonths)}
-                      cy={yScale(scenario.exitPrice)}
-                      r="16"
-                      fill="none"
-                      stroke="#FFD700"
-                      strokeWidth="2"
-                      opacity="0.5"
-                    />
-                    {/* Pulsing animation ring */}
-                    <circle
-                      cx={xScale(scenario.exitMonths)}
-                      cy={yScale(scenario.exitPrice)}
-                      r="20"
-                      fill="none"
-                      stroke="#FFD700"
-                      strokeWidth="1"
-                      opacity="0.3"
-                    >
-                      <animate attributeName="r" values="16;24;16" dur="2s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
-                    </circle>
-                  </>
-                )}
-                
-                {/* Point circle */}
-                <circle
-                  cx={xScale(scenario.exitMonths)}
-                  cy={yScale(scenario.exitPrice)}
-                  r={isBestROE ? 10 : 8}
-                  fill="#0f172a"
-                  stroke={isBestROE ? "#FFD700" : "#CCFF00"}
-                  strokeWidth={isBestROE ? 3 : 2}
-                />
-                <circle
-                  cx={xScale(scenario.exitMonths)}
-                  cy={yScale(scenario.exitPrice)}
-                  r={isBestROE ? 5 : 4}
-                  fill={isBestROE ? "#FFD700" : "#CCFF00"}
-                />
+          {/* Exit 1, 2, 3 markers */}
+          {exitMarkersData.map(({ scenario, label }, index) => (
+            <g key={label}>
+              {/* Point circle */}
+              <circle
+                cx={xScale(scenario.exitMonths)}
+                cy={yScale(scenario.exitPrice)}
+                r="8"
+                fill="#0f172a"
+                stroke="#CCFF00"
+                strokeWidth="2"
+              />
+              <circle
+                cx={xScale(scenario.exitMonths)}
+                cy={yScale(scenario.exitPrice)}
+                r="4"
+                fill="#CCFF00"
+              />
 
-                {/* Best ROE badge */}
-                {isBestROE && (
-                  <g transform={`translate(${xScale(scenario.exitMonths) + 15}, ${yScale(scenario.exitPrice) - 25})`}>
-                    <rect
-                      x="-45"
-                      y="-12"
-                      width="90"
-                      height="24"
-                      rx="12"
-                      fill="#FFD700"
-                    />
-                    <text
-                      x="0"
-                      y="4"
-                      fill="#0f172a"
-                      fontSize="10"
-                      fontWeight="bold"
-                      textAnchor="middle"
-                    >
-                      🎯 BEST ROE
-                    </text>
-                  </g>
-                )}
-
-                {/* Value label - alternate above/below */}
+              {/* Exit label badge */}
+              <g transform={`translate(${xScale(scenario.exitMonths)}, ${yScale(scenario.exitPrice) - 22})`}>
+                <rect
+                  x="-28"
+                  y="-10"
+                  width="56"
+                  height="20"
+                  rx="10"
+                  fill="#CCFF00"
+                />
                 <text
-                  x={xScale(scenario.exitMonths)}
-                  y={yScale(scenario.exitPrice) + (isBestROE ? 45 : (index % 2 === 0 ? -18 : 25))}
-                  fill={isBestROE ? "#FFD700" : "#CCFF00"}
-                  fontSize={isBestROE ? 12 : 11}
+                  x="0"
+                  y="4"
+                  fill="#0f172a"
+                  fontSize="10"
                   fontWeight="bold"
                   textAnchor="middle"
-                  fontFamily="monospace"
                 >
-                  {formatCurrencyShort(scenario.exitPrice, currency)}
-                </text>
-
-                {/* ROE label */}
-                <text
-                  x={xScale(scenario.exitMonths)}
-                  y={yScale(scenario.exitPrice) + (isBestROE ? 58 : (index % 2 === 0 ? -5 : 38))}
-                  fill={isBestROE ? "#FFD700" : "#9ca3af"}
-                  fontSize={isBestROE ? 11 : 9}
-                  fontWeight={isBestROE ? "bold" : "normal"}
-                  textAnchor="middle"
-                >
-                  ROE: {scenario.trueROE.toFixed(0)}%
+                  {label}
                 </text>
               </g>
-            );
-          })}
+
+              {/* Value label */}
+              <text
+                x={xScale(scenario.exitMonths)}
+                y={yScale(scenario.exitPrice) + (index % 2 === 0 ? 28 : 40)}
+                fill="#CCFF00"
+                fontSize="11"
+                fontWeight="bold"
+                textAnchor="middle"
+                fontFamily="monospace"
+              >
+                {formatCurrencyShort(scenario.exitPrice, currency)}
+              </text>
+
+              {/* ROE label */}
+              <text
+                x={xScale(scenario.exitMonths)}
+                y={yScale(scenario.exitPrice) + (index % 2 === 0 ? 41 : 53)}
+                fill="#9ca3af"
+                fontSize="9"
+                textAnchor="middle"
+              >
+                ROE: {scenario.trueROE.toFixed(0)}%
+              </text>
+            </g>
+          ))}
+
+          {/* Handover marker */}
+          <g>
+            {/* Point circle - special styling */}
+            <circle
+              cx={xScale(handoverScenario.exitMonths)}
+              cy={yScale(handoverScenario.exitPrice)}
+              r="10"
+              fill="#0f172a"
+              stroke="#ffffff"
+              strokeWidth="2"
+            />
+            <circle
+              cx={xScale(handoverScenario.exitMonths)}
+              cy={yScale(handoverScenario.exitPrice)}
+              r="5"
+              fill="#ffffff"
+            />
+
+            {/* Handover label badge */}
+            <g transform={`translate(${xScale(handoverScenario.exitMonths)}, ${yScale(handoverScenario.exitPrice) - 25})`}>
+              <rect
+                x="-42"
+                y="-12"
+                width="84"
+                height="24"
+                rx="12"
+                fill="#ffffff"
+              />
+              <text
+                x="0"
+                y="4"
+                fill="#0f172a"
+                fontSize="10"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                🏠 Handover
+              </text>
+            </g>
+
+            {/* Value label */}
+            <text
+              x={xScale(handoverScenario.exitMonths)}
+              y={yScale(handoverScenario.exitPrice) + 28}
+              fill="#ffffff"
+              fontSize="11"
+              fontWeight="bold"
+              textAnchor="middle"
+              fontFamily="monospace"
+            >
+              {formatCurrencyShort(handoverScenario.exitPrice, currency)}
+            </text>
+
+            {/* ROE label */}
+            <text
+              x={xScale(handoverScenario.exitMonths)}
+              y={yScale(handoverScenario.exitPrice) + 41}
+              fill="#9ca3af"
+              fontSize="9"
+              textAnchor="middle"
+            >
+              ROE: {handoverScenario.trueROE.toFixed(0)}%
+            </text>
+          </g>
 
           {/* Starting point */}
           <circle

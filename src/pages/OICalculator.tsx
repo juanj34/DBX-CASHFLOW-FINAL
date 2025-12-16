@@ -109,7 +109,7 @@ const OICalculator = () => {
           {/* Left Column - Charts & Tables */}
           <div className="xl:col-span-2 space-y-8">
             {/* Growth Curve */}
-            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} />
+            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} />
 
             {/* Exit Scenarios Cards */}
             <ExitScenariosCards 
