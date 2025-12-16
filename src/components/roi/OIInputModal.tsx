@@ -31,6 +31,13 @@ const months = [
   { value: 12, label: 'December' },
 ];
 
+const quarters = [
+  { value: 1, label: 'Q1' },
+  { value: 2, label: 'Q2' },
+  { value: 3, label: 'Q3' },
+  { value: 4, label: 'Q4' },
+];
+
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
 // Presets only set the pre-handover/handover split
@@ -222,21 +229,21 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Handover Date - Month/Year */}
+          {/* Handover Date - Quarter/Year */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400">Handover Date</label>
             <div className="flex gap-3">
               <Select
-                value={String(inputs.handoverMonth)}
-                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverMonth: parseInt(value) }))}
+                value={String(inputs.handoverQuarter)}
+                onValueChange={(value) => setInputs(prev => ({ ...prev, handoverQuarter: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Month" />
+                  <SelectValue placeholder="Quarter" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                  {months.map(m => (
-                    <SelectItem key={m.value} value={String(m.value)} className="text-white hover:bg-[#2a3142]">
-                      {m.label}
+                  {quarters.map(q => (
+                    <SelectItem key={q.value} value={String(q.value)} className="text-white hover:bg-[#2a3142]">
+                      {q.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

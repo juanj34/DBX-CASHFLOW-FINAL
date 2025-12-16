@@ -1,4 +1,4 @@
-import { OIInputs, PaymentMilestone } from "./useOICalculations";
+import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
 
@@ -27,7 +27,7 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 const DLD_FEE_PERCENT = 4;
 
 export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreakdownProps) => {
-  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverMonth, handoverYear } = inputs;
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate amounts
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
@@ -157,7 +157,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-cyan-400">
             <Home className="w-4 h-4" />
-            <span className="text-sm font-medium">AT HANDOVER ({monthToDateString(handoverMonth, handoverYear)})</span>
+            <span className="text-sm font-medium">AT HANDOVER (Q{handoverQuarter} {handoverYear})</span>
           </div>
           
           <div className="pl-6 space-y-2">
