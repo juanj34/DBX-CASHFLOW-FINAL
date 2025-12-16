@@ -20,7 +20,20 @@ const OICalculator = () => {
     bookingYear: 2025,
     handoverMonth: 6,
     handoverYear: 2028,
-    paymentPlanPercent: 30,
+    minimumExitThreshold: 30,
+    paymentMilestones: [
+      { constructionPercent: 0, paymentPercent: 10 },
+      { constructionPercent: 10, paymentPercent: 5 },
+      { constructionPercent: 20, paymentPercent: 5 },
+      { constructionPercent: 30, paymentPercent: 5 },
+      { constructionPercent: 40, paymentPercent: 5 },
+      { constructionPercent: 50, paymentPercent: 0 },
+      { constructionPercent: 60, paymentPercent: 0 },
+      { constructionPercent: 70, paymentPercent: 0 },
+      { constructionPercent: 80, paymentPercent: 0 },
+      { constructionPercent: 90, paymentPercent: 0 },
+      { constructionPercent: 100, paymentPercent: 70 },
+    ],
   });
 
   const calculations = useOICalculations(inputs);
@@ -95,9 +108,12 @@ const OICalculator = () => {
                 </div>
 
                 <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Payment Plan</div>
+                  <div className="text-xs text-gray-400 mb-1">Minimum Exit Threshold</div>
                   <div className="text-xl font-bold text-[#CCFF00] font-mono">
-                    {inputs.paymentPlanPercent}/{100 - inputs.paymentPlanPercent}
+                    {inputs.minimumExitThreshold}%
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    First exit at {inputs.minimumExitThreshold}% construction
                   </div>
                 </div>
 
@@ -126,26 +142,30 @@ const OICalculator = () => {
                 </div>
 
                 {/* Best ROE Highlight */}
-                <div className="p-4 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl">
-                  <div className="text-xs text-[#CCFF00] mb-1">Best ROE (50% Exit)</div>
-                  <div className="text-2xl font-bold text-[#CCFF00] font-mono">
-                    {calculations.scenarios[0].roe.toFixed(1)}%
+                {calculations.scenarios.length > 0 && (
+                  <div className="p-4 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl">
+                    <div className="text-xs text-[#CCFF00] mb-1">Best ROE ({calculations.scenarios[0].exitPercent}% Exit)</div>
+                    <div className="text-2xl font-bold text-[#CCFF00] font-mono">
+                      {calculations.scenarios[0].roe.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Profit: {formatCurrency(calculations.scenarios[0].profit, currency)}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    Profit: {formatCurrency(calculations.scenarios[0].profit, currency)}
-                  </div>
-                </div>
+                )}
 
                 {/* 100% Exit */}
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">ROE at Handover (100%)</div>
-                  <div className="text-xl font-bold text-white font-mono">
-                    {calculations.scenarios[calculations.scenarios.length - 1].roe.toFixed(1)}%
+                {calculations.scenarios.length > 0 && (
+                  <div className="p-4 bg-[#0d1117] rounded-xl">
+                    <div className="text-xs text-gray-400 mb-1">ROE at Handover (100%)</div>
+                    <div className="text-xl font-bold text-white font-mono">
+                      {calculations.scenarios[calculations.scenarios.length - 1].roe.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Profit: {formatCurrency(calculations.scenarios[calculations.scenarios.length - 1].profit, currency)}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Profit: {formatCurrency(calculations.scenarios[calculations.scenarios.length - 1].profit, currency)}
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Navigation to Full Calculator */}

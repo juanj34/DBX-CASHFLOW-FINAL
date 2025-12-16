@@ -1,3 +1,8 @@
+export interface PaymentMilestone {
+  constructionPercent: number; // 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
+  paymentPercent: number;      // % of base price due at this milestone
+}
+
 export interface OIInputs {
   basePrice: number;
   rentalYieldPercent: number;
@@ -6,14 +11,15 @@ export interface OIInputs {
   bookingYear: number;
   handoverMonth: number;
   handoverYear: number;
-  paymentPlanPercent: number; // What OI pays by handover (e.g., 30 for 30/70)
+  minimumExitThreshold: number; // % construction when developer allows resale
+  paymentMilestones: PaymentMilestone[];
 }
 
 export interface OIExitScenario {
-  exitPercent: number;       // 50%, 60%, 70%, 80%, 90%, 100%
+  exitPercent: number;       // 10%, 20%, ..., 100%
   exitMonths: number;        // Months held from booking
   exitPrice: number;         // Property value at exit
-  equityDeployed: number;    // Based on payment plan progression
+  equityDeployed: number;    // Based on cumulative milestone payments
   profit: number;            // Exit price - Entry price
   roe: number;               // Profit / Equity * 100
   rentalYield: number;       // Rent at exit / Entry price
@@ -36,6 +42,17 @@ export interface OICalculations {
   basePrice: number;
 }
 
+// Calculate cumulative equity deployed at a given construction percentage
+const calculateEquityAtExit = (
+  exitPercent: number,
+  milestones: PaymentMilestone[],
+  basePrice: number
+): number => {
+  return milestones
+    .filter(m => m.constructionPercent <= exitPercent)
+    .reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
+};
+
 export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const { 
     basePrice, 
@@ -45,7 +62,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     bookingYear, 
     handoverMonth, 
     handoverYear, 
-    paymentPlanPercent 
+    minimumExitThreshold,
+    paymentMilestones
   } = inputs;
 
   // Calculate total construction period from booking to handover
@@ -53,10 +71,11 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const handoverDate = new Date(handoverYear, handoverMonth - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-  // Exit percentages to calculate
-  const exitPercentages = [50, 60, 70, 80, 90, 100];
+  // Exit percentages: 10% increments, filtered by minimum threshold
+  const allExitPercentages = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  const validExitPercentages = allExitPercentages.filter(p => p >= minimumExitThreshold);
 
-  const scenarios: OIExitScenario[] = exitPercentages.map(exitPercent => {
+  const scenarios: OIExitScenario[] = validExitPercentages.map(exitPercent => {
     // Months held at this exit point
     const exitMonths = Math.round((exitPercent / 100) * totalMonths);
     const exitYears = exitMonths / 12;
@@ -64,11 +83,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     // Property value at exit (appreciated)
     const exitPrice = basePrice * Math.pow(1 + appreciationRate / 100, exitYears);
 
-    // Equity deployed: proportional to how much of the payment plan is done
-    // If exitPercent is 50% of construction, OI has paid 50% of the paymentPlanPercent
-    // e.g., 30/70 plan at 50% construction = 15% of base price paid
-    const paymentProgress = exitPercent / 100;
-    const equityDeployed = basePrice * (paymentPlanPercent / 100) * paymentProgress;
+    // Equity deployed: cumulative milestone payments up to this point
+    const equityDeployed = calculateEquityAtExit(exitPercent, paymentMilestones, basePrice);
 
     // Profit is appreciation
     const profit = exitPrice - basePrice;
