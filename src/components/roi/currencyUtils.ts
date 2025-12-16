@@ -1,14 +1,14 @@
 export type Currency = 'AED' | 'USD';
 
-export const AED_TO_USD = 3.67;
+export const DEFAULT_RATE = 3.67;
 
-export const formatCurrency = (value: number, currency: Currency) => {
+export const formatCurrency = (value: number, currency: Currency, rate: number = DEFAULT_RATE) => {
   if (currency === 'USD') {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
       currency: 'USD',
       maximumFractionDigits: 0 
-    }).format(value / AED_TO_USD);
+    }).format(value / rate);
   }
   return new Intl.NumberFormat('en-AE', { 
     style: 'currency', 
@@ -17,8 +17,8 @@ export const formatCurrency = (value: number, currency: Currency) => {
   }).format(value);
 };
 
-export const formatCurrencyShort = (value: number, currency: Currency) => {
-  const converted = currency === 'USD' ? value / AED_TO_USD : value;
+export const formatCurrencyShort = (value: number, currency: Currency, rate: number = DEFAULT_RATE) => {
+  const converted = currency === 'USD' ? value / rate : value;
   const symbol = currency === 'USD' ? '$' : '';
   
   if (converted >= 1000000) {

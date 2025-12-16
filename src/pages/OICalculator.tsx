@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home } from "lucide-react";
+import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
@@ -9,6 +9,7 @@ import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 const OICalculator = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -34,6 +35,7 @@ const OICalculator = () => {
   const [exitScenarios, setExitScenarios] = useState<[number, number, number]>([18, 30, 36]);
 
   const calculations = useOICalculations(inputs);
+  const { rate, isLive } = useExchangeRate();
   const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
 
   // Find best TRUE ROE scenario
@@ -70,6 +72,13 @@ const OICalculator = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Live rate indicator */}
+            {currency === 'USD' && (
+              <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                {isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                <span>1 USD = {rate.toFixed(2)} AED</span>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -128,7 +137,7 @@ const OICalculator = () => {
                 <div className="p-4 bg-[#0d1117] rounded-xl">
                   <div className="text-xs text-gray-400 mb-1">Base Property Price</div>
                   <div className="text-xl font-bold text-white font-mono">
-                    {formatCurrency(inputs.basePrice, currency)}
+                    {formatCurrency(inputs.basePrice, currency, rate)}
                   </div>
                 </div>
 
@@ -170,10 +179,10 @@ const OICalculator = () => {
                 <div className="p-4 bg-[#0d1117] rounded-xl">
                   <div className="text-xs text-gray-400 mb-1">Total Entry Costs</div>
                   <div className="text-xl font-bold text-red-400 font-mono">
-                    -{formatCurrency(calculations.totalEntryCosts, currency)}
+                    -{formatCurrency(calculations.totalEntryCosts, currency, rate)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    DLD 4% + Oqood {formatCurrency(inputs.oqoodFee, currency)}
+                    DLD 4% + Oqood {formatCurrency(inputs.oqoodFee, currency, rate)}
                   </div>
                 </div>
 
@@ -185,10 +194,10 @@ const OICalculator = () => {
                       {bestROEScenario.trueROE.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      Profit: {formatCurrency(bestROEScenario.trueProfit, currency)}
+                      Profit: {formatCurrency(bestROEScenario.trueProfit, currency, rate)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Capital: {formatCurrency(bestROEScenario.totalCapitalDeployed, currency)}
+                      Capital: {formatCurrency(bestROEScenario.totalCapitalDeployed, currency, rate)}
                     </div>
                   </div>
                 )}
@@ -201,7 +210,7 @@ const OICalculator = () => {
                       {handoverScenario.trueROE.toFixed(1)}% ROE
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Profit: {formatCurrency(handoverScenario.trueProfit, currency)}
+                      Profit: {formatCurrency(handoverScenario.trueProfit, currency, rate)}
                     </div>
                   </div>
                 )}
@@ -227,19 +236,19 @@ const OICalculator = () => {
                       <div className="flex justify-between">
                         <span className="text-xs text-gray-400">Total Capital Invested</span>
                         <span className="text-sm text-white font-mono">
-                          {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency)}
+                          {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency, rate)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-xs text-gray-400">Value at Handover</span>
                         <span className="text-sm text-white font-mono">
-                          {formatCurrency(calculations.holdAnalysis.propertyValueAtHandover, currency)}
+                          {formatCurrency(calculations.holdAnalysis.propertyValueAtHandover, currency, rate)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-xs text-gray-400">Annual Rent (Est.)</span>
                         <span className="text-sm text-[#CCFF00] font-mono">
-                          {formatCurrency(calculations.holdAnalysis.annualRent, currency)}
+                          {formatCurrency(calculations.holdAnalysis.annualRent, currency, rate)}
                         </span>
                       </div>
                       <div className="flex justify-between">

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2 } from "lucide-react";
 import { ROIInputs } from "./useROICalculations";
-import { Currency, formatCurrency, AED_TO_USD } from "./currencyUtils";
+import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 
 interface ROIInputModalProps {
   inputs: ROIInputs;
@@ -37,7 +37,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
   // Local state for the base price input to allow free typing
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
-      ? Math.round(inputs.basePrice / AED_TO_USD).toString()
+      ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
       : inputs.basePrice.toString()
   );
 
@@ -58,20 +58,20 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
     const num = parseFloat(basePriceInput.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num > 0) {
       // Convert to AED if needed
-      const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
+      const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
       const clamped = Math.min(Math.max(aedValue, 500000), 10000000);
       setInputs(prev => ({ ...prev, basePrice: clamped }));
       // Update display value
       setBasePriceInput(
         currency === 'USD' 
-          ? Math.round(clamped / AED_TO_USD).toString()
+          ? Math.round(clamped / DEFAULT_RATE).toString()
           : clamped.toString()
       );
     } else {
       // Reset to current valid value
       setBasePriceInput(
         currency === 'USD' 
-          ? Math.round(inputs.basePrice / AED_TO_USD).toString()
+          ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
           : inputs.basePrice.toString()
       );
     }
@@ -79,7 +79,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
 
   // Update local state when currency changes
   const displayBasePrice = currency === 'USD' 
-    ? Math.round(inputs.basePrice / AED_TO_USD)
+    ? Math.round(inputs.basePrice / DEFAULT_RATE)
     : inputs.basePrice;
 
   return (
@@ -121,7 +121,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
                 setInputs(prev => ({ ...prev, basePrice: value }));
                 setBasePriceInput(
                   currency === 'USD' 
-                    ? Math.round(value / AED_TO_USD).toString()
+                    ? Math.round(value / DEFAULT_RATE).toString()
                     : value.toString()
                 );
               }}

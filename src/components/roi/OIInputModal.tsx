@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home } from "lucide-react";
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
-import { Currency, formatCurrency, AED_TO_USD } from "./currencyUtils";
+import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -46,7 +46,7 @@ const presetSplits = ['20/80', '30/70', '40/60', '50/50', '60/40', '80/20'];
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
-      ? Math.round(inputs.basePrice / AED_TO_USD).toString()
+      ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
       : inputs.basePrice.toString()
   );
 
@@ -74,18 +74,18 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
   const handleBasePriceBlur = () => {
     const num = parseFloat(basePriceInput.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num > 0) {
-      const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
+      const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
       const clamped = Math.min(Math.max(aedValue, 500000), 50000000);
       setInputs(prev => ({ ...prev, basePrice: clamped }));
       setBasePriceInput(
         currency === 'USD' 
-          ? Math.round(clamped / AED_TO_USD).toString()
+          ? Math.round(clamped / DEFAULT_RATE).toString()
           : clamped.toString()
       );
     } else {
       setBasePriceInput(
         currency === 'USD' 
-          ? Math.round(inputs.basePrice / AED_TO_USD).toString()
+          ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
           : inputs.basePrice.toString()
       );
     }
@@ -94,7 +94,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
   const handleFixedFeeChange = (field: 'oqoodFee' | 'eoiFee', value: string) => {
     const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num >= 0) {
-      const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
+      const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
       setInputs(prev => ({ ...prev, [field]: aedValue }));
     }
   };
@@ -180,7 +180,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 setInputs(prev => ({ ...prev, basePrice: value }));
                 setBasePriceInput(
                   currency === 'USD' 
-                    ? Math.round(value / AED_TO_USD).toString()
+                    ? Math.round(value / DEFAULT_RATE).toString()
                     : value.toString()
                 );
               }}
@@ -280,7 +280,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                   </span>
                   <Input
                     type="text"
-                    value={currency === 'USD' ? Math.round(inputs.eoiFee / AED_TO_USD) : inputs.eoiFee}
+                    value={currency === 'USD' ? Math.round(inputs.eoiFee / DEFAULT_RATE) : inputs.eoiFee}
                     onChange={(e) => handleFixedFeeChange('eoiFee', e.target.value)}
                     className="w-28 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs pl-10"
                   />
@@ -302,7 +302,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                   </span>
                   <Input
                     type="text"
-                    value={currency === 'USD' ? Math.round(inputs.oqoodFee / AED_TO_USD) : inputs.oqoodFee}
+                    value={currency === 'USD' ? Math.round(inputs.oqoodFee / DEFAULT_RATE) : inputs.oqoodFee}
                     onChange={(e) => handleFixedFeeChange('oqoodFee', e.target.value)}
                     className="w-28 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs pl-10"
                   />
