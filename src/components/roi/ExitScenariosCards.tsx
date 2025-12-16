@@ -23,6 +23,7 @@ interface ExitScenariosCardsProps {
   totalEntryCosts: number;
   exitScenarios: [number, number, number]; // 3 month values
   onExitScenariosChange: (scenarios: [number, number, number]) => void;
+  rate: number;
 }
 
 // Calculate equity deployed at exit
@@ -108,6 +109,7 @@ export const ExitScenariosCards = ({
   totalEntryCosts,
   exitScenarios,
   onExitScenariosChange,
+  rate,
 }: ExitScenariosCardsProps) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
@@ -203,7 +205,7 @@ export const ExitScenariosCards = ({
                   <Tag className="w-3 h-3" />
                   Original
                 </span>
-                <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency)}</span>
+                <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -211,12 +213,12 @@ export const ExitScenariosCards = ({
                   <Wallet className="w-3 h-3" />
                   Amount Paid
                 </span>
-                <span className="text-sm text-white font-mono">{formatCurrency(scenario.amountPaid, currency)}</span>
+                <span className="text-sm text-white font-mono">{formatCurrency(scenario.amountPaid, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">Exit Price</span>
-                <span className="text-sm text-white font-mono">{formatCurrency(scenario.exitPrice, currency)}</span>
+                <span className="text-sm text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]">
@@ -225,7 +227,7 @@ export const ExitScenariosCards = ({
                   Profit
                 </span>
                 <span className={`text-sm font-mono ${scenario.trueProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, currency)}
+                  {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, currency, rate)}
                 </span>
               </div>
               

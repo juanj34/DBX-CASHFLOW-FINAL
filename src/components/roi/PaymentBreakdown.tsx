@@ -6,6 +6,7 @@ interface PaymentBreakdownProps {
   inputs: OIInputs;
   currency: Currency;
   totalMonths: number;
+  rate: number;
 }
 
 // Convert booking month/year to readable date string
@@ -26,7 +27,7 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreakdownProps) => {
+export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: PaymentBreakdownProps) => {
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate amounts
@@ -69,7 +70,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
         {/* Base Price */}
         <div className="flex justify-between items-center pb-3 border-b border-[#2a3142]">
           <span className="text-sm text-gray-400">Base Property Price</span>
-          <span className="text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency)}</span>
+          <span className="text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
         </div>
 
         {/* Section: At Booking */}
@@ -82,23 +83,23 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
           <div className="pl-6 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">EOI / Booking Fee</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency)}</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">Rest of Downpayment ({downpaymentPercent}% - EOI)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency)}</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">DLD Fee (4%)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency)}</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">Oqood Fee</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(oqoodFee, currency)}</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(oqoodFee, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
               <span className="text-sm font-medium text-[#CCFF00]">Total Today</span>
-              <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(todayTotal, currency)}</span>
+              <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
             </div>
           </div>
         </div>
@@ -139,14 +140,14 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
                         <span className="text-xs text-gray-500">({dateStr})</span>
                       )}
                     </div>
-                    <span className="text-sm text-white font-mono">{formatCurrency(amount, currency)}</span>
+                    <span className="text-sm text-white font-mono">{formatCurrency(amount, currency, rate)}</span>
                   </div>
                 );
               })}
               {additionalTotal > 0 && (
                 <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
                   <span className="text-sm text-gray-400">Subtotal Installments</span>
-                  <span className="text-sm text-gray-300 font-mono">{formatCurrency(additionalTotal, currency)}</span>
+                  <span className="text-sm text-gray-300 font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
                 </div>
               )}
             </div>
@@ -163,7 +164,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
           <div className="pl-6 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-300">Final Payment ({handoverPercent}%)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(handoverAmount, currency)}</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
             </div>
           </div>
         </div>
@@ -172,15 +173,15 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths }: PaymentBreak
         <div className="mt-4 pt-4 border-t border-[#2a3142] space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-400">Property Payments</span>
-            <span className="text-sm text-white font-mono">{formatCurrency(totalPropertyPayments, currency)}</span>
+            <span className="text-sm text-white font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-400">Entry Costs (DLD + Oqood)</span>
-            <span className="text-sm text-white font-mono">{formatCurrency(totalEntryCosts, currency)}</span>
+            <span className="text-sm text-white font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30 bg-[#CCFF00]/5 -mx-4 px-4 py-2">
             <span className="text-sm font-bold text-[#CCFF00]">TOTAL TO DISBURSE</span>
-            <span className="text-lg font-bold text-[#CCFF00] font-mono">{formatCurrency(grandTotal, currency)}</span>
+            <span className="text-lg font-bold text-[#CCFF00] font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
           </div>
         </div>
       </div>

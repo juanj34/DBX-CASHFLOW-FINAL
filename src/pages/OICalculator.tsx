@@ -109,7 +109,7 @@ const OICalculator = () => {
           {/* Left Column - Charts & Tables */}
           <div className="xl:col-span-2 space-y-8">
             {/* Growth Curve */}
-            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} />
+            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
 
             {/* Exit Scenarios Cards */}
             <ExitScenariosCards 
@@ -120,6 +120,7 @@ const OICalculator = () => {
               totalEntryCosts={calculations.totalEntryCosts}
               exitScenarios={exitScenarios}
               onExitScenariosChange={setExitScenarios}
+              rate={rate}
             />
 
             {/* Payment Breakdown */}
@@ -127,10 +128,11 @@ const OICalculator = () => {
               inputs={inputs}
               currency={currency}
               totalMonths={calculations.totalMonths}
+              rate={rate}
             />
 
             {/* 10-Year Projection Table */}
-            <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} />
+            <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
           </div>
 
           {/* Right Column - Metrics Panel */}
