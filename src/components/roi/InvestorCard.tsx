@@ -1,11 +1,13 @@
 import { Rocket, Shield, Home, TrendingUp, TrendingDown, Wallet, BadgePercent } from "lucide-react";
 import { InvestorMetrics } from "./useROICalculations";
+import { Currency, formatCurrency } from "./currencyUtils";
 
 type InvestorType = 'oi' | 'si' | 'ho';
 
 interface InvestorCardProps {
   type: InvestorType;
   metrics: InvestorMetrics;
+  currency: Currency;
 }
 
 const config = {
@@ -35,15 +37,7 @@ const config = {
   },
 };
 
-const formatAED = (value: number) => {
-  return new Intl.NumberFormat('en-AE', { 
-    style: 'currency', 
-    currency: 'AED',
-    maximumFractionDigits: 0 
-  }).format(value);
-};
-
-export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
+export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => {
   const { title, subtitle, icon: Icon, color, bgGradient, borderColor } = config[type];
   const isHO = type === 'ho';
 
@@ -90,7 +84,7 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
             <TrendingDown className="w-3.5 h-3.5" />
             Entry Price
           </div>
-          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.entryPrice)}</p>
+          <p className="text-white font-semibold font-mono text-sm">{formatCurrency(metrics.entryPrice, currency)}</p>
         </div>
 
         {!isHO && (
@@ -99,7 +93,7 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
               <TrendingUp className="w-3.5 h-3.5" />
               Exit Price
             </div>
-            <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.exitPrice)}</p>
+            <p className="text-white font-semibold font-mono text-sm">{formatCurrency(metrics.exitPrice, currency)}</p>
           </div>
         )}
 
@@ -110,7 +104,7 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
               Profit
             </div>
             <p className="font-semibold font-mono text-sm" style={{ color: metrics.projectedProfit > 0 ? color : '#6b7280' }}>
-              {metrics.projectedProfit > 0 ? '+' : ''}{formatAED(metrics.projectedProfit)}
+              {metrics.projectedProfit > 0 ? '+' : ''}{formatCurrency(metrics.projectedProfit, currency)}
             </p>
           </div>
         )}
@@ -120,7 +114,7 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
             <Wallet className="w-3.5 h-3.5" />
             Equity Deployed
           </div>
-          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.equityInvested)}</p>
+          <p className="text-white font-semibold font-mono text-sm">{formatCurrency(metrics.equityInvested, currency)}</p>
         </div>
       </div>
 

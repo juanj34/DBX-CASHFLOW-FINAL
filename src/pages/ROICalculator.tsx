@@ -8,9 +8,11 @@ import { InvestorCard } from "@/components/roi/InvestorCard";
 import { MetricsPanel } from "@/components/roi/MetricsPanel";
 import { YearlyProjectionTable } from "@/components/roi/YearlyProjectionTable";
 import { useROICalculations, ROIInputs } from "@/components/roi/useROICalculations";
+import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
 
 const ROICalculator = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<ROIInputs>({
     basePrice: 800000,
     rentalYieldPercent: 8.5,
@@ -46,12 +48,23 @@ const ROICalculator = () => {
               </div>
             </div>
           </div>
-          <ROIInputModal 
-            inputs={inputs} 
-            setInputs={setInputs} 
-            open={modalOpen}
-            onOpenChange={setModalOpen}
-          />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrency(c => c === 'AED' ? 'USD' : 'AED')}
+              className="border-[#2a3142] text-gray-300 hover:bg-[#1a1f2e] hover:text-white"
+            >
+              {currency === 'AED' ? '🇦🇪 AED' : '🇺🇸 USD'}
+            </Button>
+            <ROIInputModal 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              currency={currency}
+            />
+          </div>
         </div>
       </header>
 
@@ -61,13 +74,13 @@ const ROICalculator = () => {
           {/* Left Column - Cards & Chart */}
           <div className="xl:col-span-2 space-y-8">
             {/* Growth Curve */}
-            <GrowthCurve calculations={calculations} inputs={inputs} />
+            <GrowthCurve calculations={calculations} inputs={inputs} currency={currency} />
 
             {/* Investor Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <InvestorCard type="oi" metrics={calculations.oi} />
-              <InvestorCard type="si" metrics={calculations.si} />
-              <InvestorCard type="ho" metrics={calculations.ho} />
+              <InvestorCard type="oi" metrics={calculations.oi} currency={currency} />
+              <InvestorCard type="si" metrics={calculations.si} currency={currency} />
+              <InvestorCard type="ho" metrics={calculations.ho} currency={currency} />
             </div>
 
             {/* Comparison Table */}
@@ -88,26 +101,26 @@ const ROICalculator = () => {
                   <tbody className="divide-y divide-[#2a3142]">
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">Entry Price</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.oi.entryPrice)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.si.entryPrice)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.ho.entryPrice)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.entryPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.entryPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.ho.entryPrice, currency)}</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">Exit Price</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.oi.exitPrice)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.si.exitPrice)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.exitPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.exitPrice, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">Equity Invested</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.oi.equityInvested)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.si.equityInvested)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{new Intl.NumberFormat('en-AE').format(calculations.ho.equityInvested)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.equityInvested, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.equityInvested, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.ho.equityInvested, currency)}</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-400">Projected Profit</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">+{new Intl.NumberFormat('en-AE').format(calculations.oi.projectedProfit)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">+{new Intl.NumberFormat('en-AE').format(calculations.si.projectedProfit)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">+{formatCurrency(calculations.oi.projectedProfit, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">+{formatCurrency(calculations.si.projectedProfit, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
@@ -134,12 +147,12 @@ const ROICalculator = () => {
             </div>
 
             {/* 10-Year Projection Table */}
-            <YearlyProjectionTable projections={calculations.yearlyProjections} />
+            <YearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} />
           </div>
 
           {/* Right Column - Metrics Panel */}
           <div className="xl:col-span-1">
-            <MetricsPanel calculations={calculations} inputs={inputs} />
+            <MetricsPanel calculations={calculations} inputs={inputs} currency={currency} />
           </div>
         </div>
       </main>
