@@ -464,8 +464,9 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                       <Input
                         type="text"
                         inputMode="decimal"
-                        value={payment.paymentPercent}
-                        onChange={(e) => {
+                        defaultValue={payment.paymentPercent}
+                        key={`${payment.id}-${payment.paymentPercent}`}
+                        onBlur={(e) => {
                           const value = parseFloat(e.target.value);
                           if (!isNaN(value)) {
                             updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, value)));
