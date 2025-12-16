@@ -177,3 +177,40 @@ All colors MUST be HSL.
   position: relative;
   z-index: 1060 !important;
 }
+
+/* ROI Calculator Custom Slider Styles */
+.roi-slider-lime [data-radix-slider-track] {
+  background: hsl(222 47% 20%);
+}
+.roi-slider-lime [data-radix-slider-range] {
+  background: #CCFF00;
+}
+.roi-slider-lime [data-radix-slider-thumb] {
+  background: #CCFF00;
+  border-color: #CCFF00;
+  box-shadow: 0 0 10px #CCFF00;
+}
+
+.roi-slider-cyan [data-radix-slider-track] {
+  background: hsl(222 47% 20%);
+}
+.roi-slider-cyan [data-radix-slider-range] {
+  background: #00EAFF;
+}
+.roi-slider-cyan [data-radix-slider-thumb] {
+  background: #00EAFF;
+  border-color: #00EAFF;
+  box-shadow: 0 0 10px #00EAFF;
+}
+
+.roi-slider-pink [data-radix-slider-track] {
+  background: hsl(222 47% 20%);
+}
+.roi-slider-pink [data-radix-slider-range] {
+  background: #FF00FF;
+}
+.roi-slider-pink [data-radix-slider-thumb] {
+  background: #FF00FF;
+  border-color: #FF00FF;
+  box-shadow: 0 0 10px #FF00FF;
+}
