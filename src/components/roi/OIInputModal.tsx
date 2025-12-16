@@ -27,6 +27,10 @@ const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
 // Preset payment plans
 const presets = {
+  '20/80': [
+    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 20, label: 'Booking' },
+    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 80, label: 'Handover' },
+  ],
   '30/70': [
     { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 30, label: 'Booking' },
     { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 70, label: 'Handover' },
@@ -39,6 +43,14 @@ const presets = {
     { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 50, label: 'Booking' },
     { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 50, label: 'Handover' },
   ],
+  '60/40': [
+    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 60, label: 'Booking' },
+    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 40, label: 'Handover' },
+  ],
+  '80/20': [
+    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 80, label: 'Booking' },
+    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 20, label: 'Handover' },
+  ],
 };
 
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
@@ -50,7 +62,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
   // Calculate total payment percentage
   const totalPayment = inputs.paymentMilestones.reduce((sum, m) => sum + m.paymentPercent, 0);
-  const isValidTotal = totalPayment === 100;
+  const isValidTotal = Math.abs(totalPayment - 100) < 0.01;
 
   const handleNumberChange = (field: keyof OIInputs, value: string, min: number, max: number) => {
     const num = parseFloat(value);
@@ -347,34 +359,24 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
             
             {/* Preset Buttons */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => applyPreset('30/70')}
-                className="flex-1 h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
-              >
-                30/70
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => applyPreset('40/60')}
-                className="flex-1 h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
-              >
-                40/60
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => applyPreset('50/50')}
-                className="flex-1 h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
-              >
-                50/50
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(presets).map((key) => (
+                <Button
+                  key={key}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyPreset(key as keyof typeof presets)}
+                  className="h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white px-3"
+                >
+                  {key}
+                </Button>
+              ))}
+            </div>
+
+            {/* Helper text */}
+            <div className="text-xs text-gray-500 px-1">
+              💡 Time-based: absolute months from booking (e.g., 7 = month 7, not +7)
             </div>
 
             {/* Dynamic Payment List */}
@@ -407,7 +409,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
                   {/* Trigger Value */}
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500" title={milestone.type === 'time' ? 'Months from booking date' : 'Construction %'}>
                       {milestone.type === 'time' ? 'Mo:' : 'At:'}
                     </span>
                     <Input
@@ -427,12 +429,18 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-gray-500">Pay:</span>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={milestone.paymentPercent}
-                      onChange={(e) => updateMilestone(milestone.id, 'paymentPercent', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                      className="w-14 h-7 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
-                      min={0}
-                      max={100}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (!isNaN(value)) {
+                          updateMilestone(milestone.id, 'paymentPercent', Math.min(100, Math.max(0, value)));
+                        } else if (e.target.value === '' || e.target.value === '.') {
+                          updateMilestone(milestone.id, 'paymentPercent', 0);
+                        }
+                      }}
+                      className="w-16 h-7 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
                     />
                     <span className="text-xs text-gray-500">%</span>
                   </div>
