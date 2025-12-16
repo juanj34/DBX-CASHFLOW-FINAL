@@ -214,7 +214,7 @@ const OICalculator = () => {
                   <div className="p-4 bg-[#0d1117] rounded-xl">
                     <div className="text-xs text-gray-400 mb-1">At Handover ({handoverScenario.exitMonths} months)</div>
                     <div className="text-xl font-bold text-white font-mono">
-                      {handoverScenario.trueROE.toFixed(1)}% ROE
+                      {formatCurrency(handoverScenario.exitPrice, currency, rate)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       Profit: {formatCurrency(handoverScenario.trueProfit, currency, rate)}
