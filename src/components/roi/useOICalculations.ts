@@ -22,8 +22,16 @@ export interface OIExitScenario {
   equityDeployed: number;    // Based on cumulative milestone payments
   profit: number;            // Exit price - Entry price
   roe: number;               // Profit / Equity * 100
-  rentalYield: number;       // Rent at exit / Entry price
-  yearsToPay: number;        // Entry price / Annual rent
+  annualizedROE: number;     // ROE / years held
+  profitPerMonth: number;    // Profit / months held
+}
+
+export interface OIHoldAnalysis {
+  totalCapitalInvested: number;  // 100% of base price
+  propertyValueAtHandover: number;
+  annualRent: number;
+  rentalYieldOnInvestment: number; // rent / capital invested * 100
+  yearsToBreakEven: number;  // capital / annual rent
 }
 
 export interface OIYearlyProjection {
@@ -40,6 +48,7 @@ export interface OICalculations {
   yearlyProjections: OIYearlyProjection[];
   totalMonths: number;
   basePrice: number;
+  holdAnalysis: OIHoldAnalysis;
 }
 
 // Calculate cumulative equity deployed at a given construction percentage
@@ -92,10 +101,12 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     // ROE based on equity actually deployed
     const roe = equityDeployed > 0 ? (profit / equityDeployed) * 100 : 0;
 
-    // Rental yield based on rent at exit time relative to base price
-    const rentAtExit = exitPrice * (rentalYieldPercent / 100);
-    const rentalYield = (rentAtExit / basePrice) * 100;
-    const yearsToPay = basePrice / rentAtExit;
+    // Annualized ROE = ROE / years held
+    const yearsHeld = exitMonths / 12;
+    const annualizedROE = yearsHeld > 0 ? roe / yearsHeld : 0;
+
+    // Profit per month
+    const profitPerMonth = exitMonths > 0 ? profit / exitMonths : 0;
 
     return {
       exitPercent,
@@ -104,8 +115,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       equityDeployed,
       profit,
       roe,
-      rentalYield,
-      yearsToPay,
+      annualizedROE,
+      profitPerMonth,
     };
   });
 
@@ -129,10 +140,27 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     });
   }
 
+  // Hold Analysis - if investor keeps the property after handover
+  const handoverYears = totalMonths / 12;
+  const propertyValueAtHandover = basePrice * Math.pow(1 + appreciationRate / 100, handoverYears);
+  const totalCapitalInvested = basePrice; // 100% paid at handover
+  const annualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
+  const rentalYieldOnInvestment = (annualRent / totalCapitalInvested) * 100;
+  const yearsToBreakEven = totalCapitalInvested / annualRent;
+
+  const holdAnalysis: OIHoldAnalysis = {
+    totalCapitalInvested,
+    propertyValueAtHandover,
+    annualRent,
+    rentalYieldOnInvestment,
+    yearsToBreakEven,
+  };
+
   return {
     scenarios,
     yearlyProjections,
     totalMonths,
     basePrice,
+    holdAnalysis,
   };
 };
