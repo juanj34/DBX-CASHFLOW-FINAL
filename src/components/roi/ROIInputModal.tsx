@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { Settings2 } from "lucide-react";
 import { ROIInputs } from "./useROICalculations";
 
@@ -20,6 +21,13 @@ const formatAED = (value: number) => {
 };
 
 export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInputModalProps) => {
+  const handleNumberChange = (field: keyof ROIInputs, value: string, min: number, max: number) => {
+    const num = parseFloat(value);
+    if (!isNaN(num)) {
+      setInputs(prev => ({ ...prev, [field]: Math.min(Math.max(num, min), max) }));
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
@@ -30,17 +38,22 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
           Configure Investment
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg">
+      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white">Investment Parameters</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
+        <div className="space-y-5 py-4">
           {/* Base Property Price */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm text-gray-400">Base Property Price</label>
-              <span className="text-[#CCFF00] font-mono font-semibold">{formatAED(inputs.basePrice)}</span>
+              <Input
+                type="number"
+                value={inputs.basePrice}
+                onChange={(e) => handleNumberChange('basePrice', e.target.value, 500000, 10000000)}
+                className="w-32 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+              />
             </div>
             <Slider
               value={[inputs.basePrice]}
@@ -50,29 +63,44 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               step={50000}
               className="roi-slider-lime"
             />
+            <div className="text-xs text-gray-500 text-right">{formatAED(inputs.basePrice)}</div>
           </div>
 
-          {/* Annual Rent */}
-          <div className="space-y-3">
+          {/* Rental Yield Percent */}
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Annual Rent</label>
-              <span className="text-[#00EAFF] font-mono font-semibold">{formatAED(inputs.annualRent)}</span>
+              <label className="text-sm text-gray-400">Rental Yield %</label>
+              <Input
+                type="number"
+                value={inputs.rentalYieldPercent}
+                onChange={(e) => handleNumberChange('rentalYieldPercent', e.target.value, 1, 20)}
+                step={0.5}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#00EAFF] font-mono text-sm"
+              />
             </div>
             <Slider
-              value={[inputs.annualRent]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, annualRent: value }))}
-              min={20000}
-              max={500000}
-              step={5000}
+              value={[inputs.rentalYieldPercent]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
+              min={1}
+              max={20}
+              step={0.5}
               className="roi-slider-cyan"
             />
+            <div className="text-xs text-gray-500 text-right">
+              Annual Rent: {formatAED(inputs.basePrice * (inputs.rentalYieldPercent / 100))}
+            </div>
           </div>
 
           {/* Equity Percent */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Payment Plan / Equity</label>
-              <span className="text-[#FF00FF] font-mono font-semibold">{inputs.equityPercent}%</span>
+              <label className="text-sm text-gray-400">Payment Plan / Equity %</label>
+              <Input
+                type="number"
+                value={inputs.equityPercent}
+                onChange={(e) => handleNumberChange('equityPercent', e.target.value, 10, 100)}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#FF00FF] font-mono text-sm"
+              />
             </div>
             <Slider
               value={[inputs.equityPercent]}
@@ -82,13 +110,20 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               step={5}
               className="roi-slider-pink"
             />
+            <div className="text-xs text-gray-500 text-right">{inputs.equityPercent}% / {100 - inputs.equityPercent}%</div>
           </div>
 
           {/* Appreciation Rate */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Appreciation Rate (CAGR)</label>
-              <span className="text-[#CCFF00] font-mono font-semibold">{inputs.appreciationRate}%</span>
+              <label className="text-sm text-gray-400">Appreciation Rate (CAGR) %</label>
+              <Input
+                type="number"
+                value={inputs.appreciationRate}
+                onChange={(e) => handleNumberChange('appreciationRate', e.target.value, 1, 25)}
+                step={0.5}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+              />
             </div>
             <Slider
               value={[inputs.appreciationRate]}
@@ -100,11 +135,16 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
             />
           </div>
 
-          {/* Holding Period */}
-          <div className="space-y-3">
+          {/* OI Holding Period */}
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Holding Period</label>
-              <span className="text-[#00EAFF] font-mono font-semibold">{inputs.holdingPeriodMonths} months</span>
+              <label className="text-sm text-gray-400">OI Holding Period (months)</label>
+              <Input
+                type="number"
+                value={inputs.holdingPeriodMonths}
+                onChange={(e) => handleNumberChange('holdingPeriodMonths', e.target.value, 6, 60)}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#00EAFF] font-mono text-sm"
+              />
             </div>
             <Slider
               value={[inputs.holdingPeriodMonths]}
@@ -114,6 +154,49 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange }: ROIInpu
               step={3}
               className="roi-slider-cyan"
             />
+          </div>
+
+          {/* SI Holding Period */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-400">SI Holding Period (years)</label>
+              <Input
+                type="number"
+                value={inputs.siHoldingYears}
+                onChange={(e) => handleNumberChange('siHoldingYears', e.target.value, 1, 10)}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#00EAFF] font-mono text-sm"
+              />
+            </div>
+            <Slider
+              value={[inputs.siHoldingYears]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, siHoldingYears: value }))}
+              min={1}
+              max={10}
+              step={1}
+              className="roi-slider-cyan"
+            />
+          </div>
+
+          {/* Resale Threshold */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-400">Resale Threshold %</label>
+              <Input
+                type="number"
+                value={inputs.resaleThresholdPercent}
+                onChange={(e) => handleNumberChange('resaleThresholdPercent', e.target.value, 10, 100)}
+                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#FF00FF] font-mono text-sm"
+              />
+            </div>
+            <Slider
+              value={[inputs.resaleThresholdPercent]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, resaleThresholdPercent: value }))}
+              min={10}
+              max={100}
+              step={5}
+              className="roi-slider-pink"
+            />
+            <div className="text-xs text-gray-500 text-right">OI can sell after {inputs.resaleThresholdPercent}% paid</div>
           </div>
         </div>
 

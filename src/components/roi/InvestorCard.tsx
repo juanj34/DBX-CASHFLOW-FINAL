@@ -45,11 +45,12 @@ const formatAED = (value: number) => {
 
 export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
   const { title, subtitle, icon: Icon, color, bgGradient, borderColor } = config[type];
+  const isHO = type === 'ho';
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} bg-[#1a1f2e] border ${borderColor} p-6`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} bg-[#1a1f2e] border ${borderColor} p-5`}>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div 
@@ -62,54 +63,79 @@ export const InvestorCard = ({ type, metrics }: InvestorCardProps) => {
           </div>
           <p className="text-sm text-gray-400">{subtitle}</p>
         </div>
-        <div 
-          className="text-2xl font-bold font-mono"
-          style={{ color }}
-        >
-          {metrics.roe.toFixed(1)}%
-          <span className="text-xs text-gray-400 block text-right">ROE</span>
-        </div>
+        {!isHO && (
+          <div 
+            className="text-2xl font-bold font-mono"
+            style={{ color }}
+          >
+            {metrics.roe.toFixed(1)}%
+            <span className="text-xs text-gray-400 block text-right">ROE</span>
+          </div>
+        )}
+        {isHO && (
+          <div 
+            className="text-2xl font-bold font-mono"
+            style={{ color }}
+          >
+            {metrics.rentalYield.toFixed(1)}%
+            <span className="text-xs text-gray-400 block text-right">Yield</span>
+          </div>
+        )}
       </div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
             <TrendingUp className="w-3.5 h-3.5" />
             Property Value
           </div>
-          <p className="text-white font-semibold font-mono">{formatAED(metrics.propertyValue)}</p>
+          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.propertyValue)}</p>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
             <Wallet className="w-3.5 h-3.5" />
             Equity Deployed
           </div>
-          <p className="text-white font-semibold font-mono">{formatAED(metrics.equityInvested)}</p>
+          <p className="text-white font-semibold font-mono text-sm">{formatAED(metrics.equityInvested)}</p>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-            <BadgePercent className="w-3.5 h-3.5" />
-            Projected Profit
+        {!isHO && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+              <BadgePercent className="w-3.5 h-3.5" />
+              Projected Profit
+            </div>
+            <p className="font-semibold font-mono text-sm" style={{ color: metrics.projectedProfit > 0 ? color : '#6b7280' }}>
+              {metrics.projectedProfit > 0 ? '+' : ''}{formatAED(metrics.projectedProfit)}
+            </p>
           </div>
-          <p className="font-semibold font-mono" style={{ color: metrics.projectedProfit > 0 ? color : '#6b7280' }}>
-            {metrics.projectedProfit > 0 ? '+' : ''}{formatAED(metrics.projectedProfit)}
-          </p>
-        </div>
+        )}
 
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-gray-400 text-xs">
             <Home className="w-3.5 h-3.5" />
             Rental Yield
           </div>
-          <p className="text-white font-semibold font-mono">{metrics.rentalYield.toFixed(2)}%</p>
+          <p className="text-white font-semibold font-mono text-sm">{metrics.rentalYield.toFixed(2)}%</p>
         </div>
+
+        {isHO && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+              <BadgePercent className="w-3.5 h-3.5" />
+              Years to Pay
+            </div>
+            <p className="font-semibold font-mono text-sm" style={{ color }}>
+              {metrics.yearsToPay.toFixed(1)} yrs
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Bottom stat */}
-      <div className="mt-4 pt-4 border-t border-[#2a3142]">
+      <div className="mt-5 pt-4 border-t border-[#2a3142]">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-400">Years to Pay Price</span>
           <span className="font-mono font-semibold" style={{ color }}>{metrics.yearsToPay.toFixed(1)} yrs</span>
