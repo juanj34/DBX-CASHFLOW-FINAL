@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2 } from "lucide-react";
-import { OIInputs } from "./useOICalculations";
+import { Settings2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { OIInputs, PaymentMilestone } from "./useOICalculations";
 import { Currency, formatCurrency, AED_TO_USD } from "./currencyUtils";
 
 interface OIInputModalProps {
@@ -33,12 +33,30 @@ const months = [
 
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
+const milestoneLabels: Record<number, string> = {
+  0: 'At Booking (0%)',
+  10: 'At 10% Construction',
+  20: 'At 20% Construction',
+  30: 'At 30% Construction',
+  40: 'At 40% Construction',
+  50: 'At 50% Construction',
+  60: 'At 60% Construction',
+  70: 'At 70% Construction',
+  80: 'At 80% Construction',
+  90: 'At 90% Construction',
+  100: 'On Handover (100%)',
+};
+
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
       ? Math.round(inputs.basePrice / AED_TO_USD).toString()
       : inputs.basePrice.toString()
   );
+
+  // Calculate total payment percentage
+  const totalPayment = inputs.paymentMilestones.reduce((sum, m) => sum + m.paymentPercent, 0);
+  const isValidTotal = totalPayment === 100;
 
   const handleNumberChange = (field: keyof OIInputs, value: string, min: number, max: number) => {
     const num = parseFloat(value);
@@ -69,6 +87,20 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
           : inputs.basePrice.toString()
       );
     }
+  };
+
+  const handleMilestoneChange = (constructionPercent: number, value: string) => {
+    const num = parseInt(value) || 0;
+    const clamped = Math.min(Math.max(num, 0), 100);
+    
+    setInputs(prev => ({
+      ...prev,
+      paymentMilestones: prev.paymentMilestones.map(m =>
+        m.constructionPercent === constructionPercent
+          ? { ...m, paymentPercent: clamped }
+          : m
+      )
+    }));
   };
 
   return (
@@ -196,28 +228,70 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Payment Plan */}
-          <div className="space-y-2">
+          {/* Minimum Exit Threshold */}
+          <div className="space-y-2 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Payment Plan % (During Construction)</label>
+              <label className="text-sm text-gray-400">Minimum Exit Threshold</label>
               <Input
                 type="number"
-                value={inputs.paymentPlanPercent}
-                onChange={(e) => handleNumberChange('paymentPlanPercent', e.target.value, 10, 100)}
-                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+                value={inputs.minimumExitThreshold}
+                onChange={(e) => handleNumberChange('minimumExitThreshold', e.target.value, 10, 100)}
+                className="w-20 h-8 text-right bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
               />
             </div>
             <Slider
-              value={[inputs.paymentPlanPercent]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, paymentPlanPercent: value }))}
+              value={[inputs.minimumExitThreshold]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, minimumExitThreshold: value }))}
               min={10}
               max={100}
-              step={5}
+              step={10}
               className="roi-slider-lime"
             />
-            <div className="text-xs text-gray-500 text-right">
-              {inputs.paymentPlanPercent}/{100 - inputs.paymentPlanPercent} payment plan
+            <div className="text-xs text-gray-500">
+              Developer allows resale at {inputs.minimumExitThreshold}% construction
             </div>
+          </div>
+
+          {/* Payment Milestones */}
+          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-400 font-medium">Payment Milestones</label>
+              <div className={`flex items-center gap-1.5 text-xs ${isValidTotal ? 'text-green-400' : 'text-amber-400'}`}>
+                {isValidTotal ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5" />
+                )}
+                Total: {totalPayment}%
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              {inputs.paymentMilestones.map((milestone) => (
+                <div key={milestone.constructionPercent} className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-gray-500 flex-1">
+                    {milestoneLabels[milestone.constructionPercent]}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={milestone.paymentPercent}
+                      onChange={(e) => handleMilestoneChange(milestone.constructionPercent, e.target.value)}
+                      className="w-16 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                      min={0}
+                      max={100}
+                    />
+                    <span className="text-xs text-gray-500">%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {!isValidTotal && (
+              <div className="text-xs text-amber-400 mt-2">
+                ⚠️ Total must equal 100% (currently {totalPayment}%)
+              </div>
+            )}
           </div>
 
           {/* Rental Yield Percent */}
