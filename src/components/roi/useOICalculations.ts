@@ -10,9 +10,9 @@ export interface OIInputs {
   basePrice: number;
   rentalYieldPercent: number;
   appreciationRate: number;
-  bookingMonth: number;
+  bookingQuarter: number; // 1-4 (Q1, Q2, Q3, Q4)
   bookingYear: number;
-  handoverMonth: number;
+  handoverQuarter: number; // 1-4
   handoverYear: number;
   minimumExitThreshold: number;
   paymentMilestones: PaymentMilestone[];
@@ -106,14 +106,20 @@ const countTotalInstallments = (milestones: PaymentMilestone[]): number => {
   return milestones.filter(m => m.paymentPercent > 0).length;
 };
 
+// Convert quarter to mid-quarter month: Q1→2, Q2→5, Q3→8, Q4→11
+const quarterToMonth = (quarter: number): number => {
+  const monthMap: Record<number, number> = { 1: 2, 2: 5, 3: 8, 4: 11 };
+  return monthMap[quarter] || 2;
+};
+
 export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const { 
     basePrice, 
     rentalYieldPercent, 
     appreciationRate, 
-    bookingMonth, 
+    bookingQuarter, 
     bookingYear, 
-    handoverMonth, 
+    handoverQuarter, 
     handoverYear, 
     minimumExitThreshold,
     paymentMilestones,
@@ -125,9 +131,9 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Calculate entry costs (paid at booking)
   const totalEntryCosts = (basePrice * dldFeePercent / 100) + oqoodFee;
 
-  // Calculate total construction period from booking to handover
-  const bookingDate = new Date(bookingYear, bookingMonth - 1);
-  const handoverDate = new Date(handoverYear, handoverMonth - 1);
+  // Calculate total construction period from booking to handover (using mid-quarter months)
+  const bookingDate = new Date(bookingYear, quarterToMonth(bookingQuarter) - 1);
+  const handoverDate = new Date(handoverYear, quarterToMonth(handoverQuarter) - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
   // Total installments with payments
