@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2 } from "lucide-react";
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
 import { Currency, formatCurrency, AED_TO_USD } from "./currencyUtils";
 
@@ -33,18 +33,20 @@ const months = [
 
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
-const milestoneLabels: Record<number, string> = {
-  0: 'At Booking (0%)',
-  10: 'At 10% Construction',
-  20: 'At 20% Construction',
-  30: 'At 30% Construction',
-  40: 'At 40% Construction',
-  50: 'At 50% Construction',
-  60: 'At 60% Construction',
-  70: 'At 70% Construction',
-  80: 'At 80% Construction',
-  90: 'At 90% Construction',
-  100: 'On Handover (100%)',
+// Preset payment plans
+const presets = {
+  '30/70': [
+    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 30, label: 'Booking' },
+    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 70, label: 'Handover' },
+  ],
+  '40/60': [
+    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 40, label: 'Booking' },
+    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 60, label: 'Handover' },
+  ],
+  '50/50': [
+    { id: '1', type: 'construction' as const, triggerValue: 0, paymentPercent: 50, label: 'Booking' },
+    { id: '2', type: 'construction' as const, triggerValue: 100, paymentPercent: 50, label: 'Handover' },
+  ],
 };
 
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
@@ -89,26 +91,47 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
     }
   };
 
-  const handleMilestoneChange = (constructionPercent: number, value: string) => {
-    const num = parseInt(value) || 0;
-    const clamped = Math.min(Math.max(num, 0), 100);
-    
-    setInputs(prev => ({
-      ...prev,
-      paymentMilestones: prev.paymentMilestones.map(m =>
-        m.constructionPercent === constructionPercent
-          ? { ...m, paymentPercent: clamped }
-          : m
-      )
-    }));
-  };
-
-  const handleFixedFeeChange = (field: 'adminFee' | 'nocFee', value: string) => {
+  const handleFixedFeeChange = (field: 'oqoodFee' | 'nocFee', value: string) => {
     const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
     if (!isNaN(num) && num >= 0) {
       const aedValue = currency === 'USD' ? num * AED_TO_USD : num;
       setInputs(prev => ({ ...prev, [field]: aedValue }));
     }
+  };
+
+  // Payment milestone handlers
+  const applyPreset = (presetKey: keyof typeof presets) => {
+    setInputs(prev => ({
+      ...prev,
+      paymentMilestones: presets[presetKey].map((p, i) => ({ ...p, id: `preset-${i}` }))
+    }));
+  };
+
+  const addMilestone = () => {
+    const newId = `milestone-${Date.now()}`;
+    setInputs(prev => ({
+      ...prev,
+      paymentMilestones: [
+        ...prev.paymentMilestones,
+        { id: newId, type: 'construction', triggerValue: 0, paymentPercent: 0 }
+      ]
+    }));
+  };
+
+  const removeMilestone = (id: string) => {
+    setInputs(prev => ({
+      ...prev,
+      paymentMilestones: prev.paymentMilestones.filter(m => m.id !== id)
+    }));
+  };
+
+  const updateMilestone = (id: string, field: keyof PaymentMilestone, value: any) => {
+    setInputs(prev => ({
+      ...prev,
+      paymentMilestones: prev.paymentMilestones.map(m =>
+        m.id === id ? { ...m, [field]: value } : m
+      )
+    }));
   };
 
   return (
@@ -236,7 +259,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Entry Costs Section */}
+          {/* Entry Costs Section (Simplified) */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <label className="text-sm text-gray-400 font-medium">Entry Costs (At Booking)</label>
             
@@ -257,90 +280,38 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Oqood Fee %</span>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[inputs.oqoodFeePercent]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, oqoodFeePercent: value }))}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    className="w-24 roi-slider-lime"
+                <span className="text-xs text-gray-500">Oqood Fee</span>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                    {currency === 'USD' ? '$' : 'AED'}
+                  </span>
+                  <Input
+                    type="text"
+                    value={currency === 'USD' ? Math.round(inputs.oqoodFee / AED_TO_USD) : inputs.oqoodFee}
+                    onChange={(e) => handleFixedFeeChange('oqoodFee', e.target.value)}
+                    className="w-28 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs pl-10"
                   />
-                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.oqoodFeePercent}%</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Admin Fee</span>
-                <Input
-                  type="text"
-                  value={currency === 'USD' ? Math.round(inputs.adminFee / AED_TO_USD) : inputs.adminFee}
-                  onChange={(e) => handleFixedFeeChange('adminFee', e.target.value)}
-                  className="w-24 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Buyer Agent %</span>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[inputs.buyerAgentPercent]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, buyerAgentPercent: value }))}
-                    min={0}
-                    max={5}
-                    step={0.5}
-                    className="w-24 roi-slider-lime"
-                  />
-                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.buyerAgentPercent}%</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Exit Costs Section */}
+          {/* Exit Costs Section (Simplified) */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <label className="text-sm text-gray-400 font-medium">Exit Costs (When Selling)</label>
             
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">NOC Fee</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">NOC Fee</span>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+                  {currency === 'USD' ? '$' : 'AED'}
+                </span>
                 <Input
                   type="text"
                   value={currency === 'USD' ? Math.round(inputs.nocFee / AED_TO_USD) : inputs.nocFee}
                   onChange={(e) => handleFixedFeeChange('nocFee', e.target.value)}
-                  className="w-24 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                  className="w-28 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs pl-10"
                 />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Transfer Fee %</span>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[inputs.transferFeePercent]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, transferFeePercent: value }))}
-                    min={0}
-                    max={5}
-                    step={0.5}
-                    className="w-24 roi-slider-lime"
-                  />
-                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.transferFeePercent}%</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Seller Agent %</span>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[inputs.sellerAgentPercent]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, sellerAgentPercent: value }))}
-                    min={0}
-                    max={5}
-                    step={0.5}
-                    className="w-24 roi-slider-lime"
-                  />
-                  <span className="text-xs text-white font-mono w-12 text-right">{inputs.sellerAgentPercent}%</span>
-                </div>
               </div>
             </div>
           </div>
@@ -369,10 +340,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* Payment Milestones */}
+          {/* Payment Plan Section */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400 font-medium">Payment Milestones</label>
+              <label className="text-sm text-gray-400 font-medium">Payment Plan</label>
               <div className={`flex items-center gap-1.5 text-xs ${isValidTotal ? 'text-green-400' : 'text-amber-400'}`}>
                 {isValidTotal ? (
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -383,29 +354,126 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               </div>
             </div>
             
-            <div className="space-y-2">
-              {inputs.paymentMilestones.map((milestone) => (
-                <div key={milestone.constructionPercent} className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-gray-500 flex-1">
-                    {milestoneLabels[milestone.constructionPercent]}
-                  </span>
+            {/* Preset Buttons */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => applyPreset('30/70')}
+                className="flex-1 h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+              >
+                30/70
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => applyPreset('40/60')}
+                className="flex-1 h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+              >
+                40/60
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => applyPreset('50/50')}
+                className="flex-1 h-7 text-xs border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+              >
+                50/50
+              </Button>
+            </div>
+
+            {/* Dynamic Payment List */}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {inputs.paymentMilestones.map((milestone, index) => (
+                <div key={milestone.id} className="flex items-center gap-2 p-2 bg-[#1a1f2e] rounded-lg">
+                  {/* Type Selector */}
+                  <Select
+                    value={milestone.type}
+                    onValueChange={(value: 'time' | 'construction') => updateMilestone(milestone.id, 'type', value)}
+                  >
+                    <SelectTrigger className="w-[100px] h-7 text-xs bg-[#0d1117] border-[#2a3142]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                      <SelectItem value="time" className="text-white hover:bg-[#2a3142]">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Time</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="construction" className="text-white hover:bg-[#2a3142]">
+                        <div className="flex items-center gap-1">
+                          <Building2 className="w-3 h-3" />
+                          <span>Const.</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Trigger Value */}
                   <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500">
+                      {milestone.type === 'time' ? 'Mo:' : 'At:'}
+                    </span>
+                    <Input
+                      type="number"
+                      value={milestone.triggerValue}
+                      onChange={(e) => updateMilestone(milestone.id, 'triggerValue', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-14 h-7 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
+                      min={0}
+                      max={milestone.type === 'construction' ? 100 : 120}
+                    />
+                    <span className="text-xs text-gray-500">
+                      {milestone.type === 'construction' ? '%' : ''}
+                    </span>
+                  </div>
+
+                  {/* Payment Percent */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500">Pay:</span>
                     <Input
                       type="number"
                       value={milestone.paymentPercent}
-                      onChange={(e) => handleMilestoneChange(milestone.constructionPercent, e.target.value)}
-                      className="w-16 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                      onChange={(e) => updateMilestone(milestone.id, 'paymentPercent', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className="w-14 h-7 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
                       min={0}
                       max={100}
                     />
                     <span className="text-xs text-gray-500">%</span>
                   </div>
+
+                  {/* Delete Button */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeMilestone(milestone.id)}
+                    className="h-7 w-7 text-gray-500 hover:text-red-400 hover:bg-red-400/10"
+                    disabled={inputs.paymentMilestones.length <= 1}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               ))}
             </div>
-            
+
+            {/* Add Payment Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addMilestone}
+              className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add Payment
+            </Button>
+
             {!isValidTotal && (
-              <div className="text-xs text-amber-400 mt-2">
+              <div className="text-xs text-amber-400">
                 ⚠️ Total must equal 100% (currently {totalPayment}%)
               </div>
             )}
@@ -418,15 +486,15 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               <Input
                 type="number"
                 value={inputs.rentalYieldPercent}
-                onChange={(e) => handleNumberChange('rentalYieldPercent', e.target.value, 1, 20)}
+                onChange={(e) => handleNumberChange('rentalYieldPercent', e.target.value, 0, 20)}
+                className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
                 step={0.5}
-                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
               />
             </div>
             <Slider
               value={[inputs.rentalYieldPercent]}
               onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
-              min={1}
+              min={0}
               max={20}
               step={0.5}
               className="roi-slider-lime"
@@ -440,28 +508,29 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               <Input
                 type="number"
                 value={inputs.appreciationRate}
-                onChange={(e) => handleNumberChange('appreciationRate', e.target.value, 1, 25)}
+                onChange={(e) => handleNumberChange('appreciationRate', e.target.value, 0, 30)}
+                className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
                 step={0.5}
-                className="w-24 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
               />
             </div>
             <Slider
               value={[inputs.appreciationRate]}
               onValueChange={([value]) => setInputs(prev => ({ ...prev, appreciationRate: value }))}
-              min={1}
-              max={25}
+              min={0}
+              max={30}
               step={0.5}
               className="roi-slider-lime"
             />
           </div>
-        </div>
 
-        <Button 
-          onClick={() => onOpenChange(false)}
-          className="w-full bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
-        >
-          Apply Parameters
-        </Button>
+          {/* Apply Button */}
+          <Button 
+            onClick={() => onOpenChange(false)}
+            className="w-full bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+          >
+            Apply Parameters
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
