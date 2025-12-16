@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
-import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
+import { Currency, formatCurrency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 const OICalculator = () => {
@@ -35,7 +36,7 @@ const OICalculator = () => {
   const [exitScenarios, setExitScenarios] = useState<[number, number, number]>([18, 30, 36]);
 
   const calculations = useOICalculations(inputs);
-  const { rate, isLive } = useExchangeRate();
+  const { rate, isLive } = useExchangeRate(currency);
   const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
 
   // Find best TRUE ROE scenario
@@ -73,21 +74,25 @@ const OICalculator = () => {
           </div>
           <div className="flex items-center gap-3">
             {/* Live rate indicator */}
-            {currency === 'USD' && (
+            {currency !== 'AED' && (
               <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                 {isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                <span>1 USD = {rate.toFixed(2)} AED</span>
+                <span>1 AED = {rate.toFixed(4)} {currency}</span>
               </div>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrency(c => c === 'AED' ? 'USD' : 'AED')}
-              className="border-[#2a3142] text-gray-300 hover:bg-[#1a1f2e] hover:text-white"
-            >
-              {currency === 'AED' ? '🇦🇪 AED' : '🇺🇸 USD'}
-            </Button>
-            <OIInputModal 
+            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
+              <SelectTrigger className="w-[130px] border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">
+                    {config.flag} {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <OIInputModal
               inputs={inputs} 
               setInputs={setInputs} 
               open={modalOpen}
