@@ -12,10 +12,12 @@ const ROICalculator = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [inputs, setInputs] = useState<ROIInputs>({
     basePrice: 800000,
-    annualRent: 107000,
+    rentalYieldPercent: 8.5,
     equityPercent: 50,
     appreciationRate: 10,
     holdingPeriodMonths: 24,
+    resaleThresholdPercent: 40,
+    siHoldingYears: 2,
   });
 
   const calculations = useROICalculations(inputs);

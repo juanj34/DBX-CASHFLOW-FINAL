@@ -1,9 +1,11 @@
 export interface ROIInputs {
   basePrice: number;
-  annualRent: number;
+  rentalYieldPercent: number;
   equityPercent: number;
   appreciationRate: number;
   holdingPeriodMonths: number;
+  resaleThresholdPercent: number;
+  siHoldingYears: number;
 }
 
 export interface InvestorMetrics {
@@ -22,7 +24,10 @@ export interface ROICalculations {
 }
 
 export const useROICalculations = (inputs: ROIInputs): ROICalculations => {
-  const { basePrice, annualRent, equityPercent, appreciationRate, holdingPeriodMonths } = inputs;
+  const { basePrice, rentalYieldPercent, equityPercent, appreciationRate, holdingPeriodMonths, siHoldingYears } = inputs;
+
+  // Calculate annual rent from rental yield percentage
+  const annualRent = basePrice * (rentalYieldPercent / 100);
 
   // OI (Opportunity Investor) - Buys off-plan early
   const oiEntryPrice = basePrice;
@@ -37,7 +42,7 @@ export const useROICalculations = (inputs: ROIInputs): ROICalculations => {
   // SI (Security Investor) - Buys from OI
   const siEntryPrice = oiExitPrice;
   const siEquity = siEntryPrice; // 100% cash
-  const siExitPrice = siEntryPrice * Math.pow(1 + appreciationRate / 100, 2); // Holds 2 more years
+  const siExitPrice = siEntryPrice * Math.pow(1 + appreciationRate / 100, siHoldingYears);
   const siProfit = siExitPrice - siEntryPrice;
   const siROE = (siProfit / siEquity) * 100;
   const siRentalYield = (annualRent / siEntryPrice) * 100;

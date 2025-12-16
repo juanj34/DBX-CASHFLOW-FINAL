@@ -1,39 +1,14 @@
 import { ROICalculations, ROIInputs } from "./useROICalculations";
-import { Calculator, TrendingUp, Clock } from "lucide-react";
+import { TrendingUp, Clock } from "lucide-react";
 
 interface MetricsPanelProps {
   calculations: ROICalculations;
   inputs: ROIInputs;
 }
 
-const formatAED = (value: number) => {
-  return new Intl.NumberFormat('en-AE', { 
-    style: 'currency', 
-    currency: 'AED',
-    maximumFractionDigits: 0 
-  }).format(value);
-};
-
 export const MetricsPanel = ({ calculations, inputs }: MetricsPanelProps) => {
   return (
     <div className="space-y-6">
-      {/* ROE Formula Card */}
-      <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Calculator className="w-5 h-5 text-[#CCFF00]" />
-          <h3 className="font-semibold text-white">ROE Formula</h3>
-        </div>
-        <div className="bg-[#0d1117] rounded-xl p-4 font-mono text-sm">
-          <div className="text-gray-400 mb-2">Return on Equity</div>
-          <div className="text-[#CCFF00] text-lg">
-            ROE = <span className="text-white">(Profit / Equity)</span> × 100
-          </div>
-          <div className="mt-3 pt-3 border-t border-[#2a3142] text-xs text-gray-500">
-            OI: ({formatAED(calculations.oi.projectedProfit)} / {formatAED(calculations.oi.equityInvested)}) × 100 = <span className="text-[#CCFF00]">{calculations.oi.roe.toFixed(1)}%</span>
-          </div>
-        </div>
-      </div>
-
       {/* Rental Yields Comparison */}
       <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -77,13 +52,17 @@ export const MetricsPanel = ({ calculations, inputs }: MetricsPanelProps) => {
             <span className="text-white font-mono font-semibold">{inputs.holdingPeriodMonths} months</span>
           </div>
           <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
+            <span className="text-gray-400 text-sm">SI Holding Period</span>
+            <span className="text-white font-mono font-semibold">{inputs.siHoldingYears} years</span>
+          </div>
+          <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
             <span className="text-gray-400 text-sm">Appreciation Rate</span>
             <span className="text-[#CCFF00] font-mono font-semibold">{inputs.appreciationRate}% CAGR</span>
           </div>
           <div className="flex justify-between items-center p-3 bg-[#0d1117] rounded-xl">
             <span className="text-gray-400 text-sm">Total Value Growth</span>
             <span className="text-[#CCFF00] font-mono font-semibold">
-              +{(((calculations.si.propertyValue - inputs.basePrice) / inputs.basePrice) * 100).toFixed(1)}%
+              +{(((calculations.ho.propertyValue - inputs.basePrice) / inputs.basePrice) * 100).toFixed(1)}%
             </span>
           </div>
         </div>
