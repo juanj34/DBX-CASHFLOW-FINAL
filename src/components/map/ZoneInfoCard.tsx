@@ -33,7 +33,10 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
           />
         )}
         {zone.description && (
-          <p className="text-sm text-muted-foreground">{zone.description}</p>
+          <div>
+            <p className="font-semibold text-sm mb-1">Descripción</p>
+            <p className="text-sm text-muted-foreground">{zone.description}</p>
+          </div>
         )}
         <div className="space-y-2">
           {zone.population !== null && zone.population !== undefined && (

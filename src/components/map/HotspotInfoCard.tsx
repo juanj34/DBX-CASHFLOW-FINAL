@@ -32,9 +32,9 @@ export const HotspotInfoCard = ({ hotspot, onClose }: HotspotInfoCardProps) => {
     <Card className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-hidden shadow-lg z-10" data-info-card>
       {/* Header with title and category */}
       <div className="flex items-start justify-between p-4 pb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <h3 className="font-semibold text-lg truncate">{hotspot.title}</h3>
-          <Badge className={`${categoryConfig.color} shrink-0`}>
+        <div className="flex-1 min-w-0 pr-2">
+          <h3 className="font-semibold text-lg leading-tight">{hotspot.title}</h3>
+          <Badge className={`${categoryConfig.color} mt-2`}>
             {categoryConfig.label}
           </Badge>
         </div>
@@ -58,10 +58,11 @@ export const HotspotInfoCard = ({ hotspot, onClose }: HotspotInfoCardProps) => {
 
       {/* Description */}
       <CardContent className={hasImage ? "pt-3" : "pt-0"}>
+        <p className="font-semibold text-sm mb-1">Descripción</p>
         {hotspot.description ? (
           <p className="text-sm text-muted-foreground">{hotspot.description}</p>
         ) : (
-          <p className="text-sm text-muted-foreground italic">No description available</p>
+          <p className="text-sm text-muted-foreground italic">Sin descripción disponible</p>
         )}
       </CardContent>
     </Card>
