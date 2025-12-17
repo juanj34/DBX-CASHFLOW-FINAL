@@ -1,15 +1,17 @@
-import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2 } from "lucide-react";
+import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2, Rocket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { COUNTRIES, UNIT_TYPES } from "./ClientUnitModal";
+import { COUNTRIES, UNIT_TYPES, Client } from "./ClientUnitModal";
 import { AdvisorInfo } from "./AdvisorInfo";
 import { Profile } from "@/hooks/useProfile";
 
 export interface ClientUnitData {
   developer: string;
   projectName?: string;
-  clientName: string;
-  clientCountry: string;
+  clients: Client[];
+  // Legacy fields for backward compatibility
+  clientName?: string;
+  clientCountry?: string;
   brokerName: string;
   unit: string;
   unitSizeSqf: number;
@@ -26,20 +28,38 @@ interface ClientUnitInfoProps {
 export const ClientUnitInfo = ({ data, onEditClick, brokerProfile }: ClientUnitInfoProps) => {
   const { language, t } = useLanguage();
 
-  const country = COUNTRIES.find(c => c.code === data.clientCountry);
   const unitType = UNIT_TYPES.find(u => u.value === data.unitType);
 
-  const hasData = data.developer || data.clientName || data.unit || data.projectName;
+  // Get clients array, handling legacy single client format
+  const clients = data.clients?.length > 0 
+    ? data.clients 
+    : data.clientName 
+      ? [{ id: '1', name: data.clientName, country: data.clientCountry || '' }]
+      : [];
+
+  const hasData = data.developer || clients.length > 0 || data.unit || data.projectName;
 
   if (!hasData) {
     return (
-      <div 
-        onClick={onEditClick}
-        className="bg-[#1a1f2e]/50 border border-dashed border-[#2a3142] rounded-2xl p-6 mb-6 flex items-center justify-center cursor-pointer hover:bg-[#1a1f2e] hover:border-[#CCFF00]/30 transition-all"
-      >
-        <div className="text-center">
-          <Plus className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-          <p className="text-gray-400 text-sm">{t('clickToAddClientInfo')}</p>
+      <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 mb-6">
+        {/* Header with Title */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
+              <Rocket className="w-5 h-5 text-[#00EAFF]" />
+            </div>
+            <h2 className="text-lg font-bold text-white">{t('cashflowStatement')}</h2>
+          </div>
+        </div>
+        
+        <div 
+          onClick={onEditClick}
+          className="border border-dashed border-[#2a3142] rounded-xl p-6 flex items-center justify-center cursor-pointer hover:bg-[#0d1117] hover:border-[#CCFF00]/30 transition-all"
+        >
+          <div className="text-center">
+            <Plus className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">{t('clickToAddClientInfo')}</p>
+          </div>
         </div>
       </div>
     );
@@ -47,9 +67,27 @@ export const ClientUnitInfo = ({ data, onEditClick, brokerProfile }: ClientUnitI
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 mb-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        {/* Main Info Grid */}
-        <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-4">
+      {/* Header with Title */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
+            <Rocket className="w-5 h-5 text-[#00EAFF]" />
+          </div>
+          <h2 className="text-lg font-bold text-white">{t('cashflowStatement')}</h2>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onEditClick}
+          className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+        >
+          <Pencil className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-start gap-6">
+        {/* Property Info Grid */}
+        <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-4">
           {/* Developer */}
           {data.developer && (
             <div className="flex items-start gap-2">
@@ -69,50 +107,6 @@ export const ClientUnitInfo = ({ data, onEditClick, brokerProfile }: ClientUnitI
                 <p className="text-xs text-gray-500">{t('projectName')}</p>
                 <p className="text-sm font-medium text-white">{data.projectName}</p>
               </div>
-            </div>
-          )}
-
-          {/* Client Name */}
-          {data.clientName && (
-            <div className="flex items-start gap-2">
-              <User className="w-4 h-4 text-[#CCFF00] mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500">{t('client')}</p>
-                <p className="text-sm font-medium text-white">{data.clientName}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Client Country */}
-          {country && (
-            <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-[#CCFF00] mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500">{t('country')}</p>
-                <p className="text-sm font-medium text-white">
-                  {country.flag} {language === 'es' ? country.nameEs : country.name}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Advisor - Show profile if available, otherwise show manual entry */}
-          {(brokerProfile || data.brokerName) && (
-            <div className="flex items-start gap-2">
-              {brokerProfile ? (
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">{t('advisor')}</p>
-                  <AdvisorInfo profile={brokerProfile} size="sm" />
-                </div>
-              ) : (
-                <>
-                  <User className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-gray-500">{t('advisor')}</p>
-                    <p className="text-sm font-medium text-white">{data.brokerName}</p>
-                  </div>
-                </>
-              )}
             </div>
           )}
 
@@ -149,15 +143,35 @@ export const ClientUnitInfo = ({ data, onEditClick, brokerProfile }: ClientUnitI
           )}
         </div>
 
-        {/* Edit Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onEditClick}
-          className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
-        >
-          <Pencil className="w-4 h-4" />
-        </Button>
+        {/* Vertical Divider */}
+        {clients.length > 0 && (
+          <div className="hidden lg:block w-px bg-[#2a3142] self-stretch" />
+        )}
+
+        {/* Clients Section */}
+        {clients.length > 0 && (
+          <div className="min-w-[200px]">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-[#00EAFF]" />
+              <p className="text-xs text-gray-500">{t('clients')}</p>
+            </div>
+            <div className="space-y-1.5">
+              {clients.map((client) => {
+                const country = COUNTRIES.find(c => c.code === client.country);
+                return (
+                  <div key={client.id} className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-white">{client.name}</span>
+                    {country && (
+                      <span className="text-sm text-gray-400">
+                        {country.flag}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

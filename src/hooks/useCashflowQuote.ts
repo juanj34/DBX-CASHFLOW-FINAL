@@ -70,10 +70,13 @@ export const useCashflowQuote = (quoteId?: string) => {
 
   // Save to localStorage as draft
   const saveDraft = useCallback((inputs: OIInputs, clientInfo: ClientUnitData) => {
+    // Get first client for backward compatibility with DB
+    const firstClient = clientInfo.clients?.[0];
     const draft = {
       inputs,
-      client_name: clientInfo.clientName,
-      client_country: clientInfo.clientCountry,
+      clientInfo, // Save full clientInfo with clients array
+      client_name: firstClient?.name || clientInfo.clientName || '',
+      client_country: firstClient?.country || clientInfo.clientCountry || '',
       project_name: clientInfo.projectName,
       developer: clientInfo.developer,
       unit: clientInfo.unit,
@@ -111,11 +114,20 @@ export const useCashflowQuote = (quoteId?: string) => {
       return null;
     }
 
+    // Get first client for DB (backward compatibility - DB stores single client)
+    const firstClient = clientInfo.clients?.[0];
+    const clientName = firstClient?.name || clientInfo.clientName || null;
+    const clientCountry = firstClient?.country || clientInfo.clientCountry || null;
+
+    // Build title from clients
+    const clientNames = clientInfo.clients?.map(c => c.name).filter(Boolean).join(', ');
+    const titleClientPart = clientNames || clientName || '';
+
     const quoteData = {
       broker_id: user.id,
       inputs: inputs as any,
-      client_name: clientInfo.clientName || null,
-      client_country: clientInfo.clientCountry || null,
+      client_name: clientName,
+      client_country: clientCountry,
       project_name: clientInfo.projectName || null,
       developer: clientInfo.developer || null,
       unit: clientInfo.unit || null,
@@ -123,8 +135,8 @@ export const useCashflowQuote = (quoteId?: string) => {
       unit_size_sqf: clientInfo.unitSizeSqf || null,
       unit_size_m2: clientInfo.unitSizeM2 || null,
       is_draft: false,
-      title: clientInfo.clientName 
-        ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${clientInfo.clientName}`
+      title: titleClientPart 
+        ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
         : 'Untitled Quote',
     };
 
@@ -191,11 +203,20 @@ export const useCashflowQuote = (quoteId?: string) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // Support both new clientInfo format and legacy format
+        if (parsed.clientInfo) {
+          return {
+            inputs: parsed.inputs,
+            clientInfo: parsed.clientInfo,
+          };
+        }
+        // Legacy format migration
         return {
           inputs: parsed.inputs,
           clientInfo: {
-            clientName: parsed.client_name || '',
-            clientCountry: parsed.client_country || '',
+            clients: parsed.client_name 
+              ? [{ id: '1', name: parsed.client_name, country: parsed.client_country || '' }]
+              : [],
             projectName: parsed.project_name || '',
             developer: parsed.developer || '',
             unit: parsed.unit || '',

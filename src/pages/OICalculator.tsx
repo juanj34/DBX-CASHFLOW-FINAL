@@ -39,8 +39,7 @@ const DEFAULT_INPUTS: OIInputs = {
 const DEFAULT_CLIENT_INFO: ClientUnitData = {
   developer: '',
   projectName: '',
-  clientName: '',
-  clientCountry: '',
+  clients: [],
   brokerName: '',
   unit: '',
   unitSizeSqf: 0,
@@ -79,11 +78,14 @@ const OICalculatorContent = () => {
   useEffect(() => {
     if (quote) {
       setInputs(quote.inputs);
+      // Migrate from legacy single client format to clients array
+      const clients = quote.client_name 
+        ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }]
+        : [];
       setClientInfo({
         developer: quote.developer || '',
         projectName: quote.project_name || '',
-        clientName: quote.client_name || '',
-        clientCountry: quote.client_country || '',
+        clients,
         brokerName: profile?.full_name || '',
         unit: quote.unit || '',
         unitSizeSqf: quote.unit_size_sqf || 0,
@@ -179,23 +181,9 @@ const OICalculatorContent = () => {
                 <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
-                  <Rocket className="w-6 h-6 text-[#00EAFF]" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">Cashflow Statements</h1>
-                  <p className="text-sm text-gray-400">{t('exitScenariosPaymentBreakdown')}</p>
-                </div>
-              </div>
-              {profile && (
-                <>
-                  <div className="h-10 w-px bg-[#2a3142]" />
-                  <AdvisorInfo profile={profile} size="md" showSubtitle />
-                </>
-              )}
-            </div>
+            {profile && (
+              <AdvisorInfo profile={profile} size="lg" showSubtitle />
+            )}
           </div>
           <div className="flex items-center gap-3">
             {/* Live rate indicator */}

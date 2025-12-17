@@ -50,10 +50,13 @@ const CashflowViewContent = () => {
       }
 
       setInputs(data.inputs as unknown as OIInputs);
+      // Migrate from legacy single client format to clients array
+      const clients = data.client_name 
+        ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
+        : [];
       setClientInfo({
         developer: data.developer || '',
-        clientName: data.client_name || '',
-        clientCountry: data.client_country || '',
+        clients,
         brokerName: (data.profiles as any)?.full_name || '',
         projectName: data.project_name || '',
         unit: data.unit || '',
