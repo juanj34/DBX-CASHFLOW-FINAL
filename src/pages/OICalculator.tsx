@@ -475,7 +475,7 @@ const OICalculatorContent = () => {
                 <Link to="/my-quotes">
                   <Button 
                     variant="outline" 
-                    className="w-full border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+                    className="w-full bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
                   >
                     {t('myQuotes')}
                   </Button>

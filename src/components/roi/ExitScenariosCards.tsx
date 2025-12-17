@@ -177,7 +177,7 @@ export const ExitScenariosCards = ({
             variant="outline"
             size="sm"
             onClick={handleAddExit}
-            className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+            className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Exit
