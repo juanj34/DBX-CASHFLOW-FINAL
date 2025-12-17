@@ -12,6 +12,7 @@ interface ZoneInfoCardProps {
     image_url?: string;
     // Investment Profile
     concept?: string;
+    property_types?: string;
     investment_focus?: string;
     main_developer?: string;
     // Maturity
@@ -118,6 +119,13 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
               <div>
                 <p className="font-semibold text-sm mb-1">Desarrollador Principal</p>
                 <p className="text-sm text-muted-foreground">{zone.main_developer}</p>
+              </div>
+            )}
+
+            {zone.property_types && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Tipos de Propiedad</p>
+                <p className="text-sm text-muted-foreground">{zone.property_types}</p>
               </div>
             )}
           </div>

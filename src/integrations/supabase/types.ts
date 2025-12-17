@@ -355,6 +355,7 @@ export type Database = {
           population: number | null
           price_range_max: number | null
           price_range_min: number | null
+          property_types: string | null
           tagline: string | null
           ticket_1br_max: number | null
           ticket_1br_min: number | null
@@ -380,6 +381,7 @@ export type Database = {
           population?: number | null
           price_range_max?: number | null
           price_range_min?: number | null
+          property_types?: string | null
           tagline?: string | null
           ticket_1br_max?: number | null
           ticket_1br_min?: number | null
@@ -405,6 +407,7 @@ export type Database = {
           population?: number | null
           price_range_max?: number | null
           price_range_min?: number | null
+          property_types?: string | null
           tagline?: string | null
           ticket_1br_max?: number | null
           ticket_1br_min?: number | null
