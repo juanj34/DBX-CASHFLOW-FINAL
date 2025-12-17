@@ -12,6 +12,7 @@ import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { SaveControls } from "@/components/roi/SaveControls";
+import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -178,14 +179,22 @@ const OICalculatorContent = () => {
                 <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
-                <Rocket className="w-6 h-6 text-[#00EAFF]" />
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
+                  <Rocket className="w-6 h-6 text-[#00EAFF]" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Cashflow Statements</h1>
+                  <p className="text-sm text-gray-400">{t('exitScenariosPaymentBreakdown')}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Cashflow Statements</h1>
-                <p className="text-sm text-gray-400">{t('exitScenariosPaymentBreakdown')}</p>
-              </div>
+              {profile && (
+                <>
+                  <div className="h-10 w-px bg-[#2a3142]" />
+                  <AdvisorInfo profile={profile} size="md" showSubtitle />
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">

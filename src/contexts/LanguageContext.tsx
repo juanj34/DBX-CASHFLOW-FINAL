@@ -106,6 +106,7 @@ const translations: Translations = {
   accountSettings: { en: 'Account Settings', es: 'Configuración de Cuenta' },
   myQuotes: { en: 'My Quotes', es: 'Mis Cotizaciones' },
   newQuote: { en: 'New Quote', es: 'Nueva Cotización' },
+  wealthAdvisor: { en: 'Wealth Advisor', es: 'Asesor de Patrimonio' },
   cashflowStatement: { en: 'Cashflow Statement', es: 'Estado de Flujo de Caja' },
 };
 
