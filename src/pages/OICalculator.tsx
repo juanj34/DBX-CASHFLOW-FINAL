@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
-import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
+import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
@@ -48,11 +48,15 @@ const OICalculatorContent = () => {
     unitType: '',
   });
 
-  const [exitScenarios, setExitScenarios] = useState<[number, number, number]>([18, 30, 36]);
-
   const calculations = useOICalculations(inputs);
   const { rate, isLive } = useExchangeRate(currency);
   const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
+
+  // Auto-calculate exit scenarios based on project timeline
+  const exitScenarios = useMemo(() => 
+    calculateAutoExitScenarios(calculations.totalMonths),
+    [calculations.totalMonths]
+  );
 
   const bestROEScenario = calculations.scenarios.reduce<OIExitScenario | null>(
     (best, current) => (!best || current.trueROE > best.trueROE ? current : best),
@@ -150,7 +154,6 @@ const OICalculatorContent = () => {
               basePrice={calculations.basePrice}
               totalEntryCosts={calculations.totalEntryCosts}
               exitScenarios={exitScenarios}
-              onExitScenariosChange={setExitScenarios}
               rate={rate}
             />
 
