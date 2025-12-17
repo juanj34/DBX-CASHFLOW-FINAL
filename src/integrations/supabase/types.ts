@@ -413,6 +413,15 @@ export type Database = {
         | "attraction"
         | "project"
         | "other"
+        | "district"
+        | "masterplan"
+        | "residential"
+        | "waterfront"
+        | "retail"
+        | "leisure"
+        | "golf"
+        | "infrastructure"
+        | "heritage"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -548,6 +557,15 @@ export const Constants = {
         "attraction",
         "project",
         "other",
+        "district",
+        "masterplan",
+        "residential",
+        "waterfront",
+        "retail",
+        "leisure",
+        "golf",
+        "infrastructure",
+        "heritage",
       ],
     },
   },

@@ -173,10 +173,16 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="landmark">Landmark</SelectItem>
-                  <SelectItem value="metro">Metro</SelectItem>
-                  <SelectItem value="attraction">Attraction</SelectItem>
-                  <SelectItem value="project">Project</SelectItem>
+                  <SelectItem value="landmark">🏛️ Landmark</SelectItem>
+                  <SelectItem value="district">🏙️ District</SelectItem>
+                  <SelectItem value="masterplan">🗺️ Masterplan</SelectItem>
+                  <SelectItem value="residential">🏠 Residential</SelectItem>
+                  <SelectItem value="waterfront">🌊 Waterfront / Marina</SelectItem>
+                  <SelectItem value="retail">🛍️ Retail / Commerce</SelectItem>
+                  <SelectItem value="leisure">⭐ Leisure / Lifestyle</SelectItem>
+                  <SelectItem value="golf">⛳ Golf Community</SelectItem>
+                  <SelectItem value="infrastructure">✈️ Infrastructure</SelectItem>
+                  <SelectItem value="heritage">🧭 Heritage</SelectItem>
                 </SelectContent>
               </Select>
             </div>

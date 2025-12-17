@@ -95,6 +95,16 @@ const HotspotsManager = () => {
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       landmark: "bg-blue-500",
+      district: "bg-violet-500",
+      masterplan: "bg-amber-500",
+      residential: "bg-emerald-500",
+      waterfront: "bg-cyan-500",
+      retail: "bg-pink-500",
+      leisure: "bg-orange-500",
+      golf: "bg-green-500",
+      infrastructure: "bg-slate-500",
+      heritage: "bg-purple-500",
+      // Legacy
       metro: "bg-purple-500",
       attraction: "bg-pink-500",
       project: "bg-emerald-500",
@@ -128,10 +138,16 @@ const HotspotsManager = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="landmark">Landmark</SelectItem>
-            <SelectItem value="metro">Metro</SelectItem>
-            <SelectItem value="attraction">Attraction</SelectItem>
-            <SelectItem value="project">Project</SelectItem>
+            <SelectItem value="landmark">🏛️ Landmark</SelectItem>
+            <SelectItem value="district">🏙️ District</SelectItem>
+            <SelectItem value="masterplan">🗺️ Masterplan</SelectItem>
+            <SelectItem value="residential">🏠 Residential</SelectItem>
+            <SelectItem value="waterfront">🌊 Waterfront</SelectItem>
+            <SelectItem value="retail">🛍️ Retail</SelectItem>
+            <SelectItem value="leisure">⭐ Leisure</SelectItem>
+            <SelectItem value="golf">⛳ Golf</SelectItem>
+            <SelectItem value="infrastructure">✈️ Infrastructure</SelectItem>
+            <SelectItem value="heritage">🧭 Heritage</SelectItem>
           </SelectContent>
         </Select>
       </div>
