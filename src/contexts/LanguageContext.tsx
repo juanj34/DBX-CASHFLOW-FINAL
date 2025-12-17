@@ -110,6 +110,10 @@ const translations: Translations = {
   clients: { en: 'Clients', es: 'Clientes' },
   addClient: { en: 'Add Client', es: 'Agregar Cliente' },
   cashflowStatement: { en: 'Cashflow Statement', es: 'Estado de Flujo de Caja' },
+  investmentSnapshot: { en: 'Investment Snapshot', es: 'Resumen de Inversión' },
+  amountUntilSPA: { en: 'At Booking (SPA)', es: 'En Reserva (SPA)' },
+  amountDuringConstruction: { en: 'During Construction', es: 'Durante Construcción' },
+  amountAtHandover: { en: 'At Handover', es: 'En Entrega' },
 };
 
 interface LanguageContextType {

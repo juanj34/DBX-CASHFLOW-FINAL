@@ -123,9 +123,23 @@ export const useCashflowQuote = (quoteId?: string) => {
     const clientNames = clientInfo.clients?.map(c => c.name).filter(Boolean).join(', ');
     const titleClientPart = clientNames || clientName || '';
 
+    // Store clients array inside inputs for persistence
+    const inputsWithClients = {
+      ...inputs,
+      _clients: clientInfo.clients || [],
+      _clientInfo: {
+        developer: clientInfo.developer,
+        projectName: clientInfo.projectName,
+        unit: clientInfo.unit,
+        unitType: clientInfo.unitType,
+        unitSizeSqf: clientInfo.unitSizeSqf,
+        unitSizeM2: clientInfo.unitSizeM2,
+      }
+    };
+
     const quoteData = {
       broker_id: user.id,
-      inputs: inputs as any,
+      inputs: inputsWithClients as any,
       client_name: clientName,
       client_country: clientCountry,
       project_name: clientInfo.projectName || null,
