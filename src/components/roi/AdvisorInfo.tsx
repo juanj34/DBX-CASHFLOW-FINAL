@@ -1,21 +1,29 @@
 import { User } from 'lucide-react';
 import { Profile } from '@/hooks/useProfile';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AdvisorInfoProps {
   profile: Profile | null;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
+  showSubtitle?: boolean;
 }
 
-export const AdvisorInfo = ({ profile, size = 'sm' }: AdvisorInfoProps) => {
+export const AdvisorInfo = ({ profile, size = 'sm', showSubtitle = false }: AdvisorInfoProps) => {
+  const { t } = useLanguage();
+  
   if (!profile) return null;
 
-  const avatarSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10';
-  const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
-  const textSize = size === 'sm' ? 'text-sm' : 'text-base';
+  const sizeConfig = {
+    sm: { avatar: 'w-8 h-8', icon: 'w-4 h-4', name: 'text-sm', subtitle: 'text-xs' },
+    md: { avatar: 'w-10 h-10', icon: 'w-5 h-5', name: 'text-base', subtitle: 'text-sm' },
+    lg: { avatar: 'w-12 h-12', icon: 'w-6 h-6', name: 'text-lg', subtitle: 'text-sm' },
+  };
+
+  const config = sizeConfig[size];
 
   return (
-    <div className="flex items-center gap-2">
-      <div className={`${avatarSize} rounded-full overflow-hidden bg-[#2a3142] flex-shrink-0`}>
+    <div className="flex items-center gap-3">
+      <div className={`${config.avatar} rounded-full overflow-hidden bg-[#2a3142] flex-shrink-0 ring-2 ring-[#CCFF00]/30`}>
         {profile.avatar_url ? (
           <img 
             src={profile.avatar_url} 
@@ -24,15 +32,22 @@ export const AdvisorInfo = ({ profile, size = 'sm' }: AdvisorInfoProps) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <User className={`${iconSize} text-gray-500`} />
+            <User className={`${config.icon} text-gray-500`} />
           </div>
         )}
       </div>
-      {profile.full_name && (
-        <span className={`${textSize} text-white font-medium`}>
-          {profile.full_name}
-        </span>
-      )}
+      <div className="flex flex-col">
+        {profile.full_name && (
+          <span className={`${config.name} text-white font-medium leading-tight`}>
+            {profile.full_name}
+          </span>
+        )}
+        {showSubtitle && (
+          <span className={`${config.subtitle} text-[#CCFF00] font-medium leading-tight`}>
+            {t('wealthAdvisor')}
+          </span>
+        )}
+      </div>
     </div>
   );
 };
