@@ -1,6 +1,9 @@
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { TrendingUp, Calendar, Wallet, Target, Tag, Zap } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { useState } from "react";
 
 interface ExitScenario {
   months: number;
@@ -19,8 +22,10 @@ interface ExitScenariosCardsProps {
   totalMonths: number;
   basePrice: number;
   totalEntryCosts: number;
-  exitScenarios: [number, number, number]; // 3 month values (auto-calculated)
+  exitScenarios: number[];
+  setExitScenarios?: (scenarios: number[]) => void;
   rate: number;
+  readOnly?: boolean;
 }
 
 // Calculate equity deployed at exit - returns MAX of plan equity vs threshold requirement
@@ -102,7 +107,7 @@ const monthsToDate = (months: number, bookingMonth: number, bookingYear: number)
 };
 
 // Auto-calculate exit scenarios based on project timeline
-export const calculateAutoExitScenarios = (totalMonths: number): [number, number, number] => {
+export const calculateAutoExitScenarios = (totalMonths: number): number[] => {
   // Exit 3: Always 6 months before handover
   const exit3 = Math.max(12, totalMonths - 6);
   
@@ -127,18 +132,35 @@ export const ExitScenariosCards = ({
   basePrice, 
   totalEntryCosts,
   exitScenarios,
+  setExitScenarios,
   rate,
+  readOnly = false,
 }: ExitScenariosCardsProps) => {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  
   const scenarios = exitScenarios.map(months => 
     calculateScenario(months, inputs, totalMonths, basePrice, totalEntryCosts)
   );
 
-  const labels = ['Exit #1', 'Exit #2', 'Exit #3'];
-  const descriptions = [
-    `~${Math.round((exitScenarios[0] / totalMonths) * 100)}% construction`,
-    `~${Math.round((exitScenarios[1] / totalMonths) * 100)}% construction`,
-    '6 mo before handover'
-  ];
+  const handleAddExit = () => {
+    if (exitScenarios.length >= 5 || !setExitScenarios || readOnly) return;
+    // Add a new exit scenario between the last one and handover
+    const lastExit = exitScenarios[exitScenarios.length - 1] || Math.round(totalMonths * 0.5);
+    const newExit = Math.min(lastExit + 6, totalMonths - 3);
+    setExitScenarios([...exitScenarios, newExit]);
+  };
+
+  const handleRemoveExit = (index: number) => {
+    if (exitScenarios.length <= 1 || !setExitScenarios || readOnly) return;
+    setExitScenarios(exitScenarios.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateExitMonths = (index: number, months: number) => {
+    if (!setExitScenarios || readOnly) return;
+    const newScenarios = [...exitScenarios];
+    newScenarios[index] = months;
+    setExitScenarios(newScenarios);
+  };
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
@@ -147,28 +169,79 @@ export const ExitScenariosCards = ({
           <Target className="w-5 h-5 text-[#CCFF00]" />
           <div>
             <h3 className="font-semibold text-white">Exit Scenarios</h3>
-            <p className="text-xs text-gray-400">Auto-calculated based on {totalMonths} month timeline</p>
+            <p className="text-xs text-gray-400">{exitScenarios.length} scenario{exitScenarios.length !== 1 ? 's' : ''} • Click to edit</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 px-2 py-1 bg-[#CCFF00]/10 rounded-full">
-          <Zap className="w-3 h-3 text-[#CCFF00]" />
-          <span className="text-xs text-[#CCFF00] font-medium">Auto</span>
-        </div>
+        {!readOnly && exitScenarios.length < 5 && setExitScenarios && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddExit}
+            className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add Exit
+          </Button>
+        )}
       </div>
 
-      <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {scenarios.map((scenario, index) => (
           <div 
             key={index}
-            className="p-4 rounded-xl border transition-all bg-[#0d1117] border-[#2a3142]"
+            className="p-4 rounded-xl border transition-all bg-[#0d1117] border-[#2a3142] hover:border-[#CCFF00]/30"
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <div>
-                <span className="text-sm font-medium text-[#CCFF00]">{labels[index]}</span>
-                <p className="text-xs text-gray-500">{descriptions[index]}</p>
+                <span className="text-sm font-medium text-[#CCFF00]">Exit #{index + 1}</span>
+                <p className="text-xs text-gray-500">~{Math.round((exitScenarios[index] / totalMonths) * 100)}% construction</p>
               </div>
+              {!readOnly && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-gray-500 hover:text-[#CCFF00]"
+                    onClick={() => setEditingIndex(editingIndex === index ? null : index)}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                  {exitScenarios.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-gray-500 hover:text-red-400"
+                      onClick={() => handleRemoveExit(index)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Edit Mode - Slider */}
+            {!readOnly && editingIndex === index && (
+              <div className="mb-3 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400">Exit after:</span>
+                  <span className="text-sm font-bold text-[#CCFF00]">{exitScenarios[index]} months</span>
+                </div>
+                <Slider
+                  value={[exitScenarios[index]]}
+                  onValueChange={([v]) => handleUpdateExitMonths(index, v)}
+                  min={6}
+                  max={totalMonths - 1}
+                  step={1}
+                  className="roi-slider-lime"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>6mo</span>
+                  <span>{totalMonths - 1}mo</span>
+                </div>
+              </div>
+            )}
 
             {/* Time Info */}
             <div className="mb-3 p-2 bg-[#1a1f2e] rounded-lg">
@@ -183,7 +256,7 @@ export const ExitScenariosCards = ({
 
             {/* Metrics */}
             <div className="space-y-2">
-              {/* Original Price - NEW */}
+              {/* Original Price */}
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Tag className="w-3 h-3" />

@@ -4,7 +4,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects, useLandmarks } from "@/hooks/useMapData";
-import { Loader2, Presentation, Building2, X, LogOut, MapPinned, Route, LayoutDashboard, Settings } from "lucide-react";
+import { Loader2, Presentation, Building2, X, MapPinned, Route, Settings, Home } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -775,26 +775,26 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         </div>
       </div>
 
-      {/* Bottom right controls - Dashboard + Settings + Presentation + Logout */}
+      {/* Bottom right controls - Home + Map Config + Presentation */}
       <div className="absolute bottom-4 right-4 z-[1060] flex items-center gap-3">
-        {/* Dashboard button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/home")}
-          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142] gap-2"
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          Dashboard
-        </Button>
-
-        {/* Settings button */}
+        {/* Home button */}
         <Button
           variant="outline"
           size="icon"
-          onClick={() => navigate("/account-settings")}
+          onClick={() => navigate("/home")}
           className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142]"
-          title="Account Settings"
+          title="Home"
+        >
+          <Home className="w-4 h-4" />
+        </Button>
+
+        {/* Map Config button (wheelhouse) */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate("/map-config")}
+          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142]"
+          title="Map Configuration"
         >
           <Settings className="w-4 h-4" />
         </Button>
@@ -811,20 +811,6 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           title={presentationMode ? "Exit Presentation Mode" : "Enter Presentation Mode"}
         >
           {presentationMode ? <X className="w-4 h-4" /> : <Presentation className="w-4 h-4" />}
-        </Button>
-
-        {/* Logout button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            navigate("/login");
-          }}
-          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-red-400 hover:bg-[#2a3142] gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
         </Button>
       </div>
 

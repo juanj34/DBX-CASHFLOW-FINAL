@@ -49,7 +49,7 @@ const QuotesDashboard = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/home">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
@@ -59,7 +59,7 @@ const QuotesDashboard = () => {
               <p className="text-sm text-gray-400">{quotes.length} quotes saved</p>
             </div>
           </div>
-          <Link to="/oi-calculator">
+          <Link to="/cash-statement">
             <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
               <Plus className="w-4 h-4" />
               New Quote
@@ -76,7 +76,7 @@ const QuotesDashboard = () => {
             </div>
             <h2 className="text-xl text-white mb-2">No quotes yet</h2>
             <p className="text-gray-400 mb-6">Create your first cashflow statement to get started</p>
-            <Link to="/oi-calculator">
+            <Link to="/cash-statement">
               <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90">
                 Create Quote
               </Button>

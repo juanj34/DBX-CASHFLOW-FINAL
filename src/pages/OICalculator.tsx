@@ -115,11 +115,16 @@ const OICalculatorContent = () => {
     }
   }, [inputs, clientInfo, quote?.id, quoteLoading]);
 
-  // Auto-calculate exit scenarios based on project timeline
-  const exitScenarios = useMemo(() => 
-    calculateAutoExitScenarios(calculations.totalMonths),
-    [calculations.totalMonths]
+  // Exit scenarios - now user-configurable
+  const [exitScenarios, setExitScenarios] = useState<number[]>(() => 
+    calculateAutoExitScenarios(calculations.totalMonths)
   );
+
+  // Update exit scenarios when totalMonths changes significantly
+  useEffect(() => {
+    const autoScenarios = calculateAutoExitScenarios(calculations.totalMonths);
+    setExitScenarios(autoScenarios);
+  }, [calculations.totalMonths]);
 
   const bestROEScenario = calculations.scenarios.reduce<OIExitScenario | null>(
     (best, current) => (!best || current.trueROE > best.trueROE ? current : best),
@@ -271,6 +276,7 @@ const OICalculatorContent = () => {
               basePrice={calculations.basePrice}
               totalEntryCosts={calculations.totalEntryCosts}
               exitScenarios={exitScenarios}
+              setExitScenarios={setExitScenarios}
               rate={rate}
             />
 

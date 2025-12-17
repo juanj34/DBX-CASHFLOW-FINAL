@@ -70,7 +70,7 @@ const CashflowViewContent = () => {
 
   const calculations = inputs ? useOICalculations(inputs) : null;
 
-  const exitScenarios: [number, number, number] = useMemo(() => 
+  const exitScenarios: number[] = useMemo(() => 
     calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36],
     [calculations?.totalMonths]
   );
@@ -154,6 +154,7 @@ const CashflowViewContent = () => {
             totalEntryCosts={calculations.totalEntryCosts}
             exitScenarios={exitScenarios}
             rate={rate}
+            readOnly={true}
           />
 
           <PaymentBreakdown 
