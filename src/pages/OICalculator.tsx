@@ -30,6 +30,8 @@ const OICalculator = () => {
     // Entry Costs (simplified - DLD fixed at 4%)
     eoiFee: 50000, // EOI / Booking fee
     oqoodFee: 5000,
+    // Exit threshold
+    minimumExitThreshold: 30,      // Developer requires 30% paid before resale
   });
 
   // Custom exit scenarios (months)

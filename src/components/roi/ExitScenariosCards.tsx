@@ -26,17 +26,17 @@ interface ExitScenariosCardsProps {
   rate: number;
 }
 
-// Calculate equity deployed at exit
+// Calculate equity deployed at exit - returns MAX of plan equity vs threshold requirement
 const calculateEquityAtExit = (
   exitMonths: number,
   inputs: OIInputs,
   totalMonths: number,
   basePrice: number
 ): number => {
-  let equity = 0;
+  let planEquity = 0;
   
   // Downpayment - always paid
-  equity += basePrice * inputs.downpaymentPercent / 100;
+  planEquity += basePrice * inputs.downpaymentPercent / 100;
   
   // Additional payments
   inputs.additionalPayments.forEach(m => {
@@ -51,17 +51,20 @@ const calculateEquityAtExit = (
     }
     
     if (triggered && m.paymentPercent > 0) {
-      equity += basePrice * m.paymentPercent / 100;
+      planEquity += basePrice * m.paymentPercent / 100;
     }
   });
   
   // Handover payment - only if at or after handover
   if (exitMonths >= totalMonths) {
     const handoverPercent = 100 - inputs.preHandoverPercent;
-    equity += basePrice * handoverPercent / 100;
+    planEquity += basePrice * handoverPercent / 100;
   }
   
-  return equity;
+  // KEY: Return MAX of plan equity vs threshold requirement
+  // If threshold is higher than what we've paid, we need to advance payments
+  const thresholdAmount = basePrice * (inputs.minimumExitThreshold || 30) / 100;
+  return Math.max(planEquity, thresholdAmount);
 };
 
 const calculateScenario = (
@@ -186,13 +189,13 @@ export const ExitScenariosCards = ({
                   value={[exitScenarios[index]]}
                   onValueChange={([value]) => updateScenario(index, value)}
                   min={6}
-                  max={totalMonths}
+                  max={index === 2 ? totalMonths - 1 : totalMonths}
                   step={1}
                   className="roi-slider-lime"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>6 mo</span>
-                  <span>{totalMonths} mo (Handover)</span>
+                  <span>{index === 2 ? `${totalMonths - 1} mo` : `${totalMonths} mo (Handover)`}</span>
                 </div>
               </div>
             )}
@@ -217,8 +220,8 @@ export const ExitScenariosCards = ({
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">+ Entry Costs</span>
-                <span className="text-sm text-gray-300 font-mono">{formatCurrency(scenario.entryCosts, currency, rate)}</span>
+                <span className="text-xs text-red-400">+ Entry Costs</span>
+                <span className="text-sm text-red-400 font-mono">{formatCurrency(scenario.entryCosts, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center border-t border-[#2a3142] pt-1">
