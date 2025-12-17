@@ -1,26 +1,56 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 interface ZoneInfoCardProps {
   zone: {
     name: string;
+    tagline?: string;
     description?: string;
     color: string;
+    image_url?: string;
+    // Investment Profile
+    concept?: string;
+    investment_focus?: string;
+    main_developer?: string;
+    // Maturity
+    maturity_level?: number;
+    maturity_label?: string;
+    // Prices
+    price_range_min?: number;
+    price_range_max?: number;
+    ticket_1br_min?: number;
+    ticket_1br_max?: number;
+    // Legacy
     population?: number;
     occupancy_rate?: number;
     absorption_rate?: number;
-    image_url?: string;
   };
   onClose: () => void;
 }
 
+const formatPrice = (value: number): string => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  }
+  return value.toLocaleString();
+};
+
 export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
+  const hasInvestmentProfile = zone.concept || zone.investment_focus || zone.main_developer || 
+    zone.maturity_level || zone.price_range_min || zone.ticket_1br_min;
+
   return (
     <Card className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-y-auto shadow-lg z-10" data-info-card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-        <CardTitle className="text-xl">{zone.name}</CardTitle>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="flex-1 pr-2">
+          <CardTitle className="text-xl leading-tight">{zone.name}</CardTitle>
+          {zone.tagline && (
+            <p className="text-sm text-muted-foreground italic mt-1">"{zone.tagline}"</p>
+          )}
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0">
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
@@ -32,32 +62,97 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
             className="w-full h-40 object-cover rounded-lg"
           />
         )}
+
+        {hasInvestmentProfile && (
+          <div className="space-y-4">
+            <p className="font-bold text-sm text-primary border-b pb-1">Perfil de Inversión</p>
+
+            {zone.concept && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Concepto</p>
+                <p className="text-sm text-muted-foreground">{zone.concept}</p>
+              </div>
+            )}
+
+            {(zone.maturity_level !== null && zone.maturity_level !== undefined) && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Nivel de Madurez</p>
+                <div className="space-y-1">
+                  <Progress value={zone.maturity_level} className="h-2" />
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{zone.maturity_level}%</span>
+                    {zone.maturity_label && (
+                      <span className="text-muted-foreground">{zone.maturity_label}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {zone.investment_focus && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Enfoque de Inversión</p>
+                <p className="text-sm text-muted-foreground">{zone.investment_focus}</p>
+              </div>
+            )}
+
+            {(zone.price_range_min || zone.price_range_max) && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Rango de Precios</p>
+                <p className="text-sm text-muted-foreground">
+                  {zone.price_range_min?.toLocaleString()} – {zone.price_range_max?.toLocaleString()} AED/sqft
+                </p>
+              </div>
+            )}
+
+            {(zone.ticket_1br_min || zone.ticket_1br_max) && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Ticket 1BR</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatPrice(zone.ticket_1br_min || 0)} – {formatPrice(zone.ticket_1br_max || 0)} AED
+                </p>
+              </div>
+            )}
+
+            {zone.main_developer && (
+              <div>
+                <p className="font-semibold text-sm mb-1">Desarrollador Principal</p>
+                <p className="text-sm text-muted-foreground">{zone.main_developer}</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {zone.description && (
           <div>
             <p className="font-semibold text-sm mb-1">Descripción</p>
             <p className="text-sm text-muted-foreground">{zone.description}</p>
           </div>
         )}
-        <div className="space-y-2">
-          {zone.population !== null && zone.population !== undefined && (
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">Population:</span>
-              <span>{zone.population.toLocaleString()}</span>
-            </div>
-          )}
-          {zone.occupancy_rate !== null && zone.occupancy_rate !== undefined && (
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">Occupancy Rate:</span>
-              <span>{zone.occupancy_rate}%</span>
-            </div>
-          )}
-          {zone.absorption_rate !== null && zone.absorption_rate !== undefined && (
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">Absorption Rate:</span>
-              <span>{zone.absorption_rate}%</span>
-            </div>
-          )}
-        </div>
+
+        {/* Legacy fields - only show if no investment profile */}
+        {!hasInvestmentProfile && (
+          <div className="space-y-2">
+            {zone.population !== null && zone.population !== undefined && (
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Population:</span>
+                <span>{zone.population.toLocaleString()}</span>
+              </div>
+            )}
+            {zone.occupancy_rate !== null && zone.occupancy_rate !== undefined && (
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Occupancy Rate:</span>
+                <span>{zone.occupancy_rate}%</span>
+              </div>
+            )}
+            {zone.absorption_rate !== null && zone.absorption_rate !== undefined && (
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Absorption Rate:</span>
+                <span>{zone.absorption_rate}%</span>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

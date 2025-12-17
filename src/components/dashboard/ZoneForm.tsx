@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -32,12 +33,26 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
   const [formData, setFormData] = useState({
     name: zone?.name || "",
+    tagline: zone?.tagline || "",
     description: zone?.description || "",
     color: zone?.color || "#2563EB",
+    image_url: zone?.image_url || "",
+    // Investment Profile
+    concept: zone?.concept || "",
+    investment_focus: zone?.investment_focus || "",
+    main_developer: zone?.main_developer || "",
+    // Maturity
+    maturity_level: zone?.maturity_level || 50,
+    maturity_label: zone?.maturity_label || "",
+    // Prices
+    price_range_min: zone?.price_range_min || "",
+    price_range_max: zone?.price_range_max || "",
+    ticket_1br_min: zone?.ticket_1br_min || "",
+    ticket_1br_max: zone?.ticket_1br_max || "",
+    // Legacy fields
     population: zone?.population || "",
     occupancy_rate: zone?.occupancy_rate || "",
     absorption_rate: zone?.absorption_rate || "",
-    image_url: zone?.image_url || "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -81,8 +96,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({
-        title: "Validation error",
-        description: "Zone name is required",
+        title: "Error de validación",
+        description: "El nombre de la zona es requerido",
         variant: "destructive",
       });
       return;
@@ -90,8 +105,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
     if (!draw.current) {
       toast({
-        title: "Validation error",
-        description: "Please draw a polygon on the map",
+        title: "Error de validación",
+        description: "Por favor dibuja un polígono en el mapa",
         variant: "destructive",
       });
       return;
@@ -100,8 +115,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     const data = draw.current.getAll();
     if (data.features.length === 0) {
       toast({
-        title: "Validation error",
-        description: "Please draw a polygon on the map",
+        title: "Error de validación",
+        description: "Por favor dibuja un polígono en el mapa",
         variant: "destructive",
       });
       return;
@@ -113,13 +128,27 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
     const zoneData = {
       name: formData.name,
+      tagline: formData.tagline || null,
       description: formData.description || null,
       color: formData.color,
       polygon,
+      image_url: formData.image_url || null,
+      // Investment Profile
+      concept: formData.concept || null,
+      investment_focus: formData.investment_focus || null,
+      main_developer: formData.main_developer || null,
+      // Maturity
+      maturity_level: formData.maturity_level || null,
+      maturity_label: formData.maturity_label || null,
+      // Prices
+      price_range_min: formData.price_range_min ? parseFloat(formData.price_range_min) : null,
+      price_range_max: formData.price_range_max ? parseFloat(formData.price_range_max) : null,
+      ticket_1br_min: formData.ticket_1br_min ? parseFloat(formData.ticket_1br_min) : null,
+      ticket_1br_max: formData.ticket_1br_max ? parseFloat(formData.ticket_1br_max) : null,
+      // Legacy fields
       population: formData.population ? parseInt(formData.population) : null,
       occupancy_rate: formData.occupancy_rate ? parseFloat(formData.occupancy_rate) : null,
       absorption_rate: formData.absorption_rate ? parseFloat(formData.absorption_rate) : null,
-      image_url: formData.image_url || null,
     };
 
     let error;
@@ -133,14 +162,14 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
     if (error) {
       toast({
-        title: "Error saving zone",
+        title: "Error guardando zona",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Zone saved",
-        description: `Zone "${formData.name}" has been successfully ${zone ? "updated" : "created"}.`,
+        title: "Zona guardada",
+        description: `La zona "${formData.name}" ha sido ${zone ? "actualizada" : "creada"} exitosamente.`,
       });
       onSaved();
     }
@@ -150,94 +179,183 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{zone ? "Edit Zone" : "Create New Zone"}</DialogTitle>
+          <DialogTitle>{zone ? "Editar Zona" : "Crear Nueva Zona"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-6">
+          {/* Section 1: Basic Information */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg border-b pb-2">Información Básica</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre de la Zona *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="ej: Downtown Dubai"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="color">Color del Polígono</Label>
+                <Input
+                  id="color"
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name">Zone Name *</Label>
+              <Label htmlFor="tagline">Tagline</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Downtown Dubai"
+                id="tagline"
+                value={formData.tagline}
+                onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+                placeholder='ej: "El Centro del Mundo"'
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
+              <Label htmlFor="image_url">URL de Imagen</Label>
               <Input
-                id="color"
-                type="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Enter zone description..."
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="population">Population</Label>
-              <Input
-                id="population"
-                type="number"
-                value={formData.population}
-                onChange={(e) => setFormData({ ...formData, population: e.target.value })}
-                placeholder="e.g., 50000"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="occupancy_rate">Occupancy Rate (%)</Label>
-              <Input
-                id="occupancy_rate"
-                type="number"
-                step="0.1"
-                value={formData.occupancy_rate}
-                onChange={(e) => setFormData({ ...formData, occupancy_rate: e.target.value })}
-                placeholder="e.g., 85.5"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="absorption_rate">Absorption Rate (%)</Label>
-              <Input
-                id="absorption_rate"
-                type="number"
-                step="0.1"
-                value={formData.absorption_rate}
-                onChange={(e) => setFormData({ ...formData, absorption_rate: e.target.value })}
-                placeholder="e.g., 92.3"
+                id="image_url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://..."
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input
-              id="image_url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://..."
-            />
+          {/* Section 2: Investment Profile */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg border-b pb-2">Perfil de Inversión</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="concept">Concepto</Label>
+              <Textarea
+                id="concept"
+                value={formData.concept}
+                onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
+                placeholder="ej: El kilómetro cuadrado más prestigioso y turístico."
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="investment_focus">Enfoque de Inversión</Label>
+                <Input
+                  id="investment_focus"
+                  value={formData.investment_focus}
+                  onChange={(e) => setFormData({ ...formData, investment_focus: e.target.value })}
+                  placeholder="ej: Airbnb + Preservación de Capital"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="main_developer">Desarrollador Principal</Label>
+                <Input
+                  id="main_developer"
+                  value={formData.main_developer}
+                  onChange={(e) => setFormData({ ...formData, main_developer: e.target.value })}
+                  placeholder="ej: Emaar"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Draw Zone Polygon *</Label>
+          {/* Section 3: Maturity Level */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg border-b pb-2">Nivel de Madurez</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="maturity_level">Nivel de Madurez: {formData.maturity_level}%</Label>
+                <Slider
+                  value={[formData.maturity_level]}
+                  onValueChange={(value) => setFormData({ ...formData, maturity_level: value[0] })}
+                  min={0}
+                  max={100}
+                  step={5}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maturity_label">Etiqueta de Madurez</Label>
+                <Input
+                  id="maturity_label"
+                  value={formData.maturity_label}
+                  onChange={(e) => setFormData({ ...formData, maturity_label: e.target.value })}
+                  placeholder="ej: Saturado / Escasez"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Prices */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg border-b pb-2">Precios</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price_range_min">Precio Mínimo (AED/sqft)</Label>
+                <Input
+                  id="price_range_min"
+                  type="number"
+                  value={formData.price_range_min}
+                  onChange={(e) => setFormData({ ...formData, price_range_min: e.target.value })}
+                  placeholder="ej: 2200"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price_range_max">Precio Máximo (AED/sqft)</Label>
+                <Input
+                  id="price_range_max"
+                  type="number"
+                  value={formData.price_range_max}
+                  onChange={(e) => setFormData({ ...formData, price_range_max: e.target.value })}
+                  placeholder="ej: 4500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticket_1br_min">Ticket 1BR Mínimo (AED)</Label>
+                <Input
+                  id="ticket_1br_min"
+                  type="number"
+                  value={formData.ticket_1br_min}
+                  onChange={(e) => setFormData({ ...formData, ticket_1br_min: e.target.value })}
+                  placeholder="ej: 2000000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ticket_1br_max">Ticket 1BR Máximo (AED)</Label>
+                <Input
+                  id="ticket_1br_max"
+                  type="number"
+                  value={formData.ticket_1br_max}
+                  onChange={(e) => setFormData({ ...formData, ticket_1br_max: e.target.value })}
+                  placeholder="ej: 3500000"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Map */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg border-b pb-2">Polígono de la Zona</h3>
+            
             <p className="text-sm text-muted-foreground">
-              Use the polygon tool to draw the zone boundary on the map
+              Usa la herramienta de polígono para dibujar el límite de la zona en el mapa
             </p>
             <div
               ref={mapContainer}
@@ -253,11 +371,11 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={onClose} disabled={saving}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {zone ? "Update Zone" : "Create Zone"}
+              {zone ? "Actualizar Zona" : "Crear Zona"}
             </Button>
           </div>
         </div>
