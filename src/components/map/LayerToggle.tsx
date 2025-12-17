@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Layers, ChevronDown, ChevronUp, MapIcon, Train, MapPin, Building2 } from "lucide-react";
+import { Layers, ChevronDown, ChevronUp, MapIcon, Train, MapPin, Building2, Camera } from "lucide-react";
 
 interface LayerToggleProps {
   zonesVisible: boolean;
   hotspotsVisible: boolean;
   projectsVisible: boolean;
   metroLinesVisible: boolean;
+  landmarksVisible?: boolean;
   onZonesToggle: (visible: boolean) => void;
   onHotspotsToggle: (visible: boolean) => void;
   onProjectsToggle: (visible: boolean) => void;
   onMetroLinesToggle: (visible: boolean) => void;
+  onLandmarksToggle?: (visible: boolean) => void;
 }
 
 export const LayerToggle = ({
@@ -19,10 +21,12 @@ export const LayerToggle = ({
   hotspotsVisible,
   projectsVisible,
   metroLinesVisible,
+  landmarksVisible = true,
   onZonesToggle,
   onHotspotsToggle,
   onProjectsToggle,
   onMetroLinesToggle,
+  onLandmarksToggle,
 }: LayerToggleProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -121,6 +125,20 @@ export const LayerToggle = ({
               onCheckedChange={onProjectsToggle}
             />
           </div>
+
+          {onLandmarksToggle && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4 h-4 text-muted-foreground" />
+                <Label htmlFor="landmarks-toggle" className="text-sm">Landmarks</Label>
+              </div>
+              <Switch
+                id="landmarks-toggle"
+                checked={landmarksVisible}
+                onCheckedChange={onLandmarksToggle}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

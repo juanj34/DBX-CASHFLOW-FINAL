@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, Map, MapPin, Building2, Sparkles, Users } from "lucide-react";
+import { LogOut, Map, MapPin, Building2, Sparkles, Users, Camera } from "lucide-react";
 import ZonesManager from "./ZonesManager";
 import HotspotsManager from "./HotspotsManager";
 import ProjectsManager from "./ProjectsManager";
 import DevelopersManager from "./DevelopersManager";
+import LandmarksManager from "./LandmarksManager";
 import AIChatPanel from "./AIChatPanel";
 
-type ActiveTab = "zones" | "hotspots" | "projects" | "developers";
+type ActiveTab = "zones" | "hotspots" | "projects" | "developers" | "landmarks";
 
 const DashboardLayout = () => {
   const { signOut } = useAuth();
@@ -59,6 +60,15 @@ const DashboardLayout = () => {
             <Users className="mr-2 h-4 w-4" />
             Developers
           </Button>
+
+          <Button
+            variant={activeTab === "landmarks" ? "secondary" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => setActiveTab("landmarks")}
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            Landmarks
+          </Button>
         </nav>
 
         <div className="absolute bottom-0 w-64 p-4 border-t">
@@ -75,6 +85,7 @@ const DashboardLayout = () => {
         {activeTab === "hotspots" && <HotspotsManager />}
         {activeTab === "projects" && <ProjectsManager />}
         {activeTab === "developers" && <DevelopersManager />}
+        {activeTab === "landmarks" && <LandmarksManager />}
 
         {/* Floating AI Button */}
         <Button

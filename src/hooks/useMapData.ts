@@ -49,3 +49,18 @@ export const useProjects = () => {
     },
   });
 };
+
+export const useLandmarks = () => {
+  return useQuery({
+    queryKey: ["landmarks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landmarks")
+        .select("*")
+        .eq("visible", true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+};
