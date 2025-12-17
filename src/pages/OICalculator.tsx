@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target, Settings } from "lucide-react";
+import { LayoutDashboard, Wifi, WifiOff, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
+import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
 import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
@@ -56,7 +56,6 @@ const OICalculatorContent = () => {
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
-  const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
 
   const { profile } = useProfile();
   const { 
@@ -77,20 +76,33 @@ const OICalculatorContent = () => {
   // Load quote data or draft on mount
   useEffect(() => {
     if (quote) {
-      setInputs(quote.inputs);
+      // Extract clients from inputs._clients if available (new format)
+      const savedClients = (quote.inputs as any)?._clients || [];
+      const savedClientInfo = (quote.inputs as any)?._clientInfo || {};
+      
+      // Clean inputs (remove _clients and _clientInfo)
+      const cleanInputs = { ...quote.inputs };
+      delete (cleanInputs as any)._clients;
+      delete (cleanInputs as any)._clientInfo;
+      
+      setInputs(cleanInputs);
+      
       // Migrate from legacy single client format to clients array
-      const clients = quote.client_name 
-        ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }]
-        : [];
+      const clients = savedClients.length > 0 
+        ? savedClients
+        : quote.client_name 
+          ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }]
+          : [];
+          
       setClientInfo({
-        developer: quote.developer || '',
-        projectName: quote.project_name || '',
+        developer: savedClientInfo.developer || quote.developer || '',
+        projectName: savedClientInfo.projectName || quote.project_name || '',
         clients,
         brokerName: profile?.full_name || '',
-        unit: quote.unit || '',
-        unitSizeSqf: quote.unit_size_sqf || 0,
-        unitSizeM2: quote.unit_size_m2 || 0,
-        unitType: quote.unit_type || '',
+        unit: savedClientInfo.unit || quote.unit || '',
+        unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0,
+        unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0,
+        unitType: savedClientInfo.unitType || quote.unit_type || '',
       });
     } else if (!quoteId) {
       // Load draft from localStorage
@@ -128,15 +140,6 @@ const OICalculatorContent = () => {
     const autoScenarios = calculateAutoExitScenarios(calculations.totalMonths);
     setExitScenarios(autoScenarios);
   }, [calculations.totalMonths]);
-
-  const bestROEScenario = calculations.scenarios.reduce<OIExitScenario | null>(
-    (best, current) => (!best || current.trueROE > best.trueROE ? current : best),
-    null
-  );
-
-  const handoverScenario = calculations.scenarios.find(s => s.exitMonths === calculations.totalMonths);
-
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const handleSave = useCallback(async () => {
     return saveQuote(inputs, clientInfo, quote?.id);
@@ -253,241 +256,74 @@ const OICalculatorContent = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-6">
         {/* Client & Unit Information - Read-only display */}
         <ClientUnitInfo 
           data={clientInfo} 
           onEditClick={() => setClientModalOpen(true)} 
-          brokerProfile={profile}
         />
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Left Column - Charts & Tables */}
-          <div className="xl:col-span-2 space-y-8">
-            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-
-            <ExitScenariosCards 
-              inputs={inputs}
-              currency={currency}
-              totalMonths={calculations.totalMonths}
-              basePrice={calculations.basePrice}
-              totalEntryCosts={calculations.totalEntryCosts}
-              exitScenarios={exitScenarios}
-              setExitScenarios={setExitScenarios}
-              rate={rate}
-            />
-
+        {/* Two Column Layout: Payment Plan (2/3) + Investment Snapshot (1/3) */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+          <div className="xl:col-span-2">
             <PaymentBreakdown 
               inputs={inputs}
               currency={currency}
               totalMonths={calculations.totalMonths}
               rate={rate}
             />
-
-            <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
           </div>
-
-          {/* Right Column - Metrics Panel */}
           <div className="xl:col-span-1">
-            <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 sticky top-24">
-              <h3 className="font-semibold text-white mb-4">{t('investmentSummary')}</h3>
-              
-              <div className="space-y-4">
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">{t('basePropertyPrice')}</div>
-                  <div className="text-xl font-bold text-white font-mono">
-                    {formatCurrency(inputs.basePrice, currency, rate)}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">{t('paymentPlan')}</div>
-                  <div className="text-xl font-bold text-[#CCFF00] font-mono">
-                    {inputs.preHandoverPercent}/{100 - inputs.preHandoverPercent}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {t('downpayment')}: {inputs.downpaymentPercent}% + {inputs.additionalPayments.length} {t('additional')}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">{t('constructionPeriod')}</div>
-                  <div className="text-xl font-bold text-white font-mono">
-                    {calculations.totalMonths} {t('months')}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {monthNames[inputs.bookingMonth - 1]} {inputs.bookingYear} → Q{inputs.handoverQuarter} {inputs.handoverYear}
-                  </div>
-                </div>
-
-                {/* Editable Financial Metrics */}
-                <div className="p-4 bg-[#0d1117] rounded-xl space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400">{t('appreciationRate')}</span>
-                    <div className="flex items-center gap-2">
-                      <Slider
-                        value={[inputs.appreciationRate]}
-                        onValueChange={([v]) => setInputs(prev => ({ ...prev, appreciationRate: v }))}
-                        min={1}
-                        max={25}
-                        step={0.5}
-                        className="w-20 roi-slider-lime"
-                      />
-                      <span className="text-sm font-bold text-[#CCFF00] font-mono w-12 text-right">{inputs.appreciationRate}%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400">{t('rentalYield')}</span>
-                    <div className="flex items-center gap-2">
-                      <Slider
-                        value={[inputs.rentalYieldPercent]}
-                        onValueChange={([v]) => setInputs(prev => ({ ...prev, rentalYieldPercent: v }))}
-                        min={3}
-                        max={15}
-                        step={0.5}
-                        className="w-20 roi-slider-lime"
-                      />
-                      <span className="text-sm font-bold text-white font-mono w-12 text-right">{inputs.rentalYieldPercent}%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Target className="w-3 h-3 text-[#CCFF00]" />
-                      {t('minimumExitThreshold')}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Slider
-                        value={[inputs.minimumExitThreshold]}
-                        onValueChange={([v]) => setInputs(prev => ({ ...prev, minimumExitThreshold: v }))}
-                        min={10}
-                        max={100}
-                        step={5}
-                        className="w-20 roi-slider-lime"
-                      />
-                      <span className="text-sm font-bold text-[#CCFF00] font-mono w-12 text-right">{inputs.minimumExitThreshold}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Entry Costs Summary */}
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">{t('totalEntryCosts')}</div>
-                  <div className="text-xl font-bold text-red-400 font-mono">
-                    -{formatCurrency(calculations.totalEntryCosts, currency, rate)}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    DLD 4% + Oqood {formatCurrency(inputs.oqoodFee, currency, rate)}
-                  </div>
-                </div>
-
-                {/* Best ROE Highlight */}
-                {bestROEScenario && (
-                  <div className="p-4 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl">
-                    <div className="text-xs text-[#CCFF00] mb-1">{t('bestROE')} ({bestROEScenario.exitMonths} {t('months')})</div>
-                    <div className="text-2xl font-bold text-[#CCFF00] font-mono">
-                      {bestROEScenario.trueROE.toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {t('profit')}: {formatCurrency(bestROEScenario.trueProfit, currency, rate)}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {t('capital')}: {formatCurrency(bestROEScenario.totalCapitalDeployed, currency, rate)}
-                    </div>
-                  </div>
-                )}
-
-                {/* Handover */}
-                {handoverScenario && (
-                  <div className="p-4 bg-[#0d1117] rounded-xl">
-                    <div className="text-xs text-gray-400 mb-1">{t('atHandover')} ({handoverScenario.exitMonths} {t('months')})</div>
-                    <div className="text-xl font-bold text-white font-mono">
-                      {formatCurrency(handoverScenario.exitPrice, currency, rate)}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {t('profit')}: {formatCurrency(handoverScenario.trueProfit, currency, rate)}
-                    </div>
-                  </div>
-                )}
-
-                {/* Hold Analysis - Collapsible */}
-                <div className="border border-[#2a3142] rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setHoldAnalysisOpen(!holdAnalysisOpen)}
-                    className="w-full p-4 flex items-center justify-between bg-[#0d1117] hover:bg-[#161b26] transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Home className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">{t('ifYouHoldAfterHandover')}</span>
-                    </div>
-                    {holdAnalysisOpen ? (
-                      <ChevronUp className="w-4 h-4 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    )}
-                  </button>
-                  {holdAnalysisOpen && (
-                    <div className="p-4 space-y-3 bg-[#0d1117]/50">
-                      <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">{t('totalCapitalInvested')}</span>
-                        <span className="text-sm text-white font-mono">
-                          {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency, rate)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">{t('valueAtHandover')}</span>
-                        <span className="text-sm text-white font-mono">
-                          {formatCurrency(calculations.holdAnalysis.propertyValueAtHandover, currency, rate)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">{t('annualRentEst')}</span>
-                        <span className="text-sm text-[#CCFF00] font-mono">
-                          {formatCurrency(calculations.holdAnalysis.annualRent, currency, rate)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">{t('rentalYieldOnInvestment')}</span>
-                        <span className="text-sm text-white font-mono">
-                          {calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">{t('yearsToBreakEven')}</span>
-                        <span className="text-sm text-white font-mono">
-                          {calculations.holdAnalysis.yearsToBreakEven.toFixed(1)} {language === 'en' ? 'years' : 'años'}
-                        </span>
-                      </div>
-                      <div className="pt-2 border-t border-[#2a3142]">
-                        <p className="text-xs text-gray-500">
-                          💡 {t('holdingMeansFullPayment')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Navigation to Full Calculator */}
-              <div className="mt-6 pt-4 border-t border-[#2a3142] space-y-2">
-                <Link to="/my-quotes">
-                  <Button 
-                    variant="outline" 
-                    className="w-full bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
-                  >
-                    {t('myQuotes')}
-                  </Button>
-                </Link>
-                <Link to="/roi-calculator">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
-                  >
-                    {t('fullROICalculator')}
-                  </Button>
-                </Link>
-              </div>
-            </div>
+            <InvestmentSnapshot
+              inputs={inputs}
+              currency={currency}
+              totalMonths={calculations.totalMonths}
+              totalEntryCosts={calculations.totalEntryCosts}
+              rate={rate}
+            />
           </div>
+        </div>
+
+        {/* Growth Curve */}
+        <div className="mb-6">
+          <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+        </div>
+
+        {/* Exit Scenarios */}
+        <div className="mb-6">
+          <ExitScenariosCards 
+            inputs={inputs}
+            currency={currency}
+            totalMonths={calculations.totalMonths}
+            basePrice={calculations.basePrice}
+            totalEntryCosts={calculations.totalEntryCosts}
+            exitScenarios={exitScenarios}
+            setExitScenarios={setExitScenarios}
+            rate={rate}
+          />
+        </div>
+
+        {/* Yearly Projection Table */}
+        <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
+
+        {/* Navigation Links */}
+        <div className="mt-8 flex gap-4">
+          <Link to="/my-quotes">
+            <Button 
+              variant="outline" 
+              className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
+            >
+              {t('myQuotes')}
+            </Button>
+          </Link>
+          <Link to="/roi-calculator">
+            <Button 
+              variant="outline" 
+              className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+            >
+              {t('fullROICalculator')}
+            </Button>
+          </Link>
         </div>
       </main>
     </div>
