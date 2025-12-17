@@ -66,7 +66,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
       <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
         <CreditCard className="w-5 h-5 text-[#CCFF00]" />
         <div>
-          <h3 className="font-semibold text-white">PAYMENT PLAN ({preHandoverPercent})</h3>
+          <h3 className="font-semibold text-white">PAYMENT BREAKDOWN</h3>
           <p className="text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} payment structure</p>
         </div>
       </div>

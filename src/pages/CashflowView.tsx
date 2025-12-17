@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OIGrowthCurve } from '@/components/roi/OIGrowthCurve';
 import { OIYearlyProjectionTable } from '@/components/roi/OIYearlyProjectionTable';
 import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
+import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
@@ -173,6 +174,27 @@ const CashflowViewContent = () => {
         {/* Client & Unit Information - Read only */}
         <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
+        {/* Two Column Layout: Payment Breakdown + Investment Snapshot */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+          <div className="xl:col-span-2">
+            <PaymentBreakdown 
+              inputs={inputs}
+              currency={currency}
+              totalMonths={calculations.totalMonths}
+              rate={rate}
+            />
+          </div>
+          <div className="xl:col-span-1">
+            <InvestmentSnapshot 
+              inputs={inputs}
+              currency={currency}
+              totalMonths={calculations.totalMonths}
+              totalEntryCosts={calculations.totalEntryCosts}
+              rate={rate}
+            />
+          </div>
+        </div>
+
         <div className="space-y-8">
           <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
 
@@ -185,13 +207,6 @@ const CashflowViewContent = () => {
             exitScenarios={exitScenarios}
             rate={rate}
             readOnly={true}
-          />
-
-          <PaymentBreakdown 
-            inputs={inputs}
-            currency={currency}
-            totalMonths={calculations.totalMonths}
-            rate={rate}
           />
 
           <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
