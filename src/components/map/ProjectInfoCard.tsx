@@ -107,7 +107,10 @@ export const ProjectInfoCard = ({ project, onClose }: ProjectInfoCardProps) => {
         )}
         
         {project.description && (
-          <p className="text-sm text-muted-foreground">{project.description}</p>
+          <div>
+            <p className="font-semibold text-sm mb-1">Descripción</p>
+            <p className="text-sm text-muted-foreground">{project.description}</p>
+          </div>
         )}
         
         <div className="space-y-2">
