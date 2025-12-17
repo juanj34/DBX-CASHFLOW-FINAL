@@ -19,6 +19,13 @@ export const LOGO_CONFIG: ImageConfig = {
   format: 'webp'
 };
 
+export const ZONE_IMAGE_CONFIG: ImageConfig = {
+  maxWidth: 800,
+  maxHeight: 450,
+  quality: 0.85,
+  format: 'webp'
+};
+
 export async function optimizeImage(file: File, config: ImageConfig): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();

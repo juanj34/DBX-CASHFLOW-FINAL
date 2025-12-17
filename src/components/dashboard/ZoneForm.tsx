@@ -16,7 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import mapboxgl from "mapbox-gl";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
+import { optimizeImage, ZONE_IMAGE_CONFIG } from "@/lib/imageUtils";
 
 interface ZoneFormProps {
   zone?: any;
@@ -30,6 +31,7 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const draw = useRef<MapboxDraw | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: zone?.name || "",
@@ -56,6 +58,29 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     absorption_rate: zone?.absorption_rate || "",
   });
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(zone?.image_url || null);
+
+  // Paste handler for Ctrl+V
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+            break;
+          }
+        }
+      }
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, []);
 
   useEffect(() => {
     if (!token || !mapContainer.current || map.current) return;
@@ -94,6 +119,46 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     };
   }, [token, zone]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return formData.image_url || null;
+    
+    try {
+      const optimized = await optimizeImage(imageFile, ZONE_IMAGE_CONFIG);
+      const fileName = `${Date.now()}-${formData.name.replace(/\s+/g, "-").toLowerCase()}.webp`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("zone-images")
+        .upload(fileName, optimized, { contentType: "image/webp" });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage.from("zone-images").getPublicUrl(fileName);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Error subiendo imagen",
+        description: "No se pudo subir la imagen. Intenta de nuevo.",
+        variant: "destructive",
+      });
+      return formData.image_url || null;
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({
@@ -126,6 +191,7 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     setSaving(true);
 
     const polygon = data.features[0].geometry;
+    const imageUrl = await uploadImage();
 
     const zoneData = {
       name: formData.name,
@@ -133,7 +199,7 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
       description: formData.description || null,
       color: formData.color,
       polygon,
-      image_url: formData.image_url || null,
+      image_url: imageUrl,
       // Investment Profile
       concept: formData.concept || null,
       property_types: formData.property_types || null,
@@ -222,13 +288,40 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image_url">URL de Imagen</Label>
-              <Input
-                id="image_url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
-              />
+              <Label>Imagen de la Zona (800×450px recomendado)</Label>
+              <div className="flex items-start gap-4">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-48 h-28 object-cover rounded-lg border" 
+                    />
+                    <button 
+                      type="button"
+                      onClick={removeImage} 
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()} 
+                    className="w-48 h-28 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                  >
+                    <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground">Click o Ctrl+V</span>
+                  </div>
+                )}
+                <input 
+                  ref={fileInputRef} 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageSelect} 
+                  className="hidden" 
+                />
+              </div>
             </div>
           </div>
 
