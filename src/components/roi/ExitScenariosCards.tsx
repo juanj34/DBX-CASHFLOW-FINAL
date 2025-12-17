@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { Slider } from "@/components/ui/slider";
-import { TrendingUp, Calendar, Wallet, Target, Edit2, Tag } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Tag, Zap } from "lucide-react";
 
 interface ExitScenario {
   months: number;
@@ -21,8 +19,7 @@ interface ExitScenariosCardsProps {
   totalMonths: number;
   basePrice: number;
   totalEntryCosts: number;
-  exitScenarios: [number, number, number]; // 3 month values
-  onExitScenariosChange: (scenarios: [number, number, number]) => void;
+  exitScenarios: [number, number, number]; // 3 month values (auto-calculated)
   rate: number;
 }
 
@@ -104,6 +101,25 @@ const monthsToDate = (months: number, bookingMonth: number, bookingYear: number)
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
 };
 
+// Auto-calculate exit scenarios based on project timeline
+export const calculateAutoExitScenarios = (totalMonths: number): [number, number, number] => {
+  // Exit 3: Always 6 months before handover
+  const exit3 = Math.max(12, totalMonths - 6);
+  
+  // Exit 1: ~50% of construction period (min 6 months)
+  const exit1 = Math.max(6, Math.round(totalMonths * 0.50));
+  
+  // Exit 2: ~67% of construction period
+  const exit2 = Math.max(exit1 + 3, Math.round(totalMonths * 0.67));
+  
+  // Ensure proper ordering and constraints
+  return [
+    Math.min(exit1, exit3 - 6),
+    Math.min(Math.max(exit2, exit1 + 3), exit3 - 3),
+    exit3
+  ];
+};
+
 export const ExitScenariosCards = ({ 
   inputs, 
   currency, 
@@ -111,35 +127,32 @@ export const ExitScenariosCards = ({
   basePrice, 
   totalEntryCosts,
   exitScenarios,
-  onExitScenariosChange,
   rate,
 }: ExitScenariosCardsProps) => {
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
   const scenarios = exitScenarios.map(months => 
     calculateScenario(months, inputs, totalMonths, basePrice, totalEntryCosts)
   );
 
-  const updateScenario = (index: number, months: number) => {
-    const newScenarios = [...exitScenarios] as [number, number, number];
-    newScenarios[index] = months;
-    onExitScenariosChange(newScenarios);
-  };
-
   const labels = ['Exit #1', 'Exit #2', 'Exit #3'];
   const descriptions = [
-    'Early exit opportunity',
-    'Mid-construction exit',
-    'Near handover exit'
+    `~${Math.round((exitScenarios[0] / totalMonths) * 100)}% construction`,
+    `~${Math.round((exitScenarios[1] / totalMonths) * 100)}% construction`,
+    '6 mo before handover'
   ];
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
-        <Target className="w-5 h-5 text-[#CCFF00]" />
-        <div>
-          <h3 className="font-semibold text-white">Exit Scenarios</h3>
-          <p className="text-xs text-gray-400">Compare your exit options (click to adjust)</p>
+      <div className="p-4 border-b border-[#2a3142] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Target className="w-5 h-5 text-[#CCFF00]" />
+          <div>
+            <h3 className="font-semibold text-white">Exit Scenarios</h3>
+            <p className="text-xs text-gray-400">Auto-calculated based on {totalMonths} month timeline</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 px-2 py-1 bg-[#CCFF00]/10 rounded-full">
+          <Zap className="w-3 h-3 text-[#CCFF00]" />
+          <span className="text-xs text-[#CCFF00] font-medium">Auto</span>
         </div>
       </div>
 
@@ -147,11 +160,7 @@ export const ExitScenariosCards = ({
         {scenarios.map((scenario, index) => (
           <div 
             key={index}
-            className={`p-4 rounded-xl border transition-all ${
-              editingIndex === index 
-                ? 'bg-[#CCFF00]/10 border-[#CCFF00]/50' 
-                : 'bg-[#0d1117] border-[#2a3142] hover:border-[#CCFF00]/30'
-            }`}
+            className="p-4 rounded-xl border transition-all bg-[#0d1117] border-[#2a3142]"
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
@@ -159,16 +168,6 @@ export const ExitScenariosCards = ({
                 <span className="text-sm font-medium text-[#CCFF00]">{labels[index]}</span>
                 <p className="text-xs text-gray-500">{descriptions[index]}</p>
               </div>
-              <button
-                onClick={() => setEditingIndex(editingIndex === index ? null : index)}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  editingIndex === index 
-                    ? 'bg-[#CCFF00] text-black' 
-                    : 'bg-[#2a3142] text-gray-400 hover:text-white'
-                }`}
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
             </div>
 
             {/* Time Info */}
@@ -181,24 +180,6 @@ export const ExitScenariosCards = ({
                 {monthsToDate(scenario.months, inputs.bookingMonth, inputs.bookingYear)}
               </div>
             </div>
-
-            {/* Edit Slider */}
-            {editingIndex === index && (
-              <div className="mb-3 p-2 bg-[#CCFF00]/5 rounded-lg">
-                <Slider
-                  value={[exitScenarios[index]]}
-                  onValueChange={([value]) => updateScenario(index, value)}
-                  min={6}
-                  max={index === 2 ? totalMonths - 1 : totalMonths}
-                  step={1}
-                  className="roi-slider-lime"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>6 mo</span>
-                  <span>{index === 2 ? `${totalMonths - 1} mo` : `${totalMonths} mo (Handover)`}</span>
-                </div>
-              </div>
-            )}
 
             {/* Metrics */}
             <div className="space-y-2">
