@@ -56,6 +56,7 @@ const OICalculatorContent = () => {
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const { profile } = useProfile();
   const { 
@@ -75,6 +76,8 @@ const OICalculatorContent = () => {
 
   // Load quote data or draft on mount
   useEffect(() => {
+    if (dataLoaded) return; // Prevent re-running after initial load
+    
     if (quote) {
       // Extract clients from inputs._clients if available (new format)
       const savedClients = (quote.inputs as any)?._clients || [];
@@ -98,12 +101,13 @@ const OICalculatorContent = () => {
         developer: savedClientInfo.developer || quote.developer || '',
         projectName: savedClientInfo.projectName || quote.project_name || '',
         clients,
-        brokerName: profile?.full_name || '',
+        brokerName: savedClientInfo.brokerName || '',
         unit: savedClientInfo.unit || quote.unit || '',
         unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0,
         unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0,
         unitType: savedClientInfo.unitType || quote.unit_type || '',
       });
+      setDataLoaded(true);
     } else if (!quoteId) {
       // Load draft from localStorage
       const draft = loadDraft();
@@ -113,10 +117,14 @@ const OICalculatorContent = () => {
       if (draft?.clientInfo) {
         setClientInfo(prev => ({ ...prev, ...draft.clientInfo }));
       }
+      setDataLoaded(true);
     }
-  }, [quote, quoteId, profile?.full_name]);
+  }, [quote, quoteId, dataLoaded, loadDraft]);
 
-  // Update broker name from profile
+  // Reset dataLoaded when quoteId changes (navigating to different quote)
+  useEffect(() => {
+    setDataLoaded(false);
+  }, [quoteId]);
   useEffect(() => {
     if (profile?.full_name && !clientInfo.brokerName) {
       setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' }));
