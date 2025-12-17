@@ -100,6 +100,13 @@ const translations: Translations = {
   // Select placeholders
   selectCountry: { en: 'Select country', es: 'Seleccionar país' },
   selectType: { en: 'Select type', es: 'Seleccionar tipo' },
+  
+  // New fields
+  projectName: { en: 'Project Name', es: 'Nombre del Proyecto' },
+  accountSettings: { en: 'Account Settings', es: 'Configuración de Cuenta' },
+  myQuotes: { en: 'My Quotes', es: 'Mis Cotizaciones' },
+  newQuote: { en: 'New Quote', es: 'Nueva Cotización' },
+  cashflowStatement: { en: 'Cashflow Statement', es: 'Estado de Flujo de Caja' },
 };
 
 interface LanguageContextType {

@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      cashflow_quotes: {
+        Row: {
+          broker_id: string
+          client_country: string | null
+          client_email: string | null
+          client_name: string | null
+          created_at: string | null
+          developer: string | null
+          id: string
+          inputs: Json
+          is_draft: boolean | null
+          project_name: string | null
+          share_token: string | null
+          title: string | null
+          unit: string | null
+          unit_size_m2: number | null
+          unit_size_sqf: number | null
+          unit_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          broker_id: string
+          client_country?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          developer?: string | null
+          id?: string
+          inputs?: Json
+          is_draft?: boolean | null
+          project_name?: string | null
+          share_token?: string | null
+          title?: string | null
+          unit?: string | null
+          unit_size_m2?: number | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          broker_id?: string
+          client_country?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          developer?: string | null
+          id?: string
+          inputs?: Json
+          is_draft?: boolean | null
+          project_name?: string | null
+          share_token?: string | null
+          title?: string | null
+          unit?: string | null
+          unit_size_m2?: number | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflow_quotes_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       developers: {
         Row: {
           created_at: string | null

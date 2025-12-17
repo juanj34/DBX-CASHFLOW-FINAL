@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -11,46 +11,109 @@ import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
+import { SaveControls } from "@/components/roi/SaveControls";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { useCashflowQuote } from "@/hooks/useCashflowQuote";
+import { useProfile } from "@/hooks/useProfile";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 
+const DEFAULT_INPUTS: OIInputs = {
+  basePrice: 800000,
+  rentalYieldPercent: 8.5,
+  appreciationRate: 10,
+  bookingMonth: 1,
+  bookingYear: 2025,
+  handoverQuarter: 4,
+  handoverYear: 2027,
+  downpaymentPercent: 20,
+  preHandoverPercent: 20,
+  additionalPayments: [],
+  eoiFee: 50000,
+  oqoodFee: 5000,
+  minimumExitThreshold: 30,
+};
+
+const DEFAULT_CLIENT_INFO: ClientUnitData = {
+  developer: '',
+  projectName: '',
+  clientName: '',
+  clientCountry: '',
+  brokerName: '',
+  unit: '',
+  unitSizeSqf: 0,
+  unitSizeM2: 0,
+  unitType: '',
+};
+
 const OICalculatorContent = () => {
+  const { quoteId } = useParams<{ quoteId: string }>();
+  const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
-  const [inputs, setInputs] = useState<OIInputs>({
-    basePrice: 800000,
-    rentalYieldPercent: 8.5,
-    appreciationRate: 10,
-    bookingMonth: 1,
-    bookingYear: 2025,
-    handoverQuarter: 4,
-    handoverYear: 2027,
-    downpaymentPercent: 20,
-    preHandoverPercent: 20,
-    additionalPayments: [],
-    eoiFee: 50000,
-    oqoodFee: 5000,
-    minimumExitThreshold: 30,
-  });
+  const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
+  const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
+  const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
 
-  const [clientInfo, setClientInfo] = useState<ClientUnitData>({
-    developer: '',
-    clientName: '',
-    clientCountry: '',
-    brokerName: '',
-    unit: '',
-    unitSizeSqf: 0,
-    unitSizeM2: 0,
-    unitType: '',
-  });
+  const { profile } = useProfile();
+  const { 
+    quote, 
+    loading: quoteLoading, 
+    saving, 
+    lastSaved, 
+    saveQuote, 
+    saveAsNew, 
+    scheduleAutoSave,
+    generateShareToken,
+    loadDraft 
+  } = useCashflowQuote(quoteId);
 
   const calculations = useOICalculations(inputs);
   const { rate, isLive } = useExchangeRate(currency);
-  const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
+
+  // Load quote data or draft on mount
+  useEffect(() => {
+    if (quote) {
+      setInputs(quote.inputs);
+      setClientInfo({
+        developer: quote.developer || '',
+        projectName: quote.project_name || '',
+        clientName: quote.client_name || '',
+        clientCountry: quote.client_country || '',
+        brokerName: profile?.full_name || '',
+        unit: quote.unit || '',
+        unitSizeSqf: quote.unit_size_sqf || 0,
+        unitSizeM2: quote.unit_size_m2 || 0,
+        unitType: quote.unit_type || '',
+      });
+    } else if (!quoteId) {
+      // Load draft from localStorage
+      const draft = loadDraft();
+      if (draft?.inputs) {
+        setInputs(draft.inputs);
+      }
+      if (draft?.clientInfo) {
+        setClientInfo(prev => ({ ...prev, ...draft.clientInfo }));
+      }
+    }
+  }, [quote, quoteId, profile?.full_name]);
+
+  // Update broker name from profile
+  useEffect(() => {
+    if (profile?.full_name && !clientInfo.brokerName) {
+      setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' }));
+    }
+  }, [profile?.full_name]);
+
+  // Auto-save when inputs or clientInfo change
+  useEffect(() => {
+    if (!quoteLoading) {
+      scheduleAutoSave(inputs, clientInfo, quote?.id);
+    }
+  }, [inputs, clientInfo, quote?.id, quoteLoading]);
 
   // Auto-calculate exit scenarios based on project timeline
   const exitScenarios = useMemo(() => 
@@ -66,6 +129,38 @@ const OICalculatorContent = () => {
   const handoverScenario = calculations.scenarios.find(s => s.exitMonths === calculations.totalMonths);
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const handleSave = useCallback(async () => {
+    return saveQuote(inputs, clientInfo, quote?.id);
+  }, [inputs, clientInfo, quote?.id, saveQuote]);
+
+  const handleSaveAs = useCallback(async () => {
+    const newQuote = await saveAsNew(inputs, clientInfo);
+    if (newQuote) {
+      navigate(`/cashflow/${newQuote.id}`);
+    }
+    return newQuote;
+  }, [inputs, clientInfo, saveAsNew, navigate]);
+
+  const handleShare = useCallback(async () => {
+    if (!quote?.id) {
+      // Save first if not saved
+      const savedQuote = await handleSave();
+      if (savedQuote) {
+        return generateShareToken(savedQuote.id);
+      }
+      return null;
+    }
+    return generateShareToken(quote.id);
+  }, [quote?.id, handleSave, generateShareToken]);
+
+  if (quoteLoading && quoteId) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
@@ -97,6 +192,16 @@ const OICalculatorContent = () => {
               </div>
             )}
             
+            {/* Save Controls */}
+            <SaveControls
+              quoteId={quote?.id}
+              saving={saving}
+              lastSaved={lastSaved}
+              onSave={handleSave}
+              onSaveAs={handleSaveAs}
+              onShare={handleShare}
+            />
+            
             {/* Language Toggle */}
             <Button
               variant="outline"
@@ -120,6 +225,14 @@ const OICalculatorContent = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Settings Icon */}
+            <Link to="/account-settings">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
+
             <ClientUnitModal
               data={clientInfo}
               onChange={setClientInfo}
@@ -140,7 +253,11 @@ const OICalculatorContent = () => {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* Client & Unit Information - Read-only display */}
-        <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
+        <ClientUnitInfo 
+          data={clientInfo} 
+          onEditClick={() => setClientModalOpen(true)} 
+          brokerProfile={profile}
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column - Charts & Tables */}
@@ -348,7 +465,15 @@ const OICalculatorContent = () => {
               </div>
 
               {/* Navigation to Full Calculator */}
-              <div className="mt-6 pt-4 border-t border-[#2a3142]">
+              <div className="mt-6 pt-4 border-t border-[#2a3142] space-y-2">
+                <Link to="/my-quotes">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+                  >
+                    {t('myQuotes')}
+                  </Button>
+                </Link>
                 <Link to="/roi-calculator">
                   <Button 
                     variant="outline" 
