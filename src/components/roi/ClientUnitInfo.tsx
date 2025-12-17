@@ -20,9 +20,10 @@ export interface ClientUnitData {
 interface ClientUnitInfoProps {
   data: ClientUnitData;
   onEditClick: () => void;
+  readOnly?: boolean;
 }
 
-export const ClientUnitInfo = ({ data, onEditClick }: ClientUnitInfoProps) => {
+export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUnitInfoProps) => {
   const { language, t } = useLanguage();
 
   const unitType = UNIT_TYPES.find(u => u.value === data.unitType);
@@ -39,15 +40,21 @@ export const ClientUnitInfo = ({ data, onEditClick }: ClientUnitInfoProps) => {
   if (!hasData) {
     return (
       <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 mb-4">
-        <div 
-          onClick={onEditClick}
-          className="border border-dashed border-[#2a3142] rounded-xl p-4 flex items-center justify-center cursor-pointer hover:bg-[#0d1117] hover:border-[#CCFF00]/30 transition-all"
-        >
-          <div className="text-center">
-            <Plus className="w-6 h-6 text-gray-500 mx-auto mb-1" />
-            <p className="text-gray-400 text-sm">{t('clickToAddClientInfo')}</p>
+        {!readOnly ? (
+          <div 
+            onClick={onEditClick}
+            className="border border-dashed border-[#2a3142] rounded-xl p-4 flex items-center justify-center cursor-pointer hover:bg-[#0d1117] hover:border-[#CCFF00]/30 transition-all"
+          >
+            <div className="text-center">
+              <Plus className="w-6 h-6 text-gray-500 mx-auto mb-1" />
+              <p className="text-gray-400 text-sm">{t('clickToAddClientInfo')}</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-gray-500 text-sm">No client information</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -133,15 +140,17 @@ export const ClientUnitInfo = ({ data, onEditClick }: ClientUnitInfoProps) => {
           )}
         </div>
 
-        {/* Edit Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onEditClick}
-          className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
-        >
-          <Pencil className="w-4 h-4" />
-        </Button>
+        {/* Edit Button - hidden in read-only mode */}
+        {!readOnly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEditClick}
+            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
