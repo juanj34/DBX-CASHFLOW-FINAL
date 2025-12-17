@@ -102,6 +102,17 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
             />
           </div>
 
+          {/* Project Name - NEW FIELD */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-gray-400">{t('projectName')}</label>
+            <Input
+              value={data.projectName || ''}
+              onChange={(e) => handleChange('projectName', e.target.value)}
+              placeholder="e.g. The Valley, Dubai Creek Tower"
+              className="bg-[#0d1117] border-[#2a3142] text-white"
+            />
+          </div>
+
           {/* Client Name */}
           <div className="space-y-1.5">
             <label className="text-xs text-gray-400">{t('clientName')}</label>

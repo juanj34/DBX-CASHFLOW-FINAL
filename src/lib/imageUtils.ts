@@ -19,6 +19,13 @@ export const LOGO_CONFIG: ImageConfig = {
   format: 'webp'
 };
 
+export const PROFILE_AVATAR_CONFIG: ImageConfig = {
+  maxWidth: 256,
+  maxHeight: 256,
+  quality: 0.9,
+  format: 'webp'
+};
+
 export const ZONE_IMAGE_CONFIG: ImageConfig = {
   maxWidth: 800,
   maxHeight: 450,

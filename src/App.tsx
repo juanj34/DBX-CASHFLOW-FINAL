@@ -9,6 +9,9 @@ import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
 import ROICalculator from "./pages/ROICalculator";
 import OICalculator from "./pages/OICalculator";
+import AccountSettings from "./pages/AccountSettings";
+import QuotesDashboard from "./pages/QuotesDashboard";
+import CashflowView from "./pages/CashflowView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +30,10 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/roi-calculator" element={<ROICalculator />} />
             <Route path="/oi-calculator" element={<OICalculator />} />
+            <Route path="/cashflow/:quoteId" element={<OICalculator />} />
+            <Route path="/account-settings" element={<AccountSettings />} />
+            <Route path="/my-quotes" element={<QuotesDashboard />} />
+            <Route path="/view/:shareToken" element={<CashflowView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
