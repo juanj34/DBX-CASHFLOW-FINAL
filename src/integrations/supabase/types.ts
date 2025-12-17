@@ -339,45 +339,75 @@ export type Database = {
         Row: {
           absorption_rate: number | null
           color: string
+          concept: string | null
           created_at: string
           created_by: string | null
           description: string | null
           id: string
           image_url: string | null
+          investment_focus: string | null
+          main_developer: string | null
+          maturity_label: string | null
+          maturity_level: number | null
           name: string
           occupancy_rate: number | null
           polygon: Json
           population: number | null
+          price_range_max: number | null
+          price_range_min: number | null
+          tagline: string | null
+          ticket_1br_max: number | null
+          ticket_1br_min: number | null
           updated_at: string
           visible: boolean
         }
         Insert: {
           absorption_rate?: number | null
           color?: string
+          concept?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
+          investment_focus?: string | null
+          main_developer?: string | null
+          maturity_label?: string | null
+          maturity_level?: number | null
           name: string
           occupancy_rate?: number | null
           polygon: Json
           population?: number | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          tagline?: string | null
+          ticket_1br_max?: number | null
+          ticket_1br_min?: number | null
           updated_at?: string
           visible?: boolean
         }
         Update: {
           absorption_rate?: number | null
           color?: string
+          concept?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
+          investment_focus?: string | null
+          main_developer?: string | null
+          maturity_label?: string | null
+          maturity_level?: number | null
           name?: string
           occupancy_rate?: number | null
           polygon?: Json
           population?: number | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          tagline?: string | null
+          ticket_1br_max?: number | null
+          ticket_1br_min?: number | null
           updated_at?: string
           visible?: boolean
         }
