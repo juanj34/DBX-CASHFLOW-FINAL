@@ -1,56 +1,63 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
+import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 
-const OICalculator = () => {
+const OICalculatorContent = () => {
+  const { language, setLanguage, t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>({
     basePrice: 800000,
     rentalYieldPercent: 8.5,
     appreciationRate: 10,
-    bookingMonth: 1, // January
+    bookingMonth: 1,
     bookingYear: 2025,
-    handoverQuarter: 4, // Q4
+    handoverQuarter: 4,
     handoverYear: 2027,
-    // Restructured payment plan
-    downpaymentPercent: 20,        // 20% at booking
-    preHandoverPercent: 20,        // 20/80 split (20% pre-handover, 80% handover)
-    additionalPayments: [],        // No additional payments for 20/80
-    // Entry Costs (simplified - DLD fixed at 4%)
-    eoiFee: 50000, // EOI / Booking fee
+    downpaymentPercent: 20,
+    preHandoverPercent: 20,
+    additionalPayments: [],
+    eoiFee: 50000,
     oqoodFee: 5000,
-    // Exit threshold
-    minimumExitThreshold: 30,      // Developer requires 30% paid before resale
+    minimumExitThreshold: 30,
   });
 
-  // Custom exit scenarios (months)
+  const [clientInfo, setClientInfo] = useState<ClientUnitData>({
+    developer: '',
+    clientName: '',
+    clientCountry: '',
+    brokerName: '',
+    unit: '',
+    unitSizeSqf: 0,
+    unitType: '',
+  });
+
   const [exitScenarios, setExitScenarios] = useState<[number, number, number]>([18, 30, 36]);
 
   const calculations = useOICalculations(inputs);
   const { rate, isLive } = useExchangeRate(currency);
   const [holdAnalysisOpen, setHoldAnalysisOpen] = useState(false);
 
-  // Find best TRUE ROE scenario
   const bestROEScenario = calculations.scenarios.reduce<OIExitScenario | null>(
     (best, current) => (!best || current.trueROE > best.trueROE ? current : best),
     null
   );
 
-  // Find handover scenario
   const handoverScenario = calculations.scenarios.find(s => s.exitMonths === calculations.totalMonths);
 
-  // Month names for display
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
@@ -69,8 +76,8 @@ const OICalculator = () => {
                 <Rocket className="w-6 h-6 text-[#CCFF00]" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Opportunity Investor Analysis</h1>
-                <p className="text-sm text-gray-400">Exit scenarios & payment breakdown</p>
+                <h1 className="text-xl font-bold text-white">{t('opportunityInvestorAnalysis')}</h1>
+                <p className="text-sm text-gray-400">{t('exitScenariosPaymentBreakdown')}</p>
               </div>
             </div>
           </div>
@@ -82,6 +89,18 @@ const OICalculator = () => {
                 <span>1 AED = {rate.toFixed(4)} {currency}</span>
               </div>
             )}
+            
+            {/* Language Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+              className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white px-3"
+            >
+              {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
+            </Button>
+
+            {/* Currency Selector */}
             <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
               <SelectTrigger className="w-[130px] border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]">
                 <SelectValue />
@@ -107,13 +126,14 @@ const OICalculator = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Client & Unit Information */}
+        <ClientUnitInfo data={clientInfo} onChange={setClientInfo} />
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column - Charts & Tables */}
           <div className="xl:col-span-2 space-y-8">
-            {/* Growth Curve */}
             <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
 
-            {/* Exit Scenarios Cards */}
             <ExitScenariosCards 
               inputs={inputs}
               currency={currency}
@@ -125,7 +145,6 @@ const OICalculator = () => {
               rate={rate}
             />
 
-            {/* Payment Breakdown */}
             <PaymentBreakdown 
               inputs={inputs}
               currency={currency}
@@ -133,60 +152,94 @@ const OICalculator = () => {
               rate={rate}
             />
 
-            {/* 10-Year Projection Table */}
             <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
           </div>
 
           {/* Right Column - Metrics Panel */}
           <div className="xl:col-span-1">
             <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 sticky top-24">
-              <h3 className="font-semibold text-white mb-4">Investment Summary</h3>
+              <h3 className="font-semibold text-white mb-4">{t('investmentSummary')}</h3>
               
               <div className="space-y-4">
                 <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Base Property Price</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('basePropertyPrice')}</div>
                   <div className="text-xl font-bold text-white font-mono">
                     {formatCurrency(inputs.basePrice, currency, rate)}
                   </div>
                 </div>
 
                 <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Payment Plan</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('paymentPlan')}</div>
                   <div className="text-xl font-bold text-[#CCFF00] font-mono">
                     {inputs.preHandoverPercent}/{100 - inputs.preHandoverPercent}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Downpayment: {inputs.downpaymentPercent}% + {inputs.additionalPayments.length} additional
+                    {t('downpayment')}: {inputs.downpaymentPercent}% + {inputs.additionalPayments.length} {t('additional')}
                   </div>
                 </div>
 
                 <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Construction Period</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('constructionPeriod')}</div>
                   <div className="text-xl font-bold text-white font-mono">
-                    {calculations.totalMonths} months
+                    {calculations.totalMonths} {t('months')}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
                     {monthNames[inputs.bookingMonth - 1]} {inputs.bookingYear} → Q{inputs.handoverQuarter} {inputs.handoverYear}
                   </div>
                 </div>
 
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Appreciation Rate (CAGR)</div>
-                  <div className="text-xl font-bold text-[#CCFF00] font-mono">
-                    {inputs.appreciationRate}%
+                {/* Editable Financial Metrics */}
+                <div className="p-4 bg-[#0d1117] rounded-xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400">{t('appreciationRate')}</span>
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[inputs.appreciationRate]}
+                        onValueChange={([v]) => setInputs(prev => ({ ...prev, appreciationRate: v }))}
+                        min={1}
+                        max={25}
+                        step={0.5}
+                        className="w-20 roi-slider-lime"
+                      />
+                      <span className="text-sm font-bold text-[#CCFF00] font-mono w-12 text-right">{inputs.appreciationRate}%</span>
+                    </div>
                   </div>
-                </div>
-
-                <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Rental Yield</div>
-                  <div className="text-xl font-bold text-white font-mono">
-                    {inputs.rentalYieldPercent}%
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400">{t('rentalYield')}</span>
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[inputs.rentalYieldPercent]}
+                        onValueChange={([v]) => setInputs(prev => ({ ...prev, rentalYieldPercent: v }))}
+                        min={3}
+                        max={15}
+                        step={0.5}
+                        className="w-20 roi-slider-lime"
+                      />
+                      <span className="text-sm font-bold text-white font-mono w-12 text-right">{inputs.rentalYieldPercent}%</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Target className="w-3 h-3 text-[#CCFF00]" />
+                      {t('minimumExitThreshold')}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Slider
+                        value={[inputs.minimumExitThreshold]}
+                        onValueChange={([v]) => setInputs(prev => ({ ...prev, minimumExitThreshold: v }))}
+                        min={10}
+                        max={100}
+                        step={5}
+                        className="w-20 roi-slider-lime"
+                      />
+                      <span className="text-sm font-bold text-[#CCFF00] font-mono w-12 text-right">{inputs.minimumExitThreshold}%</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Entry Costs Summary */}
                 <div className="p-4 bg-[#0d1117] rounded-xl">
-                  <div className="text-xs text-gray-400 mb-1">Total Entry Costs</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('totalEntryCosts')}</div>
                   <div className="text-xl font-bold text-red-400 font-mono">
                     -{formatCurrency(calculations.totalEntryCosts, currency, rate)}
                   </div>
@@ -198,15 +251,15 @@ const OICalculator = () => {
                 {/* Best ROE Highlight */}
                 {bestROEScenario && (
                   <div className="p-4 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl">
-                    <div className="text-xs text-[#CCFF00] mb-1">Best ROE ({bestROEScenario.exitMonths} months)</div>
+                    <div className="text-xs text-[#CCFF00] mb-1">{t('bestROE')} ({bestROEScenario.exitMonths} {t('months')})</div>
                     <div className="text-2xl font-bold text-[#CCFF00] font-mono">
                       {bestROEScenario.trueROE.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      Profit: {formatCurrency(bestROEScenario.trueProfit, currency, rate)}
+                      {t('profit')}: {formatCurrency(bestROEScenario.trueProfit, currency, rate)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Capital: {formatCurrency(bestROEScenario.totalCapitalDeployed, currency, rate)}
+                      {t('capital')}: {formatCurrency(bestROEScenario.totalCapitalDeployed, currency, rate)}
                     </div>
                   </div>
                 )}
@@ -214,12 +267,12 @@ const OICalculator = () => {
                 {/* Handover */}
                 {handoverScenario && (
                   <div className="p-4 bg-[#0d1117] rounded-xl">
-                    <div className="text-xs text-gray-400 mb-1">At Handover ({handoverScenario.exitMonths} months)</div>
+                    <div className="text-xs text-gray-400 mb-1">{t('atHandover')} ({handoverScenario.exitMonths} {t('months')})</div>
                     <div className="text-xl font-bold text-white font-mono">
                       {formatCurrency(handoverScenario.exitPrice, currency, rate)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Profit: {formatCurrency(handoverScenario.trueProfit, currency, rate)}
+                      {t('profit')}: {formatCurrency(handoverScenario.trueProfit, currency, rate)}
                     </div>
                   </div>
                 )}
@@ -232,7 +285,7 @@ const OICalculator = () => {
                   >
                     <div className="flex items-center gap-2">
                       <Home className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">If You HOLD After Handover</span>
+                      <span className="text-sm text-gray-300">{t('ifYouHoldAfterHandover')}</span>
                     </div>
                     {holdAnalysisOpen ? (
                       <ChevronUp className="w-4 h-4 text-gray-400" />
@@ -243,38 +296,38 @@ const OICalculator = () => {
                   {holdAnalysisOpen && (
                     <div className="p-4 space-y-3 bg-[#0d1117]/50">
                       <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">Total Capital Invested</span>
+                        <span className="text-xs text-gray-400">{t('totalCapitalInvested')}</span>
                         <span className="text-sm text-white font-mono">
                           {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency, rate)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">Value at Handover</span>
+                        <span className="text-xs text-gray-400">{t('valueAtHandover')}</span>
                         <span className="text-sm text-white font-mono">
                           {formatCurrency(calculations.holdAnalysis.propertyValueAtHandover, currency, rate)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">Annual Rent (Est.)</span>
+                        <span className="text-xs text-gray-400">{t('annualRentEst')}</span>
                         <span className="text-sm text-[#CCFF00] font-mono">
                           {formatCurrency(calculations.holdAnalysis.annualRent, currency, rate)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">Rental Yield on Investment</span>
+                        <span className="text-xs text-gray-400">{t('rentalYieldOnInvestment')}</span>
                         <span className="text-sm text-white font-mono">
                           {calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(2)}%
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">Years to Break Even</span>
+                        <span className="text-xs text-gray-400">{t('yearsToBreakEven')}</span>
                         <span className="text-sm text-white font-mono">
-                          {calculations.holdAnalysis.yearsToBreakEven.toFixed(1)} years
+                          {calculations.holdAnalysis.yearsToBreakEven.toFixed(1)} {language === 'en' ? 'years' : 'años'}
                         </span>
                       </div>
                       <div className="pt-2 border-t border-[#2a3142]">
                         <p className="text-xs text-gray-500">
-                          💡 Holding means full property payment + rental income
+                          💡 {t('holdingMeansFullPayment')}
                         </p>
                       </div>
                     </div>
@@ -289,7 +342,7 @@ const OICalculator = () => {
                     variant="outline" 
                     className="w-full border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
                   >
-                    Full ROI Calculator (OI → SI → HO)
+                    {t('fullROICalculator')}
                   </Button>
                 </Link>
               </div>
@@ -298,6 +351,14 @@ const OICalculator = () => {
         </div>
       </main>
     </div>
+  );
+};
+
+const OICalculator = () => {
+  return (
+    <LanguageProvider>
+      <OICalculatorContent />
+    </LanguageProvider>
   );
 };
 

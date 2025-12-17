@@ -321,7 +321,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               <span className="text-lg font-bold text-[#CCFF00] font-mono">{inputs.minimumExitThreshold || 30}%</span>
             </div>
             <p className="text-xs text-gray-500">
-              % del precio que el developer exige haber pagado para permitir reventa
+              % of price developer requires paid before allowing resale
             </p>
             <Slider
               value={[inputs.minimumExitThreshold || 30]}
