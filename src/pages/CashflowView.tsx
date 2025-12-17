@@ -14,6 +14,11 @@ import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 
+interface AdvisorProfile {
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 const CashflowViewContent = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
   const { language, setLanguage, t } = useLanguage();
@@ -22,7 +27,7 @@ const CashflowViewContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);
   const [clientInfo, setClientInfo] = useState<ClientUnitData | null>(null);
-  const [advisorName, setAdvisorName] = useState<string>('');
+  const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
 
   const { rate } = useExchangeRate(currency);
 
@@ -64,7 +69,10 @@ const CashflowViewContent = () => {
         unitSizeM2: data.unit_size_m2 || 0,
         unitType: data.unit_type || '',
       });
-      setAdvisorName((data.profiles as any)?.full_name || '');
+      setAdvisorProfile({
+        full_name: (data.profiles as any)?.full_name || null,
+        avatar_url: (data.profiles as any)?.avatar_url || null,
+      });
       setLoading(false);
     };
 
@@ -107,11 +115,30 @@ const CashflowViewContent = () => {
               <Rocket className="w-6 h-6 text-[#00EAFF]" />
             </div>
             <div>
-            <h1 className="text-xl font-bold text-white">Cashflow Statement</h1>
-              {advisorName && (
-                <p className="text-sm text-gray-400">Prepared by {advisorName}</p>
-              )}
+              <h1 className="text-xl font-bold text-white">Cashflow Statement</h1>
             </div>
+            {advisorProfile?.full_name && (
+              <>
+                <div className="h-8 w-px bg-[#2a3142] mx-2" />
+                <div className="flex items-center gap-3">
+                  {advisorProfile.avatar_url ? (
+                    <img 
+                      src={advisorProfile.avatar_url} 
+                      alt={advisorProfile.full_name} 
+                      className="w-10 h-10 rounded-full object-cover border-2 border-[#2a3142]"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[#2a3142] flex items-center justify-center text-white font-medium">
+                      {advisorProfile.full_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-white">{advisorProfile.full_name}</p>
+                    <p className="text-xs text-gray-400">Wealth Advisor</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {/* Language Toggle */}
@@ -143,8 +170,8 @@ const CashflowViewContent = () => {
 
       {/* Main Content - Read-only view */}
       <main className="container mx-auto px-6 py-8">
-        {/* Client & Unit Information */}
-        <ClientUnitInfo data={clientInfo} onEditClick={() => {}} />
+        {/* Client & Unit Information - Read only */}
+        <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
         <div className="space-y-8">
           <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />

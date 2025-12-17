@@ -37,6 +37,13 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
+
+  // Calculate additional payments total
+  const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
+  
+  // Calculate pre-handover totals
+  const todayTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
+  const totalPreHandover = todayTotal + additionalTotal;
   
   // Sort additional payments by trigger
   const sortedAdditionalPayments = [...additionalPayments].sort((a, b) => {
@@ -50,19 +57,17 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
   });
 
   // Calculate totals
-  const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
   const totalPropertyPayments = basePrice;
   const totalEntryCosts = dldFeeAmount + oqoodFee;
   const grandTotal = totalPropertyPayments + totalEntryCosts;
-  const todayTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
         <CreditCard className="w-5 h-5 text-[#CCFF00]" />
         <div>
-          <h3 className="font-semibold text-white">Payment Breakdown</h3>
-          <p className="text-xs text-gray-400">Complete schedule of all payments</p>
+          <h3 className="font-semibold text-white">PAYMENT PLAN ({preHandoverPercent})</h3>
+          <p className="text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} payment structure</p>
         </div>
       </div>
 
@@ -153,6 +158,24 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
             </div>
           </div>
         )}
+
+        {/* Pre-Handover Summary */}
+        <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl p-4 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-300">Total Today</span>
+            <span className="text-sm text-white font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
+          </div>
+          {additionalTotal > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-300">+ Installments</span>
+              <span className="text-sm text-white font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30">
+            <span className="text-sm font-bold text-[#CCFF00]">TOTAL PRE-HANDOVER ({preHandoverPercent}%)</span>
+            <span className="text-base font-bold text-[#CCFF00] font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
+          </div>
+        </div>
 
         {/* Section: At Handover */}
         <div className="space-y-2">

@@ -100,7 +100,7 @@ export const useCashflowQuote = (quoteId?: string) => {
       if (existingQuoteId) {
         await saveQuote(inputs, clientInfo, existingQuoteId);
       }
-    }, 3000);
+    }, 15000);
   }, [saveDraft]);
 
   // Save quote to database
