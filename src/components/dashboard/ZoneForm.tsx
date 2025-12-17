@@ -39,6 +39,7 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     image_url: zone?.image_url || "",
     // Investment Profile
     concept: zone?.concept || "",
+    property_types: zone?.property_types || "",
     investment_focus: zone?.investment_focus || "",
     main_developer: zone?.main_developer || "",
     // Maturity
@@ -135,6 +136,7 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
       image_url: formData.image_url || null,
       // Investment Profile
       concept: formData.concept || null,
+      property_types: formData.property_types || null,
       investment_focus: formData.investment_focus || null,
       main_developer: formData.main_developer || null,
       // Maturity
@@ -241,6 +243,17 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
                 value={formData.concept}
                 onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
                 placeholder="ej: El kilómetro cuadrado más prestigioso y turístico."
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="property_types">Tipos de Propiedad</Label>
+              <Textarea
+                id="property_types"
+                value={formData.property_types}
+                onChange={(e) => setFormData({ ...formData, property_types: e.target.value })}
+                placeholder="ej: Torres Residenciales, Penthouses, Villas, Townhouses..."
                 rows={2}
               />
             </div>
