@@ -29,7 +29,7 @@ export const HotspotInfoCard = ({ hotspot, onClose }: HotspotInfoCardProps) => {
   const hasImage = hotspot.photos && hotspot.photos.length > 0;
 
   return (
-    <Card className="absolute top-4 right-4 w-80 max-h-[80vh] overflow-hidden shadow-lg z-10" data-info-card>
+    <Card className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-hidden shadow-lg z-10" data-info-card>
       {/* Header with title and category */}
       <div className="flex items-start justify-between p-4 pb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">

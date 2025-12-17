@@ -17,7 +17,7 @@ interface ZoneInfoCardProps {
 
 export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
   return (
-    <Card className="absolute top-4 right-4 w-80 max-h-[80vh] overflow-y-auto shadow-lg z-10" data-info-card>
+    <Card className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-y-auto shadow-lg z-10" data-info-card>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <CardTitle className="text-xl">{zone.name}</CardTitle>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
