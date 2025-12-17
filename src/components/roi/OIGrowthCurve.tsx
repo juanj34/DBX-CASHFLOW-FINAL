@@ -6,7 +6,7 @@ interface OIGrowthCurveProps {
   calculations: OICalculations;
   inputs: OIInputs;
   currency: Currency;
-  exitScenarios: [number, number, number];
+  exitScenarios: number[];
   rate: number;
 }
 
@@ -54,17 +54,47 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
   // X-axis time labels
   const timeLabels = [0, Math.round(totalMonths * 0.25), Math.round(totalMonths * 0.5), Math.round(totalMonths * 0.75), totalMonths];
 
-  // Find scenarios to display: Exit 1, 2, 3 + Handover
+  // Find scenarios to display: Exit markers + Handover
   const getExitScenarioData = (exitMonth: number) => {
     return scenarios.find(s => s.exitMonths === exitMonth) || scenarios.reduce((prev, curr) => 
       Math.abs(curr.exitMonths - exitMonth) < Math.abs(prev.exitMonths - exitMonth) ? curr : prev
     );
   };
 
+  // Calculate y-offsets to prevent overlapping labels
+  const calculateOffsets = () => {
+    const markers = exitScenarios.map((month, index) => ({
+      index,
+      x: xScale(month),
+      yOffset: 0
+    }));
+
+    // Sort by x position
+    markers.sort((a, b) => a.x - b.x);
+
+    // Check for overlaps and offset
+    const MIN_X_DISTANCE = 80;
+    for (let i = 1; i < markers.length; i++) {
+      const prev = markers[i - 1];
+      const curr = markers[i];
+      const distance = curr.x - prev.x;
+      
+      if (distance < MIN_X_DISTANCE) {
+        // Alternate offset direction
+        curr.yOffset = (i % 2 === 0) ? -35 : 35;
+      }
+    }
+
+    return markers.sort((a, b) => a.index - b.index).map(m => m.yOffset);
+  };
+
+  const yOffsets = calculateOffsets();
+
   const exitMarkersData = exitScenarios.map((month, index) => ({
     scenario: getExitScenarioData(month),
     label: `Exit ${index + 1}`,
-    isHandover: false
+    isHandover: false,
+    yOffset: yOffsets[index] || 0
   }));
 
   // Add handover marker
@@ -171,9 +201,23 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
             opacity="0.2"
           />
 
-          {/* Exit 1, 2, 3 markers */}
-          {exitMarkersData.map(({ scenario, label }, index) => (
+          {/* Exit markers */}
+          {exitMarkersData.map(({ scenario, label, yOffset }, index) => (
             <g key={label}>
+              {/* Connection line if offset */}
+              {yOffset !== 0 && (
+                <line
+                  x1={xScale(scenario.exitMonths)}
+                  y1={yScale(scenario.exitPrice)}
+                  x2={xScale(scenario.exitMonths)}
+                  y2={yScale(scenario.exitPrice) - 22 + yOffset}
+                  stroke="#CCFF00"
+                  strokeWidth="1"
+                  strokeDasharray="2,2"
+                  opacity="0.5"
+                />
+              )}
+              
               {/* Point circle */}
               <circle
                 cx={xScale(scenario.exitMonths)}
@@ -191,7 +235,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
               />
 
               {/* Exit label badge */}
-              <g transform={`translate(${xScale(scenario.exitMonths)}, ${yScale(scenario.exitPrice) - 22})`}>
+              <g transform={`translate(${xScale(scenario.exitMonths)}, ${yScale(scenario.exitPrice) - 22 + yOffset})`}>
                 <rect
                   x="-28"
                   y="-10"
@@ -215,7 +259,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
               {/* Value label */}
               <text
                 x={xScale(scenario.exitMonths)}
-                y={yScale(scenario.exitPrice) + (index % 2 === 0 ? 28 : 40)}
+                y={yScale(scenario.exitPrice) + (yOffset >= 0 ? 28 : 45) + Math.abs(yOffset)}
                 fill="#CCFF00"
                 fontSize="11"
                 fontWeight="bold"
@@ -228,7 +272,7 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
               {/* ROE label */}
               <text
                 x={xScale(scenario.exitMonths)}
-                y={yScale(scenario.exitPrice) + (index % 2 === 0 ? 41 : 53)}
+                y={yScale(scenario.exitPrice) + (yOffset >= 0 ? 41 : 58) + Math.abs(yOffset)}
                 fill="#9ca3af"
                 fontSize="9"
                 textAnchor="middle"

@@ -28,7 +28,7 @@ const solutions: SolutionCard[] = [
     title: "Cashflow Statements",
     description: "Exit scenarios, payment breakdowns & client quotes",
     icon: Rocket,
-    route: "/oi-calculator",
+    route: "/cash-statement",
     color: "#00EAFF",
   },
   {
