@@ -462,13 +462,17 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
     hotspots.forEach((hotspot) => {
       const el = document.createElement("div");
       el.className = "hotspot-marker";
-      el.style.width = "30px";
-      el.style.height = "30px";
+      el.style.width = "32px";
+      el.style.height = "32px";
       el.style.borderRadius = "50%";
       el.style.backgroundColor = getCategoryColor(hotspot.category);
       el.style.border = "2px solid white";
       el.style.cursor = "pointer";
-      el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
+      el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+      el.style.display = "flex";
+      el.style.alignItems = "center";
+      el.style.justifyContent = "center";
+      el.innerHTML = getCategoryIcon(hotspot.category);
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([Number(hotspot.longitude), Number(hotspot.latitude)])
@@ -570,13 +574,23 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       landmark: "#2563EB",
-      metro: "#9333EA",
+      transportation: "#9333EA",
       attraction: "#EC4899",
-      restaurant: "#F97316",
-      shopping: "#10B981",
-      hotel: "#6366F1",
+      project: "#10B981",
+      other: "#6B7280",
     };
     return colors[category] || "#6B7280";
+  };
+
+  const getCategoryIcon = (category: string) => {
+    const icons: Record<string, string> = {
+      landmark: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>',
+      transportation: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><path d="m8 19-2 3"/><path d="m18 22-2-3"/><path d="M8 15h.01"/><path d="M16 15h.01"/></svg>',
+      attraction: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+      project: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>',
+      other: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+    };
+    return icons[category] || icons.other;
   };
 
   if (tokenLoading || zonesLoading || hotspotsLoading || projectsLoading || landmarksLoading) {
@@ -741,19 +755,36 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         </div>
       </div>
 
-      {/* Simple Logout button - bottom right */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={async () => {
-          await supabase.auth.signOut();
-          navigate("/login");
-        }}
-        className="absolute bottom-4 right-4 z-[1060] glass-panel gap-2"
-      >
-        <LogOut className="w-4 h-4" />
-        Logout
-      </Button>
+      {/* Bottom right controls - Presentation + Logout */}
+      <div className="absolute bottom-4 right-4 z-[1060] flex items-center gap-3">
+        {/* Presentation Mode Toggle */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            setPresentationMode(!presentationMode);
+            toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled - Press ESC to exit");
+          }}
+          className="glass-panel"
+          title={presentationMode ? "Exit Presentation Mode" : "Enter Presentation Mode"}
+        >
+          {presentationMode ? <X className="w-4 h-4" /> : <Presentation className="w-4 h-4" />}
+        </Button>
+
+        {/* Logout button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            await supabase.auth.signOut();
+            navigate("/login");
+          }}
+          className="glass-panel gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
+      </div>
 
       {/* Quick Navigate Panel */}
       {!presentationMode && (
@@ -785,44 +816,28 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         />
       )}
 
-      {/* Presentation toolbar - right side panel */}
-      <div className="fixed top-0 right-0 bottom-0 z-[1100] flex items-center">
-        {/* Toggle button - higher z-index so it's always clickable */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            setPresentationMode(!presentationMode);
-            toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled - Press ESC to exit");
-          }}
-          className="glass-panel -mr-1 z-[1200]"
-        >
-          {presentationMode ? <X className="w-4 h-4" /> : <Presentation className="w-4 h-4" />}
-        </Button>
-        
-        {/* Toolbar panel - only visible when presentation mode is on */}
-        {presentationMode && (
-          <div className="h-full glass-panel border-l border-border/40 p-2 flex flex-col items-center justify-center overflow-y-auto">
-            <DrawingToolbar
-              activeTool={activeTool}
-              activeColor={activeColor}
-              brushSize={brushSize}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onToolChange={setActiveTool}
-              onColorChange={setActiveColor}
-              onBrushSizeChange={setBrushSize}
-              onUndo={() => setUndoTrigger(prev => prev + 1)}
-              onRedo={() => setRedoTrigger(prev => prev + 1)}
-              onClear={() => {
-                setClearTrigger(prev => prev + 1);
-                toast("Drawing cleared");
-              }}
-              onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
-            />
-          </div>
-        )}
-      </div>
+      {/* Drawing toolbar - right side, only visible when presentation mode is on */}
+      {presentationMode && (
+        <div className="fixed top-1/2 right-4 -translate-y-1/2 z-[1100] glass-panel rounded-lg p-2">
+          <DrawingToolbar
+            activeTool={activeTool}
+            activeColor={activeColor}
+            brushSize={brushSize}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onToolChange={setActiveTool}
+            onColorChange={setActiveColor}
+            onBrushSizeChange={setBrushSize}
+            onUndo={() => setUndoTrigger(prev => prev + 1)}
+            onRedo={() => setRedoTrigger(prev => prev + 1)}
+            onClear={() => {
+              setClearTrigger(prev => prev + 1);
+              toast("Drawing cleared");
+            }}
+            onScreenshot={() => setScreenshotTrigger(prev => prev + 1)}
+          />
+        </div>
+      )}
 
       {/* Info cards */}
       {selectedZone && (
