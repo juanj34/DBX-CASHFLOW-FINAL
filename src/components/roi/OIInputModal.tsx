@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target } from "lucide-react";
+import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target, Zap } from "lucide-react";
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 
@@ -49,6 +49,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
       ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
       : inputs.basePrice.toString()
   );
+  
+  // Auto-generator state
+  const [numPayments, setNumPayments] = useState(4);
+  const [paymentInterval, setPaymentInterval] = useState(6);
 
   // Calculate totals for validation
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -106,6 +110,31 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
       ...prev,
       preHandoverPercent: preHandover,
       additionalPayments: [] // Clear additional payments when changing preset
+    }));
+  };
+
+  // Auto-generate payment plan
+  const calculateAutoPercentage = () => {
+    const remaining = inputs.preHandoverPercent - inputs.downpaymentPercent;
+    return numPayments > 0 ? remaining / numPayments : 0;
+  };
+
+  const handleGeneratePayments = () => {
+    const percentPerPayment = calculateAutoPercentage();
+    const newPayments: PaymentMilestone[] = [];
+    
+    for (let i = 0; i < numPayments; i++) {
+      newPayments.push({
+        id: `auto-${Date.now()}-${i}`,
+        type: 'time',
+        triggerValue: paymentInterval * (i + 1),
+        paymentPercent: parseFloat(percentPerPayment.toFixed(2))
+      });
+    }
+    
+    setInputs(prev => ({
+      ...prev,
+      additionalPayments: newPayments
     }));
   };
 
@@ -311,32 +340,6 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* MINIMUM EXIT THRESHOLD */}
-          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
-                <Target className="w-4 h-4 text-[#CCFF00]" />
-                Minimum Exit Threshold
-              </label>
-              <span className="text-lg font-bold text-[#CCFF00] font-mono">{inputs.minimumExitThreshold || 30}%</span>
-            </div>
-            <p className="text-xs text-gray-500">
-              % of price developer requires paid before allowing resale
-            </p>
-            <Slider
-              value={[inputs.minimumExitThreshold || 30]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, minimumExitThreshold: value }))}
-              min={10}
-              max={100}
-              step={5}
-              className="roi-slider-lime"
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>10%</span>
-              <span>100%</span>
-            </div>
-          </div>
-
           {/* PAYMENT PLAN SECTION - NEW STRUCTURE */}
           <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
@@ -407,8 +410,54 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 </div>
               </div>
               <div className="text-xs text-gray-500">
-                {formatCurrency(inputs.basePrice * inputs.downpaymentPercent / 100, currency)}
+              {formatCurrency(inputs.basePrice * inputs.downpaymentPercent / 100, currency)}
+            </div>
+            </div>
+
+            {/* AUTO-GENERATE PAYMENT PLAN */}
+            <div className="space-y-3 p-3 bg-gradient-to-r from-[#CCFF00]/10 to-transparent rounded-lg border border-[#CCFF00]/30">
+              <div className="flex items-center gap-2 text-[#CCFF00]">
+                <Zap className="w-4 h-4" />
+                <span className="text-sm font-medium">Auto-Generate Payments</span>
               </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">Number of Payments</label>
+                  <Input
+                    type="number"
+                    value={numPayments}
+                    onChange={(e) => setNumPayments(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))}
+                    className="h-8 bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
+                    min={1}
+                    max={12}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">Interval (months)</label>
+                  <Input
+                    type="number"
+                    value={paymentInterval}
+                    onChange={(e) => setPaymentInterval(Math.max(1, Math.min(24, parseInt(e.target.value) || 1)))}
+                    className="h-8 bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
+                    min={1}
+                    max={24}
+                  />
+                </div>
+              </div>
+              
+              <div className="text-xs text-gray-400">
+                Preview: <span className="text-white font-mono">{numPayments} payments × {calculateAutoPercentage().toFixed(1)}%</span> each = <span className={`font-mono ${Math.abs(numPayments * calculateAutoPercentage() - remainingToDistribute - additionalPaymentsTotal) < 0.1 ? 'text-green-400' : 'text-amber-400'}`}>{(numPayments * calculateAutoPercentage()).toFixed(1)}%</span>
+              </div>
+              
+              <Button
+                type="button"
+                onClick={handleGeneratePayments}
+                className="w-full h-8 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-sm"
+              >
+                <Zap className="w-3.5 h-3.5 mr-1" />
+                Generate Payments
+              </Button>
             </div>
 
             {/* ADDITIONAL PAYMENTS */}
@@ -555,6 +604,32 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                   <span className="font-mono font-bold">{totalPayment.toFixed(1)}%</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* MINIMUM EXIT THRESHOLD - Moved to bottom */}
+          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+                <Target className="w-4 h-4 text-[#CCFF00]" />
+                Minimum Exit Threshold
+              </label>
+              <span className="text-lg font-bold text-[#CCFF00] font-mono">{inputs.minimumExitThreshold || 30}%</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              % of price developer requires paid before allowing resale
+            </p>
+            <Slider
+              value={[inputs.minimumExitThreshold || 30]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, minimumExitThreshold: value }))}
+              min={10}
+              max={100}
+              step={5}
+              className="roi-slider-lime"
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>10%</span>
+              <span>100%</span>
             </div>
           </div>
 
