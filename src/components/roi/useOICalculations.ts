@@ -23,6 +23,9 @@ export interface OIInputs {
   // Entry Costs (simplified - DLD fixed at 4%)
   eoiFee: number; // EOI / Booking fee (default 50000), part of downpayment
   oqoodFee: number; // Fixed amount
+  
+  // Exit Threshold
+  minimumExitThreshold: number; // % mínimo requerido por developer para permitir reventa (default 30)
 }
 
 export interface OIExitScenario {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home } from "lucide-react";
+import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target } from "lucide-react";
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 
@@ -311,6 +311,31 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
+          {/* MINIMUM EXIT THRESHOLD */}
+          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <div className="flex justify-between items-center">
+              <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+                <Target className="w-4 h-4 text-[#CCFF00]" />
+                Minimum Exit Threshold
+              </label>
+              <span className="text-lg font-bold text-[#CCFF00] font-mono">{inputs.minimumExitThreshold || 30}%</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              % del precio que el developer exige haber pagado para permitir reventa
+            </p>
+            <Slider
+              value={[inputs.minimumExitThreshold || 30]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, minimumExitThreshold: value }))}
+              min={10}
+              max={100}
+              step={5}
+              className="roi-slider-lime"
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>10%</span>
+              <span>100%</span>
+            </div>
+          </div>
 
           {/* PAYMENT PLAN SECTION - NEW STRUCTURE */}
           <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
