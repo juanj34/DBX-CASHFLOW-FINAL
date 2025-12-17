@@ -22,7 +22,7 @@ const CashflowViewContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);
   const [clientInfo, setClientInfo] = useState<ClientUnitData | null>(null);
-  const [brokerName, setBrokerName] = useState<string>('');
+  const [advisorName, setAdvisorName] = useState<string>('');
 
   const { rate } = useExchangeRate(currency);
 
@@ -61,7 +61,7 @@ const CashflowViewContent = () => {
         unitSizeM2: data.unit_size_m2 || 0,
         unitType: data.unit_type || '',
       });
-      setBrokerName((data.profiles as any)?.full_name || '');
+      setAdvisorName((data.profiles as any)?.full_name || '');
       setLoading(false);
     };
 
@@ -100,13 +100,13 @@ const CashflowViewContent = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#CCFF00]/20 rounded-xl">
-              <Rocket className="w-6 h-6 text-[#CCFF00]" />
+            <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
+              <Rocket className="w-6 h-6 text-[#00EAFF]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">{t('opportunityInvestorAnalysis')}</h1>
-              {brokerName && (
-                <p className="text-sm text-gray-400">Prepared by {brokerName}</p>
+            <h1 className="text-xl font-bold text-white">Cashflow Statement</h1>
+              {advisorName && (
+                <p className="text-sm text-gray-400">Prepared by {advisorName}</p>
               )}
             </div>
           </div>

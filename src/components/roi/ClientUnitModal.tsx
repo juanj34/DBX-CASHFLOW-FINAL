@@ -145,13 +145,13 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
             </Select>
           </div>
 
-          {/* Broker Name */}
+          {/* Advisor Name */}
           <div className="space-y-1.5">
-            <label className="text-xs text-gray-400">{t('brokerName')}</label>
+            <label className="text-xs text-gray-400">{t('advisorName')}</label>
             <Input
               value={data.brokerName}
               onChange={(e) => handleChange('brokerName', e.target.value)}
-              placeholder="Broker name"
+              placeholder="Advisor name"
               className="bg-[#0d1117] border-[#2a3142] text-white"
             />
           </div>

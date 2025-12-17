@@ -3,8 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import Home from "./pages/Home";
 import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
 import ROICalculator from "./pages/ROICalculator";
@@ -24,8 +25,9 @@ function App() {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/map" element={<Map />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/roi-calculator" element={<ROICalculator />} />

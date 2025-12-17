@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, User, Camera } from 'lucide-react';
+import { LayoutDashboard, Upload, User, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
@@ -83,9 +83,9 @@ const AccountSettings = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/home">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
-                <ArrowLeft className="w-5 h-5" />
+                <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
             <h1 className="text-xl font-bold text-white">Account Settings</h1>

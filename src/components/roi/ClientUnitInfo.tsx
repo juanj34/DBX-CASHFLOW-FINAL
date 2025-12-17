@@ -2,7 +2,7 @@ import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2 } from "lu
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { COUNTRIES, UNIT_TYPES } from "./ClientUnitModal";
-import { BrokerInfo } from "./BrokerInfo";
+import { AdvisorInfo } from "./AdvisorInfo";
 import { Profile } from "@/hooks/useProfile";
 
 export interface ClientUnitData {
@@ -96,19 +96,19 @@ export const ClientUnitInfo = ({ data, onEditClick, brokerProfile }: ClientUnitI
             </div>
           )}
 
-          {/* Broker - Show profile if available, otherwise show manual entry */}
+          {/* Advisor - Show profile if available, otherwise show manual entry */}
           {(brokerProfile || data.brokerName) && (
             <div className="flex items-start gap-2">
               {brokerProfile ? (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">{t('broker')}</p>
-                  <BrokerInfo profile={brokerProfile} size="sm" />
+                  <p className="text-xs text-gray-500 mb-1">{t('advisor')}</p>
+                  <AdvisorInfo profile={brokerProfile} size="sm" />
                 </div>
               ) : (
                 <>
                   <User className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-500">{t('broker')}</p>
+                    <p className="text-xs text-gray-500">{t('advisor')}</p>
                     <p className="text-sm font-medium text-white">{data.brokerName}</p>
                   </div>
                 </>
