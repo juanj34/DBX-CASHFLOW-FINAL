@@ -10,6 +10,7 @@ import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTabl
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -18,6 +19,7 @@ import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 const OICalculatorContent = () => {
   const { language, setLanguage, t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
+  const [clientModalOpen, setClientModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>({
     basePrice: 800000,
@@ -42,6 +44,7 @@ const OICalculatorContent = () => {
     brokerName: '',
     unit: '',
     unitSizeSqf: 0,
+    unitSizeM2: 0,
     unitType: '',
   });
 
@@ -113,6 +116,12 @@ const OICalculatorContent = () => {
                 ))}
               </SelectContent>
             </Select>
+            <ClientUnitModal
+              data={clientInfo}
+              onChange={setClientInfo}
+              open={clientModalOpen}
+              onOpenChange={setClientModalOpen}
+            />
             <OIInputModal
               inputs={inputs} 
               setInputs={setInputs} 
@@ -126,8 +135,8 @@ const OICalculatorContent = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {/* Client & Unit Information */}
-        <ClientUnitInfo data={clientInfo} onChange={setClientInfo} />
+        {/* Client & Unit Information - Read-only display */}
+        <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column - Charts & Tables */}

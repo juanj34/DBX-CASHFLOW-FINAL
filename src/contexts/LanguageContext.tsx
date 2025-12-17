@@ -16,14 +16,23 @@ const translations: Translations = {
   
   // Client Info
   clientUnitInfo: { en: 'Client & Unit Information', es: 'Información del Cliente y Unidad' },
+  clientDetails: { en: 'Client Details', es: 'Datos del Cliente' },
   developer: { en: 'Developer', es: 'Desarrollador' },
   clientName: { en: 'Client Name', es: 'Nombre del Cliente' },
+  client: { en: 'Client', es: 'Cliente' },
   clientCountry: { en: 'Client Country', es: 'País del Cliente' },
+  country: { en: 'Country', es: 'País' },
   brokerName: { en: 'Broker Name', es: 'Nombre del Broker' },
+  broker: { en: 'Broker', es: 'Broker' },
   unit: { en: 'Unit', es: 'Unidad' },
   unitSize: { en: 'Unit Size (sqf)', es: 'Tamaño (sqf)' },
+  unitSizeSqf: { en: 'Size (sqf)', es: 'Tamaño (sqf)' },
+  unitSizeM2: { en: 'Size (m²)', es: 'Tamaño (m²)' },
+  size: { en: 'Size', es: 'Tamaño' },
   unitType: { en: 'Unit Type', es: 'Tipo de Unidad' },
   purchasePrice: { en: 'Purchase Price', es: 'Precio de Compra' },
+  clickToAddClientInfo: { en: 'Click to add client & unit information', es: 'Clic para agregar información del cliente y unidad' },
+  save: { en: 'Save', es: 'Guardar' },
   
   // Unit Types
   studio: { en: 'Studio', es: 'Estudio' },
