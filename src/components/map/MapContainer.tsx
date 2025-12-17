@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
-import { useZones, useHotspots, useProjects } from "@/hooks/useMapData";
+import { useZones, useHotspots, useProjects, useLandmarks } from "@/hooks/useMapData";
 import { Loader2, Presentation, Building2, X, LogOut, MapPinned, Route } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
+import { LandmarkInfoCard } from "./LandmarkInfoCard";
 import { LayerToggle } from "./LayerToggle";
 import { QuickNavigate } from "./QuickNavigate";
 import { dubaiMetroLines } from "@/data/dubaiMetroLines";
@@ -29,6 +30,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const hotspotMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const projectMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const landmarkMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const justClickedFeatureRef = useRef(false);
   
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -36,6 +38,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const [zonesVisible, setZonesVisible] = useState(true);
   const [hotspotsVisible, setHotspotsVisible] = useState(true);
   const [projectsVisible, setProjectsVisible] = useState(true);
+  const [landmarksVisible, setLandmarksVisible] = useState(true);
   const [metroVisible, setMetroVisible] = useState(true);
   const [buildings3DVisible, setBuildings3DVisible] = useState(() => {
     const saved = localStorage.getItem('map-buildings3d-visible');
@@ -53,6 +56,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedLandmark, setSelectedLandmark] = useState<any>(null);
   
   // Drawing state
   const [presentationMode, setPresentationMode] = useState(false);
@@ -71,6 +75,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
   const { data: zones, isLoading: zonesLoading } = useZones();
   const { data: hotspots, isLoading: hotspotsLoading } = useHotspots();
   const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: landmarks, isLoading: landmarksLoading } = useLandmarks();
 
   // Handle ESC key to exit presentation mode
   useEffect(() => {
@@ -521,6 +526,47 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
     });
   }, [projects, projectsLoading, projectsVisible, mapLoaded]);
 
+  // Add landmarks to map
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Clear existing landmark markers
+    landmarkMarkersRef.current.forEach((marker) => marker.remove());
+    landmarkMarkersRef.current = [];
+
+    if (!landmarksVisible || !landmarks || landmarksLoading) return;
+
+    landmarks.forEach((landmark) => {
+      const el = document.createElement("div");
+      el.className = "landmark-marker";
+      el.style.width = "36px";
+      el.style.height = "36px";
+      el.style.borderRadius = "8px";
+      el.style.backgroundColor = "#8B5CF6";
+      el.style.border = "3px solid white";
+      el.style.cursor = "pointer";
+      el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.4)";
+      el.style.display = "flex";
+      el.style.alignItems = "center";
+      el.style.justifyContent = "center";
+      el.innerHTML = "📷";
+      el.style.fontSize = "16px";
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([Number(landmark.longitude), Number(landmark.latitude)])
+        .addTo(map.current!);
+
+      el.addEventListener("click", () => {
+        setSelectedLandmark(landmark);
+        setSelectedZone(null);
+        setSelectedHotspot(null);
+        setSelectedProject(null);
+      });
+
+      landmarkMarkersRef.current.push(marker);
+    });
+  }, [landmarks, landmarksLoading, landmarksVisible, mapLoaded]);
+
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       landmark: "#2563EB",
@@ -533,7 +579,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
     return colors[category] || "#6B7280";
   };
 
-  if (tokenLoading || zonesLoading || hotspotsLoading || projectsLoading) {
+  if (tokenLoading || zonesLoading || hotspotsLoading || projectsLoading || landmarksLoading) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -550,11 +596,13 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
     
     const target = e.target as HTMLElement;
     
-    // No cerrar si el clic fue en un marker (hotspot o proyecto)
+    // No cerrar si el clic fue en un marker (hotspot, proyecto, o landmark)
     if (target.classList.contains('hotspot-marker') || 
         target.classList.contains('project-marker') ||
+        target.classList.contains('landmark-marker') ||
         target.closest('.hotspot-marker') ||
-        target.closest('.project-marker')) {
+        target.closest('.project-marker') ||
+        target.closest('.landmark-marker')) {
       return;
     }
     
@@ -574,6 +622,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
     setSelectedZone(null);
     setSelectedHotspot(null);
     setSelectedProject(null);
+    setSelectedLandmark(null);
   };
 
   return (
@@ -784,6 +833,9 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
       )}
       {selectedProject && (
         <ProjectInfoCard project={selectedProject} onClose={() => setSelectedProject(null)} />
+      )}
+      {selectedLandmark && (
+        <LandmarkInfoCard landmark={selectedLandmark} onClose={() => setSelectedLandmark(null)} />
       )}
     </div>
   );

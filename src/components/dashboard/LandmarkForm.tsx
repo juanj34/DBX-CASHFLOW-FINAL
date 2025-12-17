@@ -6,30 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import mapboxgl from "mapbox-gl";
 import { Loader2, Upload, Link as LinkIcon } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface HotspotFormProps {
-  hotspot?: any;
+interface LandmarkFormProps {
+  landmark?: any;
   onClose: () => void;
   onSaved: () => void;
 }
 
-const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
+const LandmarkForm = ({ landmark, onClose, onSaved }: LandmarkFormProps) => {
   const { data: token, isLoading } = useMapboxToken();
   const { toast } = useToast();
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -37,16 +30,15 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
   const marker = useRef<mapboxgl.Marker | null>(null);
 
   const [formData, setFormData] = useState({
-    title: hotspot?.title || "",
-    description: hotspot?.description || "",
-    category: hotspot?.category || "landmark",
-    latitude: hotspot?.latitude?.toString() || "",
-    longitude: hotspot?.longitude?.toString() || "",
-    imageUrl: hotspot?.photos?.[0] || "",
+    title: landmark?.title || "",
+    description: landmark?.description || "",
+    image_url: landmark?.image_url || "",
+    latitude: landmark?.latitude?.toString() || "",
+    longitude: landmark?.longitude?.toString() || "",
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState(hotspot?.photos?.[0] || "");
+  const [imagePreview, setImagePreview] = useState(landmark?.image_url || "");
 
   useEffect(() => {
     if (!token || !mapContainer.current || map.current) return;
@@ -90,11 +82,71 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
     };
   }, [token]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("landmark-images")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      toast({
+        title: "Upload failed",
+        description: uploadError.message,
+        variant: "destructive",
+      });
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("landmark-images")
+      .getPublicUrl(fileName);
+
+    setFormData((prev) => ({ ...prev, image_url: urlData.publicUrl }));
+    setImagePreview(urlData.publicUrl);
+    setUploading(false);
+
+    toast({
+      title: "Image uploaded",
+      description: "Image has been uploaded successfully",
+    });
+  };
+
+  const handleUrlChange = (url: string) => {
+    setFormData((prev) => ({ ...prev, image_url: url }));
+    setImagePreview(url);
+  };
+
   const handleSave = async () => {
     if (!formData.title.trim()) {
       toast({
         title: "Validation error",
-        description: "Hotspot title is required",
+        description: "Landmark title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.image_url.trim()) {
+      toast({
+        title: "Validation error",
+        description: "Image is required for landmarks",
         variant: "destructive",
       });
       return;
@@ -111,34 +163,33 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
 
     setSaving(true);
 
-    const hotspotData = {
+    const landmarkData = {
       title: formData.title,
       description: formData.description || null,
-      category: formData.category,
+      image_url: formData.image_url,
       latitude: parseFloat(formData.latitude),
       longitude: parseFloat(formData.longitude),
-      photos: formData.imageUrl ? [formData.imageUrl] : null,
     };
 
     let error;
-    if (hotspot) {
-      ({ error } = await supabase.from("hotspots").update(hotspotData).eq("id", hotspot.id));
+    if (landmark) {
+      ({ error } = await supabase.from("landmarks").update(landmarkData).eq("id", landmark.id));
     } else {
-      ({ error } = await supabase.from("hotspots").insert(hotspotData));
+      ({ error } = await supabase.from("landmarks").insert(landmarkData));
     }
 
     setSaving(false);
 
     if (error) {
       toast({
-        title: "Error saving hotspot",
+        title: "Error saving landmark",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Hotspot saved",
-        description: `Hotspot "${formData.title}" has been successfully ${hotspot ? "updated" : "created"}.`,
+        title: "Landmark saved",
+        description: `Landmark "${formData.title}" has been successfully ${landmark ? "updated" : "created"}.`,
       });
       onSaved();
     }
@@ -148,54 +199,33 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{hotspot ? "Edit Hotspot" : "Create New Hotspot"}</DialogTitle>
+          <DialogTitle>{landmark ? "Edit Landmark" : "Create New Landmark"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Hotspot Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Burj Khalifa"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="landmark">Landmark</SelectItem>
-                  <SelectItem value="metro">Metro</SelectItem>
-                  <SelectItem value="attraction">Attraction</SelectItem>
-                  <SelectItem value="project">Project</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g., Downtown Dubai Panorama"
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Short Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Enter hotspot description..."
-              rows={3}
+              placeholder="Brief description of the view..."
+              rows={2}
             />
           </div>
 
-          {/* Image Upload Section */}
           <div className="space-y-2">
-            <Label>Image (Optional)</Label>
+            <Label>Image * (Required)</Label>
             <Tabs defaultValue="upload" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upload">
@@ -211,50 +241,7 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    if (!file.type.startsWith("image/")) {
-                      toast({
-                        title: "Invalid file type",
-                        description: "Please select an image file",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    setUploading(true);
-                    const fileExt = file.name.split(".").pop();
-                    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-                    const { error: uploadError } = await supabase.storage
-                      .from("hotspot-images")
-                      .upload(fileName, file);
-
-                    if (uploadError) {
-                      toast({
-                        title: "Upload failed",
-                        description: uploadError.message,
-                        variant: "destructive",
-                      });
-                      setUploading(false);
-                      return;
-                    }
-
-                    const { data: urlData } = supabase.storage
-                      .from("hotspot-images")
-                      .getPublicUrl(fileName);
-
-                    setFormData((prev) => ({ ...prev, imageUrl: urlData.publicUrl }));
-                    setImagePreview(urlData.publicUrl);
-                    setUploading(false);
-
-                    toast({
-                      title: "Image uploaded",
-                      description: "Image has been uploaded successfully",
-                    });
-                  }}
+                  onChange={handleFileUpload}
                   disabled={uploading}
                 />
                 {uploading && (
@@ -267,11 +254,8 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
               <TabsContent value="url" className="space-y-2">
                 <Input
                   type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => {
-                    setFormData((prev) => ({ ...prev, imageUrl: e.target.value }));
-                    setImagePreview(e.target.value);
-                  }}
+                  value={formData.image_url}
+                  onChange={(e) => handleUrlChange(e.target.value)}
                   placeholder="https://example.com/image.jpg"
                 />
               </TabsContent>
@@ -282,7 +266,7 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
                 <img
                   src={imagePreview}
                   alt="Preview"
-                  className="w-full h-32 object-cover rounded-lg border"
+                  className="w-full h-48 object-cover rounded-lg border"
                   onError={() => setImagePreview("")}
                 />
               </div>
@@ -334,11 +318,11 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
             </p>
             <div
               ref={mapContainer}
-              className="h-96 rounded-lg border"
+              className="h-64 rounded-lg border"
               style={{ display: isLoading ? "none" : "block" }}
             />
             {isLoading && (
-              <div className="h-96 rounded-lg border flex items-center justify-center">
+              <div className="h-64 rounded-lg border flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             )}
@@ -348,9 +332,9 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
             <Button variant="outline" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || uploading}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {hotspot ? "Update Hotspot" : "Create Hotspot"}
+              {landmark ? "Update Landmark" : "Create Landmark"}
             </Button>
           </div>
         </div>
@@ -359,4 +343,4 @@ const HotspotForm = ({ hotspot, onClose, onSaved }: HotspotFormProps) => {
   );
 };
 
-export default HotspotForm;
+export default LandmarkForm;
