@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target, Settings } from "lucide-react";
+import { LayoutDashboard, Rocket, ChevronDown, ChevronUp, Home, Wifi, WifiOff, Target, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -168,17 +168,17 @@ const OICalculatorContent = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/home">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
-                <ArrowLeft className="w-5 h-5" />
+                <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#CCFF00]/20 rounded-xl">
-                <Rocket className="w-6 h-6 text-[#CCFF00]" />
+              <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
+                <Rocket className="w-6 h-6 text-[#00EAFF]" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">{t('opportunityInvestorAnalysis')}</h1>
+                <h1 className="text-xl font-bold text-white">Cashflow Statements</h1>
                 <p className="text-sm text-gray-400">{t('exitScenariosPaymentBreakdown')}</p>
               </div>
             </div>

@@ -1,12 +1,12 @@
 import { User } from 'lucide-react';
 import { Profile } from '@/hooks/useProfile';
 
-interface BrokerInfoProps {
+interface AdvisorInfoProps {
   profile: Profile | null;
   size?: 'sm' | 'md';
 }
 
-export const BrokerInfo = ({ profile, size = 'sm' }: BrokerInfoProps) => {
+export const AdvisorInfo = ({ profile, size = 'sm' }: AdvisorInfoProps) => {
   if (!profile) return null;
 
   const avatarSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10';
@@ -19,7 +19,7 @@ export const BrokerInfo = ({ profile, size = 'sm' }: BrokerInfoProps) => {
         {profile.avatar_url ? (
           <img 
             src={profile.avatar_url} 
-            alt={profile.full_name || 'Broker'} 
+            alt={profile.full_name || 'Advisor'} 
             className="w-full h-full object-cover"
           />
         ) : (

@@ -1,6 +1,5 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface HotspotInfoCardProps {
@@ -29,16 +28,16 @@ export const HotspotInfoCard = ({ hotspot, onClose }: HotspotInfoCardProps) => {
   const hasImage = hotspot.photos && hotspot.photos.length > 0;
 
   return (
-    <Card className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-hidden shadow-lg z-10" data-info-card>
+    <div className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-hidden shadow-xl z-10 bg-[#1a1f2e] border border-[#2a3142] rounded-xl" data-info-card>
       {/* Header with title and category */}
       <div className="flex items-start justify-between p-4 pb-3">
         <div className="flex-1 min-w-0 pr-2">
-          <h3 className="font-semibold text-lg leading-tight">{hotspot.title}</h3>
+          <h3 className="font-semibold text-lg leading-tight text-white">{hotspot.title}</h3>
           <Badge className={`${categoryConfig.color} mt-2`}>
             {categoryConfig.label}
           </Badge>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0 -mr-2 -mt-1">
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0 -mr-2 -mt-1 text-gray-400 hover:text-white hover:bg-[#2a3142]">
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -57,14 +56,14 @@ export const HotspotInfoCard = ({ hotspot, onClose }: HotspotInfoCardProps) => {
       )}
 
       {/* Description */}
-      <CardContent className={hasImage ? "pt-3" : "pt-0"}>
-        <p className="font-semibold text-sm mb-1">Descripción</p>
+      <div className={`px-4 pb-4 ${hasImage ? "pt-3" : "pt-0"}`}>
+        <p className="font-semibold text-sm mb-1 text-white">Descripción</p>
         {hotspot.description ? (
-          <p className="text-sm text-muted-foreground">{hotspot.description}</p>
+          <p className="text-sm text-gray-400">{hotspot.description}</p>
         ) : (
-          <p className="text-sm text-muted-foreground italic">Sin descripción disponible</p>
+          <p className="text-sm text-gray-500 italic">Sin descripción disponible</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

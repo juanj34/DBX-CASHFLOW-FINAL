@@ -69,13 +69,13 @@ export const QuickNavigate = ({ map }: QuickNavigateProps) => {
       {/* Expanded Panel */}
       <div
         className={`
-          bg-background/95 backdrop-blur-md rounded-xl shadow-xl border border-border/50
+          bg-[#1a1f2e]/95 border border-[#2a3142] backdrop-blur-xl rounded-xl shadow-xl
           transition-all duration-300 ease-out overflow-hidden
           ${isExpanded ? "w-48 opacity-100 translate-x-0" : "w-0 opacity-0 translate-x-4 pointer-events-none"}
         `}
       >
         <div className="p-2">
-          <div className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1">
+          <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
             Quick Navigate
           </div>
           <div className="max-h-[60vh] overflow-y-auto space-y-0.5 pr-1 scrollbar-thin">
@@ -88,8 +88,8 @@ export const QuickNavigate = ({ map }: QuickNavigateProps) => {
                   w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg
                   transition-all duration-200 text-left group
                   ${activeLocation === location.id 
-                    ? "bg-primary/15 text-primary" 
-                    : "hover:bg-muted/80 text-foreground"
+                    ? "bg-[#CCFF00]/15 text-[#CCFF00]" 
+                    : "hover:bg-[#2a3142] text-gray-300"
                   }
                   ${isAnimating ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
                 `}
@@ -101,7 +101,7 @@ export const QuickNavigate = ({ map }: QuickNavigateProps) => {
                   <div className="text-sm font-medium truncate">
                     {location.name}
                   </div>
-                  <div className="text-[10px] text-muted-foreground truncate">
+                  <div className="text-[10px] text-gray-500 truncate">
                     {location.description}
                   </div>
                 </div>
@@ -117,8 +117,9 @@ export const QuickNavigate = ({ map }: QuickNavigateProps) => {
         size="icon"
         onClick={() => setIsExpanded(!isExpanded)}
         className={`
-          h-11 w-11 rounded-xl shadow-lg border-border/50
-          bg-background/95 backdrop-blur-md
+          h-11 w-11 rounded-xl shadow-lg
+          bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl
+          text-gray-400 hover:text-white hover:bg-[#2a3142]
           transition-all duration-300
           ${isExpanded ? "rotate-0" : ""}
           ${isAnimating ? "animate-pulse" : ""}

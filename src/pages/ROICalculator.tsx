@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROIInputModal } from "@/components/roi/ROIInputModal";
 import { GrowthCurve } from "@/components/roi/GrowthCurve";
@@ -33,9 +33,9 @@ const ROICalculator = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/map">
+            <Link to="/home">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
-                <ArrowLeft className="w-5 h-5" />
+                <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
             <div className="flex items-center gap-3">
@@ -43,8 +43,8 @@ const ROICalculator = () => {
                 <TrendingUp className="w-6 h-6 text-[#CCFF00]" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Investment Analysis</h1>
-                <p className="text-sm text-gray-400">Dubai Real Estate ROI Calculator</p>
+                <h1 className="text-xl font-bold text-white">Investor Type</h1>
+                <p className="text-sm text-gray-400">Compare OI, SI, HO investment profiles</p>
               </div>
             </div>
           </div>
@@ -57,6 +57,11 @@ const ROICalculator = () => {
             >
               {currency === 'AED' ? '🇦🇪 AED' : '🇺🇸 USD'}
             </Button>
+            <Link to="/account-settings">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
             <ROIInputModal 
               inputs={inputs} 
               setInputs={setInputs} 

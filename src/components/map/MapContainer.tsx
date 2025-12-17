@@ -4,7 +4,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { useZones, useHotspots, useProjects, useLandmarks } from "@/hooks/useMapData";
-import { Loader2, Presentation, Building2, X, LogOut, MapPinned, Route } from "lucide-react";
+import { Loader2, Presentation, Building2, X, LogOut, MapPinned, Route, LayoutDashboard, Settings } from "lucide-react";
 import { ZoneInfoCard } from "./ZoneInfoCard";
 import { HotspotInfoCard } from "./HotspotInfoCard";
 import { ProjectInfoCard } from "./ProjectInfoCard";
@@ -718,17 +718,17 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         />
 
         {/* Quick controls - same height as LayerToggle header */}
-        <div className="flex flex-row gap-2 glass-panel rounded-lg p-2">
+        <div className="flex flex-row gap-2 bg-[#1a1f2e]/95 border border-[#2a3142] backdrop-blur-xl rounded-lg p-2">
         {/* 3D Buildings toggle button */}
         <Button
           variant="outline"
           size="icon"
           onClick={() => setBuildings3DVisible(!buildings3DVisible)}
-          className={`glass-panel bg-white hover:bg-gray-50 ${!buildings3DVisible ? 'opacity-40' : ''}`}
+          className={`bg-[#1a1f2e] border-[#2a3142] hover:bg-[#2a3142] ${!buildings3DVisible ? 'opacity-40' : ''}`}
           title={buildings3DVisible ? "Hide 3D Buildings" : "Show 3D Buildings"}
         >
           <div className="relative">
-            <Building2 className="w-4 h-4 text-gray-800" />
+            <Building2 className="w-4 h-4 text-gray-400" />
             {!buildings3DVisible && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-5 h-0.5 bg-red-500 rotate-45 rounded-full" />
@@ -742,11 +742,11 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           variant="outline"
           size="icon"
           onClick={() => setPlacesVisible(!placesVisible)}
-          className={`glass-panel bg-white hover:bg-gray-50 ${!placesVisible ? 'opacity-40' : ''}`}
+          className={`bg-[#1a1f2e] border-[#2a3142] hover:bg-[#2a3142] ${!placesVisible ? 'opacity-40' : ''}`}
           title={placesVisible ? "Hide Places & Labels" : "Show Places & Labels"}
         >
           <div className="relative">
-            <MapPinned className="w-4 h-4 text-gray-800" />
+            <MapPinned className="w-4 h-4 text-gray-400" />
             {!placesVisible && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-5 h-0.5 bg-red-500 rotate-45 rounded-full" />
@@ -760,11 +760,11 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           variant="outline"
           size="icon"
           onClick={() => setRoadsVisible(!roadsVisible)}
-          className={`glass-panel bg-white hover:bg-gray-50 ${!roadsVisible ? 'opacity-40' : ''}`}
+          className={`bg-[#1a1f2e] border-[#2a3142] hover:bg-[#2a3142] ${!roadsVisible ? 'opacity-40' : ''}`}
           title={roadsVisible ? "Hide Road Labels" : "Show Road Labels"}
         >
           <div className="relative">
-            <Route className="w-4 h-4 text-gray-800" />
+            <Route className="w-4 h-4 text-gray-400" />
             {!roadsVisible && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-5 h-0.5 bg-red-500 rotate-45 rounded-full" />
@@ -775,8 +775,30 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
         </div>
       </div>
 
-      {/* Bottom right controls - Presentation + Logout */}
+      {/* Bottom right controls - Dashboard + Settings + Presentation + Logout */}
       <div className="absolute bottom-4 right-4 z-[1060] flex items-center gap-3">
+        {/* Dashboard button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/home")}
+          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142] gap-2"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          Dashboard
+        </Button>
+
+        {/* Settings button */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate("/account-settings")}
+          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142]"
+          title="Account Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+
         {/* Presentation Mode Toggle */}
         <Button
           variant="outline"
@@ -785,7 +807,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
             setPresentationMode(!presentationMode);
             toast(presentationMode ? "Presentation mode disabled" : "Presentation mode enabled - Press ESC to exit");
           }}
-          className="glass-panel"
+          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142]"
           title={presentationMode ? "Exit Presentation Mode" : "Enter Presentation Mode"}
         >
           {presentationMode ? <X className="w-4 h-4" /> : <Presentation className="w-4 h-4" />}
@@ -799,7 +821,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
             await supabase.auth.signOut();
             navigate("/login");
           }}
-          className="glass-panel gap-2"
+          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-red-400 hover:bg-[#2a3142] gap-2"
         >
           <LogOut className="w-4 h-4" />
           Logout
@@ -838,7 +860,7 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
 
       {/* Drawing toolbar - right side, only visible when presentation mode is on */}
       {presentationMode && (
-        <div className="fixed top-1/2 right-4 -translate-y-1/2 z-[1100] glass-panel rounded-lg p-2">
+        <div className="fixed top-1/2 right-4 -translate-y-1/2 z-[1100] bg-[#1a1f2e]/95 border border-[#2a3142] backdrop-blur-xl rounded-lg p-2">
           <DrawingToolbar
             activeTool={activeTool}
             activeColor={activeColor}
