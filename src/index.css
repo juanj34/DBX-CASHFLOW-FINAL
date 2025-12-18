@@ -214,3 +214,121 @@ All colors MUST be HSL.
   border-color: #FF00FF;
   box-shadow: 0 0 10px #FF00FF;
 }
+
+/* Print Styles for Cashflow Statement PDF Export */
+@media print {
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* Hide interactive elements */
+  header,
+  .print-hidden,
+  button,
+  [role="dialog"],
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Reset background for print */
+  body,
+  .min-h-screen {
+    background: white !important;
+    color: #1a1a1a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Main container adjustments */
+  main {
+    padding: 0 !important;
+  }
+
+  /* Dark cards should print with dark background for brand consistency */
+  .bg-\[\#0f172a\],
+  .bg-\[\#1a1f2e\] {
+    background: #0f172a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure text colors are preserved */
+  .text-white,
+  .text-gray-100,
+  .text-gray-200,
+  .text-gray-300 {
+    color: inherit !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Accent colors preserved */
+  .text-\[\#CCFF00\] {
+    color: #CCFF00 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .text-\[\#00EAFF\] {
+    color: #00EAFF !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Prevent page breaks inside important sections */
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Force page break before specific sections */
+  .page-break-before {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* Grid layouts for print */
+  .grid {
+    display: grid !important;
+  }
+
+  /* Ensure SVG charts print correctly */
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Table styling for print */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 8px;
+  }
+
+  /* Remove shadows and blur effects for cleaner print */
+  .shadow-lg,
+  .shadow-md,
+  .shadow-xl,
+  .backdrop-blur-xl,
+  .backdrop-blur-sm {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Border visibility */
+  .border,
+  .border-b,
+  .border-t {
+    border-color: #2a3142 !important;
+  }
+}
