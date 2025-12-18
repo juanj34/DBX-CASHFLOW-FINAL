@@ -110,16 +110,17 @@ const CashflowViewContent = () => {
     <div className="min-h-screen bg-[#0f172a]">
       {/* Header - Simplified for client view */}
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#00EAFF]/20 rounded-xl">
-              <Rocket className="w-6 h-6 text-[#00EAFF]" />
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-[#00EAFF]/20 rounded-xl">
+              <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-[#00EAFF]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Cashflow Statement</h1>
+              <h1 className="text-base sm:text-xl font-bold text-white">Cashflow Statement</h1>
             </div>
+            {/* Desktop: Advisor info inline */}
             {advisorProfile?.full_name && (
-              <>
+              <div className="hidden md:flex items-center">
                 <div className="h-8 w-px bg-[#2a3142] mx-2" />
                 <div className="flex items-center gap-3">
                   {advisorProfile.avatar_url ? (
@@ -138,23 +139,24 @@ const CashflowViewContent = () => {
                     <p className="text-xs text-gray-400">Wealth Advisor</p>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            {/* Language Toggle */}
+          <div className="flex items-center gap-2">
+            {/* Language Toggle - Compact on mobile */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-              className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white px-3"
+              className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
             >
-              {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
+              {language === 'en' ? '🇬🇧' : '🇪🇸'}
+              <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
             </Button>
 
-            {/* Currency Selector */}
+            {/* Currency Selector - Compact on mobile */}
             <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
-              <SelectTrigger className="w-[130px] border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]">
+              <SelectTrigger className="w-[70px] sm:w-[130px] h-7 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
@@ -169,22 +171,38 @@ const CashflowViewContent = () => {
         </div>
       </header>
 
+      {/* Mobile-only Advisor Section */}
+      {advisorProfile?.full_name && (
+        <div className="md:hidden bg-[#1a1f2e] border-b border-[#2a3142] py-3 px-3">
+          <div className="flex items-center gap-3">
+            {advisorProfile.avatar_url ? (
+              <img 
+                src={advisorProfile.avatar_url} 
+                alt={advisorProfile.full_name} 
+                className="w-12 h-12 rounded-full object-cover border-2 border-[#2a3142]"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-[#2a3142] flex items-center justify-center text-white font-medium text-lg">
+                {advisorProfile.full_name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium text-white">{advisorProfile.full_name}</p>
+              <p className="text-xs text-[#CCFF00]">Wealth Advisor</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content - Read-only view */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {/* Client & Unit Information - Read only */}
         <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
         {/* Two Column Layout: Payment Breakdown + Investment Snapshot */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-          <div className="xl:col-span-2">
-            <PaymentBreakdown 
-              inputs={inputs}
-              currency={currency}
-              totalMonths={calculations.totalMonths}
-              rate={rate}
-            />
-          </div>
-          <div className="xl:col-span-1">
+        {/* Mobile: Investment Snapshot first, Payment Breakdown second */}
+        <div className="flex flex-col xl:grid xl:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="xl:col-span-1 order-1 xl:order-2">
             <InvestmentSnapshot 
               inputs={inputs}
               currency={currency}
@@ -193,9 +211,17 @@ const CashflowViewContent = () => {
               rate={rate}
             />
           </div>
+          <div className="xl:col-span-2 order-2 xl:order-1">
+            <PaymentBreakdown 
+              inputs={inputs}
+              currency={currency}
+              totalMonths={calculations.totalMonths}
+              rate={rate}
+            />
+          </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
 
           <ExitScenariosCards 
@@ -213,7 +239,7 @@ const CashflowViewContent = () => {
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 pt-6 border-t border-[#2a3142] text-center">
+        <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">
           <p className="text-xs text-gray-500">
             This cashflow statement is for informational purposes only and does not constitute financial advice.
           </p>

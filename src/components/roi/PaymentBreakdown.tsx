@@ -63,67 +63,71 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
-        <CreditCard className="w-5 h-5 text-[#CCFF00]" />
+      <div className="p-3 sm:p-4 border-b border-[#2a3142] flex items-center gap-2">
+        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#CCFF00]" />
         <div>
-          <h3 className="font-semibold text-white">PAYMENT BREAKDOWN</h3>
-          <p className="text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} payment structure</p>
+          <h3 className="font-semibold text-white text-sm sm:text-base">PAYMENT BREAKDOWN</h3>
+          <p className="text-[10px] sm:text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} payment structure</p>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Base Price */}
-        <div className="flex justify-between items-center pb-3 border-b border-[#2a3142]">
-          <span className="text-sm text-gray-400">Base Property Price</span>
-          <span className="text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+        <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-[#2a3142]">
+          <span className="text-xs sm:text-sm text-gray-400">Base Property Price</span>
+          <span className="text-sm sm:text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
         </div>
 
         {/* Section: At Booking */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[#CCFF00]">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm font-medium">AT BOOKING ({monthToDateString(bookingMonth, bookingYear)})</span>
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[#CCFF00]">
+            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="text-xs sm:text-sm font-medium">AT BOOKING ({monthToDateString(bookingMonth, bookingYear)})</span>
           </div>
           
-          <div className="pl-6 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">EOI / Booking Fee</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency, rate)}</span>
+          <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
+              <span className="text-xs sm:text-sm text-gray-300">EOI / Booking Fee</span>
+              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency, rate)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">Rest of Downpayment ({downpaymentPercent}% - EOI)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency, rate)}</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
+              <span className="text-xs sm:text-sm text-gray-300">Rest of Downpayment ({downpaymentPercent}% - EOI)</span>
+              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency, rate)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">DLD Fee (4%)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency, rate)}</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
+              <span className="text-xs sm:text-sm text-gray-300">DLD Fee (4%)</span>
+              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency, rate)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">Oqood Fee</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(oqoodFee, currency, rate)}</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
+              <span className="text-xs sm:text-sm text-gray-300">Oqood Fee</span>
+              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(oqoodFee, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
-              <span className="text-sm font-medium text-[#CCFF00]">Total Today</span>
-              <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
+              <span className="text-xs sm:text-sm font-medium text-[#CCFF00]">Total Today</span>
+              <span className="text-xs sm:text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
             </div>
           </div>
         </div>
 
         {/* Section: During Construction */}
         {sortedAdditionalPayments.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Building2 className="w-4 h-4" />
-              <span className="text-sm font-medium">DURING CONSTRUCTION</span>
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
+              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm font-medium">DURING CONSTRUCTION</span>
             </div>
             
-            <div className="pl-6 space-y-2">
+            <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
               {sortedAdditionalPayments.map((payment, index) => {
                 const amount = basePrice * payment.paymentPercent / 100;
                 const isTimeBased = payment.type === 'time';
+                // Compact label for mobile
                 const triggerLabel = isTimeBased
+                  ? `M${payment.triggerValue}`
+                  : `${payment.triggerValue}%`;
+                const triggerLabelFull = isTimeBased
                   ? `Month ${payment.triggerValue}`
-                  : `${payment.triggerValue}% construction`;
+                  : `${payment.triggerValue}% const.`;
                 
                 // Only show date for time-based payments
                 const dateStr = isTimeBased 
@@ -131,28 +135,28 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
                   : null;
                 
                 return (
-                  <div key={payment.id} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
+                  <div key={payment.id} className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       {isTimeBased ? (
-                        <Clock className="w-3 h-3 text-gray-500" />
+                        <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
                       ) : (
-                        <Building2 className="w-3 h-3 text-gray-500" />
+                        <Building2 className="w-3 h-3 text-gray-500 flex-shrink-0" />
                       )}
-                      <span className="text-sm text-gray-300">
-                        {payment.paymentPercent}% @ {triggerLabel}
+                      <span className="text-xs sm:text-sm text-gray-300">
+                        {payment.paymentPercent}% @ <span className="sm:hidden">{triggerLabel}</span><span className="hidden sm:inline">{triggerLabelFull}</span>
                       </span>
                       {dateStr && (
-                        <span className="text-xs text-gray-500">({dateStr})</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500">({dateStr})</span>
                       )}
                     </div>
-                    <span className="text-sm text-white font-mono">{formatCurrency(amount, currency, rate)}</span>
+                    <span className="text-xs sm:text-sm text-white font-mono pl-4 sm:pl-0">{formatCurrency(amount, currency, rate)}</span>
                   </div>
                 );
               })}
               {additionalTotal > 0 && (
                 <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
-                  <span className="text-sm text-gray-400">Subtotal Installments</span>
-                  <span className="text-sm text-gray-300 font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Subtotal Installments</span>
+                  <span className="text-xs sm:text-sm text-gray-300 font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
                 </div>
               )}
             </div>
@@ -160,51 +164,51 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
         )}
 
         {/* Pre-Handover Summary */}
-        <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl p-4 space-y-2">
+        <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl p-3 sm:p-4 space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-300">Total Today</span>
-            <span className="text-sm text-white font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
+            <span className="text-xs sm:text-sm text-gray-300">Total Today</span>
+            <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
           </div>
           {additionalTotal > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">+ Installments</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+              <span className="text-xs sm:text-sm text-gray-300">+ Installments</span>
+              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
             </div>
           )}
           <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30">
-            <span className="text-sm font-bold text-[#CCFF00]">TOTAL PRE-HANDOVER ({preHandoverPercent}%)</span>
-            <span className="text-base font-bold text-[#CCFF00] font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
+            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">TOTAL PRE-HANDOVER ({preHandoverPercent}%)</span>
+            <span className="text-sm sm:text-base font-bold text-[#CCFF00] font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
           </div>
         </div>
 
         {/* Section: At Handover */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-cyan-400">
-            <Home className="w-4 h-4" />
-            <span className="text-sm font-medium">AT HANDOVER (Q{handoverQuarter} {handoverYear})</span>
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-cyan-400">
+            <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="text-xs sm:text-sm font-medium">AT HANDOVER (Q{handoverQuarter} {handoverYear})</span>
           </div>
           
-          <div className="pl-6 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-300">Final Payment ({handoverPercent}%)</span>
-              <span className="text-sm text-white font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
+          <div className="pl-4 sm:pl-6 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
+              <span className="text-xs sm:text-sm text-gray-300">Final Payment ({handoverPercent}%)</span>
+              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
             </div>
           </div>
         </div>
 
         {/* Grand Total */}
-        <div className="mt-4 pt-4 border-t border-[#2a3142] space-y-2">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#2a3142] space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-400">Property Payments</span>
-            <span className="text-sm text-white font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
+            <span className="text-xs sm:text-sm text-gray-400">Property Payments</span>
+            <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-400">Entry Costs (DLD + Oqood)</span>
-            <span className="text-sm text-white font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
+            <span className="text-xs sm:text-sm text-gray-400">Entry Costs (DLD + Oqood)</span>
+            <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
           </div>
-          <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30 bg-[#CCFF00]/5 -mx-4 px-4 py-2">
-            <span className="text-sm font-bold text-[#CCFF00]">TOTAL TO DISBURSE</span>
-            <span className="text-lg font-bold text-[#CCFF00] font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
+          <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30 bg-[#CCFF00]/5 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2">
+            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">TOTAL TO DISBURSE</span>
+            <span className="text-sm sm:text-lg font-bold text-[#CCFF00] font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
           </div>
         </div>
       </div>
