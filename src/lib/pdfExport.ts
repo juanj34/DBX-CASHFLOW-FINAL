@@ -1,3 +1,4 @@
+// PDF Export utility for Cashflow Statements v1.0
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
