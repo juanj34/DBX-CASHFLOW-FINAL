@@ -19,6 +19,7 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { exportCashflowPDF } from "@/lib/pdfExport";
 
 const DEFAULT_INPUTS: OIInputs = {
   basePrice: 800000,
@@ -57,6 +58,7 @@ const OICalculatorContent = () => {
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   const { profile } = useProfile();
   const { 
@@ -173,6 +175,27 @@ const OICalculatorContent = () => {
     return generateShareToken(quote.id);
   }, [quote?.id, handleSave, generateShareToken]);
 
+  const handleExportPDF = useCallback(async () => {
+    setExportingPDF(true);
+    try {
+      await exportCashflowPDF({
+        inputs,
+        clientInfo,
+        calculations: {
+          totalMonths: calculations.totalMonths,
+          basePrice: calculations.basePrice,
+          totalEntryCosts: calculations.totalEntryCosts,
+          yearlyProjections: calculations.yearlyProjections,
+        },
+        exitScenarios,
+        advisorName: profile?.full_name || clientInfo.brokerName,
+        currency,
+        rate,
+      });
+    } finally {
+      setExportingPDF(false);
+    }
+  }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
   if (quoteLoading && quoteId) {
     return (
@@ -214,6 +237,8 @@ const OICalculatorContent = () => {
               onSave={handleSave}
               onSaveAs={handleSaveAs}
               onShare={handleShare}
+              onExportPDF={handleExportPDF}
+              exportingPDF={exportingPDF}
             />
             
             {/* Language Toggle */}
