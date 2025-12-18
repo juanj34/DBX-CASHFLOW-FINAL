@@ -17,6 +17,8 @@ interface SaveControlsProps {
   onSave: () => Promise<any>;
   onSaveAs: () => Promise<any>;
   onShare: () => Promise<string | null>;
+  onExportPDF?: () => Promise<void>;
+  exportingPDF?: boolean;
 }
 
 export const SaveControls = ({
@@ -26,6 +28,8 @@ export const SaveControls = ({
   onSave,
   onSaveAs,
   onShare,
+  onExportPDF,
+  exportingPDF = false,
 }: SaveControlsProps) => {
   const { toast } = useToast();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -49,6 +53,18 @@ export const SaveControls = ({
       setShareUrl(url);
       await navigator.clipboard.writeText(url);
       toast({ title: 'Share link copied to clipboard!' });
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (onExportPDF) {
+      toast({ title: 'Generating PDF...', description: 'Please wait while we prepare your document.' });
+      try {
+        await onExportPDF();
+        toast({ title: 'PDF exported successfully!' });
+      } catch (error) {
+        toast({ title: 'Failed to export PDF', variant: 'destructive' });
+      }
     }
   };
 
@@ -117,11 +133,16 @@ export const SaveControls = ({
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2 opacity-50"
-            disabled
+            onClick={handleExportPDF}
+            disabled={exportingPDF || !onExportPDF}
+            className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
           >
-            <FileDown className="w-4 h-4" />
-            Export PDF (coming soon)
+            {exportingPDF ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            Export PDF
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
