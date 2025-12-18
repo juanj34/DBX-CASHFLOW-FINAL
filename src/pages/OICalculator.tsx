@@ -14,12 +14,11 @@ import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { SaveControls } from "@/components/roi/SaveControls";
 import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
-import { Currency, formatCurrency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
+import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
-import { exportCashflowPDF } from "@/lib/pdfExport";
 
 const DEFAULT_INPUTS: OIInputs = {
   basePrice: 800000,
@@ -58,7 +57,6 @@ const OICalculatorContent = () => {
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [exportingPDF, setExportingPDF] = useState(false);
 
   const { profile } = useProfile();
   const { 
@@ -175,27 +173,9 @@ const OICalculatorContent = () => {
     return generateShareToken(quote.id);
   }, [quote?.id, handleSave, generateShareToken]);
 
-  const handleExportPDF = useCallback(async () => {
-    setExportingPDF(true);
-    try {
-      await exportCashflowPDF({
-        inputs,
-        clientInfo,
-        calculations: {
-          totalMonths: calculations.totalMonths,
-          basePrice: calculations.basePrice,
-          totalEntryCosts: calculations.totalEntryCosts,
-          yearlyProjections: calculations.yearlyProjections,
-        },
-        exitScenarios,
-        advisorName: profile?.full_name || clientInfo.brokerName,
-        currency,
-        rate,
-      });
-    } finally {
-      setExportingPDF(false);
-    }
-  }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
+  const handleExportPDF = useCallback(() => {
+    window.print();
+  }, []);
 
   if (quoteLoading && quoteId) {
     return (
@@ -207,8 +187,26 @@ const OICalculatorContent = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
-      {/* Header */}
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
+      {/* Print Header - Only visible when printing */}
+      <div className="hidden print-only print:block bg-[#0f172a] text-white p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#CCFF00]">CASHFLOW STATEMENT</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          {profile && (
+            <div className="text-right">
+              <p className="text-sm text-gray-400">{t('advisor')}</p>
+              <p className="font-medium">{profile.full_name || 'Advisor'}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Header - Hidden when printing */}
+      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/home">
@@ -238,7 +236,6 @@ const OICalculatorContent = () => {
               onSaveAs={handleSaveAs}
               onShare={handleShare}
               onExportPDF={handleExportPDF}
-              exportingPDF={exportingPDF}
             />
             
             {/* Language Toggle */}
@@ -340,8 +337,8 @@ const OICalculatorContent = () => {
         {/* Yearly Projection Table */}
         <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
 
-        {/* Navigation Links */}
-        <div className="mt-8 flex gap-4">
+        {/* Navigation Links - Hidden when printing */}
+        <div className="mt-8 flex gap-4 print:hidden">
           <Link to="/my-quotes">
             <Button 
               variant="outline" 
