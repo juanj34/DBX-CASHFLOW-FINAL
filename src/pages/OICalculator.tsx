@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Wifi, WifiOff, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { generateCashflowPDF } from "@/lib/pdfExport";
 
 const DEFAULT_INPUTS: OIInputs = {
   basePrice: 800000,
@@ -57,6 +58,8 @@ const OICalculatorContent = () => {
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const { profile } = useProfile();
   const { 
@@ -173,6 +176,29 @@ const OICalculatorContent = () => {
     return generateShareToken(quote.id);
   }, [quote?.id, handleSave, generateShareToken]);
 
+  const handleExportPDF = useCallback(async () => {
+    setExportingPDF(true);
+    try {
+      await generateCashflowPDF({
+        inputs,
+        clientInfo,
+        calculations: {
+          totalMonths: calculations.totalMonths,
+          basePrice: calculations.basePrice,
+          totalEntryCosts: calculations.totalEntryCosts,
+          yearlyProjections: calculations.yearlyProjections,
+        },
+        exitScenarios,
+        advisorName: profile?.full_name || clientInfo.brokerName,
+        currency,
+        rate,
+        chartElement: chartRef.current,
+      });
+    } finally {
+      setExportingPDF(false);
+    }
+  }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
+
   if (quoteLoading && quoteId) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
@@ -213,6 +239,8 @@ const OICalculatorContent = () => {
               onSave={handleSave}
               onSaveAs={handleSaveAs}
               onShare={handleShare}
+              onExportPDF={handleExportPDF}
+              exportingPDF={exportingPDF}
             />
             
             {/* Language Toggle */}
@@ -293,7 +321,7 @@ const OICalculatorContent = () => {
         </div>
 
         {/* Growth Curve */}
-        <div className="mb-6">
+        <div className="mb-6" ref={chartRef}>
           <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
         </div>
 
