@@ -68,6 +68,7 @@ const CashflowViewContent = () => {
         rentGrowthRate: savedInputs.rentGrowthRate ?? 4,
         serviceChargePerSqft: savedInputs.serviceChargePerSqft ?? 18,
         adrGrowthRate: savedInputs.adrGrowthRate ?? 3,
+        unitSizeSqf: data.unit_size_sqf || savedInputs.unitSizeSqf || 0,
       } as OIInputs);
       // Migrate from legacy single client format to clients array
       const clients = data.client_name 
@@ -222,6 +223,7 @@ const CashflowViewContent = () => {
               totalMonths={calculations.totalMonths}
               totalEntryCosts={calculations.totalEntryCosts}
               rate={rate}
+              holdAnalysis={calculations.holdAnalysis}
             />
           </div>
           <div className="xl:col-span-2 order-2 xl:order-1">

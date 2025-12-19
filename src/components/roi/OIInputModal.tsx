@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -9,6 +9,7 @@ import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, C
 import { OIInputs, PaymentMilestone, getZoneAppreciationProfile } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 import { ZoneAppreciationIndicator } from "./ZoneAppreciationIndicator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -53,10 +54,21 @@ const DEFAULT_SHORT_TERM_RENTAL = {
   managementFeePercent: 15,
 };
 
+interface Zone {
+  id: string;
+  name: string;
+  maturity_level: number | null;
+  maturity_label: string | null;
+}
+
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
   // Ensure shortTermRental has defaults if missing (for backward compatibility)
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
   const rentalMode = inputs.rentalMode || 'long-term';
+  
+  // Zone selector state
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [loadingZones, setLoadingZones] = useState(false);
   
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
@@ -67,6 +79,46 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
   // Auto-generator state
   const [numPayments, setNumPayments] = useState(4);
   const [paymentInterval, setPaymentInterval] = useState(6);
+  
+  // Fetch zones from database
+  useEffect(() => {
+    const fetchZones = async () => {
+      setLoadingZones(true);
+      const { data, error } = await supabase
+        .from('zones')
+        .select('id, name, maturity_level, maturity_label')
+        .not('maturity_level', 'is', null)
+        .order('name');
+      
+      if (!error && data) {
+        setZones(data);
+      }
+      setLoadingZones(false);
+    };
+    
+    if (open) {
+      fetchZones();
+    }
+  }, [open]);
+  
+  // Handle zone selection
+  const handleZoneSelect = (zoneId: string) => {
+    const zone = zones.find(z => z.id === zoneId);
+    if (zone && zone.maturity_level !== null) {
+      const profile = getZoneAppreciationProfile(zone.maturity_level);
+      setInputs(prev => ({
+        ...prev,
+        zoneId,
+        zoneMaturityLevel: zone.maturity_level!,
+        ...(prev.useZoneDefaults ? {
+          constructionAppreciation: profile.constructionAppreciation,
+          growthAppreciation: profile.growthAppreciation,
+          matureAppreciation: profile.matureAppreciation,
+          growthPeriodYears: profile.growthPeriodYears,
+        } : {})
+      }));
+    }
+  };
 
   // Calculate totals for validation
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -857,39 +909,75 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               </div>
             </div>
 
-            {/* Zone Maturity Slider */}
+            {/* Zone Selector from Database */}
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Zone Maturity Level</label>
-                <span className="text-sm font-bold text-[#CCFF00] font-mono">{inputs.zoneMaturityLevel ?? 60}%</span>
-              </div>
-              <Slider
-                value={[inputs.zoneMaturityLevel ?? 60]}
-                onValueChange={([value]) => {
-                  const profile = getZoneAppreciationProfile(value);
-                  if (inputs.useZoneDefaults ?? true) {
-                    setInputs(prev => ({
-                      ...prev,
-                      zoneMaturityLevel: value,
-                      constructionAppreciation: profile.constructionAppreciation,
-                      growthAppreciation: profile.growthAppreciation,
-                      matureAppreciation: profile.matureAppreciation,
-                      growthPeriodYears: profile.growthPeriodYears,
-                    }));
-                  } else {
-                    setInputs(prev => ({ ...prev, zoneMaturityLevel: value }));
-                  }
-                }}
-                min={0}
-                max={100}
-                step={5}
-                className="roi-slider-lime"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Emerging (0%)</span>
-                <span>Established (100%)</span>
-              </div>
+              <label className="text-xs text-gray-400">Select Project Zone</label>
+              <Select
+                value={inputs.zoneId || ''}
+                onValueChange={handleZoneSelect}
+              >
+                <SelectTrigger className="bg-[#1a1f2e] border-[#2a3142] text-white">
+                  <SelectValue placeholder={loadingZones ? "Loading zones..." : "Select a zone..."} />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-64">
+                  {zones.map(zone => (
+                    <SelectItem 
+                      key={zone.id} 
+                      value={zone.id} 
+                      className="text-white hover:bg-[#2a3142]"
+                    >
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <span>{zone.name}</span>
+                        <span className="text-xs text-[#CCFF00] font-mono">
+                          {zone.maturity_level}%
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {inputs.zoneId && zones.find(z => z.id === inputs.zoneId)?.maturity_label && (
+                <p className="text-xs text-gray-500">
+                  {zones.find(z => z.id === inputs.zoneId)?.maturity_label}
+                </p>
+              )}
             </div>
+
+            {/* Manual Zone Maturity Slider (when no zone selected) */}
+            {!inputs.zoneId && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs text-gray-400">Or set maturity manually</label>
+                  <span className="text-sm font-bold text-[#CCFF00] font-mono">{inputs.zoneMaturityLevel ?? 60}%</span>
+                </div>
+                <Slider
+                  value={[inputs.zoneMaturityLevel ?? 60]}
+                  onValueChange={([value]) => {
+                    const profile = getZoneAppreciationProfile(value);
+                    if (inputs.useZoneDefaults ?? true) {
+                      setInputs(prev => ({
+                        ...prev,
+                        zoneMaturityLevel: value,
+                        constructionAppreciation: profile.constructionAppreciation,
+                        growthAppreciation: profile.growthAppreciation,
+                        matureAppreciation: profile.matureAppreciation,
+                        growthPeriodYears: profile.growthPeriodYears,
+                      }));
+                    } else {
+                      setInputs(prev => ({ ...prev, zoneMaturityLevel: value }));
+                    }
+                  }}
+                  min={0}
+                  max={100}
+                  step={5}
+                  className="roi-slider-lime"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Emerging (0%)</span>
+                  <span>Established (100%)</span>
+                </div>
+              </div>
+            )}
 
             {/* Zone Appreciation Indicator */}
             <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={inputs.useZoneDefaults ?? true} />
