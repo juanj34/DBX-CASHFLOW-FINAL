@@ -19,6 +19,7 @@ import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations'
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 interface AdvisorProfile {
   full_name: string | null;
@@ -26,6 +27,7 @@ interface AdvisorProfile {
 }
 
 const CashflowViewContent = () => {
+  useDocumentTitle("Cashflow Statement");
   const { shareToken } = useParams<{ shareToken: string }>();
   const [searchParams] = useSearchParams();
   const { language, setLanguage, t } = useLanguage();

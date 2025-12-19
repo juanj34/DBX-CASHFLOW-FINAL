@@ -9,8 +9,10 @@ import { MetricsPanel } from "@/components/roi/MetricsPanel";
 import { YearlyProjectionTable } from "@/components/roi/YearlyProjectionTable";
 import { useROICalculations, ROIInputs } from "@/components/roi/useROICalculations";
 import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const ROICalculator = () => {
+  useDocumentTitle("ROI Calculator");
   const [modalOpen, setModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<ROIInputs>({

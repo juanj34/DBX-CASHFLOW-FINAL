@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/components/roi/currencyUtils';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const QuotesDashboard = () => {
+  useDocumentTitle("My Statements");
   const { quotes, loading, deleteQuote } = useQuotesList();
   const { toast } = useToast();
   const navigate = useNavigate();

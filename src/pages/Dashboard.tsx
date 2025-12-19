@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAdminRole } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Loader2 } from "lucide-react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const Dashboard = () => {
+  useDocumentTitle("Admin Dashboard");
   const { isAdmin, loading } = useAdminRole();
   const navigate = useNavigate();
 
