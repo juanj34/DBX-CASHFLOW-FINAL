@@ -117,6 +117,27 @@ const translations: Translations = {
   yearsToPayOff: { en: 'Years to Pay Off', es: 'Años para Recuperar' },
   longTermRental: { en: 'Long-Term Rental', es: 'Renta a Largo Plazo' },
   basedOnNetRentalIncome: { en: 'Based on net rental income', es: 'Basado en renta neta' },
+  
+  // Rent Snapshot
+  rentSnapshot: { en: 'Rent Snapshot', es: 'Resumen de Renta' },
+  estimatedAnnualRent: { en: 'Est. Annual Rent (Y1)', es: 'Renta Anual Est. (A1)' },
+  rentGrowth: { en: 'Rent Growth', es: 'Crecimiento Renta' },
+  serviceCharges: { en: 'Service Charges', es: 'Cargos de Servicio' },
+  netAnnualRent: { en: 'Net Annual Rent', es: 'Renta Anual Neta' },
+  airbnbComparison: { en: 'Airbnb Comparison', es: 'Comparación Airbnb' },
+  averageDailyRate: { en: 'Average Daily Rate', es: 'Tarifa Diaria Promedio' },
+  occupancy: { en: 'Occupancy', es: 'Ocupación' },
+  adrGrowth: { en: 'ADR Growth', es: 'Crecimiento ADR' },
+  grossAnnual: { en: 'Gross Annual', es: 'Bruto Anual' },
+  operatingExpenses: { en: 'Operating Expenses', es: 'Gastos Operativos' },
+  managementFee: { en: 'Management Fee', es: 'Comisión de Gestión' },
+  netAnnual: { en: 'Net Annual', es: 'Neto Anual' },
+  longTermOnly: { en: 'Long-Term Only', es: 'Solo Largo Plazo' },
+  ltPlusAirbnb: { en: 'LT + Airbnb', es: 'LP + Airbnb' },
+  incomeComparison: { en: 'Income Comparison', es: 'Comparación de Ingresos' },
+  longTerm: { en: 'Long-Term', es: 'Largo Plazo' },
+  vsLongTerm: { en: 'vs Long-Term', es: 'vs Largo Plazo' },
+  year: { en: 'year', es: 'año' },
 };
 
 interface LanguageContextType {
