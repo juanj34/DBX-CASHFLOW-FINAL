@@ -44,7 +44,19 @@ const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 // Presets only set the pre-handover/handover split
 const presetSplits = ['20/80', '30/70', '40/60', '50/50', '60/40', '80/20'];
 
+// Default values for short-term rental config
+const DEFAULT_SHORT_TERM_RENTAL = {
+  averageDailyRate: 800,
+  occupancyPercent: 70,
+  operatingExpensePercent: 25,
+  managementFeePercent: 15,
+};
+
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
+  // Ensure shortTermRental has defaults if missing (for backward compatibility)
+  const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
+  const rentalMode = inputs.rentalMode || 'long-term';
+  
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
       ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
@@ -642,17 +654,21 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 Rental Strategy
               </label>
               <div className="flex items-center gap-2">
-                <span className={`text-xs ${inputs.rentalMode === 'long-term' ? 'text-blue-400' : 'text-gray-500'}`}>Long-Term</span>
+                <span className={`text-xs ${rentalMode === 'long-term' ? 'text-blue-400' : 'text-gray-500'}`}>Long-Term</span>
                 <Switch
-                  checked={inputs.rentalMode === 'short-term'}
-                  onCheckedChange={(checked) => setInputs(prev => ({ ...prev, rentalMode: checked ? 'short-term' : 'long-term' }))}
+                  checked={rentalMode === 'short-term'}
+                  onCheckedChange={(checked) => setInputs(prev => ({ 
+                    ...prev, 
+                    rentalMode: checked ? 'short-term' : 'long-term',
+                    shortTermRental: prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL 
+                  }))}
                   className="data-[state=checked]:bg-purple-500"
                 />
-                <span className={`text-xs ${inputs.rentalMode === 'short-term' ? 'text-purple-400' : 'text-gray-500'}`}>Airbnb</span>
+                <span className={`text-xs ${rentalMode === 'short-term' ? 'text-purple-400' : 'text-gray-500'}`}>Airbnb</span>
               </div>
             </div>
             
-            {inputs.rentalMode === 'long-term' ? (
+            {rentalMode === 'long-term' ? (
               /* Long-term rental yield */
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -689,14 +705,14 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                     </span>
                     <Input
                       type="number"
-                      value={currency === 'USD' ? Math.round(inputs.shortTermRental.averageDailyRate / DEFAULT_RATE) : inputs.shortTermRental.averageDailyRate}
+                      value={currency === 'USD' ? Math.round(shortTermRental.averageDailyRate / DEFAULT_RATE) : shortTermRental.averageDailyRate}
                       onChange={(e) => {
                         const num = parseFloat(e.target.value);
                         if (!isNaN(num)) {
                           const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
                           setInputs(prev => ({ 
                             ...prev, 
-                            shortTermRental: { ...prev.shortTermRental, averageDailyRate: aedValue } 
+                            shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), averageDailyRate: aedValue } 
                           }));
                         }
                       }}
@@ -709,13 +725,13 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className="text-xs text-gray-400">Occupancy Rate</label>
-                    <span className="text-xs text-purple-400 font-mono">{inputs.shortTermRental.occupancyPercent}%</span>
+                    <span className="text-xs text-purple-400 font-mono">{shortTermRental.occupancyPercent}%</span>
                   </div>
                   <Slider
-                    value={[inputs.shortTermRental.occupancyPercent]}
+                    value={[shortTermRental.occupancyPercent]}
                     onValueChange={([value]) => setInputs(prev => ({ 
                       ...prev, 
-                      shortTermRental: { ...prev.shortTermRental, occupancyPercent: value } 
+                      shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), occupancyPercent: value } 
                     }))}
                     min={30}
                     max={95}
@@ -728,13 +744,13 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className="text-xs text-gray-400">Operating Expenses</label>
-                    <span className="text-xs text-red-400 font-mono">{inputs.shortTermRental.operatingExpensePercent}%</span>
+                    <span className="text-xs text-red-400 font-mono">{shortTermRental.operatingExpensePercent}%</span>
                   </div>
                   <Slider
-                    value={[inputs.shortTermRental.operatingExpensePercent]}
+                    value={[shortTermRental.operatingExpensePercent]}
                     onValueChange={([value]) => setInputs(prev => ({ 
                       ...prev, 
-                      shortTermRental: { ...prev.shortTermRental, operatingExpensePercent: value } 
+                      shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), operatingExpensePercent: value } 
                     }))}
                     min={10}
                     max={50}
@@ -748,13 +764,13 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className="text-xs text-gray-400">Management Fee</label>
-                    <span className="text-xs text-amber-400 font-mono">{inputs.shortTermRental.managementFeePercent}%</span>
+                    <span className="text-xs text-amber-400 font-mono">{shortTermRental.managementFeePercent}%</span>
                   </div>
                   <Slider
-                    value={[inputs.shortTermRental.managementFeePercent]}
+                    value={[shortTermRental.managementFeePercent]}
                     onValueChange={([value]) => setInputs(prev => ({ 
                       ...prev, 
-                      shortTermRental: { ...prev.shortTermRental, managementFeePercent: value } 
+                      shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), managementFeePercent: value } 
                     }))}
                     min={0}
                     max={30}
@@ -771,17 +787,17 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                     <span className="text-gray-500">Gross Income</span>
                     <span className="text-white font-mono">
                       {formatCurrency(
-                        inputs.shortTermRental.averageDailyRate * 365 * (inputs.shortTermRental.occupancyPercent / 100), 
+                        shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100), 
                         currency
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">- Expenses ({inputs.shortTermRental.operatingExpensePercent + inputs.shortTermRental.managementFeePercent}%)</span>
+                    <span className="text-gray-500">- Expenses ({shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent}%)</span>
                     <span className="text-red-400 font-mono">
                       -{formatCurrency(
-                        inputs.shortTermRental.averageDailyRate * 365 * (inputs.shortTermRental.occupancyPercent / 100) * 
-                        ((inputs.shortTermRental.operatingExpensePercent + inputs.shortTermRental.managementFeePercent) / 100), 
+                        shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100) * 
+                        ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100), 
                         currency
                       )}
                     </span>
@@ -790,8 +806,8 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                     <span className="text-purple-400 font-medium">Net Income</span>
                     <span className="text-[#CCFF00] font-mono font-bold">
                       {formatCurrency(
-                        inputs.shortTermRental.averageDailyRate * 365 * (inputs.shortTermRental.occupancyPercent / 100) * 
-                        (1 - (inputs.shortTermRental.operatingExpensePercent + inputs.shortTermRental.managementFeePercent) / 100), 
+                        shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100) * 
+                        (1 - (shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100), 
                         currency
                       )}
                     </span>
