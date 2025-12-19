@@ -63,7 +63,18 @@ const CashflowViewContent = () => {
         return;
       }
 
-      const savedInputs = data.inputs as unknown as Partial<OIInputs>;
+      const savedInputs = data.inputs as unknown as Partial<OIInputs> & {
+        _clients?: Array<{ id: string; name: string; country: string; share?: number }>;
+        _clientInfo?: {
+          developer?: string;
+          projectName?: string;
+          unit?: string;
+          unitType?: string;
+          unitSizeSqf?: number;
+          unitSizeM2?: number;
+        };
+      };
+      
       setInputs({
         ...savedInputs,
         zoneMaturityLevel: savedInputs.zoneMaturityLevel ?? 60,
@@ -78,18 +89,25 @@ const CashflowViewContent = () => {
         unitSizeSqf: data.unit_size_sqf || savedInputs.unitSizeSqf || 0,
       } as OIInputs);
       
-      const clients = data.client_name 
-        ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
-        : [];
+      // Extract clients from _clients (new format) or fallback to single client (legacy)
+      const savedClients = savedInputs._clients;
+      const savedClientInfo = savedInputs._clientInfo;
+      
+      const clients = savedClients && savedClients.length > 0
+        ? savedClients
+        : data.client_name 
+          ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
+          : [];
+          
       setClientInfo({
-        developer: data.developer || '',
+        developer: savedClientInfo?.developer || data.developer || '',
         clients,
         brokerName: (data.profiles as any)?.full_name || '',
-        projectName: data.project_name || '',
-        unit: data.unit || '',
-        unitSizeSqf: data.unit_size_sqf || 0,
-        unitSizeM2: data.unit_size_m2 || 0,
-        unitType: data.unit_type || '',
+        projectName: savedClientInfo?.projectName || data.project_name || '',
+        unit: savedClientInfo?.unit || data.unit || '',
+        unitSizeSqf: savedClientInfo?.unitSizeSqf || data.unit_size_sqf || 0,
+        unitSizeM2: savedClientInfo?.unitSizeM2 || data.unit_size_m2 || 0,
+        unitType: savedClientInfo?.unitType || data.unit_type || '',
       });
       setAdvisorProfile({
         full_name: (data.profiles as any)?.full_name || null,
@@ -193,7 +211,7 @@ const CashflowViewContent = () => {
           )}
           {visibility.paymentBreakdown && (
             <div className="xl:col-span-2 order-2 xl:order-1">
-              <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+              <PaymentBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
             </div>
           )}
         </div>
