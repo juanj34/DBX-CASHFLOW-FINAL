@@ -150,6 +150,13 @@ const OICalculatorContent = () => {
     }
   }, [profile?.full_name]);
 
+  // Sync unitSizeSqf from clientInfo to inputs for service charge calculations
+  useEffect(() => {
+    if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) {
+      setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf }));
+    }
+  }, [clientInfo.unitSizeSqf]);
+
   // Auto-save when inputs or clientInfo change
   useEffect(() => {
     if (!quoteLoading) {
@@ -331,6 +338,7 @@ const OICalculatorContent = () => {
               totalMonths={calculations.totalMonths}
               totalEntryCosts={calculations.totalEntryCosts}
               rate={rate}
+              holdAnalysis={calculations.holdAnalysis}
             />
           </div>
         </div>

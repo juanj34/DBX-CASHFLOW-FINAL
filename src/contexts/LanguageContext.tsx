@@ -114,6 +114,9 @@ const translations: Translations = {
   amountUntilSPA: { en: 'At Booking (SPA)', es: 'En Reserva (SPA)' },
   amountDuringConstruction: { en: 'During Construction', es: 'Durante Construcción' },
   amountAtHandover: { en: 'At Handover', es: 'En Entrega' },
+  yearsToPayOff: { en: 'Years to Pay Off', es: 'Años para Recuperar' },
+  longTermRental: { en: 'Long-Term Rental', es: 'Renta a Largo Plazo' },
+  basedOnNetRentalIncome: { en: 'Based on net rental income', es: 'Basado en renta neta' },
 };
 
 interface LanguageContextType {
