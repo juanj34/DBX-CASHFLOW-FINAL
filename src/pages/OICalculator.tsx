@@ -8,6 +8,7 @@ import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
+import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
@@ -337,6 +338,12 @@ const OICalculatorContent = () => {
               currency={currency}
               totalMonths={calculations.totalMonths}
               totalEntryCosts={calculations.totalEntryCosts}
+              rate={rate}
+              holdAnalysis={calculations.holdAnalysis}
+            />
+            <RentSnapshot
+              inputs={inputs}
+              currency={currency}
               rate={rate}
               holdAnalysis={calculations.holdAnalysis}
             />
