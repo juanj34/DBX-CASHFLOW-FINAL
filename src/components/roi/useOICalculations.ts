@@ -34,9 +34,12 @@ export interface OIInputs {
   // Exit Threshold
   minimumExitThreshold: number; // % mínimo requerido por developer para permitir reventa (default 30)
   
-  // Rental Strategy (NEW)
-  rentalMode: 'long-term' | 'short-term';
-  shortTermRental: ShortTermRentalConfig;
+  // Rental Strategy - NEW: Long-term always + optional Airbnb comparison
+  showAirbnbComparison?: boolean; // Toggle to show Airbnb comparison
+  shortTermRental?: ShortTermRentalConfig;
+  
+  // Legacy field for backward compatibility
+  rentalMode?: 'long-term' | 'short-term';
 }
 
 export interface OIExitScenario {
@@ -59,21 +62,34 @@ export interface OIHoldAnalysis {
   annualRent: number;
   rentalYieldOnInvestment: number;
   yearsToBreakEven: number;
+  yearsToPayOff: number; // NEW: basePrice / annualRent
+  // Airbnb comparison
+  airbnbAnnualRent?: number;
+  airbnbYearsToBreakEven?: number;
+  airbnbYearsToPayOff?: number;
 }
 
 export interface OIYearlyProjection {
   year: number;
   calendarYear: number;
   propertyValue: number;
+  // Long-term rental (always calculated)
   annualRent: number | null;
   grossIncome: number | null;
   operatingExpenses: number | null;
   managementFee: number | null;
   netIncome: number | null;
   cumulativeNetIncome: number;
+  // Airbnb comparison (when showAirbnbComparison = true)
+  airbnbGrossIncome: number | null;
+  airbnbExpenses: number | null;
+  airbnbNetIncome: number | null;
+  airbnbCumulativeNetIncome: number;
+  // Status flags
   isConstruction: boolean;
   isHandover: boolean;
   isBreakEven: boolean;
+  isAirbnbBreakEven: boolean;
 }
 
 export interface OICalculations {
@@ -83,6 +99,7 @@ export interface OICalculations {
   basePrice: number;
   holdAnalysis: OIHoldAnalysis;
   totalEntryCosts: number;
+  showAirbnbComparison: boolean;
 }
 
 // DLD Fee is always 4%
@@ -252,11 +269,13 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   
   // Short-term rental calculations with fallback for backward compatibility
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
-  const rentalMode = inputs.rentalMode || 'long-term';
+  const showAirbnbComparison = inputs.showAirbnbComparison || false;
   
   const yearlyProjections: OIYearlyProjection[] = [];
   let cumulativeNetIncome = 0;
+  let airbnbCumulativeNetIncome = 0;
   let breakEvenYear: number | null = null;
+  let airbnbBreakEvenYear: number | null = null;
   
   for (let i = 1; i <= 10; i++) {
     const calendarYear = bookingYear + i - 1;
@@ -264,36 +283,46 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     const isConstruction = i < handoverYearIndex;
     const isHandover = i === handoverYearIndex;
     
+    // Long-term rental (always calculated)
     let annualRent: number | null = null;
     let grossIncome: number | null = null;
     let operatingExpenses: number | null = null;
     let managementFee: number | null = null;
     let netIncome: number | null = null;
     
+    // Airbnb rental (only when comparison enabled)
+    let airbnbGrossIncome: number | null = null;
+    let airbnbExpenses: number | null = null;
+    let airbnbNetIncome: number | null = null;
+    
     if (!isConstruction) {
-      if (rentalMode === 'short-term') {
-        // Short-term rental (Airbnb) calculation
-        grossIncome = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
-        operatingExpenses = grossIncome * (shortTermRental.operatingExpensePercent / 100);
-        managementFee = grossIncome * (shortTermRental.managementFeePercent / 100);
-        netIncome = grossIncome - operatingExpenses - managementFee;
-        annualRent = netIncome; // For compatibility
-      } else {
-        // Long-term rental calculation
-        annualRent = propertyValue * (rentalYieldPercent / 100);
-        grossIncome = annualRent;
-        operatingExpenses = 0;
-        managementFee = 0;
-        netIncome = annualRent;
-      }
-      
+      // Long-term rental calculation (always)
+      annualRent = propertyValue * (rentalYieldPercent / 100);
+      grossIncome = annualRent;
+      operatingExpenses = 0;
+      managementFee = 0;
+      netIncome = annualRent;
       cumulativeNetIncome += netIncome;
+      
+      // Airbnb rental calculation (when comparison enabled)
+      if (showAirbnbComparison) {
+        airbnbGrossIncome = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
+        airbnbExpenses = airbnbGrossIncome * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
+        airbnbNetIncome = airbnbGrossIncome - airbnbExpenses;
+        airbnbCumulativeNetIncome += airbnbNetIncome;
+      }
     }
     
     // Check for break-even (cumulative net income >= total capital invested)
-    const isBreakEven = !isConstruction && breakEvenYear === null && cumulativeNetIncome >= (basePrice + totalEntryCosts);
+    const totalCapitalInvested = basePrice + totalEntryCosts;
+    const isBreakEven = !isConstruction && breakEvenYear === null && cumulativeNetIncome >= totalCapitalInvested;
     if (isBreakEven) {
       breakEvenYear = i;
+    }
+    
+    const isAirbnbBreakEven = showAirbnbComparison && !isConstruction && airbnbBreakEvenYear === null && airbnbCumulativeNetIncome >= totalCapitalInvested;
+    if (isAirbnbBreakEven) {
+      airbnbBreakEvenYear = i;
     }
     
     yearlyProjections.push({
@@ -306,27 +335,39 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       managementFee,
       netIncome,
       cumulativeNetIncome,
+      airbnbGrossIncome,
+      airbnbExpenses,
+      airbnbNetIncome,
+      airbnbCumulativeNetIncome,
       isConstruction,
       isHandover,
       isBreakEven,
+      isAirbnbBreakEven,
     });
   }
 
-  // Hold Analysis - updated for rental mode
+  // Hold Analysis - always calculate long-term, optionally calculate Airbnb
   const handoverYears = totalMonths / 12;
   const propertyValueAtHandover = basePrice * Math.pow(1 + appreciationRate / 100, handoverYears);
   const totalCapitalInvested = basePrice + totalEntryCosts;
   
-  let annualRent: number;
-  if (rentalMode === 'short-term') {
-    const grossIncome = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
-    annualRent = grossIncome * (1 - shortTermRental.operatingExpensePercent / 100 - shortTermRental.managementFeePercent / 100);
-  } else {
-    annualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
-  }
-  
+  // Long-term rent (always)
+  const annualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
   const rentalYieldOnInvestment = (annualRent / totalCapitalInvested) * 100;
   const yearsToBreakEven = totalCapitalInvested / annualRent;
+  const yearsToPayOff = basePrice / annualRent;
+  
+  // Airbnb rent (optional)
+  let airbnbAnnualRent: number | undefined;
+  let airbnbYearsToBreakEven: number | undefined;
+  let airbnbYearsToPayOff: number | undefined;
+  
+  if (showAirbnbComparison) {
+    const airbnbGross = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
+    airbnbAnnualRent = airbnbGross * (1 - (shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
+    airbnbYearsToBreakEven = totalCapitalInvested / airbnbAnnualRent;
+    airbnbYearsToPayOff = basePrice / airbnbAnnualRent;
+  }
 
   const holdAnalysis: OIHoldAnalysis = {
     totalCapitalInvested,
@@ -334,6 +375,10 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     annualRent,
     rentalYieldOnInvestment,
     yearsToBreakEven,
+    yearsToPayOff,
+    airbnbAnnualRent,
+    airbnbYearsToBreakEven,
+    airbnbYearsToPayOff,
   };
 
   return {
@@ -343,5 +388,6 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     basePrice,
     holdAnalysis,
     totalEntryCosts,
+    showAirbnbComparison,
   };
 };

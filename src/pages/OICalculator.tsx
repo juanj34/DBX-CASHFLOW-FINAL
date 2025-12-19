@@ -34,7 +34,7 @@ const DEFAULT_INPUTS: OIInputs = {
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,
-  rentalMode: 'long-term',
+  showAirbnbComparison: false,
   shortTermRental: {
     averageDailyRate: 800,
     occupancyPercent: 70,
@@ -343,7 +343,7 @@ const OICalculatorContent = () => {
         </div>
 
         {/* Yearly Projection Table */}
-        <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} rentalMode={inputs.rentalMode} />
+        <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
 
         {/* Navigation Links - Hidden when printing */}
         <div className="mt-8 flex gap-4 print:hidden">

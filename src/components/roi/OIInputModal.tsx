@@ -646,56 +646,64 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             </div>
           </div>
 
-          {/* RENTAL STRATEGY SECTION - NEW */}
+          {/* RENTAL STRATEGY SECTION - Long-term always visible + optional Airbnb comparison */}
           <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
               <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
                 <Building className="w-4 h-4 text-[#CCFF00]" />
                 Rental Strategy
               </label>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs ${rentalMode === 'long-term' ? 'text-blue-400' : 'text-gray-500'}`}>Long-Term</span>
-                <Switch
-                  checked={rentalMode === 'short-term'}
-                  onCheckedChange={(checked) => setInputs(prev => ({ 
-                    ...prev, 
-                    rentalMode: checked ? 'short-term' : 'long-term',
-                    shortTermRental: prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL 
-                  }))}
-                  className="data-[state=checked]:bg-purple-500"
-                />
-                <span className={`text-xs ${rentalMode === 'short-term' ? 'text-purple-400' : 'text-gray-500'}`}>Airbnb</span>
-              </div>
             </div>
             
-            {rentalMode === 'long-term' ? (
-              /* Long-term rental yield */
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm text-gray-400">Rental Yield %</label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={inputs.rentalYieldPercent}
-                    onChange={(e) => handleNumberChange('rentalYieldPercent', e.target.value, 0, 20)}
-                    className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
-                  />
-                </div>
-                <Slider
-                  value={[inputs.rentalYieldPercent]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
-                  min={0}
-                  max={20}
-                  step={0.5}
-                  className="roi-slider-lime"
-                />
-                <div className="text-xs text-gray-500">
-                  Est. Annual Rent: {formatCurrency(inputs.basePrice * inputs.rentalYieldPercent / 100, currency)}
-                </div>
+            {/* Long-term rental yield - ALWAYS VISIBLE */}
+            <div className="space-y-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+              <div className="flex items-center gap-2 text-blue-400 mb-2">
+                <Building className="w-4 h-4" />
+                <span className="text-sm font-medium">Long-Term Rental</span>
               </div>
-            ) : (
-              /* Short-term (Airbnb) configuration */
-              <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-sm text-gray-400">Rental Yield %</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={inputs.rentalYieldPercent}
+                  onChange={(e) => handleNumberChange('rentalYieldPercent', e.target.value, 0, 20)}
+                  className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
+                />
+              </div>
+              <Slider
+                value={[inputs.rentalYieldPercent]}
+                onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
+                min={0}
+                max={20}
+                step={0.5}
+                className="roi-slider-lime"
+              />
+              <div className="text-xs text-gray-500">
+                Est. Annual Rent: {formatCurrency(inputs.basePrice * inputs.rentalYieldPercent / 100, currency)}
+              </div>
+            </div>
+
+            {/* Airbnb Comparison Toggle */}
+            <div className="flex items-center justify-between p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-purple-400" />
+                <span className="text-sm text-purple-400">Compare with Airbnb</span>
+              </div>
+              <Switch
+                checked={inputs.showAirbnbComparison || false}
+                onCheckedChange={(checked) => setInputs(prev => ({ 
+                  ...prev, 
+                  showAirbnbComparison: checked,
+                  shortTermRental: prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL 
+                }))}
+                className="data-[state=checked]:bg-purple-500"
+              />
+            </div>
+            
+            {/* Airbnb Configuration - Only when comparison enabled */}
+            {inputs.showAirbnbComparison && (
+              <div className="space-y-3 p-3 bg-purple-500/5 rounded-lg border border-purple-500/20">
                 {/* ADR */}
                 <div className="flex justify-between items-center">
                   <label className="text-xs text-gray-400">Average Daily Rate (ADR)</label>
@@ -815,28 +823,6 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Appreciation Rate */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Appreciation Rate (CAGR %)</label>
-              <Input
-                type="number"
-                step="0.5"
-                value={inputs.appreciationRate}
-                onChange={(e) => handleNumberChange('appreciationRate', e.target.value, 0, 30)}
-                className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
-              />
-            </div>
-            <Slider
-              value={[inputs.appreciationRate]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, appreciationRate: value }))}
-              min={0}
-              max={30}
-              step={0.5}
-              className="roi-slider-lime"
-            />
           </div>
 
           {/* Appreciation Rate */}
