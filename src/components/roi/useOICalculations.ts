@@ -88,6 +88,14 @@ export interface OICalculations {
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
+// Default short-term rental config for backward compatibility
+const DEFAULT_SHORT_TERM_RENTAL: ShortTermRentalConfig = {
+  averageDailyRate: 800,
+  occupancyPercent: 70,
+  operatingExpensePercent: 25,
+  managementFeePercent: 15,
+};
+
 // Convert quarter to mid-month for calculations
 export const quarterToMonth = (quarter: number): number => {
   const quarterMidMonths: Record<number, number> = {
@@ -242,8 +250,9 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Calculate 10-year projections from booking year
   const handoverYearIndex = Math.ceil(totalMonths / 12);
   
-  // Short-term rental calculations
-  const { shortTermRental, rentalMode } = inputs;
+  // Short-term rental calculations with fallback for backward compatibility
+  const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
+  const rentalMode = inputs.rentalMode || 'long-term';
   
   const yearlyProjections: OIYearlyProjection[] = [];
   let cumulativeNetIncome = 0;
