@@ -138,6 +138,35 @@ const translations: Translations = {
   longTerm: { en: 'Long-Term', es: 'Largo Plazo' },
   vsLongTerm: { en: 'vs Long-Term', es: 'vs Largo Plazo' },
   year: { en: 'year', es: 'año' },
+  totalExpenses: { en: 'Total Expenses', es: 'Gastos Totales' },
+  
+  // Section Headers
+  exitStrategyAnalysis: { en: 'Exit Strategy Analysis', es: 'Análisis de Estrategia de Salida' },
+  whenToSell: { en: 'When to sell for maximum returns', es: 'Cuándo vender para máximos retornos' },
+  longTermHoldAnalysis: { en: 'Long-Term Hold Analysis', es: 'Análisis de Retención a Largo Plazo' },
+  tenYearProjection: { en: '10-year rental income projection', es: 'Proyección de ingresos por renta a 10 años' },
+  
+  // Cumulative Chart
+  cumulativeNetIncome: { en: 'Cumulative Net Income', es: 'Ingreso Neto Acumulado' },
+  underConstruction: { en: 'Under Construction', es: 'En Construcción' },
+  breakEven: { en: 'Break-Even', es: 'Punto de Equilibrio' },
+  
+  // Wealth Summary
+  wealthCreated10Years: { en: 'Wealth Created (10 Years)', es: 'Riqueza Generada (10 Años)' },
+  propertyValueYear10: { en: 'Property Value (Y10)', es: 'Valor de Propiedad (A10)' },
+  cumulativeRentLT: { en: 'Cumulative Rent (LT)', es: 'Renta Acumulada (LP)' },
+  cumulativeRentAirbnb: { en: 'Cumulative Rent (Airbnb)', es: 'Renta Acumulada (Airbnb)' },
+  initialInvestment: { en: 'Initial Investment', es: 'Inversión Inicial' },
+  netWealthLT: { en: 'Net Wealth (Long-Term)', es: 'Riqueza Neta (Largo Plazo)' },
+  netWealthAirbnb: { en: 'Net Wealth (Airbnb)', es: 'Riqueza Neta (Airbnb)' },
+  
+  // Visibility Controls
+  share: { en: 'Share', es: 'Compartir' },
+  customizeClientView: { en: 'Customize Client View', es: 'Personalizar Vista del Cliente' },
+  selectSectionsToShow: { en: 'Select which sections to show in the shared link', es: 'Selecciona qué secciones mostrar en el enlace compartido' },
+  generateLink: { en: 'Generate Link', es: 'Generar Enlace' },
+  linkCopied: { en: 'Link copied to clipboard!', es: '¡Enlace copiado al portapapeles!' },
+  paymentBreakdown: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
 };
 
 interface LanguageContextType {
