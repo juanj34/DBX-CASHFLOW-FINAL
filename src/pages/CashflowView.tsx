@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { Rocket } from 'lucide-react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Rocket, TrendingUp, Home } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,10 @@ import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo';
+import { SectionHeader } from '@/components/roi/SectionHeader';
+import { CumulativeIncomeChart } from '@/components/roi/CumulativeIncomeChart';
+import { WealthSummaryCard } from '@/components/roi/WealthSummaryCard';
+import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
@@ -23,6 +27,7 @@ interface AdvisorProfile {
 
 const CashflowViewContent = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
+  const [searchParams] = useSearchParams();
   const { language, setLanguage, t } = useLanguage();
   const [currency, setCurrency] = useState<Currency>('AED');
   const [loading, setLoading] = useState(true);
@@ -32,6 +37,9 @@ const CashflowViewContent = () => {
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
 
   const { rate } = useExchangeRate(currency);
+  
+  // Parse visibility from URL
+  const visibility = useMemo(() => decodeVisibility(searchParams.get('v')), [searchParams]);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -43,10 +51,7 @@ const CashflowViewContent = () => {
 
       const { data, error: fetchError } = await supabase
         .from('cashflow_quotes')
-        .select(`
-          *,
-          profiles:broker_id (full_name, avatar_url)
-        `)
+        .select(`*, profiles:broker_id (full_name, avatar_url)`)
         .eq('share_token', shareToken)
         .single();
 
@@ -56,7 +61,6 @@ const CashflowViewContent = () => {
         return;
       }
 
-      // Merge with defaults to ensure all new fields exist
       const savedInputs = data.inputs as unknown as Partial<OIInputs>;
       setInputs({
         ...savedInputs,
@@ -71,7 +75,7 @@ const CashflowViewContent = () => {
         adrGrowthRate: savedInputs.adrGrowthRate ?? 3,
         unitSizeSqf: data.unit_size_sqf || savedInputs.unitSizeSqf || 0,
       } as OIInputs);
-      // Migrate from legacy single client format to clients array
+      
       const clients = data.client_name 
         ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
         : [];
@@ -96,7 +100,6 @@ const CashflowViewContent = () => {
   }, [shareToken]);
 
   const calculations = inputs ? useOICalculations(inputs) : null;
-
   const exitScenarios: number[] = useMemo(() => 
     calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36],
     [calculations?.totalMonths]
@@ -121,29 +124,25 @@ const CashflowViewContent = () => {
     );
   }
 
+  const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
+  const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
+
   return (
     <div className="min-h-screen bg-[#0f172a]">
-      {/* Header - Simplified for client view */}
+      {/* Header */}
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-1.5 sm:p-2 bg-[#00EAFF]/20 rounded-xl">
               <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-[#00EAFF]" />
             </div>
-            <div>
-              <h1 className="text-base sm:text-xl font-bold text-white">Cashflow Statement</h1>
-            </div>
-            {/* Desktop: Advisor info inline */}
+            <h1 className="text-base sm:text-xl font-bold text-white">Cashflow Statement</h1>
             {advisorProfile?.full_name && (
               <div className="hidden md:flex items-center">
                 <div className="h-8 w-px bg-[#2a3142] mx-2" />
                 <div className="flex items-center gap-3">
                   {advisorProfile.avatar_url ? (
-                    <img 
-                      src={advisorProfile.avatar_url} 
-                      alt={advisorProfile.full_name} 
-                      className="w-10 h-10 rounded-full object-cover border-2 border-[#2a3142]"
-                    />
+                    <img src={advisorProfile.avatar_url} alt={advisorProfile.full_name} className="w-10 h-10 rounded-full object-cover border-2 border-[#2a3142]" />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-[#2a3142] flex items-center justify-center text-white font-medium">
                       {advisorProfile.full_name.charAt(0).toUpperCase()}
@@ -158,27 +157,16 @@ const CashflowViewContent = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Language Toggle - Compact on mobile */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-              className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
-            >
-              {language === 'en' ? '🇬🇧' : '🇪🇸'}
-              <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
+            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm">
+              {language === 'en' ? '🇬🇧' : '🇪🇸'}<span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
             </Button>
-
-            {/* Currency Selector - Compact on mobile */}
             <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
               <SelectTrigger className="w-[70px] sm:w-[130px] h-7 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
                 {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">
-                    {config.flag} {key}
-                  </SelectItem>
+                  <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -186,85 +174,53 @@ const CashflowViewContent = () => {
         </div>
       </header>
 
-      {/* Mobile-only Advisor Section */}
-      {advisorProfile?.full_name && (
-        <div className="md:hidden bg-[#1a1f2e] border-b border-[#2a3142] py-3 px-3">
-          <div className="flex items-center gap-3">
-            {advisorProfile.avatar_url ? (
-              <img 
-                src={advisorProfile.avatar_url} 
-                alt={advisorProfile.full_name} 
-                className="w-12 h-12 rounded-full object-cover border-2 border-[#2a3142]"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-[#2a3142] flex items-center justify-center text-white font-medium text-lg">
-                {advisorProfile.full_name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <p className="text-sm font-medium text-white">{advisorProfile.full_name}</p>
-              <p className="text-xs text-[#CCFF00]">Wealth Advisor</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content - Read-only view */}
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        {/* Client & Unit Information - Read only */}
         <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
-        {/* Two Column Layout: Payment Breakdown + Investment Snapshot */}
-        {/* Mobile: Investment Snapshot first, Payment Breakdown second */}
+        {/* Two Column Layout */}
         <div className="flex flex-col xl:grid xl:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="xl:col-span-1 order-1 xl:order-2">
-            <InvestmentSnapshot 
-              inputs={inputs}
-              currency={currency}
-              totalMonths={calculations.totalMonths}
-              totalEntryCosts={calculations.totalEntryCosts}
-              rate={rate}
-              holdAnalysis={calculations.holdAnalysis}
-            />
-            <RentSnapshot
-              inputs={inputs}
-              currency={currency}
-              rate={rate}
-              holdAnalysis={calculations.holdAnalysis}
-            />
-          </div>
-          <div className="xl:col-span-2 order-2 xl:order-1">
-            <PaymentBreakdown 
-              inputs={inputs}
-              currency={currency}
-              totalMonths={calculations.totalMonths}
-              rate={rate}
-            />
-          </div>
+          {(visibility.investmentSnapshot || visibility.rentSnapshot) && (
+            <div className="xl:col-span-1 order-1 xl:order-2 flex flex-col">
+              {visibility.investmentSnapshot && (
+                <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+              )}
+              {visibility.rentSnapshot && (
+                <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+              )}
+            </div>
+          )}
+          {visibility.paymentBreakdown && (
+            <div className="xl:col-span-2 order-2 xl:order-1">
+              <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+            </div>
+          )}
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
-          <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+        {/* Exit Strategy Section */}
+        {visibility.exitStrategy && (
+          <div className="mb-8">
+            <SectionHeader icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />} title={t('exitStrategyAnalysis')} subtitle={t('whenToSell')} />
+            <div className="space-y-6">
+              <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+              <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} />
+            </div>
+          </div>
+        )}
 
-          <ExitScenariosCards 
-            inputs={inputs}
-            currency={currency}
-            totalMonths={calculations.totalMonths}
-            basePrice={calculations.basePrice}
-            totalEntryCosts={calculations.totalEntryCosts}
-            exitScenarios={exitScenarios}
-            rate={rate}
-            readOnly={true}
-          />
+        {/* Long-Term Hold Section */}
+        {visibility.longTermHold && (
+          <div className="mb-8">
+            <SectionHeader icon={<Home className="w-5 h-5 text-[#CCFF00]" />} title={t('longTermHoldAnalysis')} subtitle={t('tenYearProjection')} />
+            <div className="space-y-6">
+              <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
+              <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+              <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+            </div>
+          </div>
+        )}
 
-          <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-        </div>
-
-        {/* Footer */}
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">
-          <p className="text-xs text-gray-500">
-            This cashflow statement is for informational purposes only and does not constitute financial advice.
-          </p>
+          <p className="text-xs text-gray-500">This cashflow statement is for informational purposes only and does not constitute financial advice.</p>
         </footer>
       </main>
     </div>
