@@ -6,6 +6,13 @@ export interface PaymentMilestone {
   label?: string;
 }
 
+export interface ShortTermRentalConfig {
+  averageDailyRate: number;       // ADR in AED
+  occupancyPercent: number;        // Annual occupancy % (e.g., 70)
+  operatingExpensePercent: number; // Operating expenses % of gross (e.g., 25)
+  managementFeePercent: number;    // Management fee % of gross (e.g., 15)
+}
+
 export interface OIInputs {
   basePrice: number;
   rentalYieldPercent: number;
@@ -26,6 +33,10 @@ export interface OIInputs {
   
   // Exit Threshold
   minimumExitThreshold: number; // % mínimo requerido por developer para permitir reventa (default 30)
+  
+  // Rental Strategy (NEW)
+  rentalMode: 'long-term' | 'short-term';
+  shortTermRental: ShortTermRentalConfig;
 }
 
 export interface OIExitScenario {
@@ -55,8 +66,14 @@ export interface OIYearlyProjection {
   calendarYear: number;
   propertyValue: number;
   annualRent: number | null;
+  grossIncome: number | null;
+  operatingExpenses: number | null;
+  managementFee: number | null;
+  netIncome: number | null;
+  cumulativeNetIncome: number;
   isConstruction: boolean;
   isHandover: boolean;
+  isBreakEven: boolean;
 }
 
 export interface OICalculations {
@@ -225,28 +242,80 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Calculate 10-year projections from booking year
   const handoverYearIndex = Math.ceil(totalMonths / 12);
   
+  // Short-term rental calculations
+  const { shortTermRental, rentalMode } = inputs;
+  
   const yearlyProjections: OIYearlyProjection[] = [];
+  let cumulativeNetIncome = 0;
+  let breakEvenYear: number | null = null;
+  
   for (let i = 1; i <= 10; i++) {
     const calendarYear = bookingYear + i - 1;
     const propertyValue = basePrice * Math.pow(1 + appreciationRate / 100, i);
     const isConstruction = i < handoverYearIndex;
-    const annualRent = isConstruction ? null : propertyValue * (rentalYieldPercent / 100);
+    const isHandover = i === handoverYearIndex;
+    
+    let annualRent: number | null = null;
+    let grossIncome: number | null = null;
+    let operatingExpenses: number | null = null;
+    let managementFee: number | null = null;
+    let netIncome: number | null = null;
+    
+    if (!isConstruction) {
+      if (rentalMode === 'short-term') {
+        // Short-term rental (Airbnb) calculation
+        grossIncome = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
+        operatingExpenses = grossIncome * (shortTermRental.operatingExpensePercent / 100);
+        managementFee = grossIncome * (shortTermRental.managementFeePercent / 100);
+        netIncome = grossIncome - operatingExpenses - managementFee;
+        annualRent = netIncome; // For compatibility
+      } else {
+        // Long-term rental calculation
+        annualRent = propertyValue * (rentalYieldPercent / 100);
+        grossIncome = annualRent;
+        operatingExpenses = 0;
+        managementFee = 0;
+        netIncome = annualRent;
+      }
+      
+      cumulativeNetIncome += netIncome;
+    }
+    
+    // Check for break-even (cumulative net income >= total capital invested)
+    const isBreakEven = !isConstruction && breakEvenYear === null && cumulativeNetIncome >= (basePrice + totalEntryCosts);
+    if (isBreakEven) {
+      breakEvenYear = i;
+    }
     
     yearlyProjections.push({
       year: i,
       calendarYear,
       propertyValue,
       annualRent,
+      grossIncome,
+      operatingExpenses,
+      managementFee,
+      netIncome,
+      cumulativeNetIncome,
       isConstruction,
-      isHandover: i === handoverYearIndex,
+      isHandover,
+      isBreakEven,
     });
   }
 
-  // Hold Analysis
+  // Hold Analysis - updated for rental mode
   const handoverYears = totalMonths / 12;
   const propertyValueAtHandover = basePrice * Math.pow(1 + appreciationRate / 100, handoverYears);
   const totalCapitalInvested = basePrice + totalEntryCosts;
-  const annualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
+  
+  let annualRent: number;
+  if (rentalMode === 'short-term') {
+    const grossIncome = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
+    annualRent = grossIncome * (1 - shortTermRental.operatingExpensePercent / 100 - shortTermRental.managementFeePercent / 100);
+  } else {
+    annualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
+  }
+  
   const rentalYieldOnInvestment = (annualRent / totalCapitalInvested) * 100;
   const yearsToBreakEven = totalCapitalInvested / annualRent;
 

@@ -235,7 +235,7 @@ const CashflowViewContent = () => {
             readOnly={true}
           />
 
-          <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
+          <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} rentalMode={inputs.rentalMode || 'long-term'} />
         </div>
 
         {/* Footer */}
