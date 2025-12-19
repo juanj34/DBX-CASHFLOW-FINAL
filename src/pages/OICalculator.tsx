@@ -41,6 +41,18 @@ const DEFAULT_INPUTS: OIInputs = {
     operatingExpensePercent: 25,
     managementFeePercent: 15,
   },
+  // Zone-based appreciation
+  zoneMaturityLevel: 60,
+  useZoneDefaults: true,
+  // Phased appreciation rates
+  constructionAppreciation: 12,
+  growthAppreciation: 8,
+  matureAppreciation: 4,
+  growthPeriodYears: 5,
+  // Rent & service charges
+  rentGrowthRate: 4,
+  serviceChargePerSqft: 18,
+  adrGrowthRate: 3,
 };
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = {

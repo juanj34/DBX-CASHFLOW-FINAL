@@ -55,7 +55,20 @@ const CashflowViewContent = () => {
         return;
       }
 
-      setInputs(data.inputs as unknown as OIInputs);
+      // Merge with defaults to ensure all new fields exist
+      const savedInputs = data.inputs as unknown as Partial<OIInputs>;
+      setInputs({
+        ...savedInputs,
+        zoneMaturityLevel: savedInputs.zoneMaturityLevel ?? 60,
+        useZoneDefaults: savedInputs.useZoneDefaults ?? true,
+        constructionAppreciation: savedInputs.constructionAppreciation ?? 12,
+        growthAppreciation: savedInputs.growthAppreciation ?? 8,
+        matureAppreciation: savedInputs.matureAppreciation ?? 4,
+        growthPeriodYears: savedInputs.growthPeriodYears ?? 5,
+        rentGrowthRate: savedInputs.rentGrowthRate ?? 4,
+        serviceChargePerSqft: savedInputs.serviceChargePerSqft ?? 18,
+        adrGrowthRate: savedInputs.adrGrowthRate ?? 3,
+      } as OIInputs);
       // Migrate from legacy single client format to clients array
       const clients = data.client_name 
         ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
