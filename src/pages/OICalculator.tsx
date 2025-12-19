@@ -90,7 +90,7 @@ const OICalculatorContent = () => {
       token = await generateShareToken(quote.id);
     }
     if (token) {
-      return `${window.location.origin}/cash-statement/${token}`;
+      return `${window.location.origin}/view/${token}`;
     }
     return null;
   }, [quote?.id, handleSave, generateShareToken]);
