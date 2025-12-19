@@ -25,6 +25,7 @@ import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const DEFAULT_INPUTS: OIInputs = {
   basePrice: 800000, rentalYieldPercent: 8.5, appreciationRate: 10, bookingMonth: 1, bookingYear: 2025, handoverQuarter: 4, handoverYear: 2027, downpaymentPercent: 20, preHandoverPercent: 20, additionalPayments: [], eoiFee: 50000, oqoodFee: 5000, minimumExitThreshold: 30, showAirbnbComparison: false, shortTermRental: { averageDailyRate: 800, occupancyPercent: 70, operatingExpensePercent: 25, managementFeePercent: 15 }, zoneMaturityLevel: 60, useZoneDefaults: true, constructionAppreciation: 12, growthAppreciation: 8, matureAppreciation: 4, growthPeriodYears: 5, rentGrowthRate: 4, serviceChargePerSqft: 18, adrGrowthRate: 3,
@@ -33,6 +34,7 @@ const DEFAULT_INPUTS: OIInputs = {
 const DEFAULT_CLIENT_INFO: ClientUnitData = { developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' };
 
 const OICalculatorContent = () => {
+  useDocumentTitle("Cashflow Generator");
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();

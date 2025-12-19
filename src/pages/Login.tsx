@@ -2,8 +2,10 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp } from "lucide-react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const Login = () => {
+  useDocumentTitle("Sign In");
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0f172a] p-4">
       <div className="w-full max-w-md">

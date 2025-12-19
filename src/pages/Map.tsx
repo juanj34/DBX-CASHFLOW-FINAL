@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MapContainer } from "@/components/map/MapContainer";
 import { Loader2 } from "lucide-react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const Map = () => {
+  useDocumentTitle("Investment Map");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);

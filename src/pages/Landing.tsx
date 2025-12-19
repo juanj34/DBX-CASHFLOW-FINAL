@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Map, TrendingUp, FileText, ArrowRight, Sparkles, BarChart3, Globe, Zap } from "lucide-react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const Landing = () => {
+  useDocumentTitle("AI Real Estate Investment Tools");
   return (
     <div className="min-h-screen bg-[#050810] text-white overflow-hidden">
       {/* Animated Background */}

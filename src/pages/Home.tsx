@@ -4,6 +4,7 @@ import { Map, Rocket, TrendingUp, FileText, Settings, LogOut } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 interface SolutionCard {
   id: string;
@@ -42,6 +43,7 @@ const solutions: SolutionCard[] = [
 ];
 
 const Home = () => {
+  useDocumentTitle("Dashboard");
   const navigate = useNavigate();
   const { profile, loading } = useProfile();
   const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
