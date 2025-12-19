@@ -1,7 +1,5 @@
-// Simple PDF export helper that calls the Edge Function
-// Uses 'any' types intentionally to avoid complex type inference that causes compiler issues
-
 import { supabase } from "@/integrations/supabase/client";
+import { ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 
 interface ExportData {
   inputs: any;
@@ -11,6 +9,7 @@ interface ExportData {
   advisorName: string;
   currency: string;
   rate: number;
+  visibility?: ViewVisibility;
 }
 
 export const exportCashflowPDF = async (data: ExportData): Promise<void> => {

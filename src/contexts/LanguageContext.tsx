@@ -166,6 +166,8 @@ const translations: Translations = {
   selectSectionsToShow: { en: 'Select which sections to show in the shared link', es: 'Selecciona qué secciones mostrar en el enlace compartido' },
   generateLink: { en: 'Generate Link', es: 'Generar Enlace' },
   linkCopied: { en: 'Link copied to clipboard!', es: '¡Enlace copiado al portapapeles!' },
+  exportPDF: { en: 'Export PDF', es: 'Exportar PDF' },
+  pdfExported: { en: 'PDF generated successfully!', es: '¡PDF generado con éxito!' },
   paymentBreakdown: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
 };
 
