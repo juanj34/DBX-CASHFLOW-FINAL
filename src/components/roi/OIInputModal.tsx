@@ -5,9 +5,10 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target, Zap, Building, DollarSign } from "lucide-react";
-import { OIInputs, PaymentMilestone } from "./useOICalculations";
+import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target, Zap, Building, DollarSign, TrendingUp, MapPin } from "lucide-react";
+import { OIInputs, PaymentMilestone, getZoneAppreciationProfile } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
+import { ZoneAppreciationIndicator } from "./ZoneAppreciationIndicator";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -825,26 +826,207 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             )}
           </div>
 
-          {/* Appreciation Rate */}
-          <div className="space-y-2">
+          {/* ZONE & APPRECIATION SECTION */}
+          <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Appreciation Rate (CAGR %)</label>
-              <Input
-                type="number"
-                step="0.5"
-                value={inputs.appreciationRate}
-                onChange={(e) => handleNumberChange('appreciationRate', e.target.value, 0, 30)}
-                className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+              <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#CCFF00]" />
+                Zone & Appreciation
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Use Zone Defaults</span>
+                <Switch
+                  checked={inputs.useZoneDefaults ?? true}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const profile = getZoneAppreciationProfile(inputs.zoneMaturityLevel ?? 60);
+                      setInputs(prev => ({
+                        ...prev,
+                        useZoneDefaults: true,
+                        constructionAppreciation: profile.constructionAppreciation,
+                        growthAppreciation: profile.growthAppreciation,
+                        matureAppreciation: profile.matureAppreciation,
+                        growthPeriodYears: profile.growthPeriodYears,
+                      }));
+                    } else {
+                      setInputs(prev => ({ ...prev, useZoneDefaults: false }));
+                    }
+                  }}
+                  className="data-[state=checked]:bg-[#CCFF00]"
+                />
+              </div>
+            </div>
+
+            {/* Zone Maturity Slider */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-gray-400">Zone Maturity Level</label>
+                <span className="text-sm font-bold text-[#CCFF00] font-mono">{inputs.zoneMaturityLevel ?? 60}%</span>
+              </div>
+              <Slider
+                value={[inputs.zoneMaturityLevel ?? 60]}
+                onValueChange={([value]) => {
+                  const profile = getZoneAppreciationProfile(value);
+                  if (inputs.useZoneDefaults ?? true) {
+                    setInputs(prev => ({
+                      ...prev,
+                      zoneMaturityLevel: value,
+                      constructionAppreciation: profile.constructionAppreciation,
+                      growthAppreciation: profile.growthAppreciation,
+                      matureAppreciation: profile.matureAppreciation,
+                      growthPeriodYears: profile.growthPeriodYears,
+                    }));
+                  } else {
+                    setInputs(prev => ({ ...prev, zoneMaturityLevel: value }));
+                  }
+                }}
+                min={0}
+                max={100}
+                step={5}
+                className="roi-slider-lime"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Emerging (0%)</span>
+                <span>Established (100%)</span>
+              </div>
+            </div>
+
+            {/* Zone Appreciation Indicator */}
+            <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={inputs.useZoneDefaults ?? true} />
+
+            {/* Manual Appreciation Sliders - Only when not using zone defaults */}
+            {!(inputs.useZoneDefaults ?? true) && (
+              <div className="space-y-3 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+                <div className="text-xs text-gray-400 font-medium">Custom Appreciation Rates</div>
+                
+                {/* Construction */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs text-gray-500">Construction Phase</label>
+                    <span className="text-xs text-orange-400 font-mono">{inputs.constructionAppreciation ?? 12}%</span>
+                  </div>
+                  <Slider
+                    value={[inputs.constructionAppreciation ?? 12]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, constructionAppreciation: value }))}
+                    min={5}
+                    max={20}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Growth */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs text-gray-500">Growth Phase ({inputs.growthPeriodYears ?? 5}y)</label>
+                    <span className="text-xs text-green-400 font-mono">{inputs.growthAppreciation ?? 8}%</span>
+                  </div>
+                  <Slider
+                    value={[inputs.growthAppreciation ?? 8]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, growthAppreciation: value }))}
+                    min={3}
+                    max={15}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Growth Period */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs text-gray-500">Growth Period (years)</label>
+                    <span className="text-xs text-white font-mono">{inputs.growthPeriodYears ?? 5}y</span>
+                  </div>
+                  <Slider
+                    value={[inputs.growthPeriodYears ?? 5]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, growthPeriodYears: value }))}
+                    min={2}
+                    max={10}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Mature */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs text-gray-500">Mature Phase</label>
+                    <span className="text-xs text-blue-400 font-mono">{inputs.matureAppreciation ?? 4}%</span>
+                  </div>
+                  <Slider
+                    value={[inputs.matureAppreciation ?? 4]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, matureAppreciation: value }))}
+                    min={1}
+                    max={8}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SERVICE CHARGES & RENT GROWTH */}
+          <div className="space-y-4 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-[#CCFF00]" />
+              Expenses & Growth Rates
+            </label>
+
+            {/* Service Charges */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-gray-400">Service Charge (AED/sqft/year)</label>
+                <Input
+                  type="number"
+                  value={inputs.serviceChargePerSqft ?? 18}
+                  onChange={(e) => handleNumberChange('serviceChargePerSqft', e.target.value, 0, 100)}
+                  className="w-20 h-7 text-right bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-sm"
+                />
+              </div>
+              <Slider
+                value={[inputs.serviceChargePerSqft ?? 18]}
+                onValueChange={([value]) => setInputs(prev => ({ ...prev, serviceChargePerSqft: value }))}
+                min={5}
+                max={50}
+                step={1}
+                className="roi-slider-lime"
               />
             </div>
-            <Slider
-              value={[inputs.appreciationRate]}
-              onValueChange={([value]) => setInputs(prev => ({ ...prev, appreciationRate: value }))}
-              min={0}
-              max={30}
-              step={0.5}
-              className="roi-slider-lime"
-            />
+
+            {/* Rent Growth Rate */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-gray-400">Annual Rent Growth Rate</label>
+                <span className="text-xs text-green-400 font-mono">{inputs.rentGrowthRate ?? 4}%</span>
+              </div>
+              <Slider
+                value={[inputs.rentGrowthRate ?? 4]}
+                onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: value }))}
+                min={0}
+                max={10}
+                step={0.5}
+                className="roi-slider-lime"
+              />
+            </div>
+
+            {/* ADR Growth Rate (only when Airbnb enabled) */}
+            {inputs.showAirbnbComparison && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs text-gray-400">Annual ADR Growth Rate</label>
+                  <span className="text-xs text-purple-400 font-mono">{inputs.adrGrowthRate ?? 3}%</span>
+                </div>
+                <Slider
+                  value={[inputs.adrGrowthRate ?? 3]}
+                  onValueChange={([value]) => setInputs(prev => ({ ...prev, adrGrowthRate: value }))}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="roi-slider-lime"
+                />
+              </div>
+            )}
           </div>
 
           {/* Apply Button */}

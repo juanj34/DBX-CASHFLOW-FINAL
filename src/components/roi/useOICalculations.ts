@@ -15,8 +15,8 @@ export interface ShortTermRentalConfig {
 
 export interface OIInputs {
   basePrice: number;
-  rentalYieldPercent: number;
-  appreciationRate: number;
+  rentalYieldPercent: number; // Now: Initial Rental Yield at Handover
+  appreciationRate: number; // Legacy - kept for backward compatibility
   bookingMonth: number; // 1-12
   bookingYear: number;
   handoverQuarter: number; // 1, 2, 3, 4 (Q1, Q2, Q3, Q4)
@@ -40,6 +40,27 @@ export interface OIInputs {
   
   // Legacy field for backward compatibility
   rentalMode?: 'long-term' | 'short-term';
+  
+  // NEW: Zone-based appreciation
+  zoneId?: string;
+  zoneMaturityLevel: number; // 0-100
+  useZoneDefaults: boolean; // If true, use zone-based appreciation profile
+  
+  // NEW: Phased appreciation rates
+  constructionAppreciation: number; // Default 12% (during construction)
+  growthAppreciation: number;       // Default 8% (first growthPeriodYears post-handover)
+  matureAppreciation: number;       // Default 4% (after growth period)
+  growthPeriodYears: number;        // Default 5 years
+  
+  // NEW: Independent rent growth
+  rentGrowthRate: number; // Annual rent growth % (default 4%)
+  
+  // NEW: Service charges
+  serviceChargePerSqft: number; // AED/sqft/year (default 18)
+  unitSizeSqf?: number; // Pass from clientInfo for service charge calculation
+  
+  // NEW: ADR growth for Airbnb
+  adrGrowthRate: number; // Annual ADR growth % (default 3%)
 }
 
 export interface OIExitScenario {
@@ -62,11 +83,14 @@ export interface OIHoldAnalysis {
   annualRent: number;
   rentalYieldOnInvestment: number;
   yearsToBreakEven: number;
-  yearsToPayOff: number; // NEW: basePrice / annualRent
+  yearsToPayOff: number; // basePrice / annualNetRent
   // Airbnb comparison
   airbnbAnnualRent?: number;
   airbnbYearsToBreakEven?: number;
   airbnbYearsToPayOff?: number;
+  // NEW: Service charges
+  annualServiceCharges: number;
+  netAnnualRent: number;
 }
 
 export interface OIYearlyProjection {
@@ -77,6 +101,7 @@ export interface OIYearlyProjection {
   annualRent: number | null;
   grossIncome: number | null;
   operatingExpenses: number | null;
+  serviceCharges: number | null; // NEW
   managementFee: number | null;
   netIncome: number | null;
   cumulativeNetIncome: number;
@@ -90,6 +115,10 @@ export interface OIYearlyProjection {
   isHandover: boolean;
   isBreakEven: boolean;
   isAirbnbBreakEven: boolean;
+  // NEW: Phase info
+  appreciationRate: number; // Rate used this year
+  effectiveYield: number | null; // Actual yield (rent/property value)
+  phase: 'construction' | 'growth' | 'mature';
 }
 
 export interface OICalculations {
@@ -122,6 +151,76 @@ export const quarterToMonth = (quarter: number): number => {
     4: 11  // Q4 → November
   };
   return quarterMidMonths[quarter] || 2;
+};
+
+// NEW: Get appreciation profile based on zone maturity level
+export interface ZoneAppreciationProfile {
+  constructionAppreciation: number;
+  growthAppreciation: number;
+  matureAppreciation: number;
+  growthPeriodYears: number;
+  riskLevel: 'low' | 'low-medium' | 'medium' | 'medium-high' | 'high';
+  description: string;
+}
+
+export const getZoneAppreciationProfile = (maturityLevel: number): ZoneAppreciationProfile => {
+  // Zona muy nueva (0-25): Dubai South, nuevos masterplans
+  if (maturityLevel <= 25) {
+    return {
+      constructionAppreciation: 15,
+      growthAppreciation: 12,
+      matureAppreciation: 6,
+      growthPeriodYears: 7,
+      riskLevel: 'high',
+      description: 'High potential, higher risk'
+    };
+  }
+  
+  // Zona en desarrollo (26-50): Creek Harbour, Maritime City
+  if (maturityLevel <= 50) {
+    return {
+      constructionAppreciation: 13,
+      growthAppreciation: 10,
+      matureAppreciation: 5,
+      growthPeriodYears: 6,
+      riskLevel: 'medium-high',
+      description: 'Good growth potential'
+    };
+  }
+  
+  // Zona creciendo (51-75): JVC, Emaar Beachfront, Dubai Hills
+  if (maturityLevel <= 75) {
+    return {
+      constructionAppreciation: 12,
+      growthAppreciation: 8,
+      matureAppreciation: 4,
+      growthPeriodYears: 5,
+      riskLevel: 'medium',
+      description: 'Balanced growth/stability'
+    };
+  }
+  
+  // Zona madura (76-90): Business Bay, Sobha Hartland
+  if (maturityLevel <= 90) {
+    return {
+      constructionAppreciation: 10,
+      growthAppreciation: 6,
+      matureAppreciation: 3,
+      growthPeriodYears: 3,
+      riskLevel: 'low-medium',
+      description: 'Stable, moderate growth'
+    };
+  }
+  
+  // Zona saturada (91-100): Downtown, Marina, Palm, JBR
+  return {
+    constructionAppreciation: 8,
+    growthAppreciation: 4,
+    matureAppreciation: 2,
+    growthPeriodYears: 2,
+    riskLevel: 'low',
+    description: 'Capital preservation, low growth'
+  };
 };
 
 // Calculate equity deployed at exit based on new payment structure
@@ -179,7 +278,6 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const { 
     basePrice, 
     rentalYieldPercent, 
-    appreciationRate, 
     bookingMonth, 
     bookingYear, 
     handoverQuarter, 
@@ -187,6 +285,16 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     oqoodFee,
     eoiFee,
   } = inputs;
+
+  // Get appreciation rates (zone-based or manual)
+  const constructionAppreciation = inputs.constructionAppreciation ?? 12;
+  const growthAppreciation = inputs.growthAppreciation ?? 8;
+  const matureAppreciation = inputs.matureAppreciation ?? 4;
+  const growthPeriodYears = inputs.growthPeriodYears ?? 5;
+  const rentGrowthRate = inputs.rentGrowthRate ?? 4;
+  const serviceChargePerSqft = inputs.serviceChargePerSqft ?? 18;
+  const unitSizeSqf = inputs.unitSizeSqf ?? 0;
+  const adrGrowthRate = inputs.adrGrowthRate ?? 3;
 
   // Calculate entry costs (paid at booking) - DLD fixed at 4%
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
@@ -200,6 +308,28 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const handoverDate = new Date(handoverYear, handoverMonth - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
+  // Calculate handover year index (1-indexed)
+  const handoverYearIndex = Math.ceil(totalMonths / 12);
+
+  // Helper: Get appreciation rate for a given year
+  const getAppreciationRate = (year: number): { rate: number; phase: 'construction' | 'growth' | 'mature' } => {
+    if (year <= handoverYearIndex) {
+      return { rate: constructionAppreciation, phase: 'construction' };
+    } else if (year <= handoverYearIndex + growthPeriodYears) {
+      return { rate: growthAppreciation, phase: 'growth' };
+    } else {
+      return { rate: matureAppreciation, phase: 'mature' };
+    }
+  };
+
+  // Calculate property values year by year with phased appreciation
+  const propertyValues: number[] = [basePrice]; // Year 0 = booking
+  for (let i = 1; i <= 10; i++) {
+    const { rate } = getAppreciationRate(i);
+    const prevValue = propertyValues[i - 1];
+    propertyValues.push(prevValue * (1 + rate / 100));
+  }
+
   // Generate scenarios at key time points (every 6 months + handover)
   const exitMonthsOptions: number[] = [];
   for (let m = 6; m <= totalMonths; m += 6) {
@@ -212,9 +342,15 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const scenarios: OIExitScenario[] = exitMonthsOptions.map(exitMonths => {
     const exitPercent = (exitMonths / totalMonths) * 100;
     const exitYears = exitMonths / 12;
+    const exitYearIndex = Math.ceil(exitYears);
 
-    // Property value at exit (appreciated)
-    const exitPrice = basePrice * Math.pow(1 + appreciationRate / 100, exitYears);
+    // Property value at exit (from our calculated array, interpolated)
+    const lowerYear = Math.floor(exitYears);
+    const upperYear = Math.ceil(exitYears);
+    const fraction = exitYears - lowerYear;
+    const lowerValue = propertyValues[lowerYear] || basePrice;
+    const upperValue = propertyValues[upperYear] || propertyValues[lowerYear] || basePrice;
+    const exitPrice = lowerValue + (upperValue - lowerValue) * fraction;
 
     // Equity deployed using new calculation
     const { equity: equityDeployed } = calculateEquityAtExit(
@@ -264,12 +400,18 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     };
   });
 
-  // Calculate 10-year projections from booking year
-  const handoverYearIndex = Math.ceil(totalMonths / 12);
-  
   // Short-term rental calculations with fallback for backward compatibility
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
   const showAirbnbComparison = inputs.showAirbnbComparison || false;
+  
+  // Calculate property value at handover for initial rent calculation
+  const propertyValueAtHandover = propertyValues[handoverYearIndex] || basePrice;
+  
+  // Initial rent based on handover value (not property value each year)
+  const initialAnnualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
+  
+  // Annual service charges
+  const annualServiceCharges = unitSizeSqf * serviceChargePerSqft;
   
   const yearlyProjections: OIYearlyProjection[] = [];
   let cumulativeNetIncome = 0;
@@ -277,18 +419,25 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   let breakEvenYear: number | null = null;
   let airbnbBreakEvenYear: number | null = null;
   
+  // Track rent growth (independent of property value)
+  let currentRent = initialAnnualRent;
+  let currentADR = shortTermRental.averageDailyRate;
+  
   for (let i = 1; i <= 10; i++) {
     const calendarYear = bookingYear + i - 1;
-    const propertyValue = basePrice * Math.pow(1 + appreciationRate / 100, i);
-    const isConstruction = i < handoverYearIndex;
+    const propertyValue = propertyValues[i];
+    const { rate: appreciationRate, phase } = getAppreciationRate(i);
+    const isConstruction = i <= handoverYearIndex;
     const isHandover = i === handoverYearIndex;
     
     // Long-term rental (always calculated)
     let annualRent: number | null = null;
     let grossIncome: number | null = null;
     let operatingExpenses: number | null = null;
+    let serviceCharges: number | null = null;
     let managementFee: number | null = null;
     let netIncome: number | null = null;
+    let effectiveYield: number | null = null;
     
     // Airbnb rental (only when comparison enabled)
     let airbnbGrossIncome: number | null = null;
@@ -296,18 +445,35 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     let airbnbNetIncome: number | null = null;
     
     if (!isConstruction) {
-      // Long-term rental calculation (always)
-      annualRent = propertyValue * (rentalYieldPercent / 100);
+      // Years since handover (1 = first year after handover)
+      const yearsSinceHandover = i - handoverYearIndex;
+      
+      // Rent grows independently each year after the first
+      if (yearsSinceHandover > 1) {
+        currentRent = currentRent * (1 + rentGrowthRate / 100);
+      }
+      
+      // Long-term rental calculation
+      annualRent = currentRent;
       grossIncome = annualRent;
-      operatingExpenses = 0;
+      operatingExpenses = 0; // Long-term has minimal operating expenses
+      serviceCharges = annualServiceCharges;
       managementFee = 0;
-      netIncome = annualRent;
+      netIncome = annualRent - annualServiceCharges;
+      effectiveYield = (annualRent / propertyValue) * 100;
       cumulativeNetIncome += netIncome;
       
       // Airbnb rental calculation (when comparison enabled)
       if (showAirbnbComparison) {
-        airbnbGrossIncome = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
-        airbnbExpenses = airbnbGrossIncome * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
+        // ADR grows each year
+        if (yearsSinceHandover > 1) {
+          currentADR = currentADR * (1 + adrGrowthRate / 100);
+        }
+        
+        airbnbGrossIncome = currentADR * 365 * (shortTermRental.occupancyPercent / 100);
+        // Airbnb expenses include operating expenses + management + service charges
+        const airbnbOperatingExpenses = airbnbGrossIncome * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
+        airbnbExpenses = airbnbOperatingExpenses + annualServiceCharges;
         airbnbNetIncome = airbnbGrossIncome - airbnbExpenses;
         airbnbCumulativeNetIncome += airbnbNetIncome;
       }
@@ -332,6 +498,7 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       annualRent,
       grossIncome,
       operatingExpenses,
+      serviceCharges,
       managementFee,
       netIncome,
       cumulativeNetIncome,
@@ -343,19 +510,20 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       isHandover,
       isBreakEven,
       isAirbnbBreakEven,
+      appreciationRate,
+      effectiveYield,
+      phase,
     });
   }
 
   // Hold Analysis - always calculate long-term, optionally calculate Airbnb
-  const handoverYears = totalMonths / 12;
-  const propertyValueAtHandover = basePrice * Math.pow(1 + appreciationRate / 100, handoverYears);
   const totalCapitalInvested = basePrice + totalEntryCosts;
   
-  // Long-term rent (always)
-  const annualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
-  const rentalYieldOnInvestment = (annualRent / totalCapitalInvested) * 100;
-  const yearsToBreakEven = totalCapitalInvested / annualRent;
-  const yearsToPayOff = basePrice / annualRent;
+  // Long-term rent at handover (first year net)
+  const netAnnualRent = initialAnnualRent - annualServiceCharges;
+  const rentalYieldOnInvestment = (netAnnualRent / totalCapitalInvested) * 100;
+  const yearsToBreakEven = netAnnualRent > 0 ? totalCapitalInvested / netAnnualRent : 999;
+  const yearsToPayOff = netAnnualRent > 0 ? basePrice / netAnnualRent : 999;
   
   // Airbnb rent (optional)
   let airbnbAnnualRent: number | undefined;
@@ -364,21 +532,24 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   
   if (showAirbnbComparison) {
     const airbnbGross = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
-    airbnbAnnualRent = airbnbGross * (1 - (shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
-    airbnbYearsToBreakEven = totalCapitalInvested / airbnbAnnualRent;
-    airbnbYearsToPayOff = basePrice / airbnbAnnualRent;
+    const airbnbOperatingExpenses = airbnbGross * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
+    airbnbAnnualRent = airbnbGross - airbnbOperatingExpenses - annualServiceCharges;
+    airbnbYearsToBreakEven = airbnbAnnualRent > 0 ? totalCapitalInvested / airbnbAnnualRent : 999;
+    airbnbYearsToPayOff = airbnbAnnualRent > 0 ? basePrice / airbnbAnnualRent : 999;
   }
 
   const holdAnalysis: OIHoldAnalysis = {
     totalCapitalInvested,
     propertyValueAtHandover,
-    annualRent,
+    annualRent: initialAnnualRent,
     rentalYieldOnInvestment,
     yearsToBreakEven,
     yearsToPayOff,
     airbnbAnnualRent,
     airbnbYearsToBreakEven,
     airbnbYearsToPayOff,
+    annualServiceCharges,
+    netAnnualRent,
   };
 
   return {
