@@ -126,6 +126,62 @@ All colors MUST be HSL.
   }
 }
 
+/* Landing page animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(var(--rotation, 0deg));
+  }
+  50% {
+    transform: translateY(-15px) rotate(var(--rotation, 0deg));
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow.delay-1000 {
+  animation-delay: 1s;
+}
+
+.animate-pulse-slow.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
 /* Custom Mapbox Geocoder styles to match app design */
 .mapboxgl-ctrl-geocoder-wrapper .mapboxgl-ctrl-geocoder {
   min-width: 240px;
