@@ -120,44 +120,49 @@ serve(async (req) => {
 <head>
   <meta charset="UTF-8">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px; font-size: 12px; line-height: 1.5; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #CCFF00; padding-bottom: 20px; }
-    .header h1 { font-size: 28px; font-weight: 700; color: #CCFF00; letter-spacing: 2px; margin-bottom: 8px; }
-    .header .subtitle { color: #94a3b8; font-size: 14px; }
-    .section { margin-bottom: 25px; background: #1e293b; border-radius: 8px; padding: 20px; page-break-inside: avoid; }
-    .section-title { font-size: 16px; font-weight: 600; color: #CCFF00; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #0f172a !important; color: #e2e8f0; padding: 40px; font-size: 12px; line-height: 1.5; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #CCFF00; padding-bottom: 20px; background-color: #0f172a !important; }
+    .header h1 { font-size: 28px; font-weight: 700; color: #CCFF00 !important; letter-spacing: 2px; margin-bottom: 8px; }
+    .header .subtitle { color: #94a3b8 !important; font-size: 14px; }
+    .section { margin-bottom: 25px; background-color: #1e293b !important; border-radius: 8px; padding: 20px; page-break-inside: avoid; }
+    .section-title { font-size: 16px; font-weight: 600; color: #CCFF00 !important; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
     .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-    .info-label { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-value { color: #f1f5f9; font-size: 14px; font-weight: 500; }
+    .info-label { color: #64748b !important; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-value { color: #f1f5f9 !important; font-size: 14px; font-weight: 500; }
     .exit-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-    .exit-card { background: #0f172a; border-radius: 8px; padding: 15px; border: 1px solid #334155; }
-    .exit-card-title { font-size: 14px; font-weight: 600; color: #CCFF00; margin-bottom: 10px; }
+    .exit-card { background-color: #0f172a !important; border-radius: 8px; padding: 15px; border: 1px solid #334155; }
+    .exit-card-title { font-size: 14px; font-weight: 600; color: #CCFF00 !important; margin-bottom: 10px; }
     .exit-metric { margin-bottom: 8px; }
-    .exit-metric-label { color: #64748b; font-size: 10px; }
-    .exit-metric-value { color: #f1f5f9; font-size: 13px; font-weight: 500; }
-    .roe-value { color: #CCFF00; font-size: 18px; font-weight: 700; }
+    .exit-metric-label { color: #64748b !important; font-size: 10px; }
+    .exit-metric-value { color: #f1f5f9 !important; font-size: 13px; font-weight: 500; }
+    .roe-value { color: #CCFF00 !important; font-size: 18px; font-weight: 700; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #0f172a; color: #94a3b8; font-size: 10px; text-transform: uppercase; padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
-    td { padding: 10px; border-bottom: 1px solid #1e293b; color: #e2e8f0; }
-    tr:nth-child(even) { background: #0f172a; }
-    .highlight-row { background: rgba(204, 255, 0, 0.1) !important; }
-    .footer { margin-top: 30px; text-align: center; color: #64748b; font-size: 10px; }
+    th { background-color: #0f172a !important; color: #94a3b8 !important; font-size: 10px; text-transform: uppercase; padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
+    td { padding: 10px; border-bottom: 1px solid #1e293b; color: #e2e8f0 !important; background-color: #1e293b !important; }
+    tr:nth-child(even) td { background-color: #0f172a !important; }
+    .highlight-row td { background-color: rgba(204, 255, 0, 0.15) !important; }
+    .footer { margin-top: 30px; text-align: center; color: #64748b !important; font-size: 10px; background-color: #0f172a !important; }
     .payment-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; }
-    .payment-label { color: #94a3b8; }
-    .payment-value { color: #f1f5f9; font-weight: 500; }
+    .payment-label { color: #94a3b8 !important; }
+    .payment-value { color: #f1f5f9 !important; font-weight: 500; }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .rent-item { display: flex; justify-content: space-between; padding: 6px 0; }
-    .rent-label { color: #94a3b8; font-size: 11px; }
-    .rent-value { color: #f1f5f9; font-weight: 500; }
-    .rent-highlight { color: #22d3ee; }
-    .payoff-bar { height: 6px; background: #334155; border-radius: 3px; margin: 5px 0; }
-    .payoff-fill { height: 100%; border-radius: 3px; background: #22c55e; }
-    .wealth-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #CCFF00; border-radius: 8px; padding: 20px; margin-top: 20px; }
-    .wealth-title { color: #CCFF00; font-size: 14px; font-weight: 600; margin-bottom: 15px; }
+    .rent-label { color: #94a3b8 !important; font-size: 11px; }
+    .rent-value { color: #f1f5f9 !important; font-weight: 500; }
+    .rent-highlight { color: #22d3ee !important; }
+    .payoff-bar { height: 6px; background-color: #334155 !important; border-radius: 3px; margin: 5px 0; }
+    .payoff-fill { height: 100%; border-radius: 3px; background-color: #22c55e !important; }
+    .wealth-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; border: 1px solid #CCFF00; border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .wealth-title { color: #CCFF00 !important; font-size: 14px; font-weight: 600; margin-bottom: 15px; }
     .wealth-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; }
-    .wealth-total { font-size: 18px; color: #22d3ee; font-weight: 700; }
-    @media print { body { padding: 20px; } .section { page-break-inside: avoid; } }
+    .wealth-total { font-size: 18px; color: #22d3ee !important; font-weight: 700; }
+    @media print { 
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+      html, body { background-color: #0f172a !important; }
+      body { padding: 20px; } 
+      .section { page-break-inside: avoid; } 
+    }
   </style>
 </head>
 <body>

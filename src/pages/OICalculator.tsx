@@ -80,8 +80,17 @@ const OICalculatorContent = () => {
   const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id), [inputs, clientInfo, quote?.id, saveQuote]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, saveAsNew, navigate]);
   const handleShare = useCallback(async () => {
-    if (!quote?.id) { const savedQuote = await handleSave(); if (savedQuote) return generateShareToken(savedQuote.id); return null; }
-    return generateShareToken(quote.id);
+    let token: string | null = null;
+    if (!quote?.id) {
+      const savedQuote = await handleSave();
+      if (savedQuote) token = await generateShareToken(savedQuote.id);
+    } else {
+      token = await generateShareToken(quote.id);
+    }
+    if (token) {
+      return `${window.location.origin}/cash-statement/${token}`;
+    }
+    return null;
   }, [quote?.id, handleSave, generateShareToken]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
