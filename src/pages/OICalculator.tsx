@@ -302,6 +302,7 @@ const OICalculatorContent = () => {
               currency={currency}
               totalMonths={calculations.totalMonths}
               rate={rate}
+              clientInfo={clientInfo}
             />
           </div>
           <div className="xl:col-span-1">
