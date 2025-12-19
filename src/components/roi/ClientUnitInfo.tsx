@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { COUNTRIES, UNIT_TYPES, Client } from "./ClientUnitModal";
 
+export interface ClientShare {
+  clientId: string;
+  sharePercent: number;
+}
+
 export interface ClientUnitData {
   developer: string;
   projectName?: string;
@@ -15,6 +20,9 @@ export interface ClientUnitData {
   unitSizeSqf: number;
   unitSizeM2: number;
   unitType: string;
+  // Payment split feature
+  splitEnabled?: boolean;
+  clientShares?: ClientShare[];
 }
 
 interface ClientUnitInfoProps {
