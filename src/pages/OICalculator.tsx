@@ -34,6 +34,13 @@ const DEFAULT_INPUTS: OIInputs = {
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,
+  rentalMode: 'long-term',
+  shortTermRental: {
+    averageDailyRate: 800,
+    occupancyPercent: 70,
+    operatingExpensePercent: 25,
+    managementFeePercent: 15,
+  },
 };
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = {
@@ -336,7 +343,7 @@ const OICalculatorContent = () => {
         </div>
 
         {/* Yearly Projection Table */}
-        <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} />
+        <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} rentalMode={inputs.rentalMode} />
 
         {/* Navigation Links - Hidden when printing */}
         <div className="mt-8 flex gap-4 print:hidden">
