@@ -17,13 +17,14 @@ import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { SectionHeader } from "@/components/roi/SectionHeader";
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
-import { ViewVisibilityControls } from "@/components/roi/ViewVisibilityControls";
-import { useOICalculations, OIInputs, OIExitScenario } from "@/components/roi/useOICalculations";
+import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
+import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { exportCashflowPDF } from "@/lib/pdfExport";
 
 const DEFAULT_INPUTS: OIInputs = {
   basePrice: 800000, rentalYieldPercent: 8.5, appreciationRate: 10, bookingMonth: 1, bookingYear: 2025, handoverQuarter: 4, handoverYear: 2027, downpaymentPercent: 20, preHandoverPercent: 20, additionalPayments: [], eoiFee: 50000, oqoodFee: 5000, minimumExitThreshold: 30, showAirbnbComparison: false, shortTermRental: { averageDailyRate: 800, occupancyPercent: 70, operatingExpensePercent: 25, managementFeePercent: 15 }, zoneMaturityLevel: 60, useZoneDefaults: true, constructionAppreciation: 12, growthAppreciation: 8, matureAppreciation: 4, growthPeriodYears: 5, rentGrowthRate: 4, serviceChargePerSqft: 18, adrGrowthRate: 3,
@@ -82,7 +83,19 @@ const OICalculatorContent = () => {
     if (!quote?.id) { const savedQuote = await handleSave(); if (savedQuote) return generateShareToken(savedQuote.id); return null; }
     return generateShareToken(quote.id);
   }, [quote?.id, handleSave, generateShareToken]);
-  const handleExportPDF = useCallback(() => { window.print(); }, []);
+
+  const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
+    await exportCashflowPDF({
+      inputs,
+      clientInfo,
+      calculations,
+      exitScenarios,
+      advisorName: profile?.full_name || '',
+      currency,
+      rate,
+      visibility,
+    });
+  }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
@@ -108,8 +121,8 @@ const OICalculatorContent = () => {
           </div>
           <div className="flex items-center gap-3">
             {currency !== 'AED' && <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}<span>1 AED = {rate.toFixed(4)} {currency}</span></div>}
-            <SaveControls quoteId={quote?.id} saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} onShare={handleShare} onExportPDF={handleExportPDF} />
-            <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} />
+            <SaveControls quoteId={quote?.id} saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} onShare={handleShare} />
+            <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
             <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white px-3">{language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}</Button>
             <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}><SelectTrigger className="w-[130px] border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]"><SelectValue /></SelectTrigger><SelectContent className="bg-[#1a1f2e] border-[#2a3142]">{Object.entries(CURRENCY_CONFIG).map(([key, config]) => <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>)}</SelectContent></Select>
             <Link to="/account-settings"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]"><Settings className="w-5 h-5" /></Button></Link>

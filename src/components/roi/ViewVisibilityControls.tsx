@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Share2, Copy, Check } from 'lucide-react';
+import { Eye, EyeOff, Share2, Copy, Check, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -25,6 +25,7 @@ const DEFAULT_VISIBILITY: ViewVisibility = {
 interface ViewVisibilityControlsProps {
   shareUrl: string | null;
   onGenerateShareUrl: () => Promise<string | null>;
+  onExportPDF?: (visibility: ViewVisibility) => void;
 }
 
 export const encodeVisibility = (visibility: ViewVisibility): string => {
@@ -49,16 +50,17 @@ export const decodeVisibility = (encoded: string | null): ViewVisibility => {
   };
 };
 
-export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl }: ViewVisibilityControlsProps) => {
+export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportPDF }: ViewVisibilityControlsProps) => {
   const { t } = useLanguage();
   const [visibility, setVisibility] = useState<ViewVisibility>(DEFAULT_VISIBILITY);
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(shareUrl);
 
   const handleToggle = (key: keyof ViewVisibility) => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
-    setGeneratedUrl(null); // Reset URL when visibility changes
+    setGeneratedUrl(null);
   };
 
   const getShareUrlWithVisibility = (baseUrl: string): string => {
@@ -87,6 +89,20 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl }: ViewVis
       setCopied(true);
       toast.success(t('linkCopied'));
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (onExportPDF) {
+      setExporting(true);
+      try {
+        await onExportPDF(visibility);
+        toast.success(t('pdfExported'));
+      } catch (error) {
+        toast.error('Failed to export PDF');
+      } finally {
+        setExporting(false);
+      }
     }
   };
 
@@ -146,6 +162,7 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl }: ViewVis
           </div>
 
           <div className="pt-4 border-t border-[#2a3142] space-y-3">
+            {/* Share Link Section */}
             {generatedUrl ? (
               <div className="flex gap-2">
                 <input
@@ -175,6 +192,25 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl }: ViewVis
                   <>
                     <Share2 className="w-4 h-4 mr-2" />
                     {t('generateLink')}
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Export PDF Button */}
+            {onExportPDF && (
+              <Button
+                onClick={handleExportPDF}
+                disabled={exporting}
+                variant="outline"
+                className="w-full border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+              >
+                {exporting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300" />
+                ) : (
+                  <>
+                    <FileDown className="w-4 h-4 mr-2" />
+                    {t('exportPDF')}
                   </>
                 )}
               </Button>
