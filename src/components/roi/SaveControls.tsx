@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Copy, Share2, FileDown, Check, Loader2 } from 'lucide-react';
+import { Save, Copy, Share2, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,7 +17,6 @@ interface SaveControlsProps {
   onSave: () => Promise<any>;
   onSaveAs: () => Promise<any>;
   onShare: () => Promise<string | null>;
-  onExportPDF?: () => void | Promise<void>;
 }
 
 export const SaveControls = ({
@@ -27,7 +26,6 @@ export const SaveControls = ({
   onSave,
   onSaveAs,
   onShare,
-  onExportPDF,
 }: SaveControlsProps) => {
   const { toast } = useToast();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -51,12 +49,6 @@ export const SaveControls = ({
       setShareUrl(url);
       await navigator.clipboard.writeText(url);
       toast({ title: 'Share link copied to clipboard!' });
-    }
-  };
-
-  const handleExportPDF = () => {
-    if (onExportPDF) {
-      onExportPDF();
     }
   };
 
@@ -124,14 +116,6 @@ export const SaveControls = ({
               Share with Client
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem
-            onClick={handleExportPDF}
-            disabled={!onExportPDF}
-            className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
-          >
-            <FileDown className="w-4 h-4" />
-            Export PDF
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
