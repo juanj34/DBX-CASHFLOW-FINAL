@@ -1,15 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Wifi, WifiOff, Settings, TrendingUp, Home, FolderOpen, Globe, Coins } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
@@ -20,7 +12,8 @@ import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
-import { SaveControls } from "@/components/roi/SaveControls";
+import { QuotesDropdown } from "@/components/roi/QuotesDropdown";
+import { SettingsDropdown } from "@/components/roi/SettingsDropdown";
 import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
@@ -32,7 +25,7 @@ import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/Er
 import { OnboardingModal, useAdvisorOnboarding } from "@/components/roi/OnboardingModal";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
-import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
+import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
@@ -184,75 +177,30 @@ const OICalculatorContent = () => {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Primary Actions */}
-              <Button variant="outline" size="sm" onClick={() => setLoadQuoteModalOpen(true)} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 sm:px-3">
-                <FolderOpen className="w-4 h-4" />
-                <span className="hidden md:inline ml-1.5">{t('loadQuote')}</span>
-              </Button>
-              <SaveControls saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} />
+              {/* Quotes Dropdown - Save/Load/View */}
+              <QuotesDropdown
+                saving={saving}
+                lastSaved={lastSaved}
+                onSave={handleSave}
+                onSaveAs={handleSaveAs}
+                onLoadQuote={() => setLoadQuoteModalOpen(true)}
+              />
+
+              {/* Share Controls */}
               <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
 
               {/* Separator */}
-              <div className="hidden sm:block w-px h-6 bg-[#2a3142] mx-1" />
+              <div className="w-px h-6 bg-[#2a3142] mx-0.5" />
 
-              {/* Secondary Controls */}
-              <div className="hidden sm:flex items-center gap-1.5">
-                {currency !== 'AED' && (
-                  <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                    {isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                    <span>1 AED = {rate.toFixed(4)} {currency}</span>
-                  </div>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 px-2" title={t('language')}>
-                  <Globe className="w-3.5 h-3.5" />
-                  <span className="ml-1">{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
-                </Button>
-                <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
-                  <SelectTrigger className="w-[90px] h-8 text-xs border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]" title={t('currency')}>
-                    <Coins className="w-3.5 h-3.5 mr-1 text-[#CCFF00]" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
-                    {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-                      <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Link to="/account-settings">
-                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8">
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Mobile: Secondary controls dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild className="sm:hidden">
-                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8">
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-[#1a1f2e] border-[#2a3142] z-50 w-48">
-                  <DropdownMenuItem onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">
-                    <Globe className="w-4 h-4 mr-2" />
-                    {language === 'en' ? '🇬🇧 English' : '🇪🇸 Español'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-[#2a3142]" />
-                  {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-                    <DropdownMenuItem key={key} onClick={() => setCurrency(key as Currency)} className={`text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] ${currency === key ? 'bg-[#2a3142]' : ''}`}>
-                      <Coins className="w-4 h-4 mr-2" />
-                      {config.flag} {key}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator className="bg-[#2a3142]" />
-                  <Link to="/account-settings">
-                    <DropdownMenuItem className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Account Settings
-                    </DropdownMenuItem>
-                  </Link>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Settings Dropdown - Profile/Language/Currency */}
+              <SettingsDropdown
+                language={language}
+                setLanguage={setLanguage}
+                currency={currency}
+                setCurrency={setCurrency}
+                exchangeRate={rate}
+                isLive={isLive}
+              />
 
               {/* Configure Button - Always visible */}
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
