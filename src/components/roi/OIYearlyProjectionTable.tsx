@@ -106,6 +106,9 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                 >
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-white font-medium whitespace-nowrap">
                     {proj.calendarYear}
+                    {proj.monthsActive && proj.monthsActive < 12 && (
+                      <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
+                    )}
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-center">
                     <span className={`text-xs sm:text-sm ${getPhaseColor(proj.phase)}`} title={proj.phase}>
@@ -114,17 +117,11 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right text-white font-mono whitespace-nowrap">
                     {formatCurrency(proj.propertyValue, currency, rate)}
-                    {proj.monthsActive && proj.monthsActive < 12 && (
-                      <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
-                    )}
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
                     {proj.netIncome ? (
                       <span className="text-cyan-400">
                         {formatCurrency(proj.netIncome, currency, rate)}
-                        {proj.monthsActive && proj.monthsActive < 12 && (
-                          <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
-                        )}
                       </span>
                     ) : (
                       <span className="text-gray-500">—</span>
@@ -135,9 +132,6 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                       {proj.airbnbNetIncome ? (
                         <span className="text-orange-400">
                           {formatCurrency(proj.airbnbNetIncome, currency, rate)}
-                          {proj.monthsActive && proj.monthsActive < 12 && (
-                            <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
-                          )}
                         </span>
                       ) : (
                         <span className="text-gray-500">—</span>
