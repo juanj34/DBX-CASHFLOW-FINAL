@@ -30,7 +30,7 @@ interface ExitScenariosCardsProps {
 }
 
 // Calculate equity deployed at exit - returns MAX of plan equity vs threshold requirement
-const calculateEquityAtExit = (
+export const calculateEquityAtExit = (
   exitMonths: number,
   inputs: OIInputs,
   totalMonths: number,
@@ -71,7 +71,7 @@ const calculateEquityAtExit = (
 };
 
 // Calculate exit price using phased appreciation (matching useOICalculations logic)
-const calculatePhasedExitPrice = (
+export const calculatePhasedExitPrice = (
   months: number,
   inputs: OIInputs,
   totalMonths: number,
