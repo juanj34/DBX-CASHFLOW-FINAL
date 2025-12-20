@@ -5,12 +5,14 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target, Zap, Building, DollarSign, TrendingUp, MapPin } from "lucide-react";
+import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target, Zap, Building, DollarSign, TrendingUp, MapPin, Save, FolderOpen } from "lucide-react";
 import { OIInputs, PaymentMilestone, getZoneAppreciationProfile } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 import { ZoneAppreciationIndicator } from "./ZoneAppreciationIndicator";
 import { InfoTooltip } from "./InfoTooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -63,6 +65,8 @@ interface Zone {
 }
 
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
+  const { t } = useLanguage();
+  
   // Ensure shortTermRental has defaults if missing (for backward compatibility)
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
   const rentalMode = inputs.rentalMode || 'long-term';
@@ -70,6 +74,11 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
   // Zone selector state
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingZones, setLoadingZones] = useState(false);
+  
+  // Appreciation presets
+  const { presets, loading: loadingPresets, saving: savingPreset, savePreset, deletePreset, applyPreset } = useAppreciationPresets();
+  const [presetName, setPresetName] = useState('');
+  const [showSavePreset, setShowSavePreset] = useState(false);
   
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
@@ -185,14 +194,47 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
     }
   };
 
-  // Apply preset split (only changes preHandoverPercent, clears additional payments)
-  const applyPreset = (split: string) => {
+  // Apply payment split preset (only changes preHandoverPercent, clears additional payments)
+  const applyPaymentSplit = (split: string) => {
     const [preHandover] = split.split('/').map(Number);
     setInputs(prev => ({
       ...prev,
       preHandoverPercent: preHandover,
       additionalPayments: [] // Clear additional payments when changing preset
     }));
+  };
+  
+  // Handle applying an appreciation preset
+  const handleApplyAppreciationPreset = (presetId: string) => {
+    const preset = presets.find(p => p.id === presetId);
+    if (preset) {
+      const values = applyPreset(preset);
+      setInputs(prev => ({
+        ...prev,
+        useZoneDefaults: false,
+        constructionAppreciation: values.constructionAppreciation,
+        growthAppreciation: values.growthAppreciation,
+        matureAppreciation: values.matureAppreciation,
+        growthPeriodYears: values.growthPeriodYears,
+        ...(values.rentGrowthRate !== undefined ? { rentGrowthRate: values.rentGrowthRate } : {}),
+      }));
+    }
+  };
+  
+  // Handle saving current values as preset
+  const handleSavePreset = async () => {
+    if (!presetName.trim()) return;
+    const success = await savePreset(presetName.trim(), {
+      constructionAppreciation: inputs.constructionAppreciation ?? 12,
+      growthAppreciation: inputs.growthAppreciation ?? 8,
+      matureAppreciation: inputs.matureAppreciation ?? 4,
+      growthPeriodYears: inputs.growthPeriodYears ?? 5,
+      rentGrowthRate: inputs.rentGrowthRate,
+    });
+    if (success) {
+      setPresetName('');
+      setShowSavePreset(false);
+    }
   };
 
   // Auto-generate payment plan
@@ -510,7 +552,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => applyPreset(split)}
+                    onClick={() => applyPaymentSplit(split)}
                     className={`h-7 text-xs border-[#2a3142] px-3 ${
                       inputs.preHandoverPercent === parseInt(split.split('/')[0])
                         ? 'bg-[#CCFF00]/20 border-[#CCFF00]/50 text-[#CCFF00]'
@@ -1077,6 +1119,33 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             {/* Manual Appreciation Sliders - Only when not using zone defaults */}
             {!(inputs.useZoneDefaults ?? true) && (
               <div className="space-y-3 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+                {/* Preset Selector */}
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#2a3142]">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-400">{t('loadPreset')}</span>
+                  </div>
+                  <Select onValueChange={handleApplyAppreciationPreset}>
+                    <SelectTrigger className="w-40 h-7 text-xs bg-[#0d1117] border-[#2a3142] text-white">
+                      <SelectValue placeholder={loadingPresets ? "Loading..." : t('selectPreset')} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                      {presets.length === 0 ? (
+                        <div className="px-2 py-1.5 text-xs text-gray-500">{t('noPresets')}</div>
+                      ) : (
+                        presets.map(preset => (
+                          <SelectItem key={preset.id} value={preset.id} className="text-white hover:bg-[#2a3142] text-xs">
+                            <div className="flex items-center justify-between w-full gap-2">
+                              <span>{preset.name}</span>
+                              <span className="text-[10px] text-gray-500">{preset.construction_appreciation}/{preset.growth_appreciation}/{preset.mature_appreciation}%</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="text-xs text-gray-400 font-medium">Custom Appreciation Rates</div>
                 
                 {/* Construction */}
@@ -1141,6 +1210,41 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                     step={1}
                     className="roi-slider-lime"
                   />
+                </div>
+                
+                {/* Save as Preset */}
+                <div className="pt-2 border-t border-[#2a3142]">
+                  {!showSavePreset ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowSavePreset(true)}
+                      className="w-full h-7 text-xs border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      {t('saveAsPreset')}
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        placeholder={t('presetName')}
+                        value={presetName}
+                        onChange={(e) => setPresetName(e.target.value)}
+                        className="flex-1 h-7 text-xs bg-[#0d1117] border-[#2a3142] text-white"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSavePreset}
+                        disabled={!presetName.trim() || savingPreset}
+                        className="h-7 text-xs bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                      >
+                        {savingPreset ? '...' : t('save')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

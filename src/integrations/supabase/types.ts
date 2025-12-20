@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      appreciation_presets: {
+        Row: {
+          construction_appreciation: number
+          created_at: string | null
+          growth_appreciation: number
+          growth_period_years: number
+          id: string
+          mature_appreciation: number
+          name: string
+          rent_growth_rate: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          construction_appreciation?: number
+          created_at?: string | null
+          growth_appreciation?: number
+          growth_period_years?: number
+          id?: string
+          mature_appreciation?: number
+          name: string
+          rent_growth_rate?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          construction_appreciation?: number
+          created_at?: string | null
+          growth_appreciation?: number
+          growth_period_years?: number
+          id?: string
+          mature_appreciation?: number
+          name?: string
+          rent_growth_rate?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cashflow_quotes: {
         Row: {
           broker_id: string

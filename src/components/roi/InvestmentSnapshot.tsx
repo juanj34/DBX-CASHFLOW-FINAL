@@ -2,6 +2,7 @@ import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TrendingUp, Calendar, CreditCard, Home, Banknote } from "lucide-react";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface InvestmentSnapshotProps {
   inputs: OIInputs;
@@ -46,6 +47,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
           <div className="flex items-center gap-2">
             <Banknote className="w-4 h-4 text-gray-400" />
             <span className="text-sm text-gray-400">{t('basePropertyPrice')}</span>
+            <InfoTooltip translationKey="tooltipBasePrice" />
           </div>
           <span className="text-sm font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
         </div>
@@ -55,6 +57,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
           <div className="flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-gray-400" />
             <span className="text-sm text-gray-400">{t('paymentPlan')}</span>
+            <InfoTooltip translationKey="tooltipPaymentPlan" />
           </div>
           <span className="text-sm font-bold text-[#CCFF00] font-mono">{preHandoverPercent}/{handoverPercent}</span>
         </div>
@@ -64,6 +67,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-gray-400" />
             <span className="text-sm text-gray-400">{t('constructionPeriod')}</span>
+            <InfoTooltip translationKey="tooltipConstructionPeriod" />
           </div>
           <span className="text-sm font-bold text-white font-mono">{totalMonths} {t('months')}</span>
         </div>
@@ -95,7 +99,10 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
 
         {/* Total Entry Costs */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">{t('totalEntryCosts')}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-500">{t('totalEntryCosts')}</span>
+            <InfoTooltip translationKey="tooltipEntryCosts" />
+          </div>
           <span className="text-xs text-red-400 font-mono">-{formatCurrency(totalEntryCosts, currency, rate)}</span>
         </div>
 

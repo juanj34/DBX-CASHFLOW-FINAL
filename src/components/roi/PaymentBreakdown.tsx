@@ -2,6 +2,7 @@ import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations"
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface PaymentBreakdownProps {
   inputs: OIInputs;
@@ -93,19 +94,31 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
           
           <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">{t('eoiBookingFee')}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-sm text-gray-300">{t('eoiBookingFee')}</span>
+                <InfoTooltip translationKey="tooltipEoiFee" />
+              </div>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency, rate)}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">{t('restOfDownpayment')} ({downpaymentPercent}% - EOI)</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-sm text-gray-300">{t('restOfDownpayment')} ({downpaymentPercent}% - EOI)</span>
+                <InfoTooltip translationKey="tooltipDownpayment" />
+              </div>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency, rate)}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">{t('dldFeePercent')}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-sm text-gray-300">{t('dldFeePercent')}</span>
+                <InfoTooltip translationKey="tooltipDldFee" />
+              </div>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency, rate)}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">{t('oqoodFee')}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-sm text-gray-300">{t('oqoodFee')}</span>
+                <InfoTooltip translationKey="tooltipOqoodFee" />
+              </div>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(oqoodFee, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
@@ -196,7 +209,10 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
           
           <div className="pl-4 sm:pl-6 space-y-2">
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">{t('finalPayment')} ({handoverPercent}%)</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-sm text-gray-300">{t('finalPayment')} ({handoverPercent}%)</span>
+                <InfoTooltip translationKey="tooltipFinalPayment" />
+              </div>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
             </div>
           </div>
