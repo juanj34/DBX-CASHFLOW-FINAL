@@ -3,6 +3,13 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Wifi, WifiOff, Settings, TrendingUp, Home, FolderOpen, Globe, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
@@ -137,39 +144,96 @@ const OICalculatorContent = () => {
       </div>
 
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
-        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link to="/home"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-10 sm:w-10"><LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" /></Button></Link>
-            {profile && <AdvisorInfo profile={profile} size="lg" showSubtitle />}
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            {currency !== 'AED' && <div className={`hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}<span>1 AED = {rate.toFixed(4)} {currency}</span></div>}
-            <Button variant="outline" size="sm" onClick={() => setLoadQuoteModalOpen(true)} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm">
-              <FolderOpen className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">{t('loadQuote')}</span>
-            </Button>
-            <SaveControls saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} />
-            <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
-            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
-              <Globe className="w-3.5 h-3.5 sm:mr-1" />
-              {language === 'en' ? '🇬🇧' : '🇪🇸'}
-              <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
-            </Button>
-            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
-              <SelectTrigger className="w-[80px] sm:w-[140px] h-8 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]" title={t('currency')}>
-                <Coins className="w-3.5 h-3.5 mr-1 text-[#CCFF00]" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Link to="/account-settings"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-10 sm:w-10"><Settings className="w-4 h-4 sm:w-5 sm:h-5" /></Button></Link>
-            <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-            <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
-            <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          {/* Main header row */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Navigation + Advisor */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link to="/home">
+                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-9 sm:w-9">
+                  <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+              </Link>
+              {profile && <AdvisorInfo profile={profile} size="lg" showSubtitle />}
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Primary Actions */}
+              <Button variant="outline" size="sm" onClick={() => setLoadQuoteModalOpen(true)} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 sm:px-3">
+                <FolderOpen className="w-4 h-4" />
+                <span className="hidden md:inline ml-1.5">{t('loadQuote')}</span>
+              </Button>
+              <SaveControls saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} />
+              <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
+
+              {/* Separator */}
+              <div className="hidden sm:block w-px h-6 bg-[#2a3142] mx-1" />
+
+              {/* Secondary Controls */}
+              <div className="hidden sm:flex items-center gap-1.5">
+                {currency !== 'AED' && (
+                  <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                    {isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                    <span>1 AED = {rate.toFixed(4)} {currency}</span>
+                  </div>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 px-2" title={t('language')}>
+                  <Globe className="w-3.5 h-3.5" />
+                  <span className="ml-1">{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
+                </Button>
+                <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
+                  <SelectTrigger className="w-[90px] h-8 text-xs border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]" title={t('currency')}>
+                    <Coins className="w-3.5 h-3.5 mr-1 text-[#CCFF00]" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
+                    {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Link to="/account-settings">
+                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Mobile: Secondary controls dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="sm:hidden">
+                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-[#1a1f2e] border-[#2a3142] z-50 w-48">
+                  <DropdownMenuItem onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">
+                    <Globe className="w-4 h-4 mr-2" />
+                    {language === 'en' ? '🇬🇧 English' : '🇪🇸 Español'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-[#2a3142]" />
+                  {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                    <DropdownMenuItem key={key} onClick={() => setCurrency(key as Currency)} className={`text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] ${currency === key ? 'bg-[#2a3142]' : ''}`}>
+                      <Coins className="w-4 h-4 mr-2" />
+                      {config.flag} {key}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator className="bg-[#2a3142]" />
+                  <Link to="/account-settings">
+                    <DropdownMenuItem className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Account Settings
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Configure Button - Always visible */}
+              <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
+              <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
+              <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
+            </div>
           </div>
         </div>
       </header>
