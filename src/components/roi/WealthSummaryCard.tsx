@@ -1,6 +1,7 @@
 import { Gem, TrendingUp, Wallet, Minus, Equal } from 'lucide-react';
 import { Currency, formatCurrency } from './currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { InfoTooltip } from './InfoTooltip';
 
 interface WealthSummaryCardProps {
   propertyValueYear10: number;
@@ -47,6 +48,7 @@ export const WealthSummaryCard = ({
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-gray-400" />
             <span className="text-sm text-gray-400">{t('propertyValueYear10')}</span>
+            <InfoTooltip translationKey="tooltipPropertyValue10Y" />
           </div>
           <span className="text-sm font-bold text-white font-mono">
             {formatCurrency(propertyValueYear10, currency, rate)}
@@ -58,6 +60,7 @@ export const WealthSummaryCard = ({
           <div className="flex items-center gap-2">
             <Wallet className="w-4 h-4 text-cyan-400" />
             <span className="text-sm text-gray-400">{t('cumulativeRentLT')}</span>
+            <InfoTooltip translationKey="tooltipCumulativeRent" />
           </div>
           <span className="text-sm font-bold text-cyan-400 font-mono">
             +{formatCurrency(cumulativeRentIncome, currency, rate)}
@@ -95,6 +98,7 @@ export const WealthSummaryCard = ({
           <div className="flex items-center gap-2">
             <Equal className="w-4 h-4 text-cyan-400" />
             <span className="text-sm text-white font-medium">{t('netWealthLT')}</span>
+            <InfoTooltip translationKey="tooltipNetWealth" />
           </div>
           <div className="text-right">
             <span className="text-lg font-bold text-cyan-400 font-mono">

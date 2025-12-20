@@ -349,6 +349,28 @@ const translations: Translations = {
   next: { en: 'Next', es: 'Siguiente' },
   contactAdvisor: { en: 'Contact Advisor', es: 'Contactar Asesor' },
   showGuide: { en: 'Show Guide', es: 'Mostrar Guía' },
+  
+  // Client View - Additional Tooltips
+  tooltipGrossRent: { en: 'Annual rental income before deducting any expenses like service charges', es: 'Ingreso anual por renta antes de descontar gastos como cargos de servicio' },
+  tooltipNetRent: { en: 'Rental income after deducting service charges and maintenance costs', es: 'Ingreso por renta después de descontar cargos de servicio y mantenimiento' },
+  tooltipYearsToPayOff: { en: 'Number of years of net rental income needed to recover your total investment', es: 'Años de ingreso neto por renta necesarios para recuperar tu inversión total' },
+  tooltipPropertyValue10Y: { en: 'Projected property value after 10 years of appreciation', es: 'Valor proyectado de la propiedad después de 10 años de apreciación' },
+  tooltipCumulativeRent: { en: 'Total net rental income accumulated over the entire holding period', es: 'Ingreso neto total por renta acumulado durante todo el período de retención' },
+  tooltipNetWealth: { en: 'Property value + Total rental income - Initial investment = Your total wealth created', es: 'Valor de propiedad + Ingresos por renta - Inversión inicial = Riqueza total creada' },
+  tooltipPaymentPlan: { en: 'Split between pre-handover and handover payments (e.g., 30/70 means 30% before keys, 70% at handover)', es: 'División entre pagos pre-entrega y entrega (ej., 30/70 significa 30% antes de llaves, 70% en entrega)' },
+  tooltipFinalPayment: { en: 'The remaining balance due when you receive the keys to your property', es: 'El saldo restante a pagar cuando reciba las llaves de su propiedad' },
+  tooltipGrossYield: { en: 'Annual rent as a percentage of property price, before expenses', es: 'Renta anual como porcentaje del precio de la propiedad, antes de gastos' },
+  tooltipNetYield: { en: 'Annual rent as a percentage of property price, after deducting expenses', es: 'Renta anual como porcentaje del precio de la propiedad, después de descontar gastos' },
+  tooltipConstructionPeriod: { en: 'Time from booking to receiving the keys (handover)', es: 'Tiempo desde la reserva hasta recibir las llaves (entrega)' },
+  
+  // Appreciation Presets
+  appreciationPresets: { en: 'Appreciation Presets', es: 'Preajustes de Apreciación' },
+  loadPreset: { en: 'Load Preset', es: 'Cargar Preajuste' },
+  saveAsPreset: { en: 'Save as Preset', es: 'Guardar como Preajuste' },
+  presetName: { en: 'Preset Name', es: 'Nombre del Preajuste' },
+  deletePreset: { en: 'Delete Preset', es: 'Eliminar Preajuste' },
+  noPresets: { en: 'No saved presets', es: 'Sin preajustes guardados' },
+  selectPreset: { en: 'Select a preset...', es: 'Selecciona un preajuste...' },
 };
 
 interface LanguageContextType {

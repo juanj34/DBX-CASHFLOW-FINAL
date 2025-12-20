@@ -25,15 +25,15 @@ export const InfoTooltip = ({ translationKey, className = "" }: InfoTooltipProps
         <TooltipTrigger asChild>
           <button
             type="button"
-            className={`inline-flex items-center justify-center rounded-full p-0.5 text-gray-500 hover:text-[#CCFF00] transition-colors ${className}`}
+            className={`inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 hover:text-[#CCFF00] hover:bg-[#CCFF00]/10 transition-colors ${className}`}
             onClick={(e) => e.preventDefault()}
           >
-            <HelpCircle className="w-3.5 h-3.5" />
+            <HelpCircle className="w-4 h-4" />
           </button>
         </TooltipTrigger>
         <TooltipContent 
           side="top" 
-          className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-gray-300 text-xs leading-relaxed"
+          className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-gray-300 text-xs leading-relaxed z-50"
         >
           <p>{tooltipText}</p>
         </TooltipContent>

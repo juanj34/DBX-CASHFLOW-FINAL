@@ -3,6 +3,7 @@ import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface RentSnapshotProps {
   inputs: OIInputs;
@@ -85,6 +86,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <div className="flex items-center gap-2">
             <DollarSign className="w-3.5 h-3.5 text-gray-500" />
             <span className="text-sm text-gray-400">{t('grossAnnualRent')}</span>
+            <InfoTooltip translationKey="tooltipGrossRent" />
           </div>
           <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAnnualRent, currency, rate)}</span>
         </div>
@@ -95,6 +97,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             <div className="flex items-center gap-2">
               <Minus className="w-3.5 h-3.5 text-red-400" />
               <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+              <InfoTooltip translationKey="tooltipServiceCharge" />
             </div>
             <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
           </div>
@@ -108,6 +111,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <div className="flex items-center gap-2">
             <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
             <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
+            <InfoTooltip translationKey="tooltipNetRent" />
           </div>
           <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
         </div>
@@ -118,6 +122,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             <div className="flex items-center gap-2">
               <Percent className="w-3.5 h-3.5 text-gray-500" />
               <span className="text-sm text-gray-400">{t('grossYield')}</span>
+              <InfoTooltip translationKey="tooltipGrossYield" />
             </div>
             <span className="text-sm font-bold text-white font-mono">{rentalYieldPercent.toFixed(1)}%</span>
           </div>
@@ -125,6 +130,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             <div className="flex items-center gap-2">
               <Percent className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-sm text-gray-400">{t('netYieldAfterCharges')}</span>
+              <InfoTooltip translationKey="tooltipNetYield" />
             </div>
             <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
           </div>
@@ -234,6 +240,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <div className="flex items-center gap-2 mb-3">
             <Target className="w-4 h-4 text-[#CCFF00]" />
             <span className="text-sm font-medium text-white">{t('yearsToPayOff')}</span>
+            <InfoTooltip translationKey="tooltipYearsToPayOff" />
           </div>
           <div className="space-y-2">
             {/* Long-Term Rental */}
