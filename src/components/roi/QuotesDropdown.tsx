@@ -1,0 +1,132 @@
+import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+interface QuotesDropdownProps {
+  saving: boolean;
+  lastSaved: Date | null;
+  onSave: () => Promise<any>;
+  onSaveAs: () => Promise<any>;
+  onLoadQuote: () => void;
+}
+
+export const QuotesDropdown = ({
+  saving,
+  lastSaved,
+  onSave,
+  onSaveAs,
+  onLoadQuote,
+}: QuotesDropdownProps) => {
+  const { toast } = useToast();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const handleSave = async () => {
+    await onSave();
+    toast({ title: t('save') + '!' });
+  };
+
+  const handleSaveAs = async () => {
+    const result = await onSaveAs();
+    if (result) {
+      toast({ title: 'Saved as new quote!' });
+    }
+  };
+
+  const formatLastSaved = () => {
+    if (!lastSaved) return null;
+    const diff = Date.now() - lastSaved.getTime();
+    if (diff < 60000) return 'Saved just now';
+    if (diff < 3600000) return `Saved ${Math.floor(diff / 60000)}m ago`;
+    return `Saved ${lastSaved.toLocaleTimeString()}`;
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 sm:px-3 gap-1.5"
+        >
+          <FileText className="w-4 h-4" />
+          <span className="hidden sm:inline">{t('quotes')}</span>
+          <ChevronDown className="w-3 h-3 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent 
+        align="end" 
+        className="bg-[#1a1f2e] border-[#2a3142] z-50 w-52"
+      >
+        {/* Save */}
+        <DropdownMenuItem
+          onClick={handleSave}
+          disabled={saving}
+          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+        >
+          <Save className="w-4 h-4" />
+          {t('save')}
+        </DropdownMenuItem>
+
+        {/* Save as New */}
+        <DropdownMenuItem
+          onClick={handleSaveAs}
+          disabled={saving}
+          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+        >
+          <Copy className="w-4 h-4" />
+          Save as New
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="bg-[#2a3142]" />
+
+        {/* Load Quote */}
+        <DropdownMenuItem
+          onClick={onLoadQuote}
+          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+        >
+          <FolderOpen className="w-4 h-4" />
+          {t('loadQuote')}
+        </DropdownMenuItem>
+
+        {/* View All Quotes */}
+        <DropdownMenuItem
+          onClick={() => navigate('/quotes')}
+          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          {t('viewAllQuotes')}
+        </DropdownMenuItem>
+
+        {/* Save status indicator */}
+        {(saving || lastSaved) && (
+          <>
+            <DropdownMenuSeparator className="bg-[#2a3142]" />
+            <div className="px-2 py-1.5 text-xs text-gray-500 flex items-center gap-1.5">
+              {saving ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Saving...
+                </>
+              ) : lastSaved ? (
+                <>
+                  <Check className="w-3 h-3 text-green-500" />
+                  {formatLastSaved()}
+                </>
+              ) : null}
+            </div>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};

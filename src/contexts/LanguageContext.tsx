@@ -175,6 +175,10 @@ const translations: Translations = {
   exportPDF: { en: 'Export PDF', es: 'Exportar PDF' },
   pdfExported: { en: 'PDF generated successfully!', es: '¡PDF generado con éxito!' },
   paymentBreakdown: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
+  quotes: { en: 'Quotes', es: 'Cotizaciones' },
+  viewAllQuotes: { en: 'View All Quotes', es: 'Ver Todas las Cotizaciones' },
+  profileSettings: { en: 'Profile Settings', es: 'Configuración de Perfil' },
+  settings: { en: 'Settings', es: 'Configuración' },
   
   // New translations for Load Quote, Language/Currency, Contact
   loadQuote: { en: 'Load Quote', es: 'Cargar Cotización' },
