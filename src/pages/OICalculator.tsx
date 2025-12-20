@@ -28,6 +28,7 @@ import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVis
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
+import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
@@ -69,7 +70,8 @@ const OICalculatorContent = () => {
       const cleanInputs = { ...quote.inputs };
       delete (cleanInputs as any)._clients;
       delete (cleanInputs as any)._clientInfo;
-      setInputs(cleanInputs);
+      // Migrate inputs to ensure all fields have defaults
+      setInputs(migrateInputs(cleanInputs));
       const clients = savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [];
       setClientInfo({ 
         developer: savedClientInfo.developer || quote.developer || '', 
@@ -86,7 +88,8 @@ const OICalculatorContent = () => {
       setDataLoaded(true);
     } else if (!quoteId) {
       const draft = loadDraft();
-      if (draft?.inputs) setInputs(draft.inputs);
+      // Migrate draft inputs to ensure all fields have defaults
+      if (draft?.inputs) setInputs(migrateInputs(draft.inputs));
       if (draft?.clientInfo) setClientInfo(prev => ({ ...prev, ...draft.clientInfo }));
       setDataLoaded(true);
     }
