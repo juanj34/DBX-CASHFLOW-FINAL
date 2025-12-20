@@ -76,6 +76,15 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
       : inputs.basePrice.toString()
   );
   
+  // Sync basePriceInput when inputs.basePrice changes (e.g., when quote loads)
+  useEffect(() => {
+    setBasePriceInput(
+      currency === 'USD' 
+        ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
+        : inputs.basePrice.toString()
+    );
+  }, [inputs.basePrice, currency]);
+  
   // Auto-generator state
   const [numPayments, setNumPayments] = useState(4);
   const [paymentInterval, setPaymentInterval] = useState(6);
