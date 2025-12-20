@@ -1043,80 +1043,84 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               </div>
             </div>
 
-            {/* Zone Selector from Database */}
-            <div className="space-y-2">
-              <label className="text-xs text-gray-400">Select Project Zone</label>
-              <Select
-                value={inputs.zoneId || ''}
-                onValueChange={handleZoneSelect}
-              >
-                <SelectTrigger className="bg-[#1a1f2e] border-[#2a3142] text-white">
-                  <SelectValue placeholder={loadingZones ? "Loading zones..." : "Select a zone..."} />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-64">
-                  {zones.map(zone => (
-                    <SelectItem 
-                      key={zone.id} 
-                      value={zone.id} 
-                      className="text-white hover:bg-[#2a3142]"
-                    >
-                      <div className="flex items-center justify-between w-full gap-2">
-                        <span>{zone.name}</span>
-                        <span className="text-xs text-[#CCFF00] font-mono">
-                          {zone.maturity_level}%
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {inputs.zoneId && zones.find(z => z.id === inputs.zoneId)?.maturity_label && (
-                <p className="text-xs text-gray-500">
-                  {zones.find(z => z.id === inputs.zoneId)?.maturity_label}
-                </p>
-              )}
-            </div>
-
-            {/* Manual Zone Maturity Slider (when no zone selected) */}
-            {!inputs.zoneId && (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs text-gray-400">Or set maturity manually</label>
-                  <span className="text-sm font-bold text-[#CCFF00] font-mono">{inputs.zoneMaturityLevel ?? 60}%</span>
-                </div>
-                <Slider
-                  value={[inputs.zoneMaturityLevel ?? 60]}
-                  onValueChange={([value]) => {
-                    const profile = getZoneAppreciationProfile(value);
-                    if (inputs.useZoneDefaults ?? true) {
-                      setInputs(prev => ({
-                        ...prev,
-                        zoneMaturityLevel: value,
-                        constructionAppreciation: profile.constructionAppreciation,
-                        growthAppreciation: profile.growthAppreciation,
-                        matureAppreciation: profile.matureAppreciation,
-                        growthPeriodYears: profile.growthPeriodYears,
-                      }));
-                    } else {
-                      setInputs(prev => ({ ...prev, zoneMaturityLevel: value }));
-                    }
-                  }}
-                  min={0}
-                  max={100}
-                  step={5}
-                  className="roi-slider-lime"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Emerging (0%)</span>
-                  <span>Established (100%)</span>
-                </div>
-              </div>
-            )}
-
-            {/* Zone Appreciation Indicator - Only show when using zone defaults */}
+            {/* Zone Selector and Maturity Slider - Only show when using zone defaults */}
             {(inputs.useZoneDefaults ?? true) && (
-              <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={false} />
+              <>
+                {/* Zone Selector from Database */}
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400">Select Project Zone</label>
+                  <Select
+                    value={inputs.zoneId || ''}
+                    onValueChange={handleZoneSelect}
+                  >
+                    <SelectTrigger className="bg-[#1a1f2e] border-[#2a3142] text-white">
+                      <SelectValue placeholder={loadingZones ? "Loading zones..." : "Select a zone..."} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-64">
+                      {zones.map(zone => (
+                        <SelectItem 
+                          key={zone.id} 
+                          value={zone.id} 
+                          className="text-white hover:bg-[#2a3142]"
+                        >
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span>{zone.name}</span>
+                            <span className="text-xs text-[#CCFF00] font-mono">
+                              {zone.maturity_level}%
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {inputs.zoneId && zones.find(z => z.id === inputs.zoneId)?.maturity_label && (
+                    <p className="text-xs text-gray-500">
+                      {zones.find(z => z.id === inputs.zoneId)?.maturity_label}
+                    </p>
+                  )}
+                </div>
+
+                {/* Manual Zone Maturity Slider (when no zone selected) */}
+                {!inputs.zoneId && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs text-gray-400">Or set maturity manually</label>
+                      <span className="text-sm font-bold text-[#CCFF00] font-mono">{inputs.zoneMaturityLevel ?? 60}%</span>
+                    </div>
+                    <Slider
+                      value={[inputs.zoneMaturityLevel ?? 60]}
+                      onValueChange={([value]) => {
+                        const profile = getZoneAppreciationProfile(value);
+                        if (inputs.useZoneDefaults ?? true) {
+                          setInputs(prev => ({
+                            ...prev,
+                            zoneMaturityLevel: value,
+                            constructionAppreciation: profile.constructionAppreciation,
+                            growthAppreciation: profile.growthAppreciation,
+                            matureAppreciation: profile.matureAppreciation,
+                            growthPeriodYears: profile.growthPeriodYears,
+                          }));
+                        } else {
+                          setInputs(prev => ({ ...prev, zoneMaturityLevel: value }));
+                        }
+                      }}
+                      min={0}
+                      max={100}
+                      step={5}
+                      className="roi-slider-lime"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Emerging (0%)</span>
+                      <span>Established (100%)</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Zone Appreciation Indicator */}
+                <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={false} />
+              </>
             )}
+
 
             {/* Manual Appreciation Sliders - Only when not using zone defaults */}
             {!(inputs.useZoneDefaults ?? true) && (
