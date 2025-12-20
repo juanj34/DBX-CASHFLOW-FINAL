@@ -134,6 +134,9 @@ export const useCashflowQuote = (quoteId?: string) => {
         unitType: clientInfo.unitType,
         unitSizeSqf: clientInfo.unitSizeSqf,
         unitSizeM2: clientInfo.unitSizeM2,
+        brokerName: clientInfo.brokerName,
+        splitEnabled: clientInfo.splitEnabled,
+        clientShares: clientInfo.clientShares,
       }
     };
 

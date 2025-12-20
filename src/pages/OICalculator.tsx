@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Wifi, WifiOff, Settings, TrendingUp, Home } from "lucide-react";
+import { LayoutDashboard, Wifi, WifiOff, Settings, TrendingUp, Home, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OIInputModal } from "@/components/roi/OIInputModal";
@@ -14,10 +14,10 @@ import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo"
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { SaveControls } from "@/components/roi/SaveControls";
 import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
-import { SectionHeader } from "@/components/roi/SectionHeader";
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
+import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -61,7 +61,18 @@ const OICalculatorContent = () => {
       delete (cleanInputs as any)._clientInfo;
       setInputs(cleanInputs);
       const clients = savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [];
-      setClientInfo({ developer: savedClientInfo.developer || quote.developer || '', projectName: savedClientInfo.projectName || quote.project_name || '', clients, brokerName: savedClientInfo.brokerName || '', unit: savedClientInfo.unit || quote.unit || '', unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0, unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0, unitType: savedClientInfo.unitType || quote.unit_type || '' });
+      setClientInfo({ 
+        developer: savedClientInfo.developer || quote.developer || '', 
+        projectName: savedClientInfo.projectName || quote.project_name || '', 
+        clients, 
+        brokerName: savedClientInfo.brokerName || '', 
+        unit: savedClientInfo.unit || quote.unit || '', 
+        unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0, 
+        unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0, 
+        unitType: savedClientInfo.unitType || quote.unit_type || '',
+        splitEnabled: savedClientInfo.splitEnabled || false,
+        clientShares: savedClientInfo.clientShares || [],
+      });
       setDataLoaded(true);
     } else if (!quoteId) {
       const draft = loadDraft();
@@ -119,63 +130,70 @@ const OICalculatorContent = () => {
     <div className="min-h-screen bg-[#0f172a]">
       <div className="hidden print-only print:block bg-[#0f172a] text-white p-6 mb-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold text-[#CCFF00]">CASHFLOW STATEMENT</h1><p className="text-gray-400 text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+          <div><h1 className="text-2xl font-bold text-[#CCFF00]">CASHFLOW GENERATOR</h1><p className="text-gray-400 text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
           {profile && <div className="text-right"><p className="text-sm text-gray-400">{t('advisor')}</p><p className="font-medium">{profile.full_name || 'Advisor'}</p></div>}
         </div>
       </div>
 
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/home"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]"><LayoutDashboard className="w-5 h-5" /></Button></Link>
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link to="/home"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-10 sm:w-10"><LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" /></Button></Link>
             {profile && <AdvisorInfo profile={profile} size="lg" showSubtitle />}
           </div>
-          <div className="flex items-center gap-3">
-            {currency !== 'AED' && <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}<span>1 AED = {rate.toFixed(4)} {currency}</span></div>}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            {currency !== 'AED' && <div className={`hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}<span>1 AED = {rate.toFixed(4)} {currency}</span></div>}
             <SaveControls quoteId={quote?.id} saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} onShare={handleShare} />
             <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
-            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white px-3">{language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}</Button>
-            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}><SelectTrigger className="w-[130px] border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]"><SelectValue /></SelectTrigger><SelectContent className="bg-[#1a1f2e] border-[#2a3142]">{Object.entries(CURRENCY_CONFIG).map(([key, config]) => <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>)}</SelectContent></Select>
-            <Link to="/account-settings"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]"><Settings className="w-5 h-5" /></Button></Link>
+            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm">{language === 'en' ? '🇬🇧' : '🇪🇸'}<span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span></Button>
+            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}><SelectTrigger className="w-[70px] sm:w-[130px] h-8 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]"><SelectValue /></SelectTrigger><SelectContent className="bg-[#1a1f2e] border-[#2a3142]">{Object.entries(CURRENCY_CONFIG).map(([key, config]) => <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>)}</SelectContent></Select>
+            <Link to="/account-settings"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-10 sm:w-10"><Settings className="w-4 h-4 sm:w-5 sm:h-5" /></Button></Link>
             <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
             <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-6">
+      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-          <div className="xl:col-span-2"><PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} clientInfo={clientInfo} /></div>
-          <div className="xl:col-span-1 flex flex-col">
-            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+        {/* Investment Snapshot - First */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+          <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} clientInfo={clientInfo} />
+        </div>
+
+        {/* Rental Income Analysis - Collapsible */}
+        <CollapsibleSection
+          title={t('rentalIncomeAnalysis') || "Rental Income Analysis"}
+          subtitle={t('tenYearProjection') || "10-year hold simulation"}
+          icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
+          defaultOpen={true}
+        >
+          <div className="space-y-4 sm:space-y-6">
             <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-          </div>
-        </div>
-
-        {/* Exit Strategy Section */}
-        <div className="mb-8">
-          <SectionHeader icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />} title={t('exitStrategyAnalysis')} subtitle={t('whenToSell')} />
-          <div className="space-y-6">
-            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-            <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} />
-          </div>
-        </div>
-
-        {/* Long-Term Hold Section */}
-        <div className="mb-8">
-          <SectionHeader icon={<Home className="w-5 h-5 text-[#CCFF00]" />} title={t('longTermHoldAnalysis')} subtitle={t('tenYearProjection')} />
-          <div className="space-y-6">
             <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
             <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
             <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
           </div>
-        </div>
+        </CollapsibleSection>
 
-        <div className="mt-8 flex gap-4 print:hidden">
-          <Link to="/my-quotes"><Button variant="outline" className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20">{t('myQuotes')}</Button></Link>
-          <Link to="/roi-calculator"><Button variant="outline" className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white">{t('fullROICalculator')}</Button></Link>
+        {/* Exit Scenarios - Collapsible */}
+        <CollapsibleSection
+          title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
+          subtitle={t('whenToSell') || "When to sell for maximum returns"}
+          icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
+          defaultOpen={false}
+        >
+          <div className="space-y-4 sm:space-y-6">
+            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+            <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} />
+          </div>
+        </CollapsibleSection>
+
+        <div className="mt-6 sm:mt-8 flex flex-wrap gap-2 sm:gap-4 print:hidden">
+          <Link to="/my-quotes"><Button variant="outline" className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20 text-xs sm:text-sm">{t('myQuotes')}</Button></Link>
+          <Link to="/roi-calculator"><Button variant="outline" className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white text-xs sm:text-sm">{t('fullROICalculator')}</Button></Link>
         </div>
       </main>
     </div>

@@ -313,18 +313,6 @@ export const ExitScenariosCards = ({
         ))}
       </div>
 
-      {/* Summary Row */}
-      <div className="px-4 pb-4">
-        <div className="p-3 bg-[#0d1117] rounded-lg">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400">💡 Best ROE in this comparison:</span>
-            <span className="text-[#CCFF00] font-bold">
-              Exit #{scenarios.indexOf(scenarios.reduce((best, s) => s.trueROE > best.trueROE ? s : best)) + 1} 
-              ({Math.max(...scenarios.map(s => s.trueROE)).toFixed(1)}%)
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
