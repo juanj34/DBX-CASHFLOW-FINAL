@@ -6,6 +6,9 @@ export interface Profile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  business_email: string | null;
+  whatsapp_number: string | null;
+  whatsapp_country_code: string | null;
 }
 
 export const useProfile = () => {
@@ -23,7 +26,7 @@ export const useProfile = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, avatar_url')
+        .select('id, email, full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code')
         .eq('id', user.id)
         .single();
 
@@ -42,7 +45,7 @@ export const useProfile = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const updateProfile = async (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url'>>) => {
+  const updateProfile = async (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'business_email' | 'whatsapp_number' | 'whatsapp_country_code'>>) => {
     if (!profile) return { error: new Error('No profile') };
 
     const { error } = await supabase

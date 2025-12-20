@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Upload, User, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,15 +19,21 @@ const AccountSettings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [fullName, setFullName] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappCountryCode, setWhatsappCountryCode] = useState('+971');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Initialize form when profile loads
-  useState(() => {
-    if (profile?.full_name) {
-      setFullName(profile.full_name);
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || '');
+      setBusinessEmail(profile.business_email || '');
+      setWhatsappNumber(profile.whatsapp_number || '');
+      setWhatsappCountryCode(profile.whatsapp_country_code || '+971');
     }
-  });
+  }, [profile]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,7 +64,12 @@ const AccountSettings = () => {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await updateProfile({ full_name: fullName });
+    const { error } = await updateProfile({ 
+      full_name: fullName,
+      business_email: businessEmail || null,
+      whatsapp_number: whatsappNumber || null,
+      whatsapp_country_code: whatsappCountryCode,
+    });
     if (error) {
       toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
     } else {
@@ -162,6 +173,37 @@ const AccountSettings = () => {
                 placeholder="Enter your full name"
                 className="bg-[#0d1117] border-[#2a3142] text-white"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Business Email</label>
+              <Input
+                value={businessEmail}
+                onChange={(e) => setBusinessEmail(e.target.value)}
+                placeholder="your@business.com"
+                type="email"
+                className="bg-[#0d1117] border-[#2a3142] text-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">Clients can contact you via this email</p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">WhatsApp Number</label>
+              <div className="flex gap-2">
+                <Input
+                  value={whatsappCountryCode}
+                  onChange={(e) => setWhatsappCountryCode(e.target.value)}
+                  placeholder="+971"
+                  className="bg-[#0d1117] border-[#2a3142] text-white w-24"
+                />
+                <Input
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="501234567"
+                  className="bg-[#0d1117] border-[#2a3142] text-white flex-1"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Clients can message you on WhatsApp</p>
             </div>
 
             <Button

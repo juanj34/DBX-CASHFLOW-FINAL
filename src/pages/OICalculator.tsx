@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Wifi, WifiOff, Settings, TrendingUp, Home, DollarSign } from "lucide-react";
+import { LayoutDashboard, Wifi, WifiOff, Settings, TrendingUp, Home, FolderOpen, Globe, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OIInputModal } from "@/components/roi/OIInputModal";
@@ -19,6 +19,7 @@ import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
+import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -41,6 +42,7 @@ const OICalculatorContent = () => {
   const { language, setLanguage, t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [loadQuoteModalOpen, setLoadQuoteModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
@@ -144,13 +146,32 @@ const OICalculatorContent = () => {
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3">
             {currency !== 'AED' && <div className={`hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{isLive ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}<span>1 AED = {rate.toFixed(4)} {currency}</span></div>}
+            <Button variant="outline" size="sm" onClick={() => setLoadQuoteModalOpen(true)} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm">
+              <FolderOpen className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">{t('loadQuote')}</span>
+            </Button>
             <SaveControls quoteId={quote?.id} saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} onShare={handleShare} />
             <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
-            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm">{language === 'en' ? '🇬🇧' : '🇪🇸'}<span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span></Button>
-            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}><SelectTrigger className="w-[70px] sm:w-[130px] h-8 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]"><SelectValue /></SelectTrigger><SelectContent className="bg-[#1a1f2e] border-[#2a3142]">{Object.entries(CURRENCY_CONFIG).map(([key, config]) => <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>)}</SelectContent></Select>
+            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
+              <Globe className="w-3.5 h-3.5 sm:mr-1" />
+              {language === 'en' ? '🇬🇧' : '🇪🇸'}
+              <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
+            </Button>
+            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
+              <SelectTrigger className="w-[80px] sm:w-[140px] h-8 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]" title={t('currency')}>
+                <Coins className="w-3.5 h-3.5 mr-1 text-[#CCFF00]" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Link to="/account-settings"><Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-10 sm:w-10"><Settings className="w-4 h-4 sm:w-5 sm:h-5" /></Button></Link>
             <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
             <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
+            <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
           </div>
         </div>
       </header>

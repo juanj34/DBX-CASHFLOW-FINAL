@@ -49,7 +49,6 @@ const translations: Translations = {
   downpayment: { en: 'Downpayment', es: 'Enganche' },
   additional: { en: 'additional', es: 'adicionales' },
   constructionPeriod: { en: 'Construction Period', es: 'Período de Construcción' },
-  months: { en: 'months', es: 'meses' },
   appreciationRate: { en: 'Appreciation Rate (CAGR)', es: 'Tasa de Apreciación (CAGR)' },
   rentalYield: { en: 'Rental Yield', es: 'Rendimiento de Renta' },
   minimumExitThreshold: { en: 'Min Exit Threshold', es: 'Umbral Mín de Salida' },
@@ -171,6 +170,27 @@ const translations: Translations = {
   exportPDF: { en: 'Export PDF', es: 'Exportar PDF' },
   pdfExported: { en: 'PDF generated successfully!', es: '¡PDF generado con éxito!' },
   paymentBreakdown: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
+  
+  // New translations for Load Quote, Language/Currency, Contact
+  loadQuote: { en: 'Load Quote', es: 'Cargar Cotización' },
+  selectQuote: { en: 'Select a quote to load', es: 'Selecciona una cotización para cargar' },
+  noQuotesFound: { en: 'No quotes found', es: 'No se encontraron cotizaciones' },
+  draft: { en: 'Draft', es: 'Borrador' },
+  currency: { en: 'Currency', es: 'Moneda' },
+  language: { en: 'Language', es: 'Idioma' },
+  emailAdvisor: { en: 'Email Advisor', es: 'Enviar Correo' },
+  messageOnWhatsApp: { en: 'Message on WhatsApp', es: 'Mensaje por WhatsApp' },
+  businessEmail: { en: 'Business Email', es: 'Correo Empresarial' },
+  whatsappNumber: { en: 'WhatsApp Number', es: 'Número de WhatsApp' },
+  
+  // Account Settings
+  fullName: { en: 'Full Name', es: 'Nombre Completo' },
+  saveChanges: { en: 'Save Changes', es: 'Guardar Cambios' },
+  signOut: { en: 'Sign Out', es: 'Cerrar Sesión' },
+  
+  // Pro-rata month indicator
+  months: { en: 'months', es: 'meses' },
+  mo: { en: 'mo', es: 'mes' },
 };
 
 interface LanguageContextType {

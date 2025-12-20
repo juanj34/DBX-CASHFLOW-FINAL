@@ -266,27 +266,36 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          business_email: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
           updated_at: string
+          whatsapp_country_code: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           avatar_url?: string | null
+          business_email?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
           updated_at?: string
+          whatsapp_country_code?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           avatar_url?: string | null
+          business_email?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
           updated_at?: string
+          whatsapp_country_code?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
