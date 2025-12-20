@@ -142,6 +142,7 @@ const translations: Translations = {
   grossYield: { en: 'Gross Yield', es: 'Rendimiento Bruto' },
   netYieldAfterCharges: { en: 'Net Yield (after charges)', es: 'Rendimiento Neto (después de cargos)' },
   basedOnPropertyValueAtHandover: { en: 'Based on property value at handover', es: 'Basado en valor de propiedad en entrega' },
+  basedOnPurchasePrice: { en: 'Based on purchase price', es: 'Basado en precio de compra' },
   
   // Section Headers
   exitStrategyAnalysis: { en: 'Exit Strategy Analysis', es: 'Análisis de Estrategia de Salida' },

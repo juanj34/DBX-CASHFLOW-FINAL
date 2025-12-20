@@ -22,14 +22,13 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
     shortTermRental
   } = inputs;
 
-  // Use property value at handover (1 month after) for rent calculation
-  const propertyValueAtHandover = holdAnalysis?.propertyValueAtHandover || inputs.basePrice;
-  
-  // Long-Term calculations based on property value at handover
-  const grossAnnualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
+  // Rental yields are calculated on PURCHASE PRICE (rent compression principle)
+  // When property appreciates, rental yield % on appreciated value compresses
+  const { basePrice } = inputs;
+  const grossAnnualRent = basePrice * (rentalYieldPercent / 100);
   const annualServiceCharges = unitSizeSqf * serviceChargePerSqft;
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
-  const netYieldPercent = propertyValueAtHandover > 0 ? (netAnnualRent / propertyValueAtHandover) * 100 : 0;
+  const netYieldPercent = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
 
   // Airbnb calculations (if enabled)
   const adrValue = shortTermRental?.averageDailyRate || 800;
@@ -60,7 +59,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <Home className="w-5 h-5 text-[#CCFF00]" />
           <div>
             <h3 className="font-semibold text-white">{t('rentSnapshot')}</h3>
-            <p className="text-[10px] text-gray-500">{t('basedOnPropertyValueAtHandover')}</p>
+            <p className="text-[10px] text-gray-500">{t('basedOnPurchasePrice')}</p>
           </div>
         </div>
         <Badge 
