@@ -12,11 +12,11 @@ interface OIGrowthCurveProps {
 }
 
 export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, rate }: OIGrowthCurveProps) => {
-  const { scenarios, basePrice, totalMonths } = calculations;
+  const { basePrice, totalMonths, totalEntryCosts } = calculations;
   
-  // Get the handover scenario for max values
-  const maxScenario = scenarios[scenarios.length - 1];
-  const maxValue = maxScenario.exitPrice * 1.1; // Add 10% padding
+  // Calculate handover price using the SAME function as exit scenario cards
+  const handoverPrice = calculatePhasedExitPrice(totalMonths, inputs, totalMonths, basePrice);
+  const maxValue = handoverPrice * 1.1; // Add 10% padding
 
   // SVG dimensions
   const width = 700;
@@ -29,12 +29,23 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
   const xScale = (months: number) => padding.left + (months / totalMonths) * chartWidth;
   const yScale = (value: number) => padding.top + chartHeight - ((value - basePrice * 0.9) / (maxValue - basePrice * 0.9)) * chartHeight;
 
-  // Generate curve path
+  // Generate curve path using calculatePhasedExitPrice for consistency with exit scenario cards
   const generateCurvePath = () => {
-    const points: { x: number; y: number }[] = [
-      { x: 0, y: basePrice }, // Starting point
-      ...scenarios.map(s => ({ x: s.exitMonths, y: s.exitPrice }))
-    ];
+    const points: { x: number; y: number }[] = [];
+    
+    // Start at base price
+    points.push({ x: 0, y: basePrice });
+    
+    // Generate points every 3 months for smooth curve using SAME calculation as exit cards
+    for (let month = 3; month <= totalMonths; month += 3) {
+      const price = calculatePhasedExitPrice(month, inputs, totalMonths, basePrice);
+      points.push({ x: month, y: price });
+    }
+    
+    // Ensure last point is exactly at handover
+    if (points[points.length - 1].x !== totalMonths) {
+      points.push({ x: totalMonths, y: handoverPrice });
+    }
     
     // Create smooth bezier curve
     let path = `M ${xScale(points[0].x)} ${yScale(points[0].y)}`;
@@ -55,13 +66,9 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
   // X-axis time labels
   const timeLabels = [0, Math.round(totalMonths * 0.25), Math.round(totalMonths * 0.5), Math.round(totalMonths * 0.75), totalMonths];
 
-  // Find scenarios to display: Exit markers + Handover
-  // Calculate on-the-fly if exact match not found to ensure ROE consistency with ExitScenariosCards
+  // Calculate exit scenario data using the SAME function as exit scenario cards
   const getExitScenarioData = (exitMonth: number) => {
-    const exactMatch = scenarios.find(s => s.exitMonths === exitMonth);
-    if (exactMatch) return exactMatch;
-    
-    // Calculate on-the-fly using same logic as ExitScenariosCards
+    // Always calculate on-the-fly using same logic as ExitScenariosCards
     const exitPrice = calculatePhasedExitPrice(exitMonth, inputs, totalMonths, basePrice);
     const equityDeployed = calculateEquityAtExit(exitMonth, inputs, totalMonths, basePrice);
     const profit = exitPrice - basePrice;
@@ -115,8 +122,14 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
     yOffset: yOffsets[index] || 0
   }));
 
-  // Add handover marker
-  const handoverScenario = scenarios.find(s => s.exitMonths === totalMonths) || scenarios[scenarios.length - 1];
+  // Add handover marker - use calculatePhasedExitPrice for consistency
+  const handoverScenario = {
+    exitMonths: totalMonths,
+    exitPrice: handoverPrice,
+    equityDeployed: calculateEquityAtExit(totalMonths, inputs, totalMonths, basePrice),
+    profit: handoverPrice - basePrice,
+    trueROE: ((handoverPrice - basePrice - totalEntryCosts) / (calculateEquityAtExit(totalMonths, inputs, totalMonths, basePrice) + totalEntryCosts)) * 100
+  };
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 relative overflow-hidden">
