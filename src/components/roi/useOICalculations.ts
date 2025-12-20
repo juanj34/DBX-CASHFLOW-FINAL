@@ -422,11 +422,12 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
   const showAirbnbComparison = inputs.showAirbnbComparison || false;
   
-  // Calculate property value at handover for initial rent calculation
+  // Calculate property value at handover (for reference only)
   const propertyValueAtHandover = propertyValues[handoverYearIndex] || basePrice;
   
-  // Initial rent based on handover value (not property value each year)
-  const initialAnnualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
+  // Initial rent based on PURCHASE PRICE (basePrice), not appreciated value
+  // This reflects real-world rent compression - yields are quoted on purchase price
+  const initialAnnualRent = basePrice * (rentalYieldPercent / 100);
   
   // Annual service charges
   const annualServiceCharges = unitSizeSqf * serviceChargePerSqft;
@@ -491,7 +492,7 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       serviceCharges = annualServiceCharges * proRataFactor;
       managementFee = 0;
       netIncome = annualRent - serviceCharges;
-      effectiveYield = (currentRent / propertyValue) * 100; // Full year yield
+      effectiveYield = (currentRent / basePrice) * 100; // Yield on purchase price (realistic)
       cumulativeNetIncome += netIncome;
       
       // Airbnb rental calculation (when comparison enabled)
