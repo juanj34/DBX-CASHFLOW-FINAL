@@ -318,12 +318,4 @@ const CashflowViewContent = () => {
   );
 };
 
-const CashflowView = () => {
-  return (
-    <LanguageProvider>
-      <CashflowViewContent />
-    </LanguageProvider>
-  );
-};
-
-export default CashflowView;
+export default CashflowViewContent;
