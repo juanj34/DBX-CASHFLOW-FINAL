@@ -113,13 +113,22 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
         </div>
 
-        {/* Net Yield */}
-        <div className="flex items-center justify-between bg-[#0d1117] rounded-lg p-2 mt-2">
-          <div className="flex items-center gap-2">
-            <Percent className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-sm text-gray-400">Net Yield (after charges)</span>
+        {/* Yield Summary */}
+        <div className="bg-[#0d1117] rounded-lg p-3 mt-2 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Percent className="w-3.5 h-3.5 text-gray-500" />
+              <span className="text-sm text-gray-400">Gross Yield</span>
+            </div>
+            <span className="text-sm font-bold text-white font-mono">{rentalYieldPercent.toFixed(1)}%</span>
           </div>
-          <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Percent className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-sm text-gray-400">Net Yield (after charges)</span>
+            </div>
+            <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
+          </div>
         </div>
       </div>
 
