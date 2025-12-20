@@ -139,6 +139,12 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
   const totalPayment = preHandoverTotal + handoverPercent;
   const isValidTotal = Math.abs(totalPayment - 100) < 0.01;
 
+  // Date validation: Handover must be after Booking
+  const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+  const handoverQuarterMonth = (inputs.handoverQuarter - 1) * 3 + 1; // Q1=Jan, Q2=Apr, Q3=Jul, Q4=Oct
+  const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
+  const isHandoverBeforeBooking = handoverDate <= bookingDate;
+
   const handleNumberChange = (field: keyof OIInputs, value: string, min: number, max: number) => {
     const num = parseFloat(value);
     if (!isNaN(num)) {
@@ -256,8 +262,49 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-xl font-bold text-white">OI Investment Parameters</DialogTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setInputs({
+                basePrice: 800000,
+                rentalYieldPercent: 8.5,
+                appreciationRate: 10,
+                bookingMonth: 1,
+                bookingYear: 2025,
+                handoverQuarter: 4,
+                handoverYear: 2027,
+                downpaymentPercent: 20,
+                preHandoverPercent: 20,
+                additionalPayments: [],
+                eoiFee: 50000,
+                oqoodFee: 5000,
+                minimumExitThreshold: 30,
+                showAirbnbComparison: false,
+                shortTermRental: {
+                  averageDailyRate: 800,
+                  occupancyPercent: 70,
+                  operatingExpensePercent: 25,
+                  managementFeePercent: 15,
+                },
+                zoneMaturityLevel: 60,
+                useZoneDefaults: true,
+                constructionAppreciation: 12,
+                growthAppreciation: 8,
+                matureAppreciation: 4,
+                growthPeriodYears: 5,
+                rentGrowthRate: 4,
+                serviceChargePerSqft: 18,
+                adrGrowthRate: 3,
+              });
+              setBasePriceInput(currency === 'USD' ? Math.round(800000 / DEFAULT_RATE).toString() : '800000');
+            }}
+            className="text-xs text-gray-400 hover:text-white hover:bg-[#2a3142]"
+          >
+            Reset to Defaults
+          </Button>
         </DialogHeader>
         
         <div className="space-y-5 py-4">
@@ -368,6 +415,13 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 </SelectContent>
               </Select>
             </div>
+            {/* Date validation warning */}
+            {isHandoverBeforeBooking && (
+              <div className="flex items-center gap-2 text-amber-400 text-xs bg-amber-500/10 px-3 py-2 rounded-lg">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>Handover date must be after booking date</span>
+              </div>
+            )}
           </div>
 
           {/* Entry Costs Section - Simplified */}

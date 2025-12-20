@@ -104,12 +104,16 @@ const OICalculatorContent = () => {
   const [exitScenarios, setExitScenarios] = useState<number[]>(() => calculateAutoExitScenarios(calculations.totalMonths));
   const [exitScenariosInitialized, setExitScenariosInitialized] = useState(false);
   
-  // Initialize exit scenarios from saved quote (once)
+  // Initialize exit scenarios from saved quote (once) and clamp to bounds
   useEffect(() => {
     if (!dataLoaded || exitScenariosInitialized) return;
     const savedExitScenarios = (quote?.inputs as any)?._exitScenarios;
     if (savedExitScenarios && Array.isArray(savedExitScenarios) && savedExitScenarios.length > 0) {
-      setExitScenarios(savedExitScenarios);
+      // Clamp saved exit scenarios to valid bounds (1 to totalMonths)
+      const clampedScenarios = savedExitScenarios
+        .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))
+        .filter((m: number, i: number, arr: number[]) => arr.indexOf(m) === i); // Remove duplicates
+      setExitScenarios(clampedScenarios.length > 0 ? clampedScenarios : calculateAutoExitScenarios(calculations.totalMonths));
     } else {
       setExitScenarios(calculateAutoExitScenarios(calculations.totalMonths));
     }
