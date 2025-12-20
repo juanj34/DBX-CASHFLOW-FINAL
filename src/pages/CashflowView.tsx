@@ -15,6 +15,8 @@ import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo'
 import { CumulativeIncomeChart } from '@/components/roi/CumulativeIncomeChart';
 import { WealthSummaryCard } from '@/components/roi/WealthSummaryCard';
 import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
+import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
+import { CashflowErrorBoundary } from '@/components/roi/ErrorBoundary';
 import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
@@ -147,17 +149,16 @@ const CashflowViewContent = () => {
   }, [inputs, calculations?.totalMonths]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" />
-      </div>
-    );
+    return <CashflowSkeleton />;
   }
 
   if (error || !inputs || !clientInfo || !calculations) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="p-4 bg-red-500/20 rounded-full inline-flex mb-4">
+            <Rocket className="w-8 h-8 text-red-400" />
+          </div>
           <h1 className="text-2xl text-white mb-2">{t('quoteNotFound')}</h1>
           <p className="text-gray-400">{error || t('quoteNotFoundDesc')}</p>
         </div>
@@ -182,6 +183,7 @@ const CashflowViewContent = () => {
   };
 
   return (
+    <CashflowErrorBoundary>
     <div className="min-h-screen bg-[#0f172a]">
       {/* Header */}
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
@@ -324,6 +326,7 @@ const CashflowViewContent = () => {
         </footer>
       </main>
     </div>
+    </CashflowErrorBoundary>
   );
 };
 

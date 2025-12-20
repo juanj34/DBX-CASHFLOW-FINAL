@@ -27,6 +27,8 @@ import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
+import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
+import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
@@ -151,8 +153,11 @@ const OICalculatorContent = () => {
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
 
   if (quoteLoading && quoteId) {
-    return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" /></div>;
+    return <CashflowSkeleton />;
   }
+
+  return (
+    <CashflowErrorBoundary>
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
@@ -308,6 +313,7 @@ const OICalculatorContent = () => {
         </div>
       </main>
     </div>
+    </CashflowErrorBoundary>
   );
 };
 
