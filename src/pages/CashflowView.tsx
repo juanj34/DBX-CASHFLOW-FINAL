@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OIGrowthCurve } from '@/components/roi/OIGrowthCurve';
 import { OIYearlyProjectionTable } from '@/components/roi/OIYearlyProjectionTable';
 import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
+import { PaymentSplitBreakdown } from '@/components/roi/PaymentSplitBreakdown';
 import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
@@ -202,21 +203,28 @@ const CashflowViewContent = () => {
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
-        {/* Investment Snapshot & Payment Breakdown - First */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-          {visibility.investmentSnapshot && (
-            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-          )}
+        {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           {visibility.paymentBreakdown && (
-            <PaymentBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+            <div className="lg:col-span-2">
+              <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+            </div>
           )}
+          <div className="lg:col-span-1 space-y-4">
+            {visibility.investmentSnapshot && (
+              <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+            )}
+            {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
+              <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+            )}
+          </div>
         </div>
 
-        {/* Rental Income Analysis - Collapsible */}
+        {/* Hold Strategy Analysis - Collapsible */}
         {visibility.longTermHold && (
           <CollapsibleSection
-            title={t('rentalIncomeAnalysis') || "Rental Income Analysis"}
-            subtitle={t('tenYearProjection') || "10-year hold simulation"}
+            title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
+            subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
             icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
             defaultOpen={true}
           >
@@ -240,8 +248,8 @@ const CashflowViewContent = () => {
             defaultOpen={false}
           >
             <div className="space-y-4 sm:space-y-6">
-              <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
               <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} />
+              <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
             </div>
           </CollapsibleSection>
         )}

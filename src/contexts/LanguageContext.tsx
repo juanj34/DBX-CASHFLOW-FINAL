@@ -143,6 +143,8 @@ const translations: Translations = {
   // Section Headers
   exitStrategyAnalysis: { en: 'Exit Strategy Analysis', es: 'Análisis de Estrategia de Salida' },
   whenToSell: { en: 'When to sell for maximum returns', es: 'Cuándo vender para máximos retornos' },
+  holdStrategyAnalysis: { en: 'Hold Strategy Analysis', es: 'Análisis de Estrategia de Retención' },
+  holdStrategySubtitle: { en: 'Long-term rental projections and wealth accumulation', es: 'Proyecciones de renta a largo plazo y acumulación de riqueza' },
   longTermHoldAnalysis: { en: 'Long-Term Hold Analysis', es: 'Análisis de Retención a Largo Plazo' },
   tenYearProjection: { en: '10-year rental income projection', es: 'Proyección de ingresos por renta a 10 años' },
   

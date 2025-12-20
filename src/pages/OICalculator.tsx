@@ -7,6 +7,7 @@ import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
+import { PaymentSplitBreakdown } from "@/components/roi/PaymentSplitBreakdown";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
 import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
@@ -157,16 +158,23 @@ const OICalculatorContent = () => {
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
 
-        {/* Investment Snapshot - First */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-          <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-          <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} clientInfo={clientInfo} />
+        {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+          </div>
+          <div className="lg:col-span-1 space-y-4">
+            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+            {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
+              <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+            )}
+          </div>
         </div>
 
-        {/* Rental Income Analysis - Collapsible */}
+        {/* Hold Strategy Analysis - Collapsible */}
         <CollapsibleSection
-          title={t('rentalIncomeAnalysis') || "Rental Income Analysis"}
-          subtitle={t('tenYearProjection') || "10-year hold simulation"}
+          title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
+          subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
           icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
           defaultOpen={true}
         >
@@ -186,8 +194,8 @@ const OICalculatorContent = () => {
           defaultOpen={false}
         >
           <div className="space-y-4 sm:space-y-6">
-            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
             <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} />
+            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
           </div>
         </CollapsibleSection>
 
