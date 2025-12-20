@@ -262,6 +262,19 @@ const translations: Translations = {
   
   // Disclaimer
   disclaimerText: { en: 'This cashflow statement is for informational purposes only and does not constitute financial advice.', es: 'Este estado de flujo de efectivo es solo para fines informativos y no constituye asesoramiento financiero.' },
+  
+  // Payment Split By Person
+  paymentSplitByPerson: { en: 'PAYMENT SPLIT BY PERSON', es: 'DIVISIÓN DE PAGOS POR PERSONA' },
+  individualContributionBreakdown: { en: 'Individual contribution breakdown', es: 'Desglose de contribución individual' },
+  shareLabel: { en: 'share', es: 'participación' },
+  totalContribution: { en: 'Total contribution', es: 'Contribución total' },
+  todayTotal: { en: 'Today Total', es: 'Total Hoy' },
+  installmentsTotal: { en: 'Installments Total', es: 'Total Cuotas' },
+  dldFee: { en: 'DLD Fee', es: 'Tarifa DLD' },
+  atBookingLabel: { en: 'At Booking', es: 'En Reserva' },
+  atHandoverUpper: { en: 'AT HANDOVER', es: 'EN ENTREGA' },
+  duringConstructionLabel: { en: 'During Construction', es: 'Durante Construcción' },
+  totalContributionUpper: { en: 'TOTAL CONTRIBUTION', es: 'CONTRIBUCIÓN TOTAL' },
 };
 
 interface LanguageContextType {
