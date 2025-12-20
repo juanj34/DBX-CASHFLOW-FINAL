@@ -1,7 +1,7 @@
 import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Home, Building, Percent, DollarSign, Calendar, Target } from "lucide-react";
+import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface RentSnapshotProps {
@@ -15,7 +15,6 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
   const { t } = useLanguage();
   
   const { 
-    basePrice, 
     rentalYieldPercent, 
     serviceChargePerSqft = 18,
     unitSizeSqf = 0,
@@ -23,10 +22,14 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
     shortTermRental
   } = inputs;
 
-  // Long-Term calculations
-  const estimatedAnnualRent = basePrice * (rentalYieldPercent / 100);
+  // Use property value at handover (1 month after) for rent calculation
+  const propertyValueAtHandover = holdAnalysis?.propertyValueAtHandover || inputs.basePrice;
+  
+  // Long-Term calculations based on property value at handover
+  const grossAnnualRent = propertyValueAtHandover * (rentalYieldPercent / 100);
   const annualServiceCharges = unitSizeSqf * serviceChargePerSqft;
-  const netAnnualRent = estimatedAnnualRent - annualServiceCharges;
+  const netAnnualRent = grossAnnualRent - annualServiceCharges;
+  const netYieldPercent = propertyValueAtHandover > 0 ? (netAnnualRent / propertyValueAtHandover) * 100 : 0;
 
   // Airbnb calculations (if enabled)
   const adrValue = shortTermRental?.averageDailyRate || 800;
@@ -36,7 +39,8 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
 
   const grossAirbnbAnnual = adrValue * 365 * (occupancyPercent / 100);
   const totalExpensePercent = operatingExpensePercent + managementFeePercent;
-  const netAirbnbAnnual = grossAirbnbAnnual * (1 - totalExpensePercent / 100) - annualServiceCharges;
+  const airbnbOperatingExpenses = grossAirbnbAnnual * (totalExpensePercent / 100);
+  const netAirbnbAnnual = grossAirbnbAnnual - airbnbOperatingExpenses - annualServiceCharges;
 
   // Comparison
   const airbnbDifferencePercent = netAnnualRent > 0 
@@ -54,7 +58,10 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
       <div className="p-4 border-b border-[#2a3142] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Home className="w-5 h-5 text-[#CCFF00]" />
-          <h3 className="font-semibold text-white">{t('rentSnapshot')}</h3>
+          <div>
+            <h3 className="font-semibold text-white">{t('rentSnapshot')}</h3>
+            <p className="text-[10px] text-gray-500">Based on property value at handover</p>
+          </div>
         </div>
         <Badge 
           variant={showAirbnbComparison ? "default" : "secondary"}
@@ -67,43 +74,52 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
         </Badge>
       </div>
 
-      {/* Long-Term Rental Section */}
+      {/* Long-Term Rental Section - Clear Breakdown */}
       <div className="p-4 space-y-3 flex-1">
         <div className="flex items-center gap-2 mb-3">
           <Building className="w-4 h-4 text-cyan-400" />
           <h4 className="text-sm font-medium text-white">{t('longTermRental')}</h4>
         </div>
 
-        {/* Initial Yield */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Percent className="w-3.5 h-3.5 text-gray-500" />
-            <span className="text-sm text-gray-400">{t('rentalYield')}</span>
-          </div>
-          <span className="text-sm font-bold text-[#CCFF00] font-mono">{rentalYieldPercent}%</span>
-        </div>
-
-        {/* Estimated Annual Rent */}
+        {/* Gross Annual Rent */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <DollarSign className="w-3.5 h-3.5 text-gray-500" />
-            <span className="text-sm text-gray-400">{t('estimatedAnnualRent')}</span>
+            <span className="text-sm text-gray-400">Gross Annual Rent</span>
           </div>
-          <span className="text-sm font-bold text-white font-mono">{formatCurrency(estimatedAnnualRent, currency, rate)}</span>
+          <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAnnualRent, currency, rate)}</span>
         </div>
 
-        {/* Service Charges */}
+        {/* Service Charges (subtracted) */}
         {unitSizeSqf > 0 && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+            <div className="flex items-center gap-2">
+              <Minus className="w-3.5 h-3.5 text-red-400" />
+              <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+            </div>
             <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
           </div>
         )}
 
+        {/* Divider */}
+        <div className="border-t border-[#2a3142] pt-2"></div>
+
         {/* Net Annual Rent */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#2a3142]">
-          <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
-          <span className="text-sm font-bold text-cyan-400 font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
+            <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
+          </div>
+          <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
+        </div>
+
+        {/* Net Yield */}
+        <div className="flex items-center justify-between bg-[#0d1117] rounded-lg p-2 mt-2">
+          <div className="flex items-center gap-2">
+            <Percent className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-sm text-gray-400">Net Yield (after charges)</span>
+          </div>
+          <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
         </div>
       </div>
 
@@ -127,11 +143,25 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAirbnbAnnual, currency, rate)}</span>
           </div>
 
-          {/* Total Expenses */}
+          {/* Operating Expenses + Management */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">{t('totalExpenses')} ({totalExpensePercent}%)</span>
-            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * totalExpensePercent / 100 + annualServiceCharges, currency, rate)}</span>
+            <div className="flex items-center gap-2">
+              <Minus className="w-3.5 h-3.5 text-red-400" />
+              <span className="text-sm text-gray-400">Expenses ({totalExpensePercent}%)</span>
+            </div>
+            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(airbnbOperatingExpenses, currency, rate)}</span>
           </div>
+
+          {/* Service Charges */}
+          {unitSizeSqf > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Minus className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+              </div>
+              <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
+            </div>
+          )}
 
           {/* Net Annual Airbnb */}
           <div className="flex items-center justify-between pt-2 border-t border-orange-500/20">
@@ -181,7 +211,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
         </div>
       )}
 
-      {/* Years to Pay Off Section - Moved from InvestmentSnapshot */}
+      {/* Years to Pay Off Section */}
       {holdAnalysis && holdAnalysis.yearsToPayOff < 999 && (
         <div className="p-4 border-t border-[#2a3142] bg-[#0f172a]/50">
           <div className="flex items-center gap-2 mb-3">

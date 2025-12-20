@@ -61,7 +61,7 @@ const QuotesDashboard = () => {
               <p className="text-sm text-gray-400">{quotes.length} quotes saved</p>
             </div>
           </div>
-          <Link to="/cash-statement">
+          <Link to="/cashflow-generator">
             <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
               <Plus className="w-4 h-4" />
               New Quote
@@ -78,7 +78,7 @@ const QuotesDashboard = () => {
             </div>
             <h2 className="text-xl text-white mb-2">No quotes yet</h2>
             <p className="text-gray-400 mb-6">Create your first cashflow statement to get started</p>
-            <Link to="/cash-statement">
+            <Link to="/cashflow-generator">
               <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90">
                 Create Quote
               </Button>

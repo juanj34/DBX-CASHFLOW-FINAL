@@ -84,10 +84,9 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
               <th className="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Year</th>
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Phase</th>
               <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Value</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">Rent</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">Cumulative</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">Net Rent</th>
               {showAirbnbComparison && (
-                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 uppercase tracking-wider whitespace-nowrap">Airbnb</th>
+                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 uppercase tracking-wider whitespace-nowrap">Airbnb Net</th>
               )}
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Status</th>
             </tr>
@@ -117,23 +116,16 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                     {formatCurrency(proj.propertyValue, currency, rate)}
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
-                    {proj.annualRent ? (
-                      <span className="text-cyan-400">{formatCurrency(proj.annualRent, currency, rate)}</span>
-                    ) : (
-                      <span className="text-gray-500">—</span>
-                    )}
-                  </td>
-                  <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
-                    {proj.cumulativeNetIncome ? (
-                      <span className="text-[#CCFF00]">{formatCurrency(proj.cumulativeNetIncome, currency, rate)}</span>
+                    {proj.netIncome ? (
+                      <span className="text-cyan-400">{formatCurrency(proj.netIncome, currency, rate)}</span>
                     ) : (
                       <span className="text-gray-500">—</span>
                     )}
                   </td>
                   {showAirbnbComparison && (
                     <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
-                      {proj.airbnbCumulativeNetIncome ? (
-                        <span className="text-orange-400">{formatCurrency(proj.airbnbCumulativeNetIncome, currency, rate)}</span>
+                      {proj.airbnbNetIncome ? (
+                        <span className="text-orange-400">{formatCurrency(proj.airbnbNetIncome, currency, rate)}</span>
                       ) : (
                         <span className="text-gray-500">—</span>
                       )}

@@ -323,11 +323,24 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   };
 
   // Calculate property values year by year with phased appreciation
+  // Year 1 gets pro-rata appreciation based on remaining months in first year
   const propertyValues: number[] = [basePrice]; // Year 0 = booking
+  
+  // Calculate pro-rata factor for first year based on booking month
+  // If booking in December (month 12), only 1/12 of the year remains
+  // If booking in January (month 1), 12/12 of the year remains
+  const monthsRemainingInFirstYear = 13 - bookingMonth; // 12 - bookingMonth + 1
+  const firstYearProRataFactor = monthsRemainingInFirstYear / 12;
+  
   for (let i = 1; i <= 10; i++) {
-    const { rate } = getAppreciationRate(i);
+    const { rate: yearRate } = getAppreciationRate(i);
     const prevValue = propertyValues[i - 1];
-    propertyValues.push(prevValue * (1 + rate / 100));
+    
+    // Apply pro-rata appreciation only for first year
+    const appreciationFactor = i === 1 ? firstYearProRataFactor : 1;
+    const effectiveRate = yearRate * appreciationFactor;
+    
+    propertyValues.push(prevValue * (1 + effectiveRate / 100));
   }
 
   // Generate scenarios at key time points (every 6 months + handover)

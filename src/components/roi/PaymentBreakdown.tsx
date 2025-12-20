@@ -1,15 +1,12 @@
 import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
-import { ClientUnitData } from "./ClientUnitInfo";
-import { PaymentSplitBreakdown } from "./PaymentSplitBreakdown";
 
 interface PaymentBreakdownProps {
   inputs: OIInputs;
   currency: Currency;
   totalMonths: number;
   rate: number;
-  clientInfo?: ClientUnitData;
 }
 
 // Convert booking month/year to readable date string
@@ -30,7 +27,7 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, clientInfo }: PaymentBreakdownProps) => {
+export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: PaymentBreakdownProps) => {
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate amounts
@@ -65,7 +62,6 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, clientIn
   const grandTotal = totalPropertyPayments + totalEntryCosts;
 
   return (
-    <>
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
       <div className="p-3 sm:p-4 border-b border-[#2a3142] flex items-center gap-2">
         <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#CCFF00]" />
@@ -217,17 +213,5 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, clientIn
         </div>
       </div>
     </div>
-
-      {/* Payment Split Breakdown - shown when split is enabled */}
-      {clientInfo && (
-        <PaymentSplitBreakdown
-          inputs={inputs}
-          clientInfo={clientInfo}
-          currency={currency}
-          totalMonths={totalMonths}
-          rate={rate}
-        />
-      )}
-    </>
   );
 };
