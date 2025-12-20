@@ -4,6 +4,7 @@ import { ClientShare, ClientUnitData } from "./ClientUnitInfo";
 import { User, Percent } from "lucide-react";
 import { COUNTRIES, Client } from "./ClientUnitModal";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PaymentSplitBreakdownProps {
   inputs: OIInputs;
@@ -22,6 +23,7 @@ export const PaymentSplitBreakdown = ({
   totalMonths, 
   rate 
 }: PaymentSplitBreakdownProps) => {
+  const { t } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee } = inputs;
   
   // Get clients and shares
@@ -53,7 +55,7 @@ export const PaymentSplitBreakdown = ({
   const getClientDisplay = (client: Client): { name: string; flag?: string } => {
     const country = COUNTRIES.find(c => c.code === client.country);
     return {
-      name: client.name || 'Client',
+      name: client.name || t('client'),
       flag: country?.flag
     };
   };
@@ -63,8 +65,8 @@ export const PaymentSplitBreakdown = ({
       <div className="p-3 sm:p-4 border-b border-[#2a3142] flex items-center gap-2">
         <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#00EAFF]" />
         <div>
-          <h3 className="font-semibold text-white text-sm sm:text-base">PAYMENT SPLIT BY PERSON</h3>
-          <p className="text-[10px] sm:text-xs text-gray-400">Individual contribution breakdown</p>
+          <h3 className="font-semibold text-white text-sm sm:text-base">{t('paymentSplitByPerson')}</h3>
+          <p className="text-[10px] sm:text-xs text-gray-400">{t('individualContributionBreakdown')}</p>
         </div>
       </div>
 
@@ -103,7 +105,7 @@ export const PaymentSplitBreakdown = ({
                         </p>
                         <p className="text-xs text-[#00EAFF] flex items-center gap-1">
                           <Percent className="w-3 h-3" />
-                          {sharePercent.toFixed(2)}% share
+                          {sharePercent.toFixed(2)}% {t('shareLabel')}
                         </p>
                       </div>
                     </div>
@@ -111,7 +113,7 @@ export const PaymentSplitBreakdown = ({
                       <p className="text-sm sm:text-base font-bold text-[#CCFF00] font-mono">
                         {formatCurrency(clientGrandTotal, currency, rate)}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-gray-500">Total contribution</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{t('totalContribution')}</p>
                     </div>
                   </div>
                 </AccordionTrigger>
@@ -119,26 +121,26 @@ export const PaymentSplitBreakdown = ({
                   <div className="space-y-3 pt-2">
                     {/* At Booking */}
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-[#CCFF00] uppercase">At Booking</p>
+                      <p className="text-xs font-medium text-[#CCFF00] uppercase">{t('atBookingLabel')}</p>
                       <div className="pl-3 space-y-1.5 text-xs sm:text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">EOI / Booking Fee</span>
+                          <span className="text-gray-400">{t('eoiBookingFee')}</span>
                           <span className="text-white font-mono">{formatCurrency(clientEoi, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Rest of Downpayment</span>
+                          <span className="text-gray-400">{t('restOfDownpayment')}</span>
                           <span className="text-white font-mono">{formatCurrency(clientRestDownpayment, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">DLD Fee</span>
+                          <span className="text-gray-400">{t('dldFee')}</span>
                           <span className="text-white font-mono">{formatCurrency(clientDld, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Oqood Fee</span>
+                          <span className="text-gray-400">{t('oqoodFee')}</span>
                           <span className="text-white font-mono">{formatCurrency(clientOqood, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between pt-1 border-t border-[#2a3142]/50">
-                          <span className="text-gray-300 font-medium">Today Total</span>
+                          <span className="text-gray-300 font-medium">{t('todayTotal')}</span>
                           <span className="text-[#CCFF00] font-mono font-medium">{formatCurrency(clientTodayTotal, currency, rate)}</span>
                         </div>
                       </div>
@@ -147,13 +149,13 @@ export const PaymentSplitBreakdown = ({
                     {/* During Construction */}
                     {additionalTotal > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-400 uppercase">During Construction</p>
+                        <p className="text-xs font-medium text-gray-400 uppercase">{t('duringConstructionLabel')}</p>
                         <div className="pl-3 space-y-1.5 text-xs sm:text-sm">
                           {additionalPayments.map((payment) => {
                             const amount = basePrice * payment.paymentPercent / 100 * sharePercent / 100;
                             const label = payment.type === 'time' 
-                              ? `Month ${payment.triggerValue}` 
-                              : `${payment.triggerValue}% construction`;
+                              ? `${t('monthLabel')} ${payment.triggerValue}` 
+                              : `${payment.triggerValue}% ${t('construction')}`;
                             return (
                               <div key={payment.id} className="flex justify-between">
                                 <span className="text-gray-400">{payment.paymentPercent}% @ {label}</span>
@@ -162,7 +164,7 @@ export const PaymentSplitBreakdown = ({
                             );
                           })}
                           <div className="flex justify-between pt-1 border-t border-[#2a3142]/50">
-                            <span className="text-gray-300 font-medium">Installments Total</span>
+                            <span className="text-gray-300 font-medium">{t('installmentsTotal')}</span>
                             <span className="text-gray-300 font-mono font-medium">{formatCurrency(clientAdditionalTotal, currency, rate)}</span>
                           </div>
                         </div>
@@ -171,10 +173,10 @@ export const PaymentSplitBreakdown = ({
 
                     {/* At Handover */}
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-cyan-400 uppercase">At Handover</p>
+                      <p className="text-xs font-medium text-cyan-400 uppercase">{t('atHandoverLabel')}</p>
                       <div className="pl-3 text-xs sm:text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Final Payment ({100 - preHandoverPercent}%)</span>
+                          <span className="text-gray-400">{t('finalPayment')} ({100 - preHandoverPercent}%)</span>
                           <span className="text-white font-mono">{formatCurrency(clientHandover, currency, rate)}</span>
                         </div>
                       </div>
@@ -183,7 +185,7 @@ export const PaymentSplitBreakdown = ({
                     {/* Grand Total */}
                     <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-lg p-3 mt-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-bold text-[#CCFF00]">TOTAL CONTRIBUTION</span>
+                        <span className="text-sm font-bold text-[#CCFF00]">{t('totalContributionUpper')}</span>
                         <span className="text-base font-bold text-[#CCFF00] font-mono">{formatCurrency(clientGrandTotal, currency, rate)}</span>
                       </div>
                     </div>
