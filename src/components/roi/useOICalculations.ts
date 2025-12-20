@@ -313,8 +313,9 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const handoverDate = new Date(handoverYear, handoverMonth - 1);
   const totalMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-  // Calculate handover year index (1-indexed)
-  const handoverYearIndex = Math.ceil(totalMonths / 12);
+  // Calculate handover year index based on actual calendar years (1-indexed)
+  // Year 1 = bookingYear, Year 2 = bookingYear+1, etc.
+  const handoverYearIndex = handoverYear - bookingYear + 1;
 
   // Helper: Get appreciation rate for a given year
   const getAppreciationRate = (year: number): { rate: number; phase: 'construction' | 'growth' | 'mature' } => {

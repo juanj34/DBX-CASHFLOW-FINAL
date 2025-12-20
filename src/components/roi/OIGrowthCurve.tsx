@@ -1,6 +1,7 @@
 import { Rocket, Home } from "lucide-react";
 import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
+import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
 
 interface OIGrowthCurveProps {
   calculations: OICalculations;
@@ -55,10 +56,27 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
   const timeLabels = [0, Math.round(totalMonths * 0.25), Math.round(totalMonths * 0.5), Math.round(totalMonths * 0.75), totalMonths];
 
   // Find scenarios to display: Exit markers + Handover
+  // Calculate on-the-fly if exact match not found to ensure ROE consistency with ExitScenariosCards
   const getExitScenarioData = (exitMonth: number) => {
-    return scenarios.find(s => s.exitMonths === exitMonth) || scenarios.reduce((prev, curr) => 
-      Math.abs(curr.exitMonths - exitMonth) < Math.abs(prev.exitMonths - exitMonth) ? curr : prev
-    );
+    const exactMatch = scenarios.find(s => s.exitMonths === exitMonth);
+    if (exactMatch) return exactMatch;
+    
+    // Calculate on-the-fly using same logic as ExitScenariosCards
+    const exitPrice = calculatePhasedExitPrice(exitMonth, inputs, totalMonths, basePrice);
+    const equityDeployed = calculateEquityAtExit(exitMonth, inputs, totalMonths, basePrice);
+    const profit = exitPrice - basePrice;
+    const trueProfit = profit - calculations.totalEntryCosts;
+    const totalCapital = equityDeployed + calculations.totalEntryCosts;
+    const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+    
+    return {
+      exitMonths: exitMonth,
+      exitPrice,
+      equityDeployed,
+      profit,
+      trueROE,
+      totalCapitalDeployed: totalCapital
+    };
   };
 
   // Calculate y-offsets to prevent overlapping labels
