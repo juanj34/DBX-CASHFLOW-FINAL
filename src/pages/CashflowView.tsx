@@ -50,7 +50,7 @@ const CashflowViewContent = () => {
   useEffect(() => {
     const fetchQuote = async () => {
       if (!shareToken) {
-        setError('Invalid share link');
+        setError(t('invalidShareLink'));
         setLoading(false);
         return;
       }
@@ -62,7 +62,7 @@ const CashflowViewContent = () => {
         .single();
 
       if (fetchError || !data) {
-        setError('Quote not found or has been deleted');
+        setError(t('quoteDeletedOrNotFound'));
         setLoading(false);
         return;
       }
@@ -149,8 +149,8 @@ const CashflowViewContent = () => {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl text-white mb-2">Quote Not Found</h1>
-          <p className="text-gray-400">{error || 'This quote may have been deleted or the link is invalid.'}</p>
+          <h1 className="text-2xl text-white mb-2">{t('quoteNotFound')}</h1>
+          <p className="text-gray-400">{error || t('quoteNotFoundDesc')}</p>
         </div>
       </div>
     );
@@ -218,7 +218,7 @@ const CashflowViewContent = () => {
                   </div>
                 )}
                 <div>
-                  <p className="text-lg font-medium text-white">{advisorProfile?.full_name || 'Wealth Advisor'}</p>
+                  <p className="text-lg font-medium text-white">{advisorProfile?.full_name || t('wealthAdvisor')}</p>
                   <p className="text-sm text-[#CCFF00]">{t('wealthAdvisor')}</p>
                   {advisorProfile?.business_email && (
                     <p className="text-xs text-gray-400 mt-0.5">{advisorProfile.business_email}</p>
@@ -279,8 +279,8 @@ const CashflowViewContent = () => {
         {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
         {visibility.longTermHold && (
           <CollapsibleSection
-            title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
-            subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
+            title={t('holdStrategyAnalysis')}
+            subtitle={t('holdStrategySubtitle')}
             icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
             defaultOpen={false}
           >
@@ -298,8 +298,8 @@ const CashflowViewContent = () => {
         {/* Exit Strategy - Collapsible */}
         {visibility.exitStrategy && (
           <CollapsibleSection
-            title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
-            subtitle={t('whenToSell') || "When to sell for maximum returns"}
+            title={t('exitStrategyAnalysis')}
+            subtitle={t('whenToSell')}
             icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
             defaultOpen={false}
           >
@@ -311,7 +311,7 @@ const CashflowViewContent = () => {
         )}
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">
-          <p className="text-xs text-gray-500">This cashflow statement is for informational purposes only and does not constitute financial advice.</p>
+          <p className="text-xs text-gray-500">{t('disclaimerText')}</p>
         </footer>
       </main>
     </div>

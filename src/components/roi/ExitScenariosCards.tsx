@@ -4,6 +4,7 @@ import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil } from 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ExitScenario {
   months: number;
@@ -98,11 +99,13 @@ const calculateScenario = (
 };
 
 // Convert months to readable date using booking month/year
-const monthsToDate = (months: number, bookingMonth: number, bookingYear: number): string => {
+const monthsToDate = (months: number, bookingMonth: number, bookingYear: number, language: string): string => {
   const totalMonthsFromJan = bookingMonth + months;
   const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
   const month = ((totalMonthsFromJan - 1) % 12) + 1;
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const monthNames = language === 'es' ? monthNamesEs : monthNamesEn;
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
 };
 
@@ -136,6 +139,7 @@ export const ExitScenariosCards = ({
   rate,
   readOnly = false,
 }: ExitScenariosCardsProps) => {
+  const { t, language } = useLanguage();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   
   const scenarios = exitScenarios.map(months => 
@@ -162,14 +166,17 @@ export const ExitScenariosCards = ({
     setExitScenarios(newScenarios);
   };
 
+  const scenarioCount = exitScenarios.length;
+  const scenarioLabel = scenarioCount === 1 ? t('scenario') : t('scenarios');
+
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-[#2a3142] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="w-5 h-5 text-[#CCFF00]" />
           <div>
-            <h3 className="font-semibold text-white">Exit Scenarios</h3>
-            <p className="text-xs text-gray-400">{exitScenarios.length} scenario{exitScenarios.length !== 1 ? 's' : ''} • Click to edit</p>
+            <h3 className="font-semibold text-white">{t('exitScenarios')}</h3>
+            <p className="text-xs text-gray-400">{scenarioCount} {scenarioLabel} • {t('clickToEdit')}</p>
           </div>
         </div>
         {!readOnly && exitScenarios.length < 5 && setExitScenarios && (
@@ -180,7 +187,7 @@ export const ExitScenariosCards = ({
             className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Add Exit
+            {t('addExit')}
           </Button>
         )}
       </div>
@@ -194,8 +201,8 @@ export const ExitScenariosCards = ({
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <div>
-                <span className="text-sm font-medium text-[#CCFF00]">Exit #{index + 1}</span>
-                <p className="text-xs text-gray-500">~{Math.round((exitScenarios[index] / totalMonths) * 100)}% construction</p>
+                <span className="text-sm font-medium text-[#CCFF00]">{t('exitNumber')}{index + 1}</span>
+                <p className="text-xs text-gray-500">~{Math.round((exitScenarios[index] / totalMonths) * 100)}% {t('construction')}</p>
               </div>
               {!readOnly && (
                 <div className="flex items-center gap-1">
@@ -225,8 +232,8 @@ export const ExitScenariosCards = ({
             {!readOnly && editingIndex === index && (
               <div className="mb-3 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/20">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-400">Exit after:</span>
-                  <span className="text-sm font-bold text-[#CCFF00]">{exitScenarios[index]} months</span>
+                  <span className="text-xs text-gray-400">{t('exitAfter')}</span>
+                  <span className="text-sm font-bold text-[#CCFF00]">{exitScenarios[index]} {t('months')}</span>
                 </div>
                 <Slider
                   value={[exitScenarios[index]]}
@@ -237,8 +244,8 @@ export const ExitScenariosCards = ({
                   className="roi-slider-lime"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>6mo</span>
-                  <span>{totalMonths - 1}mo</span>
+                  <span>6{t('mo')}</span>
+                  <span>{totalMonths - 1}{t('mo')}</span>
                 </div>
               </div>
             )}
@@ -247,10 +254,10 @@ export const ExitScenariosCards = ({
             <div className="mb-3 p-2 bg-[#1a1f2e] rounded-lg">
               <div className="flex items-center gap-2 text-white">
                 <Calendar className="w-4 h-4 text-gray-400" />
-                <span className="text-lg font-bold font-mono">{scenario.months} months</span>
+                <span className="text-lg font-bold font-mono">{scenario.months} {t('months')}</span>
               </div>
               <div className="text-xs text-gray-500 ml-6">
-                {monthsToDate(scenario.months, inputs.bookingMonth, inputs.bookingYear)}
+                {monthsToDate(scenario.months, inputs.bookingMonth, inputs.bookingYear, language)}
               </div>
             </div>
 
@@ -260,7 +267,7 @@ export const ExitScenariosCards = ({
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Tag className="w-3 h-3" />
-                  Original
+                  {t('original')}
                 </span>
                 <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency, rate)}</span>
               </div>
@@ -268,30 +275,30 @@ export const ExitScenariosCards = ({
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Wallet className="w-3 h-3" />
-                  Payments
+                  {t('payments')}
                 </span>
                 <span className="text-sm text-gray-300 font-mono">{formatCurrency(scenario.amountPaid, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-red-400">+ Entry Costs</span>
+                <span className="text-xs text-red-400">{t('plusEntryCosts')}</span>
                 <span className="text-sm text-red-400 font-mono">{formatCurrency(scenario.entryCosts, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center border-t border-[#2a3142] pt-1">
-                <span className="text-xs text-gray-400 font-medium">= Total Capital</span>
+                <span className="text-xs text-gray-400 font-medium">{t('totalCapitalEquals')}</span>
                 <span className="text-sm text-white font-mono font-medium">{formatCurrency(scenario.amountPaid + scenario.entryCosts, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Exit Price</span>
+                <span className="text-xs text-gray-400">{t('exitPrice')}</span>
                 <span className="text-sm text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  Profit
+                  {t('profit')}
                 </span>
                 <span className={`text-sm font-mono ${scenario.trueProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, currency, rate)}
@@ -299,14 +306,14 @@ export const ExitScenariosCards = ({
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">ROE</span>
+                <span className="text-xs text-gray-400">{t('roe')}</span>
                 <span className={`text-lg font-bold font-mono ${scenario.trueROE >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
                   {scenario.trueROE.toFixed(1)}%
                 </span>
               </div>
 
               <div className="text-xs text-gray-500 pt-1">
-                {(scenario.trueROE / (scenario.months / 12)).toFixed(1)}% annualized
+                {(scenario.trueROE / (scenario.months / 12)).toFixed(1)}% {t('annualized')}
               </div>
             </div>
           </div>
