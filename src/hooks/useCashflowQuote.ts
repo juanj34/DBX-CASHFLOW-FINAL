@@ -107,7 +107,7 @@ export const useCashflowQuote = (quoteId?: string) => {
   }, [saveDraft]);
 
   // Save quote to database
-  const saveQuote = async (inputs: OIInputs, clientInfo: ClientUnitData, existingId?: string) => {
+  const saveQuote = async (inputs: OIInputs, clientInfo: ClientUnitData, existingId?: string, exitScenarios?: number[]) => {
     setSaving(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -141,7 +141,8 @@ export const useCashflowQuote = (quoteId?: string) => {
         brokerName: clientInfo.brokerName,
         splitEnabled: clientInfo.splitEnabled,
         clientShares: clientInfo.clientShares,
-      }
+      },
+      _exitScenarios: exitScenarios || [],
     };
 
     const quoteData = {
@@ -197,8 +198,8 @@ export const useCashflowQuote = (quoteId?: string) => {
   };
 
   // Save as new quote
-  const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData) => {
-    return saveQuote(inputs, clientInfo);
+  const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData, exitScenarios?: number[]) => {
+    return saveQuote(inputs, clientInfo, undefined, exitScenarios);
   };
 
   // Generate share token

@@ -100,14 +100,27 @@ const OICalculatorContent = () => {
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
   useEffect(() => { if (!quoteLoading) scheduleAutoSave(inputs, clientInfo, quote?.id); }, [inputs, clientInfo, quote?.id, quoteLoading]);
 
+  // Exit scenarios state - load from saved quote or auto-calculate
   const [exitScenarios, setExitScenarios] = useState<number[]>(() => calculateAutoExitScenarios(calculations.totalMonths));
-  useEffect(() => { setExitScenarios(calculateAutoExitScenarios(calculations.totalMonths)); }, [calculations.totalMonths]);
+  const [exitScenariosInitialized, setExitScenariosInitialized] = useState(false);
+  
+  // Initialize exit scenarios from saved quote (once)
+  useEffect(() => {
+    if (!dataLoaded || exitScenariosInitialized) return;
+    const savedExitScenarios = (quote?.inputs as any)?._exitScenarios;
+    if (savedExitScenarios && Array.isArray(savedExitScenarios) && savedExitScenarios.length > 0) {
+      setExitScenarios(savedExitScenarios);
+    } else {
+      setExitScenarios(calculateAutoExitScenarios(calculations.totalMonths));
+    }
+    setExitScenariosInitialized(true);
+  }, [dataLoaded, quote, calculations.totalMonths, exitScenariosInitialized]);
 
-  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id), [inputs, clientInfo, quote?.id, saveQuote]);
-  const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, saveAsNew, navigate]);
+  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios), [inputs, clientInfo, quote?.id, exitScenarios, saveQuote]);
+  const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, saveAsNew, navigate]);
   const handleShare = useCallback(async () => {
-    // Always save first to ensure the client sees the latest data
-    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id);
+    // Always save first to ensure the client sees the latest data (including exit scenarios)
+    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios);
     if (!savedQuote) return null;
     
     const token = await generateShareToken(savedQuote.id);
@@ -115,7 +128,7 @@ const OICalculatorContent = () => {
       return `${window.location.origin}/view/${token}`;
     }
     return null;
-  }, [quote?.id, inputs, clientInfo, saveQuote, generateShareToken]);
+  }, [quote?.id, inputs, clientInfo, exitScenarios, saveQuote, generateShareToken]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
