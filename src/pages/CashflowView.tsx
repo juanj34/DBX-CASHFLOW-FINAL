@@ -205,53 +205,54 @@ const CashflowViewContent = () => {
             </div>
           </div>
           
-          {/* Advisor info row */}
-          {advisorProfile?.full_name && (
-            <div className="mt-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                {/* Avatar and info */}
-                <div className="flex items-center gap-4 flex-1">
-                  {advisorProfile.avatar_url ? (
-                    <img src={advisorProfile.avatar_url} alt={advisorProfile.full_name} className="w-14 h-14 rounded-full object-cover border-2 border-[#CCFF00]/30" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-[#2a3142] flex items-center justify-center text-white text-xl font-medium border-2 border-[#CCFF00]/30">
-                      {advisorProfile.full_name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-lg font-medium text-white">{advisorProfile.full_name}</p>
-                    <p className="text-sm text-[#CCFF00]">{t('wealthAdvisor')}</p>
+          {/* Advisor info row - Always show if advisor has a name */}
+          <div className="mt-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {/* Avatar and info */}
+              <div className="flex items-center gap-4 flex-1">
+                {advisorProfile?.avatar_url ? (
+                  <img src={advisorProfile.avatar_url} alt={advisorProfile.full_name || 'Advisor'} className="w-14 h-14 rounded-full object-cover border-2 border-[#CCFF00]/30" />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-[#2a3142] flex items-center justify-center text-white text-xl font-medium border-2 border-[#CCFF00]/30">
+                    {advisorProfile?.full_name ? advisorProfile.full_name.charAt(0).toUpperCase() : <User className="w-6 h-6 text-gray-400" />}
                   </div>
-                </div>
-                
-                {/* Contact buttons */}
-                <div className="flex items-center gap-2">
-                  {advisorProfile.business_email && (
-                    <Button 
-                      onClick={handleEmailAdvisor}
-                      variant="outline" 
-                      size="sm"
-                      className="border-[#2a3142] bg-[#0d1117] text-gray-300 hover:bg-[#2a3142] hover:text-white"
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      {t('emailAdvisor')}
-                    </Button>
-                  )}
-                  {advisorProfile.whatsapp_number && (
-                    <Button 
-                      onClick={handleWhatsAppAdvisor}
-                      variant="outline" 
-                      size="sm"
-                      className="border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      WhatsApp
-                    </Button>
+                )}
+                <div>
+                  <p className="text-lg font-medium text-white">{advisorProfile?.full_name || 'Wealth Advisor'}</p>
+                  <p className="text-sm text-[#CCFF00]">{t('wealthAdvisor')}</p>
+                  {advisorProfile?.business_email && (
+                    <p className="text-xs text-gray-400 mt-0.5">{advisorProfile.business_email}</p>
                   )}
                 </div>
               </div>
+              
+              {/* Contact buttons */}
+              <div className="flex items-center gap-2">
+                {advisorProfile?.business_email && (
+                  <Button 
+                    onClick={handleEmailAdvisor}
+                    variant="outline" 
+                    size="sm"
+                    className="border-[#2a3142] bg-[#0d1117] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    {t('emailAdvisor')}
+                  </Button>
+                )}
+                {advisorProfile?.whatsapp_number && (
+                  <Button 
+                    onClick={handleWhatsAppAdvisor}
+                    variant="outline" 
+                    size="sm"
+                    className="border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </header>
 
