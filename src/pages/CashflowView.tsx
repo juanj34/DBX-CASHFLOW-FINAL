@@ -132,10 +132,14 @@ const CashflowViewContent = () => {
   }, [shareToken]);
 
   const calculations = inputs ? useOICalculations(inputs) : null;
-  const exitScenarios: number[] = useMemo(() => 
-    calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36],
-    [calculations?.totalMonths]
-  );
+  // Load exit scenarios from saved inputs or auto-calculate
+  const exitScenarios: number[] = useMemo(() => {
+    const savedExitScenarios = (inputs as any)?._exitScenarios;
+    if (savedExitScenarios && Array.isArray(savedExitScenarios) && savedExitScenarios.length > 0) {
+      return savedExitScenarios;
+    }
+    return calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36];
+  }, [inputs, calculations?.totalMonths]);
 
   if (loading) {
     return (
