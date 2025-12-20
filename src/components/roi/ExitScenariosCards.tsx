@@ -70,6 +70,52 @@ const calculateEquityAtExit = (
   return Math.max(planEquity, thresholdAmount);
 };
 
+// Calculate exit price using phased appreciation (matching useOICalculations logic)
+const calculatePhasedExitPrice = (
+  months: number,
+  inputs: OIInputs,
+  totalMonths: number,
+  basePrice: number
+): number => {
+  const { 
+    constructionAppreciation = 12, 
+    growthAppreciation = 8, 
+    matureAppreciation = 4, 
+    growthPeriodYears = 5 
+  } = inputs;
+  
+  let currentValue = basePrice;
+  
+  // Phase 1: Construction period (using constructionAppreciation)
+  const constructionMonths = Math.min(months, totalMonths);
+  if (constructionMonths > 0) {
+    const monthlyConstructionRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyConstructionRate, constructionMonths);
+  }
+  
+  // If exit is during construction, return here
+  if (months <= totalMonths) {
+    return currentValue;
+  }
+  
+  // Phase 2: Growth period (post-handover, first growthPeriodYears years)
+  const postHandoverMonths = months - totalMonths;
+  const growthMonths = Math.min(postHandoverMonths, growthPeriodYears * 12);
+  if (growthMonths > 0) {
+    const monthlyGrowthRate = Math.pow(1 + growthAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyGrowthRate, growthMonths);
+  }
+  
+  // Phase 3: Mature period (after growthPeriodYears)
+  const matureMonths = Math.max(0, postHandoverMonths - growthPeriodYears * 12);
+  if (matureMonths > 0) {
+    const monthlyMatureRate = Math.pow(1 + matureAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyMatureRate, matureMonths);
+  }
+  
+  return currentValue;
+};
+
 const calculateScenario = (
   months: number,
   inputs: OIInputs,
@@ -77,8 +123,8 @@ const calculateScenario = (
   basePrice: number,
   totalEntryCosts: number
 ): ExitScenario => {
-  const exitYears = months / 12;
-  const exitPrice = basePrice * Math.pow(1 + inputs.appreciationRate / 100, exitYears);
+  // Use phased appreciation instead of legacy appreciationRate
+  const exitPrice = calculatePhasedExitPrice(months, inputs, totalMonths, basePrice);
   const amountPaid = calculateEquityAtExit(months, inputs, totalMonths, basePrice);
   const profit = exitPrice - basePrice;
   const trueProfit = profit - totalEntryCosts;
