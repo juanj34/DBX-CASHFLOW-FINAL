@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { OIInputs } from '@/components/roi/useOICalculations';
+import { migrateInputs, CURRENT_SCHEMA_VERSION } from '@/components/roi/inputMigration';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,9 +46,11 @@ export const useCashflowQuote = (quoteId?: string) => {
           .single();
 
         if (!error && data) {
+          // Migrate inputs when loading from database
+          const migratedInputs = migrateInputs(data.inputs as unknown as Partial<OIInputs>);
           setQuote({
             ...data,
-            inputs: data.inputs as unknown as OIInputs
+            inputs: migratedInputs
           });
         }
       } else {
@@ -123,9 +126,10 @@ export const useCashflowQuote = (quoteId?: string) => {
     const clientNames = clientInfo.clients?.map(c => c.name).filter(Boolean).join(', ');
     const titleClientPart = clientNames || clientName || '';
 
-    // Store clients array inside inputs for persistence
+    // Store clients array inside inputs for persistence + stamp schema version
     const inputsWithClients = {
       ...inputs,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       _clients: clientInfo.clients || [],
       _clientInfo: {
         developer: clientInfo.developer,
@@ -223,13 +227,14 @@ export const useCashflowQuote = (quoteId?: string) => {
         // Support both new clientInfo format and legacy format
         if (parsed.clientInfo) {
           return {
-            inputs: parsed.inputs,
+            // Migrate inputs from draft to ensure all fields have defaults
+            inputs: migrateInputs(parsed.inputs),
             clientInfo: parsed.clientInfo,
           };
         }
         // Legacy format migration
         return {
-          inputs: parsed.inputs,
+          inputs: migrateInputs(parsed.inputs),
           clientInfo: {
             clients: parsed.client_name 
               ? [{ id: '1', name: parsed.client_name, country: parsed.client_country || '' }]

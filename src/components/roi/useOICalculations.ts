@@ -61,6 +61,9 @@ export interface OIInputs {
   
   // NEW: ADR growth for Airbnb
   adrGrowthRate: number; // Annual ADR growth % (default 3%)
+  
+  // Schema version for migration support
+  schemaVersion?: number;
 }
 
 export interface OIExitScenario {
