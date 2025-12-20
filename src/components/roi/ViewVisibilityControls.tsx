@@ -175,7 +175,7 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
                   onClick={handleCopy}
                   variant="outline"
                   size="icon"
-                  className="shrink-0 border-[#CCFF00] text-[#CCFF00] hover:bg-[#CCFF00]/20"
+                  className="shrink-0 bg-[#0d1117] border-[#CCFF00] text-[#CCFF00] hover:bg-[#CCFF00]/20"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>

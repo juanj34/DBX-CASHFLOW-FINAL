@@ -1113,8 +1113,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               </div>
             )}
 
-            {/* Zone Appreciation Indicator */}
-            <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={inputs.useZoneDefaults ?? true} />
+            {/* Zone Appreciation Indicator - Only show when using zone defaults */}
+            {(inputs.useZoneDefaults ?? true) && (
+              <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={false} />
+            )}
 
             {/* Manual Appreciation Sliders - Only when not using zone defaults */}
             {!(inputs.useZoneDefaults ?? true) && (
@@ -1220,7 +1222,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                       variant="outline"
                       size="sm"
                       onClick={() => setShowSavePreset(true)}
-                      className="w-full h-7 text-xs border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+                      className="w-full h-7 text-xs bg-[#0d1117] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
                     >
                       <Save className="w-3 h-3 mr-1" />
                       {t('saveAsPreset')}
