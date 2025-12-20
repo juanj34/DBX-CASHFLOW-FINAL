@@ -278,6 +278,77 @@ const translations: Translations = {
   totalContributionUpper: { en: 'TOTAL CONTRIBUTION', es: 'CONTRIBUCIÓN TOTAL' },
   preHandoverTotal: { en: 'PRE-HANDOVER TOTAL', es: 'TOTAL PRE-ENTREGA' },
   amountNeededToResell: { en: 'Amount needed to resell', es: 'Monto para revender' },
+  
+  // Tooltip translations - Property & Dates
+  tooltipBasePrice: { en: 'The purchase price before any fees or additional costs', es: 'El precio de compra antes de tarifas o costos adicionales' },
+  tooltipBookingDate: { en: 'When you sign the SPA and make initial payments', es: 'Cuando firma el SPA y realiza los pagos iniciales' },
+  tooltipHandoverDate: { en: 'Estimated date when keys are delivered and property is ready', es: 'Fecha estimada cuando se entregan las llaves' },
+  
+  // Tooltip translations - Entry Costs
+  tooltipEoiFee: { en: 'Expression of Interest - refundable deposit deducted from downpayment', es: 'Expresión de Interés - depósito reembolsable descontado del enganche' },
+  tooltipDldFee: { en: 'Dubai Land Department transfer fee - fixed at 4% of property price', es: 'Tarifa del Departamento de Tierras de Dubai - fija al 4% del precio' },
+  tooltipOqoodFee: { en: 'Registration fee for off-plan properties in RERA', es: 'Tarifa de registro para propiedades en planos en RERA' },
+  
+  // Tooltip translations - Payment Plan
+  tooltipPreHandover: { en: 'Total percentage to be paid before receiving keys', es: 'Porcentaje total a pagar antes de recibir las llaves' },
+  tooltipDownpayment: { en: 'Initial payment made at booking, includes EOI', es: 'Pago inicial realizado en la reserva, incluye EOI' },
+  tooltipMinExitThreshold: { en: 'Minimum % of property price that must be paid before the developer allows resale', es: '% mínimo del precio que debe pagarse antes de que el desarrollador permita reventa' },
+  
+  // Tooltip translations - Appreciation & Zone
+  tooltipZoneMaturity: { en: 'Market maturity affects growth rates. Emerging areas have higher growth potential, established areas offer stability', es: 'La madurez del mercado afecta las tasas de crecimiento. Áreas emergentes tienen mayor potencial, áreas establecidas ofrecen estabilidad' },
+  tooltipConstructionAppreciation: { en: 'Annual price growth during the construction/build phase (off-plan premium)', es: 'Crecimiento anual del precio durante la construcción (prima de pre-venta)' },
+  tooltipGrowthAppreciation: { en: 'Annual appreciation rate during the initial years after handover', es: 'Tasa de apreciación anual durante los primeros años después de la entrega' },
+  tooltipMatureAppreciation: { en: 'Long-term stable appreciation rate once the area is fully developed', es: 'Tasa de apreciación estable a largo plazo cuando el área está desarrollada' },
+  tooltipGrowthYears: { en: 'Number of years the area continues high growth after handover before stabilizing', es: 'Número de años de alto crecimiento después de la entrega antes de estabilizarse' },
+  
+  // Tooltip translations - Rental Settings
+  tooltipRentalYield: { en: 'Annual rental income as a percentage of property value (net after vacancy)', es: 'Ingreso anual por renta como porcentaje del valor de la propiedad (neto)' },
+  tooltipServiceCharge: { en: 'Annual maintenance and management fee charged per square foot', es: 'Tarifa anual de mantenimiento por pie cuadrado' },
+  tooltipRentGrowth: { en: 'Expected annual increase in long-term rental rates', es: 'Aumento anual esperado en tarifas de renta a largo plazo' },
+  tooltipAdrGrowth: { en: 'Expected annual increase in Airbnb average daily rate', es: 'Aumento anual esperado en tarifa diaria promedio de Airbnb' },
+  
+  // Tooltip translations - Exit Scenarios
+  tooltipRoe: { en: 'Return on Equity = Profit ÷ Total Capital Deployed. Shows efficiency of your invested money', es: 'Retorno sobre Capital = Ganancia ÷ Capital Total. Muestra eficiencia de tu inversión' },
+  tooltipExitPrice: { en: 'Property value at exit, calculated using phased appreciation rates based on zone maturity', es: 'Valor de la propiedad al salir, calculado usando tasas de apreciación por fases' },
+  tooltipEntryCosts: { en: 'Total upfront costs: EOI + DLD (4%) + OQOOD + any other transaction fees', es: 'Costos totales iniciales: EOI + DLD (4%) + OQOOD + otras tarifas de transacción' },
+  tooltipAnnualizedRoe: { en: 'ROE adjusted to an annual rate for fair comparison across different exit timelines', es: 'ROE ajustado a tasa anual para comparación justa entre diferentes plazos de salida' },
+  tooltipTotalCapital: { en: 'Total money deployed = Property payments made + Entry costs', es: 'Dinero total desplegado = Pagos de propiedad + Costos de entrada' },
+  
+  // Advisor Onboarding translations
+  onboardingWelcome: { en: 'Welcome to the Cashflow Generator', es: 'Bienvenido al Generador de Cashflow' },
+  onboardingStep1Title: { en: 'Configure Your Property', es: 'Configura Tu Propiedad' },
+  onboardingStep1Desc: { en: 'Set the base price, booking date, and expected handover date', es: 'Establece el precio base, fecha de reserva y fecha de entrega' },
+  onboardingStep2Title: { en: 'Set Up Payment Plan', es: 'Configura el Plan de Pago' },
+  onboardingStep2Desc: { en: 'Define downpayment, milestone payments, and handover percentage', es: 'Define enganche, pagos de hitos y porcentaje de entrega' },
+  onboardingStep3Title: { en: 'Customize Appreciation', es: 'Personaliza la Apreciación' },
+  onboardingStep3Desc: { en: 'Select a zone or manually set appreciation rates for each phase', es: 'Selecciona una zona o establece manualmente las tasas de apreciación' },
+  onboardingStep4Title: { en: 'Explore Exit Strategies', es: 'Explora Estrategias de Salida' },
+  onboardingStep4Desc: { en: 'Analyze different exit timelines and save your quote', es: 'Analiza diferentes plazos de salida y guarda tu cotización' },
+  
+  // Client Onboarding translations
+  clientOnboardingWelcome: { en: 'Your Investment Analysis', es: 'Tu Análisis de Inversión' },
+  clientOnboardingStep1Title: { en: 'Your Investment Analysis', es: 'Tu Análisis de Inversión' },
+  clientOnboardingStep1Desc: { en: 'This is a personalized cashflow projection for your property investment', es: 'Esta es una proyección de flujo de caja personalizada para tu inversión inmobiliaria' },
+  clientOnboardingStep2Title: { en: 'Payment Timeline', es: 'Cronograma de Pagos' },
+  clientOnboardingStep2Desc: { en: 'See when and how much you will pay during construction and at handover', es: 'Ve cuándo y cuánto pagarás durante la construcción y en la entrega' },
+  clientOnboardingStep3Title: { en: 'Hold & Rent Strategy', es: 'Estrategia de Retención y Renta' },
+  clientOnboardingStep3Desc: { en: 'Explore rental income potential if you keep the property long-term', es: 'Explora el potencial de ingresos por renta si mantienes la propiedad a largo plazo' },
+  clientOnboardingStep4Title: { en: 'Exit Opportunities', es: 'Oportunidades de Salida' },
+  clientOnboardingStep4Desc: { en: 'Analyze the best time to sell and maximize your returns', es: 'Analiza el mejor momento para vender y maximiza tus retornos' },
+  clientOnboardingStep5Title: { en: 'Ready to Invest?', es: '¿Listo para Invertir?' },
+  clientOnboardingStep5Desc: { en: 'Contact {advisor} to discuss next steps', es: 'Contacta a {advisor} para discutir los próximos pasos' },
+  
+  // General onboarding/help labels
+  getStarted: { en: 'Get Started', es: 'Comenzar' },
+  skipOnboarding: { en: 'Skip', es: 'Omitir' },
+  dontShowAgain: { en: "Don't show again", es: 'No mostrar de nuevo' },
+  needHelp: { en: 'Need Help?', es: '¿Necesita Ayuda?' },
+  helpResources: { en: 'Help Resources', es: 'Recursos de Ayuda' },
+  quickStartGuide: { en: 'Quick Start Guide', es: 'Guía de Inicio Rápido' },
+  back: { en: 'Back', es: 'Atrás' },
+  next: { en: 'Next', es: 'Siguiente' },
+  contactAdvisor: { en: 'Contact Advisor', es: 'Contactar Asesor' },
+  showGuide: { en: 'Show Guide', es: 'Mostrar Guía' },
 };
 
 interface LanguageContextType {

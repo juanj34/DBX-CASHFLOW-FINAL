@@ -29,6 +29,7 @@ import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
+import { OnboardingModal, useAdvisorOnboarding } from "@/components/roi/OnboardingModal";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
@@ -58,6 +59,7 @@ const OICalculatorContent = () => {
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const { showOnboarding, setShowOnboarding } = useAdvisorOnboarding();
 
   const { profile } = useProfile();
   const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
@@ -258,6 +260,7 @@ const OICalculatorContent = () => {
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
               <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
               <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
+              <OnboardingModal open={showOnboarding} onOpenChange={setShowOnboarding} />
             </div>
           </div>
         </div>
