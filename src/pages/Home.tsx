@@ -26,7 +26,7 @@ const solutions: SolutionCard[] = [
   },
   {
     id: "cashflow",
-    title: "Cashflow Statements",
+    title: "Cashflow Generator",
     description: "Exit scenarios, payment breakdowns & client quotes",
     icon: Rocket,
     route: "/cashflow-generator",
@@ -105,7 +105,7 @@ const Home = () => {
             <Link to="/my-quotes">
               <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] gap-2">
                 <FileText className="w-4 h-4" />
-                My Statements
+                My Generators
               </Button>
             </Link>
             <Link to="/account-settings">
@@ -164,7 +164,7 @@ const Home = () => {
         {recentQuotes.length > 0 && (
           <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">Recent Cashflow Statements</h3>
+              <h3 className="font-semibold text-white">Recent Cashflow Generators</h3>
               <Link to="/my-quotes">
                 <Button variant="link" className="text-[#CCFF00] hover:text-[#CCFF00]/80 p-0">
                   View All

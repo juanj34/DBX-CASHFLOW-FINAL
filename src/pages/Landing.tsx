@@ -111,7 +111,7 @@ const Landing = () => {
               <p className="text-lg text-gray-400 max-w-xl leading-relaxed">
                 Herramientas de análisis de inversión de próxima generación. 
                 Mapas interactivos, calculadoras ROI con IA, y generador de 
-                cotizaciones profesionales — todo en una plataforma.
+                cashflow profesional — todo en una plataforma.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -258,9 +258,9 @@ const Landing = () => {
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#CCFF00]/20 to-[#CCFF00]/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <FileText className="w-7 h-7 text-[#CCFF00]" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Generador de Cotizaciones</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Generador de Cashflow</h3>
                 <p className="text-gray-400 leading-relaxed">
-                  Crea cotizaciones profesionales con planes de pago, proyecciones de cashflow y reportes PDF listos para presentar.
+                  Crea reportes profesionales con planes de pago, proyecciones de cashflow y PDFs listos para presentar.
                 </p>
                 <div className="mt-6 flex items-center text-[#CCFF00] text-sm font-medium group-hover:translate-x-2 transition-transform">
                   Crear Cotización <ArrowRight className="w-4 h-4 ml-2" />

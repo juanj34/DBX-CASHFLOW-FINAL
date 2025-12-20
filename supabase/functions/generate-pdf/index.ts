@@ -167,7 +167,7 @@ serve(async (req) => {
 </head>
 <body>
   <div class="header">
-    <h1>CASHFLOW STATEMENT</h1>
+    <h1>CASHFLOW GENERATOR</h1>
     <div class="subtitle">Prepared by ${advisorName || 'Investment Advisor'} • ${currentDate}</div>
   </div>
 

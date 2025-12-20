@@ -108,7 +108,7 @@ const translations: Translations = {
   wealthAdvisor: { en: 'Wealth Advisor', es: 'Asesor de Patrimonio' },
   clients: { en: 'Clients', es: 'Clientes' },
   addClient: { en: 'Add Client', es: 'Agregar Cliente' },
-  cashflowStatement: { en: 'Cashflow Statement', es: 'Estado de Flujo de Caja' },
+  cashflowStatement: { en: 'Cashflow Generator', es: 'Generador de Cashflow' },
   investmentSnapshot: { en: 'Investment Snapshot', es: 'Resumen de Inversión' },
   amountUntilSPA: { en: 'At Booking (SPA)', es: 'En Reserva (SPA)' },
   amountDuringConstruction: { en: 'During Construction', es: 'Durante Construcción' },
