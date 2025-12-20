@@ -114,10 +114,18 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right text-white font-mono whitespace-nowrap">
                     {formatCurrency(proj.propertyValue, currency, rate)}
+                    {proj.monthsActive && proj.monthsActive < 12 && (
+                      <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
+                    )}
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
                     {proj.netIncome ? (
-                      <span className="text-cyan-400">{formatCurrency(proj.netIncome, currency, rate)}</span>
+                      <span className="text-cyan-400">
+                        {formatCurrency(proj.netIncome, currency, rate)}
+                        {proj.monthsActive && proj.monthsActive < 12 && (
+                          <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
+                        )}
+                      </span>
                     ) : (
                       <span className="text-gray-500">—</span>
                     )}
@@ -125,7 +133,12 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                   {showAirbnbComparison && (
                     <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
                       {proj.airbnbNetIncome ? (
-                        <span className="text-orange-400">{formatCurrency(proj.airbnbNetIncome, currency, rate)}</span>
+                        <span className="text-orange-400">
+                          {formatCurrency(proj.airbnbNetIncome, currency, rate)}
+                          {proj.monthsActive && proj.monthsActive < 12 && (
+                            <span className="text-[10px] text-gray-500 ml-1">({proj.monthsActive} mo)</span>
+                          )}
+                        </span>
                       ) : (
                         <span className="text-gray-500">—</span>
                       )}

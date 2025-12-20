@@ -119,6 +119,8 @@ export interface OIYearlyProjection {
   appreciationRate: number; // Rate used this year
   effectiveYield: number | null; // Actual yield (rent/property value)
   phase: 'construction' | 'growth' | 'mature';
+  // NEW: Months active (for pro-rata rent display)
+  monthsActive?: number; // 12 = full year, < 12 = partial year (handover year)
 }
 
 export interface OICalculations {
@@ -451,13 +453,25 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     let managementFee: number | null = null;
     let netIncome: number | null = null;
     let effectiveYield: number | null = null;
+    let monthsActive: number | undefined = undefined;
     
     // Airbnb rental (only when comparison enabled)
     let airbnbGrossIncome: number | null = null;
     let airbnbExpenses: number | null = null;
     let airbnbNetIncome: number | null = null;
     
-    if (!isConstruction) {
+    if (!isConstruction || isHandover) {
+      // For handover year, calculate pro-rata based on handover month
+      if (isHandover) {
+        // Handover month is when property is delivered (e.g., November for Q4)
+        // Rent starts from that month
+        monthsActive = 12 - handoverMonth + 1; // e.g., Nov = month 11, so 12 - 11 + 1 = 2 months
+        if (monthsActive < 1) monthsActive = 1;
+        if (monthsActive > 12) monthsActive = 12;
+      } else {
+        monthsActive = 12;
+      }
+      
       // Years since handover (1 = first year after handover)
       const yearsSinceHandover = i - handoverYearIndex;
       
@@ -466,14 +480,15 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
         currentRent = currentRent * (1 + rentGrowthRate / 100);
       }
       
-      // Long-term rental calculation
-      annualRent = currentRent;
+      // Long-term rental calculation with pro-rata for handover year
+      const proRataFactor = monthsActive / 12;
+      annualRent = currentRent * proRataFactor;
       grossIncome = annualRent;
       operatingExpenses = 0; // Long-term has minimal operating expenses
-      serviceCharges = annualServiceCharges;
+      serviceCharges = annualServiceCharges * proRataFactor;
       managementFee = 0;
-      netIncome = annualRent - annualServiceCharges;
-      effectiveYield = (annualRent / propertyValue) * 100;
+      netIncome = annualRent - serviceCharges;
+      effectiveYield = (currentRent / propertyValue) * 100; // Full year yield
       cumulativeNetIncome += netIncome;
       
       // Airbnb rental calculation (when comparison enabled)
@@ -483,10 +498,11 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
           currentADR = currentADR * (1 + adrGrowthRate / 100);
         }
         
-        airbnbGrossIncome = currentADR * 365 * (shortTermRental.occupancyPercent / 100);
+        const fullYearAirbnbGross = currentADR * 365 * (shortTermRental.occupancyPercent / 100);
+        airbnbGrossIncome = fullYearAirbnbGross * proRataFactor;
         // Airbnb expenses include operating expenses + management + service charges
         const airbnbOperatingExpenses = airbnbGrossIncome * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
-        airbnbExpenses = airbnbOperatingExpenses + annualServiceCharges;
+        airbnbExpenses = airbnbOperatingExpenses + (annualServiceCharges * proRataFactor);
         airbnbNetIncome = airbnbGrossIncome - airbnbExpenses;
         airbnbCumulativeNetIncome += airbnbNetIncome;
       }
@@ -519,13 +535,14 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       airbnbExpenses,
       airbnbNetIncome,
       airbnbCumulativeNetIncome,
-      isConstruction,
+      isConstruction: isConstruction && !isHandover,
       isHandover,
       isBreakEven,
       isAirbnbBreakEven,
       appreciationRate,
       effectiveYield,
       phase,
+      monthsActive,
     });
   }
 

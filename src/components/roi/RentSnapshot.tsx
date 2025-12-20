@@ -152,13 +152,22 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAirbnbAnnual, currency, rate)}</span>
           </div>
 
-          {/* Operating Expenses + Management */}
+          {/* Operating Expenses */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Minus className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-sm text-gray-400">Expenses ({totalExpensePercent}%)</span>
+              <span className="text-sm text-gray-400">{t('operatingExpenses')} ({operatingExpensePercent}%)</span>
             </div>
-            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(airbnbOperatingExpenses, currency, rate)}</span>
+            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (operatingExpensePercent / 100), currency, rate)}</span>
+          </div>
+
+          {/* Management Fee */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Minus className="w-3.5 h-3.5 text-red-400" />
+              <span className="text-sm text-gray-400">{t('managementFee')} ({managementFeePercent}%)</span>
+            </div>
+            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (managementFeePercent / 100), currency, rate)}</span>
           </div>
 
           {/* Service Charges */}

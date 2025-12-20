@@ -103,7 +103,7 @@ export const PaymentSplitBreakdown = ({
                         </p>
                         <p className="text-xs text-[#00EAFF] flex items-center gap-1">
                           <Percent className="w-3 h-3" />
-                          {sharePercent}% share
+                          {sharePercent.toFixed(2)}% share
                         </p>
                       </div>
                     </div>
