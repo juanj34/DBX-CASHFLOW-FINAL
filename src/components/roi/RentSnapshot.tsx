@@ -60,7 +60,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <Home className="w-5 h-5 text-[#CCFF00]" />
           <div>
             <h3 className="font-semibold text-white">{t('rentSnapshot')}</h3>
-            <p className="text-[10px] text-gray-500">Based on property value at handover</p>
+            <p className="text-[10px] text-gray-500">{t('basedOnPropertyValueAtHandover')}</p>
           </div>
         </div>
         <Badge 
@@ -85,7 +85,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <DollarSign className="w-3.5 h-3.5 text-gray-500" />
-            <span className="text-sm text-gray-400">Gross Annual Rent</span>
+            <span className="text-sm text-gray-400">{t('grossAnnualRent')}</span>
           </div>
           <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAnnualRent, currency, rate)}</span>
         </div>
@@ -118,14 +118,14 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Percent className="w-3.5 h-3.5 text-gray-500" />
-              <span className="text-sm text-gray-400">Gross Yield</span>
+              <span className="text-sm text-gray-400">{t('grossYield')}</span>
             </div>
             <span className="text-sm font-bold text-white font-mono">{rentalYieldPercent.toFixed(1)}%</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Percent className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-sm text-gray-400">Net Yield (after charges)</span>
+              <span className="text-sm text-gray-400">{t('netYieldAfterCharges')}</span>
             </div>
             <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
           </div>

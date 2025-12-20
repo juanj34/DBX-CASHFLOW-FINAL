@@ -1,6 +1,7 @@
 import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PaymentBreakdownProps {
   inputs: OIInputs;
@@ -10,17 +11,21 @@ interface PaymentBreakdownProps {
 }
 
 // Convert booking month/year to readable date string
-const monthToDateString = (month: number, year: number): string => {
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthToDateString = (month: number, year: number, language: string): string => {
+  const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const monthNames = language === 'es' ? monthNamesEs : monthNamesEn;
   return `${monthNames[month - 1]} ${year}`;
 };
 
 // Estimate date from months after booking
-const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYear: number): string => {
+const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYear: number, language: string): string => {
   const totalMonthsFromJan = bookingMonth + months;
   const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
   const month = ((totalMonthsFromJan - 1) % 12) + 1;
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const monthNames = language === 'es' ? monthNamesEs : monthNamesEn;
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
 };
 
@@ -28,6 +33,7 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 const DLD_FEE_PERCENT = 4;
 
 export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: PaymentBreakdownProps) => {
+  const { t, language } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate amounts
@@ -66,15 +72,15 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
       <div className="p-3 sm:p-4 border-b border-[#2a3142] flex items-center gap-2">
         <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#CCFF00]" />
         <div>
-          <h3 className="font-semibold text-white text-sm sm:text-base">PAYMENT BREAKDOWN</h3>
-          <p className="text-[10px] sm:text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} payment structure</p>
+          <h3 className="font-semibold text-white text-sm sm:text-base">{t('paymentBreakdownTitle')}</h3>
+          <p className="text-[10px] sm:text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} {t('paymentStructure')}</p>
         </div>
       </div>
 
       <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Base Price */}
         <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-[#2a3142]">
-          <span className="text-xs sm:text-sm text-gray-400">Base Property Price</span>
+          <span className="text-xs sm:text-sm text-gray-400">{t('basePropertyPrice')}</span>
           <span className="text-sm sm:text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
         </div>
 
@@ -82,28 +88,28 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
         <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center gap-1.5 sm:gap-2 text-[#CCFF00]">
             <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="text-xs sm:text-sm font-medium">AT BOOKING ({monthToDateString(bookingMonth, bookingYear)})</span>
+            <span className="text-xs sm:text-sm font-medium">{t('atBooking')} ({monthToDateString(bookingMonth, bookingYear, language)})</span>
           </div>
           
           <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">EOI / Booking Fee</span>
+              <span className="text-xs sm:text-sm text-gray-300">{t('eoiBookingFee')}</span>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(eoiFeeActual, currency, rate)}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">Rest of Downpayment ({downpaymentPercent}% - EOI)</span>
+              <span className="text-xs sm:text-sm text-gray-300">{t('restOfDownpayment')} ({downpaymentPercent}% - EOI)</span>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(restOfDownpayment, currency, rate)}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">DLD Fee (4%)</span>
+              <span className="text-xs sm:text-sm text-gray-300">{t('dldFeePercent')}</span>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(dldFeeAmount, currency, rate)}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">Oqood Fee</span>
+              <span className="text-xs sm:text-sm text-gray-300">{t('oqoodFee')}</span>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(oqoodFee, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
-              <span className="text-xs sm:text-sm font-medium text-[#CCFF00]">Total Today</span>
+              <span className="text-xs sm:text-sm font-medium text-[#CCFF00]">{t('totalToday')}</span>
               <span className="text-xs sm:text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
             </div>
           </div>
@@ -114,7 +120,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
           <div className="space-y-2 sm:space-y-3">
             <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
               <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-xs sm:text-sm font-medium">DURING CONSTRUCTION</span>
+              <span className="text-xs sm:text-sm font-medium">{t('duringConstruction')}</span>
             </div>
             
             <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
@@ -126,12 +132,12 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
                   ? `M${payment.triggerValue}`
                   : `${payment.triggerValue}%`;
                 const triggerLabelFull = isTimeBased
-                  ? `Month ${payment.triggerValue}`
-                  : `${payment.triggerValue}% const.`;
+                  ? `${t('monthLabel')} ${payment.triggerValue}`
+                  : `${payment.triggerValue}% ${t('constructionPercent')}`;
                 
                 // Only show date for time-based payments
                 const dateStr = isTimeBased 
-                  ? estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear)
+                  ? estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language)
                   : null;
                 
                 return (
@@ -155,7 +161,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
               })}
               {additionalTotal > 0 && (
                 <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
-                  <span className="text-xs sm:text-sm text-gray-400">Subtotal Installments</span>
+                  <span className="text-xs sm:text-sm text-gray-400">{t('subtotalInstallments')}</span>
                   <span className="text-xs sm:text-sm text-gray-300 font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
                 </div>
               )}
@@ -166,17 +172,17 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
         {/* Pre-Handover Summary */}
         <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl p-3 sm:p-4 space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-xs sm:text-sm text-gray-300">Total Today</span>
+            <span className="text-xs sm:text-sm text-gray-300">{t('totalToday')}</span>
             <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
           </div>
           {additionalTotal > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-xs sm:text-sm text-gray-300">+ Installments</span>
+              <span className="text-xs sm:text-sm text-gray-300">{t('plusInstallments')}</span>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
             </div>
           )}
           <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30">
-            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">TOTAL PRE-HANDOVER ({preHandoverPercent}%)</span>
+            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">{t('totalPreHandover')} ({preHandoverPercent}%)</span>
             <span className="text-sm sm:text-base font-bold text-[#CCFF00] font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
           </div>
         </div>
@@ -185,12 +191,12 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
         <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center gap-1.5 sm:gap-2 text-cyan-400">
             <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="text-xs sm:text-sm font-medium">AT HANDOVER (Q{handoverQuarter} {handoverYear})</span>
+            <span className="text-xs sm:text-sm font-medium">{t('atHandoverLabel')} (Q{handoverQuarter} {handoverYear})</span>
           </div>
           
           <div className="pl-4 sm:pl-6 space-y-2">
             <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2">
-              <span className="text-xs sm:text-sm text-gray-300">Final Payment ({handoverPercent}%)</span>
+              <span className="text-xs sm:text-sm text-gray-300">{t('finalPayment')} ({handoverPercent}%)</span>
               <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
             </div>
           </div>
@@ -199,15 +205,15 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
         {/* Grand Total */}
         <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#2a3142] space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-xs sm:text-sm text-gray-400">Property Payments</span>
+            <span className="text-xs sm:text-sm text-gray-400">{t('propertyPayments')}</span>
             <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs sm:text-sm text-gray-400">Entry Costs (DLD + Oqood)</span>
+            <span className="text-xs sm:text-sm text-gray-400">{t('entryCostsDldOqood')}</span>
             <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30 bg-[#CCFF00]/5 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2">
-            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">TOTAL TO DISBURSE</span>
+            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">{t('totalToDisburse')}</span>
             <span className="text-sm sm:text-lg font-bold text-[#CCFF00] font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
           </div>
         </div>

@@ -138,6 +138,10 @@ const translations: Translations = {
   vsLongTerm: { en: 'vs Long-Term', es: 'vs Largo Plazo' },
   year: { en: 'year', es: 'año' },
   totalExpenses: { en: 'Total Expenses', es: 'Gastos Totales' },
+  grossAnnualRent: { en: 'Gross Annual Rent', es: 'Renta Bruta Anual' },
+  grossYield: { en: 'Gross Yield', es: 'Rendimiento Bruto' },
+  netYieldAfterCharges: { en: 'Net Yield (after charges)', es: 'Rendimiento Neto (después de cargos)' },
+  basedOnPropertyValueAtHandover: { en: 'Based on property value at handover', es: 'Basado en valor de propiedad en entrega' },
   
   // Section Headers
   exitStrategyAnalysis: { en: 'Exit Strategy Analysis', es: 'Análisis de Estrategia de Salida' },
@@ -191,6 +195,73 @@ const translations: Translations = {
   // Pro-rata month indicator
   months: { en: 'months', es: 'meses' },
   mo: { en: 'mo', es: 'mes' },
+  
+  // Payment Breakdown Section
+  paymentBreakdownTitle: { en: 'PAYMENT BREAKDOWN', es: 'DESGLOSE DE PAGOS' },
+  paymentStructure: { en: 'payment structure', es: 'estructura de pago' },
+  atBooking: { en: 'AT BOOKING', es: 'EN RESERVA' },
+  restOfDownpayment: { en: 'Rest of Downpayment', es: 'Resto de Enganche' },
+  dldFeePercent: { en: 'DLD Fee (4%)', es: 'Tarifa DLD (4%)' },
+  totalToday: { en: 'Total Today', es: 'Total Hoy' },
+  duringConstruction: { en: 'DURING CONSTRUCTION', es: 'DURANTE CONSTRUCCIÓN' },
+  constructionPercent: { en: 'const.', es: 'const.' },
+  monthLabel: { en: 'Month', es: 'Mes' },
+  subtotalInstallments: { en: 'Subtotal Installments', es: 'Subtotal Cuotas' },
+  plusInstallments: { en: '+ Installments', es: '+ Cuotas' },
+  totalPreHandover: { en: 'TOTAL PRE-HANDOVER', es: 'TOTAL PRE-ENTREGA' },
+  atHandoverLabel: { en: 'AT HANDOVER', es: 'EN ENTREGA' },
+  finalPayment: { en: 'Final Payment', es: 'Pago Final' },
+  propertyPayments: { en: 'Property Payments', es: 'Pagos de Propiedad' },
+  entryCostsDldOqood: { en: 'Entry Costs (DLD + Oqood)', es: 'Costos de Entrada (DLD + Oqood)' },
+  totalToDisburse: { en: 'TOTAL TO DISBURSE', es: 'TOTAL A DESEMBOLSAR' },
+  
+  // OI Yearly Projection Table
+  tenYearHoldSimulation: { en: '10-Year Hold Simulation', es: 'Simulación de Retención a 10 Años' },
+  propertyValueRentalYield: { en: 'Property value, rental income & yield compression', es: 'Valor de propiedad, ingresos por renta y compresión de rendimiento' },
+  yearColumn: { en: 'Year', es: 'Año' },
+  phase: { en: 'Phase', es: 'Fase' },
+  value: { en: 'Value', es: 'Valor' },
+  netRent: { en: 'Net Rent', es: 'Renta Neta' },
+  airbnbNet: { en: 'Airbnb Net', es: 'Neto Airbnb' },
+  status: { en: 'Status', es: 'Estado' },
+  difference: { en: 'Difference', es: 'Diferencia' },
+  airbnbWins: { en: 'Airbnb wins', es: 'Airbnb gana' },
+  longTermWins: { en: 'Long-Term wins', es: 'Largo Plazo gana' },
+  longTermTenYear: { en: 'Long-Term (10Y)', es: 'Largo Plazo (10A)' },
+  airbnbTenYear: { en: 'Airbnb (10Y)', es: 'Airbnb (10A)' },
+  build: { en: 'Build', es: 'Construcción' },
+  handover: { en: 'Handover', es: 'Entrega' },
+  growth: { en: 'Growth', es: 'Crecimiento' },
+  mature: { en: 'Mature', es: 'Maduro' },
+  totalNetIncome10Y: { en: 'Total Net Income (10Y)', es: 'Ingreso Neto Total (10A)' },
+  ltLabel: { en: 'LT:', es: 'LP:' },
+  airbnbLabel: { en: 'Airbnb:', es: 'Airbnb:' },
+  
+  // Exit Scenarios Cards
+  exitScenarios: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },
+  scenario: { en: 'scenario', es: 'escenario' },
+  scenarios: { en: 'scenarios', es: 'escenarios' },
+  clickToEdit: { en: 'Click to edit', es: 'Clic para editar' },
+  addExit: { en: 'Add Exit', es: 'Agregar Salida' },
+  exitNumber: { en: 'Exit #', es: 'Salida #' },
+  construction: { en: 'construction', es: 'construcción' },
+  exitAfter: { en: 'Exit after:', es: 'Salir después de:' },
+  original: { en: 'Original', es: 'Original' },
+  payments: { en: 'Payments', es: 'Pagos' },
+  plusEntryCosts: { en: '+ Entry Costs', es: '+ Costos de Entrada' },
+  totalCapitalEquals: { en: '= Total Capital', es: '= Capital Total' },
+  exitPrice: { en: 'Exit Price', es: 'Precio de Salida' },
+  roe: { en: 'ROE', es: 'ROE' },
+  annualized: { en: 'annualized', es: 'anualizado' },
+  
+  // Error messages
+  quoteNotFound: { en: 'Quote Not Found', es: 'Cotización No Encontrada' },
+  quoteNotFoundDesc: { en: 'This quote may have been deleted or the link is invalid.', es: 'Esta cotización puede haber sido eliminada o el enlace es inválido.' },
+  invalidShareLink: { en: 'Invalid share link', es: 'Enlace compartido inválido' },
+  quoteDeletedOrNotFound: { en: 'Quote not found or has been deleted', es: 'Cotización no encontrada o fue eliminada' },
+  
+  // Disclaimer
+  disclaimerText: { en: 'This cashflow statement is for informational purposes only and does not constitute financial advice.', es: 'Este estado de flujo de efectivo es solo para fines informativos y no constituye asesoramiento financiero.' },
 };
 
 interface LanguageContextType {
