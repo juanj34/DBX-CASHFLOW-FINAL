@@ -9,6 +9,7 @@ import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, C
 import { OIInputs, PaymentMilestone, getZoneAppreciationProfile } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
 import { ZoneAppreciationIndicator } from "./ZoneAppreciationIndicator";
+import { InfoTooltip } from "./InfoTooltip";
 import { supabase } from "@/integrations/supabase/client";
 
 interface OIInputModalProps {
@@ -311,7 +312,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
           {/* Base Property Price */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Base Property Price</label>
+              <div className="flex items-center gap-1">
+                <label className="text-sm text-gray-400">Base Property Price</label>
+                <InfoTooltip translationKey="tooltipBasePrice" />
+              </div>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
                   {currency === 'USD' ? '$' : 'AED'}
@@ -345,7 +349,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
           {/* Booking Date - Month/Year */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Booking Date (OI Entry)</label>
+            <div className="flex items-center gap-1">
+              <label className="text-sm text-gray-400">Booking Date (OI Entry)</label>
+              <InfoTooltip translationKey="tooltipBookingDate" />
+            </div>
             <div className="flex gap-3">
               <Select
                 value={String(inputs.bookingMonth)}
@@ -382,7 +389,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
           {/* Handover Date - Quarter/Year */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Handover Date</label>
+            <div className="flex items-center gap-1">
+              <label className="text-sm text-gray-400">Handover Date</label>
+              <InfoTooltip translationKey="tooltipHandoverDate" />
+            </div>
             <div className="flex gap-3">
               <Select
                 value={String(inputs.handoverQuarter)}
@@ -431,7 +441,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             <div className="space-y-3">
               {/* EOI Fee */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">EOI / Booking Fee</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500">EOI / Booking Fee</span>
+                  <InfoTooltip translationKey="tooltipEoiFee" />
+                </div>
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
                     {currency === 'USD' ? '$' : 'AED'}
@@ -447,13 +460,19 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
               {/* DLD Fee - Fixed at 4% */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">DLD Fee (fixed)</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500">DLD Fee (fixed)</span>
+                  <InfoTooltip translationKey="tooltipDldFee" />
+                </div>
                 <span className="text-xs text-white font-mono">4% = {formatCurrency(inputs.basePrice * 0.04, currency)}</span>
               </div>
               
               {/* Oqood Fee */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Oqood Fee</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500">Oqood Fee</span>
+                  <InfoTooltip translationKey="tooltipOqoodFee" />
+                </div>
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
                     {currency === 'USD' ? '$' : 'AED'}
@@ -480,7 +499,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             
             {/* Preset Split Buttons */}
             <div className="space-y-2">
-              <label className="text-xs text-gray-500">Pre-Handover / Handover Split</label>
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-gray-500">Pre-Handover / Handover Split</label>
+                <InfoTooltip translationKey="tooltipPreHandover" />
+              </div>
               <div className="flex flex-wrap gap-2">
                 {presetSplits.map((split) => (
                   <Button
@@ -506,6 +528,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               <div className="flex items-center gap-2 text-[#CCFF00]">
                 <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold">1</div>
                 <span className="text-sm font-medium">DOWNPAYMENT (Booking - Month 0)</span>
+                <InfoTooltip translationKey="tooltipDownpayment" />
               </div>
               <div className="text-xs text-gray-500 mb-2">
                 💡 EOI ({formatCurrency(inputs.eoiFee, currency)}) is part of this
@@ -739,10 +762,13 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
           {/* MINIMUM EXIT THRESHOLD - Moved to bottom */}
           <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
-                <Target className="w-4 h-4 text-[#CCFF00]" />
-                Minimum Exit Threshold
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+                  <Target className="w-4 h-4 text-[#CCFF00]" />
+                  Minimum Exit Threshold
+                </label>
+                <InfoTooltip translationKey="tooltipMinExitThreshold" />
+              </div>
               <span className="text-lg font-bold text-[#CCFF00] font-mono">{inputs.minimumExitThreshold || 30}%</span>
             </div>
             <p className="text-xs text-gray-500">
@@ -778,7 +804,10 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
                 <span className="text-sm font-medium">Long-Term Rental</span>
               </div>
               <div className="flex justify-between items-center">
-                <label className="text-sm text-gray-400">Rental Yield %</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-sm text-gray-400">Rental Yield %</label>
+                  <InfoTooltip translationKey="tooltipRentalYield" />
+                </div>
                 <Input
                   type="number"
                   step="0.1"

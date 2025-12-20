@@ -17,6 +17,7 @@ import { WealthSummaryCard } from '@/components/roi/WealthSummaryCard';
 import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
 import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
 import { CashflowErrorBoundary } from '@/components/roi/ErrorBoundary';
+import { ClientOnboardingModal, useClientOnboarding } from '@/components/roi/ClientOnboardingModal';
 import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
@@ -43,6 +44,7 @@ const CashflowViewContent = () => {
   const [inputs, setInputs] = useState<OIInputs | null>(null);
   const [clientInfo, setClientInfo] = useState<ClientUnitData | null>(null);
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
+  const { showOnboarding, setShowOnboarding } = useClientOnboarding();
 
   const { rate } = useExchangeRate(currency);
   
@@ -184,6 +186,12 @@ const CashflowViewContent = () => {
 
   return (
     <CashflowErrorBoundary>
+    <ClientOnboardingModal 
+      open={showOnboarding} 
+      onOpenChange={setShowOnboarding}
+      advisorName={advisorProfile?.full_name || undefined}
+      onContactAdvisor={handleWhatsAppAdvisor}
+    />
     <div className="min-h-screen bg-[#0f172a]">
       {/* Header */}
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface ExitScenario {
   months: number;
@@ -327,12 +328,18 @@ export const ExitScenariosCards = ({
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-red-400">{t('plusEntryCosts')}</span>
+                <span className="text-xs text-red-400 flex items-center gap-1">
+                  {t('plusEntryCosts')}
+                  <InfoTooltip translationKey="tooltipEntryCosts" />
+                </span>
                 <span className="text-sm text-red-400 font-mono">{formatCurrency(scenario.entryCosts, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center border-t border-[#2a3142] pt-1">
-                <span className="text-xs text-gray-400 font-medium">{t('totalCapitalEquals')}</span>
+                <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                  {t('totalCapitalEquals')}
+                  <InfoTooltip translationKey="tooltipTotalCapital" />
+                </span>
                 <span className="text-sm text-white font-mono font-medium">{formatCurrency(scenario.amountPaid + scenario.entryCosts, currency, rate)}</span>
               </div>
               
@@ -352,7 +359,10 @@ export const ExitScenariosCards = ({
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">{t('roe')}</span>
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  {t('roe')}
+                  <InfoTooltip translationKey="tooltipRoe" />
+                </span>
                 <span className={`text-lg font-bold font-mono ${scenario.trueROE >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
                   {scenario.trueROE.toFixed(1)}%
                 </span>
