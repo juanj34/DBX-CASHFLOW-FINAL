@@ -171,6 +171,24 @@ export const PaymentSplitBreakdown = ({
                       </div>
                     )}
 
+                    {/* Pre-Handover Total - For Resale */}
+                    {(() => {
+                      const clientPreHandoverTotal = clientTodayTotal + clientAdditionalTotal;
+                      return (
+                        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="text-sm font-bold text-orange-400">{t('preHandoverTotal')}</span>
+                              <p className="text-[10px] text-orange-300/70">{t('amountNeededToResell')}</p>
+                            </div>
+                            <span className="text-base font-bold text-orange-400 font-mono">
+                              {formatCurrency(clientPreHandoverTotal, currency, rate)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* At Handover */}
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-cyan-400 uppercase">{t('atHandoverLabel')}</p>

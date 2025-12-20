@@ -275,6 +275,8 @@ const translations: Translations = {
   atHandoverUpper: { en: 'AT HANDOVER', es: 'EN ENTREGA' },
   duringConstructionLabel: { en: 'During Construction', es: 'Durante Construcción' },
   totalContributionUpper: { en: 'TOTAL CONTRIBUTION', es: 'CONTRIBUCIÓN TOTAL' },
+  preHandoverTotal: { en: 'PRE-HANDOVER TOTAL', es: 'TOTAL PRE-ENTREGA' },
+  amountNeededToResell: { en: 'Amount needed to resell', es: 'Monto para revender' },
 };
 
 interface LanguageContextType {
