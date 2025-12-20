@@ -132,11 +132,16 @@ const CashflowViewContent = () => {
   }, [shareToken]);
 
   const calculations = inputs ? useOICalculations(inputs) : null;
-  // Load exit scenarios from saved inputs or auto-calculate
+  // Load exit scenarios from saved inputs or auto-calculate, clamp to bounds
   const exitScenarios: number[] = useMemo(() => {
     const savedExitScenarios = (inputs as any)?._exitScenarios;
+    const totalMonths = calculations?.totalMonths || 120;
     if (savedExitScenarios && Array.isArray(savedExitScenarios) && savedExitScenarios.length > 0) {
-      return savedExitScenarios;
+      // Clamp saved exit scenarios to valid bounds (1 to totalMonths)
+      const clampedScenarios = savedExitScenarios
+        .map((m: number) => Math.min(Math.max(1, m), totalMonths))
+        .filter((m: number, i: number, arr: number[]) => arr.indexOf(m) === i); // Remove duplicates
+      return clampedScenarios.length > 0 ? clampedScenarios : calculateAutoExitScenarios(totalMonths);
     }
     return calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36];
   }, [inputs, calculations?.totalMonths]);
