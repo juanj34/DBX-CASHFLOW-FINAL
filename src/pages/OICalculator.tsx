@@ -294,5 +294,4 @@ const OICalculatorContent = () => {
   );
 };
 
-const OICalculator = () => <LanguageProvider><OICalculatorContent /></LanguageProvider>;
-export default OICalculator;
+export default OICalculatorContent;
