@@ -31,7 +31,7 @@ interface AdvisorProfile {
 }
 
 const CashflowViewContent = () => {
-  useDocumentTitle("Cashflow Statement");
+  useDocumentTitle("Cashflow Generator");
   const { shareToken } = useParams<{ shareToken: string }>();
   const [searchParams] = useSearchParams();
   const { language, setLanguage, t } = useLanguage();

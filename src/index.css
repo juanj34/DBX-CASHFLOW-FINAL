@@ -271,7 +271,7 @@ All colors MUST be HSL.
   box-shadow: 0 0 10px #FF00FF;
 }
 
-/* Print Styles for Cashflow Statement PDF Export */
+/* Print Styles for Cashflow Generator PDF Export */
 @media print {
   /* Page setup */
   @page {

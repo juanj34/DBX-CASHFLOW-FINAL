@@ -7,7 +7,7 @@ import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const QuotesDashboard = () => {
-  useDocumentTitle("My Statements");
+  useDocumentTitle("My Cashflow Generators");
   const { quotes, loading, deleteQuote } = useQuotesList();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ const QuotesDashboard = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white">My Cashflow Statements</h1>
+              <h1 className="text-xl font-bold text-white">My Cashflow Generators</h1>
               <p className="text-sm text-gray-400">{quotes.length} quotes saved</p>
             </div>
           </div>
@@ -77,7 +77,7 @@ const QuotesDashboard = () => {
               <DollarSign className="w-8 h-8 text-gray-500" />
             </div>
             <h2 className="text-xl text-white mb-2">No quotes yet</h2>
-            <p className="text-gray-400 mb-6">Create your first cashflow statement to get started</p>
+            <p className="text-gray-400 mb-6">Create your first cashflow generator to get started</p>
             <Link to="/cashflow-generator">
               <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90">
                 Create Quote
