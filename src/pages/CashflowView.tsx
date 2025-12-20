@@ -11,9 +11,9 @@ import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo';
-import { SectionHeader } from '@/components/roi/SectionHeader';
 import { CumulativeIncomeChart } from '@/components/roi/CumulativeIncomeChart';
 import { WealthSummaryCard } from '@/components/roi/WealthSummaryCard';
+import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
 import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
@@ -72,6 +72,9 @@ const CashflowViewContent = () => {
           unitType?: string;
           unitSizeSqf?: number;
           unitSizeM2?: number;
+          brokerName?: string;
+          splitEnabled?: boolean;
+          clientShares?: Array<{ clientId: string; sharePercent: number }>;
         };
       };
       
@@ -102,12 +105,14 @@ const CashflowViewContent = () => {
       setClientInfo({
         developer: savedClientInfo?.developer || data.developer || '',
         clients,
-        brokerName: (data.profiles as any)?.full_name || '',
+        brokerName: savedClientInfo?.brokerName || (data.profiles as any)?.full_name || '',
         projectName: savedClientInfo?.projectName || data.project_name || '',
         unit: savedClientInfo?.unit || data.unit || '',
         unitSizeSqf: savedClientInfo?.unitSizeSqf || data.unit_size_sqf || 0,
         unitSizeM2: savedClientInfo?.unitSizeM2 || data.unit_size_m2 || 0,
         unitType: savedClientInfo?.unitType || data.unit_type || '',
+        splitEnabled: savedClientInfo?.splitEnabled || false,
+        clientShares: savedClientInfo?.clientShares || [],
       });
       setAdvisorProfile({
         full_name: (data.profiles as any)?.full_name || null,
@@ -153,10 +158,10 @@ const CashflowViewContent = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-[#00EAFF]/20 rounded-xl">
-              <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-[#00EAFF]" />
+            <div className="p-1.5 sm:p-2 bg-[#CCFF00]/20 rounded-xl">
+              <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-[#CCFF00]" />
             </div>
-            <h1 className="text-base sm:text-xl font-bold text-white">Cashflow Statement</h1>
+            <h1 className="text-sm sm:text-xl font-bold text-white">Cashflow Statement</h1>
             {advisorProfile?.full_name && (
               <div className="hidden md:flex items-center">
                 <div className="h-8 w-px bg-[#2a3142] mx-2" />
@@ -197,46 +202,48 @@ const CashflowViewContent = () => {
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
-        {/* Two Column Layout */}
-        <div className="flex flex-col xl:grid xl:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {(visibility.investmentSnapshot || visibility.rentSnapshot) && (
-            <div className="xl:col-span-1 order-1 xl:order-2 flex flex-col">
-              {visibility.investmentSnapshot && (
-                <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-              )}
-              {visibility.rentSnapshot && (
-                <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-              )}
-            </div>
+        {/* Investment Snapshot & Payment Breakdown - First */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          {visibility.investmentSnapshot && (
+            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
           )}
           {visibility.paymentBreakdown && (
-            <div className="xl:col-span-2 order-2 xl:order-1">
-              <PaymentBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
-            </div>
+            <PaymentBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
           )}
         </div>
 
-        {/* Exit Strategy Section */}
-        {visibility.exitStrategy && (
-          <div className="mb-8">
-            <SectionHeader icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />} title={t('exitStrategyAnalysis')} subtitle={t('whenToSell')} />
-            <div className="space-y-6">
-              <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-              <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} />
-            </div>
-          </div>
-        )}
-
-        {/* Long-Term Hold Section */}
+        {/* Rental Income Analysis - Collapsible */}
         {visibility.longTermHold && (
-          <div className="mb-8">
-            <SectionHeader icon={<Home className="w-5 h-5 text-[#CCFF00]" />} title={t('longTermHoldAnalysis')} subtitle={t('tenYearProjection')} />
-            <div className="space-y-6">
+          <CollapsibleSection
+            title={t('rentalIncomeAnalysis') || "Rental Income Analysis"}
+            subtitle={t('tenYearProjection') || "10-year hold simulation"}
+            icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
+            defaultOpen={true}
+          >
+            <div className="space-y-4 sm:space-y-6">
+              {visibility.rentSnapshot && (
+                <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+              )}
               <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
               <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
               <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
             </div>
-          </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Exit Strategy - Collapsible */}
+        {visibility.exitStrategy && (
+          <CollapsibleSection
+            title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
+            subtitle={t('whenToSell') || "When to sell for maximum returns"}
+            icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
+            defaultOpen={false}
+          >
+            <div className="space-y-4 sm:space-y-6">
+              <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+              <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} />
+            </div>
+          </CollapsibleSection>
         )}
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">

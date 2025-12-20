@@ -78,31 +78,22 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
       )}
       
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-[#0d1117]">
             <tr>
-              <th className="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Year</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Phase</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Apprec.</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Property Value</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-blue-400 uppercase tracking-wider">LT Rent</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-blue-400 uppercase tracking-wider">Eff. Yield</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-blue-400 uppercase tracking-wider">Net Income</th>
+              <th className="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Year</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Phase</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Value</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">Rent</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">Cumulative</th>
               {showAirbnbComparison && (
-                <>
-                  <th className="px-2 py-3 text-right text-xs font-medium text-purple-400 uppercase tracking-wider">Airbnb Net</th>
-                </>
+                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 uppercase tracking-wider whitespace-nowrap">Airbnb</th>
               )}
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#2a3142]">
-            {projections.map((proj, index) => {
-              const prevYield = index > 0 ? projections[index - 1].effectiveYield : null;
-              const yieldCompression = proj.effectiveYield && prevYield 
-                ? proj.effectiveYield - prevYield 
-                : null;
-              
+            {projections.map((proj) => {
               return (
                 <tr 
                   key={proj.year}
@@ -114,52 +105,35 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                         : ''
                   }
                 >
-                  <td className="px-2 py-3 text-sm text-white font-medium">
+                  <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-white font-medium whitespace-nowrap">
                     {proj.calendarYear}
                   </td>
-                  <td className="px-2 py-3 text-center">
-                    <span className={`text-sm ${getPhaseColor(proj.phase)}`} title={proj.phase}>
+                  <td className="px-2 py-2 sm:py-3 text-center">
+                    <span className={`text-xs sm:text-sm ${getPhaseColor(proj.phase)}`} title={proj.phase}>
                       {getPhaseLabel(proj.phase)}
                     </span>
                   </td>
-                  <td className="px-2 py-3 text-sm text-right font-mono">
-                    <span className={getPhaseColor(proj.phase)}>
-                      {proj.appreciationRate.toFixed(0)}%
-                    </span>
-                  </td>
-                  <td className="px-2 py-3 text-sm text-right text-white font-mono">
+                  <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right text-white font-mono whitespace-nowrap">
                     {formatCurrency(proj.propertyValue, currency, rate)}
                   </td>
-                  <td className="px-2 py-3 text-sm text-right font-mono">
+                  <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
                     {proj.annualRent ? (
-                      <span className="text-blue-400">{formatCurrency(proj.annualRent, currency, rate)}</span>
+                      <span className="text-cyan-400">{formatCurrency(proj.annualRent, currency, rate)}</span>
                     ) : (
                       <span className="text-gray-500">—</span>
                     )}
                   </td>
-                  <td className="px-2 py-3 text-sm text-right font-mono">
-                    {proj.effectiveYield ? (
-                      <div className="flex items-center justify-end gap-1">
-                        <span className="text-blue-300">{proj.effectiveYield.toFixed(1)}%</span>
-                        {yieldCompression !== null && yieldCompression < 0 && (
-                          <TrendingDown className="w-3 h-3 text-amber-400" />
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-500">—</span>
-                    )}
-                  </td>
-                  <td className="px-2 py-3 text-sm text-right font-mono">
-                    {proj.netIncome ? (
-                      <span className="text-green-400">{formatCurrency(proj.netIncome, currency, rate)}</span>
+                  <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
+                    {proj.cumulativeNetIncome ? (
+                      <span className="text-[#CCFF00]">{formatCurrency(proj.cumulativeNetIncome, currency, rate)}</span>
                     ) : (
                       <span className="text-gray-500">—</span>
                     )}
                   </td>
                   {showAirbnbComparison && (
-                    <td className="px-2 py-3 text-sm text-right font-mono">
-                      {proj.airbnbNetIncome ? (
-                        <span className="text-purple-400">{formatCurrency(proj.airbnbNetIncome, currency, rate)}</span>
+                    <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
+                      {proj.airbnbCumulativeNetIncome ? (
+                        <span className="text-orange-400">{formatCurrency(proj.airbnbCumulativeNetIncome, currency, rate)}</span>
                       ) : (
                         <span className="text-gray-500">—</span>
                       )}

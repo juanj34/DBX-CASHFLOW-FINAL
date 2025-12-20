@@ -32,13 +32,14 @@ function App() {
             <Route path="/map" element={<Map />} />
             <Route path="/map-config" element={<Dashboard />} />
             <Route path="/roi-calculator" element={<ROICalculator />} />
-            <Route path="/cash-statement" element={<OICalculator />} />
+            <Route path="/cashflow-generator" element={<OICalculator />} />
             <Route path="/cashflow/:quoteId" element={<OICalculator />} />
             <Route path="/account-settings" element={<AccountSettings />} />
             <Route path="/my-quotes" element={<QuotesDashboard />} />
             <Route path="/view/:shareToken" element={<CashflowView />} />
             {/* Redirects for old routes */}
-            <Route path="/oi-calculator" element={<Navigate to="/cash-statement" replace />} />
+            <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
+            <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
             <Route path="/dashboard" element={<Navigate to="/map-config" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
