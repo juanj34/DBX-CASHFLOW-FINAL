@@ -96,18 +96,16 @@ const OICalculatorContent = () => {
   const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id), [inputs, clientInfo, quote?.id, saveQuote]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, saveAsNew, navigate]);
   const handleShare = useCallback(async () => {
-    let token: string | null = null;
-    if (!quote?.id) {
-      const savedQuote = await handleSave();
-      if (savedQuote) token = await generateShareToken(savedQuote.id);
-    } else {
-      token = await generateShareToken(quote.id);
-    }
+    // Always save first to ensure the client sees the latest data
+    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id);
+    if (!savedQuote) return null;
+    
+    const token = await generateShareToken(savedQuote.id);
     if (token) {
       return `${window.location.origin}/view/${token}`;
     }
     return null;
-  }, [quote?.id, handleSave, generateShareToken]);
+  }, [quote?.id, inputs, clientInfo, saveQuote, generateShareToken]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
@@ -150,7 +148,7 @@ const OICalculatorContent = () => {
               <FolderOpen className="w-4 h-4 sm:mr-1" />
               <span className="hidden sm:inline">{t('loadQuote')}</span>
             </Button>
-            <SaveControls quoteId={quote?.id} saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} onShare={handleShare} />
+            <SaveControls saving={saving} lastSaved={lastSaved} onSave={handleSave} onSaveAs={handleSaveAs} />
             <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
             <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
               <Globe className="w-3.5 h-3.5 sm:mr-1" />

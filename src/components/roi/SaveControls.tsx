@@ -1,34 +1,27 @@
-import { useState } from 'react';
-import { Save, Copy, Share2, Check, Loader2 } from 'lucide-react';
+import { Save, Copy, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
 interface SaveControlsProps {
-  quoteId?: string;
   saving: boolean;
   lastSaved: Date | null;
   onSave: () => Promise<any>;
   onSaveAs: () => Promise<any>;
-  onShare: () => Promise<string | null>;
 }
 
 export const SaveControls = ({
-  quoteId,
   saving,
   lastSaved,
   onSave,
   onSaveAs,
-  onShare,
 }: SaveControlsProps) => {
   const { toast } = useToast();
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   const handleSave = async () => {
     await onSave();
@@ -39,16 +32,6 @@ export const SaveControls = ({
     const result = await onSaveAs();
     if (result) {
       toast({ title: 'Saved as new quote!' });
-    }
-  };
-
-  const handleShare = async () => {
-    const token = await onShare();
-    if (token) {
-      const url = `${window.location.origin}/view/${token}`;
-      setShareUrl(url);
-      await navigator.clipboard.writeText(url);
-      toast({ title: 'Share link copied to clipboard!' });
     }
   };
 
@@ -106,16 +89,6 @@ export const SaveControls = ({
             <Copy className="w-4 h-4" />
             Save as New
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-[#2a3142]" />
-          {quoteId && (
-            <DropdownMenuItem
-              onClick={handleShare}
-              className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
-            >
-              <Share2 className="w-4 h-4" />
-              Share with Client
-            </DropdownMenuItem>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
