@@ -1017,7 +1017,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
             <div className="flex justify-between items-center">
               <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#CCFF00]" />
-                Zone & Appreciation
+                {(inputs.useZoneDefaults ?? true) ? 'Zone & Appreciation' : 'Custom Appreciation'}
               </label>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">Use Zone Defaults</span>
