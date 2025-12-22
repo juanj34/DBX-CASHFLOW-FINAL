@@ -107,7 +107,7 @@ const OICalculatorContent = () => {
   useEffect(() => { setDataLoaded(false); }, [quoteId]);
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
-  useEffect(() => { if (!quoteLoading) scheduleAutoSave(inputs, clientInfo, quote?.id); }, [inputs, clientInfo, quote?.id, quoteLoading]);
+  useEffect(() => { if (!quoteLoading) scheduleAutoSave(inputs, clientInfo, quote?.id, isQuoteConfigured); }, [inputs, clientInfo, quote?.id, quoteLoading, isQuoteConfigured, scheduleAutoSave]);
 
   // Exit scenarios state - load from saved quote or auto-calculate
   const [exitScenarios, setExitScenarios] = useState<number[]>(() => calculateAutoExitScenarios(calculations.totalMonths));

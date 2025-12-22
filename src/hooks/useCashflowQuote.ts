@@ -91,7 +91,7 @@ export const useCashflowQuote = (quoteId?: string) => {
   }, []);
 
   // Auto-save with debounce
-  const scheduleAutoSave = useCallback((inputs: OIInputs, clientInfo: ClientUnitData, existingQuoteId?: string) => {
+  const scheduleAutoSave = useCallback((inputs: OIInputs, clientInfo: ClientUnitData, existingQuoteId?: string, isQuoteConfigured?: boolean) => {
     if (autoSaveTimeout.current) {
       clearTimeout(autoSaveTimeout.current);
     }
@@ -101,10 +101,70 @@ export const useCashflowQuote = (quoteId?: string) => {
 
     autoSaveTimeout.current = setTimeout(async () => {
       if (existingQuoteId) {
+        // Update existing quote after 15 seconds
         await saveQuote(inputs, clientInfo, existingQuoteId);
+      } else if (isQuoteConfigured) {
+        // Auto-save NEW quote as draft after 60 seconds to prevent data loss
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const firstClient = clientInfo.clients?.[0];
+        const clientName = firstClient?.name || clientInfo.clientName || null;
+        const clientNames = clientInfo.clients?.map(c => c.name).filter(Boolean).join(', ');
+        const titleClientPart = clientNames || clientName || '';
+        
+        const inputsWithClients = {
+          ...inputs,
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+          _clients: clientInfo.clients || [],
+          _clientInfo: {
+            developer: clientInfo.developer,
+            projectName: clientInfo.projectName,
+            unit: clientInfo.unit,
+            unitType: clientInfo.unitType,
+            unitSizeSqf: clientInfo.unitSizeSqf,
+            unitSizeM2: clientInfo.unitSizeM2,
+            brokerName: clientInfo.brokerName,
+            splitEnabled: clientInfo.splitEnabled,
+            clientShares: clientInfo.clientShares,
+            zoneId: clientInfo.zoneId,
+            zoneName: clientInfo.zoneName,
+          },
+          _exitScenarios: [],
+        };
+
+        const quoteData = {
+          broker_id: user.id,
+          inputs: inputsWithClients as any,
+          client_name: clientName,
+          client_country: firstClient?.country || clientInfo.clientCountry || null,
+          project_name: clientInfo.projectName || null,
+          developer: clientInfo.developer || null,
+          unit: clientInfo.unit || null,
+          unit_type: clientInfo.unitType || null,
+          unit_size_sqf: clientInfo.unitSizeSqf || null,
+          unit_size_m2: clientInfo.unitSizeM2 || null,
+          is_draft: true, // Mark as draft for auto-saved quotes
+          title: titleClientPart 
+            ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
+            : 'Draft Quote',
+        };
+
+        const { data } = await supabase
+          .from('cashflow_quotes')
+          .insert(quoteData)
+          .select()
+          .single();
+
+        if (data) {
+          // Clear localStorage after saving to DB
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          setLastSaved(new Date());
+          toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
+        }
       }
-    }, 15000);
-  }, [saveDraft]);
+    }, existingQuoteId ? 15000 : 60000); // 15s for existing, 60s for new
+  }, [saveDraft, toast]);
 
   // Save quote to database
   const saveQuote = async (inputs: OIInputs, clientInfo: ClientUnitData, existingId?: string, exitScenarios?: number[]) => {

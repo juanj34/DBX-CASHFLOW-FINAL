@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,21 +6,37 @@ import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const QuotesDashboard = () => {
   useDocumentTitle("My Cashflow Generators");
   const { quotes, loading, deleteQuote } = useQuotesList();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [deletingQuote, setDeletingQuote] = useState<CashflowQuote | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this quote?')) return;
-    const { error } = await deleteQuote(id);
+  const handleDeleteClick = (quote: CashflowQuote) => {
+    setDeletingQuote(quote);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingQuote) return;
+    const { error } = await deleteQuote(deletingQuote.id);
     if (error) {
       toast({ title: 'Failed to delete', variant: 'destructive' });
     } else {
       toast({ title: 'Quote deleted' });
     }
+    setDeletingQuote(null);
   };
 
   const handleShare = async (quote: CashflowQuote) => {
@@ -131,7 +148,7 @@ const QuotesDashboard = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleShare(quote)}
-                        className="text-gray-400 hover:text-[#CCFF00]"
+                        className="text-gray-400 hover:text-black hover:bg-[#CCFF00]"
                       >
                         <Share2 className="w-4 h-4" />
                       </Button>
@@ -140,15 +157,15 @@ const QuotesDashboard = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => navigate(`/cashflow/${quote.id}`)}
-                      className="text-gray-400 hover:text-white"
+                      className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(quote.id)}
-                      className="text-gray-400 hover:text-red-400"
+                      onClick={() => handleDeleteClick(quote)}
+                      className="text-gray-400 hover:text-white hover:bg-red-600"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -159,6 +176,29 @@ const QuotesDashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingQuote} onOpenChange={() => setDeletingQuote(null)}>
+        <AlertDialogContent className="bg-[#1a1f2e] border-[#2a3142]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Quote</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete "{deletingQuote?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-[#2a3142] text-gray-300 border-[#2a3142] hover:bg-[#3a4152] hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
