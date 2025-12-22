@@ -124,7 +124,7 @@ export const QuotesDropdown = ({
 
         {/* View All Quotes */}
         <DropdownMenuItem
-          onClick={() => navigate('/quotes')}
+          onClick={() => navigate('/my-quotes')}
           className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
         >
           <FileText className="w-4 h-4" />
