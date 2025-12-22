@@ -76,9 +76,10 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
     });
   }, [quotes, searchQuery]);
 
-  const handleSelectQuote = (quoteId: string) => {
-    onOpenChange(false);
+  const handleSelectQuote = (quoteId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     navigate(`/cashflow/${quoteId}`);
+    onOpenChange(false);
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -98,6 +99,7 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
             <FolderOpen className="w-5 h-5 text-[#CCFF00]" />
             {t('loadQuote')}
           </DialogTitle>
+          <p className="text-sm text-gray-400">{t('searchQuotes')}</p>
         </DialogHeader>
 
         {/* Search Input */}
@@ -129,7 +131,7 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
                 return (
                   <button
                     key={quote.id}
-                    onClick={() => handleSelectQuote(quote.id)}
+                    onClick={(e) => handleSelectQuote(quote.id, e)}
                     className="w-full p-4 bg-[#0d1117] border border-[#2a3142] rounded-xl hover:border-[#CCFF00]/50 transition-colors text-left group"
                   >
                     <div className="flex items-start justify-between">

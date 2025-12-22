@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Map, Rocket, TrendingUp, FileText, Settings, LogOut } from "lucide-react";
+import { Map, Rocket, TrendingUp, FileText, Settings, LogOut, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useAdminRole } from "@/hooks/useAuth";
 
 interface SolutionCard {
   id: string;
@@ -46,6 +47,7 @@ const Home = () => {
   useDocumentTitle("Dashboard");
   const navigate = useNavigate();
   const { profile, loading } = useProfile();
+  const { isAdmin } = useAdminRole();
   const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
 
   useEffect(() => {
@@ -108,6 +110,14 @@ const Home = () => {
                 My Generators
               </Button>
             </Link>
+            {isAdmin && (
+              <Link to="/dashboard">
+                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] gap-2">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Configuration
+                </Button>
+              </Link>
+            )}
             <Link to="/account-settings">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
                 <Settings className="w-5 h-5" />

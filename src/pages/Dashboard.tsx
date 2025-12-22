@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const Dashboard = () => {
-  useDocumentTitle("Admin Dashboard");
+  useDocumentTitle("Configuration Center");
   const { isAdmin, loading } = useAdminRole();
   const navigate = useNavigate();
 

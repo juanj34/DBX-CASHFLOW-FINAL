@@ -2,15 +2,16 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, Map, MapPin, Building2, Sparkles, Users, Camera, Home, ArrowLeft } from "lucide-react";
+import { LogOut, Layers, Target, Building2, Sparkles, Users, Landmark, Home, ArrowLeft, TrendingUp } from "lucide-react";
 import ZonesManager from "./ZonesManager";
 import HotspotsManager from "./HotspotsManager";
 import ProjectsManager from "./ProjectsManager";
 import DevelopersManager from "./DevelopersManager";
 import LandmarksManager from "./LandmarksManager";
+import PresetsManager from "./PresetsManager";
 import AIChatPanel from "./AIChatPanel";
 
-type ActiveTab = "zones" | "hotspots" | "projects" | "developers" | "landmarks";
+type ActiveTab = "zones" | "presets" | "hotspots" | "projects" | "developers" | "landmarks";
 
 const DashboardLayout = () => {
   const { signOut } = useAuth();
@@ -22,8 +23,8 @@ const DashboardLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 border-r border-[#2a3142] bg-[#1a1f2e]">
         <div className="p-6 border-b border-[#2a3142]">
-          <h1 className="text-xl font-semibold text-white">Map Config</h1>
-          <p className="text-sm text-gray-400">Manage map data</p>
+          <h1 className="text-xl font-semibold text-white">Configuration Center</h1>
+          <p className="text-sm text-gray-400">Manage data & presets</p>
         </div>
 
         {/* Navigation to Home/Map */}
@@ -58,8 +59,21 @@ const DashboardLayout = () => {
             }`}
             onClick={() => setActiveTab("zones")}
           >
-            <Map className="mr-2 h-4 w-4" />
+            <Layers className="mr-2 h-4 w-4" />
             Zones
+          </Button>
+
+          <Button
+            variant={activeTab === "presets" ? "secondary" : "ghost"}
+            className={`w-full justify-start ${
+              activeTab === "presets" 
+                ? "bg-[#CCFF00]/20 text-[#CCFF00] hover:bg-[#CCFF00]/30" 
+                : "text-gray-300 hover:text-white hover:bg-[#2a3142]"
+            }`}
+            onClick={() => setActiveTab("presets")}
+          >
+            <TrendingUp className="mr-2 h-4 w-4" />
+            Appreciation Presets
           </Button>
           
           <Button
@@ -71,7 +85,7 @@ const DashboardLayout = () => {
             }`}
             onClick={() => setActiveTab("hotspots")}
           >
-            <MapPin className="mr-2 h-4 w-4" />
+            <Target className="mr-2 h-4 w-4" />
             Hotspots
           </Button>
           
@@ -110,7 +124,7 @@ const DashboardLayout = () => {
             }`}
             onClick={() => setActiveTab("landmarks")}
           >
-            <Camera className="mr-2 h-4 w-4" />
+            <Landmark className="mr-2 h-4 w-4" />
             Landmarks
           </Button>
         </nav>
@@ -130,6 +144,7 @@ const DashboardLayout = () => {
       {/* Main Content */}
       <main className="flex-1 p-8 relative bg-[#0f172a]">
         {activeTab === "zones" && <ZonesManager />}
+        {activeTab === "presets" && <PresetsManager />}
         {activeTab === "hotspots" && <HotspotsManager />}
         {activeTab === "projects" && <ProjectsManager />}
         {activeTab === "developers" && <DevelopersManager />}

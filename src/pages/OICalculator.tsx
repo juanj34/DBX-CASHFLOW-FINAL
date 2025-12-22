@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
@@ -29,6 +29,7 @@ import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useProfile } from "@/hooks/useProfile";
+import { useAdminRole } from "@/hooks/useAuth";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -55,9 +56,20 @@ const OICalculatorContent = () => {
   const { showOnboarding, setShowOnboarding } = useAdvisorOnboarding();
 
   const { profile } = useProfile();
+  const { isAdmin } = useAdminRole();
   const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
   const calculations = useOICalculations(inputs);
   const { rate, isLive } = useExchangeRate(currency);
+
+  // Check if quote is configured (has meaningful data)
+  const isQuoteConfigured = useMemo(() => {
+    return (
+      !!quoteId ||
+      !!clientInfo.developer ||
+      !!clientInfo.projectName ||
+      inputs.basePrice !== 800000
+    );
+  }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
   useEffect(() => {
     if (dataLoaded) return;
@@ -172,6 +184,13 @@ const OICalculatorContent = () => {
                   <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
+              {isAdmin && (
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-9 sm:w-9">
+                    <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Button>
+                </Link>
+              )}
               {profile && <AdvisorInfo profile={profile} size="lg" showSubtitle />}
             </div>
 
@@ -215,46 +234,81 @@ const OICalculatorContent = () => {
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
 
-        {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+        {!isQuoteConfigured ? (
+          /* Unconfigured State - Show placeholder */
+          <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-8 sm:p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-[#CCFF00]/20 flex items-center justify-center mx-auto mb-6">
+                <Settings2 className="w-8 h-8 text-[#CCFF00]" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3">Configure Your Scenario</h3>
+              <p className="text-gray-400 mb-6">
+                Start by configuring the property details and financial inputs to generate your cashflow projection.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => setClientModalOpen(true)}
+                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
+                >
+                  <Settings2 className="w-4 h-4" />
+                  Set Client & Property
+                </Button>
+                <Button
+                  onClick={() => setModalOpen(true)}
+                  variant="outline"
+                  className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Configure Financials
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="lg:col-span-1 space-y-4">
-            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-            {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
-              <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
-            )}
-          </div>
-        </div>
+        ) : (
+          /* Configured State - Show full content */
+          <>
+            {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+              <div className="lg:col-span-2">
+                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+              </div>
+              <div className="lg:col-span-1 space-y-4">
+                <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+                {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
+                  <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+                )}
+              </div>
+            </div>
 
-        {/* Hold Strategy Analysis - Collapsible */}
-        <CollapsibleSection
-          title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
-          subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
-          icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
-          defaultOpen={true}
-        >
-          <div className="space-y-4 sm:space-y-6">
-            <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-            <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-            <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-            <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-          </div>
-        </CollapsibleSection>
+            {/* Hold Strategy Analysis - Collapsible */}
+            <CollapsibleSection
+              title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
+              subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
+              icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
+              defaultOpen={true}
+            >
+              <div className="space-y-4 sm:space-y-6">
+                <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+                <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
+                <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+              </div>
+            </CollapsibleSection>
 
-        {/* Exit Scenarios - Collapsible */}
-        <CollapsibleSection
-          title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
-          subtitle={t('whenToSell') || "When to sell for maximum returns"}
-          icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
-          defaultOpen={false}
-        >
-          <div className="space-y-4 sm:space-y-6">
-            <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} />
-            <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-          </div>
-        </CollapsibleSection>
+            {/* Exit Scenarios - Collapsible */}
+            <CollapsibleSection
+              title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
+              subtitle={t('whenToSell') || "When to sell for maximum returns"}
+              icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
+              defaultOpen={false}
+            >
+              <div className="space-y-4 sm:space-y-6">
+                <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} />
+                <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+              </div>
+            </CollapsibleSection>
+          </>
+        )}
 
         <div className="mt-6 sm:mt-8 flex flex-wrap gap-2 sm:gap-4 print:hidden">
           <Link to="/my-quotes"><Button variant="outline" className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20 text-xs sm:text-sm">{t('myQuotes')}</Button></Link>
