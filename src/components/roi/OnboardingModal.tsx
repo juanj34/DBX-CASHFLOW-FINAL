@@ -101,7 +101,7 @@ export const OnboardingModal = ({ open, onOpenChange }: OnboardingModalProps) =>
               <Button
                 variant="outline"
                 onClick={handlePrev}
-                className="flex-1 border-[#2a3142] text-gray-300 hover:bg-[#2a3142]"
+                className="flex-1 border-[#2a3142] text-white hover:bg-[#2a3142]"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 {t('back') || 'Back'}

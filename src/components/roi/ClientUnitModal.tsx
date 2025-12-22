@@ -197,7 +197,7 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
         <Button
           variant="outline"
           size="sm"
-          className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white gap-2"
+          className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
         >
           <Settings2 className="w-4 h-4" />
           {t('clientDetails')}

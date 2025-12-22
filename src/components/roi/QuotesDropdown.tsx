@@ -69,7 +69,7 @@ export const QuotesDropdown = ({
         <Button
           variant="outline"
           size="sm"
-          className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white h-8 px-2 sm:px-3 gap-1.5"
+          className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] h-8 px-2 sm:px-3 gap-1.5"
         >
           <FileText className="w-4 h-4" />
           <span className="hidden sm:inline">{t('quotes')}</span>
