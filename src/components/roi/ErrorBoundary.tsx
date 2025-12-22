@@ -70,9 +70,8 @@ export class CashflowErrorBoundary extends Component<Props, State> {
 
             <div className="flex gap-3 justify-center pt-2">
               <Button
-                variant="outline"
+                variant="outlineDark"
                 onClick={this.handleGoHome}
-                className="border-[#2a3142] bg-[#0d1117] text-white hover:bg-[#2a3142]"
               >
                 <Home className="w-4 h-4 mr-2" />
                 Go Home

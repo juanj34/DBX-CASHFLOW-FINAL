@@ -118,9 +118,9 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="outlineDark"
           size="sm"
-          className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
+          className="gap-2"
         >
           <Share2 className="w-4 h-4" />
           <span className="hidden sm:inline">{t('share')}</span>
@@ -202,8 +202,8 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
               <Button
                 onClick={handleExportPDF}
                 disabled={exporting}
-                variant="outline"
-                className="w-full border-[#2a3142] text-white hover:bg-[#2a3142]"
+                variant="outlineDark"
+                className="w-full"
               >
                 {exporting ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300" />

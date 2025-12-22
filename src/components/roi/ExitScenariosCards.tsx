@@ -228,10 +228,9 @@ export const ExitScenariosCards = ({
         </div>
         {!readOnly && exitScenarios.length < 5 && setExitScenarios && (
           <Button
-            variant="outline"
+            variant="outlineAccent"
             size="sm"
             onClick={handleAddExit}
-            className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
           >
             <Plus className="w-4 h-4 mr-1" />
             {t('addExit')}

@@ -276,8 +276,8 @@ const OICalculatorContent = () => {
                 </Button>
                 <Button
                   onClick={() => setModalOpen(true)}
-                  variant="outline"
-                  className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
+                  variant="outlineDark"
+                  className="gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
                   Configure Financials
@@ -332,8 +332,8 @@ const OICalculatorContent = () => {
         )}
 
         <div className="mt-6 sm:mt-8 flex flex-wrap gap-2 sm:gap-4 print:hidden">
-          <Link to="/my-quotes"><Button variant="outline" className="bg-[#1a1f2e] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20 text-xs sm:text-sm">{t('myQuotes')}</Button></Link>
-          <Link to="/roi-calculator"><Button variant="outline" className="border-[#2a3142] text-white hover:bg-[#2a3142] text-xs sm:text-sm">{t('fullROICalculator')}</Button></Link>
+          <Link to="/my-quotes"><Button variant="outlineAccent" className="text-xs sm:text-sm">{t('myQuotes')}</Button></Link>
+          <Link to="/roi-calculator"><Button variant="outlineDark" className="text-xs sm:text-sm">{t('fullROICalculator')}</Button></Link>
         </div>
       </main>
     </div>
