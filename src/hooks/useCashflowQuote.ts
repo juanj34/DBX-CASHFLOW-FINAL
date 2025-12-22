@@ -141,6 +141,8 @@ export const useCashflowQuote = (quoteId?: string) => {
         brokerName: clientInfo.brokerName,
         splitEnabled: clientInfo.splitEnabled,
         clientShares: clientInfo.clientShares,
+        zoneId: clientInfo.zoneId,
+        zoneName: clientInfo.zoneName,
       },
       _exitScenarios: exitScenarios || [],
     };
