@@ -277,7 +277,7 @@ const OICalculatorContent = () => {
                 <Button
                   onClick={() => setModalOpen(true)}
                   variant="outline"
-                  className="border-[#2a3142] text-white hover:bg-[#2a3142] gap-2"
+                  className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
                   Configure Financials
