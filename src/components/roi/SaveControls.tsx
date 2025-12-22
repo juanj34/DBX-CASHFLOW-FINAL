@@ -64,7 +64,7 @@ export const SaveControls = ({
         size="sm"
         onClick={handleSave}
         disabled={saving}
-        className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white gap-2"
+        className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
       >
         <Save className="w-4 h-4" />
         Save
@@ -76,7 +76,7 @@ export const SaveControls = ({
           <Button
             variant="outline"
             size="sm"
-            className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+            className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142]"
           >
             •••
           </Button>

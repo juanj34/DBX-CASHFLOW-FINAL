@@ -120,7 +120,7 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
         <Button
           variant="outline"
           size="sm"
-          className="border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142] hover:text-white gap-2"
+          className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
         >
           <Share2 className="w-4 h-4" />
           <span className="hidden sm:inline">{t('share')}</span>
@@ -203,7 +203,7 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
                 onClick={handleExportPDF}
                 disabled={exporting}
                 variant="outline"
-                className="w-full border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white"
+                className="w-full border-[#2a3142] text-white hover:bg-[#2a3142]"
               >
                 {exporting ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300" />
