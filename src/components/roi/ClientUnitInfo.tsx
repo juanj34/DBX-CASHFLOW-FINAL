@@ -1,7 +1,8 @@
 import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2, Users, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { COUNTRIES, UNIT_TYPES, Client } from "./ClientUnitModal";
+import { UNIT_TYPES, Client } from "./ClientUnitModal";
+import { COUNTRIES, getCountryByCode } from "@/data/countries";
 
 export interface ClientShare {
   clientId: string;
@@ -148,7 +149,7 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
                 <p className="text-xs text-gray-500">{t('clients')}</p>
                 <div className="space-y-0.5">
                   {clients.map((client) => {
-                    const country = COUNTRIES.find(c => c.code === client.country);
+                    const country = getCountryByCode(client.country);
                     return (
                       <p key={client.id} className="text-sm font-medium text-white flex items-center gap-1">
                         {client.name}

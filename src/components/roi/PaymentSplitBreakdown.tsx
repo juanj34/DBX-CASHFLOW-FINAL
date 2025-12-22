@@ -2,7 +2,8 @@ import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { ClientShare, ClientUnitData } from "./ClientUnitInfo";
 import { User, Percent } from "lucide-react";
-import { COUNTRIES, Client } from "./ClientUnitModal";
+import { Client } from "./ClientUnitModal";
+import { getCountryByCode } from "@/data/countries";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -53,7 +54,7 @@ export const PaymentSplitBreakdown = ({
 
   // Get client name with flag
   const getClientDisplay = (client: Client): { name: string; flag?: string } => {
-    const country = COUNTRIES.find(c => c.code === client.country);
+    const country = getCountryByCode(client.country);
     return {
       name: client.name || t('client'),
       flag: country?.flag

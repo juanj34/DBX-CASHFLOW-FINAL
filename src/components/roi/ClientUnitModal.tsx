@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { CountrySelect } from "@/components/ui/country-select";
 import { Settings2, Plus, Trash2, Users, Percent, AlertCircle, MapPin, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "./ClientUnitInfo";
@@ -30,37 +31,7 @@ interface Zone {
 
 const SQF_TO_M2 = 0.092903;
 
-export const COUNTRIES = [
-  { code: 'AE', name: 'United Arab Emirates', nameEs: 'Emiratos Árabes Unidos', flag: '🇦🇪' },
-  { code: 'CO', name: 'Colombia', nameEs: 'Colombia', flag: '🇨🇴' },
-  { code: 'IN', name: 'India', nameEs: 'India', flag: '🇮🇳' },
-  { code: 'GB', name: 'United Kingdom', nameEs: 'Reino Unido', flag: '🇬🇧' },
-  { code: 'US', name: 'United States', nameEs: 'Estados Unidos', flag: '🇺🇸' },
-  { code: 'SA', name: 'Saudi Arabia', nameEs: 'Arabia Saudita', flag: '🇸🇦' },
-  { code: 'PK', name: 'Pakistan', nameEs: 'Pakistán', flag: '🇵🇰' },
-  { code: 'EG', name: 'Egypt', nameEs: 'Egipto', flag: '🇪🇬' },
-  { code: 'RU', name: 'Russia', nameEs: 'Rusia', flag: '🇷🇺' },
-  { code: 'CN', name: 'China', nameEs: 'China', flag: '🇨🇳' },
-  { code: 'DE', name: 'Germany', nameEs: 'Alemania', flag: '🇩🇪' },
-  { code: 'FR', name: 'France', nameEs: 'Francia', flag: '🇫🇷' },
-  { code: 'IT', name: 'Italy', nameEs: 'Italia', flag: '🇮🇹' },
-  { code: 'ES', name: 'Spain', nameEs: 'España', flag: '🇪🇸' },
-  { code: 'BR', name: 'Brazil', nameEs: 'Brasil', flag: '🇧🇷' },
-  { code: 'MX', name: 'Mexico', nameEs: 'México', flag: '🇲🇽' },
-  { code: 'CA', name: 'Canada', nameEs: 'Canadá', flag: '🇨🇦' },
-  { code: 'AU', name: 'Australia', nameEs: 'Australia', flag: '🇦🇺' },
-  { code: 'JP', name: 'Japan', nameEs: 'Japón', flag: '🇯🇵' },
-  { code: 'KR', name: 'South Korea', nameEs: 'Corea del Sur', flag: '🇰🇷' },
-  { code: 'NG', name: 'Nigeria', nameEs: 'Nigeria', flag: '🇳🇬' },
-  { code: 'KE', name: 'Kenya', nameEs: 'Kenia', flag: '🇰🇪' },
-  { code: 'ZA', name: 'South Africa', nameEs: 'Sudáfrica', flag: '🇿🇦' },
-  { code: 'LB', name: 'Lebanon', nameEs: 'Líbano', flag: '🇱🇧' },
-  { code: 'JO', name: 'Jordan', nameEs: 'Jordania', flag: '🇯🇴' },
-  { code: 'KW', name: 'Kuwait', nameEs: 'Kuwait', flag: '🇰🇼' },
-  { code: 'QA', name: 'Qatar', nameEs: 'Catar', flag: '🇶🇦' },
-  { code: 'BH', name: 'Bahrain', nameEs: 'Baréin', flag: '🇧🇭' },
-  { code: 'OM', name: 'Oman', nameEs: 'Omán', flag: '🇴🇲' },
-];
+// Countries are now imported from @/data/countries and used via CountrySelect component
 
 export const UNIT_TYPES = [
   { value: 'studio', labelEn: 'Studio', labelEs: 'Estudio' },
@@ -355,25 +326,12 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
                         placeholder={t('clientName')}
                         className="bg-[#1a1f2e] border-[#2a3142] text-white h-9"
                       />
-                      <Select 
-                        value={client.country} 
+                      <CountrySelect
+                        value={client.country}
                         onValueChange={(v) => handleClientChange(client.id, 'country', v)}
-                      >
-                        <SelectTrigger className="bg-[#1a1f2e] border-[#2a3142] text-white h-9">
-                          <SelectValue placeholder={t('selectCountry')} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-[200px]">
-                          {COUNTRIES.map((country) => (
-                            <SelectItem 
-                              key={country.code} 
-                              value={country.code}
-                              className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]"
-                            >
-                              {country.flag} {language === 'es' ? country.nameEs : country.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder={t('selectCountry')}
+                        className="bg-[#1a1f2e] border-[#2a3142] h-9 w-full"
+                      />
                       {data.splitEnabled && (
                         <div className="relative">
                           <Input
