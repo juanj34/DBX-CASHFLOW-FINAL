@@ -22,7 +22,7 @@ import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
-import { OnboardingModal, useAdvisorOnboarding } from "@/components/roi/OnboardingModal";
+import { AlertTriangle, Save } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -53,7 +53,7 @@ const OICalculatorContent = () => {
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const { showOnboarding, setShowOnboarding } = useAdvisorOnboarding();
+  
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -225,11 +225,32 @@ const OICalculatorContent = () => {
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
               <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
               <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
-              <OnboardingModal open={showOnboarding} onOpenChange={setShowOnboarding} />
+              
             </div>
           </div>
         </div>
       </header>
+
+      {/* Unsaved Draft Warning Banner */}
+      {isQuoteConfigured && !quoteId && !lastSaved && (
+        <div className="bg-amber-900/30 border-b border-amber-700/50 print:hidden">
+          <div className="container mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-amber-200 text-sm">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>Draft – Changes are only saved locally on this device. Save to prevent data loss.</span>
+            </div>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              size="sm"
+              className="bg-amber-600 hover:bg-amber-500 text-white gap-1.5 flex-shrink-0"
+            >
+              <Save className="w-3.5 h-3.5" />
+              {saving ? 'Saving...' : 'Save Now'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />

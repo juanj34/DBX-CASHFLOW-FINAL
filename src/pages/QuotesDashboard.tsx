@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useToast } from '@/hooks/use-toast';
@@ -105,6 +105,12 @@ const QuotesDashboard = () => {
                       )}
                       {quote.developer && (
                         <span>Developer: {quote.developer}</span>
+                      )}
+                      {(quote.inputs as any)?._clientInfo?.zoneName && (
+                        <span className="flex items-center gap-1 text-cyan-400">
+                          <MapPin className="w-3 h-3" />
+                          {(quote.inputs as any)._clientInfo.zoneName}
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
