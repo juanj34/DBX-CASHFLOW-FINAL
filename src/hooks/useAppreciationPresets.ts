@@ -106,6 +106,43 @@ export const useAppreciationPresets = () => {
     }
   };
 
+  const updatePreset = async (id: string, name: string, values: PresetValues): Promise<boolean> => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('appreciation_presets')
+        .update({
+          name,
+          construction_appreciation: values.constructionAppreciation,
+          growth_appreciation: values.growthAppreciation,
+          mature_appreciation: values.matureAppreciation,
+          growth_period_years: values.growthPeriodYears,
+          rent_growth_rate: values.rentGrowthRate || null,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Preset Updated',
+        description: `"${name}" has been updated`,
+      });
+
+      await fetchPresets();
+      return true;
+    } catch (error) {
+      console.error('Error updating preset:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update preset',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const deletePreset = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
@@ -153,6 +190,7 @@ export const useAppreciationPresets = () => {
     saving,
     fetchPresets,
     savePreset,
+    updatePreset,
     deletePreset,
     applyPreset,
   };
