@@ -11,16 +11,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, Search, Edit, Trash2, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import LandmarkForm from "./LandmarkForm";
+
+interface Landmark {
+  id: string;
+  title: string;
+  description: string | null;
+  latitude: number;
+  longitude: number;
+  image_url: string | null;
+}
 
 const LandmarksManager = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingLandmark, setEditingLandmark] = useState<any>(null);
+  const [editingLandmark, setEditingLandmark] = useState<Landmark | null>(null);
+  const [deletingLandmark, setDeletingLandmark] = useState<Landmark | null>(null);
 
   const { data: landmarks, isLoading } = useQuery({
     queryKey: ["landmarks-admin"],
@@ -35,10 +55,14 @@ const LandmarksManager = () => {
     },
   });
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+  const handleDeleteClick = (landmark: Landmark) => {
+    setDeletingLandmark(landmark);
+  };
 
-    const { error } = await supabase.from("landmarks").delete().eq("id", id);
+  const confirmDelete = async () => {
+    if (!deletingLandmark) return;
+
+    const { error } = await supabase.from("landmarks").delete().eq("id", deletingLandmark.id);
 
     if (error) {
       toast({
@@ -49,11 +73,12 @@ const LandmarksManager = () => {
     } else {
       toast({
         title: "Landmark deleted",
-        description: `"${title}" has been deleted.`,
+        description: `"${deletingLandmark.title}" has been deleted.`,
       });
       queryClient.invalidateQueries({ queryKey: ["landmarks-admin"] });
       queryClient.invalidateQueries({ queryKey: ["landmarks"] });
     }
+    setDeletingLandmark(null);
   };
 
   const filteredLandmarks = landmarks?.filter((landmark) =>
@@ -160,7 +185,7 @@ const LandmarksManager = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(landmark.id, landmark.title)}
+                        onClick={() => handleDeleteClick(landmark)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -180,6 +205,27 @@ const LandmarksManager = () => {
           onSaved={handleFormSaved}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingLandmark} onOpenChange={() => setDeletingLandmark(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Landmark</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingLandmark?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
