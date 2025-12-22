@@ -62,7 +62,6 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
             )}
           </div>
         </div>
-        </div>
 
         {/* Payment Plan */}
         <div className="flex items-center justify-between">

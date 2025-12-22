@@ -324,6 +324,24 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
               <p className="text-xs text-cyan-400">Selected: {data.zoneName}</p>
             )}
           </div>
+
+          {/* Client Information */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#CCFF00]" />
+                <h3 className="text-sm font-semibold text-white">{t('clients')}</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAddClient}
+                className="text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10 h-7 gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                {t('addClient')}
+              </Button>
+            </div>
             
             <div className="space-y-2">
               {clients.map((client) => {
@@ -451,4 +469,4 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
   );
 };
 
-export { COUNTRIES, UNIT_TYPES };
+
