@@ -11,10 +11,14 @@ interface InvestmentSnapshotProps {
   totalEntryCosts: number;
   rate: number;
   holdAnalysis?: OIHoldAnalysis;
+  unitSizeSqf?: number;
 }
 
-export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCosts, rate }: InvestmentSnapshotProps) => {
+export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCosts, rate, unitSizeSqf = 0 }: InvestmentSnapshotProps) => {
   const { t } = useLanguage();
+  
+  // Calculate price per sqft
+  const pricePerSqft = unitSizeSqf > 0 ? inputs.basePrice / unitSizeSqf : 0;
   
   const { basePrice, downpaymentPercent, preHandoverPercent, additionalPayments, bookingMonth, bookingYear, handoverQuarter, handoverYear, oqoodFee } = inputs;
   
@@ -49,7 +53,15 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
             <span className="text-sm text-gray-400">{t('basePropertyPrice')}</span>
             <InfoTooltip translationKey="tooltipBasePrice" />
           </div>
-          <span className="text-sm font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+          <div className="text-right">
+            <span className="text-sm font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+            {pricePerSqft > 0 && (
+              <p className="text-xs text-gray-500 font-mono">
+                {formatCurrency(pricePerSqft, currency, rate)}/sqft
+              </p>
+            )}
+          </div>
+        </div>
         </div>
 
         {/* Payment Plan */}
