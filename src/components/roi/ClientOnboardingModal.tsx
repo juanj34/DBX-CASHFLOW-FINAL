@@ -121,9 +121,9 @@ export const ClientOnboardingModal = ({
           <div className="flex gap-3">
             {currentStep > 0 && (
               <Button
-                variant="outline"
+                variant="outlineDark"
                 onClick={handlePrev}
-                className="flex-1 border-[#2a3142] text-white hover:bg-[#2a3142]"
+                className="flex-1"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 {t('back') || 'Back'}

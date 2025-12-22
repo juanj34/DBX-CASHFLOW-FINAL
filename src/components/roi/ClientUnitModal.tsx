@@ -195,9 +195,9 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="outlineDark"
           size="sm"
-          className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
+          className="gap-2"
         >
           <Settings2 className="w-4 h-4" />
           {t('clientDetails')}

@@ -52,10 +52,9 @@ const ROICalculator = () => {
           </div>
           <div className="flex items-center gap-3">
             <Button
-              variant="outline"
+              variant="outlineDark"
               size="sm"
               onClick={() => setCurrency(c => c === 'AED' ? 'USD' : 'AED')}
-              className="border-[#2a3142] text-gray-300 hover:bg-[#1a1f2e] hover:text-white"
             >
               {currency === 'AED' ? '🇦🇪 AED' : '🇺🇸 USD'}
             </Button>

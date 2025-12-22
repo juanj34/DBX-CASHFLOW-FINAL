@@ -182,9 +182,8 @@ const PresetsManager = () => {
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button
-                  variant="outline"
+                  variant="outlineDark"
                   onClick={() => setCreateOpen(false)}
-                  className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142]"
                 >
                   Cancel
                 </Button>
@@ -355,9 +354,8 @@ const PresetsManager = () => {
 
             <div className="flex justify-end gap-2 pt-4">
               <Button
-                variant="outline"
+                variant="outlineDark"
                 onClick={() => setEditOpen(false)}
-                className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142]"
               >
                 Cancel
               </Button>

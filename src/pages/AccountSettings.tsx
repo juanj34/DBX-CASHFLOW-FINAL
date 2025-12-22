@@ -218,12 +218,12 @@ const AccountSettings = () => {
           {/* Quick Links */}
           <div className="mt-8 pt-6 border-t border-[#2a3142] space-y-3">
             <Link to="/my-quotes" className="block">
-              <Button variant="outline" className="w-full border-[#2a3142] text-white hover:bg-[#2a3142]">
+              <Button variant="outlineDark" className="w-full">
                 View My Cashflow Generators
               </Button>
             </Link>
             <Link to="/dashboard" className="block">
-              <Button variant="outline" className="w-full border-[#2a3142] text-white hover:bg-[#2a3142]">
+              <Button variant="outlineDark" className="w-full">
                 Admin Dashboard
               </Button>
             </Link>

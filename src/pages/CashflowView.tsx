@@ -205,7 +205,7 @@ const CashflowViewContent = () => {
               <h1 className="text-sm sm:text-xl font-bold text-white">{t('cashflowStatement')}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
+              <Button variant="outlineDark" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
                 <Globe className="w-3.5 h-3.5 sm:mr-1" />
                 {language === 'en' ? '🇬🇧' : '🇪🇸'}
                 <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>

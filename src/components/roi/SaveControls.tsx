@@ -60,11 +60,11 @@ export const SaveControls = ({
 
       {/* Save button */}
       <Button
-        variant="outline"
+        variant="outlineDark"
         size="sm"
         onClick={handleSave}
         disabled={saving}
-        className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142] gap-2"
+        className="gap-2"
       >
         <Save className="w-4 h-4" />
         Save
@@ -74,9 +74,8 @@ export const SaveControls = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="outlineDark"
             size="sm"
-            className="border-[#2a3142] bg-[#1a1f2e] text-white hover:bg-[#2a3142]"
           >
             •••
           </Button>

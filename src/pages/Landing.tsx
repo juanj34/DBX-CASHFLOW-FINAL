@@ -121,7 +121,7 @@ const Landing = () => {
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-gray-700 text-white hover:bg-white/5 hover:border-gray-600 text-lg px-8 py-6">
+                <Button size="lg" variant="outlineDark" className="w-full sm:w-auto text-lg px-8 py-6">
                   Ver Demo
                 </Button>
               </div>
