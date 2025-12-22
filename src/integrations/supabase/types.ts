@@ -456,13 +456,17 @@ export type Database = {
           absorption_rate: number | null
           color: string
           concept: string | null
+          construction_appreciation: number | null
           created_at: string
           created_by: string | null
           description: string | null
+          growth_appreciation: number | null
+          growth_period_years: number | null
           id: string
           image_url: string | null
           investment_focus: string | null
           main_developer: string | null
+          mature_appreciation: number | null
           maturity_label: string | null
           maturity_level: number | null
           name: string
@@ -472,6 +476,7 @@ export type Database = {
           price_range_max: number | null
           price_range_min: number | null
           property_types: string | null
+          rent_growth_rate: number | null
           tagline: string | null
           ticket_1br_max: number | null
           ticket_1br_min: number | null
@@ -482,13 +487,17 @@ export type Database = {
           absorption_rate?: number | null
           color?: string
           concept?: string | null
+          construction_appreciation?: number | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          growth_appreciation?: number | null
+          growth_period_years?: number | null
           id?: string
           image_url?: string | null
           investment_focus?: string | null
           main_developer?: string | null
+          mature_appreciation?: number | null
           maturity_label?: string | null
           maturity_level?: number | null
           name: string
@@ -498,6 +507,7 @@ export type Database = {
           price_range_max?: number | null
           price_range_min?: number | null
           property_types?: string | null
+          rent_growth_rate?: number | null
           tagline?: string | null
           ticket_1br_max?: number | null
           ticket_1br_min?: number | null
@@ -508,13 +518,17 @@ export type Database = {
           absorption_rate?: number | null
           color?: string
           concept?: string | null
+          construction_appreciation?: number | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          growth_appreciation?: number | null
+          growth_period_years?: number | null
           id?: string
           image_url?: string | null
           investment_focus?: string | null
           main_developer?: string | null
+          mature_appreciation?: number | null
           maturity_label?: string | null
           maturity_level?: number | null
           name?: string
@@ -524,6 +538,7 @@ export type Database = {
           price_range_max?: number | null
           price_range_min?: number | null
           property_types?: string | null
+          rent_growth_rate?: number | null
           tagline?: string | null
           ticket_1br_max?: number | null
           ticket_1br_min?: number | null

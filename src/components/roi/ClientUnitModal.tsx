@@ -1,11 +1,13 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, Plus, Trash2, Users, Percent, AlertCircle } from "lucide-react";
+import { Settings2, Plus, Trash2, Users, Percent, AlertCircle, MapPin, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "./ClientUnitInfo";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Client {
   id: string;
@@ -20,9 +22,15 @@ interface ClientUnitModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface Zone {
+  id: string;
+  name: string;
+  maturity_level: number | null;
+}
+
 const SQF_TO_M2 = 0.092903;
 
-const COUNTRIES = [
+export const COUNTRIES = [
   { code: 'AE', name: 'United Arab Emirates', nameEs: 'Emiratos Árabes Unidos', flag: '🇦🇪' },
   { code: 'CO', name: 'Colombia', nameEs: 'Colombia', flag: '🇨🇴' },
   { code: 'IN', name: 'India', nameEs: 'India', flag: '🇮🇳' },
@@ -54,7 +62,7 @@ const COUNTRIES = [
   { code: 'OM', name: 'Oman', nameEs: 'Omán', flag: '🇴🇲' },
 ];
 
-const UNIT_TYPES = [
+export const UNIT_TYPES = [
   { value: 'studio', labelEn: 'Studio', labelEs: 'Estudio' },
   { value: '1bed', labelEn: '1 Bedroom', labelEs: '1 Habitación' },
   { value: '2bed', labelEn: '2 Bedrooms', labelEs: '2 Habitaciones' },
@@ -65,6 +73,27 @@ const UNIT_TYPES = [
 
 export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUnitModalProps) => {
   const { language, t } = useLanguage();
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [loadingZones, setLoadingZones] = useState(false);
+
+  // Fetch zones with maturity level
+  useEffect(() => {
+    const fetchZones = async () => {
+      if (!open) return;
+      setLoadingZones(true);
+      const { data, error } = await supabase
+        .from('zones')
+        .select('id, name, maturity_level')
+        .not('maturity_level', 'is', null)
+        .order('name');
+      
+      if (!error && data) {
+        setZones(data);
+      }
+      setLoadingZones(false);
+    };
+    fetchZones();
+  }, [open]);
 
   // Get clients array, handling legacy format
   const clients: Client[] = data.clients?.length > 0 
@@ -94,6 +123,15 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
     } else {
       onChange({ ...data, [field]: value });
     }
+  };
+
+  const handleZoneChange = (zoneId: string) => {
+    const zone = zones.find(z => z.id === zoneId);
+    onChange({ 
+      ...data, 
+      zoneId, 
+      zoneName: zone?.name || '' 
+    });
   };
 
   const handleAddClient = () => {
@@ -252,23 +290,40 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
             </div>
           </div>
 
-          {/* Clients Section */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#00EAFF]" />
-                <label className="text-sm font-medium text-white">{t('clients')}</label>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAddClient}
-                className="border-[#2a3142] bg-[#0d1117] text-gray-300 hover:bg-[#2a3142] hover:text-white gap-1 h-7 text-xs"
-              >
-                <Plus className="w-3 h-3" />
-                {t('addClient')}
-              </Button>
+          {/* Zone Selection */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-cyan-400" />
+              <label className="text-xs text-gray-400">{t('zone')}</label>
             </div>
+            <Select value={data.zoneId || ''} onValueChange={handleZoneChange}>
+              <SelectTrigger className="bg-[#0d1117] border-[#2a3142] text-white">
+                <SelectValue placeholder={loadingZones ? 'Loading...' : t('selectZone')} />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-[200px]">
+                {loadingZones ? (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                ) : zones.length === 0 ? (
+                  <div className="text-gray-500 text-sm py-2 px-2">{t('noZones')}</div>
+                ) : (
+                  zones.map((zone) => (
+                    <SelectItem 
+                      key={zone.id} 
+                      value={zone.id}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]"
+                    >
+                      {zone.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {data.zoneName && (
+              <p className="text-xs text-cyan-400">Selected: {data.zoneName}</p>
+            )}
+          </div>
             
             <div className="space-y-2">
               {clients.map((client) => {

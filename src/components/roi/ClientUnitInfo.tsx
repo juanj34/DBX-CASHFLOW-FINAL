@@ -1,4 +1,4 @@
-import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2, Users } from "lucide-react";
+import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2, Users, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { COUNTRIES, UNIT_TYPES, Client } from "./ClientUnitModal";
@@ -23,6 +23,9 @@ export interface ClientUnitData {
   // Payment split feature
   splitEnabled?: boolean;
   clientShares?: ClientShare[];
+  // Zone feature
+  zoneId?: string;
+  zoneName?: string;
 }
 
 interface ClientUnitInfoProps {
@@ -122,6 +125,17 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
                 <p className="text-xs text-gray-400">
                   ({data.unitSizeM2.toLocaleString()} m²)
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Zone */}
+          {data.zoneName && (
+            <div className="flex items-start gap-2">
+              <Navigation className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-gray-500">{t('zone')}</p>
+                <p className="text-sm font-medium text-cyan-400">{data.zoneName}</p>
               </div>
             </div>
           )}

@@ -1,4 +1,4 @@
-import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown } from 'lucide-react';
+import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown, FilePlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,7 @@ interface QuotesDropdownProps {
   onSave: () => Promise<any>;
   onSaveAs: () => Promise<any>;
   onLoadQuote: () => void;
+  onNewQuote?: () => void;
 }
 
 export const QuotesDropdown = ({
@@ -25,6 +26,7 @@ export const QuotesDropdown = ({
   onSave,
   onSaveAs,
   onLoadQuote,
+  onNewQuote,
 }: QuotesDropdownProps) => {
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -39,6 +41,17 @@ export const QuotesDropdown = ({
     const result = await onSaveAs();
     if (result) {
       toast({ title: 'Saved as new quote!' });
+    }
+  };
+
+  const handleNewQuote = () => {
+    if (onNewQuote) {
+      onNewQuote();
+    } else {
+      // Clear local storage and navigate to fresh generator
+      localStorage.removeItem('cashflow_quote_draft');
+      navigate('/cashflow-generator');
+      window.location.reload();
     }
   };
 
@@ -67,6 +80,17 @@ export const QuotesDropdown = ({
         align="end" 
         className="bg-[#1a1f2e] border-[#2a3142] z-50 w-52"
       >
+        {/* New Quote */}
+        <DropdownMenuItem
+          onClick={handleNewQuote}
+          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+        >
+          <FilePlus className="w-4 h-4" />
+          {t('newQuote')}
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="bg-[#2a3142]" />
+
         {/* Save */}
         <DropdownMenuItem
           onClick={handleSave}

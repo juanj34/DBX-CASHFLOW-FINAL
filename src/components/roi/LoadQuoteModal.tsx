@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Loader2, Calendar, User, FolderOpen } from 'lucide-react';
+import { FileText, Loader2, Calendar, User, FolderOpen, Search, MapPin, Building } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -29,10 +30,12 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
   const navigate = useNavigate();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (open) {
       fetchQuotes();
+      setSearchQuery('');
     }
   }, [open]);
 
@@ -55,6 +58,23 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
     }
     setLoading(false);
   };
+
+  const filteredQuotes = useMemo(() => {
+    if (!searchQuery.trim()) return quotes;
+    
+    const query = searchQuery.toLowerCase();
+    return quotes.filter(quote => {
+      const zoneName = quote.inputs?._clientInfo?.zoneName?.toLowerCase() || '';
+      const developer = (quote.developer || '').toLowerCase();
+      const clientName = (quote.client_name || '').toLowerCase();
+      const projectName = (quote.project_name || '').toLowerCase();
+      
+      return zoneName.includes(query) || 
+             developer.includes(query) || 
+             clientName.includes(query) || 
+             projectName.includes(query);
+    });
+  }, [quotes, searchQuery]);
 
   const handleSelectQuote = (quoteId: string) => {
     onOpenChange(false);
@@ -80,20 +100,32 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('searchQuotes')}
+            className="pl-10 bg-[#0d1117] border-[#2a3142] text-white placeholder:text-gray-500"
+          />
+        </div>
+
+        <ScrollArea className="max-h-[50vh] pr-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-[#CCFF00]" />
             </div>
-          ) : quotes.length === 0 ? (
+          ) : filteredQuotes.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>{t('noQuotesFound')}</p>
+              <p>{searchQuery ? 'No matching quotes' : t('noQuotesFound')}</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {quotes.map((quote) => {
+              {filteredQuotes.map((quote) => {
                 const basePrice = quote.inputs?.basePrice || 0;
+                const zoneName = quote.inputs?._clientInfo?.zoneName || null;
                 return (
                   <button
                     key={quote.id}
@@ -113,7 +145,7 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 flex-wrap">
                           {quote.client_name && (
                             <span className="flex items-center gap-1">
                               <User className="w-3 h-3" />
@@ -121,7 +153,16 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
                             </span>
                           )}
                           {quote.developer && (
-                            <span className="truncate">{quote.developer}</span>
+                            <span className="flex items-center gap-1">
+                              <Building className="w-3 h-3" />
+                              {quote.developer}
+                            </span>
+                          )}
+                          {zoneName && (
+                            <span className="flex items-center gap-1 text-cyan-400">
+                              <MapPin className="w-3 h-3" />
+                              {zoneName}
+                            </span>
                           )}
                         </div>
                         
