@@ -43,6 +43,7 @@ function App() {
               <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
               <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
               <Route path="/dashboard" element={<Navigate to="/map-config" replace />} />
+              <Route path="/quotes" element={<Navigate to="/my-quotes" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
