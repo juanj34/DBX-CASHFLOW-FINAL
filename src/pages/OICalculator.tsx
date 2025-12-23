@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2 } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
@@ -22,6 +22,9 @@ import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
+import { MortgageModal } from "@/components/roi/MortgageModal";
+import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
+import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
 import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
@@ -48,9 +51,11 @@ const OICalculatorContent = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [loadQuoteModalOpen, setLoadQuoteModalOpen] = useState(false);
+  const [mortgageModalOpen, setMortgageModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
+  const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   
@@ -59,9 +64,30 @@ const OICalculatorContent = () => {
   const { isAdmin } = useAdminRole();
   const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
   const calculations = useOICalculations(inputs);
+  const mortgageAnalysis = useMortgageCalculations({
+    mortgageInputs,
+    basePrice: calculations.basePrice,
+    preHandoverPercent: inputs.preHandoverPercent,
+  });
   const { rate, isLive } = useExchangeRate(currency);
 
-  // Check if quote is configured (has meaningful data)
+  // Stricter validation: needs both client details AND property configured
+  const hasClientDetails = useMemo(() => {
+    return !!(
+      clientInfo.developer &&
+      clientInfo.projectName &&
+      clientInfo.unit &&
+      clientInfo.unitSizeSqf > 0
+    );
+  }, [clientInfo.developer, clientInfo.projectName, clientInfo.unit, clientInfo.unitSizeSqf]);
+
+  const hasPropertyConfigured = useMemo(() => {
+    return inputs.basePrice !== 800000 || !!quoteId;
+  }, [inputs.basePrice, quoteId]);
+
+  const isFullyConfigured = hasClientDetails && hasPropertyConfigured;
+
+  // Keep isQuoteConfigured for autosave logic (less strict)
   const isQuoteConfigured = useMemo(() => {
     return (
       !!quoteId ||
@@ -246,6 +272,15 @@ const OICalculatorContent = () => {
                 isLive={isLive}
               />
 
+              {/* Mortgage Calculator Button */}
+              <MortgageModal
+                mortgageInputs={mortgageInputs}
+                setMortgageInputs={setMortgageInputs}
+                preHandoverPercent={inputs.preHandoverPercent}
+                open={mortgageModalOpen}
+                onOpenChange={setMortgageModalOpen}
+              />
+
               {/* Configure Button - Always visible */}
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
               <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
@@ -280,33 +315,37 @@ const OICalculatorContent = () => {
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
 
-        {!isQuoteConfigured ? (
-          /* Unconfigured State - Show placeholder */
+        {!isFullyConfigured ? (
+          /* Unconfigured State - Show what's missing */
           <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-8 sm:p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 rounded-2xl bg-[#CCFF00]/20 flex items-center justify-center mx-auto mb-6">
-                <Settings2 className="w-8 h-8 text-[#CCFF00]" />
+                {!hasClientDetails ? <AlertCircle className="w-8 h-8 text-[#CCFF00]" /> : <Settings2 className="w-8 h-8 text-[#CCFF00]" />}
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Configure Your Scenario</h3>
+              <h3 className="text-xl font-semibold text-white mb-3">
+                {!hasClientDetails ? t('completeClientInfo') : t('configurePropertyFinancials')}
+              </h3>
               <p className="text-gray-400 mb-6">
-                Start by configuring the property details and financial inputs to generate your cashflow projection.
+                {!hasClientDetails ? t('completeClientInfoDesc') : t('configurePropertyFinancialsDesc')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={() => setClientModalOpen(true)}
-                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
-                >
-                  <Settings2 className="w-4 h-4" />
-                  Set Client & Property
-                </Button>
-                <Button
-                  onClick={() => setModalOpen(true)}
-                  variant="outlineDark"
-                  className="gap-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Configure Financials
-                </Button>
+                {!hasClientDetails ? (
+                  <Button
+                    onClick={() => setClientModalOpen(true)}
+                    className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
+                  >
+                    <Settings2 className="w-4 h-4" />
+                    Set Client & Property
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setModalOpen(true)}
+                    className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    Configure Financials
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -315,8 +354,17 @@ const OICalculatorContent = () => {
           <>
             {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-              <div className="lg:col-span-2">
-                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+              <div className="lg:col-span-2 space-y-4">
+                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
+                {mortgageInputs.enabled && (
+                  <MortgageBreakdown
+                    mortgageInputs={mortgageInputs}
+                    mortgageAnalysis={mortgageAnalysis}
+                    basePrice={calculations.basePrice}
+                    currency={currency}
+                    rate={rate}
+                  />
+                )}
               </div>
               <div className="lg:col-span-1 space-y-4">
                 <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
