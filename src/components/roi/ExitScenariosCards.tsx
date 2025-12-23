@@ -28,6 +28,7 @@ interface ExitScenariosCardsProps {
   setExitScenarios?: (scenarios: number[]) => void;
   rate: number;
   readOnly?: boolean;
+  unitSizeSqf?: number;
 }
 
 // Calculate equity deployed at exit - returns MAX of plan equity vs threshold requirement
@@ -185,6 +186,7 @@ export const ExitScenariosCards = ({
   setExitScenarios,
   rate,
   readOnly = false,
+  unitSizeSqf,
 }: ExitScenariosCardsProps) => {
   const { t, language } = useLanguage();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -344,7 +346,14 @@ export const ExitScenariosCards = ({
               
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">{t('exitPrice')}</span>
-                <span className="text-sm text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
+                <div className="text-right">
+                  <span className="text-sm text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
+                  {unitSizeSqf && unitSizeSqf > 0 && (
+                    <p className="text-[10px] text-gray-600 font-mono">
+                      {formatCurrency(scenario.exitPrice / unitSizeSqf, currency, rate)}/sqft
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]">

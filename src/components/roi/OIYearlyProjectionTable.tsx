@@ -8,6 +8,7 @@ interface OIYearlyProjectionTableProps {
   currency: Currency;
   rate: number;
   showAirbnbComparison: boolean;
+  unitSizeSqf?: number;
 }
 
 const getPhaseColor = (phase: 'construction' | 'growth' | 'mature') => {
@@ -26,7 +27,7 @@ const getPhaseLabel = (phase: 'construction' | 'growth' | 'mature') => {
   }
 };
 
-export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbnbComparison }: OIYearlyProjectionTableProps) => {
+export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbnbComparison, unitSizeSqf }: OIYearlyProjectionTableProps) => {
   const { t } = useLanguage();
   const lastProjection = projections[projections.length - 1];
   const longTermTotal = lastProjection?.cumulativeNetIncome || 0;
@@ -117,8 +118,15 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                       {getPhaseLabel(proj.phase)}
                     </span>
                   </td>
-                  <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right text-white font-mono whitespace-nowrap">
-                    {formatCurrency(proj.propertyValue, currency, rate)}
+                  <td className="px-2 py-2 sm:py-3 text-right whitespace-nowrap">
+                    <div className="text-xs sm:text-sm text-white font-mono">
+                      {formatCurrency(proj.propertyValue, currency, rate)}
+                    </div>
+                    {unitSizeSqf && unitSizeSqf > 0 && (
+                      <div className="text-[10px] text-gray-600 font-mono">
+                        {formatCurrency(proj.propertyValue / unitSizeSqf, currency, rate)}/sqft
+                      </div>
+                    )}
                   </td>
                   <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
                     {proj.netIncome ? (
