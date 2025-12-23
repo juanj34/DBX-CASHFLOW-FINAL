@@ -415,14 +415,28 @@ const OICalculatorContent = () => {
                 icon={<Building2 className="w-5 h-5 text-blue-400" />}
                 defaultOpen={true}
               >
-                <MortgageBreakdown
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  basePrice={calculations.basePrice}
-                  currency={currency}
-                  rate={rate}
-                  preHandoverPercent={inputs.preHandoverPercent}
-                />
+                {(() => {
+                  // Calculate monthly rent figures for mortgage comparison
+                  const handoverProjection = calculations.yearlyProjections.find(p => p.isHandover);
+                  const monthlyLongTermRent = handoverProjection?.annualRent ? handoverProjection.annualRent / 12 : undefined;
+                  const monthlyServiceCharges = handoverProjection?.serviceCharges ? handoverProjection.serviceCharges / 12 : undefined;
+                  const monthlyAirbnbNet = handoverProjection?.airbnbNetIncome ? handoverProjection.airbnbNetIncome / 12 : undefined;
+                  
+                  return (
+                    <MortgageBreakdown
+                      mortgageInputs={mortgageInputs}
+                      mortgageAnalysis={mortgageAnalysis}
+                      basePrice={calculations.basePrice}
+                      currency={currency}
+                      rate={rate}
+                      preHandoverPercent={inputs.preHandoverPercent}
+                      monthlyLongTermRent={monthlyLongTermRent}
+                      monthlyServiceCharges={monthlyServiceCharges}
+                      monthlyAirbnbNet={monthlyAirbnbNet}
+                      showAirbnbComparison={calculations.showAirbnbComparison}
+                    />
+                  );
+                })()}
               </CollapsibleSection>
             )}
           </>

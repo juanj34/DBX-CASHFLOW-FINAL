@@ -1,4 +1,4 @@
-import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator } from "lucide-react";
+import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator, Home, CheckCircle, AlertCircle } from "lucide-react";
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,6 +10,11 @@ interface MortgageBreakdownProps {
   currency: Currency;
   rate: number;
   preHandoverPercent?: number;
+  // Rent comparison props
+  monthlyLongTermRent?: number;
+  monthlyServiceCharges?: number;
+  monthlyAirbnbNet?: number;
+  showAirbnbComparison?: boolean;
 }
 
 export const MortgageBreakdown = ({
@@ -19,6 +24,10 @@ export const MortgageBreakdown = ({
   currency,
   rate,
   preHandoverPercent = 30,
+  monthlyLongTermRent,
+  monthlyServiceCharges,
+  monthlyAirbnbNet,
+  showAirbnbComparison,
 }: MortgageBreakdownProps) => {
   const { t } = useLanguage();
 
@@ -31,7 +40,6 @@ export const MortgageBreakdown = ({
     equityRequiredPercent,
     loanAmount,
     monthlyPayment,
-    totalInterest,
     totalLoanPayments,
     processingFee,
     valuationFee,
@@ -41,12 +49,24 @@ export const MortgageBreakdown = ({
     annualPropertyInsurance,
     totalAnnualInsurance,
     totalInsuranceOverTerm,
-    totalCostWithMortgage,
     totalInterestAndFees,
   } = mortgageAnalysis;
 
   const preHandoverAmount = basePrice * preHandoverPercent / 100;
   const totalBeforeHandover = basePrice * equityRequiredPercent / 100;
+
+  // Calculate rent vs mortgage coverage
+  const netMonthlyRent = (monthlyLongTermRent || 0) - (monthlyServiceCharges || 0);
+  const monthlyMortgageTotal = monthlyPayment + totalAnnualInsurance / 12;
+  const monthlyCashflow = netMonthlyRent - monthlyMortgageTotal;
+  const isCovered = monthlyCashflow >= 0;
+
+  // Airbnb cashflow
+  const airbnbCashflow = (monthlyAirbnbNet || 0) - monthlyMortgageTotal;
+  const isAirbnbCovered = airbnbCashflow >= 0;
+
+  // Grand total calculation: gap + total loan payments + fees + insurance
+  const grandTotal = gapAmount + totalLoanPayments + totalUpfrontFees + totalInsuranceOverTerm;
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6">
@@ -109,13 +129,20 @@ export const MortgageBreakdown = ({
           </div>
         )}
 
-        {/* Loan Summary */}
+        {/* Loan Summary - Updated: added gap, removed equity/total interest */}
         <div className="p-3 bg-[#0f172a] rounded-xl border border-[#2a3142]">
           <div className="flex items-center gap-2 mb-3">
             <CreditCard className="w-4 h-4 text-[#CCFF00]" />
             <span className="text-sm font-medium text-gray-300">{t('loanSummary')}</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            {/* Gap Payment - only if exists */}
+            {hasGap && (
+              <div>
+                <p className="text-xs text-gray-500">{t('gapPayment')}</p>
+                <p className="text-sm font-mono text-amber-400">{formatCurrency(gapAmount, currency, rate)}</p>
+              </div>
+            )}
             <div>
               <p className="text-xs text-gray-500">{t('loanAmount')}</p>
               <p className="text-sm font-mono text-white">{formatCurrency(loanAmount, currency, rate)}</p>
@@ -125,12 +152,8 @@ export const MortgageBreakdown = ({
               <p className="text-sm font-mono text-[#CCFF00]">{formatCurrency(monthlyPayment, currency, rate)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">{t('equityRequired')}</p>
-              <p className="text-sm font-mono text-white">{equityRequiredPercent}% ({formatCurrency(basePrice * equityRequiredPercent / 100, currency, rate)})</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">{t('totalInterest')}</p>
-              <p className="text-sm font-mono text-red-400">{formatCurrency(totalInterest, currency, rate)}</p>
+              <p className="text-xs text-gray-500">{t('loanTerm')}</p>
+              <p className="text-sm font-mono text-white">{mortgageInputs.loanTermYears} {t('years')}</p>
             </div>
           </div>
         </div>
@@ -190,24 +213,110 @@ export const MortgageBreakdown = ({
           </div>
         </div>
 
-        {/* Total Cost Summary */}
+        {/* Rent vs Mortgage Coverage - NEW SECTION */}
+        {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
+          <div className="p-3 bg-[#0f172a] rounded-xl border border-[#2a3142]">
+            <div className="flex items-center gap-2 mb-3">
+              <Home className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-gray-300">{t('rentVsMortgage')}</span>
+            </div>
+            
+            <div className="space-y-3">
+              {/* Long-term rental analysis */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">{t('monthlyRent')} ({t('longTerm')})</span>
+                  <span className="text-white font-mono">{formatCurrency(monthlyLongTermRent, currency, rate)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">- {t('serviceCharges')}</span>
+                  <span className="text-white font-mono">-{formatCurrency(monthlyServiceCharges || 0, currency, rate)}</span>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-[#2a3142]">
+                  <span className="text-gray-400">{t('netMonthlyRent')}</span>
+                  <span className="text-emerald-400 font-mono font-medium">
+                    {formatCurrency(netMonthlyRent, currency, rate)}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Mortgage payment */}
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">{t('monthlyMortgageTotal')}</span>
+                <span className="text-purple-400 font-mono">
+                  -{formatCurrency(monthlyMortgageTotal, currency, rate)}
+                </span>
+              </div>
+              
+              {/* Net cashflow */}
+              <div className={`flex justify-between items-center pt-2 border-t border-[#2a3142] ${isCovered ? 'bg-emerald-500/10' : 'bg-red-500/10'} -mx-3 px-3 py-2 rounded-lg`}>
+                <div className="flex items-center gap-2">
+                  {isCovered ? (
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className="text-sm text-white">{t('monthlyCashflow')}</span>
+                </div>
+                <span className={`text-sm font-mono font-bold ${isCovered ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
+                </span>
+              </div>
+              
+              {/* Airbnb comparison if enabled */}
+              {showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 && (
+                <div className="mt-3 pt-3 border-t border-[#2a3142]">
+                  <div className="flex justify-between text-xs mb-2">
+                    <span className="text-gray-500">{t('airbnbNetMonthly')}</span>
+                    <span className="text-orange-400 font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
+                  </div>
+                  <div className={`flex justify-between items-center ${isAirbnbCovered ? 'bg-orange-500/10' : 'bg-red-500/10'} -mx-3 px-3 py-2 rounded-lg`}>
+                    <div className="flex items-center gap-2">
+                      {isAirbnbCovered ? (
+                        <CheckCircle className="w-4 h-4 text-orange-400" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-400" />
+                      )}
+                      <span className="text-sm text-white">{t('airbnbCashflow')}</span>
+                    </div>
+                    <span className={`text-sm font-mono font-bold ${isAirbnbCovered ? 'text-orange-400' : 'text-red-400'}`}>
+                      {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Total Cost Summary - Restructured */}
         <div className="p-3 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl border border-blue-700/30">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-4 h-4 text-blue-400" />
             <span className="text-sm font-medium text-gray-300">{t('totalCostSummary')}</span>
           </div>
           <div className="space-y-2">
+            {/* Gap Payment (if exists) */}
+            {hasGap && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">{t('gapPayment')}</span>
+                <span className="text-amber-400 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
+              </div>
+            )}
+            {/* Total Loan Payments */}
             <div className="flex justify-between text-xs">
               <span className="text-gray-400">{t('totalLoanPayments')}</span>
               <span className="text-white font-mono">{formatCurrency(totalLoanPayments, currency, rate)}</span>
             </div>
+            {/* Interest & Fees */}
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{t('totalInterestAndFees')}</span>
+              <span className="text-gray-400">{t('interestAndFees')}</span>
               <span className="text-red-400 font-mono">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
             </div>
+            {/* Grand Total */}
             <div className="flex justify-between pt-2 border-t border-blue-700/30">
               <span className="text-gray-200 font-medium">{t('grandTotal')}</span>
-              <span className="text-blue-400 font-mono font-bold text-lg">{formatCurrency(totalCostWithMortgage, currency, rate)}</span>
+              <span className="text-blue-400 font-mono font-bold text-lg">{formatCurrency(grandTotal, currency, rate)}</span>
             </div>
             <p className="text-[10px] text-gray-500 mt-1">{t('grandTotalExplanation')}</p>
           </div>
