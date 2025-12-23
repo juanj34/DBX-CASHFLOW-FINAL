@@ -2,6 +2,7 @@ import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator, H
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 interface MortgageBreakdownProps {
   mortgageInputs: MortgageInputs;
@@ -64,6 +65,14 @@ export const MortgageBreakdown = ({
   // Airbnb cashflow
   const airbnbCashflow = (monthlyAirbnbNet || 0) - monthlyMortgageTotal;
   const isAirbnbCovered = airbnbCashflow >= 0;
+
+  // Coverage percentage calculations
+  const longTermCoveragePercent = monthlyMortgageTotal > 0 
+    ? Math.round((netMonthlyRent / monthlyMortgageTotal) * 100) 
+    : 0;
+  const airbnbCoveragePercent = monthlyMortgageTotal > 0 && monthlyAirbnbNet 
+    ? Math.round((monthlyAirbnbNet / monthlyMortgageTotal) * 100) 
+    : 0;
 
   // Grand total calculation: gap + total loan payments + fees + insurance
   const grandTotal = gapAmount + totalLoanPayments + totalUpfrontFees + totalInsuranceOverTerm;
@@ -219,23 +228,14 @@ export const MortgageBreakdown = ({
           </div>
         </div>
 
-        {/* Rent vs Mortgage Coverage - Side-by-Side Comparison */}
+        {/* Rent vs Mortgage Coverage - Collapsible Side-by-Side Comparison */}
         {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
-          <div className="space-y-3">
-            {/* Header with mortgage payment - shared for both */}
-            <div className="flex justify-between items-center text-xs p-3 bg-[#0f172a] rounded-lg border border-[#2a3142]">
-              <div className="flex items-center gap-2">
-                <Home className="w-4 h-4 text-purple-400" />
-                <span className="text-gray-300 font-medium">{t('rentVsMortgage')}</span>
-              </div>
-              <div className="text-right">
-                <span className="text-gray-500 text-[10px] block">{t('monthlyMortgageTotal')}</span>
-                <span className="text-purple-400 font-mono font-bold">
-                  -{formatCurrency(monthlyMortgageTotal, currency, rate)}
-                </span>
-              </div>
-            </div>
-
+          <CollapsibleSection
+            title={t('rentVsMortgage')}
+            subtitle={`${t('monthlyMortgageTotal')}: ${formatCurrency(monthlyMortgageTotal, currency, rate)}`}
+            icon={<Home className="w-5 h-5 text-purple-400" />}
+            defaultOpen={false}
+          >
             {/* Two columns comparison */}
             <div className={`grid gap-3 ${showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
               
@@ -247,14 +247,6 @@ export const MortgageBreakdown = ({
                 </div>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t('monthlyRent')}</span>
-                    <span className="text-white font-mono">{formatCurrency(monthlyLongTermRent, currency, rate)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">- {t('serviceCharges')}</span>
-                    <span className="text-white font-mono">-{formatCurrency(monthlyServiceCharges || 0, currency, rate)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-[#2a3142]">
                     <span className="text-gray-400">{t('netMonthlyRent')}</span>
                     <span className="text-emerald-400 font-mono">{formatCurrency(netMonthlyRent, currency, rate)}</span>
                   </div>
@@ -272,6 +264,12 @@ export const MortgageBreakdown = ({
                       {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
                     </span>
                   </div>
+                  {/* Coverage percentage indicator */}
+                  <div className="text-center mt-2 pt-2 border-t border-[#2a3142]">
+                    <span className={`text-xs font-medium ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : longTermCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {t('covers')} {longTermCoveragePercent}% {t('ofMortgage')}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -284,14 +282,6 @@ export const MortgageBreakdown = ({
                   </div>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">{t('airbnbNetMonthly')}</span>
-                      <span className="text-white font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
-                    </div>
-                    <div className="flex justify-between opacity-50">
-                      <span className="text-gray-500">- {t('serviceCharges')}</span>
-                      <span className="text-gray-500 font-mono italic">{t('included')}</span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t border-[#2a3142]">
                       <span className="text-gray-400">{t('netMonthlyRent')}</span>
                       <span className="text-orange-400 font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
                     </div>
@@ -309,11 +299,17 @@ export const MortgageBreakdown = ({
                         {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
                       </span>
                     </div>
+                    {/* Coverage percentage indicator */}
+                    <div className="text-center mt-2 pt-2 border-t border-[#2a3142]">
+                      <span className={`text-xs font-medium ${airbnbCoveragePercent >= 100 ? 'text-orange-400' : airbnbCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {t('covers')} {airbnbCoveragePercent}% {t('ofMortgage')}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* Total Cost Summary - Restructured */}
