@@ -83,7 +83,14 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
   }, []);
 
   useEffect(() => {
-    if (!token || !mapContainer.current || map.current) return;
+    if (!token || !mapContainer.current) return;
+
+    // Clean up existing map when zone changes or on remount
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+      draw.current = null;
+    }
 
     mapboxgl.accessToken = token;
 
@@ -100,24 +107,39 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
         polygon: true,
         trash: true,
       },
-      defaultMode: "draw_polygon",
+      // Start in simple_select mode if editing existing polygon
+      defaultMode: zone?.polygon ? "simple_select" : "draw_polygon",
     });
 
     map.current.addControl(draw.current);
 
-    // Load existing polygon if editing
-    if (zone?.polygon) {
-      draw.current.add({
-        type: "Feature",
-        geometry: zone.polygon,
-        properties: {},
-      });
-    }
+    // Wait for map to fully load before adding polygon
+    map.current.on('load', () => {
+      if (zone?.polygon && draw.current && map.current) {
+        draw.current.add({
+          type: "Feature",
+          geometry: zone.polygon,
+          properties: {},
+        });
+        
+        // Center map on existing polygon
+        try {
+          const bounds = new mapboxgl.LngLatBounds();
+          const coords = zone.polygon.coordinates[0] as [number, number][];
+          coords.forEach((coord) => bounds.extend(coord));
+          map.current.fitBounds(bounds, { padding: 50 });
+        } catch (e) {
+          console.error("Error fitting bounds:", e);
+        }
+      }
+    });
 
     return () => {
       map.current?.remove();
+      map.current = null;
+      draw.current = null;
     };
-  }, [token, zone]);
+  }, [token, zone?.id]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

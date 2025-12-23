@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Rocket, CreditCard, Home, TrendingUp, MessageCircle, ChevronRight, ChevronLeft, X } from "lucide-react";
+import { Rocket, CreditCard, Home, TrendingUp, MessageCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const STORAGE_KEY = "hasSeenClientOnboarding";
@@ -69,15 +69,7 @@ export const ClientOnboardingModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-md p-0 overflow-hidden">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-white transition-colors z-10"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
+      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-md p-0 overflow-hidden [&>button]:text-gray-400 [&>button:hover]:text-white">
         {/* Header with icon */}
         <div className="pt-8 pb-4 px-6 text-center">
           <div className={`inline-flex p-4 rounded-2xl ${steps[currentStep].bgClass} mb-4`}>

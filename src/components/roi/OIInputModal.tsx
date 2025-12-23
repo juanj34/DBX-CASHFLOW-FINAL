@@ -13,6 +13,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ZoneSelect } from "@/components/ui/zone-select";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -1048,36 +1049,27 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               <>
                 {/* Zone Selector from Database */}
                 <div className="space-y-2">
-                  <label className="text-xs text-gray-400">Select Project Zone</label>
-                  <Select
+                  <label className="text-xs text-gray-400">{t('selectZone') || 'Select Project Zone'}</label>
+                  <ZoneSelect
                     value={inputs.zoneId || ''}
-                    onValueChange={handleZoneSelect}
-                  >
-                    <SelectTrigger className="bg-[#1a1f2e] border-[#2a3142] text-white">
-                      <SelectValue placeholder={loadingZones ? "Loading zones..." : "Select a zone..."} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-64">
-                      {zones.map(zone => (
-                        <SelectItem 
-                          key={zone.id} 
-                          value={zone.id} 
-                          className="text-white hover:bg-[#2a3142]"
-                        >
-                          <div className="flex items-center justify-between w-full gap-2">
-                            <span>{zone.name}</span>
-                            <span className="text-xs text-[#CCFF00] font-mono">
-                              {zone.maturity_level}%
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {inputs.zoneId && zones.find(z => z.id === inputs.zoneId)?.maturity_label && (
-                    <p className="text-xs text-gray-500">
-                      {zones.find(z => z.id === inputs.zoneId)?.maturity_label}
-                    </p>
-                  )}
+                    onValueChange={(zoneId, zone) => {
+                      if (zone && zone.maturity_level !== null) {
+                        const profile = getZoneAppreciationProfile(zone.maturity_level);
+                        setInputs(prev => ({
+                          ...prev,
+                          zoneId,
+                          zoneMaturityLevel: zone.maturity_level!,
+                          ...(prev.useZoneDefaults ? {
+                            constructionAppreciation: profile.constructionAppreciation,
+                            growthAppreciation: profile.growthAppreciation,
+                            matureAppreciation: profile.matureAppreciation,
+                            growthPeriodYears: profile.growthPeriodYears,
+                          } : {})
+                        }));
+                      }
+                    }}
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Manual Zone Maturity Slider (when no zone selected) */}
