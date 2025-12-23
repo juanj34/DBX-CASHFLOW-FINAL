@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { CountrySelect } from "@/components/ui/country-select";
-import { Settings2, Plus, Trash2, Users, Percent, AlertCircle, MapPin, Loader2 } from "lucide-react";
+import { ZoneSelect } from "@/components/ui/zone-select";
+import { Settings2, Plus, Trash2, Users, Percent, AlertCircle, MapPin } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "./ClientUnitInfo";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface Client {
   id: string;
@@ -21,12 +21,6 @@ interface ClientUnitModalProps {
   onChange: (data: ClientUnitData) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface Zone {
-  id: string;
-  name: string;
-  maturity_level: number | null;
 }
 
 const SQF_TO_M2 = 0.092903;
@@ -44,27 +38,6 @@ export const UNIT_TYPES = [
 
 export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUnitModalProps) => {
   const { language, t } = useLanguage();
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [loadingZones, setLoadingZones] = useState(false);
-
-  // Fetch zones with maturity level
-  useEffect(() => {
-    const fetchZones = async () => {
-      if (!open) return;
-      setLoadingZones(true);
-      const { data, error } = await supabase
-        .from('zones')
-        .select('id, name, maturity_level')
-        .not('maturity_level', 'is', null)
-        .order('name');
-      
-      if (!error && data) {
-        setZones(data);
-      }
-      setLoadingZones(false);
-    };
-    fetchZones();
-  }, [open]);
 
   // Get clients array, handling legacy format
   const clients: Client[] = data.clients?.length > 0 
@@ -94,15 +67,6 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
     } else {
       onChange({ ...data, [field]: value });
     }
-  };
-
-  const handleZoneChange = (zoneId: string) => {
-    const zone = zones.find(z => z.id === zoneId);
-    onChange({ 
-      ...data, 
-      zoneId, 
-      zoneName: zone?.name || '' 
-    });
   };
 
   const handleAddClient = () => {
@@ -267,33 +231,17 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
               <MapPin className="w-4 h-4 text-cyan-400" />
               <label className="text-xs text-gray-400">{t('zone')}</label>
             </div>
-            <Select value={data.zoneId || ''} onValueChange={handleZoneChange}>
-              <SelectTrigger className="bg-[#0d1117] border-[#2a3142] text-white">
-                <SelectValue placeholder={loadingZones ? 'Loading...' : t('selectZone')} />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1f2e] border-[#2a3142] max-h-[200px]">
-                {loadingZones ? (
-                  <div className="flex items-center justify-center py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                  </div>
-                ) : zones.length === 0 ? (
-                  <div className="text-gray-500 text-sm py-2 px-2">{t('noZones')}</div>
-                ) : (
-                  zones.map((zone) => (
-                    <SelectItem 
-                      key={zone.id} 
-                      value={zone.id}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]"
-                    >
-                      {zone.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {data.zoneName && (
-              <p className="text-xs text-cyan-400">Selected: {data.zoneName}</p>
-            )}
+            <ZoneSelect
+              value={data.zoneId || ''}
+              onValueChange={(zoneId, zone) => {
+                onChange({ 
+                  ...data, 
+                  zoneId, 
+                  zoneName: zone?.name || '' 
+                });
+              }}
+              className="w-full"
+            />
           </div>
 
           {/* Client Information */}
@@ -426,5 +374,3 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
     </Dialog>
   );
 };
-
-
