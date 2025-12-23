@@ -75,7 +75,7 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 mb-4">
       <div className="flex flex-wrap items-start gap-4">
         {/* Property Info Grid */}
-        <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-3">
+        <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
           {/* Developer */}
           {data.developer && (
             <div className="flex items-start gap-2">
