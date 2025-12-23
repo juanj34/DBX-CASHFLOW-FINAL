@@ -123,26 +123,26 @@ export const PaymentSplitBreakdown = ({
                     {/* At Booking */}
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-[#CCFF00] uppercase">{t('atBookingLabel')}</p>
-                      <div className="pl-3 space-y-1.5 text-xs sm:text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">{t('eoiBookingFee')}</span>
-                          <span className="text-white font-mono">{formatCurrency(clientEoi, currency, rate)}</span>
+                      <div className="pl-3 space-y-1.5">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('eoiBookingFee')}</span>
+                          <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(clientEoi, currency, rate)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">{t('restOfDownpayment')}</span>
-                          <span className="text-white font-mono">{formatCurrency(clientRestDownpayment, currency, rate)}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('restOfDownpayment')}</span>
+                          <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(clientRestDownpayment, currency, rate)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">{t('dldFee')}</span>
-                          <span className="text-white font-mono">{formatCurrency(clientDld, currency, rate)}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('dldFee')}</span>
+                          <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(clientDld, currency, rate)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">{t('oqoodFee')}</span>
-                          <span className="text-white font-mono">{formatCurrency(clientOqood, currency, rate)}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('oqoodFee')}</span>
+                          <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(clientOqood, currency, rate)}</span>
                         </div>
-                        <div className="flex justify-between pt-1 border-t border-[#2a3142]/50">
-                          <span className="text-gray-300 font-medium">{t('todayTotal')}</span>
-                          <span className="text-[#CCFF00] font-mono font-medium">{formatCurrency(clientTodayTotal, currency, rate)}</span>
+                        <div className="flex justify-between items-center gap-2 pt-1 border-t border-[#2a3142]/50">
+                          <span className="text-[10px] sm:text-sm text-gray-300 font-medium truncate min-w-0 flex-1">{t('todayTotal')}</span>
+                          <span className="text-[10px] sm:text-sm text-[#CCFF00] font-mono font-medium flex-shrink-0">{formatCurrency(clientTodayTotal, currency, rate)}</span>
                         </div>
                       </div>
                     </div>
@@ -151,22 +151,22 @@ export const PaymentSplitBreakdown = ({
                     {additionalTotal > 0 && (
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-gray-400 uppercase">{t('duringConstructionLabel')}</p>
-                        <div className="pl-3 space-y-1.5 text-xs sm:text-sm">
+                        <div className="pl-3 space-y-1.5">
                           {additionalPayments.map((payment) => {
                             const amount = basePrice * payment.paymentPercent / 100 * sharePercent / 100;
                             const label = payment.type === 'time' 
                               ? `${t('monthLabel')} ${payment.triggerValue}` 
                               : `${payment.triggerValue}% ${t('construction')}`;
                             return (
-                              <div key={payment.id} className="flex justify-between">
-                                <span className="text-gray-400">{payment.paymentPercent}% @ {label}</span>
-                                <span className="text-white font-mono">{formatCurrency(amount, currency, rate)}</span>
+                              <div key={payment.id} className="flex justify-between items-center gap-2">
+                                <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{payment.paymentPercent}% @ {label}</span>
+                                <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(amount, currency, rate)}</span>
                               </div>
                             );
                           })}
-                          <div className="flex justify-between pt-1 border-t border-[#2a3142]/50">
-                            <span className="text-gray-300 font-medium">{t('installmentsTotal')}</span>
-                            <span className="text-gray-300 font-mono font-medium">{formatCurrency(clientAdditionalTotal, currency, rate)}</span>
+                          <div className="flex justify-between items-center gap-2 pt-1 border-t border-[#2a3142]/50">
+                            <span className="text-[10px] sm:text-sm text-gray-300 font-medium truncate min-w-0 flex-1">{t('installmentsTotal')}</span>
+                            <span className="text-[10px] sm:text-sm text-gray-300 font-mono font-medium flex-shrink-0">{formatCurrency(clientAdditionalTotal, currency, rate)}</span>
                           </div>
                         </div>
                       </div>
@@ -193,10 +193,10 @@ export const PaymentSplitBreakdown = ({
                     {/* At Handover */}
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-cyan-400 uppercase">{t('atHandoverLabel')}</p>
-                      <div className="pl-3 text-xs sm:text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">{t('finalPayment')} ({100 - preHandoverPercent}%)</span>
-                          <span className="text-white font-mono">{formatCurrency(clientHandover, currency, rate)}</span>
+                      <div className="pl-3">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('finalPayment')} ({100 - preHandoverPercent}%)</span>
+                          <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(clientHandover, currency, rate)}</span>
                         </div>
                       </div>
                     </div>
