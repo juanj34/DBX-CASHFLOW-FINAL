@@ -485,6 +485,8 @@ const translations: Translations = {
   netAfterMortgage: { en: 'Net After Mortgage', es: 'Neto Después de Hipoteca' },
   cashflow: { en: 'Cashflow', es: 'Flujo de Caja' },
   included: { en: 'included', es: 'incluido' },
+  covers: { en: 'Covers', es: 'Cubre' },
+  ofMortgage: { en: 'of mortgage', es: 'de hipoteca' },
   
   // Validation messages
   completeClientInfo: { en: 'Complete Client Information', es: 'Completa la Información del Cliente' },
