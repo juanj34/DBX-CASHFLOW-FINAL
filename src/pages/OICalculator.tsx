@@ -1,7 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2 } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
@@ -249,7 +256,7 @@ const OICalculatorContent = () => {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Save Button with Status */}
+              {/* Save Button with Status - Always visible */}
               <div className="flex items-center gap-1.5">
                 {saving ? (
                   <span className="text-xs text-gray-400 flex items-center">
@@ -272,34 +279,169 @@ const OICalculatorContent = () => {
                 </Button>
               </div>
 
-              {/* Quotes Dropdown - Load/View */}
-              <QuotesDropdown
-                saving={saving}
-                lastSaved={lastSaved}
-                onSave={handleSave}
-                onSaveAs={handleSaveAs}
-                onLoadQuote={() => setLoadQuoteModalOpen(true)}
-                onViewHistory={() => setVersionHistoryOpen(true)}
-                hasQuoteId={!!quoteId}
-              />
+              {/* Desktop: Show all buttons */}
+              <div className="hidden sm:flex items-center gap-2">
+                {/* Quotes Dropdown */}
+                <QuotesDropdown
+                  saving={saving}
+                  lastSaved={lastSaved}
+                  onSave={handleSave}
+                  onSaveAs={handleSaveAs}
+                  onLoadQuote={() => setLoadQuoteModalOpen(true)}
+                  onViewHistory={() => setVersionHistoryOpen(true)}
+                  hasQuoteId={!!quoteId}
+                />
 
-              {/* Share Controls */}
-              <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
+                {/* Share Controls */}
+                <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
 
-              {/* Separator */}
-              <div className="w-px h-6 bg-[#2a3142] mx-0.5" />
+                {/* Separator */}
+                <div className="w-px h-6 bg-[#2a3142] mx-0.5" />
 
-              {/* Settings Dropdown - Profile/Language/Currency */}
-              <SettingsDropdown
-                language={language}
-                setLanguage={setLanguage}
-                currency={currency}
-                setCurrency={setCurrency}
-                exchangeRate={rate}
-                isLive={isLive}
-              />
+                {/* Settings Dropdown */}
+                <SettingsDropdown
+                  language={language}
+                  setLanguage={setLanguage}
+                  currency={currency}
+                  setCurrency={setCurrency}
+                  exchangeRate={rate}
+                  isLive={isLive}
+                />
 
-              {/* Mortgage Calculator Button */}
+                {/* Mortgage Calculator Button */}
+                <Button
+                  variant="outlineDark"
+                  size="sm"
+                  onClick={() => setMortgageModalOpen(true)}
+                  className={`h-8 px-2 sm:px-3 ${mortgageInputs.enabled ? 'border-[#CCFF00]/50 text-[#CCFF00]' : ''}`}
+                >
+                  <Building2 className="w-4 h-4" />
+                  <span className="ml-1.5">{t('mortgage')}</span>
+                </Button>
+
+                {/* Client Details Button */}
+                <Button
+                  variant="outlineDark"
+                  size="sm"
+                  onClick={() => setClientModalOpen(true)}
+                  className="gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  {t('clientDetails')}
+                </Button>
+
+                {/* Configure Button */}
+                <Button 
+                  onClick={() => setModalOpen(true)}
+                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+                >
+                  <Settings2 className="w-4 h-4 mr-2" />
+                  Configure
+                </Button>
+              </div>
+
+              {/* Mobile: Show condensed actions + More menu */}
+              <div className="flex sm:hidden items-center gap-1.5">
+                {/* Share (icon only) */}
+                <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
+
+                {/* Configure (icon only) */}
+                <Button 
+                  size="sm"
+                  onClick={() => setModalOpen(true)}
+                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold h-8 px-2"
+                >
+                  <Settings2 className="w-4 h-4" />
+                </Button>
+
+                {/* More Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-[#1a1f2e] border-[#2a3142] z-50 w-52">
+                    {/* Client Details */}
+                    <DropdownMenuItem
+                      onClick={() => setClientModalOpen(true)}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                    >
+                      <Users className="w-4 h-4" />
+                      {t('clientDetails')}
+                    </DropdownMenuItem>
+
+                    {/* Mortgage */}
+                    <DropdownMenuItem
+                      onClick={() => setMortgageModalOpen(true)}
+                      className={`text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2 ${mortgageInputs.enabled ? 'text-[#CCFF00]' : ''}`}
+                    >
+                      <Building2 className="w-4 h-4" />
+                      {t('mortgage')}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="bg-[#2a3142]" />
+
+                    {/* Quotes actions */}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        localStorage.removeItem('cashflow_quote_draft');
+                        navigate('/cashflow-generator');
+                        window.location.reload();
+                      }}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                    >
+                      <FilePlus className="w-4 h-4" />
+                      {t('newQuote')}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => setLoadQuoteModalOpen(true)}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      {t('loadQuote')}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => navigate('/my-quotes')}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      {t('viewAllQuotes')}
+                    </DropdownMenuItem>
+
+                    {quoteId && (
+                      <DropdownMenuItem
+                        onClick={() => setVersionHistoryOpen(true)}
+                        className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                      >
+                        <History className="w-4 h-4" />
+                        {t('versionHistory')}
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuSeparator className="bg-[#2a3142]" />
+
+                    {/* Settings section */}
+                    <DropdownMenuItem
+                      onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                    >
+                      🌐 {language === 'en' ? 'Español' : 'English'}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => setCurrency(currency === 'AED' ? 'USD' : 'AED')}
+                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                    >
+                      💰 {currency === 'AED' ? 'USD' : 'AED'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Modals - rendered outside the visible button area */}
               <MortgageModal
                 mortgageInputs={mortgageInputs}
                 setMortgageInputs={setMortgageInputs}
@@ -307,8 +449,6 @@ const OICalculatorContent = () => {
                 open={mortgageModalOpen}
                 onOpenChange={setMortgageModalOpen}
               />
-
-              {/* Configure Button - Always visible */}
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
               <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
               <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
@@ -317,7 +457,6 @@ const OICalculatorContent = () => {
                 onOpenChange={setVersionHistoryOpen}
                 quoteId={quoteId}
                 onRestore={() => {
-                  // Force reload the quote data after restore
                   setDataLoaded(false);
                 }}
               />

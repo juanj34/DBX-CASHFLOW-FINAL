@@ -21,6 +21,7 @@ interface ClientUnitModalProps {
   onChange: (data: ClientUnitData) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  showTrigger?: boolean;
 }
 
 const SQF_TO_M2 = 0.092903;
@@ -36,7 +37,7 @@ export const UNIT_TYPES = [
   { value: 'penthouse', labelEn: 'Penthouse', labelEs: 'Penthouse' },
 ];
 
-export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUnitModalProps) => {
+export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigger = false }: ClientUnitModalProps) => {
   const { language, t } = useLanguage();
 
   // Get clients array, handling legacy format
@@ -128,16 +129,18 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange }: ClientUn
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outlineDark"
-          size="sm"
-          className="gap-2"
-        >
-          <Settings2 className="w-4 h-4" />
-          {t('clientDetails')}
-        </Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            variant="outlineDark"
+            size="sm"
+            className="gap-2"
+          >
+            <Users className="w-4 h-4" />
+            {t('clientDetails')}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white">{t('clientUnitInfo')}</DialogTitle>

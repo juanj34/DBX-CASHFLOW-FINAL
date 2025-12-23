@@ -16,6 +16,7 @@ interface MortgageModalProps {
   preHandoverPercent: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  showTrigger?: boolean;
 }
 
 export const MortgageModal = ({
@@ -24,6 +25,7 @@ export const MortgageModal = ({
   preHandoverPercent,
   open,
   onOpenChange,
+  showTrigger = false,
 }: MortgageModalProps) => {
   const { t } = useLanguage();
   const [feesOpen, setFeesOpen] = useState(false);
@@ -43,16 +45,18 @@ export const MortgageModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outlineDark"
-          size="sm"
-          className={`h-8 px-2 sm:px-3 ${mortgageInputs.enabled ? 'border-[#CCFF00]/50 text-[#CCFF00]' : ''}`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span className="hidden sm:inline ml-1.5">{t('mortgage')}</span>
-        </Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            variant="outlineDark"
+            size="sm"
+            className={`h-8 px-2 sm:px-3 ${mortgageInputs.enabled ? 'border-[#CCFF00]/50 text-[#CCFF00]' : ''}`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1.5">{t('mortgage')}</span>
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">

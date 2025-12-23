@@ -21,6 +21,7 @@ interface OIInputModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currency: Currency;
+  showTrigger?: boolean;
 }
 
 const months = [
@@ -65,7 +66,7 @@ interface Zone {
   maturity_label: string | null;
 }
 
-export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: OIInputModalProps) => {
+export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false }: OIInputModalProps) => {
   const { t } = useLanguage();
   
   // Ensure shortTermRental has defaults if missing (for backward compatibility)
@@ -297,14 +298,16 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button 
-          className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
-        >
-          <Settings2 className="w-4 h-4 mr-2" />
-          Configure
-        </Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button 
+            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+          >
+            <Settings2 className="w-4 h-4 mr-2" />
+            Configure
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-xl font-bold text-white">OI Investment Parameters</DialogTitle>
