@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OIInputs } from '@/components/roi/useOICalculations';
 import { migrateInputs, CURRENT_SCHEMA_VERSION } from '@/components/roi/inputMigration';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
+import { MortgageInputs } from '@/components/roi/useMortgageCalculations';
 import { useToast } from '@/hooks/use-toast';
 
 export interface CashflowQuote {
@@ -91,7 +92,7 @@ export const useCashflowQuote = (quoteId?: string) => {
   }, []);
 
   // Auto-save with debounce
-  const scheduleAutoSave = useCallback((inputs: OIInputs, clientInfo: ClientUnitData, existingQuoteId?: string, isQuoteConfigured?: boolean) => {
+  const scheduleAutoSave = useCallback((inputs: OIInputs, clientInfo: ClientUnitData, existingQuoteId?: string, isQuoteConfigured?: boolean, mortgageInputs?: MortgageInputs) => {
     if (autoSaveTimeout.current) {
       clearTimeout(autoSaveTimeout.current);
     }
@@ -102,7 +103,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     autoSaveTimeout.current = setTimeout(async () => {
       if (existingQuoteId) {
         // Update existing quote after 15 seconds
-        await saveQuote(inputs, clientInfo, existingQuoteId);
+        await saveQuote(inputs, clientInfo, existingQuoteId, undefined, mortgageInputs);
       } else if (isQuoteConfigured) {
         // Auto-save NEW quote as draft after 60 seconds to prevent data loss
         const { data: { user } } = await supabase.auth.getUser();
@@ -131,6 +132,7 @@ export const useCashflowQuote = (quoteId?: string) => {
             zoneName: clientInfo.zoneName,
           },
           _exitScenarios: [],
+          _mortgageInputs: mortgageInputs,
         };
 
         const quoteData = {
@@ -167,7 +169,7 @@ export const useCashflowQuote = (quoteId?: string) => {
   }, [saveDraft, toast]);
 
   // Save quote to database
-  const saveQuote = async (inputs: OIInputs, clientInfo: ClientUnitData, existingId?: string, exitScenarios?: number[]) => {
+  const saveQuote = async (inputs: OIInputs, clientInfo: ClientUnitData, existingId?: string, exitScenarios?: number[], mortgageInputs?: MortgageInputs) => {
     setSaving(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -205,6 +207,7 @@ export const useCashflowQuote = (quoteId?: string) => {
         zoneName: clientInfo.zoneName,
       },
       _exitScenarios: exitScenarios || [],
+      _mortgageInputs: mortgageInputs,
     };
 
     const quoteData = {
@@ -260,8 +263,8 @@ export const useCashflowQuote = (quoteId?: string) => {
   };
 
   // Save as new quote
-  const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData, exitScenarios?: number[]) => {
-    return saveQuote(inputs, clientInfo, undefined, exitScenarios);
+  const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData, exitScenarios?: number[], mortgageInputs?: MortgageInputs) => {
+    return saveQuote(inputs, clientInfo, undefined, exitScenarios, mortgageInputs);
   };
 
   // Generate share token
