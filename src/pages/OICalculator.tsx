@@ -375,7 +375,7 @@ const OICalculatorContent = () => {
               title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
               subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
               icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
-              defaultOpen={true}
+              defaultOpen={false}
             >
               <div className="space-y-4 sm:space-y-6">
                 <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
@@ -386,9 +386,6 @@ const OICalculatorContent = () => {
                   rate={rate} 
                   showAirbnbComparison={calculations.showAirbnbComparison} 
                   unitSizeSqf={clientInfo.unitSizeSqf}
-                  showMortgage={mortgageInputs.enabled}
-                  mortgageMonthlyPayment={mortgageAnalysis.monthlyPayment}
-                  mortgageStartYear={inputs.handoverYear}
                 />
                 <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
               </div>
@@ -413,14 +410,25 @@ const OICalculatorContent = () => {
                 title={t('mortgageAnalysis') || "Mortgage Analysis"}
                 subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
                 icon={<Building2 className="w-5 h-5 text-blue-400" />}
-                defaultOpen={true}
+                defaultOpen={false}
               >
                 {(() => {
                   // Calculate monthly rent figures for mortgage comparison
-                  const handoverProjection = calculations.yearlyProjections.find(p => p.isHandover);
-                  const monthlyLongTermRent = handoverProjection?.annualRent ? handoverProjection.annualRent / 12 : undefined;
-                  const monthlyServiceCharges = handoverProjection?.serviceCharges ? handoverProjection.serviceCharges / 12 : undefined;
-                  const monthlyAirbnbNet = handoverProjection?.airbnbNetIncome ? handoverProjection.airbnbNetIncome / 12 : undefined;
+                  // Use first FULL rental year (after handover), not prorated handover year
+                  const firstFullRentalYear = calculations.yearlyProjections.find(p => 
+                    !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
+                  );
+                  
+                  // Fallback to calculated initial rent if no full year found
+                  const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
+                  const monthlyLongTermRent = fullAnnualRent / 12;
+                  
+                  // Service charges from first full year
+                  const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
+                  
+                  // Airbnb from first full year
+                  const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
+                  const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
                   
                   return (
                     <MortgageBreakdown
