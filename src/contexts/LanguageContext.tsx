@@ -507,6 +507,10 @@ const translations: Translations = {
   year1: { en: 'Year 1', es: 'Año 1' },
   year5: { en: 'Year 5', es: 'Año 5' },
   
+  // Monthly/Annual Toggle
+  monthlyShort: { en: 'Mo', es: 'Mes' },
+  annualShort: { en: 'Yr', es: 'Año' },
+  
   // Validation messages
   completeClientInfo: { en: 'Complete Client Information', es: 'Completa la Información del Cliente' },
   completeClientInfoDesc: { en: 'Add developer, project, unit details and unit size to continue', es: 'Agrega desarrollador, proyecto, detalles de unidad y tamaño para continuar' },

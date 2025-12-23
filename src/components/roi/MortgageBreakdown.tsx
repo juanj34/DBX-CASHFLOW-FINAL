@@ -43,6 +43,7 @@ export const MortgageBreakdown = ({
   const { t } = useLanguage();
   const [showLongTermBreakdown, setShowLongTermBreakdown] = useState(false);
   const [showAirbnbBreakdown, setShowAirbnbBreakdown] = useState(false);
+  const [viewMode, setViewMode] = useState<'monthly' | 'annual'>('monthly');
 
   if (!mortgageInputs.enabled) return null;
 
@@ -97,6 +98,22 @@ export const MortgageBreakdown = ({
   const rentGrowthPercent = netMonthlyRent > 0 && year5NetLongTerm > 0
     ? Math.round(((year5NetLongTerm - netMonthlyRent) / netMonthlyRent) * 100)
     : 0;
+
+  // Display multiplier for monthly/annual toggle
+  const displayMultiplier = viewMode === 'annual' ? 12 : 1;
+  const periodLabel = viewMode === 'annual' ? t('annualShort') : t('monthlyShort');
+  
+  // Display values (multiply by period)
+  const displayNetRent = netMonthlyRent * displayMultiplier;
+  const displayMortgageTotal = monthlyMortgageTotal * displayMultiplier;
+  const displayCashflow = monthlyCashflow * displayMultiplier;
+  const displayAirbnbNet = (monthlyAirbnbNet || 0) * displayMultiplier;
+  const displayAirbnbCashflow = airbnbCashflow * displayMultiplier;
+  const displayYear5NetRent = year5NetLongTerm * displayMultiplier;
+  const displayGrossRent = (monthlyLongTermRent || 0) * displayMultiplier;
+  const displayServiceCharges = (monthlyServiceCharges || 0) * displayMultiplier;
+  const displayMortgagePayment = monthlyPayment * displayMultiplier;
+  const displayInsurance = (totalAnnualInsurance / 12) * displayMultiplier;
 
   // Grand total calculation: gap + total loan payments + fees + insurance
   const grandTotal = gapAmount + totalLoanPayments + totalUpfrontFees + totalInsuranceOverTerm;
@@ -256,9 +273,36 @@ export const MortgageBreakdown = ({
         {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
           <CollapsibleSection
             title={t('rentVsMortgage')}
-            subtitle={`${t('monthlyMortgageTotal')}: ${formatCurrency(monthlyMortgageTotal, currency, rate)}`}
+            subtitle={`${periodLabel}: ${formatCurrency(displayMortgageTotal, currency, rate)}`}
             icon={<Home className="w-5 h-5 text-purple-400" />}
             defaultOpen={false}
+            headerAction={
+              <div 
+                className="flex items-center gap-1 bg-[#1e293b] rounded-lg p-0.5 ml-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setViewMode('monthly')}
+                  className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
+                    viewMode === 'monthly' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  {t('monthlyShort')}
+                </button>
+                <button
+                  onClick={() => setViewMode('annual')}
+                  className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
+                    viewMode === 'annual' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  {t('annualShort')}
+                </button>
+              </div>
+            }
           >
             {/* Two columns comparison */}
             <div className={`grid gap-3 ${showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
@@ -287,11 +331,11 @@ export const MortgageBreakdown = ({
                         </Tooltip>
                       </TooltipProvider>
                     </div>
-                    <span className="text-emerald-400 font-mono">{formatCurrency(netMonthlyRent, currency, rate)}</span>
+                    <span className="text-emerald-400 font-mono">{formatCurrency(displayNetRent, currency, rate)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">- {t('mortgage')}</span>
-                    <span className="text-purple-400 font-mono">-{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                    <span className="text-gray-500">− {t('mortgage')}</span>
+                    <span className="text-purple-400 font-mono">−{formatCurrency(displayMortgageTotal, currency, rate)}</span>
                   </div>
                   {/* Cashflow result */}
                   <div className={`flex justify-between items-center pt-2 mt-2 border-t border-[#2a3142] ${isCovered ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -300,7 +344,7 @@ export const MortgageBreakdown = ({
                       <span className="font-medium">{t('cashflow')}</span>
                     </div>
                     <span className="font-mono font-bold">
-                      {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
+                      {displayCashflow >= 0 ? '+' : ''}{formatCurrency(displayCashflow, currency, rate)}
                     </span>
                   </div>
                   {/* Coverage percentage indicator with progress bar - Clickable */}
@@ -355,11 +399,11 @@ export const MortgageBreakdown = ({
                           </Tooltip>
                         </TooltipProvider>
                       </div>
-                      <span className="text-orange-400 font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
+                      <span className="text-orange-400 font-mono">{formatCurrency(displayAirbnbNet, currency, rate)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">- {t('mortgage')}</span>
-                      <span className="text-purple-400 font-mono">-{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                      <span className="text-gray-500">− {t('mortgage')}</span>
+                      <span className="text-purple-400 font-mono">−{formatCurrency(displayMortgageTotal, currency, rate)}</span>
                     </div>
                     {/* Cashflow result */}
                     <div className={`flex justify-between items-center pt-2 mt-2 border-t border-[#2a3142] ${isAirbnbCovered ? 'text-orange-400' : 'text-red-400'}`}>
@@ -368,7 +412,7 @@ export const MortgageBreakdown = ({
                         <span className="font-medium">{t('cashflow')}</span>
                       </div>
                       <span className="font-mono font-bold">
-                        {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
+                        {displayAirbnbCashflow >= 0 ? '+' : ''}{formatCurrency(displayAirbnbCashflow, currency, rate)}
                       </span>
                     </div>
                     {/* Coverage percentage indicator with progress bar - Clickable */}
@@ -415,7 +459,7 @@ export const MortgageBreakdown = ({
                   {/* Year 1 */}
                   <div className="text-center p-2 bg-[#0f172a] rounded-lg">
                     <div className="text-[10px] text-gray-500 mb-1">{t('year1')}</div>
-                    <div className="text-sm font-mono text-emerald-400">{formatCurrency(netMonthlyRent, currency, rate)}</div>
+                    <div className="text-sm font-mono text-emerald-400">{formatCurrency(displayNetRent, currency, rate)}</div>
                     <div className={`text-[10px] mt-1 ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
                       {longTermCoveragePercent}% {t('coverage')}
                     </div>
@@ -432,7 +476,7 @@ export const MortgageBreakdown = ({
                   {/* Year 5 */}
                   <div className="text-center p-2 bg-[#0f172a] rounded-lg">
                     <div className="text-[10px] text-gray-500 mb-1">{t('year5')}</div>
-                    <div className="text-sm font-mono text-emerald-400">{formatCurrency(year5NetLongTerm, currency, rate)}</div>
+                    <div className="text-sm font-mono text-emerald-400">{formatCurrency(displayYear5NetRent, currency, rate)}</div>
                     <div className={`text-[10px] mt-1 ${year5CoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
                       {year5CoveragePercent}% {t('coverage')}
                     </div>
@@ -464,38 +508,38 @@ export const MortgageBreakdown = ({
               <div className="p-3 bg-[#0f172a] rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">{t('grossMonthlyRent')}</span>
-                  <span className="text-white font-mono">{formatCurrency(monthlyLongTermRent || 0, currency, rate)}</span>
+                  <span className="text-white font-mono">{formatCurrency(displayGrossRent, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">− {t('serviceCharges')}</span>
-                  <span className="text-red-400 font-mono">-{formatCurrency(monthlyServiceCharges || 0, currency, rate)}</span>
+                  <span className="text-red-400 font-mono">−{formatCurrency(displayServiceCharges, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-[#2a3142] mt-2">
                   <span className="text-emerald-400 font-medium">{t('netRent')}</span>
-                  <span className="text-emerald-400 font-mono font-medium">{formatCurrency(netMonthlyRent, currency, rate)}</span>
+                  <span className="text-emerald-400 font-mono font-medium">{formatCurrency(displayNetRent, currency, rate)}</span>
                 </div>
               </div>
               {/* Mortgage breakdown */}
               <div className="p-3 bg-[#0f172a] rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">{t('mortgagePayment')}</span>
-                  <span className="text-purple-400 font-mono">{formatCurrency(monthlyPayment, currency, rate)}</span>
+                  <span className="text-purple-400 font-mono">{formatCurrency(displayMortgagePayment, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">+ {t('insurance')}</span>
-                  <span className="text-purple-400 font-mono">{formatCurrency(totalAnnualInsurance / 12, currency, rate)}</span>
+                  <span className="text-purple-400 font-mono">{formatCurrency(displayInsurance, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-[#2a3142] mt-2">
                   <span className="text-purple-400 font-medium">{t('totalMortgage')}</span>
-                  <span className="text-purple-400 font-mono font-medium">{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                  <span className="text-purple-400 font-mono font-medium">{formatCurrency(displayMortgageTotal, currency, rate)}</span>
                 </div>
               </div>
               {/* Final calculation */}
               <div className="p-3 bg-gradient-to-r from-emerald-900/30 to-purple-900/30 rounded-lg">
                 <div className="flex justify-between text-sm font-medium">
                   <span className="text-white">{t('finalCashflow')}</span>
-                  <span className={`font-mono ${monthlyCashflow >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
+                  <span className={`font-mono ${displayCashflow >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {displayCashflow >= 0 ? '+' : ''}{formatCurrency(displayCashflow, currency, rate)}
                   </span>
                 </div>
                 <div className="text-center mt-3">
@@ -523,7 +567,7 @@ export const MortgageBreakdown = ({
               <div className="p-3 bg-[#0f172a] rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">{t('netMonthlyRent')}</span>
-                  <span className="text-orange-400 font-mono">{formatCurrency(monthlyAirbnbNet || 0, currency, rate)}</span>
+                  <span className="text-orange-400 font-mono">{formatCurrency(displayAirbnbNet, currency, rate)}</span>
                 </div>
                 <p className="text-[10px] text-gray-500 mt-1">{t('airbnbNetRentTooltip')}</p>
               </div>
@@ -531,23 +575,23 @@ export const MortgageBreakdown = ({
               <div className="p-3 bg-[#0f172a] rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">{t('mortgagePayment')}</span>
-                  <span className="text-purple-400 font-mono">{formatCurrency(monthlyPayment, currency, rate)}</span>
+                  <span className="text-purple-400 font-mono">{formatCurrency(displayMortgagePayment, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">+ {t('insurance')}</span>
-                  <span className="text-purple-400 font-mono">{formatCurrency(totalAnnualInsurance / 12, currency, rate)}</span>
+                  <span className="text-purple-400 font-mono">{formatCurrency(displayInsurance, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-[#2a3142] mt-2">
                   <span className="text-purple-400 font-medium">{t('totalMortgage')}</span>
-                  <span className="text-purple-400 font-mono font-medium">{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                  <span className="text-purple-400 font-mono font-medium">{formatCurrency(displayMortgageTotal, currency, rate)}</span>
                 </div>
               </div>
               {/* Final calculation */}
               <div className="p-3 bg-gradient-to-r from-orange-900/30 to-purple-900/30 rounded-lg">
                 <div className="flex justify-between text-sm font-medium">
                   <span className="text-white">{t('finalCashflow')}</span>
-                  <span className={`font-mono ${airbnbCashflow >= 0 ? 'text-orange-400' : 'text-red-400'}`}>
-                    {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
+                  <span className={`font-mono ${displayAirbnbCashflow >= 0 ? 'text-orange-400' : 'text-red-400'}`}>
+                    {displayAirbnbCashflow >= 0 ? '+' : ''}{formatCurrency(displayAirbnbCashflow, currency, rate)}
                   </span>
                 </div>
                 <div className="text-center mt-3">
