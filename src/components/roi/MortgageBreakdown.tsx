@@ -167,6 +167,12 @@ export const MortgageBreakdown = ({
               <span className="text-sm font-medium text-gray-300">{t('upfrontFees')}</span>
             </div>
             <div className="space-y-2 text-xs">
+              {hasGap && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t('gapPayment')}</span>
+                  <span className="text-amber-400 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">{t('processingFee')} ({mortgageInputs.processingFeePercent}%)</span>
                 <span className="text-white font-mono">{formatCurrency(processingFee, currency, rate)}</span>
@@ -181,7 +187,7 @@ export const MortgageBreakdown = ({
               </div>
               <div className="flex justify-between pt-2 border-t border-[#2a3142]">
                 <span className="text-gray-400 font-medium">{t('total')}</span>
-                <span className="text-purple-400 font-mono font-medium">{formatCurrency(totalUpfrontFees, currency, rate)}</span>
+                <span className="text-purple-400 font-mono font-medium">{formatCurrency(totalUpfrontFees + gapAmount, currency, rate)}</span>
               </div>
             </div>
           </div>
