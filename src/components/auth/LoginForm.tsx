@@ -26,7 +26,7 @@ export const LoginForm = () => {
       if (error) throw error;
 
       toast.success("Welcome back!");
-      navigate("/map");
+      navigate("/home");
     } catch (error: any) {
       toast.error(error.message || "Failed to login");
     } finally {

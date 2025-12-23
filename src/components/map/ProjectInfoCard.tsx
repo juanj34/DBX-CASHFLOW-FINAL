@@ -47,7 +47,7 @@ export const ProjectInfoCard = ({ project, onClose }: ProjectInfoCardProps) => {
   const developerLogo = project.developer_info?.logo_url;
 
   return (
-    <div className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-y-auto shadow-xl z-10 bg-[#1a1f2e] border border-[#2a3142] rounded-xl" data-info-card>
+    <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-20 w-auto sm:w-80 max-h-[80vh] overflow-y-auto shadow-xl z-10 bg-[#1a1f2e] border border-[#2a3142] rounded-xl" data-info-card>
       {/* Project Image Header */}
       {project.image_url && (
         <div className="relative w-full h-40">

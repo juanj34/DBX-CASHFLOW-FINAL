@@ -123,8 +123,8 @@ const LandmarksManager = () => {
         </div>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
+      <div className="border rounded-lg overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">Image</TableHead>

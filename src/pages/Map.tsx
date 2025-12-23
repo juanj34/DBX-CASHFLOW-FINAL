@@ -49,7 +49,7 @@ const Map = () => {
   }
 
   return (
-    <div className="h-screen w-screen relative overflow-hidden">
+    <div className="h-[100dvh] w-screen relative overflow-hidden">
       <MapContainer userRole={userRole} />
     </div>
   );

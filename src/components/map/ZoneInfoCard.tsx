@@ -42,7 +42,7 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
     zone.maturity_level || zone.price_range_min || zone.ticket_1br_min;
 
   return (
-    <div className="absolute top-4 right-20 w-80 max-h-[80vh] overflow-y-auto shadow-xl z-10 bg-[#1a1f2e] border border-[#2a3142] rounded-xl" data-info-card>
+    <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-20 w-auto sm:w-80 max-h-[80vh] overflow-y-auto shadow-xl z-10 bg-[#1a1f2e] border border-[#2a3142] rounded-xl" data-info-card>
       <div className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
         <div className="flex-1 pr-2">
           <h3 className="text-xl font-semibold text-white leading-tight">{zone.name}</h3>

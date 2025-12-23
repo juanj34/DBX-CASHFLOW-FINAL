@@ -1,10 +1,20 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Map, TrendingUp, FileText, ArrowRight, Sparkles, BarChart3, Globe, Zap } from "lucide-react";
+import { Map, TrendingUp, FileText, ArrowRight, Sparkles, BarChart3, Globe, Zap, Menu } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const Landing = () => {
   useDocumentTitle("AI Real Estate Investment Tools");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#050810] text-white overflow-hidden">
       {/* Animated Background */}
@@ -25,13 +35,13 @@ const Landing = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-6 lg:px-12 py-6">
+      <nav className="relative z-50 flex items-center justify-between px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 via-purple-500 to-[#CCFF00] p-[2px]">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-cyan-400 via-purple-500 to-[#CCFF00] p-[2px]">
               <div className="w-full h-full rounded-lg bg-[#050810] flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 sm:w-5 sm:h-5" fill="none">
                   <path 
                     d="M12 2L2 7L12 12L22 7L12 2Z" 
                     stroke="url(#logo-gradient)" 
@@ -65,15 +75,15 @@ const Landing = () => {
             </div>
             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-[#CCFF00] rounded-lg blur opacity-30 animate-pulse-slow" />
           </div>
-          <span className="text-xl font-bold tracking-tight">
+          <span className="text-lg sm:text-xl font-bold tracking-tight">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-[#CCFF00]">Dubai</span>
             <span className="text-white">Invest</span>
             <span className="text-[#CCFF00]">Pro</span>
           </span>
         </div>
 
-        {/* Nav Actions */}
-        <div className="flex items-center gap-4">
+        {/* Desktop Nav Actions */}
+        <div className="hidden sm:flex items-center gap-4">
           <Link to="/login">
             <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/5">
               Iniciar Sesión
@@ -85,20 +95,46 @@ const Landing = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Mobile Hamburger Menu */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild className="sm:hidden">
+            <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/5">
+              <Menu className="w-6 h-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[280px] bg-[#0a0f1a] border-gray-800">
+            <SheetHeader>
+              <SheetTitle className="text-white text-left">Menu</SheetTitle>
+            </SheetHeader>
+            <nav className="flex flex-col gap-4 mt-6">
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/5">
+                  Iniciar Sesión
+                </Button>
+              </Link>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-gradient-to-r from-cyan-500 via-purple-500 to-[#CCFF00] text-black font-semibold">
+                  Comenzar <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </nav>
+          </SheetContent>
+        </Sheet>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-10 px-6 lg:px-12 pt-16 lg:pt-24 pb-20">
+      <section className="relative z-10 px-4 sm:px-6 lg:px-12 pt-12 sm:pt-16 lg:pt-24 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 text-sm">
-                <Sparkles className="w-4 h-4" />
+            <div className="space-y-6 sm:space-y-8">
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 text-xs sm:text-sm">
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Powered by AI Intelligence</span>
               </div>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                 <span className="text-white">El Futuro de la</span>
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-[#CCFF00] animate-gradient">
@@ -108,43 +144,43 @@ const Landing = () => {
                 <span className="text-white">en Dubai</span>
               </h1>
               
-              <p className="text-lg text-gray-400 max-w-xl leading-relaxed">
+              <p className="text-base sm:text-lg text-gray-400 max-w-xl leading-relaxed">
                 Herramientas de análisis de inversión de próxima generación. 
                 Mapas interactivos, calculadoras ROI con IA, y generador de 
                 cashflow profesional — todo en una plataforma.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/login">
-                  <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-semibold text-lg px-8 py-6 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 group">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <Link to="/login" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-semibold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 group">
                     Acceder a la Plataforma
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outlineDark" className="w-full sm:w-auto text-lg px-8 py-6">
+                <Button size="lg" variant="outlineDark" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
                   Ver Demo
                 </Button>
               </div>
               
               {/* Stats */}
-              <div className="flex gap-8 pt-8 border-t border-gray-800">
+              <div className="flex gap-6 sm:gap-8 pt-6 sm:pt-8 border-t border-gray-800">
                 <div>
-                  <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+                  <div className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
                     500+
                   </div>
-                  <div className="text-sm text-gray-500">Proyectos Mapeados</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Proyectos Mapeados</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-[#CCFF00]">
+                  <div className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-[#CCFF00]">
                     50+
                   </div>
-                  <div className="text-sm text-gray-500">Zonas de Inversión</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Zonas de Inversión</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-[#CCFF00]">
+                  <div className="text-2xl sm:text-3xl font-bold text-[#CCFF00]">
                     AI
                   </div>
-                  <div className="text-sm text-gray-500">Análisis Inteligente</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Análisis Inteligente</div>
                 </div>
               </div>
             </div>
@@ -202,67 +238,67 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 px-6 lg:px-12 py-24 bg-gradient-to-b from-transparent via-gray-900/50 to-transparent">
+      <section className="relative z-10 px-4 sm:px-6 lg:px-12 py-16 sm:py-24 bg-gradient-to-b from-transparent via-gray-900/50 to-transparent">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
               <span className="text-white">Herramientas </span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
                 Profesionales
               </span>
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
               Todo lo que necesitas para tomar decisiones de inversión informadas en el mercado inmobiliario de Dubai
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             {/* Feature 1 - Map */}
-            <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-8 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10">
+            <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6 sm:p-8 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10">
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Map className="w-7 h-7 text-cyan-400" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
+                  <Map className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Mapa Interactivo</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Mapa Interactivo</h3>
+                <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
                   Explora zonas de inversión, proyectos off-plan, landmarks y hotspots en tiempo real con capas de datos inteligentes.
                 </p>
-                <div className="mt-6 flex items-center text-cyan-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
+                <div className="mt-4 sm:mt-6 flex items-center text-cyan-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
                   Explorar Mapa <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
             </div>
 
             {/* Feature 2 - ROI Calculator */}
-            <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
+            <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6 sm:p-8 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-7 h-7 text-purple-400" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Calculadora ROI</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Calculadora ROI</h3>
+                <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
                   Compara perfiles de inversión OI, SI y HO con proyecciones precisas y escenarios de salida detallados.
                 </p>
-                <div className="mt-6 flex items-center text-purple-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
+                <div className="mt-4 sm:mt-6 flex items-center text-purple-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
                   Calcular ROI <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
             </div>
 
             {/* Feature 3 - Cash Statement */}
-            <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-8 hover:border-[#CCFF00]/50 transition-all duration-300 hover:shadow-xl hover:shadow-[#CCFF00]/10">
+            <div className="group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6 sm:p-8 hover:border-[#CCFF00]/50 transition-all duration-300 hover:shadow-xl hover:shadow-[#CCFF00]/10 sm:col-span-2 md:col-span-1">
               <div className="absolute inset-0 bg-gradient-to-br from-[#CCFF00]/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#CCFF00]/20 to-[#CCFF00]/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FileText className="w-7 h-7 text-[#CCFF00]" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#CCFF00]/20 to-[#CCFF00]/5 flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
+                  <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-[#CCFF00]" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Generador de Cashflow</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Generador de Cashflow</h3>
+                <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
                   Crea reportes profesionales con planes de pago, proyecciones de cashflow y PDFs listos para presentar.
                 </p>
-                <div className="mt-6 flex items-center text-[#CCFF00] text-sm font-medium group-hover:translate-x-2 transition-transform">
+                <div className="mt-4 sm:mt-6 flex items-center text-[#CCFF00] text-sm font-medium group-hover:translate-x-2 transition-transform">
                   Crear Cotización <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
@@ -272,25 +308,25 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="relative z-10 px-6 lg:px-12 py-24">
+      <section className="relative z-10 px-4 sm:px-6 lg:px-12 py-16 sm:py-24">
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative">
             {/* Glow Effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-[#CCFF00]/20 rounded-3xl blur-3xl" />
             
-            <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl rounded-3xl border border-gray-700/50 p-12 md:p-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-gray-700/50 p-8 sm:p-12 md:p-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
                 <span className="text-white">¿Listo para </span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-[#CCFF00]">
                   Transformar
                 </span>
                 <span className="text-white"> tu Estrategia de Inversión?</span>
               </h2>
-              <p className="text-gray-400 text-lg mb-10 max-w-2xl mx-auto">
+              <p className="text-gray-400 text-base sm:text-lg mb-8 sm:mb-10 max-w-2xl mx-auto">
                 Únete a los profesionales que ya están usando Dubai Invest Pro para tomar decisiones de inversión más inteligentes.
               </p>
               <Link to="/login">
-                <Button size="lg" className="bg-gradient-to-r from-cyan-500 via-purple-500 to-[#CCFF00] text-black font-bold text-lg px-12 py-7 hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 group">
+                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 via-purple-500 to-[#CCFF00] text-black font-bold text-base sm:text-lg px-8 sm:px-12 py-6 sm:py-7 hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 group">
                   Comenzar Ahora — Es Gratis
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
@@ -301,13 +337,13 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 lg:px-12 py-8 border-t border-gray-800/50">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
+      <footer className="relative z-10 px-4 sm:px-6 lg:px-12 py-6 sm:py-8 border-t border-gray-800/50">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-gray-500 text-xs sm:text-sm text-center sm:text-left">
             <span>© 2024 Dubai Invest Pro.</span>
             <span>Todos los derechos reservados.</span>
           </div>
-          <div className="flex items-center gap-6 text-gray-500 text-sm">
+          <div className="flex items-center gap-4 sm:gap-6 text-gray-500 text-xs sm:text-sm">
             <a href="#" className="hover:text-white transition-colors">Privacidad</a>
             <a href="#" className="hover:text-white transition-colors">Términos</a>
             <a href="#" className="hover:text-white transition-colors">Contacto</a>
