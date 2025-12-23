@@ -18,7 +18,7 @@ export const LandmarkInfoCard = ({ landmark, onClose }: LandmarkInfoCardProps) =
       data-info-card
     >
       <div 
-        className="relative max-w-4xl w-[90vw] max-h-[85vh] bg-[#1a1f2e] border border-[#2a3142] rounded-xl shadow-2xl overflow-hidden"
+        className="relative max-w-4xl w-[calc(100vw-2rem)] sm:w-[90vw] max-h-[85vh] bg-[#1a1f2e] border border-[#2a3142] rounded-xl shadow-2xl overflow-hidden mx-4 sm:mx-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}

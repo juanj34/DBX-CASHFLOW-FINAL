@@ -32,7 +32,7 @@ export const SignupForm = () => {
       if (error) throw error;
 
       toast.success("Account created successfully!");
-      navigate("/map");
+      navigate("/home");
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
     } finally {

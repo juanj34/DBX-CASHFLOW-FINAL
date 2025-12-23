@@ -98,8 +98,8 @@ const DevelopersManager = () => {
         />
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
+      <div className="border rounded-lg overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">Logo</TableHead>

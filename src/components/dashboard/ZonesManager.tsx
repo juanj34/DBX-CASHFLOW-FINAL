@@ -109,8 +109,8 @@ const ZonesManager = () => {
         />
       </div>
 
-      <div className="rounded-lg border bg-card">
-        <Table>
+      <div className="rounded-lg border bg-card overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
