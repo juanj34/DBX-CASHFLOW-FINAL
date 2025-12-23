@@ -104,14 +104,15 @@ export const useCashflowQuote = (quoteId?: string) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(draft));
   }, []);
 
-  // Save quote to database
+  // Save quote to database (with version snapshot for existing quotes)
   const saveQuote = useCallback(
     async (
       inputs: OIInputs,
       clientInfo: ClientUnitData,
       existingId?: string,
       exitScenarios?: number[],
-      mortgageInputs?: MortgageInputs
+      mortgageInputs?: MortgageInputs,
+      saveVersionFn?: (data: any) => Promise<any>
     ) => {
       setSaving(true);
 
@@ -174,6 +175,23 @@ export const useCashflowQuote = (quoteId?: string) => {
 
       let result;
       if (existingId) {
+        // Save current version BEFORE overwriting (only for manual saves)
+        if (saveVersionFn && quote) {
+          await saveVersionFn({
+            inputs: quote.inputs,
+            title: quote.title,
+            client_name: quote.client_name,
+            client_email: quote.client_email,
+            client_country: quote.client_country,
+            project_name: quote.project_name,
+            developer: quote.developer,
+            unit: quote.unit,
+            unit_type: quote.unit_type,
+            unit_size_sqf: quote.unit_size_sqf,
+            unit_size_m2: quote.unit_size_m2,
+          });
+        }
+
         result = await supabase
           .from('cashflow_quotes')
           .update(quoteData)

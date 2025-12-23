@@ -422,6 +422,68 @@ export type Database = {
           },
         ]
       }
+      quote_versions: {
+        Row: {
+          client_country: string | null
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          developer: string | null
+          id: string
+          inputs: Json
+          project_name: string | null
+          quote_id: string
+          title: string | null
+          unit: string | null
+          unit_size_m2: number | null
+          unit_size_sqf: number | null
+          unit_type: string | null
+          version_number: number
+        }
+        Insert: {
+          client_country?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          developer?: string | null
+          id?: string
+          inputs: Json
+          project_name?: string | null
+          quote_id: string
+          title?: string | null
+          unit?: string | null
+          unit_size_m2?: number | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          version_number: number
+        }
+        Update: {
+          client_country?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          developer?: string | null
+          id?: string
+          inputs?: Json
+          project_name?: string | null
+          quote_id?: string
+          title?: string | null
+          unit?: string | null
+          unit_size_m2?: number | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_versions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
