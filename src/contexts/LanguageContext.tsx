@@ -488,6 +488,25 @@ const translations: Translations = {
   covers: { en: 'Covers', es: 'Cubre' },
   ofMortgage: { en: 'of mortgage', es: 'de hipoteca' },
   
+  // Coverage Breakdown Popup & Tooltips
+  longTermNetRentTooltip: { en: 'Gross monthly rent minus service charges', es: 'Renta bruta mensual menos cargos de servicio' },
+  airbnbNetRentTooltip: { en: 'Gross Airbnb income minus operating expenses, management fees, and service charges', es: 'Ingreso bruto de Airbnb menos gastos operativos, comisiones de gestión y cargos de servicio' },
+  coverageBreakdown: { en: 'Coverage Breakdown', es: 'Desglose de Cobertura' },
+  grossMonthlyRent: { en: 'Gross Monthly Rent', es: 'Renta Mensual Bruta' },
+  mortgagePayment: { en: 'Mortgage Payment', es: 'Pago de Hipoteca' },
+  totalMortgage: { en: 'Total Mortgage', es: 'Total Hipoteca' },
+  finalCashflow: { en: 'Final Cashflow', es: 'Flujo de Caja Final' },
+  mortgageCovered: { en: 'of mortgage covered', es: 'de hipoteca cubierta' },
+  clickForDetails: { en: 'Click for details', es: 'Clic para detalles' },
+  
+  // Year Comparison
+  rentGrowthImpact: { en: 'Rent Growth Impact', es: 'Impacto del Crecimiento de Renta' },
+  coverage: { en: 'coverage', es: 'cobertura' },
+  rentIncrease: { en: 'Rent increase', es: 'Aumento de renta' },
+  over5Years: { en: 'over 5 years', es: 'en 5 años' },
+  year1: { en: 'Year 1', es: 'Año 1' },
+  year5: { en: 'Year 5', es: 'Año 5' },
+  
   // Validation messages
   completeClientInfo: { en: 'Complete Client Information', es: 'Completa la Información del Cliente' },
   completeClientInfoDesc: { en: 'Add developer, project, unit details and unit size to continue', es: 'Agrega desarrollador, proyecto, detalles de unidad y tamaño para continuar' },
