@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User } from 'lucide-react';
+import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -278,22 +278,31 @@ const CashflowViewContent = () => {
 
         <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
-        {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          {visibility.paymentBreakdown && (
-            <div className="lg:col-span-2">
-              <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
-            </div>
-          )}
-          <div className="lg:col-span-1 space-y-4">
-            {visibility.investmentSnapshot && (
-              <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-            )}
-            {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
-              <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
-            )}
+        {/* Investment Snapshot first on mobile, then grid on desktop */}
+        {visibility.investmentSnapshot && (
+          <div className="mb-4 sm:mb-6">
+            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
           </div>
-        </div>
+        )}
+
+        {/* Payment Breakdown - Collapsible */}
+        {visibility.paymentBreakdown && (
+          <CollapsibleSection
+            title={t('paymentBreakdownTitle')}
+            subtitle={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent} ${t('paymentStructure')}`}
+            icon={<CreditCard className="w-5 h-5 text-[#CCFF00]" />}
+            defaultOpen={false}
+          >
+            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+          </CollapsibleSection>
+        )}
+
+        {/* Payment Split By Person */}
+        {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
+          <div className="mb-4 sm:mb-6">
+            <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+          </div>
+        )}
 
         {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
         {visibility.longTermHold && (
