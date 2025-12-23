@@ -387,7 +387,14 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }
               step={50000}
               className="roi-slider-lime"
             />
-            <div className="text-xs text-gray-500 text-right">{formatCurrency(inputs.basePrice, currency)}</div>
+            <div className="text-xs text-gray-500 text-right">
+              {formatCurrency(inputs.basePrice, currency)}
+              {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
+                <span className="ml-2 text-[10px] text-gray-600">
+                  ({formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}/sqft)
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Booking Date - Month/Year */}

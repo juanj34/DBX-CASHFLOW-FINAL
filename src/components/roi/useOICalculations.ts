@@ -338,7 +338,10 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const monthsRemainingInFirstYear = 13 - bookingMonth; // 12 - bookingMonth + 1
   const firstYearProRataFactor = monthsRemainingInFirstYear / 12;
   
-  for (let i = 1; i <= 10; i++) {
+  // Calculate how many years we need: handover year + 10 years of rent
+  const totalProjectionYears = handoverYearIndex + 10;
+  
+  for (let i = 1; i <= totalProjectionYears; i++) {
     const { rate: yearRate } = getAppreciationRate(i);
     const prevValue = propertyValues[i - 1];
     
@@ -443,7 +446,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   let currentRent = initialAnnualRent;
   let currentADR = shortTermRental.averageDailyRate;
   
-  for (let i = 1; i <= 10; i++) {
+  // Generate projections: handover year + 10 years of rental income
+  for (let i = 1; i <= totalProjectionYears; i++) {
     const calendarYear = bookingYear + i - 1;
     const propertyValue = propertyValues[i];
     const { rate: appreciationRate, phase } = getAppreciationRate(i);

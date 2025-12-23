@@ -93,6 +93,8 @@ const OICalculatorContent = () => {
         unitType: savedClientInfo.unitType || quote.unit_type || '',
         splitEnabled: savedClientInfo.splitEnabled || false,
         clientShares: savedClientInfo.clientShares || [],
+        zoneId: savedClientInfo.zoneId || '',
+        zoneName: savedClientInfo.zoneName || '',
       });
       setDataLoaded(true);
     } else if (!quoteId) {
@@ -334,7 +336,7 @@ const OICalculatorContent = () => {
               <div className="space-y-4 sm:space-y-6">
                 <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
                 <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-                <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} unitSizeSqf={clientInfo.unitSizeSqf} />
                 <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
               </div>
             </CollapsibleSection>
@@ -347,7 +349,7 @@ const OICalculatorContent = () => {
               defaultOpen={false}
             >
               <div className="space-y-4 sm:space-y-6">
-                <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} />
+                <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
                 <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
               </div>
             </CollapsibleSection>
