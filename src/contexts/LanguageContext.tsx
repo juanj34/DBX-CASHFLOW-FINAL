@@ -483,6 +483,8 @@ const translations: Translations = {
   mortgageAtHandover: { en: 'Mortgage at Handover', es: 'Hipoteca en Entrega' },
   totalBeforeHandover: { en: 'Total Before Handover', es: 'Total Antes de Entrega' },
   netAfterMortgage: { en: 'Net After Mortgage', es: 'Neto Después de Hipoteca' },
+  cashflow: { en: 'Cashflow', es: 'Flujo de Caja' },
+  included: { en: 'included', es: 'incluido' },
   
   // Validation messages
   completeClientInfo: { en: 'Complete Client Information', es: 'Completa la Información del Cliente' },

@@ -1,4 +1,4 @@
-import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator, Home, CheckCircle, AlertCircle } from "lucide-react";
+import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator, Home, CheckCircle, AlertCircle, Building } from "lucide-react";
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -219,75 +219,96 @@ export const MortgageBreakdown = ({
           </div>
         </div>
 
-        {/* Rent vs Mortgage Coverage - NEW SECTION */}
+        {/* Rent vs Mortgage Coverage - Side-by-Side Comparison */}
         {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
-          <div className="p-3 bg-[#0f172a] rounded-xl border border-[#2a3142]">
-            <div className="flex items-center gap-2 mb-3">
-              <Home className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-medium text-gray-300">{t('rentVsMortgage')}</span>
-            </div>
-            
-            <div className="space-y-3">
-              {/* Long-term rental analysis */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">{t('monthlyRent')} ({t('longTerm')})</span>
-                  <span className="text-white font-mono">{formatCurrency(monthlyLongTermRent, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">- {t('serviceCharges')}</span>
-                  <span className="text-white font-mono">-{formatCurrency(monthlyServiceCharges || 0, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between text-xs pt-1 border-t border-[#2a3142]">
-                  <span className="text-gray-400">{t('netMonthlyRent')}</span>
-                  <span className="text-emerald-400 font-mono font-medium">
-                    {formatCurrency(netMonthlyRent, currency, rate)}
-                  </span>
-                </div>
+          <div className="space-y-3">
+            {/* Header with mortgage payment - shared for both */}
+            <div className="flex justify-between items-center text-xs p-3 bg-[#0f172a] rounded-lg border border-[#2a3142]">
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-purple-400" />
+                <span className="text-gray-300 font-medium">{t('rentVsMortgage')}</span>
               </div>
-              
-              {/* Mortgage payment */}
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">{t('monthlyMortgageTotal')}</span>
-                <span className="text-purple-400 font-mono">
+              <div className="text-right">
+                <span className="text-gray-500 text-[10px] block">{t('monthlyMortgageTotal')}</span>
+                <span className="text-purple-400 font-mono font-bold">
                   -{formatCurrency(monthlyMortgageTotal, currency, rate)}
                 </span>
               </div>
+            </div>
+
+            {/* Two columns comparison */}
+            <div className={`grid gap-3 ${showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
               
-              {/* Net cashflow */}
-              <div className={`flex justify-between items-center pt-2 border-t border-[#2a3142] ${isCovered ? 'bg-emerald-500/10' : 'bg-red-500/10'} -mx-3 px-3 py-2 rounded-lg`}>
-                <div className="flex items-center gap-2">
-                  {isCovered ? (
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-red-400" />
-                  )}
-                  <span className="text-sm text-white">{t('monthlyCashflow')}</span>
+              {/* Long-Term Rental Column */}
+              <div className="p-3 bg-[#0f172a] rounded-xl border border-emerald-500/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <Home className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-400">{t('longTerm')}</span>
                 </div>
-                <span className={`text-sm font-mono font-bold ${isCovered ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
-                </span>
-              </div>
-              
-              {/* Airbnb comparison if enabled */}
-              {showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 && (
-                <div className="mt-3 pt-3 border-t border-[#2a3142]">
-                  <div className="flex justify-between text-xs mb-2">
-                    <span className="text-gray-500">{t('airbnbNetMonthly')}</span>
-                    <span className="text-orange-400 font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">{t('monthlyRent')}</span>
+                    <span className="text-white font-mono">{formatCurrency(monthlyLongTermRent, currency, rate)}</span>
                   </div>
-                  <div className={`flex justify-between items-center ${isAirbnbCovered ? 'bg-orange-500/10' : 'bg-red-500/10'} -mx-3 px-3 py-2 rounded-lg`}>
-                    <div className="flex items-center gap-2">
-                      {isAirbnbCovered ? (
-                        <CheckCircle className="w-4 h-4 text-orange-400" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-red-400" />
-                      )}
-                      <span className="text-sm text-white">{t('airbnbCashflow')}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">- {t('serviceCharges')}</span>
+                    <span className="text-white font-mono">-{formatCurrency(monthlyServiceCharges || 0, currency, rate)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-[#2a3142]">
+                    <span className="text-gray-400">{t('netMonthlyRent')}</span>
+                    <span className="text-emerald-400 font-mono">{formatCurrency(netMonthlyRent, currency, rate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">- {t('mortgage')}</span>
+                    <span className="text-purple-400 font-mono">-{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                  </div>
+                  {/* Cashflow result */}
+                  <div className={`flex justify-between items-center pt-2 mt-2 border-t border-[#2a3142] ${isCovered ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <div className="flex items-center gap-1">
+                      {isCovered ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                      <span className="font-medium">{t('cashflow')}</span>
                     </div>
-                    <span className={`text-sm font-mono font-bold ${isAirbnbCovered ? 'text-orange-400' : 'text-red-400'}`}>
-                      {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
+                    <span className="font-mono font-bold">
+                      {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Airbnb Column (if enabled) */}
+              {showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 && (
+                <div className="p-3 bg-[#0f172a] rounded-xl border border-orange-500/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building className="w-4 h-4 text-orange-400" />
+                    <span className="text-sm font-medium text-orange-400">Airbnb</span>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">{t('airbnbNetMonthly')}</span>
+                      <span className="text-white font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between opacity-50">
+                      <span className="text-gray-500">- {t('serviceCharges')}</span>
+                      <span className="text-gray-500 font-mono italic">{t('included')}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-[#2a3142]">
+                      <span className="text-gray-400">{t('netMonthlyRent')}</span>
+                      <span className="text-orange-400 font-mono">{formatCurrency(monthlyAirbnbNet, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">- {t('mortgage')}</span>
+                      <span className="text-purple-400 font-mono">-{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                    </div>
+                    {/* Cashflow result */}
+                    <div className={`flex justify-between items-center pt-2 mt-2 border-t border-[#2a3142] ${isAirbnbCovered ? 'text-orange-400' : 'text-red-400'}`}>
+                      <div className="flex items-center gap-1">
+                        {isAirbnbCovered ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                        <span className="font-medium">{t('cashflow')}</span>
+                      </div>
+                      <span className="font-mono font-bold">
+                        {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
