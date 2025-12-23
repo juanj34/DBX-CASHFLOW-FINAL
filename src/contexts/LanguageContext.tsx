@@ -516,6 +516,17 @@ const translations: Translations = {
   completeClientInfoDesc: { en: 'Add developer, project, unit details and unit size to continue', es: 'Agrega desarrollador, proyecto, detalles de unidad y tamaño para continuar' },
   configurePropertyFinancials: { en: 'Configure Property Financials', es: 'Configura los Datos Financieros' },
   configurePropertyFinancialsDesc: { en: 'Set the base price and payment plan to generate projections', es: 'Establece el precio base y plan de pagos para generar proyecciones' },
+  
+  // Version History
+  versionHistory: { en: 'Version History', es: 'Historial de Versiones' },
+  restore: { en: 'Restore', es: 'Restaurar' },
+  latestVersion: { en: 'Latest', es: 'Última' },
+  noVersions: { en: 'No previous versions', es: 'Sin versiones anteriores' },
+  versionsCreatedOnSave: { en: 'Versions are created each time you save', es: 'Las versiones se crean cada vez que guardas' },
+  confirmRestore: { en: 'Restore this version?', es: '¿Restaurar esta versión?' },
+  confirmRestoreDesc: { en: 'This will replace the current quote with the selected version. A new version will be saved with the current state before restoring.', es: 'Esto reemplazará la cotización actual con la versión seleccionada. Se guardará una nueva versión con el estado actual antes de restaurar.' },
+  cancel: { en: 'Cancel', es: 'Cancelar' },
+  versionRestored: { en: 'Version restored successfully', es: 'Versión restaurada exitosamente' },
 };
 
 interface LanguageContextType {

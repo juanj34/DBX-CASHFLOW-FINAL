@@ -20,6 +20,7 @@ import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
+import { VersionHistoryModal } from "@/components/roi/VersionHistoryModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
 import { MortgageModal } from "@/components/roi/MortgageModal";
@@ -31,6 +32,7 @@ import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
+import { useQuoteVersions } from "@/hooks/useQuoteVersions";
 import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
@@ -51,6 +53,7 @@ const OICalculatorContent = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [loadQuoteModalOpen, setLoadQuoteModalOpen] = useState(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [mortgageModalOpen, setMortgageModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
@@ -63,6 +66,7 @@ const OICalculatorContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
+  const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs,
@@ -178,8 +182,8 @@ const OICalculatorContent = () => {
     setExitScenariosInitialized(true);
   }, [dataLoaded, quote, calculations.totalMonths, exitScenariosInitialized]);
 
-  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios), [inputs, clientInfo, quote?.id, exitScenarios, saveQuote]);
-  const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, saveAsNew, navigate]);
+  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion]);
+  const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate]);
   const handleShare = useCallback(async () => {
     // Always save first to ensure the client sees the latest data (including exit scenarios)
     const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios);
@@ -275,6 +279,8 @@ const OICalculatorContent = () => {
                 onSave={handleSave}
                 onSaveAs={handleSaveAs}
                 onLoadQuote={() => setLoadQuoteModalOpen(true)}
+                onViewHistory={() => setVersionHistoryOpen(true)}
+                hasQuoteId={!!quoteId}
               />
 
               {/* Share Controls */}
@@ -306,6 +312,15 @@ const OICalculatorContent = () => {
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
               <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
               <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
+              <VersionHistoryModal 
+                open={versionHistoryOpen} 
+                onOpenChange={setVersionHistoryOpen}
+                quoteId={quoteId}
+                onRestore={() => {
+                  // Force reload the quote data after restore
+                  setDataLoaded(false);
+                }}
+              />
               
             </div>
           </div>

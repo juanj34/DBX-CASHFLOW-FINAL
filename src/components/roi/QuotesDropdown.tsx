@@ -1,4 +1,4 @@
-import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown, FilePlus } from 'lucide-react';
+import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown, FilePlus, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,8 @@ interface QuotesDropdownProps {
   onSaveAs: () => Promise<any>;
   onLoadQuote: () => void;
   onNewQuote?: () => void;
+  onViewHistory?: () => void;
+  hasQuoteId?: boolean;
 }
 
 export const QuotesDropdown = ({
@@ -27,6 +29,8 @@ export const QuotesDropdown = ({
   onSaveAs,
   onLoadQuote,
   onNewQuote,
+  onViewHistory,
+  hasQuoteId = false,
 }: QuotesDropdownProps) => {
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -121,6 +125,17 @@ export const QuotesDropdown = ({
           <FolderOpen className="w-4 h-4" />
           {t('loadQuote')}
         </DropdownMenuItem>
+
+        {/* Version History - only show when editing existing quote */}
+        {hasQuoteId && onViewHistory && (
+          <DropdownMenuItem
+            onClick={onViewHistory}
+            className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+          >
+            <History className="w-4 h-4" />
+            {t('versionHistory')}
+          </DropdownMenuItem>
+        )}
 
         {/* View All Quotes */}
         <DropdownMenuItem
