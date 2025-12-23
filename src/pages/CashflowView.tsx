@@ -293,7 +293,7 @@ const CashflowViewContent = () => {
             icon={<CreditCard className="w-5 h-5 text-[#CCFF00]" />}
             defaultOpen={false}
           >
-            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
+            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
           </CollapsibleSection>
         )}
 
@@ -332,7 +332,7 @@ const CashflowViewContent = () => {
             defaultOpen={false}
           >
             <div className="space-y-4 sm:space-y-6">
-              <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} />
+              <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} unitSizeSqf={clientInfo.unitSizeSqf} />
               <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
             </div>
           </CollapsibleSection>

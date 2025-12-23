@@ -9,6 +9,7 @@ interface PaymentBreakdownProps {
   currency: Currency;
   totalMonths: number;
   rate: number;
+  unitSizeSqf?: number;
 }
 
 // Convert booking month/year to readable date string
@@ -33,7 +34,7 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: PaymentBreakdownProps) => {
+export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0 }: PaymentBreakdownProps) => {
   const { t, language } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
@@ -82,7 +83,14 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate }: Paymen
         {/* Base Price */}
         <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-[#2a3142]">
           <span className="text-xs sm:text-sm text-gray-400">{t('basePropertyPrice')}</span>
-          <span className="text-sm sm:text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+          <div className="text-right">
+            <span className="text-sm sm:text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+            {unitSizeSqf > 0 && (
+              <p className="text-[10px] text-gray-600 font-mono">
+                {formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Section: At Booking */}

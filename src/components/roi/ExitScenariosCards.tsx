@@ -317,7 +317,14 @@ export const ExitScenariosCards = ({
                   <Tag className="w-3 h-3" />
                   {t('original')}
                 </span>
-                <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+                <div className="text-right">
+                  <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+                  {unitSizeSqf && unitSizeSqf > 0 && (
+                    <p className="text-[10px] text-gray-600 font-mono">
+                      {formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="flex justify-between items-center">
