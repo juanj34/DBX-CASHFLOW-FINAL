@@ -465,6 +465,15 @@ const translations: Translations = {
   totalInterestAndFees: { en: 'Total Interest & Fees', es: 'Total de Intereses y Gastos' },
   grandTotal: { en: 'Grand Total', es: 'Gran Total' },
   grandTotalExplanation: { en: 'Total cost including equity, loan payments, fees and insurance over the loan term', es: 'Costo total incluyendo capital, pagos del préstamo, gastos y seguros durante el plazo' },
+  mortgageAnalysis: { en: 'Mortgage Analysis', es: 'Análisis Hipotecario' },
+  mortgageAnalysisSubtitle: { en: 'Loan structure, fees, and impact on cashflow', es: 'Estructura del préstamo, gastos e impacto en flujo de caja' },
+  gapPaymentRequired: { en: 'Gap Payment Required', es: 'Pago de Brecha Requerido' },
+  gapPaymentDesc: { en: 'Your pre-handover payments do not cover the required equity. Additional payment needed before handover.', es: 'Tus pagos pre-entrega no cubren el capital requerido. Se necesita pago adicional antes de la entrega.' },
+  preHandoverPayments: { en: 'Pre-Handover Payments', es: 'Pagos Pre-Entrega' },
+  gapPaymentBeforeHandover: { en: 'Gap Payment (Before Handover)', es: 'Pago de Brecha (Antes de Entrega)' },
+  mortgageAtHandover: { en: 'Mortgage at Handover', es: 'Hipoteca en Entrega' },
+  totalBeforeHandover: { en: 'Total Before Handover', es: 'Total Antes de Entrega' },
+  netAfterMortgage: { en: 'Net After Mortgage', es: 'Neto Después de Hipoteca' },
   
   // Validation messages
   completeClientInfo: { en: 'Complete Client Information', es: 'Completa la Información del Cliente' },

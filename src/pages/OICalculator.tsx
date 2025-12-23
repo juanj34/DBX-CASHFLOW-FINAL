@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
@@ -102,9 +102,11 @@ const OICalculatorContent = () => {
     if (quote) {
       const savedClients = (quote.inputs as any)?._clients || [];
       const savedClientInfo = (quote.inputs as any)?._clientInfo || {};
+      const savedMortgageInputs = (quote.inputs as any)?._mortgageInputs;
       const cleanInputs = { ...quote.inputs };
       delete (cleanInputs as any)._clients;
       delete (cleanInputs as any)._clientInfo;
+      delete (cleanInputs as any)._mortgageInputs;
       // Migrate inputs to ensure all fields have defaults
       setInputs(migrateInputs(cleanInputs));
       const clients = savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [];
@@ -122,6 +124,9 @@ const OICalculatorContent = () => {
         zoneId: savedClientInfo.zoneId || '',
         zoneName: savedClientInfo.zoneName || '',
       });
+      if (savedMortgageInputs) {
+        setMortgageInputs(savedMortgageInputs);
+      }
       setDataLoaded(true);
     } else if (!quoteId) {
       const draft = loadDraft();
@@ -135,7 +140,7 @@ const OICalculatorContent = () => {
   useEffect(() => { setDataLoaded(false); }, [quoteId]);
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
-  useEffect(() => { if (!quoteLoading) scheduleAutoSave(inputs, clientInfo, quote?.id, isQuoteConfigured); }, [inputs, clientInfo, quote?.id, quoteLoading, isQuoteConfigured, scheduleAutoSave]);
+  useEffect(() => { if (!quoteLoading) scheduleAutoSave(inputs, clientInfo, quote?.id, isQuoteConfigured, mortgageInputs); }, [inputs, clientInfo, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave]);
 
   // Exit scenarios state - load from saved quote or auto-calculate
   const [exitScenarios, setExitScenarios] = useState<number[]>(() => calculateAutoExitScenarios(calculations.totalMonths));
@@ -169,7 +174,7 @@ const OICalculatorContent = () => {
       return `${window.location.origin}/view/${token}`;
     }
     return null;
-  }, [quote?.id, inputs, clientInfo, exitScenarios, saveQuote, generateShareToken]);
+  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
@@ -356,15 +361,6 @@ const OICalculatorContent = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
               <div className="lg:col-span-2 space-y-4">
                 <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
-                {mortgageInputs.enabled && (
-                  <MortgageBreakdown
-                    mortgageInputs={mortgageInputs}
-                    mortgageAnalysis={mortgageAnalysis}
-                    basePrice={calculations.basePrice}
-                    currency={currency}
-                    rate={rate}
-                  />
-                )}
               </div>
               <div className="lg:col-span-1 space-y-4">
                 <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
@@ -384,7 +380,16 @@ const OICalculatorContent = () => {
               <div className="space-y-4 sm:space-y-6">
                 <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
                 <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-                <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} unitSizeSqf={clientInfo.unitSizeSqf} />
+                <OIYearlyProjectionTable 
+                  projections={calculations.yearlyProjections} 
+                  currency={currency} 
+                  rate={rate} 
+                  showAirbnbComparison={calculations.showAirbnbComparison} 
+                  unitSizeSqf={clientInfo.unitSizeSqf}
+                  showMortgage={mortgageInputs.enabled}
+                  mortgageMonthlyPayment={mortgageAnalysis.monthlyPayment}
+                  mortgageStartYear={inputs.handoverYear}
+                />
                 <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
               </div>
             </CollapsibleSection>
@@ -401,6 +406,25 @@ const OICalculatorContent = () => {
                 <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
               </div>
             </CollapsibleSection>
+
+            {/* Mortgage Analysis - Collapsible */}
+            {mortgageInputs.enabled && (
+              <CollapsibleSection
+                title={t('mortgageAnalysis') || "Mortgage Analysis"}
+                subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
+                icon={<Building2 className="w-5 h-5 text-blue-400" />}
+                defaultOpen={true}
+              >
+                <MortgageBreakdown
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  basePrice={calculations.basePrice}
+                  currency={currency}
+                  rate={rate}
+                  preHandoverPercent={inputs.preHandoverPercent}
+                />
+              </CollapsibleSection>
+            )}
           </>
         )}
 

@@ -12,6 +12,7 @@ export interface ViewVisibility {
   paymentBreakdown: boolean;
   exitStrategy: boolean;
   longTermHold: boolean;
+  mortgage: boolean;
 }
 
 const DEFAULT_VISIBILITY: ViewVisibility = {
@@ -20,6 +21,7 @@ const DEFAULT_VISIBILITY: ViewVisibility = {
   paymentBreakdown: true,
   exitStrategy: true,
   longTermHold: true,
+  mortgage: true,
 };
 
 interface ViewVisibilityControlsProps {
@@ -35,18 +37,20 @@ export const encodeVisibility = (visibility: ViewVisibility): string => {
     visibility.paymentBreakdown ? '1' : '0',
     visibility.exitStrategy ? '1' : '0',
     visibility.longTermHold ? '1' : '0',
+    visibility.mortgage ? '1' : '0',
   ].join('');
   return bits;
 };
 
 export const decodeVisibility = (encoded: string | null): ViewVisibility => {
-  if (!encoded || encoded.length !== 5) return DEFAULT_VISIBILITY;
+  if (!encoded || encoded.length < 5) return DEFAULT_VISIBILITY;
   return {
     investmentSnapshot: encoded[0] === '1',
     rentSnapshot: encoded[1] === '1',
     paymentBreakdown: encoded[2] === '1',
     exitStrategy: encoded[3] === '1',
     longTermHold: encoded[4] === '1',
+    mortgage: encoded.length > 5 ? encoded[5] === '1' : true,
   };
 };
 
@@ -112,6 +116,7 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
     { key: 'paymentBreakdown' as const, label: t('paymentBreakdown') },
     { key: 'exitStrategy' as const, label: t('exitStrategyAnalysis') },
     { key: 'longTermHold' as const, label: t('longTermHoldAnalysis') },
+    { key: 'mortgage' as const, label: t('mortgageBreakdown') },
   ];
 
   return (

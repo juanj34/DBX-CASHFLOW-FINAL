@@ -1,6 +1,6 @@
 import { OIYearlyProjection } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { Home, Building, TrendingUp, Star, TrendingDown } from "lucide-react";
+import { Home, Building, TrendingUp, Star, TrendingDown, Building2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OIYearlyProjectionTableProps {
@@ -9,6 +9,9 @@ interface OIYearlyProjectionTableProps {
   rate: number;
   showAirbnbComparison: boolean;
   unitSizeSqf?: number;
+  showMortgage?: boolean;
+  mortgageMonthlyPayment?: number;
+  mortgageStartYear?: number;
 }
 
 const getPhaseColor = (phase: 'construction' | 'growth' | 'mature') => {
@@ -27,13 +30,16 @@ const getPhaseLabel = (phase: 'construction' | 'growth' | 'mature') => {
   }
 };
 
-export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbnbComparison, unitSizeSqf }: OIYearlyProjectionTableProps) => {
+export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbnbComparison, unitSizeSqf, showMortgage, mortgageMonthlyPayment, mortgageStartYear }: OIYearlyProjectionTableProps) => {
   const { t } = useLanguage();
   const lastProjection = projections[projections.length - 1];
   const longTermTotal = lastProjection?.cumulativeNetIncome || 0;
   const airbnbTotal = lastProjection?.airbnbCumulativeNetIncome || 0;
   const winner = airbnbTotal > longTermTotal ? 'airbnb' : 'long-term';
   const difference = Math.abs(airbnbTotal - longTermTotal);
+  
+  // Calculate mortgage impact
+  const annualMortgagePayment = (mortgageMonthlyPayment || 0) * 12;
   
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
@@ -88,6 +94,12 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('phase')}</th>
               <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('value')}</th>
               <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">{t('netRent')}</th>
+              {showMortgage && (
+                <th className="px-2 py-3 text-right text-xs font-medium text-blue-400 uppercase tracking-wider whitespace-nowrap">{t('mortgage')}</th>
+              )}
+              {showMortgage && (
+                <th className="px-2 py-3 text-right text-xs font-medium text-green-400 uppercase tracking-wider whitespace-nowrap">{t('netAfterMortgage')}</th>
+              )}
               {showAirbnbComparison && (
                 <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 uppercase tracking-wider whitespace-nowrap">{t('airbnbNet')}</th>
               )}
@@ -96,6 +108,11 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
           </thead>
           <tbody className="divide-y divide-[#2a3142]">
             {projections.map((proj) => {
+              // Calculate mortgage payment for this year (only after handover)
+              const isMortgageActive = showMortgage && mortgageStartYear && proj.calendarYear >= mortgageStartYear;
+              const yearMortgagePayment = isMortgageActive ? annualMortgagePayment : 0;
+              const netAfterMortgage = (proj.netIncome || 0) - yearMortgagePayment;
+              
               return (
                 <tr 
                   key={proj.year}
@@ -137,6 +154,28 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                       <span className="text-gray-500">—</span>
                     )}
                   </td>
+                  {showMortgage && (
+                    <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
+                      {isMortgageActive ? (
+                        <span className="text-blue-400">
+                          -{formatCurrency(yearMortgagePayment, currency, rate)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+                  )}
+                  {showMortgage && (
+                    <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
+                      {proj.netIncome ? (
+                        <span className={netAfterMortgage >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {formatCurrency(netAfterMortgage, currency, rate)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+                  )}
                   {showAirbnbComparison && (
                     <td className="px-2 py-2 sm:py-3 text-xs sm:text-sm text-right font-mono whitespace-nowrap">
                       {proj.airbnbNetIncome ? (
