@@ -22,7 +22,7 @@ import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
-import { AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -196,7 +196,30 @@ const OICalculatorContent = () => {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Quotes Dropdown - Save/Load/View */}
+              {/* Save Button with Status */}
+              <div className="flex items-center gap-1.5">
+                {saving ? (
+                  <span className="text-xs text-gray-400 flex items-center">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  </span>
+                ) : lastSaved ? (
+                  <span className="text-xs text-gray-500 flex items-center">
+                    <Check className="w-3 h-3 text-green-500" />
+                  </span>
+                ) : null}
+                <Button
+                  variant="outlineDark"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="h-8 px-2 sm:px-3"
+                >
+                  <Save className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1.5">Save</span>
+                </Button>
+              </div>
+
+              {/* Quotes Dropdown - Load/View */}
               <QuotesDropdown
                 saving={saving}
                 lastSaved={lastSaved}
