@@ -9,6 +9,7 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   children: React.ReactNode;
   className?: string;
+  headerAction?: React.ReactNode;
 }
 
 export const CollapsibleSection = ({
@@ -18,6 +19,7 @@ export const CollapsibleSection = ({
   defaultOpen = true,
   children,
   className,
+  headerAction,
 }: CollapsibleSectionProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -39,6 +41,7 @@ export const CollapsibleSection = ({
               <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
             )}
           </div>
+          {headerAction}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 hidden sm:inline">
