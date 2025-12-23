@@ -38,35 +38,48 @@ export const useCashflowQuote = (quoteId?: string) => {
 
   // Load quote from database or localStorage
   useEffect(() => {
-    const loadQuote = async () => {
-      if (quoteId) {
-        const { data, error } = await supabase
-          .from('cashflow_quotes')
-          .select('*')
-          .eq('id', quoteId)
-          .single();
+    // Reset state immediately when quoteId changes to avoid stale data + accidental overwrites
+    if (autoSaveTimeout.current) {
+      clearTimeout(autoSaveTimeout.current);
+      autoSaveTimeout.current = null;
+    }
 
-        if (!error && data) {
-          // Migrate inputs when loading from database
-          const migratedInputs = migrateInputs(data.inputs as unknown as Partial<OIInputs>);
-          setQuote({
-            ...data,
-            inputs: migratedInputs
-          });
-        }
-      } else {
-        // Load from localStorage for new quotes
-        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            setQuote(parsed);
-          } catch (e) {
-            console.error('Failed to parse saved quote:', e);
+    setQuote(null);
+    setLoading(true);
+    setLastSaved(null);
+
+    const loadQuote = async () => {
+      try {
+        if (quoteId) {
+          const { data, error } = await supabase
+            .from('cashflow_quotes')
+            .select('*')
+            .eq('id', quoteId)
+            .maybeSingle();
+
+          if (!error && data) {
+            // Migrate inputs when loading from database
+            const migratedInputs = migrateInputs(data.inputs as unknown as Partial<OIInputs>);
+            setQuote({
+              ...data,
+              inputs: migratedInputs,
+            });
+          }
+        } else {
+          // Load from localStorage for new quotes
+          const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              setQuote(parsed);
+            } catch (e) {
+              console.error('Failed to parse saved quote:', e);
+            }
           }
         }
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadQuote();
@@ -91,176 +104,202 @@ export const useCashflowQuote = (quoteId?: string) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(draft));
   }, []);
 
-  // Auto-save with debounce
-  const scheduleAutoSave = useCallback((inputs: OIInputs, clientInfo: ClientUnitData, existingQuoteId?: string, isQuoteConfigured?: boolean, mortgageInputs?: MortgageInputs) => {
-    if (autoSaveTimeout.current) {
-      clearTimeout(autoSaveTimeout.current);
-    }
+  // Save quote to database
+  const saveQuote = useCallback(
+    async (
+      inputs: OIInputs,
+      clientInfo: ClientUnitData,
+      existingId?: string,
+      exitScenarios?: number[],
+      mortgageInputs?: MortgageInputs
+    ) => {
+      setSaving(true);
 
-    // Always save to localStorage immediately
-    saveDraft(inputs, clientInfo);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: 'Please login to save', variant: 'destructive' });
+        setSaving(false);
+        return null;
+      }
 
-    autoSaveTimeout.current = setTimeout(async () => {
-      if (existingQuoteId) {
-        // Update existing quote after 15 seconds
-        await saveQuote(inputs, clientInfo, existingQuoteId, undefined, mortgageInputs);
-      } else if (isQuoteConfigured) {
-        // Auto-save NEW quote as draft after 60 seconds to prevent data loss
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        
-        const firstClient = clientInfo.clients?.[0];
-        const clientName = firstClient?.name || clientInfo.clientName || null;
-        const clientNames = clientInfo.clients?.map(c => c.name).filter(Boolean).join(', ');
-        const titleClientPart = clientNames || clientName || '';
-        
-        const inputsWithClients = {
-          ...inputs,
-          schemaVersion: CURRENT_SCHEMA_VERSION,
-          _clients: clientInfo.clients || [],
-          _clientInfo: {
-            developer: clientInfo.developer,
-            projectName: clientInfo.projectName,
-            unit: clientInfo.unit,
-            unitType: clientInfo.unitType,
-            unitSizeSqf: clientInfo.unitSizeSqf,
-            unitSizeM2: clientInfo.unitSizeM2,
-            brokerName: clientInfo.brokerName,
-            splitEnabled: clientInfo.splitEnabled,
-            clientShares: clientInfo.clientShares,
-            zoneId: clientInfo.zoneId,
-            zoneName: clientInfo.zoneName,
-          },
-          _exitScenarios: [],
-          _mortgageInputs: mortgageInputs,
-        };
+      // Get first client for DB (backward compatibility - DB stores single client)
+      const firstClient = clientInfo.clients?.[0];
+      const clientName = firstClient?.name || clientInfo.clientName || null;
+      const clientCountry = firstClient?.country || clientInfo.clientCountry || null;
 
-        const quoteData = {
-          broker_id: user.id,
-          inputs: inputsWithClients as any,
-          client_name: clientName,
-          client_country: firstClient?.country || clientInfo.clientCountry || null,
-          project_name: clientInfo.projectName || null,
-          developer: clientInfo.developer || null,
-          unit: clientInfo.unit || null,
-          unit_type: clientInfo.unitType || null,
-          unit_size_sqf: clientInfo.unitSizeSqf || null,
-          unit_size_m2: clientInfo.unitSizeM2 || null,
-          is_draft: true, // Mark as draft for auto-saved quotes
-          title: titleClientPart 
-            ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
-            : 'Draft Quote',
-        };
+      // Build title from clients
+      const clientNames = clientInfo.clients?.map((c) => c.name).filter(Boolean).join(', ');
+      const titleClientPart = clientNames || clientName || '';
 
-        const { data } = await supabase
+      // Store clients array inside inputs for persistence + stamp schema version
+      const inputsWithClients = {
+        ...inputs,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        _clients: clientInfo.clients || [],
+        _clientInfo: {
+          developer: clientInfo.developer,
+          projectName: clientInfo.projectName,
+          unit: clientInfo.unit,
+          unitType: clientInfo.unitType,
+          unitSizeSqf: clientInfo.unitSizeSqf,
+          unitSizeM2: clientInfo.unitSizeM2,
+          brokerName: clientInfo.brokerName,
+          splitEnabled: clientInfo.splitEnabled,
+          clientShares: clientInfo.clientShares,
+          zoneId: clientInfo.zoneId,
+          zoneName: clientInfo.zoneName,
+        },
+        _exitScenarios: exitScenarios || [],
+        _mortgageInputs: mortgageInputs,
+      };
+
+      const quoteData = {
+        broker_id: user.id,
+        inputs: inputsWithClients as any,
+        client_name: clientName,
+        client_country: clientCountry,
+        project_name: clientInfo.projectName || null,
+        developer: clientInfo.developer || null,
+        unit: clientInfo.unit || null,
+        unit_type: clientInfo.unitType || null,
+        unit_size_sqf: clientInfo.unitSizeSqf || null,
+        unit_size_m2: clientInfo.unitSizeM2 || null,
+        is_draft: false,
+        title: titleClientPart
+          ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
+          : 'Untitled Quote',
+      };
+
+      let result;
+      if (existingId) {
+        result = await supabase
           .from('cashflow_quotes')
-          .insert(quoteData)
+          .update(quoteData)
+          .eq('id', existingId)
           .select()
           .single();
-
-        if (data) {
-          // Clear localStorage after saving to DB
-          localStorage.removeItem(LOCAL_STORAGE_KEY);
-          setLastSaved(new Date());
-          toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
-        }
+      } else {
+        result = await supabase.from('cashflow_quotes').insert(quoteData).select().single();
       }
-    }, existingQuoteId ? 15000 : 60000); // 15s for existing, 60s for new
-  }, [saveDraft, toast]);
 
-  // Save quote to database
-  const saveQuote = async (inputs: OIInputs, clientInfo: ClientUnitData, existingId?: string, exitScenarios?: number[], mortgageInputs?: MortgageInputs) => {
-    setSaving(true);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast({ title: 'Please login to save', variant: 'destructive' });
       setSaving(false);
-      return null;
-    }
 
-    // Get first client for DB (backward compatibility - DB stores single client)
-    const firstClient = clientInfo.clients?.[0];
-    const clientName = firstClient?.name || clientInfo.clientName || null;
-    const clientCountry = firstClient?.country || clientInfo.clientCountry || null;
+      if (result.error) {
+        toast({ title: 'Failed to save', description: result.error.message, variant: 'destructive' });
+        return null;
+      }
 
-    // Build title from clients
-    const clientNames = clientInfo.clients?.map(c => c.name).filter(Boolean).join(', ');
-    const titleClientPart = clientNames || clientName || '';
+      setQuote({
+        ...result.data,
+        inputs: result.data.inputs as OIInputs,
+      });
+      setLastSaved(new Date());
 
-    // Store clients array inside inputs for persistence + stamp schema version
-    const inputsWithClients = {
-      ...inputs,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      _clients: clientInfo.clients || [],
-      _clientInfo: {
-        developer: clientInfo.developer,
-        projectName: clientInfo.projectName,
-        unit: clientInfo.unit,
-        unitType: clientInfo.unitType,
-        unitSizeSqf: clientInfo.unitSizeSqf,
-        unitSizeM2: clientInfo.unitSizeM2,
-        brokerName: clientInfo.brokerName,
-        splitEnabled: clientInfo.splitEnabled,
-        clientShares: clientInfo.clientShares,
-        zoneId: clientInfo.zoneId,
-        zoneName: clientInfo.zoneName,
-      },
-      _exitScenarios: exitScenarios || [],
-      _mortgageInputs: mortgageInputs,
-    };
+      // Clear localStorage draft after saving to DB
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
 
-    const quoteData = {
-      broker_id: user.id,
-      inputs: inputsWithClients as any,
-      client_name: clientName,
-      client_country: clientCountry,
-      project_name: clientInfo.projectName || null,
-      developer: clientInfo.developer || null,
-      unit: clientInfo.unit || null,
-      unit_type: clientInfo.unitType || null,
-      unit_size_sqf: clientInfo.unitSizeSqf || null,
-      unit_size_m2: clientInfo.unitSizeM2 || null,
-      is_draft: false,
-      title: titleClientPart 
-        ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
-        : 'Untitled Quote',
-    };
+      return result.data;
+    },
+    [toast]
+  );
 
-    let result;
-    if (existingId) {
-      result = await supabase
-        .from('cashflow_quotes')
-        .update(quoteData)
-        .eq('id', existingId)
-        .select()
-        .single();
-    } else {
-      result = await supabase
-        .from('cashflow_quotes')
-        .insert(quoteData)
-        .select()
-        .single();
-    }
+  // Auto-save with debounce
+  const scheduleAutoSave = useCallback(
+    (
+      inputs: OIInputs,
+      clientInfo: ClientUnitData,
+      existingQuoteId?: string,
+      isQuoteConfigured?: boolean,
+      mortgageInputs?: MortgageInputs
+    ) => {
+      if (autoSaveTimeout.current) {
+        clearTimeout(autoSaveTimeout.current);
+      }
 
-    setSaving(false);
+      // Always save to localStorage immediately
+      saveDraft(inputs, clientInfo);
 
-    if (result.error) {
-      toast({ title: 'Failed to save', description: result.error.message, variant: 'destructive' });
-      return null;
-    }
+      // Capture the intended target quote id for this autosave cycle
+      const targetExistingId = existingQuoteId;
 
-    setQuote({
-      ...result.data,
-      inputs: result.data.inputs as OIInputs
-    });
-    setLastSaved(new Date());
-    
-    // Clear localStorage draft after saving to DB
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+      autoSaveTimeout.current = setTimeout(async () => {
+        // If we were meant to update an existing quote, require that we still have the same quote loaded.
+        // This prevents overwriting when the user switches quotes during the debounce window.
+        if (targetExistingId && quote?.id !== targetExistingId) {
+          return;
+        }
 
-    return result.data;
-  };
+        if (targetExistingId) {
+          // Update existing quote after 15 seconds
+          await saveQuote(inputs, clientInfo, targetExistingId, undefined, mortgageInputs);
+          return;
+        }
+
+        if (isQuoteConfigured) {
+          // Auto-save NEW quote as draft after 60 seconds to prevent data loss
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) return;
+
+          const firstClient = clientInfo.clients?.[0];
+          const clientName = firstClient?.name || clientInfo.clientName || null;
+          const clientNames = clientInfo.clients?.map((c) => c.name).filter(Boolean).join(', ');
+          const titleClientPart = clientNames || clientName || '';
+
+          const inputsWithClients = {
+            ...inputs,
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+            _clients: clientInfo.clients || [],
+            _clientInfo: {
+              developer: clientInfo.developer,
+              projectName: clientInfo.projectName,
+              unit: clientInfo.unit,
+              unitType: clientInfo.unitType,
+              unitSizeSqf: clientInfo.unitSizeSqf,
+              unitSizeM2: clientInfo.unitSizeM2,
+              brokerName: clientInfo.brokerName,
+              splitEnabled: clientInfo.splitEnabled,
+              clientShares: clientInfo.clientShares,
+              zoneId: clientInfo.zoneId,
+              zoneName: clientInfo.zoneName,
+            },
+            _exitScenarios: [],
+            _mortgageInputs: mortgageInputs,
+          };
+
+          const quoteData = {
+            broker_id: user.id,
+            inputs: inputsWithClients as any,
+            client_name: clientName,
+            client_country: firstClient?.country || clientInfo.clientCountry || null,
+            project_name: clientInfo.projectName || null,
+            developer: clientInfo.developer || null,
+            unit: clientInfo.unit || null,
+            unit_type: clientInfo.unitType || null,
+            unit_size_sqf: clientInfo.unitSizeSqf || null,
+            unit_size_m2: clientInfo.unitSizeM2 || null,
+            is_draft: true, // Mark as draft for auto-saved quotes
+            title: titleClientPart
+              ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
+              : 'Draft Quote',
+          };
+
+          const { data } = await supabase.from('cashflow_quotes').insert(quoteData).select().single();
+
+          if (data) {
+            // Clear localStorage after saving to DB
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            setLastSaved(new Date());
+            toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
+          }
+        }
+      }, targetExistingId ? 15000 : 60000); // 15s for existing, 60s for new
+    },
+    [saveDraft, toast, quote?.id, saveQuote]
+  );
 
   // Save as new quote
   const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData, exitScenarios?: number[], mortgageInputs?: MortgageInputs) => {
