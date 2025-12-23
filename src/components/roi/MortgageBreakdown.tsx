@@ -264,11 +264,28 @@ export const MortgageBreakdown = ({
                       {monthlyCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
                     </span>
                   </div>
-                  {/* Coverage percentage indicator */}
-                  <div className="text-center mt-2 pt-2 border-t border-[#2a3142]">
-                    <span className={`text-xs font-medium ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : longTermCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {t('covers')} {longTermCoveragePercent}% {t('ofMortgage')}
-                    </span>
+                  {/* Coverage percentage indicator with progress bar */}
+                  <div className="mt-3 pt-2 border-t border-[#2a3142]">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500">{t('covers')}</span>
+                      <span className={`text-xs font-bold ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : longTermCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {longTermCoveragePercent}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          longTermCoveragePercent >= 100 ? 'bg-emerald-500' : 
+                          longTermCoveragePercent >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min(longTermCoveragePercent, 100)}%` }}
+                      />
+                    </div>
+                    {longTermCoveragePercent > 100 && (
+                      <div className="text-center mt-1">
+                        <span className="text-[10px] text-emerald-400">+{longTermCoveragePercent - 100}% surplus</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -299,11 +316,28 @@ export const MortgageBreakdown = ({
                         {airbnbCashflow >= 0 ? '+' : ''}{formatCurrency(airbnbCashflow, currency, rate)}
                       </span>
                     </div>
-                    {/* Coverage percentage indicator */}
-                    <div className="text-center mt-2 pt-2 border-t border-[#2a3142]">
-                      <span className={`text-xs font-medium ${airbnbCoveragePercent >= 100 ? 'text-orange-400' : airbnbCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
-                        {t('covers')} {airbnbCoveragePercent}% {t('ofMortgage')}
-                      </span>
+                    {/* Coverage percentage indicator with progress bar */}
+                    <div className="mt-3 pt-2 border-t border-[#2a3142]">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-500">{t('covers')}</span>
+                        <span className={`text-xs font-bold ${airbnbCoveragePercent >= 100 ? 'text-orange-400' : airbnbCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {airbnbCoveragePercent}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            airbnbCoveragePercent >= 100 ? 'bg-orange-500' : 
+                            airbnbCoveragePercent >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                          style={{ width: `${Math.min(airbnbCoveragePercent, 100)}%` }}
+                        />
+                      </div>
+                      {airbnbCoveragePercent > 100 && (
+                        <div className="text-center mt-1">
+                          <span className="text-[10px] text-orange-400">+{airbnbCoveragePercent - 100}% surplus</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
