@@ -10,9 +10,11 @@ import { YearlyProjectionTable } from "@/components/roi/YearlyProjectionTable";
 import { useROICalculations, ROIInputs } from "@/components/roi/useROICalculations";
 import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ROICalculator = () => {
   useDocumentTitle("ROI Calculator");
+  const { t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<ROIInputs>({
@@ -45,8 +47,8 @@ const ROICalculator = () => {
                 <TrendingUp className="w-6 h-6 text-[#CCFF00]" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Investor Type</h1>
-                <p className="text-sm text-gray-400">Compare OI, SI, HO investment profiles</p>
+                <h1 className="text-xl font-bold text-white">{t('roiInvestorType')}</h1>
+                <p className="text-sm text-gray-400">{t('roiCompareProfiles')}</p>
               </div>
             </div>
           </div>
@@ -92,13 +94,13 @@ const ROICalculator = () => {
             {/* Comparison Table */}
             <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-[#2a3142]">
-                <h3 className="font-semibold text-white">Detailed Comparison</h3>
+                <h3 className="font-semibold text-white">{t('roiDetailedComparison')}</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-[#0d1117]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Metric</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{t('roiMetric')}</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-[#CCFF00] uppercase tracking-wider">OI</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-[#00EAFF] uppercase tracking-wider">SI</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-[#FF00FF] uppercase tracking-wider">HO</th>
@@ -106,43 +108,43 @@ const ROICalculator = () => {
                   </thead>
                   <tbody className="divide-y divide-[#2a3142]">
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Entry Price</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiEntryPrice')}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.entryPrice, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.entryPrice, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.ho.entryPrice, currency)}</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Exit Price</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiExitPrice')}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.exitPrice, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.exitPrice, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Equity Invested</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiEquityInvested')}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.equityInvested, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.equityInvested, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.ho.equityInvested, currency)}</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Projected Profit</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiProjectedProfit')}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">+{formatCurrency(calculations.oi.projectedProfit, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">+{formatCurrency(calculations.si.projectedProfit, currency)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">ROE</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roe')}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">{calculations.oi.roe.toFixed(1)}%</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">{calculations.si.roe.toFixed(1)}%</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Rental Yield</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiRentalYield')}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.oi.rentalYield.toFixed(2)}%</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.si.rentalYield.toFixed(2)}%</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.ho.rentalYield.toFixed(2)}%</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">Years to Pay</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiYearsToPay')}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.oi.yearsToPay.toFixed(1)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.si.yearsToPay.toFixed(1)}</td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.ho.yearsToPay.toFixed(1)}</td>

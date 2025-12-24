@@ -137,15 +137,6 @@ export const QuotesDropdown = ({
           </DropdownMenuItem>
         )}
 
-        {/* View All Quotes */}
-        <DropdownMenuItem
-          onClick={() => navigate('/my-quotes')}
-          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
-        >
-          <FileText className="w-4 h-4" />
-          {t('viewAllQuotes')}
-        </DropdownMenuItem>
-
         {/* Save status indicator */}
         {(saving || lastSaved) && (
           <>

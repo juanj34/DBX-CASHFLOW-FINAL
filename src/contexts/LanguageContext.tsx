@@ -527,6 +527,126 @@ const translations: Translations = {
   confirmRestoreDesc: { en: 'This will replace the current quote with the selected version. A new version will be saved with the current state before restoring.', es: 'Esto reemplazará la cotización actual con la versión seleccionada. Se guardará una nueva versión con el estado actual antes de restaurar.' },
   cancel: { en: 'Cancel', es: 'Cancelar' },
   versionRestored: { en: 'Version restored successfully', es: 'Versión restaurada exitosamente' },
+  
+  // Landing Page
+  landingSignIn: { en: 'Sign In', es: 'Iniciar Sesión' },
+  landingGetStarted: { en: 'Get Started', es: 'Comenzar' },
+  landingMenu: { en: 'Menu', es: 'Menú' },
+  landingPoweredByAI: { en: 'Powered by AI Intelligence', es: 'Impulsado por Inteligencia Artificial' },
+  landingHeroTitle1: { en: 'The Future of', es: 'El Futuro de la' },
+  landingHeroTitle2: { en: 'Real Estate Investment', es: 'Inversión Inmobiliaria' },
+  landingHeroTitle3: { en: 'in Dubai', es: 'en Dubai' },
+  landingHeroDescription: { 
+    en: 'Next-generation investment analysis tools. Interactive maps, AI-powered ROI calculators, and professional cashflow generator — all in one platform.', 
+    es: 'Herramientas de análisis de inversión de próxima generación. Mapas interactivos, calculadoras ROI con IA, y generador de cashflow profesional — todo en una plataforma.' 
+  },
+  landingAccessPlatform: { en: 'Access Platform', es: 'Acceder a la Plataforma' },
+  landingViewDemo: { en: 'View Demo', es: 'Ver Demo' },
+  landingProjectsMapped: { en: 'Projects Mapped', es: 'Proyectos Mapeados' },
+  landingInvestmentZones: { en: 'Investment Zones', es: 'Zonas de Inversión' },
+  landingSmartAnalysis: { en: 'Smart Analysis', es: 'Análisis Inteligente' },
+  landingProfessionalTools: { en: 'Professional Tools', es: 'Herramientas Profesionales' },
+  landingProfessionalToolsDesc: { en: 'Everything you need to make informed investment decisions in Dubai real estate market', es: 'Todo lo que necesitas para tomar decisiones de inversión informadas en el mercado inmobiliario de Dubai' },
+  landingInteractiveMap: { en: 'Interactive Map', es: 'Mapa Interactivo' },
+  landingInteractiveMapDesc: { 
+    en: 'Explore investment zones, off-plan projects, landmarks and hotspots in real-time with smart data layers.', 
+    es: 'Explora zonas de inversión, proyectos off-plan, landmarks y hotspots en tiempo real con capas de datos inteligentes.' 
+  },
+  landingExploreMap: { en: 'Explore Map', es: 'Explorar Mapa' },
+  landingRoiCalculator: { en: 'ROI Calculator', es: 'Calculadora ROI' },
+  landingRoiCalculatorDesc: { 
+    en: 'Compare OI, SI and HO investment profiles with precise projections and detailed exit scenarios.', 
+    es: 'Compara perfiles de inversión OI, SI y HO con proyecciones precisas y escenarios de salida detallados.' 
+  },
+  landingCalculateRoi: { en: 'Calculate ROI', es: 'Calcular ROI' },
+  landingCashflowGenerator: { en: 'Cashflow Generator', es: 'Generador de Cashflow' },
+  landingCashflowGeneratorDesc: { 
+    en: 'Create professional reports with payment breakdowns and custom quotes for your clients.', 
+    es: 'Crea reportes profesionales con desglose de pagos y cotizaciones personalizadas para tus clientes.' 
+  },
+  landingCreateQuote: { en: 'Create Quote', es: 'Crear Cotización' },
+  landingProjectedRoi: { en: 'Projected ROI', es: 'ROI Proyectado' },
+  landingAnnualYield: { en: 'Annual Yield', es: 'Yield Anual' },
+  landingAccuracy: { en: 'Accuracy', es: 'Precisión' },
+  landingCtaTitle: { en: 'Ready to Transform Your Investment Strategy?', es: '¿Listo para Transformar tu Estrategia de Inversión?' },
+  landingCtaDescription: { en: 'Join professionals using Dubai Invest Pro to make smarter investment decisions.', es: 'Únete a los profesionales que usan Dubai Invest Pro para tomar decisiones de inversión más inteligentes.' },
+  landingCtaButton: { en: 'Start Now — It\'s Free', es: 'Comenzar Ahora — Es Gratis' },
+  landingRightsReserved: { en: 'All rights reserved.', es: 'Todos los derechos reservados.' },
+  landingPrivacy: { en: 'Privacy', es: 'Privacidad' },
+  landingTerms: { en: 'Terms', es: 'Términos' },
+  landingContact: { en: 'Contact', es: 'Contacto' },
+  
+  // Login Page
+  loginTitle: { en: 'Dubai Investment Hub', es: 'Dubai Investment Hub' },
+  loginSubtitle: { en: 'Advisory Platform', es: 'Plataforma de Asesoría' },
+  loginSignIn: { en: 'Sign in', es: 'Iniciar sesión' },
+  loginSignUp: { en: 'Sign up', es: 'Registrarse' },
+  
+  // Home Page
+  homeWelcome: { en: 'Welcome', es: 'Bienvenido' },
+  homeSubtitle: { en: 'Your investment advisory dashboard', es: 'Tu panel de asesoría de inversiones' },
+  homeInvestorType: { en: 'Investor Type', es: 'Tipo de Inversionista' },
+  homeInvestorTypeDesc: { en: 'Compare OI, SI, HO investment profiles and analyze returns', es: 'Compara perfiles de inversión OI, SI, HO y analiza retornos' },
+  homeCashflowGenerator: { en: 'Cashflow Generator', es: 'Generador de Cashflow' },
+  homeCashflowGeneratorDesc: { en: 'Exit scenarios, payment breakdowns & client quotes', es: 'Escenarios de salida, desglose de pagos y cotizaciones' },
+  homeInvestmentMap: { en: 'Investment Map', es: 'Mapa de Inversión' },
+  homeInvestmentMapDesc: { en: 'Dubai zones, projects, hotspots & live presentations', es: 'Zonas de Dubai, proyectos, hotspots y presentaciones en vivo' },
+  homeMyGenerators: { en: 'My Generators', es: 'Mis Generadores' },
+  homeConfiguration: { en: 'Configuration', es: 'Configuración' },
+  homeAccountSettings: { en: 'Account Settings', es: 'Configuración de Cuenta' },
+  homeRecentGenerators: { en: 'Recent Cashflow Generators', es: 'Generadores de Cashflow Recientes' },
+  homeViewAll: { en: 'View All', es: 'Ver Todos' },
+  homeUnnamedClient: { en: 'Unnamed Client', es: 'Cliente sin Nombre' },
+  homeNoProject: { en: 'No project', es: 'Sin proyecto' },
+  
+  // Account Settings Page
+  accountSettingsTitle: { en: 'Account Settings', es: 'Configuración de Cuenta' },
+  accountEmail: { en: 'Email', es: 'Correo Electrónico' },
+  accountEmailCannotChange: { en: 'Email cannot be changed', es: 'El correo no puede ser cambiado' },
+  accountFullName: { en: 'Full Name', es: 'Nombre Completo' },
+  accountEnterFullName: { en: 'Enter your full name', es: 'Ingresa tu nombre completo' },
+  accountBusinessEmail: { en: 'Business Email', es: 'Correo Empresarial' },
+  accountBusinessEmailDesc: { en: 'Clients can contact you via this email', es: 'Los clientes pueden contactarte por este correo' },
+  accountWhatsApp: { en: 'WhatsApp Number', es: 'Número de WhatsApp' },
+  accountWhatsAppDesc: { en: 'Clients can message you on WhatsApp', es: 'Los clientes pueden enviarte mensajes por WhatsApp' },
+  accountClickToUpload: { en: 'Click camera to upload photo', es: 'Clic en cámara para subir foto' },
+  accountSaving: { en: 'Saving...', es: 'Guardando...' },
+  accountSaveChanges: { en: 'Save Changes', es: 'Guardar Cambios' },
+  accountViewGenerators: { en: 'View My Cashflow Generators', es: 'Ver Mis Generadores de Cashflow' },
+  accountAdminDashboard: { en: 'Admin Dashboard', es: 'Panel de Administración' },
+  
+  // Quotes Dashboard Page
+  quotesTitle: { en: 'My Cashflow Generators', es: 'Mis Generadores de Cashflow' },
+  quotesSaved: { en: 'quotes saved', es: 'cotizaciones guardadas' },
+  quotesNewQuote: { en: 'New Quote', es: 'Nueva Cotización' },
+  quotesNoQuotes: { en: 'No quotes yet', es: 'Sin cotizaciones aún' },
+  quotesNoQuotesDesc: { en: 'Create your first cashflow generator to get started', es: 'Crea tu primer generador de cashflow para comenzar' },
+  quotesCreateQuote: { en: 'Create Quote', es: 'Crear Cotización' },
+  quotesUntitled: { en: 'Untitled Quote', es: 'Cotización Sin Título' },
+  quotesClient: { en: 'Client', es: 'Cliente' },
+  quotesProject: { en: 'Project', es: 'Proyecto' },
+  quotesDeveloper: { en: 'Developer', es: 'Desarrollador' },
+  quotesDeleteTitle: { en: 'Delete Quote', es: 'Eliminar Cotización' },
+  quotesDeleteDesc: { en: 'Are you sure you want to delete "{title}"? This action cannot be undone.', es: '¿Estás seguro de que deseas eliminar "{title}"? Esta acción no se puede deshacer.' },
+  quotesCancel: { en: 'Cancel', es: 'Cancelar' },
+  quotesDelete: { en: 'Delete', es: 'Eliminar' },
+  
+  // 404 Page
+  notFound404: { en: '404', es: '404' },
+  notFoundTitle: { en: 'Oops! Page not found', es: '¡Ups! Página no encontrada' },
+  notFoundReturn: { en: 'Return to Home', es: 'Volver al Inicio' },
+  
+  // ROI Calculator Page
+  roiInvestorType: { en: 'Investor Type', es: 'Tipo de Inversionista' },
+  roiCompareProfiles: { en: 'Compare OI, SI, HO investment profiles', es: 'Compara perfiles de inversión OI, SI, HO' },
+  roiDetailedComparison: { en: 'Detailed Comparison', es: 'Comparación Detallada' },
+  roiMetric: { en: 'Metric', es: 'Métrica' },
+  roiEntryPrice: { en: 'Entry Price', es: 'Precio de Entrada' },
+  roiExitPrice: { en: 'Exit Price', es: 'Precio de Salida' },
+  roiEquityInvested: { en: 'Equity Invested', es: 'Capital Invertido' },
+  roiProjectedProfit: { en: 'Projected Profit', es: 'Ganancia Proyectada' },
+  roiRentalYield: { en: 'Rental Yield', es: 'Rendimiento de Renta' },
+  roiYearsToPay: { en: 'Years to Pay', es: 'Años para Recuperar' },
 };
 
 interface LanguageContextType {

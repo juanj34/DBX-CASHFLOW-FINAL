@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Map, TrendingUp, FileText, ArrowRight, Sparkles, BarChart3, Globe, Zap, Menu } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Sheet,
   SheetContent,
@@ -14,6 +15,7 @@ import {
 const Landing = () => {
   useDocumentTitle("AI Real Estate Investment Tools");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[#050810] text-white overflow-hidden">
@@ -84,14 +86,22 @@ const Landing = () => {
 
         {/* Desktop Nav Actions */}
         <div className="hidden sm:flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+            className="text-gray-400 hover:text-white hover:bg-white/5"
+          >
+            {language === 'en' ? '🇪🇸 ES' : '🇺🇸 EN'}
+          </Button>
           <Link to="/login">
             <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/5">
-              Iniciar Sesión
+              {t('landingSignIn')}
             </Button>
           </Link>
           <Link to="/login">
             <Button className="bg-gradient-to-r from-cyan-500 via-purple-500 to-[#CCFF00] text-black font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300">
-              Comenzar <ArrowRight className="w-4 h-4 ml-1" />
+              {t('landingGetStarted')} <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </Link>
         </div>
@@ -105,17 +115,24 @@ const Landing = () => {
           </SheetTrigger>
           <SheetContent side="right" className="w-[280px] bg-[#0a0f1a] border-gray-800">
             <SheetHeader>
-              <SheetTitle className="text-white text-left">Menu</SheetTitle>
+              <SheetTitle className="text-white text-left">{t('landingMenu')}</SheetTitle>
             </SheetHeader>
             <nav className="flex flex-col gap-4 mt-6">
+              <Button
+                variant="ghost"
+                onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/5"
+              >
+                {language === 'en' ? '🇪🇸 Español' : '🇺🇸 English'}
+              </Button>
               <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/5">
-                  Iniciar Sesión
+                  {t('landingSignIn')}
                 </Button>
               </Link>
               <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-gradient-to-r from-cyan-500 via-purple-500 to-[#CCFF00] text-black font-semibold">
-                  Comenzar <ArrowRight className="w-4 h-4 ml-1" />
+                  {t('landingGetStarted')} <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </nav>
@@ -131,34 +148,32 @@ const Landing = () => {
             <div className="space-y-6 sm:space-y-8">
               <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 text-xs sm:text-sm">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Powered by AI Intelligence</span>
+                <span>{t('landingPoweredByAI')}</span>
               </div>
               
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                <span className="text-white">El Futuro de la</span>
+                <span className="text-white">{t('landingHeroTitle1')}</span>
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-[#CCFF00] animate-gradient">
-                  Inversión Inmobiliaria
+                  {t('landingHeroTitle2')}
                 </span>
                 <br />
-                <span className="text-white">en Dubai</span>
+                <span className="text-white">{t('landingHeroTitle3')}</span>
               </h1>
               
               <p className="text-base sm:text-lg text-gray-400 max-w-xl leading-relaxed">
-                Herramientas de análisis de inversión de próxima generación. 
-                Mapas interactivos, calculadoras ROI con IA, y generador de 
-                cashflow profesional — todo en una plataforma.
+                {t('landingHeroDescription')}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Link to="/login" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-semibold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 group">
-                    Acceder a la Plataforma
+                    {t('landingAccessPlatform')}
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Button size="lg" variant="outlineDark" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6">
-                  Ver Demo
+                  {t('landingViewDemo')}
                 </Button>
               </div>
               
@@ -168,19 +183,19 @@ const Landing = () => {
                   <div className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
                     500+
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Proyectos Mapeados</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('landingProjectsMapped')}</div>
                 </div>
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-[#CCFF00]">
                     50+
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Zonas de Inversión</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('landingInvestmentZones')}</div>
                 </div>
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold text-[#CCFF00]">
                     AI
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">Análisis Inteligente</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('landingSmartAnalysis')}</div>
                 </div>
               </div>
             </div>
@@ -201,11 +216,11 @@ const Landing = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500">ROI Proyectado</div>
+                      <div className="text-xs text-gray-500">{t('landingProjectedRoi')}</div>
                       <div className="text-lg font-bold text-[#CCFF00]">+127%</div>
                     </div>
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <div className="text-xs text-gray-500">Yield Anual</div>
+                      <div className="text-xs text-gray-500">{t('landingAnnualYield')}</div>
                       <div className="text-lg font-bold text-cyan-400">8.5%</div>
                     </div>
                   </div>
@@ -216,7 +231,7 @@ const Landing = () => {
               <div className="absolute -left-12 top-20 z-10 bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-700/50 p-4 shadow-xl transform -rotate-6 animate-float">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs text-gray-400">Mapa Interactivo</span>
+                  <span className="text-xs text-gray-400">{t('landingInteractiveMap')}</span>
                 </div>
                 <div className="w-32 h-24 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center">
                   <Map className="w-8 h-8 text-purple-400" />
@@ -230,7 +245,7 @@ const Landing = () => {
                   <span className="text-xs text-gray-400">AI Analysis</span>
                 </div>
                 <div className="mt-2 text-2xl font-bold text-[#CCFF00]">98%</div>
-                <div className="text-xs text-gray-500">Precisión</div>
+                <div className="text-xs text-gray-500">{t('landingAccuracy')}</div>
               </div>
             </div>
           </div>
@@ -242,13 +257,13 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-              <span className="text-white">Herramientas </span>
+              <span className="text-white">{t('landingProfessionalTools').split(' ')[0]} </span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-                Profesionales
+                {t('landingProfessionalTools').split(' ').slice(1).join(' ')}
               </span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
-              Todo lo que necesitas para tomar decisiones de inversión informadas en el mercado inmobiliario de Dubai
+              {t('landingProfessionalToolsDesc')}
             </p>
           </div>
 
@@ -260,12 +275,12 @@ const Landing = () => {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
                   <Map className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-400" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Mapa Interactivo</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">{t('landingInteractiveMap')}</h3>
                 <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
-                  Explora zonas de inversión, proyectos off-plan, landmarks y hotspots en tiempo real con capas de datos inteligentes.
+                  {t('landingInteractiveMapDesc')}
                 </p>
                 <div className="mt-4 sm:mt-6 flex items-center text-cyan-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
-                  Explorar Mapa <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('landingExploreMap')} <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
             </div>
@@ -277,12 +292,12 @@ const Landing = () => {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Calculadora ROI</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">{t('landingRoiCalculator')}</h3>
                 <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
-                  Compara perfiles de inversión OI, SI y HO con proyecciones precisas y escenarios de salida detallados.
+                  {t('landingRoiCalculatorDesc')}
                 </p>
                 <div className="mt-4 sm:mt-6 flex items-center text-purple-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
-                  Calcular ROI <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('landingCalculateRoi')} <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
             </div>
@@ -294,12 +309,12 @@ const Landing = () => {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-[#CCFF00]/20 to-[#CCFF00]/5 flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
                   <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-[#CCFF00]" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Generador de Cashflow</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">{t('landingCashflowGenerator')}</h3>
                 <p className="text-gray-400 leading-relaxed text-sm sm:text-base">
-                  Crea reportes profesionales con planes de pago, proyecciones de cashflow y PDFs listos para presentar.
+                  {t('landingCashflowGeneratorDesc')}
                 </p>
                 <div className="mt-4 sm:mt-6 flex items-center text-[#CCFF00] text-sm font-medium group-hover:translate-x-2 transition-transform">
-                  Crear Cotización <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('landingCreateQuote')} <ArrowRight className="w-4 h-4 ml-2" />
                 </div>
               </div>
             </div>
@@ -316,18 +331,18 @@ const Landing = () => {
             
             <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-gray-700/50 p-8 sm:p-12 md:p-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
-                <span className="text-white">¿Listo para </span>
+                <span className="text-white">{t('landingCtaTitle').split(' ').slice(0, 3).join(' ')} </span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-[#CCFF00]">
-                  Transformar
+                  {t('landingCtaTitle').split(' ').slice(3, 4).join(' ')}
                 </span>
-                <span className="text-white"> tu Estrategia de Inversión?</span>
+                <span className="text-white"> {t('landingCtaTitle').split(' ').slice(4).join(' ')}</span>
               </h2>
               <p className="text-gray-400 text-base sm:text-lg mb-8 sm:mb-10 max-w-2xl mx-auto">
-                Únete a los profesionales que ya están usando Dubai Invest Pro para tomar decisiones de inversión más inteligentes.
+                {t('landingCtaDescription')}
               </p>
               <Link to="/login">
                 <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 via-purple-500 to-[#CCFF00] text-black font-bold text-base sm:text-lg px-8 sm:px-12 py-6 sm:py-7 hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 group">
-                  Comenzar Ahora — Es Gratis
+                  {t('landingCtaButton')}
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -341,12 +356,12 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-gray-500 text-xs sm:text-sm text-center sm:text-left">
             <span>© 2024 Dubai Invest Pro.</span>
-            <span>Todos los derechos reservados.</span>
+            <span>{t('landingRightsReserved')}</span>
           </div>
           <div className="flex items-center gap-4 sm:gap-6 text-gray-500 text-xs sm:text-sm">
-            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-            <a href="#" className="hover:text-white transition-colors">Términos</a>
-            <a href="#" className="hover:text-white transition-colors">Contacto</a>
+            <a href="#" className="hover:text-white transition-colors">{t('landingPrivacy')}</a>
+            <a href="#" className="hover:text-white transition-colors">{t('landingTerms')}</a>
+            <a href="#" className="hover:text-white transition-colors">{t('landingContact')}</a>
           </div>
         </div>
       </footer>
