@@ -236,16 +236,16 @@ const OICalculatorContent = () => {
       <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
           {/* Main header row */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 w-full min-w-0">
             {/* Left: Navigation + Advisor */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link to="/home">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <Link to="/home" className="flex-shrink-0">
                 <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-9 sm:w-9">
                   <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
               {isAdmin && (
-                <Link to="/dashboard">
+                <Link to="/dashboard" className="flex-shrink-0">
                   <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-9 sm:w-9">
                     <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
@@ -255,7 +255,7 @@ const OICalculatorContent = () => {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {/* Save Button with Status - Always visible */}
               <div className="flex items-center gap-1.5">
                 {saving ? (
