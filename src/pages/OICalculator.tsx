@@ -269,13 +269,13 @@ const OICalculatorContent = () => {
                 ) : null}
                 <Button
                   variant="outlineDark"
-                  size="sm"
+                  size="icon"
                   onClick={handleSave}
                   disabled={saving}
-                  className="h-8 px-2 sm:px-3"
+                  className="h-8 w-8 sm:h-8 sm:w-auto sm:px-3"
                 >
                   <Save className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5">Save</span>
+                  <span className="hidden sm:inline">Save</span>
                 </Button>
               </div>
 
