@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { 
   FileText, Copy, Check, Edit3, RotateCcw, ChevronDown, ChevronRight,
-  Home, CreditCard, Calendar, Banknote, Building2, Key, TrendingUp, DoorOpen, Landmark
+  Home, CreditCard, Calendar, Banknote, Building2, Key, TrendingUp, DoorOpen, Landmark,
+  LayoutList, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,6 +117,7 @@ export const CashflowSummaryCard = ({
     showRental: showRentalPotential,
     showMortgage: showMortgageAnalysis,
   });
+  const [viewMode, setViewMode] = useState<'structured' | 'conversational'>('structured');
 
   const isMortgageEnabled = mortgageInputs?.enabled ?? false;
   const fmt = useCallback((amount: number) => formatCurrency(amount, currency, rate), [currency, rate]);
@@ -216,6 +218,34 @@ export const CashflowSummaryCard = ({
           {/* Toggle controls - only visible when not readOnly */}
           {!readOnly && (
             <div className="mb-4 pb-4 border-b border-[#2a3142]">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2 mb-4">
+                <button
+                  onClick={() => setViewMode('structured')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    viewMode === 'structured' 
+                      ? "bg-[#CCFF00]/20 text-[#CCFF00]" 
+                      : "bg-[#1a1f2e] text-gray-400 hover:text-white"
+                  )}
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  {t('dataView')}
+                </button>
+                <button
+                  onClick={() => setViewMode('conversational')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    viewMode === 'conversational' 
+                      ? "bg-[#CCFF00]/20 text-[#CCFF00]" 
+                      : "bg-[#1a1f2e] text-gray-400 hover:text-white"
+                  )}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  {t('explanationView')}
+                </button>
+              </div>
+              
               <p className="text-xs text-gray-500 mb-3">{t('sectionsToInclude')}</p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
                 <div className="flex items-center gap-2">
@@ -314,7 +344,180 @@ export const CashflowSummaryCard = ({
               className="min-h-[400px] bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs sm:text-sm leading-relaxed resize-y"
               placeholder="Edit summary..."
             />
+          ) : viewMode === 'conversational' ? (
+            /* Conversational View - Narrative explanations */
+            <div className="space-y-6 text-sm leading-relaxed">
+              {/* Property Introduction */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[#CCFF00] font-semibold">
+                  <Home className="w-4 h-4" />
+                  <span>{language === 'en' ? "Let's talk about this property" : "Hablemos de esta propiedad"}</span>
+                </div>
+                <p className="text-gray-300">
+                  {language === 'en' 
+                    ? `We're looking at ${structuredData.property.projectName} by ${structuredData.property.developer}. It's a ${structuredData.property.unitType || 'unit'} with ${structuredData.property.sizeSqft.toLocaleString()} sqft, priced at ${fmt(structuredData.property.price)}${structuredData.property.pricePerSqft > 0 ? ` – that's ${fmt(structuredData.property.pricePerSqft)} per sqft` : ''}.`
+                    : `Estamos viendo ${structuredData.property.projectName} de ${structuredData.property.developer}. Es un ${structuredData.property.unitType || 'unidad'} de ${structuredData.property.sizeSqft.toLocaleString()} sqft, con precio de ${fmt(structuredData.property.price)}${structuredData.property.pricePerSqft > 0 ? ` – es decir ${fmt(structuredData.property.pricePerSqft)} por sqft` : ''}.`
+                  }
+                </p>
+              </div>
+
+              {/* Payment Plan Explanation */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+                  <CreditCard className="w-4 h-4" />
+                  <span>{language === 'en' ? "Here's how the money flows" : "Así fluye el dinero"}</span>
+                </div>
+                <p className="text-gray-300">
+                  {language === 'en'
+                    ? `This is a ${structuredData.paymentStructure.preHandoverPercent}/${structuredData.paymentStructure.handoverPercent} payment plan. You pay ${structuredData.paymentStructure.preHandoverPercent}% before handover and the remaining ${structuredData.paymentStructure.handoverPercent}% when you get the keys.`
+                    : `Este es un plan de pago ${structuredData.paymentStructure.preHandoverPercent}/${structuredData.paymentStructure.handoverPercent}. Pagas ${structuredData.paymentStructure.preHandoverPercent}% antes de la entrega y el ${structuredData.paymentStructure.handoverPercent}% restante cuando recibas las llaves.`
+                  }
+                </p>
+                <div className="bg-[#1a1f2e] rounded-lg p-3 space-y-1">
+                  {structuredData.paymentStructure.installments.map((inst, idx) => (
+                    <div key={idx} className="flex justify-between text-xs">
+                      <span className="text-gray-400">{inst.percent}% – {inst.label}</span>
+                      <span className="text-white font-mono">{fmt(inst.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Today's Commitment */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 font-semibold">
+                  <Banknote className="w-4 h-4" />
+                  <span>{language === 'en' ? "What you need to secure this today" : "Lo que necesitas para asegurar esto hoy"}</span>
+                </div>
+                <p className="text-gray-300">
+                  {language === 'en'
+                    ? `To lock in this property today, you'll need ${fmt(structuredData.todaysCommitment.total)}. This covers your downpayment of ${fmt(structuredData.todaysCommitment.downpayment)} (${structuredData.todaysCommitment.downpaymentPercent}%), plus the DLD fee of ${fmt(structuredData.todaysCommitment.dldFee)} and Oqood fee of ${fmt(structuredData.todaysCommitment.oqoodFee)}.`
+                    : `Para asegurar esta propiedad hoy, necesitarás ${fmt(structuredData.todaysCommitment.total)}. Esto cubre tu enganche de ${fmt(structuredData.todaysCommitment.downpayment)} (${structuredData.todaysCommitment.downpaymentPercent}%), más la tarifa DLD de ${fmt(structuredData.todaysCommitment.dldFee)} y la tarifa Oqood de ${fmt(structuredData.todaysCommitment.oqoodFee)}.`
+                  }
+                </p>
+              </div>
+
+              {/* Timeline */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-purple-400 font-semibold">
+                  <Calendar className="w-4 h-4" />
+                  <span>{language === 'en' ? "The timeline" : "El cronograma"}</span>
+                </div>
+                <p className="text-gray-300">
+                  {language === 'en'
+                    ? `From booking in ${structuredData.timeline.bookingDate} to handover in ${structuredData.timeline.handoverDate}, that's about ${structuredData.timeline.constructionMonths} months of construction.`
+                    : `Desde la reserva en ${structuredData.timeline.bookingDate} hasta la entrega en ${structuredData.timeline.handoverDate}, son aproximadamente ${structuredData.timeline.constructionMonths} meses de construcción.`
+                  }
+                </p>
+              </div>
+
+              {/* During Construction */}
+              {structuredData.construction.paymentsCount > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-gray-400 font-semibold">
+                    <Building2 className="w-4 h-4" />
+                    <span>{language === 'en' ? "During construction" : "Durante la construcción"}</span>
+                  </div>
+                  <p className="text-gray-300">
+                    {language === 'en'
+                      ? `During the construction period, you'll make ${structuredData.construction.paymentsCount} additional payment${structuredData.construction.paymentsCount > 1 ? 's' : ''} totaling ${fmt(structuredData.construction.totalAmount)}.`
+                      : `Durante el período de construcción, realizarás ${structuredData.construction.paymentsCount} pago${structuredData.construction.paymentsCount > 1 ? 's' : ''} adicional${structuredData.construction.paymentsCount > 1 ? 'es' : ''} por un total de ${fmt(structuredData.construction.totalAmount)}.`
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Handover */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+                  <Key className="w-4 h-4" />
+                  <span>{language === 'en' ? "At handover" : "En la entrega"}</span>
+                </div>
+                <p className="text-gray-300">
+                  {language === 'en'
+                    ? `When you receive the keys, you'll pay the remaining ${structuredData.handover.percent}% – that's ${fmt(structuredData.handover.amount)}.`
+                    : `Cuando recibas las llaves, pagarás el ${structuredData.handover.percent}% restante – es decir ${fmt(structuredData.handover.amount)}.`
+                  }
+                </p>
+              </div>
+
+              {/* Rental Potential */}
+              {localToggles.showRental && structuredData.rental && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-green-400 font-semibold">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>{language === 'en' ? "Rental income potential" : "Potencial de ingreso por renta"}</span>
+                  </div>
+                  <p className="text-gray-300">
+                    {language === 'en'
+                      ? `Based on a ${structuredData.rental.yieldPercent}% rental yield, this property could generate ${fmt(structuredData.rental.grossAnnual)} in gross annual rent. After service charges, you'd net ${fmt(structuredData.rental.netAnnual)} per year – that's about ${fmt(structuredData.rental.netAnnual / 12)} monthly. At this rate, the property pays for itself in roughly ${structuredData.rental.yearsToPayOff.toFixed(1)} years.`
+                      : `Basado en un rendimiento de ${structuredData.rental.yieldPercent}%, esta propiedad podría generar ${fmt(structuredData.rental.grossAnnual)} en renta bruta anual. Después de cargos de servicio, tendrías ${fmt(structuredData.rental.netAnnual)} neto por año – aproximadamente ${fmt(structuredData.rental.netAnnual / 12)} mensual. A este ritmo, la propiedad se paga sola en aproximadamente ${structuredData.rental.yearsToPayOff.toFixed(1)} años.`
+                    }
+                  </p>
+                  {/* Airbnb Comparison */}
+                  {structuredData.rental.showAirbnb && structuredData.rental.airbnbNetAnnual && structuredData.rental.airbnbNetAnnual > 0 && (
+                    <div className="bg-[#1a1f2e] rounded-lg p-3 mt-2">
+                      <p className="text-gray-300">
+                        {language === 'en'
+                          ? `If you're open to short-term rentals via Airbnb, the numbers could be even better. You could potentially earn ${fmt(structuredData.rental.airbnbNetAnnual)} net annually${structuredData.rental.airbnbDifference && structuredData.rental.airbnbDifference > 0 ? ` – that's ${((structuredData.rental.airbnbDifference / structuredData.rental.netAnnual) * 100).toFixed(0)}% more than long-term rental` : ''}.`
+                          : `Si estás abierto a rentas cortas vía Airbnb, los números podrían ser mejores. Podrías ganar ${fmt(structuredData.rental.airbnbNetAnnual)} neto anualmente${structuredData.rental.airbnbDifference && structuredData.rental.airbnbDifference > 0 ? ` – eso es ${((structuredData.rental.airbnbDifference / structuredData.rental.netAnnual) * 100).toFixed(0)}% más que renta a largo plazo` : ''}.`
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Exit Scenarios */}
+              {localToggles.showExit && structuredData.exitScenarios && structuredData.exitScenarios.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-pink-400 font-semibold">
+                    <DoorOpen className="w-4 h-4" />
+                    <span>{language === 'en' ? "Exit opportunities" : "Oportunidades de salida"}</span>
+                  </div>
+                  <p className="text-gray-300">
+                    {language === 'en'
+                      ? "If you decide to sell during construction, here are your potential exit points:"
+                      : "Si decides vender durante la construcción, estas son tus opciones de salida:"
+                    }
+                  </p>
+                  <div className="bg-[#1a1f2e] rounded-lg p-3 space-y-2">
+                    {structuredData.exitScenarios.map((scenario, idx) => (
+                      <div key={idx} className="text-xs">
+                        <span className="text-gray-400">{language === 'en' ? 'Month' : 'Mes'} {scenario.month}: </span>
+                        <span className="text-white">{language === 'en' ? 'Property at' : 'Propiedad en'} {fmt(scenario.value)}, </span>
+                        <span className="text-[#CCFF00]">{language === 'en' ? 'profit' : 'ganancia'} {fmt(scenario.profit)} </span>
+                        <span className="text-gray-400">({scenario.roe.toFixed(1)}% ROE)</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mortgage */}
+              {localToggles.showMortgage && structuredData.mortgage && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-blue-400 font-semibold">
+                    <Landmark className="w-4 h-4" />
+                    <span>{language === 'en' ? "Mortgage financing" : "Financiamiento hipotecario"}</span>
+                  </div>
+                  <p className="text-gray-300">
+                    {structuredData.mortgage.isPositive
+                      ? (language === 'en'
+                          ? `Good news on financing! With ${structuredData.mortgage.financingPercent}% mortgage (${fmt(structuredData.mortgage.loanAmount)}), your monthly payment would be ${fmt(structuredData.mortgage.monthlyPayment)}. The expected rent of ${fmt(structuredData.mortgage.monthlyRent)} covers this completely, leaving you with ${fmt(structuredData.mortgage.monthlyContribution)} extra each month. The property essentially pays for itself.`
+                          : `¡Buenas noticias sobre financiamiento! Con ${structuredData.mortgage.financingPercent}% de hipoteca (${fmt(structuredData.mortgage.loanAmount)}), tu pago mensual sería ${fmt(structuredData.mortgage.monthlyPayment)}. La renta esperada de ${fmt(structuredData.mortgage.monthlyRent)} cubre esto completamente, dejándote ${fmt(structuredData.mortgage.monthlyContribution)} extra cada mes. La propiedad esencialmente se paga sola.`
+                        )
+                      : (language === 'en'
+                          ? `With ${structuredData.mortgage.financingPercent}% mortgage (${fmt(structuredData.mortgage.loanAmount)}), your monthly payment would be ${fmt(structuredData.mortgage.monthlyPayment)}. The expected rent of ${fmt(structuredData.mortgage.monthlyRent)} covers most of it, but you'd need to contribute ${fmt(structuredData.mortgage.monthlyContribution)} monthly from your own pocket. Think of it as forced savings – you're building equity while the tenant covers most of the cost.`
+                          : `Con ${structuredData.mortgage.financingPercent}% de hipoteca (${fmt(structuredData.mortgage.loanAmount)}), tu pago mensual sería ${fmt(structuredData.mortgage.monthlyPayment)}. La renta esperada de ${fmt(structuredData.mortgage.monthlyRent)} cubre la mayor parte, pero necesitarías aportar ${fmt(structuredData.mortgage.monthlyContribution)} mensualmente de tu bolsillo. Piénsalo como ahorro forzado – estás construyendo capital mientras el inquilino cubre la mayor parte del costo.`
+                        )
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
           ) : (
+            /* Structured View - Data tables */
             <div className="space-y-0">
               {/* Property Overview */}
               <SummarySection icon={Home} iconColor="text-[#CCFF00]" title={t('propertyOverviewSection')}>
@@ -414,6 +617,21 @@ export const CashflowSummaryCard = ({
                   <SummaryRow label={t('netAnnualRent')} value={fmt(structuredData.rental.netAnnual)} highlight />
                   <SummaryRow label={t('yearsToPayOff')} value={structuredData.rental.yearsToPayOff.toFixed(1)} />
                   <SummaryRow label={t('effectiveYield')} value={`${structuredData.rental.effectiveYield.toFixed(1)}%`} highlight />
+                  
+                  {/* Airbnb Comparison */}
+                  {structuredData.rental.showAirbnb && structuredData.rental.airbnbNetAnnual && structuredData.rental.airbnbNetAnnual > 0 && (
+                    <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
+                      <p className="text-xs text-gray-500 mb-2">{t('airbnbComparison')}</p>
+                      <SummaryRow label={t('airbnbNet')} value={fmt(structuredData.rental.airbnbNetAnnual)} />
+                      {structuredData.rental.airbnbDifference !== undefined && (
+                        <SummaryRow 
+                          label={t('comparedToLongTerm')} 
+                          value={`${structuredData.rental.airbnbDifference >= 0 ? '+' : ''}${fmt(structuredData.rental.airbnbDifference)}`}
+                          highlight={structuredData.rental.airbnbDifference > 0}
+                        />
+                      )}
+                    </div>
+                  )}
                 </SummarySection>
               )}
 
@@ -453,15 +671,15 @@ export const CashflowSummaryCard = ({
                   <SummaryRow label={t('monthlyRent')} value={fmt(structuredData.mortgage.monthlyRent)} />
                   <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
                     <SummaryRow 
-                      label={structuredData.mortgage.isPositive ? t('surplus') : t('gap')} 
-                      value={`${structuredData.mortgage.isPositive ? '+' : '-'}${fmt(structuredData.mortgage.gap)}`} 
+                      label={structuredData.mortgage.isPositive ? t('surplus') : t('monthlyContribution')} 
+                      value={`${structuredData.mortgage.isPositive ? '+' : '-'}${fmt(structuredData.mortgage.monthlyContribution)}`} 
                       highlight 
                     />
                     <p className={cn(
                       "text-xs mt-1",
                       structuredData.mortgage.isPositive ? "text-green-400" : "text-amber-400"
                     )}>
-                      {structuredData.mortgage.isPositive ? '✅ ' + t('mortgageCovered') : '⚠️ ' + t('gapRequired')}
+                      {structuredData.mortgage.isPositive ? '✅ ' + t('mortgageCovered') : '⚠️ ' + t('contributionRequired')}
                     </p>
                   </div>
                 </SummarySection>

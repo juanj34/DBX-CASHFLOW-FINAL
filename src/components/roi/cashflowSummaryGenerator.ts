@@ -74,6 +74,12 @@ export interface StructuredSummaryData {
     netAnnual: number;
     yearsToPayOff: number;
     effectiveYield: number;
+    // Airbnb data
+    showAirbnb?: boolean;
+    airbnbGrossAnnual?: number;
+    airbnbNetAnnual?: number;
+    airbnbYearsToPayOff?: number;
+    airbnbDifference?: number; // positive = airbnb earns more
   };
   exitScenarios?: Array<{
     month: number;
@@ -86,7 +92,7 @@ export interface StructuredSummaryData {
     loanAmount: number;
     monthlyPayment: number;
     monthlyRent: number;
-    gap: number;
+    monthlyContribution: number; // renamed from gap
     isPositive: boolean;
   };
 }
@@ -240,12 +246,38 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
 
   // Add rental data if included
   if (includeRentalPotential) {
+    const showAirbnb = inputs.showAirbnbComparison || false;
+    
+    // Get Airbnb data from yearly projections (first full year after handover)
+    let airbnbGross = 0;
+    let airbnbNet = 0;
+    if (showAirbnb && calculations.yearlyProjections.length > 0) {
+      // Find first full rental year (year after handover)
+      const firstFullYear = calculations.yearlyProjections.find(p => 
+        !p.isConstruction && !p.isHandover && p.airbnbNetIncome !== null
+      );
+      if (firstFullYear) {
+        airbnbGross = firstFullYear.airbnbGrossIncome || 0;
+        airbnbNet = firstFullYear.airbnbNetIncome || 0;
+      }
+    }
+    
+    const airbnbDifference = airbnbNet - calculations.holdAnalysis.netAnnualRent;
+    
     structuredData.rental = {
       yieldPercent: inputs.rentalYieldPercent,
       grossAnnual: calculations.holdAnalysis.annualRent,
       netAnnual: calculations.holdAnalysis.netAnnualRent,
       yearsToPayOff: calculations.holdAnalysis.yearsToPayOff,
       effectiveYield: calculations.holdAnalysis.rentalYieldOnInvestment,
+      // Airbnb data
+      showAirbnb,
+      airbnbGrossAnnual: airbnbGross,
+      airbnbNetAnnual: airbnbNet,
+      airbnbYearsToPayOff: showAirbnb && airbnbNet > 0 
+        ? inputs.basePrice / airbnbNet 
+        : undefined,
+      airbnbDifference,
     };
   }
 
@@ -272,7 +304,7 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
       loanAmount: mortgageAnalysis.loanAmount,
       monthlyPayment: mortgageAnalysis.monthlyPayment,
       monthlyRent,
-      gap: Math.abs(rentVsPayment),
+      monthlyContribution: Math.abs(rentVsPayment),
       isPositive: rentVsPayment >= 0,
     };
   }
