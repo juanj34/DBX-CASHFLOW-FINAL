@@ -37,13 +37,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         const { data } = await supabase
           .from('profiles')
-          .select('theme_preference')
+          .select('*')
           .eq('id', user.id)
           .single();
 
-        if (data?.theme_preference && data.theme_preference in THEMES) {
-          setThemeState(data.theme_preference as ThemeKey);
-          localStorage.setItem(THEME_STORAGE_KEY, data.theme_preference);
+        const themePreference = (data as any)?.theme_preference;
+        if (themePreference && themePreference in THEMES) {
+          setThemeState(themePreference as ThemeKey);
+          localStorage.setItem(THEME_STORAGE_KEY, themePreference);
         }
       } catch (error) {
         // Silently fail - use localStorage value
@@ -69,7 +70,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (user) {
         await supabase
           .from('profiles')
-          .update({ theme_preference: newTheme })
+          .update({ theme_preference: newTheme } as any)
           .eq('id', user.id);
       }
     } catch (error) {

@@ -310,6 +310,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          theme_preference: string | null
           updated_at: string
           whatsapp_country_code: string | null
           whatsapp_number: string | null
@@ -321,6 +322,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          theme_preference?: string | null
           updated_at?: string
           whatsapp_country_code?: string | null
           whatsapp_number?: string | null
@@ -332,6 +334,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          theme_preference?: string | null
           updated_at?: string
           whatsapp_country_code?: string | null
           whatsapp_number?: string | null
