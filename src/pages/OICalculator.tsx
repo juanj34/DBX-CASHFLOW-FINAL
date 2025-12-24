@@ -403,14 +403,6 @@ const OICalculatorContent = () => {
                       {t('loadQuote')}
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
-                      onClick={() => navigate('/my-quotes')}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      {t('viewAllQuotes')}
-                    </DropdownMenuItem>
-
                     {quoteId && (
                       <DropdownMenuItem
                         onClick={() => setVersionHistoryOpen(true)}
@@ -632,10 +624,6 @@ const OICalculatorContent = () => {
           </>
         )}
 
-        <div className="mt-6 sm:mt-8 flex flex-wrap gap-2 sm:gap-4 print:hidden">
-          <Link to="/my-quotes"><Button variant="outlineAccent" className="text-xs sm:text-sm">{t('myQuotes')}</Button></Link>
-          <Link to="/roi-calculator"><Button variant="outlineDark" className="text-xs sm:text-sm">{t('fullROICalculator')}</Button></Link>
-        </div>
       </main>
     </div>
     </CashflowErrorBoundary>

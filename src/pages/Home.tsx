@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useAdminRole } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Sheet,
   SheetContent,
@@ -14,49 +15,41 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-interface SolutionCard {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  route: string;
-  color: string;
-}
-
-const solutions: SolutionCard[] = [
-  {
-    id: "investor-type",
-    title: "Investor Type",
-    description: "Compare OI, SI, HO investment profiles and analyze returns",
-    icon: TrendingUp,
-    route: "/roi-calculator",
-    color: "#CCFF00",
-  },
-  {
-    id: "cashflow",
-    title: "Cashflow Generator",
-    description: "Exit scenarios, payment breakdowns & client quotes",
-    icon: Rocket,
-    route: "/cashflow-generator",
-    color: "#00EAFF",
-  },
-  {
-    id: "map",
-    title: "Investment Map",
-    description: "Dubai zones, projects, hotspots & live presentations",
-    icon: Map,
-    route: "/map",
-    color: "#FF00FF",
-  },
-];
-
 const Home = () => {
   useDocumentTitle("Dashboard");
   const navigate = useNavigate();
   const { profile, loading } = useProfile();
   const { isAdmin } = useAdminRole();
+  const { t } = useLanguage();
   const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const solutions = [
+    {
+      id: "investor-type",
+      title: t('homeInvestorType'),
+      description: t('homeInvestorTypeDesc'),
+      icon: TrendingUp,
+      route: "/roi-calculator",
+      color: "#CCFF00",
+    },
+    {
+      id: "cashflow",
+      title: t('homeCashflowGenerator'),
+      description: t('homeCashflowGeneratorDesc'),
+      icon: Rocket,
+      route: "/cashflow-generator",
+      color: "#00EAFF",
+    },
+    {
+      id: "map",
+      title: t('homeInvestmentMap'),
+      description: t('homeInvestmentMapDesc'),
+      icon: Map,
+      route: "/map",
+      color: "#FF00FF",
+    },
+  ];
 
   useEffect(() => {
     checkAuth();
@@ -102,21 +95,21 @@ const Home = () => {
       <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-gray-400 hover:text-white hover:bg-[#1a1f2e] gap-2">
           <FileText className="w-4 h-4" />
-          My Generators
+          {t('homeMyGenerators')}
         </Button>
       </Link>
       {isAdmin && (
         <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
           <Button variant="ghost" className="w-full justify-start sm:w-auto text-gray-400 hover:text-white hover:bg-[#1a1f2e] gap-2">
             <SlidersHorizontal className="w-4 h-4" />
-            Configuration
+            {t('homeConfiguration')}
           </Button>
         </Link>
       )}
       <Link to="/account-settings" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto sm:px-3 text-gray-400 hover:text-white hover:bg-[#1a1f2e] gap-2">
           <Settings className="w-5 h-5" />
-          <span className="sm:hidden">Account Settings</span>
+          <span className="sm:hidden">{t('homeAccountSettings')}</span>
         </Button>
       </Link>
       <Button 
@@ -128,7 +121,7 @@ const Home = () => {
         className="w-full justify-start sm:w-auto sm:px-3 text-gray-400 hover:text-red-400 hover:bg-[#1a1f2e] gap-2"
       >
         <LogOut className="w-5 h-5" />
-        <span className="sm:hidden">Sign Out</span>
+        <span className="sm:hidden">{t('signOut')}</span>
       </Button>
     </>
   );
@@ -143,8 +136,8 @@ const Home = () => {
               <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-[#CCFF00]" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-white">Dubai Investment Hub</h1>
-              <p className="text-xs sm:text-sm text-gray-400">Advisory Platform</p>
+              <h1 className="text-lg sm:text-xl font-bold text-white">{t('loginTitle')}</h1>
+              <p className="text-xs sm:text-sm text-gray-400">{t('loginSubtitle')}</p>
             </div>
           </div>
           
@@ -162,7 +155,7 @@ const Home = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px] bg-[#1a1f2e] border-[#2a3142]">
               <SheetHeader>
-                <SheetTitle className="text-white text-left">Menu</SheetTitle>
+                <SheetTitle className="text-white text-left">{t('landingMenu')}</SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-2 mt-6">
                 <NavItems />
@@ -177,9 +170,9 @@ const Home = () => {
         {/* Welcome Section */}
         <div className="mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-            Welcome{profile?.full_name ? `, ${profile.full_name}` : ''}
+            {t('homeWelcome')}{profile?.full_name ? `, ${profile.full_name}` : ''}
           </h2>
-          <p className="text-gray-400">Your investment advisory dashboard</p>
+          <p className="text-gray-400">{t('homeSubtitle')}</p>
         </div>
 
         {/* Solution Cards */}
@@ -211,10 +204,10 @@ const Home = () => {
         {recentQuotes.length > 0 && (
           <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">Recent Cashflow Generators</h3>
+              <h3 className="font-semibold text-white">{t('homeRecentGenerators')}</h3>
               <Link to="/my-quotes">
                 <Button variant="link" className="text-[#CCFF00] hover:text-[#CCFF00]/80 p-0">
-                  View All
+                  {t('homeViewAll')}
                 </Button>
               </Link>
             </div>
@@ -227,10 +220,10 @@ const Home = () => {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-white truncate">
-                      {quote.client_name || 'Unnamed Client'}
+                      {quote.client_name || t('homeUnnamedClient')}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      {quote.project_name || 'No project'} • {new Date(quote.created_at).toLocaleDateString()}
+                      {quote.project_name || t('homeNoProject')} • {new Date(quote.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-gray-400 ml-2">→</div>

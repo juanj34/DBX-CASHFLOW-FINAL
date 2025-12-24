@@ -6,6 +6,7 @@ import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ const QuotesDashboard = () => {
   const { quotes, loading, deleteQuote } = useQuotesList();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [deletingQuote, setDeletingQuote] = useState<CashflowQuote | null>(null);
 
   const handleDeleteClick = (quote: CashflowQuote) => {
@@ -74,14 +76,14 @@ const QuotesDashboard = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white">My Cashflow Generators</h1>
-              <p className="text-sm text-gray-400">{quotes.length} quotes saved</p>
+              <h1 className="text-xl font-bold text-white">{t('quotesTitle')}</h1>
+              <p className="text-sm text-gray-400">{quotes.length} {t('quotesSaved')}</p>
             </div>
           </div>
           <Link to="/cashflow-generator">
             <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
               <Plus className="w-4 h-4" />
-              New Quote
+              {t('quotesNewQuote')}
             </Button>
           </Link>
         </div>
@@ -93,11 +95,11 @@ const QuotesDashboard = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#1a1f2e] flex items-center justify-center">
               <DollarSign className="w-8 h-8 text-gray-500" />
             </div>
-            <h2 className="text-xl text-white mb-2">No quotes yet</h2>
-            <p className="text-gray-400 mb-6">Create your first cashflow generator to get started</p>
+            <h2 className="text-xl text-white mb-2">{t('quotesNoQuotes')}</h2>
+            <p className="text-gray-400 mb-6">{t('quotesNoQuotesDesc')}</p>
             <Link to="/cashflow-generator">
               <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90">
-                Create Quote
+                {t('quotesCreateQuote')}
               </Button>
             </Link>
           </div>
@@ -111,17 +113,17 @@ const QuotesDashboard = () => {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-white truncate">
-                      {quote.title || 'Untitled Quote'}
+                      {quote.title || t('quotesUntitled')}
                     </h3>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
                       {quote.client_name && (
-                        <span>Client: {quote.client_name}</span>
+                        <span>{t('quotesClient')}: {quote.client_name}</span>
                       )}
                       {quote.project_name && (
-                        <span>Project: {quote.project_name}</span>
+                        <span>{t('quotesProject')}: {quote.project_name}</span>
                       )}
                       {quote.developer && (
-                        <span>Developer: {quote.developer}</span>
+                        <span>{t('quotesDeveloper')}: {quote.developer}</span>
                       )}
                       {(quote.inputs as any)?._clientInfo?.zoneName && (
                         <span className="flex items-center gap-1 text-cyan-400">
@@ -181,20 +183,20 @@ const QuotesDashboard = () => {
       <AlertDialog open={!!deletingQuote} onOpenChange={() => setDeletingQuote(null)}>
         <AlertDialogContent className="bg-[#1a1f2e] border-[#2a3142]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Quote</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">{t('quotesDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete "{deletingQuote?.title}"? This action cannot be undone.
+              {t('quotesDeleteDesc').replace('{title}', deletingQuote?.title || t('quotesUntitled'))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-[#2a3142] text-gray-300 border-[#2a3142] hover:bg-[#3a4152] hover:text-white">
-              Cancel
+              {t('quotesCancel')}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-500 text-white"
             >
-              Delete
+              {t('quotesDelete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

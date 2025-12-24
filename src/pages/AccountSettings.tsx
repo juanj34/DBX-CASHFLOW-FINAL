@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { optimizeImage, PROFILE_AVATAR_CONFIG } from '@/lib/imageUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const AccountSettings = () => {
   useDocumentTitle("Account Settings");
@@ -16,6 +17,7 @@ const AccountSettings = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [fullName, setFullName] = useState('');
@@ -101,14 +103,14 @@ const AccountSettings = () => {
                 <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="text-xl font-bold text-white">Account Settings</h1>
+            <h1 className="text-xl font-bold text-white">{t('accountSettingsTitle')}</h1>
           </div>
           <Button
             variant="outline"
             onClick={signOut}
             className="border-red-500/30 text-red-400 hover:bg-red-500/10"
           >
-            Sign Out
+            {t('signOut')}
           </Button>
         </div>
       </header>
@@ -150,33 +152,33 @@ const AccountSettings = () => {
                 className="hidden"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2">Click camera to upload photo</p>
+            <p className="text-xs text-gray-500 mt-2">{t('accountClickToUpload')}</p>
           </div>
 
           {/* Form Fields */}
           <div className="space-y-6">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Email</label>
+              <label className="block text-sm text-gray-400 mb-2">{t('accountEmail')}</label>
               <Input
                 value={profile.email}
                 disabled
                 className="bg-[#0d1117] border-[#2a3142] text-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-gray-500 mt-1">{t('accountEmailCannotChange')}</p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Full Name</label>
+              <label className="block text-sm text-gray-400 mb-2">{t('accountFullName')}</label>
               <Input
                 value={fullName || profile.full_name || ''}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
+                placeholder={t('accountEnterFullName')}
                 className="bg-[#0d1117] border-[#2a3142] text-white"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Business Email</label>
+              <label className="block text-sm text-gray-400 mb-2">{t('accountBusinessEmail')}</label>
               <Input
                 value={businessEmail}
                 onChange={(e) => setBusinessEmail(e.target.value)}
@@ -184,11 +186,11 @@ const AccountSettings = () => {
                 type="email"
                 className="bg-[#0d1117] border-[#2a3142] text-white"
               />
-              <p className="text-xs text-gray-500 mt-1">Clients can contact you via this email</p>
+              <p className="text-xs text-gray-500 mt-1">{t('accountBusinessEmailDesc')}</p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">WhatsApp Number</label>
+              <label className="block text-sm text-gray-400 mb-2">{t('accountWhatsApp')}</label>
               <div className="flex gap-2">
                 <Input
                   value={whatsappCountryCode}
@@ -203,7 +205,7 @@ const AccountSettings = () => {
                   className="bg-[#0d1117] border-[#2a3142] text-white flex-1"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Clients can message you on WhatsApp</p>
+              <p className="text-xs text-gray-500 mt-1">{t('accountWhatsAppDesc')}</p>
             </div>
 
             <Button
@@ -211,7 +213,7 @@ const AccountSettings = () => {
               disabled={saving}
               className="w-full bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('accountSaving') : t('accountSaveChanges')}
             </Button>
           </div>
 
@@ -219,12 +221,12 @@ const AccountSettings = () => {
           <div className="mt-8 pt-6 border-t border-[#2a3142] space-y-3">
             <Link to="/my-quotes" className="block">
               <Button variant="outlineDark" className="w-full">
-                View My Cashflow Generators
+                {t('accountViewGenerators')}
               </Button>
             </Link>
             <Link to="/dashboard" className="block">
               <Button variant="outlineDark" className="w-full">
-                Admin Dashboard
+                {t('accountAdminDashboard')}
               </Button>
             </Link>
           </div>
