@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Settings2 } from "lucide-react";
 import { ROIInputs } from "./useROICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ROIInputModalProps {
   inputs: ROIInputs;
@@ -16,24 +17,26 @@ interface ROIInputModalProps {
   currency: Currency;
 }
 
-const months = [
-  { value: 1, label: 'Jan' },
-  { value: 2, label: 'Feb' },
-  { value: 3, label: 'Mar' },
-  { value: 4, label: 'Apr' },
-  { value: 5, label: 'May' },
-  { value: 6, label: 'Jun' },
-  { value: 7, label: 'Jul' },
-  { value: 8, label: 'Aug' },
-  { value: 9, label: 'Sep' },
-  { value: 10, label: 'Oct' },
-  { value: 11, label: 'Nov' },
-  { value: 12, label: 'Dec' },
-];
-
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
 export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency }: ROIInputModalProps) => {
+  const { t } = useLanguage();
+  
+  const months = [
+    { value: 1, label: t('monthJan') },
+    { value: 2, label: t('monthFeb') },
+    { value: 3, label: t('monthMar') },
+    { value: 4, label: t('monthApr') },
+    { value: 5, label: t('monthMay') },
+    { value: 6, label: t('monthJun') },
+    { value: 7, label: t('monthJul') },
+    { value: 8, label: t('monthAug') },
+    { value: 9, label: t('monthSep') },
+    { value: 10, label: t('monthOct') },
+    { value: 11, label: t('monthNov') },
+    { value: 12, label: t('monthDec') },
+  ];
+  
   // Local state for the base price input to allow free typing
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
@@ -89,19 +92,19 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
           className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
         >
           <Settings2 className="w-4 h-4 mr-2" />
-          Configure Investment
+          {t('configureInvestment')}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-white">Investment Parameters</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-white">{t('investmentParameters')}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-5 py-4">
           {/* Base Property Price */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Base Property Price</label>
+              <label className="text-sm text-gray-400">{t('basePropertyPrice')}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
                   {currency === 'USD' ? '$' : 'AED'}
@@ -135,14 +138,14 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
 
           {/* Booking Date */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Booking Date (OI Entry)</label>
+            <label className="text-sm text-gray-400">{t('bookingDateOI')}</label>
             <div className="flex gap-3">
               <Select
                 value={String(inputs.bookingMonth)}
                 onValueChange={(value) => setInputs(prev => ({ ...prev, bookingMonth: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Month" />
+                  <SelectValue placeholder={t('monthLabelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
                   {months.map(m => (
@@ -157,7 +160,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
                 onValueChange={(value) => setInputs(prev => ({ ...prev, bookingYear: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Year" />
+                  <SelectValue placeholder={t('yearLabelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
                   {years.map(y => (
@@ -172,14 +175,14 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
 
           {/* Handover Date */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Handover Date (HO Entry)</label>
+            <label className="text-sm text-gray-400">{t('handoverDate')} (HO Entry)</label>
             <div className="flex gap-3">
               <Select
                 value={String(inputs.handoverMonth)}
                 onValueChange={(value) => setInputs(prev => ({ ...prev, handoverMonth: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Month" />
+                  <SelectValue placeholder={t('monthLabelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
                   {months.map(m => (
@@ -194,7 +197,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
                 onValueChange={(value) => setInputs(prev => ({ ...prev, handoverYear: parseInt(value) }))}
               >
                 <SelectTrigger className="flex-1 bg-[#0d1117] border-[#2a3142] text-white">
-                  <SelectValue placeholder="Year" />
+                  <SelectValue placeholder={t('yearLabelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
                   {years.map(y => (
@@ -210,7 +213,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
           {/* OI Holding Period */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">OI Holding Period (months)</label>
+              <label className="text-sm text-gray-400">{t('oiHoldingPeriod')}</label>
               <Input
                 type="number"
                 value={inputs.oiHoldingMonths}
@@ -226,13 +229,13 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
               step={3}
               className="roi-slider-lime"
             />
-            <div className="text-xs text-gray-500 text-right">OI sells to SI after {inputs.oiHoldingMonths} months</div>
+            <div className="text-xs text-gray-500 text-right">{t('oiSellsToSI')} {inputs.oiHoldingMonths} {t('months')}</div>
           </div>
 
           {/* Rental Yield Percent */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Rental Yield %</label>
+              <label className="text-sm text-gray-400">{t('rentalYieldPercent')}</label>
               <Input
                 type="number"
                 value={inputs.rentalYieldPercent}
@@ -254,7 +257,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
           {/* Resale Threshold / OI Equity */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Resale Threshold % (OI Equity)</label>
+              <label className="text-sm text-gray-400">{t('resaleThresholdOIEquity')}</label>
               <Input
                 type="number"
                 value={inputs.resaleThresholdPercent}
@@ -278,7 +281,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
           {/* Appreciation Rate */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-400">Appreciation Rate (CAGR) %</label>
+              <label className="text-sm text-gray-400">{t('appreciationRateCAGR')}</label>
               <Input
                 type="number"
                 value={inputs.appreciationRate}
@@ -302,7 +305,7 @@ export const ROIInputModal = ({ inputs, setInputs, open, onOpenChange, currency 
           onClick={() => onOpenChange(false)}
           className="w-full bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
         >
-          Apply Parameters
+          {t('applyParameters')}
         </Button>
       </DialogContent>
     </Dialog>
