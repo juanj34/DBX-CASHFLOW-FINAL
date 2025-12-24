@@ -153,10 +153,10 @@ export const MortgageBreakdown = ({
                 </span>
               </div>
               
-              <div className="flex justify-between items-center pl-4 relative">
-                <div className="absolute -left-[9px] w-3 h-3 rounded-full bg-amber-500" />
+              <div className="flex justify-between items-center pl-4 relative min-w-0">
+                <div className="absolute -left-[9px] w-3 h-3 rounded-full bg-yellow-400" />
                 <span className="text-sm text-gray-300 font-medium">{t('gapPaymentBeforeHandover')}</span>
-                <span className="text-sm font-mono text-amber-400 font-bold">
+                <span className="text-sm font-mono text-yellow-300 font-bold flex-shrink-0">
                   {formatCurrency(gapAmount, currency, rate)} ({gapPercent.toFixed(1)}%)
                 </span>
               </div>
@@ -190,7 +190,7 @@ export const MortgageBreakdown = ({
             {hasGap && (
               <div>
                 <p className="text-xs text-gray-500">{t('gapPayment')}</p>
-                <p className="text-sm font-mono text-amber-400">{formatCurrency(gapAmount, currency, rate)}</p>
+                <p className="text-sm font-mono text-yellow-300">{formatCurrency(gapAmount, currency, rate)}</p>
               </div>
             )}
             <div>
@@ -220,7 +220,7 @@ export const MortgageBreakdown = ({
               {hasGap && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t('gapPayment')}</span>
-                  <span className="text-amber-400 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
+                  <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -616,7 +616,7 @@ export const MortgageBreakdown = ({
             {hasGap && (
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400">{t('gapPayment')}</span>
-                <span className="text-amber-400 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
+                <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
               </div>
             )}
             {/* Total Loan Payments */}

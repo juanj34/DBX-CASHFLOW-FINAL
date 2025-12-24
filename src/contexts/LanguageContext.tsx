@@ -647,6 +647,50 @@ const translations: Translations = {
   roiProjectedProfit: { en: 'Projected Profit', es: 'Ganancia Proyectada' },
   roiRentalYield: { en: 'Rental Yield', es: 'Rendimiento de Renta' },
   roiYearsToPay: { en: 'Years to Pay', es: 'Años para Recuperar' },
+  
+  // ROI Input Modal translations
+  configureInvestment: { en: 'Configure Investment', es: 'Configurar Inversión' },
+  investmentParameters: { en: 'Investment Parameters', es: 'Parámetros de Inversión' },
+  oiHoldingPeriod: { en: 'OI Holding Period (months)', es: 'Período de Tenencia OI (meses)' },
+  resaleThresholdOIEquity: { en: 'Resale Threshold % (OI Equity)', es: 'Umbral de Reventa % (Capital OI)' },
+  appreciationRateCAGR: { en: 'Appreciation Rate (CAGR) %', es: 'Tasa de Apreciación (CAGR) %' },
+  oiSellsToSI: { en: 'OI sells to SI after', es: 'OI vende a SI después de' },
+  oiDeploysToResell: { en: 'OI deploys {amount} to resell', es: 'OI despliega {amount} para revender' },
+  
+  // Month names (short)
+  monthJan: { en: 'Jan', es: 'Ene' },
+  monthFeb: { en: 'Feb', es: 'Feb' },
+  monthMar: { en: 'Mar', es: 'Mar' },
+  monthApr: { en: 'Apr', es: 'Abr' },
+  monthMay: { en: 'May', es: 'May' },
+  monthJun: { en: 'Jun', es: 'Jun' },
+  monthJul: { en: 'Jul', es: 'Jul' },
+  monthAug: { en: 'Aug', es: 'Ago' },
+  monthSep: { en: 'Sep', es: 'Sep' },
+  monthOct: { en: 'Oct', es: 'Oct' },
+  monthNov: { en: 'Nov', es: 'Nov' },
+  monthDec: { en: 'Dec', es: 'Dic' },
+  
+  // OI Input Modal additional translations
+  oiInvestmentParametersTitle: { en: 'OI Investment Parameters', es: 'Parámetros de Inversión OI' },
+  entryCostsAtBookingLabel: { en: 'Entry Costs (At Booking)', es: 'Costos de Entrada (En Reserva)' },
+  dldFeeLabelFixed: { en: 'DLD Fee (fixed)', es: 'Tarifa DLD (fija)' },
+  minExitThresholdDescLabel: { en: '% of price developer requires paid before allowing resale', es: '% del precio que el developer exige haber pagado para permitir reventa' },
+  preHandoverSplitLabel: { en: 'Pre-Handover / Handover Split', es: 'División Pre-Entrega / Entrega' },
+  timeBasedMonthLabel: { en: 'Time-based (Month)', es: 'Basado en Tiempo (Mes)' },
+  constructionBasedLabel: { en: 'Construction %', es: 'Construcción %' },
+  handoverPaymentAutoLabel: { en: 'Handover Payment (Automatic)', es: 'Pago de Entrega (Automático)' },
+  atHandoverDateLabel: { en: 'At handover date', es: 'En fecha de entrega' },
+  monthLabelPlaceholder: { en: 'Month', es: 'Mes' },
+  yearLabelPlaceholder: { en: 'Year', es: 'Año' },
+  quarterLabelPlaceholder: { en: 'Quarter', es: 'Trimestre' },
+  
+  // Client Unit Modal translations
+  splitPaymentsBetweenClients: { en: 'Split payments between clients', es: 'Dividir pagos entre clientes' },
+  assignContributionPercentage: { en: 'Assign contribution percentage to each client', es: 'Asignar porcentaje de contribución a cada cliente' },
+  mustEqual100: { en: 'Must equal 100%', es: 'Debe sumar 100%' },
+  distributeEqually: { en: 'Distribute equally', es: 'Distribuir equitativamente' },
+  totalLabel: { en: 'Total', es: 'Total' },
 };
 
 interface LanguageContextType {

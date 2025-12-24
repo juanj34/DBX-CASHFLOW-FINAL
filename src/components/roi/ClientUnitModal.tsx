@@ -321,10 +321,10 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigge
                     <Percent className="w-4 h-4 text-[#CCFF00]" />
                     <div>
                       <p className="text-sm font-medium text-white">
-                        {language === 'es' ? 'Dividir pagos entre clientes' : 'Split payments between clients'}
+                        {t('splitPaymentsBetweenClients')}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {language === 'es' ? 'Asignar porcentaje de contribución a cada cliente' : 'Assign contribution percentage to each client'}
+                        {t('assignContributionPercentage')}
                       </p>
                     </div>
                   </div>
@@ -340,12 +340,12 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigge
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-medium ${isShareValid ? 'text-green-400' : 'text-red-400'}`}>
-                          {language === 'es' ? 'Total' : 'Total'}: {totalSharePercent.toFixed(1)}%
+                          {t('totalLabel')}: {totalSharePercent.toFixed(1)}%
                         </span>
                         {!isShareValid && (
                           <div className="flex items-center gap-1 text-red-400">
                             <AlertCircle className="w-3 h-3" />
-                            <span className="text-xs">{language === 'es' ? 'Debe sumar 100%' : 'Must equal 100%'}</span>
+                            <span className="text-xs">{t('mustEqual100')}</span>
                           </div>
                         )}
                       </div>
@@ -355,7 +355,7 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigge
                         onClick={handleDistributeEqually}
                         className="text-[#00EAFF] hover:text-[#00EAFF]/80 hover:bg-[#00EAFF]/10 h-7 text-xs"
                       >
-                        {language === 'es' ? 'Distribuir equitativamente' : 'Distribute equally'}
+                        {t('distributeEqually')}
                       </Button>
                     </div>
                   </div>
