@@ -691,6 +691,19 @@ const translations: Translations = {
   mustEqual100: { en: 'Must equal 100%', es: 'Debe sumar 100%' },
   distributeEqually: { en: 'Distribute equally', es: 'Distribuir equitativamente' },
   totalLabel: { en: 'Total', es: 'Total' },
+  
+  // Cashflow Summary Card translations
+  summaryTitle: { en: 'Investment Summary', es: 'Resumen de Inversión' },
+  summarySubtitle: { en: 'Complete overview for client sharing', es: 'Resumen completo para compartir con el cliente' },
+  copyToClipboard: { en: 'Copy', es: 'Copiar' },
+  copiedToClipboard: { en: 'Copied!', es: '¡Copiado!' },
+  copied: { en: 'Copied', es: 'Copiado' },
+  editSummary: { en: 'Edit', es: 'Editar' },
+  doneEditing: { en: 'Done', es: 'Listo' },
+  resetSummary: { en: 'Reset', es: 'Restablecer' },
+  edited: { en: 'Edited', es: 'Editado' },
+  clickToCollapse: { en: 'Click to collapse', es: 'Clic para colapsar' },
+  clickToExpand: { en: 'Click to expand', es: 'Clic para expandir' },
 };
 
 interface LanguageContextType {

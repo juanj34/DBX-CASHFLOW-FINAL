@@ -26,6 +26,7 @@ import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
+import { CashflowSummaryCard } from "@/components/roi/CashflowSummaryCard";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { VersionHistoryModal } from "@/components/roi/VersionHistoryModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
@@ -519,6 +520,18 @@ const OICalculatorContent = () => {
         ) : (
           /* Configured State - Show full content */
           <>
+            {/* Investment Summary - Collapsible text summary for clients */}
+            <CashflowSummaryCard
+              inputs={inputs}
+              clientInfo={clientInfo}
+              calculations={calculations}
+              mortgageAnalysis={mortgageAnalysis}
+              mortgageInputs={mortgageInputs}
+              exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+            />
+
             {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
               <div className="lg:col-span-2 space-y-4">
