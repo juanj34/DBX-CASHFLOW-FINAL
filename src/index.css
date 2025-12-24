@@ -110,9 +110,10 @@ All colors MUST be HSL.
     @apply border-border;
   }
   
-  body {
+  html, body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
   }
 }
 
