@@ -520,18 +520,6 @@ const OICalculatorContent = () => {
         ) : (
           /* Configured State - Show full content */
           <>
-            {/* Investment Summary - Collapsible text summary for clients */}
-            <CashflowSummaryCard
-              inputs={inputs}
-              clientInfo={clientInfo}
-              calculations={calculations}
-              mortgageAnalysis={mortgageAnalysis}
-              mortgageInputs={mortgageInputs}
-              exitScenarios={exitScenarios}
-              currency={currency}
-              rate={rate}
-            />
-
             {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
               <div className="lg:col-span-2 space-y-4">
@@ -588,24 +576,14 @@ const OICalculatorContent = () => {
                 defaultOpen={false}
               >
                 {(() => {
-                  // Calculate monthly rent figures for mortgage comparison
-                  // Use first FULL rental year (after handover), not prorated handover year
                   const firstFullRentalYear = calculations.yearlyProjections.find(p => 
                     !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
                   );
-                  
-                  // Fallback to calculated initial rent if no full year found
                   const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
                   const monthlyLongTermRent = fullAnnualRent / 12;
-                  
-                  // Service charges from first full year
                   const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
-                  
-                  // Airbnb from first full year
                   const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
                   const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
-                  
-                  // Calculate Year 5 data for comparison
                   const handoverYearIndex = calculations.yearlyProjections.findIndex(p => p.isHandover);
                   const year5Index = handoverYearIndex + 5;
                   const year5Projection = calculations.yearlyProjections.find((p, idx) => 
@@ -634,6 +612,19 @@ const OICalculatorContent = () => {
                 })()}
               </CollapsibleSection>
             )}
+
+            {/* Investment Summary - Last, collapsed by default */}
+            <CashflowSummaryCard
+              inputs={inputs}
+              clientInfo={clientInfo}
+              calculations={calculations}
+              mortgageAnalysis={mortgageAnalysis}
+              mortgageInputs={mortgageInputs}
+              exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+              defaultOpen={false}
+            />
           </>
         )}
 

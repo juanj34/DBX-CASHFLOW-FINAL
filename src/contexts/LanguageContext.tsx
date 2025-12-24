@@ -698,12 +698,37 @@ const translations: Translations = {
   copyToClipboard: { en: 'Copy', es: 'Copiar' },
   copiedToClipboard: { en: 'Copied!', es: '¡Copiado!' },
   copied: { en: 'Copied', es: 'Copiado' },
+  copy: { en: 'Copy', es: 'Copiar' },
   editSummary: { en: 'Edit', es: 'Editar' },
   doneEditing: { en: 'Done', es: 'Listo' },
   resetSummary: { en: 'Reset', es: 'Restablecer' },
   edited: { en: 'Edited', es: 'Editado' },
   clickToCollapse: { en: 'Click to collapse', es: 'Clic para colapsar' },
   clickToExpand: { en: 'Click to expand', es: 'Clic para expandir' },
+  
+  // Summary Section Titles
+  propertyOverviewSection: { en: 'Property Overview', es: 'Resumen de la Propiedad' },
+  paymentStructureSection: { en: 'Payment Structure', es: 'Estructura de Pago' },
+  timelineSection: { en: 'Timeline', es: 'Cronograma' },
+  todaysCommitmentSection: { en: "Today's Commitment", es: 'Compromiso de Hoy' },
+  duringConstructionSection: { en: 'During Construction', es: 'Durante la Construcción' },
+  atHandoverSection: { en: 'At Handover', es: 'En la Entrega' },
+  rentalPotentialSection: { en: 'Rental Potential', es: 'Potencial de Renta' },
+  exitOptionsSection: { en: 'Exit Options', es: 'Opciones de Salida' },
+  mortgageSection: { en: 'Mortgage Analysis', es: 'Análisis de Hipoteca' },
+  
+  // Summary Toggle Labels
+  sectionsToInclude: { en: 'Sections to include:', es: 'Secciones a incluir:' },
+  includeRentalAnalysis: { en: 'Include Rental Analysis', es: 'Incluir Análisis de Renta' },
+  includeExitScenarios: { en: 'Include Exit Scenarios', es: 'Incluir Escenarios de Salida' },
+  
+  // Summary Row Labels
+  projectLabel: { en: 'Project', es: 'Proyecto' },
+  preHandover: { en: 'Pre-Handover', es: 'Pre-Entrega' },
+  effectiveYield: { en: 'Effective Yield', es: 'Rendimiento Efectivo' },
+  noAdditionalPaymentsMsg: { en: 'No additional payments during construction', es: 'Sin pagos adicionales durante la construcción' },
+  surplus: { en: 'Surplus', es: 'Excedente' },
+  gap: { en: 'Gap', es: 'Diferencia' },
 };
 
 interface LanguageContextType {

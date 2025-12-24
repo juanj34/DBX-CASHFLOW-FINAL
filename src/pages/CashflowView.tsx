@@ -15,6 +15,7 @@ import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo'
 import { CumulativeIncomeChart } from '@/components/roi/CumulativeIncomeChart';
 import { WealthSummaryCard } from '@/components/roi/WealthSummaryCard';
 import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
+import { CashflowSummaryCard } from '@/components/roi/CashflowSummaryCard';
 import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
 import { CashflowErrorBoundary } from '@/components/roi/ErrorBoundary';
 import { ClientOnboardingModal, useClientOnboarding } from '@/components/roi/ClientOnboardingModal';
@@ -337,6 +338,20 @@ const CashflowViewContent = () => {
             </div>
           </CollapsibleSection>
         )}
+
+        {/* Investment Summary - Read-only for client view */}
+        <CashflowSummaryCard
+          inputs={inputs}
+          clientInfo={clientInfo}
+          calculations={calculations}
+          exitScenarios={exitScenarios}
+          currency={currency}
+          rate={rate}
+          showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? true}
+          showRentalPotential={(inputs as any)?._summaryToggles?.showRental ?? true}
+          readOnly={true}
+          defaultOpen={false}
+        />
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">
           <p className="text-xs text-gray-500">{t('disclaimerText')}</p>
