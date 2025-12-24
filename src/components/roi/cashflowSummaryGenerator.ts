@@ -15,6 +15,68 @@ interface SummaryData {
   currency: Currency;
   rate: number;
   language: Language;
+  includeExitScenarios?: boolean;
+  includeRentalPotential?: boolean;
+}
+
+// Structured data for visual rendering
+export interface StructuredSummaryData {
+  property: {
+    projectName: string;
+    developer: string;
+    unit: string;
+    unitType: string;
+    sizeSqft: number;
+    price: number;
+    pricePerSqft: number;
+  };
+  paymentStructure: {
+    preHandoverPercent: number;
+    handoverPercent: number;
+    preHandoverAmount: number;
+    handoverAmount: number;
+  };
+  timeline: {
+    bookingDate: string;
+    handoverDate: string;
+    constructionMonths: number;
+  };
+  todaysCommitment: {
+    downpayment: number;
+    downpaymentPercent: number;
+    dldFee: number;
+    oqoodFee: number;
+    total: number;
+  };
+  construction: {
+    paymentsCount: number;
+    totalAmount: number;
+  };
+  handover: {
+    percent: number;
+    amount: number;
+  };
+  rental?: {
+    yieldPercent: number;
+    grossAnnual: number;
+    netAnnual: number;
+    yearsToPayOff: number;
+    effectiveYield: number;
+  };
+  exitScenarios?: Array<{
+    month: number;
+    value: number;
+    profit: number;
+    roe: number;
+  }>;
+  mortgage?: {
+    financingPercent: number;
+    loanAmount: number;
+    monthlyPayment: number;
+    monthlyRent: number;
+    gap: number;
+    isPositive: boolean;
+  };
 }
 
 interface GeneratedSummary {
@@ -26,10 +88,11 @@ interface GeneratedSummary {
     todaysCommitment: string;
     duringConstruction: string;
     atHandover: string;
-    rentalPotential: string;
+    rentalPotential?: string;
     exitScenarios?: string;
     mortgageImpact?: string;
   };
+  structuredData: StructuredSummaryData;
 }
 
 const translations = {
@@ -115,23 +178,115 @@ const getQuarterName = (quarter: number): string => {
 };
 
 export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => {
-  const { inputs, clientInfo, calculations, mortgageAnalysis, mortgageInputs, exitScenarios, currency, rate, language } = data;
+  const { 
+    inputs, 
+    clientInfo, 
+    calculations, 
+    mortgageAnalysis, 
+    mortgageInputs, 
+    exitScenarios, 
+    currency, 
+    rate, 
+    language,
+    includeExitScenarios = true,
+    includeRentalPotential = true,
+  } = data;
   const lang = language;
   
   const fmt = (amount: number) => formatCurrency(amount, currency, rate);
   const isMortgageEnabled = mortgageInputs?.enabled ?? false;
+  
   // Calculate key values
   const downpaymentAmount = inputs.basePrice * inputs.downpaymentPercent / 100;
   const dldFee = inputs.basePrice * 0.04;
   const handoverPercent = 100 - inputs.preHandoverPercent;
   const handoverAmount = inputs.basePrice * handoverPercent / 100;
+  const preHandoverAmount = inputs.basePrice * inputs.preHandoverPercent / 100;
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, p) => sum + (inputs.basePrice * p.paymentPercent / 100), 0);
   const totalToday = downpaymentAmount + dldFee + inputs.oqoodFee;
   
   const bookingDateStr = `${getMonthName(inputs.bookingMonth, lang)} ${inputs.bookingYear}`;
   const handoverDateStr = `${getQuarterName(inputs.handoverQuarter)} ${inputs.handoverYear}`;
   
-  // Sections
+  // Build structured data
+  const structuredData: StructuredSummaryData = {
+    property: {
+      projectName: clientInfo.projectName,
+      developer: clientInfo.developer,
+      unit: clientInfo.unit,
+      unitType: clientInfo.unitType || '',
+      sizeSqft: clientInfo.unitSizeSqf,
+      price: inputs.basePrice,
+      pricePerSqft: clientInfo.unitSizeSqf > 0 ? inputs.basePrice / clientInfo.unitSizeSqf : 0,
+    },
+    paymentStructure: {
+      preHandoverPercent: inputs.preHandoverPercent,
+      handoverPercent,
+      preHandoverAmount,
+      handoverAmount,
+    },
+    timeline: {
+      bookingDate: bookingDateStr,
+      handoverDate: handoverDateStr,
+      constructionMonths: calculations.totalMonths,
+    },
+    todaysCommitment: {
+      downpayment: downpaymentAmount,
+      downpaymentPercent: inputs.downpaymentPercent,
+      dldFee,
+      oqoodFee: inputs.oqoodFee,
+      total: totalToday,
+    },
+    construction: {
+      paymentsCount: inputs.additionalPayments.length,
+      totalAmount: additionalPaymentsTotal,
+    },
+    handover: {
+      percent: handoverPercent,
+      amount: handoverAmount,
+    },
+  };
+
+  // Add rental data if included
+  if (includeRentalPotential) {
+    structuredData.rental = {
+      yieldPercent: inputs.rentalYieldPercent,
+      grossAnnual: calculations.holdAnalysis.annualRent,
+      netAnnual: calculations.holdAnalysis.netAnnualRent,
+      yearsToPayOff: calculations.holdAnalysis.yearsToPayOff,
+      effectiveYield: calculations.holdAnalysis.rentalYieldOnInvestment,
+    };
+  }
+
+  // Add exit scenarios if included
+  if (includeExitScenarios && exitScenarios && exitScenarios.length > 0) {
+    structuredData.exitScenarios = exitScenarios.slice(0, 3).map(month => {
+      const scenario = calculations.scenarios.find(s => s.exitMonths === month);
+      return {
+        month,
+        value: scenario?.exitPrice || 0,
+        profit: scenario?.profit || 0,
+        roe: scenario?.trueROE || 0,
+      };
+    }).filter(s => s.value > 0);
+  }
+
+  // Add mortgage data if enabled
+  if (isMortgageEnabled && mortgageAnalysis && mortgageInputs) {
+    const monthlyRent = calculations.holdAnalysis.netAnnualRent / 12;
+    const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
+    
+    structuredData.mortgage = {
+      financingPercent: mortgageInputs.financingPercent,
+      loanAmount: mortgageAnalysis.loanAmount,
+      monthlyPayment: mortgageAnalysis.monthlyPayment,
+      monthlyRent,
+      gap: Math.abs(rentVsPayment),
+      isPositive: rentVsPayment >= 0,
+    };
+  }
+
+  // Sections for text output
   const propertyOverview = `${t('propertyOverviewTitle', lang)}
 ${clientInfo.projectName} ${t('propertyBy', lang)} ${clientInfo.developer}
 ${t('unitDetails', lang)}: ${clientInfo.unit} (${clientInfo.unitType || ''}) - ${clientInfo.unitSizeSqf} sqft
@@ -164,16 +319,20 @@ ${t('noAdditionalPayments', lang)}`;
   const atHandover = `${t('atHandoverTitle', lang)}
 ${t('finalPaymentIntro', lang)} ${handoverPercent}%, ${t('whichEquals', lang)} ${fmt(handoverAmount)}`;
 
-  const rentalPotential = `${t('rentalPotentialTitle', lang)}
+  // Optional: Rental Potential (conditionally included)
+  let rentalPotential: string | undefined;
+  if (includeRentalPotential) {
+    rentalPotential = `${t('rentalPotentialTitle', lang)}
 ${t('afterHandoverRent', lang)} ${inputs.rentalYieldPercent}%:
 • ${t('estimatedAnnualRent', lang)}: ${fmt(calculations.holdAnalysis.annualRent)}
 • ${t('netRentAfterCharges', lang)}: ${fmt(calculations.holdAnalysis.netAnnualRent)}
 • ${t('yearsToPayOffProperty', lang)}: ${calculations.holdAnalysis.yearsToPayOff.toFixed(1)}
 • ${t('yieldOnTotalInvestment', lang)}: ${calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(1)}%`;
+  }
 
-  // Optional: Exit Scenarios
+  // Optional: Exit Scenarios (conditionally included)
   let exitScenariosSection: string | undefined;
-  if (exitScenarios && exitScenarios.length > 0) {
+  if (includeExitScenarios && exitScenarios && exitScenarios.length > 0) {
     const scenarioLines = exitScenarios.slice(0, 3).map(month => {
       const scenario = calculations.scenarios.find(s => s.exitMonths === month);
       if (!scenario) return '';
@@ -233,5 +392,6 @@ ${t('withMortgage', lang)} ${mortgageInputs.financingPercent}% ${t('ofPropertyVa
   return {
     fullText,
     sections,
+    structuredData,
   };
 };
