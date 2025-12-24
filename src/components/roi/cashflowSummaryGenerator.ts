@@ -17,6 +17,7 @@ interface SummaryData {
   language: Language;
   includeExitScenarios?: boolean;
   includeRentalPotential?: boolean;
+  includeMortgage?: boolean;
 }
 
 // Structured data for visual rendering
@@ -35,6 +36,12 @@ export interface StructuredSummaryData {
     handoverPercent: number;
     preHandoverAmount: number;
     handoverAmount: number;
+    installments: Array<{
+      label: string;
+      percent: number;
+      amount: number;
+      timing: string;
+    }>;
   };
   timeline: {
     bookingDate: string;
@@ -51,6 +58,11 @@ export interface StructuredSummaryData {
   construction: {
     paymentsCount: number;
     totalAmount: number;
+    payments: Array<{
+      percent: number;
+      amount: number;
+      timing: string;
+    }>;
   };
   handover: {
     percent: number;
@@ -95,76 +107,6 @@ interface GeneratedSummary {
   structuredData: StructuredSummaryData;
 }
 
-const translations = {
-  // Property Overview
-  propertyOverviewTitle: { en: '📍 Property Overview', es: '📍 Resumen de la Propiedad' },
-  propertyBy: { en: 'by', es: 'por' },
-  unitDetails: { en: 'Unit', es: 'Unidad' },
-  purchasePriceLabel: { en: 'Purchase Price', es: 'Precio de Compra' },
-  pricePerSqft: { en: 'per sqft', es: 'por sqft' },
-  
-  // Payment Structure
-  paymentStructureTitle: { en: '💳 Payment Structure', es: '💳 Estructura de Pago' },
-  paymentPlanIntro: { en: 'This property follows a', es: 'Esta propiedad sigue un plan de pago' },
-  paymentPlanSplit: { en: 'payment plan', es: '' },
-  preHandoverExplain: { en: 'of the price is paid before handover', es: 'del precio se paga antes de la entrega' },
-  handoverExplain: { en: 'is paid at handover', es: 'se paga en la entrega' },
-  
-  // Timeline
-  timelineTitle: { en: '📅 Timeline', es: '📅 Cronograma' },
-  bookingDateLabel: { en: 'Booking Date', es: 'Fecha de Reserva' },
-  handoverDateLabel: { en: 'Expected Handover', es: 'Entrega Esperada' },
-  constructionPeriodLabel: { en: 'Construction Period', es: 'Período de Construcción' },
-  monthsLabel: { en: 'months', es: 'meses' },
-  
-  // Today's Commitment
-  todaysCommitmentTitle: { en: '💰 Today\'s Commitment', es: '💰 Compromiso de Hoy' },
-  toSecureProperty: { en: 'To secure this property today, you need', es: 'Para asegurar esta propiedad hoy, necesita' },
-  downpaymentIncluding: { en: 'Downpayment (including EOI)', es: 'Enganche (incluyendo EOI)' },
-  dldFeeLabel: { en: 'DLD Fee (4%)', es: 'Tarifa DLD (4%)' },
-  oqoodFeeLabel: { en: 'Oqood Fee', es: 'Tarifa Oqood' },
-  totalTodayLabel: { en: 'Total Today', es: 'Total Hoy' },
-  
-  // During Construction
-  duringConstructionTitle: { en: '🏗️ During Construction', es: '🏗️ Durante la Construcción' },
-  constructionPaymentsIntro: { en: 'During the construction period, you will make', es: 'Durante el período de construcción, realizará' },
-  additionalPaymentsLabel: { en: 'additional payments totaling', es: 'pagos adicionales totalizando' },
-  noAdditionalPayments: { en: 'No additional payments during construction', es: 'Sin pagos adicionales durante la construcción' },
-  
-  // At Handover
-  atHandoverTitle: { en: '🔑 At Handover', es: '🔑 En la Entrega' },
-  finalPaymentIntro: { en: 'At handover, you will pay the remaining', es: 'En la entrega, pagará el restante' },
-  whichEquals: { en: 'which equals', es: 'lo cual equivale a' },
-  
-  // Rental Potential
-  rentalPotentialTitle: { en: '📈 Rental Potential', es: '📈 Potencial de Renta' },
-  afterHandoverRent: { en: 'After handover, based on the projected rental yield of', es: 'Después de la entrega, basado en el rendimiento de renta proyectado de' },
-  estimatedAnnualRent: { en: 'Estimated gross annual rent', es: 'Renta anual bruta estimada' },
-  netRentAfterCharges: { en: 'Net rent after service charges', es: 'Renta neta después de cargos de servicio' },
-  yearsToPayOffProperty: { en: 'Years to pay off property with rent', es: 'Años para pagar la propiedad con renta' },
-  yieldOnTotalInvestment: { en: 'Effective yield on total investment', es: 'Rendimiento efectivo sobre inversión total' },
-  
-  // Exit Scenarios
-  exitScenariosTitle: { en: '🚪 Exit Options', es: '🚪 Opciones de Salida' },
-  exitScenariosIntro: { en: 'If you decide to sell during construction, here are potential exit points', es: 'Si decide vender durante la construcción, estas son las opciones de salida' },
-  atMonth: { en: 'At month', es: 'En el mes' },
-  estimatedValue: { en: 'Estimated value', es: 'Valor estimado' },
-  potentialProfit: { en: 'Potential profit', es: 'Ganancia potencial' },
-  returnOnEquity: { en: 'Return on equity', es: 'Retorno sobre capital' },
-  
-  // Mortgage Impact
-  mortgageImpactTitle: { en: '🏦 Mortgage Analysis', es: '🏦 Análisis de Hipoteca' },
-  withMortgage: { en: 'With a mortgage covering', es: 'Con una hipoteca que cubre' },
-  ofPropertyValue: { en: 'of the property value', es: 'del valor de la propiedad' },
-  monthlyPayment: { en: 'Monthly mortgage payment', es: 'Pago mensual de hipoteca' },
-  monthlyRent: { en: 'Estimated monthly rent', es: 'Renta mensual estimada' },
-  gapOrSurplus: { en: 'Monthly gap/surplus', es: 'Diferencia mensual' },
-};
-
-const t = (key: keyof typeof translations, lang: Language): string => {
-  return translations[key]?.[lang] || key;
-};
-
 const getMonthName = (month: number, lang: Language): string => {
   const monthNames = {
     en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -190,11 +132,13 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
     language,
     includeExitScenarios = true,
     includeRentalPotential = true,
+    includeMortgage = true,
   } = data;
   const lang = language;
   
   const fmt = (amount: number) => formatCurrency(amount, currency, rate);
   const isMortgageEnabled = mortgageInputs?.enabled ?? false;
+  const shouldShowMortgage = isMortgageEnabled && includeMortgage;
   
   // Calculate key values
   const downpaymentAmount = inputs.basePrice * inputs.downpaymentPercent / 100;
@@ -207,6 +151,51 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
   
   const bookingDateStr = `${getMonthName(inputs.bookingMonth, lang)} ${inputs.bookingYear}`;
   const handoverDateStr = `${getQuarterName(inputs.handoverQuarter)} ${inputs.handoverYear}`;
+  
+  // Build installments breakdown
+  const installments: Array<{ label: string; percent: number; amount: number; timing: string }> = [
+    {
+      label: lang === 'en' ? 'Downpayment at booking' : 'Enganche en reserva',
+      percent: inputs.downpaymentPercent,
+      amount: downpaymentAmount,
+      timing: bookingDateStr
+    }
+  ];
+  
+  // Add additional payments
+  inputs.additionalPayments.forEach((payment, idx) => {
+    const paymentAmount = inputs.basePrice * payment.paymentPercent / 100;
+    const timing = payment.type === 'construction'
+      ? `${payment.triggerValue}% ${lang === 'en' ? 'construction' : 'construcción'}`
+      : `${lang === 'en' ? 'Month' : 'Mes'} ${payment.triggerValue}`;
+    installments.push({
+      label: `${lang === 'en' ? 'Installment' : 'Cuota'} ${idx + 1}`,
+      percent: payment.paymentPercent,
+      amount: paymentAmount,
+      timing
+    });
+  });
+  
+  // Add handover
+  installments.push({
+    label: lang === 'en' ? 'Final payment at handover' : 'Pago final en entrega',
+    percent: handoverPercent,
+    amount: handoverAmount,
+    timing: handoverDateStr
+  });
+
+  // Build construction payments breakdown
+  const constructionPayments = inputs.additionalPayments.map((payment, idx) => {
+    const paymentAmount = inputs.basePrice * payment.paymentPercent / 100;
+    const timing = payment.type === 'construction'
+      ? `${payment.triggerValue}% ${lang === 'en' ? 'construction' : 'construcción'}`
+      : `${lang === 'en' ? 'Month' : 'Mes'} ${payment.triggerValue}`;
+    return {
+      percent: payment.paymentPercent,
+      amount: paymentAmount,
+      timing
+    };
+  });
   
   // Build structured data
   const structuredData: StructuredSummaryData = {
@@ -224,6 +213,7 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
       handoverPercent,
       preHandoverAmount,
       handoverAmount,
+      installments,
     },
     timeline: {
       bookingDate: bookingDateStr,
@@ -240,6 +230,7 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
     construction: {
       paymentsCount: inputs.additionalPayments.length,
       totalAmount: additionalPaymentsTotal,
+      payments: constructionPayments,
     },
     handover: {
       percent: handoverPercent,
@@ -271,8 +262,8 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
     }).filter(s => s.value > 0);
   }
 
-  // Add mortgage data if enabled
-  if (isMortgageEnabled && mortgageAnalysis && mortgageInputs) {
+  // Add mortgage data if enabled AND included
+  if (shouldShowMortgage && mortgageAnalysis && mortgageInputs) {
     const monthlyRent = calculations.holdAnalysis.netAnnualRent / 12;
     const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
     
@@ -286,48 +277,90 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
     };
   }
 
-  // Sections for text output
-  const propertyOverview = `${t('propertyOverviewTitle', lang)}
-${clientInfo.projectName} ${t('propertyBy', lang)} ${clientInfo.developer}
-${t('unitDetails', lang)}: ${clientInfo.unit} (${clientInfo.unitType || ''}) - ${clientInfo.unitSizeSqf} sqft
-${t('purchasePriceLabel', lang)}: ${fmt(inputs.basePrice)}${clientInfo.unitSizeSqf > 0 ? ` (${fmt(inputs.basePrice / clientInfo.unitSizeSqf)} ${t('pricePerSqft', lang)})` : ''}`;
+  // ========================================
+  // CONVERSATIONAL TEXT SECTIONS
+  // ========================================
+  
+  const propertyOverview = lang === 'en' 
+    ? `📍 PROPERTY OVERVIEW
+We're looking at ${clientInfo.projectName} by ${clientInfo.developer} – a ${clientInfo.unitType || 'unit'} of ${clientInfo.unitSizeSqf.toLocaleString()} sqft priced at ${fmt(inputs.basePrice)}${clientInfo.unitSizeSqf > 0 ? ` (${fmt(inputs.basePrice / clientInfo.unitSizeSqf)} per sqft)` : ''}.`
+    : `📍 RESUMEN DE LA PROPIEDAD
+Estamos viendo ${clientInfo.projectName} de ${clientInfo.developer} – un ${clientInfo.unitType || 'unidad'} de ${clientInfo.unitSizeSqf.toLocaleString()} sqft con precio de ${fmt(inputs.basePrice)}${clientInfo.unitSizeSqf > 0 ? ` (${fmt(inputs.basePrice / clientInfo.unitSizeSqf)} por sqft)` : ''}.`;
 
-  const paymentStructure = `${t('paymentStructureTitle', lang)}
-${t('paymentPlanIntro', lang)} ${inputs.preHandoverPercent}/${handoverPercent} ${t('paymentPlanSplit', lang)}
-• ${inputs.preHandoverPercent}% ${t('preHandoverExplain', lang)}
-• ${handoverPercent}% ${t('handoverExplain', lang)}`;
+  // Build payment plan with percentages
+  const paymentPlanDetails = installments.map(inst => 
+    `• ${inst.percent}% – ${inst.label}: ${fmt(inst.amount)} (${inst.timing})`
+  ).join('\n');
+  
+  const paymentStructure = lang === 'en'
+    ? `💳 PAYMENT PLAN
+This property follows a ${inputs.preHandoverPercent}/${handoverPercent} payment structure. Here's how it breaks down:
+${paymentPlanDetails}`
+    : `💳 PLAN DE PAGO
+Esta propiedad sigue una estructura de pago ${inputs.preHandoverPercent}/${handoverPercent}. Así se desglosa:
+${paymentPlanDetails}`;
 
-  const timeline = `${t('timelineTitle', lang)}
-• ${t('bookingDateLabel', lang)}: ${bookingDateStr}
-• ${t('handoverDateLabel', lang)}: ${handoverDateStr}
-• ${t('constructionPeriodLabel', lang)}: ${calculations.totalMonths} ${t('monthsLabel', lang)}`;
+  const timeline = lang === 'en'
+    ? `📅 TIMELINE
+From booking in ${bookingDateStr} to handover in ${handoverDateStr}, that's approximately ${calculations.totalMonths} months of construction.`
+    : `📅 CRONOGRAMA
+Desde la reserva en ${bookingDateStr} hasta la entrega en ${handoverDateStr}, son aproximadamente ${calculations.totalMonths} meses de construcción.`;
 
-  const todaysCommitment = `${t('todaysCommitmentTitle', lang)}
-${t('toSecureProperty', lang)}:
-• ${t('downpaymentIncluding', lang)}: ${fmt(downpaymentAmount)} (${inputs.downpaymentPercent}%)
-• ${t('dldFeeLabel', lang)}: ${fmt(dldFee)}
-• ${t('oqoodFeeLabel', lang)}: ${fmt(inputs.oqoodFee)}
-━━━━━━━━━━━━━━━━━━━━
-${t('totalTodayLabel', lang)}: ${fmt(totalToday)}`;
+  const todaysCommitment = lang === 'en'
+    ? `💰 TODAY'S COMMITMENT
+To secure this property today, you'll need ${fmt(totalToday)} which includes:
+• Downpayment (${inputs.downpaymentPercent}%): ${fmt(downpaymentAmount)}
+• DLD Fee (4%): ${fmt(dldFee)}
+• Oqood Fee: ${fmt(inputs.oqoodFee)}`
+    : `💰 COMPROMISO DE HOY
+Para asegurar esta propiedad hoy, necesitará ${fmt(totalToday)} que incluye:
+• Enganche (${inputs.downpaymentPercent}%): ${fmt(downpaymentAmount)}
+• Tarifa DLD (4%): ${fmt(dldFee)}
+• Tarifa Oqood: ${fmt(inputs.oqoodFee)}`;
 
-  const duringConstruction = inputs.additionalPayments.length > 0
-    ? `${t('duringConstructionTitle', lang)}
-${t('constructionPaymentsIntro', lang)} ${inputs.additionalPayments.length} ${t('additionalPaymentsLabel', lang)} ${fmt(additionalPaymentsTotal)}`
-    : `${t('duringConstructionTitle', lang)}
-${t('noAdditionalPayments', lang)}`;
+  let duringConstruction: string;
+  if (inputs.additionalPayments.length > 0) {
+    const paymentDetails = constructionPayments.map((p, idx) => 
+      `• ${p.percent}% – ${fmt(p.amount)} at ${p.timing}`
+    ).join('\n');
+    duringConstruction = lang === 'en'
+      ? `🏗️ DURING CONSTRUCTION
+During the ${calculations.totalMonths}-month construction period, you'll make ${inputs.additionalPayments.length} additional payment(s) totaling ${fmt(additionalPaymentsTotal)}:
+${paymentDetails}`
+      : `🏗️ DURANTE LA CONSTRUCCIÓN
+Durante el período de construcción de ${calculations.totalMonths} meses, realizará ${inputs.additionalPayments.length} pago(s) adicional(es) totalizando ${fmt(additionalPaymentsTotal)}:
+${paymentDetails}`;
+  } else {
+    duringConstruction = lang === 'en'
+      ? `🏗️ DURING CONSTRUCTION
+Good news – there are no additional payments required during the construction period.`
+      : `🏗️ DURANTE LA CONSTRUCCIÓN
+Buenas noticias – no se requieren pagos adicionales durante el período de construcción.`;
+  }
 
-  const atHandover = `${t('atHandoverTitle', lang)}
-${t('finalPaymentIntro', lang)} ${handoverPercent}%, ${t('whichEquals', lang)} ${fmt(handoverAmount)}`;
+  const atHandover = lang === 'en'
+    ? `🔑 AT HANDOVER
+At handover, you'll pay the remaining ${handoverPercent}% which equals ${fmt(handoverAmount)}.`
+    : `🔑 EN LA ENTREGA
+En la entrega, pagará el ${handoverPercent}% restante que equivale a ${fmt(handoverAmount)}.`;
 
   // Optional: Rental Potential (conditionally included)
   let rentalPotential: string | undefined;
   if (includeRentalPotential) {
-    rentalPotential = `${t('rentalPotentialTitle', lang)}
-${t('afterHandoverRent', lang)} ${inputs.rentalYieldPercent}%:
-• ${t('estimatedAnnualRent', lang)}: ${fmt(calculations.holdAnalysis.annualRent)}
-• ${t('netRentAfterCharges', lang)}: ${fmt(calculations.holdAnalysis.netAnnualRent)}
-• ${t('yearsToPayOffProperty', lang)}: ${calculations.holdAnalysis.yearsToPayOff.toFixed(1)}
-• ${t('yieldOnTotalInvestment', lang)}: ${calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(1)}%`;
+    const monthlyNet = calculations.holdAnalysis.netAnnualRent / 12;
+    rentalPotential = lang === 'en'
+      ? `📈 RENTAL POTENTIAL
+After handover, based on an initial rental yield of ${inputs.rentalYieldPercent}%:
+• Gross annual rent: ${fmt(calculations.holdAnalysis.annualRent)}
+• Net after service charges: ${fmt(calculations.holdAnalysis.netAnnualRent)} (${fmt(monthlyNet)}/month)
+• This means the property pays for itself in approximately ${calculations.holdAnalysis.yearsToPayOff.toFixed(1)} years
+• Effective yield on total investment: ${calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(1)}%`
+      : `📈 POTENCIAL DE RENTA
+Después de la entrega, basado en un rendimiento de renta inicial del ${inputs.rentalYieldPercent}%:
+• Renta anual bruta: ${fmt(calculations.holdAnalysis.annualRent)}
+• Neto después de cargos de servicio: ${fmt(calculations.holdAnalysis.netAnnualRent)} (${fmt(monthlyNet)}/mes)
+• Esto significa que la propiedad se paga sola en aproximadamente ${calculations.holdAnalysis.yearsToPayOff.toFixed(1)} años
+• Rendimiento efectivo sobre inversión total: ${calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(1)}%`;
   }
 
   // Optional: Exit Scenarios (conditionally included)
@@ -336,30 +369,48 @@ ${t('afterHandoverRent', lang)} ${inputs.rentalYieldPercent}%:
     const scenarioLines = exitScenarios.slice(0, 3).map(month => {
       const scenario = calculations.scenarios.find(s => s.exitMonths === month);
       if (!scenario) return '';
-      return `• ${t('atMonth', lang)} ${month}: ${t('estimatedValue', lang)} ${fmt(scenario.exitPrice)} | ${t('potentialProfit', lang)} ${fmt(scenario.profit)} | ${t('returnOnEquity', lang)} ${scenario.trueROE.toFixed(1)}%`;
+      return lang === 'en'
+        ? `• At month ${month}: Property valued at ${fmt(scenario.exitPrice)}, profit of ${fmt(scenario.profit)} (ROE: ${scenario.trueROE.toFixed(1)}%)`
+        : `• En el mes ${month}: Propiedad valuada en ${fmt(scenario.exitPrice)}, ganancia de ${fmt(scenario.profit)} (ROE: ${scenario.trueROE.toFixed(1)}%)`;
     }).filter(Boolean).join('\n');
     
     if (scenarioLines) {
-      exitScenariosSection = `${t('exitScenariosTitle', lang)}
-${t('exitScenariosIntro', lang)}:
+      exitScenariosSection = lang === 'en'
+        ? `🚪 EXIT OPTIONS
+If you decide to sell during construction, here are the potential exit points:
+${scenarioLines}`
+        : `🚪 OPCIONES DE SALIDA
+Si decide vender durante la construcción, estas son las opciones de salida potenciales:
 ${scenarioLines}`;
     }
   }
 
   // Optional: Mortgage Impact
   let mortgageImpactSection: string | undefined;
-  if (isMortgageEnabled && mortgageAnalysis && mortgageInputs) {
+  if (shouldShowMortgage && mortgageAnalysis && mortgageInputs) {
     const monthlyRent = calculations.holdAnalysis.netAnnualRent / 12;
     const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
-    const gapLabel = rentVsPayment >= 0 
-      ? (lang === 'en' ? 'Surplus' : 'Excedente')
-      : (lang === 'en' ? 'Gap' : 'Diferencia');
+    const isPositive = rentVsPayment >= 0;
     
-    mortgageImpactSection = `${t('mortgageImpactTitle', lang)}
-${t('withMortgage', lang)} ${mortgageInputs.financingPercent}% ${t('ofPropertyValue', lang)}:
-• ${t('monthlyPayment', lang)}: ${fmt(mortgageAnalysis.monthlyPayment)}
-• ${t('monthlyRent', lang)}: ${fmt(monthlyRent)}
-• ${gapLabel}: ${fmt(Math.abs(rentVsPayment))}${rentVsPayment >= 0 ? ' ✅' : ' ⚠️'}`;
+    const outcome = isPositive
+      ? (lang === 'en' 
+          ? `Rent covers the mortgage with ${fmt(Math.abs(rentVsPayment))} monthly surplus ✅` 
+          : `La renta cubre la hipoteca con ${fmt(Math.abs(rentVsPayment))} de excedente mensual ✅`)
+      : (lang === 'en'
+          ? `Monthly gap of ${fmt(Math.abs(rentVsPayment))} to cover ⚠️`
+          : `Diferencia mensual de ${fmt(Math.abs(rentVsPayment))} por cubrir ⚠️`);
+    
+    mortgageImpactSection = lang === 'en'
+      ? `🏦 MORTGAGE ANALYSIS
+With ${mortgageInputs.financingPercent}% financing (loan amount: ${fmt(mortgageAnalysis.loanAmount)}):
+• Monthly mortgage payment: ${fmt(mortgageAnalysis.monthlyPayment)}
+• Expected monthly rent: ${fmt(monthlyRent)}
+• ${outcome}`
+      : `🏦 ANÁLISIS DE HIPOTECA
+Con ${mortgageInputs.financingPercent}% de financiamiento (monto del préstamo: ${fmt(mortgageAnalysis.loanAmount)}):
+• Pago mensual de hipoteca: ${fmt(mortgageAnalysis.monthlyPayment)}
+• Renta mensual esperada: ${fmt(monthlyRent)}
+• ${outcome}`;
   }
 
   // Combine all sections
