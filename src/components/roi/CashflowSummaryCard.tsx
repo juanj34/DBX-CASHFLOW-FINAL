@@ -19,6 +19,7 @@ import { toast } from "sonner";
 interface SummaryToggles {
   showExit: boolean;
   showRental: boolean;
+  showMortgage: boolean;
 }
 
 interface CashflowSummaryCardProps {
@@ -33,6 +34,7 @@ interface CashflowSummaryCardProps {
   className?: string;
   showExitScenarios?: boolean;
   showRentalPotential?: boolean;
+  showMortgageAnalysis?: boolean;
   onToggleChange?: (toggles: SummaryToggles) => void;
   readOnly?: boolean;
   defaultOpen?: boolean;
@@ -99,6 +101,7 @@ export const CashflowSummaryCard = ({
   className,
   showExitScenarios = true,
   showRentalPotential = true,
+  showMortgageAnalysis = true,
   onToggleChange,
   readOnly = false,
   defaultOpen = false,
@@ -111,8 +114,10 @@ export const CashflowSummaryCard = ({
   const [localToggles, setLocalToggles] = useState({
     showExit: showExitScenarios,
     showRental: showRentalPotential,
+    showMortgage: showMortgageAnalysis,
   });
 
+  const isMortgageEnabled = mortgageInputs?.enabled ?? false;
   const fmt = useCallback((amount: number) => formatCurrency(amount, currency, rate), [currency, rate]);
 
   // Generate the summary with current toggle values
@@ -129,13 +134,14 @@ export const CashflowSummaryCard = ({
       language: language as 'en' | 'es',
       includeExitScenarios: localToggles.showExit,
       includeRentalPotential: localToggles.showRental,
+      includeMortgage: localToggles.showMortgage,
     });
   }, [inputs, clientInfo, calculations, mortgageAnalysis, mortgageInputs, exitScenarios, currency, rate, language, localToggles]);
 
   const { structuredData } = generatedSummary;
   const displayText = editedText ?? generatedSummary.fullText;
 
-  const handleToggleChange = (key: 'showExit' | 'showRental', value: boolean) => {
+  const handleToggleChange = (key: 'showExit' | 'showRental' | 'showMortgage', value: boolean) => {
     const newToggles = { ...localToggles, [key]: value };
     setLocalToggles(newToggles);
     onToggleChange?.(newToggles);
@@ -234,6 +240,20 @@ export const CashflowSummaryCard = ({
                     {t('includeExitScenarios')}
                   </Label>
                 </div>
+                {/* Mortgage Toggle - Only show if mortgage is enabled */}
+                {isMortgageEnabled && (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="toggle-mortgage"
+                      checked={localToggles.showMortgage}
+                      onCheckedChange={(checked) => handleToggleChange('showMortgage', checked)}
+                      className="data-[state=checked]:bg-[#CCFF00]"
+                    />
+                    <Label htmlFor="toggle-mortgage" className="text-xs sm:text-sm text-gray-300 cursor-pointer">
+                      {t('includeMortgageAnalysis')}
+                    </Label>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -310,18 +330,29 @@ export const CashflowSummaryCard = ({
                 />
               </SummarySection>
 
-              {/* Payment Structure */}
+              {/* Payment Structure with Installments */}
               <SummarySection icon={CreditCard} iconColor="text-cyan-400" title={t('paymentStructureSection')}>
-                <SummaryRow 
-                  label={t('preHandover')} 
-                  value={`${structuredData.paymentStructure.preHandoverPercent}%`} 
-                  subtext={`(${fmt(structuredData.paymentStructure.preHandoverAmount)})`}
-                />
-                <SummaryRow 
-                  label={t('atHandover')} 
-                  value={`${structuredData.paymentStructure.handoverPercent}%`} 
-                  subtext={`(${fmt(structuredData.paymentStructure.handoverAmount)})`}
-                />
+                <div className="mb-2">
+                  <SummaryRow 
+                    label={t('paymentPlan')} 
+                    value={`${structuredData.paymentStructure.preHandoverPercent}/${structuredData.paymentStructure.handoverPercent}`} 
+                    highlight
+                  />
+                </div>
+                <div className="border-t border-[#2a3142]/50 pt-2 mt-2">
+                  <p className="text-xs text-gray-500 mb-2">{t('installmentBreakdown') || 'Breakdown by installment:'}</p>
+                  {structuredData.paymentStructure.installments.map((inst, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 py-1 border-b border-[#2a3142]/30 last:border-b-0">
+                      <span className="text-xs text-gray-400">
+                        {inst.percent}% – {inst.label}
+                      </span>
+                      <div className="text-right">
+                        <span className="text-sm font-mono text-white">{fmt(inst.amount)}</span>
+                        <span className="text-xs text-gray-500 ml-1">({inst.timing})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </SummarySection>
 
               {/* Timeline */}
@@ -350,7 +381,15 @@ export const CashflowSummaryCard = ({
                 {structuredData.construction.paymentsCount > 0 ? (
                   <>
                     <SummaryRow label={t('additionalPayments')} value={`${structuredData.construction.paymentsCount}`} />
-                    <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} highlight />
+                    {structuredData.construction.payments.map((p, idx) => (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 py-1">
+                        <span className="text-xs text-gray-500">{p.percent}% at {p.timing}</span>
+                        <span className="text-sm font-mono text-white">{fmt(p.amount)}</span>
+                      </div>
+                    ))}
+                    <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
+                      <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} highlight />
+                    </div>
                   </>
                 ) : (
                   <p className="text-xs sm:text-sm text-gray-500 italic">{t('noAdditionalPaymentsMsg')}</p>
@@ -406,7 +445,7 @@ export const CashflowSummaryCard = ({
               )}
 
               {/* Mortgage Analysis - Conditional */}
-              {structuredData.mortgage && (
+              {localToggles.showMortgage && structuredData.mortgage && (
                 <SummarySection icon={Landmark} iconColor="text-blue-400" title={t('mortgageSection')}>
                   <SummaryRow label={t('financing')} value={`${structuredData.mortgage.financingPercent}%`} />
                   <SummaryRow label={t('loanAmount')} value={fmt(structuredData.mortgage.loanAmount)} />

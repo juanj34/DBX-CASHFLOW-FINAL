@@ -721,6 +721,8 @@ const translations: Translations = {
   sectionsToInclude: { en: 'Sections to include:', es: 'Secciones a incluir:' },
   includeRentalAnalysis: { en: 'Include Rental Analysis', es: 'Incluir Análisis de Renta' },
   includeExitScenarios: { en: 'Include Exit Scenarios', es: 'Incluir Escenarios de Salida' },
+  includeMortgageAnalysis: { en: 'Include Mortgage Analysis', es: 'Incluir Análisis de Hipoteca' },
+  installmentBreakdown: { en: 'Breakdown by installment:', es: 'Desglose por cuota:' },
   
   // Summary Row Labels
   projectLabel: { en: 'Project', es: 'Proyecto' },
