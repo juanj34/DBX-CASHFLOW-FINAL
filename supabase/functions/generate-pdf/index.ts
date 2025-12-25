@@ -126,9 +126,9 @@ serve(async (req) => {
     .header h1 { font-size: 28px; font-weight: 700; color: #CCFF00 !important; letter-spacing: 2px; margin-bottom: 8px; }
     .header .subtitle { color: #94a3b8 !important; font-size: 14px; }
     .section { margin-bottom: 25px; background-color: #1e293b !important; border-radius: 8px; padding: 20px; page-break-inside: avoid; }
-    .section-title { font-size: 16px; font-weight: 600; color: #CCFF00 !important; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+    .section-title { font-size: 16px; font-weight: 600; color: #CCFF00 !important; margin-bottom: 15px; letter-spacing: 1px; }
     .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-    .info-label { color: #64748b !important; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-label { color: #64748b !important; font-size: 10px; letter-spacing: 0.5px; }
     .info-value { color: #f1f5f9 !important; font-size: 14px; font-weight: 500; }
     .exit-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
     .exit-card { background-color: #0f172a !important; border-radius: 8px; padding: 15px; border: 1px solid #334155; }
@@ -138,7 +138,7 @@ serve(async (req) => {
     .exit-metric-value { color: #f1f5f9 !important; font-size: 13px; font-weight: 500; }
     .roe-value { color: #CCFF00 !important; font-size: 18px; font-weight: 700; }
     table { width: 100%; border-collapse: collapse; }
-    th { background-color: #0f172a !important; color: #94a3b8 !important; font-size: 10px; text-transform: uppercase; padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background-color: #0f172a !important; color: #94a3b8 !important; font-size: 10px; padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
     td { padding: 10px; border-bottom: 1px solid #1e293b; color: #e2e8f0 !important; background-color: #1e293b !important; }
     tr:nth-child(even) td { background-color: #0f172a !important; }
     .highlight-row td { background-color: rgba(204, 255, 0, 0.15) !important; }
@@ -167,7 +167,7 @@ serve(async (req) => {
 </head>
 <body>
   <div class="header">
-    <h1>CASHFLOW GENERATOR</h1>
+    <h1>Cashflow Generator</h1>
     <div class="subtitle">Prepared by ${advisorName || 'Investment Advisor'} • ${currentDate}</div>
   </div>
 
