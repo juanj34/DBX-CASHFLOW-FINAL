@@ -8,6 +8,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { getCountryByCode } from "@/data/countries";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 
 interface PaymentBreakdownProps {
   inputs: OIInputs;
@@ -304,6 +305,9 @@ const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }
   const clients = clientInfo.clients || [];
   const clientShares = clientInfo.clientShares || [];
   
+  // State for controlled accordion
+  const [expandedClients, setExpandedClients] = useState<string[]>([]);
+  
   // Calculate totals
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const eoiFeeActual = Math.min(eoiFee, downpaymentAmount);
@@ -335,8 +339,46 @@ const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }
     return { name: client.name || t('client'), flag: country?.flag };
   };
 
+  const allExpanded = expandedClients.length === clients.length;
+  
+  const toggleAll = () => {
+    if (allExpanded) {
+      setExpandedClients([]);
+    } else {
+      setExpandedClients(clients.map(c => c.id));
+    }
+  };
+
   return (
-    <Accordion type="multiple" className="space-y-2">
+    <div className="space-y-2">
+      {/* Expand/Collapse All Button */}
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleAll}
+          className="text-xs text-theme-text-muted hover:text-theme-text h-7 px-2"
+        >
+          {allExpanded ? (
+            <>
+              <ChevronDown className="w-3 h-3 mr-1" />
+              {t('collapseAll') || 'Collapse All'}
+            </>
+          ) : (
+            <>
+              <ChevronRight className="w-3 h-3 mr-1" />
+              {t('expandAll') || 'Expand All'}
+            </>
+          )}
+        </Button>
+      </div>
+      
+      <Accordion 
+        type="multiple" 
+        value={expandedClients}
+        onValueChange={setExpandedClients}
+        className="space-y-2"
+      >
       {clients.map((client) => {
         const sharePercent = getClientShare(client.id);
         const clientDisplay = getClientDisplay(client);
@@ -468,6 +510,7 @@ const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }
           </AccordionItem>
         );
       })}
-    </Accordion>
+      </Accordion>
+    </div>
   );
 };
