@@ -520,15 +520,20 @@ const OICalculatorContent = () => {
         ) : (
           /* Configured State - Show full content */
           <>
-            {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-              <div className="lg:col-span-2 space-y-4">
-                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
-              </div>
-              <div className="lg:col-span-1 space-y-4">
-                <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-              </div>
+            {/* Investment Snapshot at top */}
+            <div className="mb-4 sm:mb-6">
+              <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
             </div>
+
+            {/* Payment Breakdown - Collapsible, default collapsed */}
+            <CollapsibleSection
+              title={t('paymentBreakdownTitle') || "Payment Breakdown"}
+              subtitle={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent} ${t('paymentStructure') || 'payment structure'}`}
+              icon={<CreditCard className="w-5 h-5 text-theme-accent" />}
+              defaultOpen={false}
+            >
+              <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
+            </CollapsibleSection>
 
             {/* Hold Strategy Analysis - Collapsible */}
             <CollapsibleSection

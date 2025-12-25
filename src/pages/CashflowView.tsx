@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { OIGrowthCurve } from '@/components/roi/OIGrowthCurve';
 import { OIYearlyProjectionTable } from '@/components/roi/OIYearlyProjectionTable';
 import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
-import { PaymentSplitBreakdown } from '@/components/roi/PaymentSplitBreakdown';
 import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
@@ -309,15 +308,8 @@ const CashflowViewContent = () => {
             icon={<CreditCard className="w-5 h-5 text-[#CCFF00]" />}
             defaultOpen={false}
           >
-            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
+            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
           </CollapsibleSection>
-        )}
-
-        {/* Payment Split By Person */}
-        {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
-          <div className="mb-4 sm:mb-6">
-            <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
-          </div>
         )}
 
         {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
@@ -396,11 +388,14 @@ const CashflowViewContent = () => {
           inputs={inputs}
           clientInfo={clientInfo}
           calculations={calculations}
+          mortgageAnalysis={mortgageAnalysis}
+          mortgageInputs={mortgageInputs}
           exitScenarios={exitScenarios}
           currency={currency}
           rate={rate}
           showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? true}
           showRentalPotential={(inputs as any)?._summaryToggles?.showRental ?? true}
+          showMortgageAnalysis={mortgageInputs?.enabled ?? false}
           readOnly={true}
           defaultOpen={false}
         />
