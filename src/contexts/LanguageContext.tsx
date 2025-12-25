@@ -320,7 +320,7 @@ const translations: Translations = {
   disclaimerText: { en: 'This cashflow statement is for informational purposes only and does not constitute financial advice.', es: 'Este estado de flujo de efectivo es solo para fines informativos y no constituye asesoramiento financiero.' },
   
   // Payment Split By Person
-  paymentSplitByPerson: { en: 'PAYMENT SPLIT BY PERSON', es: 'DIVISIÓN DE PAGOS POR PERSONA' },
+  paymentSplitByPerson: { en: 'Payment Split by Person', es: 'División de Pagos por Persona' },
   individualContributionBreakdown: { en: 'Individual contribution breakdown', es: 'Desglose de contribución individual' },
   shareLabel: { en: 'share', es: 'participación' },
   totalContribution: { en: 'Total contribution', es: 'Contribución total' },
