@@ -344,9 +344,9 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
   // ========================================
   
   const propertyOverview = lang === 'en' 
-    ? `📍 PROPERTY OVERVIEW
+    ? `📍 Property Overview
 We're looking at ${clientInfo.projectName} by ${clientInfo.developer} – a ${clientInfo.unitType || 'unit'} of ${clientInfo.unitSizeSqf.toLocaleString()} sqft priced at ${fmt(inputs.basePrice)}${clientInfo.unitSizeSqf > 0 ? ` (${fmt(inputs.basePrice / clientInfo.unitSizeSqf)} per sqft)` : ''}.`
-    : `📍 RESUMEN DE LA PROPIEDAD
+    : `📍 Resumen de la Propiedad
 Estamos viendo ${clientInfo.projectName} de ${clientInfo.developer} – un ${clientInfo.unitType || 'unidad'} de ${clientInfo.unitSizeSqf.toLocaleString()} sqft con precio de ${fmt(inputs.basePrice)}${clientInfo.unitSizeSqf > 0 ? ` (${fmt(inputs.basePrice / clientInfo.unitSizeSqf)} por sqft)` : ''}.`;
 
   // Build payment plan with percentages
@@ -355,26 +355,26 @@ Estamos viendo ${clientInfo.projectName} de ${clientInfo.developer} – un ${cli
   ).join('\n');
   
   const paymentStructure = lang === 'en'
-    ? `💳 PAYMENT PLAN
+    ? `💳 Payment Plan
 This property follows a ${inputs.preHandoverPercent}/${handoverPercent} payment structure. Here's how it breaks down:
 ${paymentPlanDetails}`
-    : `💳 PLAN DE PAGO
+    : `💳 Plan de Pago
 Esta propiedad sigue una estructura de pago ${inputs.preHandoverPercent}/${handoverPercent}. Así se desglosa:
 ${paymentPlanDetails}`;
 
   const timeline = lang === 'en'
-    ? `📅 TIMELINE
+    ? `📅 Timeline
 From booking in ${bookingDateStr} to handover in ${handoverDateStr}, that's approximately ${calculations.totalMonths} months of construction.`
-    : `📅 CRONOGRAMA
+    : `📅 Cronograma
 Desde la reserva en ${bookingDateStr} hasta la entrega en ${handoverDateStr}, son aproximadamente ${calculations.totalMonths} meses de construcción.`;
 
   const todaysCommitment = lang === 'en'
-    ? `💰 TODAY'S COMMITMENT
+    ? `💰 Today's Commitment
 To secure this property today, you'll need ${fmt(totalToday)} which includes:
 • Downpayment (${inputs.downpaymentPercent}%): ${fmt(downpaymentAmount)}
 • DLD Fee (4%): ${fmt(dldFee)}
 • Oqood Fee: ${fmt(inputs.oqoodFee)}`
-    : `💰 COMPROMISO DE HOY
+    : `💰 Compromiso de Hoy
 Para asegurar esta propiedad hoy, necesitará ${fmt(totalToday)} que incluye:
 • Enganche (${inputs.downpaymentPercent}%): ${fmt(downpaymentAmount)}
 • Tarifa DLD (4%): ${fmt(dldFee)}
@@ -386,24 +386,24 @@ Para asegurar esta propiedad hoy, necesitará ${fmt(totalToday)} que incluye:
       `• ${p.percent}% – ${fmt(p.amount)} at ${p.timing}`
     ).join('\n');
     duringConstruction = lang === 'en'
-      ? `🏗️ DURING CONSTRUCTION
+      ? `🏗️ During Construction
 During the ${calculations.totalMonths}-month construction period, you'll make ${inputs.additionalPayments.length} additional payment(s) totaling ${fmt(additionalPaymentsTotal)}:
 ${paymentDetails}`
-      : `🏗️ DURANTE LA CONSTRUCCIÓN
+      : `🏗️ Durante la Construcción
 Durante el período de construcción de ${calculations.totalMonths} meses, realizará ${inputs.additionalPayments.length} pago(s) adicional(es) totalizando ${fmt(additionalPaymentsTotal)}:
 ${paymentDetails}`;
   } else {
     duringConstruction = lang === 'en'
-      ? `🏗️ DURING CONSTRUCTION
+      ? `🏗️ During Construction
 Good news – there are no additional payments required during the construction period.`
-      : `🏗️ DURANTE LA CONSTRUCCIÓN
+      : `🏗️ Durante la Construcción
 Buenas noticias – no se requieren pagos adicionales durante el período de construcción.`;
   }
 
   const atHandover = lang === 'en'
-    ? `🔑 AT HANDOVER
+    ? `🔑 At Handover
 At handover, you'll pay the remaining ${handoverPercent}% which equals ${fmt(handoverAmount)}.`
-    : `🔑 EN LA ENTREGA
+    : `🔑 En la Entrega
 En la entrega, pagará el ${handoverPercent}% restante que equivale a ${fmt(handoverAmount)}.`;
 
   // Optional: Rental Potential (conditionally included)
@@ -411,13 +411,13 @@ En la entrega, pagará el ${handoverPercent}% restante que equivale a ${fmt(hand
   if (includeRentalPotential) {
     const monthlyNet = calculations.holdAnalysis.netAnnualRent / 12;
     rentalPotential = lang === 'en'
-      ? `📈 RENTAL POTENTIAL
+      ? `📈 Rental Potential
 After handover, based on an initial rental yield of ${inputs.rentalYieldPercent}%:
 • Gross annual rent: ${fmt(calculations.holdAnalysis.annualRent)}
 • Net after service charges: ${fmt(calculations.holdAnalysis.netAnnualRent)} (${fmt(monthlyNet)}/month)
 • This means the property pays for itself in approximately ${calculations.holdAnalysis.yearsToPayOff.toFixed(1)} years
 • Effective yield on total investment: ${calculations.holdAnalysis.rentalYieldOnInvestment.toFixed(1)}%`
-      : `📈 POTENCIAL DE RENTA
+      : `📈 Potencial de Renta
 Después de la entrega, basado en un rendimiento de renta inicial del ${inputs.rentalYieldPercent}%:
 • Renta anual bruta: ${fmt(calculations.holdAnalysis.annualRent)}
 • Neto después de cargos de servicio: ${fmt(calculations.holdAnalysis.netAnnualRent)} (${fmt(monthlyNet)}/mes)
@@ -445,10 +445,10 @@ Después de la entrega, basado en un rendimiento de renta inicial del ${inputs.r
     
     if (scenarioLines) {
       exitScenariosSection = lang === 'en'
-        ? `🚪 EXIT OPTIONS
+        ? `🚪 Exit Options
 If you decide to sell during construction, here are the potential exit points:
 ${scenarioLines}`
-        : `🚪 OPCIONES DE SALIDA
+        : `🚪 Opciones de Salida
 Si decide vender durante la construcción, estas son las opciones de salida potenciales:
 ${scenarioLines}`;
     }
@@ -494,12 +494,12 @@ ${scenarioLines}`;
       : '';
     
     mortgageImpactSection = lang === 'en'
-      ? `🏦 MORTGAGE ANALYSIS
+      ? `🏦 Mortgage Analysis
 With ${mortgageInputs.financingPercent}% financing (loan amount: ${fmt(mortgageAnalysis.loanAmount)}):
 • Monthly mortgage payment (incl. insurance): ${fmt(monthlyMortgageTotal)}
 • Expected monthly rent: ${fmt(monthlyRent)}
 • ${outcome}${rentGrowthImpact}`
-      : `🏦 ANÁLISIS DE HIPOTECA
+      : `🏦 Análisis de Hipoteca
 Con ${mortgageInputs.financingPercent}% de financiamiento (monto del préstamo: ${fmt(mortgageAnalysis.loanAmount)}):
 • Pago mensual de hipoteca (incl. seguro): ${fmt(monthlyMortgageTotal)}
 • Renta mensual esperada: ${fmt(monthlyRent)}

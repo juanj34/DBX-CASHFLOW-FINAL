@@ -100,10 +100,10 @@ const ROICalculator = () => {
                 <table className="w-full">
                   <thead className="bg-[#0d1117]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{t('roiMetric')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-[#CCFF00] uppercase tracking-wider">OI</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-[#00EAFF] uppercase tracking-wider">SI</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-[#FF00FF] uppercase tracking-wider">HO</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 tracking-wider">{t('roiMetric')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-[#CCFF00] tracking-wider">OI</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-[#00EAFF] tracking-wider">SI</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-[#FF00FF] tracking-wider">HO</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2a3142]">

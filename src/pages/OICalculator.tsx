@@ -229,7 +229,7 @@ const OICalculatorContent = () => {
       <div className="min-h-screen bg-theme-bg">
       <div className="hidden print-only print:block bg-theme-bg text-theme-text p-6 mb-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold text-theme-accent">CASHFLOW GENERATOR</h1><p className="text-theme-text-muted text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+          <div><h1 className="text-2xl font-bold text-theme-accent">Cashflow Generator</h1><p className="text-theme-text-muted text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
           {profile && <div className="text-right"><p className="text-sm text-theme-text-muted">{t('advisor')}</p><p className="font-medium">{profile.full_name || 'Advisor'}</p></div>}
         </div>
       </div>

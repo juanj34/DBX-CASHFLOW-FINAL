@@ -84,14 +84,14 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
         <table className="w-full min-w-[600px]">
           <thead className="bg-[#0d1117]">
             <tr>
-              <th className="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('yearColumn')}</th>
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('phase')}</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('value')}</th>
-              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 uppercase tracking-wider whitespace-nowrap">{t('netRent')}</th>
+              <th className="px-2 py-3 text-left text-xs font-medium text-gray-400 tracking-wider whitespace-nowrap">{t('yearColumn')}</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 tracking-wider whitespace-nowrap">{t('phase')}</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 tracking-wider whitespace-nowrap">{t('value')}</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 tracking-wider whitespace-nowrap">{t('netRent')}</th>
               {showAirbnbComparison && (
-                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 uppercase tracking-wider whitespace-nowrap">{t('airbnbNet')}</th>
+                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 tracking-wider whitespace-nowrap">{t('airbnbNet')}</th>
               )}
-              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('status')}</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 tracking-wider whitespace-nowrap">{t('status')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#2a3142]">

@@ -122,7 +122,7 @@ export const PaymentSplitBreakdown = ({
                   <div className="space-y-3 pt-2">
                     {/* At Booking */}
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-[#CCFF00] uppercase">{t('atBookingLabel')}</p>
+                      <p className="text-xs font-medium text-[#CCFF00]">{t('atBookingLabel')}</p>
                       <div className="pl-3 space-y-1.5">
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('eoiBookingFee')}</span>
@@ -150,7 +150,7 @@ export const PaymentSplitBreakdown = ({
                     {/* During Construction */}
                     {additionalTotal > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-400 uppercase">{t('duringConstructionLabel')}</p>
+                        <p className="text-xs font-medium text-gray-400">{t('duringConstructionLabel')}</p>
                         <div className="pl-3 space-y-1.5">
                           {additionalPayments.map((payment) => {
                             const amount = basePrice * payment.paymentPercent / 100 * sharePercent / 100;
@@ -192,7 +192,7 @@ export const PaymentSplitBreakdown = ({
 
                     {/* At Handover */}
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-cyan-400 uppercase">{t('atHandoverLabel')}</p>
+                      <p className="text-xs font-medium text-cyan-400">{t('atHandoverLabel')}</p>
                       <div className="pl-3">
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-[10px] sm:text-sm text-gray-400 truncate min-w-0 flex-1">{t('finalPayment')} ({100 - preHandoverPercent}%)</span>

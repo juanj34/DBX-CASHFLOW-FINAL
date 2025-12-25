@@ -17,10 +17,10 @@ export const YearlyProjectionTable = ({ projections, currency }: YearlyProjectio
         <table className="w-full">
           <thead className="bg-[#0d1117]">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Year</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Property Value</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Annual Rent</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 tracking-wider">Year</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 tracking-wider">Property Value</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 tracking-wider">Annual Rent</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#2a3142]">

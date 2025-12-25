@@ -102,7 +102,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
         <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center gap-1.5 sm:gap-2 text-theme-accent">
             <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="text-xs sm:text-sm font-medium uppercase">{t('atBooking')} ({monthToDateString(bookingMonth, bookingYear, language)})</span>
+            <span className="text-xs sm:text-sm font-medium">{t('atBooking')} ({monthToDateString(bookingMonth, bookingYear, language)})</span>
           </div>
           
           <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
@@ -146,7 +146,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
           <div className="space-y-2 sm:space-y-3">
             <div className="flex items-center gap-1.5 sm:gap-2 text-theme-text-muted">
               <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-xs sm:text-sm font-medium uppercase">{t('duringConstruction')}</span>
+              <span className="text-xs sm:text-sm font-medium">{t('duringConstruction')}</span>
             </div>
             
             <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
@@ -217,7 +217,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
         <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center gap-1.5 sm:gap-2 text-cyan-400">
             <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="text-xs sm:text-sm font-medium uppercase">{t('atHandoverLabel')} (Q{handoverQuarter} {handoverYear})</span>
+            <span className="text-xs sm:text-sm font-medium">{t('atHandoverLabel')} (Q{handoverQuarter} {handoverYear})</span>
           </div>
           
           <div className="pl-4 sm:pl-6 space-y-2">
