@@ -56,28 +56,30 @@ export const ConfiguratorLayout = ({
   const [showCelebration, setShowCelebration] = useState(false);
   const hasShownCelebrationRef = useRef(false);
 
-  // Calculate completed sections count (visited + data valid)
-  const completedSectionsCount = useMemo(() => {
-    let count = 0;
+  // Check if a specific section is complete (visited + valid data)
+  const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
+    if (!visitedSections.has(section)) return false;
     
-    // Property: visited AND has valid base price
-    if (visitedSections.has('property') && inputs.basePrice > 0) count++;
-    
-    // Payment: visited AND has valid payment percentages (downpayment + preHandover should be reasonable)
-    if (visitedSections.has('payment') && inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0) count++;
-    
-    // Value: visited (differentiators are optional)
-    if (visitedSections.has('value')) count++;
-    
-    // Income: visited AND has rental yield set
-    if (visitedSections.has('income') && inputs.rentalYieldPercent > 0) count++;
-    
-    // Appreciation: visited AND has appreciation rates set
-    if (visitedSections.has('appreciation') && 
-        (inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0)) count++;
-    
-    return count;
+    switch (section) {
+      case 'property':
+        return inputs.basePrice > 0;
+      case 'payment':
+        return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
+      case 'value':
+        return true; // differentiators are optional
+      case 'income':
+        return inputs.rentalYieldPercent > 0;
+      case 'appreciation':
+        return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
+      default:
+        return false;
+    }
   }, [visitedSections, inputs]);
+
+  // Calculate completed sections count
+  const completedSectionsCount = useMemo(() => {
+    return SECTIONS.filter(section => isSectionComplete(section)).length;
+  }, [isSectionComplete]);
 
   // Progress based on COMPLETED sections, not just visited
   const progressPercent = Math.round((completedSectionsCount / SECTIONS.length) * 100);
@@ -356,25 +358,64 @@ export const ConfiguratorLayout = ({
           Previous
         </Button>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            {SECTIONS.map((section, index) => (
-              <button
-                key={section}
-                onClick={() => navigateToSection(section)}
-                className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                  section === activeSection 
-                    ? 'bg-[#CCFF00] w-6' 
-                    : visitedSections.has(section)
-                      ? 'bg-green-500'
-                      : 'bg-[#2a3142]'
-                }`}
-              />
-            ))}
+        {/* Progress bar with milestone markers */}
+        <div className="flex flex-col items-center gap-2">
+          {/* Animated progress bar */}
+          <div className="relative w-48 h-1.5 bg-[#2a3142] rounded-full overflow-hidden">
+            <div 
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#CCFF00] to-green-400 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+            {/* Milestone markers */}
+            {SECTIONS.map((section, index) => {
+              const position = ((index + 1) / SECTIONS.length) * 100;
+              const isComplete = isSectionComplete(section);
+              return (
+                <div
+                  key={section}
+                  className={`absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 transition-all duration-300 ${
+                    isComplete 
+                      ? 'bg-[#CCFF00] border-[#CCFF00] scale-110' 
+                      : 'bg-[#1a1f2e] border-[#3a4152]'
+                  }`}
+                  style={{ left: `calc(${position}% - 5px)` }}
+                />
+              );
+            })}
           </div>
-          <span className="text-xs font-medium text-gray-400">
-            {progressPercent}%
-          </span>
+          
+          {/* Section dots with completion checkmarks */}
+          <div className="flex items-center gap-2">
+            {SECTIONS.map((section) => {
+              const isComplete = isSectionComplete(section);
+              const isActive = section === activeSection;
+              return (
+                <button
+                  key={section}
+                  onClick={() => navigateToSection(section)}
+                  className={`relative flex items-center justify-center transition-all duration-200 ${
+                    isActive 
+                      ? 'w-6 h-6 rounded-full bg-[#CCFF00]/20 border-2 border-[#CCFF00]' 
+                      : 'w-5 h-5 rounded-full hover:scale-110'
+                  } ${
+                    !isActive && isComplete 
+                      ? 'bg-green-500/20 border-2 border-green-500' 
+                      : !isActive ? 'bg-[#2a3142] border-2 border-transparent' : ''
+                  }`}
+                >
+                  {isComplete && !isActive && (
+                    <Check className="w-3 h-3 text-green-400" />
+                  )}
+                  {isActive && (
+                    <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
+                  )}
+                </button>
+              );
+            })}
+            <span className="text-xs font-medium text-gray-400 ml-1">
+              {progressPercent}%
+            </span>
+          </div>
         </div>
 
         {isLastSection ? (
