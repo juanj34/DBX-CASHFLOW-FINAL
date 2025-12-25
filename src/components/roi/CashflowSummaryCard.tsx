@@ -64,31 +64,39 @@ const SummarySection = ({
   </div>
 );
 
-// Row component for label/value pairs - optimized for mobile
+// Row component for label/value pairs - optimized for mobile with color variants
 const SummaryRow = ({ 
   label, 
   value, 
   highlight = false,
-  subtext
+  subtext,
+  variant = 'default'
 }: { 
   label: string; 
   value: string; 
   highlight?: boolean;
   subtext?: string;
-}) => (
-  <div className="flex items-center justify-between gap-2 min-w-0">
-    <span className="text-[10px] sm:text-xs text-theme-text-muted shrink-0">{label}</span>
-    <div className="text-right whitespace-nowrap min-w-0">
-      <span className={cn(
-        "text-xs sm:text-sm font-mono",
-        highlight ? "text-theme-accent font-semibold" : "text-theme-text"
-      )}>
-        {value}
-      </span>
-      {subtext && <span className="text-[9px] sm:text-xs text-theme-text-muted ml-1">{subtext}</span>}
+  variant?: 'default' | 'income' | 'expense' | 'neutral';
+}) => {
+  const getColorClass = () => {
+    if (variant === 'income') return 'text-emerald-400 font-semibold';
+    if (variant === 'expense') return 'text-red-400 font-semibold';
+    if (highlight) return 'text-theme-accent font-semibold';
+    return 'text-theme-text';
+  };
+  
+  return (
+    <div className="flex items-center justify-between gap-2 min-w-0">
+      <span className="text-[10px] sm:text-xs text-theme-text-muted shrink-0">{label}</span>
+      <div className="text-right whitespace-nowrap min-w-0">
+        <span className={cn("text-xs sm:text-sm font-mono", getColorClass())}>
+          {value}
+        </span>
+        {subtext && <span className="text-[9px] sm:text-xs text-theme-text-muted ml-1">{subtext}</span>}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const CashflowSummaryCard = ({
   inputs,
@@ -391,8 +399,8 @@ export const CashflowSummaryCard = ({
                 </div>
                 <p className="text-gray-300">
                   {language === 'en'
-                    ? `To lock in this property today, you'll need ${fmt(structuredData.todaysCommitment.total)}. This covers your downpayment of ${fmt(structuredData.todaysCommitment.downpayment)} (${structuredData.todaysCommitment.downpaymentPercent}%), plus the DLD fee of ${fmt(structuredData.todaysCommitment.dldFee)} and Oqood fee of ${fmt(structuredData.todaysCommitment.oqoodFee)}.`
-                    : `Para asegurar esta propiedad hoy, necesitarás ${fmt(structuredData.todaysCommitment.total)}. Esto cubre tu enganche de ${fmt(structuredData.todaysCommitment.downpayment)} (${structuredData.todaysCommitment.downpaymentPercent}%), más la tarifa DLD de ${fmt(structuredData.todaysCommitment.dldFee)} y la tarifa Oqood de ${fmt(structuredData.todaysCommitment.oqoodFee)}.`
+                    ? <>To lock in this property today, you'll need <span className="text-red-400 font-medium">{fmt(structuredData.todaysCommitment.total)}</span>. This covers your downpayment of <span className="text-red-400">{fmt(structuredData.todaysCommitment.downpayment)}</span> ({structuredData.todaysCommitment.downpaymentPercent}%), plus the DLD fee of <span className="text-red-400">{fmt(structuredData.todaysCommitment.dldFee)}</span> and Oqood fee of <span className="text-red-400">{fmt(structuredData.todaysCommitment.oqoodFee)}</span>.</>
+                    : <>Para asegurar esta propiedad hoy, necesitarás <span className="text-red-400 font-medium">{fmt(structuredData.todaysCommitment.total)}</span>. Esto cubre tu enganche de <span className="text-red-400">{fmt(structuredData.todaysCommitment.downpayment)}</span> ({structuredData.todaysCommitment.downpaymentPercent}%), más la tarifa DLD de <span className="text-red-400">{fmt(structuredData.todaysCommitment.dldFee)}</span> y la tarifa Oqood de <span className="text-red-400">{fmt(structuredData.todaysCommitment.oqoodFee)}</span>.</>
                   }
                 </p>
               </div>
@@ -420,8 +428,8 @@ export const CashflowSummaryCard = ({
                   </div>
                   <p className="text-gray-300">
                     {language === 'en'
-                      ? `During the construction period, you'll make ${structuredData.construction.paymentsCount} additional payment${structuredData.construction.paymentsCount > 1 ? 's' : ''} totaling ${fmt(structuredData.construction.totalAmount)}.`
-                      : `Durante el período de construcción, realizarás ${structuredData.construction.paymentsCount} pago${structuredData.construction.paymentsCount > 1 ? 's' : ''} adicional${structuredData.construction.paymentsCount > 1 ? 'es' : ''} por un total de ${fmt(structuredData.construction.totalAmount)}.`
+                      ? <>During the construction period, you'll make {structuredData.construction.paymentsCount} additional payment{structuredData.construction.paymentsCount > 1 ? 's' : ''} totaling <span className="text-red-400 font-medium">{fmt(structuredData.construction.totalAmount)}</span>.</>
+                      : <>Durante el período de construcción, realizarás {structuredData.construction.paymentsCount} pago{structuredData.construction.paymentsCount > 1 ? 's' : ''} adicional{structuredData.construction.paymentsCount > 1 ? 'es' : ''} por un total de <span className="text-red-400 font-medium">{fmt(structuredData.construction.totalAmount)}</span>.</>
                     }
                   </p>
                 </div>
@@ -435,8 +443,8 @@ export const CashflowSummaryCard = ({
                 </div>
                 <p className="text-gray-300">
                   {language === 'en'
-                    ? `When you receive the keys, you'll pay the remaining ${structuredData.handover.percent}% – that's ${fmt(structuredData.handover.amount)}.`
-                    : `Cuando recibas las llaves, pagarás el ${structuredData.handover.percent}% restante – es decir ${fmt(structuredData.handover.amount)}.`
+                    ? <>When you receive the keys, you'll pay the remaining {structuredData.handover.percent}% – that's <span className="text-red-400 font-medium">{fmt(structuredData.handover.amount)}</span>.</>
+                    : <>Cuando recibas las llaves, pagarás el {structuredData.handover.percent}% restante – es decir <span className="text-red-400 font-medium">{fmt(structuredData.handover.amount)}</span>.</>
                   }
                 </p>
               </div>
@@ -450,8 +458,8 @@ export const CashflowSummaryCard = ({
                   </div>
                   <p className="text-gray-300">
                     {language === 'en'
-                      ? `Based on a ${structuredData.rental.yieldPercent}% rental yield, this property could generate ${fmt(structuredData.rental.grossAnnual)} in gross annual rent. After service charges, you'd net ${fmt(structuredData.rental.netAnnual)} per year – that's about ${fmt(structuredData.rental.netAnnual / 12)} monthly. At this rate, the property pays for itself in roughly ${structuredData.rental.yearsToPayOff.toFixed(1)} years.`
-                      : `Basado en un rendimiento de ${structuredData.rental.yieldPercent}%, esta propiedad podría generar ${fmt(structuredData.rental.grossAnnual)} en renta bruta anual. Después de cargos de servicio, tendrías ${fmt(structuredData.rental.netAnnual)} neto por año – aproximadamente ${fmt(structuredData.rental.netAnnual / 12)} mensual. A este ritmo, la propiedad se paga sola en aproximadamente ${structuredData.rental.yearsToPayOff.toFixed(1)} años.`
+                      ? <>Based on a {structuredData.rental.yieldPercent}% rental yield, this property could generate <span className="text-emerald-400 font-medium">{fmt(structuredData.rental.grossAnnual)}</span> in gross annual rent. After service charges, you'd net <span className="text-emerald-400 font-medium">{fmt(structuredData.rental.netAnnual)}</span> per year – that's about <span className="text-emerald-400">{fmt(structuredData.rental.netAnnual / 12)}</span> monthly. At this rate, the property pays for itself in roughly {structuredData.rental.yearsToPayOff.toFixed(1)} years.</>
+                      : <>Basado en un rendimiento de {structuredData.rental.yieldPercent}%, esta propiedad podría generar <span className="text-emerald-400 font-medium">{fmt(structuredData.rental.grossAnnual)}</span> en renta bruta anual. Después de cargos de servicio, tendrías <span className="text-emerald-400 font-medium">{fmt(structuredData.rental.netAnnual)}</span> neto por año – aproximadamente <span className="text-emerald-400">{fmt(structuredData.rental.netAnnual / 12)}</span> mensual. A este ritmo, la propiedad se paga sola en aproximadamente {structuredData.rental.yearsToPayOff.toFixed(1)} años.</>
                     }
                   </p>
                   {/* Airbnb Comparison */}
@@ -459,8 +467,8 @@ export const CashflowSummaryCard = ({
                     <div className="bg-[#1a1f2e] rounded-lg p-3 mt-2">
                       <p className="text-gray-300">
                         {language === 'en'
-                          ? `If you're open to short-term rentals via Airbnb, the numbers could be even better. You could potentially earn ${fmt(structuredData.rental.airbnbNetAnnual)} net annually${structuredData.rental.airbnbDifference && structuredData.rental.airbnbDifference > 0 ? ` – that's ${((structuredData.rental.airbnbDifference / structuredData.rental.netAnnual) * 100).toFixed(0)}% more than long-term rental` : ''}.`
-                          : `Si estás abierto a rentas cortas vía Airbnb, los números podrían ser mejores. Podrías ganar ${fmt(structuredData.rental.airbnbNetAnnual)} neto anualmente${structuredData.rental.airbnbDifference && structuredData.rental.airbnbDifference > 0 ? ` – eso es ${((structuredData.rental.airbnbDifference / structuredData.rental.netAnnual) * 100).toFixed(0)}% más que renta a largo plazo` : ''}.`
+                          ? <>If you're open to short-term rentals via Airbnb, the numbers could be even better. You could potentially earn <span className="text-orange-400 font-medium">{fmt(structuredData.rental.airbnbNetAnnual)}</span> net annually{structuredData.rental.airbnbDifference && structuredData.rental.airbnbDifference > 0 ? <> – that's <span className="text-emerald-400 font-medium">{((structuredData.rental.airbnbDifference / structuredData.rental.netAnnual) * 100).toFixed(0)}% more</span> than long-term rental</> : ''}.</>
+                          : <>Si estás abierto a rentas cortas vía Airbnb, los números podrían ser mejores. Podrías ganar <span className="text-orange-400 font-medium">{fmt(structuredData.rental.airbnbNetAnnual)}</span> neto anualmente{structuredData.rental.airbnbDifference && structuredData.rental.airbnbDifference > 0 ? <> – eso es <span className="text-emerald-400 font-medium">{((structuredData.rental.airbnbDifference / structuredData.rental.netAnnual) * 100).toFixed(0)}% más</span> que renta a largo plazo</> : ''}.</>
                         }
                       </p>
                     </div>
@@ -504,15 +512,33 @@ export const CashflowSummaryCard = ({
                   <p className="text-gray-300">
                     {structuredData.mortgage.isPositive
                       ? (language === 'en'
-                          ? `Good news on financing! With ${structuredData.mortgage.financingPercent}% mortgage (${fmt(structuredData.mortgage.loanAmount)}), your monthly payment would be ${fmt(structuredData.mortgage.monthlyPayment)}. The expected rent of ${fmt(structuredData.mortgage.monthlyRent)} covers this completely, leaving you with ${fmt(structuredData.mortgage.monthlyContribution)} extra each month. The property essentially pays for itself.`
-                          : `¡Buenas noticias sobre financiamiento! Con ${structuredData.mortgage.financingPercent}% de hipoteca (${fmt(structuredData.mortgage.loanAmount)}), tu pago mensual sería ${fmt(structuredData.mortgage.monthlyPayment)}. La renta esperada de ${fmt(structuredData.mortgage.monthlyRent)} cubre esto completamente, dejándote ${fmt(structuredData.mortgage.monthlyContribution)} extra cada mes. La propiedad esencialmente se paga sola.`
+                          ? <>Good news on financing! With {structuredData.mortgage.financingPercent}% mortgage ({fmt(structuredData.mortgage.loanAmount)}), your monthly payment would be <span className="text-red-400 font-medium">{fmt(structuredData.mortgage.monthlyPayment)}</span>. The expected rent of <span className="text-emerald-400 font-medium">{fmt(structuredData.mortgage.monthlyRent)}</span> covers this completely, leaving you with <span className="text-emerald-400 font-semibold">+{fmt(structuredData.mortgage.monthlyContribution)}</span> extra each month. The property essentially pays for itself.</>
+                          : <>¡Buenas noticias sobre financiamiento! Con {structuredData.mortgage.financingPercent}% de hipoteca ({fmt(structuredData.mortgage.loanAmount)}), tu pago mensual sería <span className="text-red-400 font-medium">{fmt(structuredData.mortgage.monthlyPayment)}</span>. La renta esperada de <span className="text-emerald-400 font-medium">{fmt(structuredData.mortgage.monthlyRent)}</span> cubre esto completamente, dejándote <span className="text-emerald-400 font-semibold">+{fmt(structuredData.mortgage.monthlyContribution)}</span> extra cada mes. La propiedad esencialmente se paga sola.</>
                         )
                       : (language === 'en'
-                          ? `With ${structuredData.mortgage.financingPercent}% mortgage (${fmt(structuredData.mortgage.loanAmount)}), your monthly payment would be ${fmt(structuredData.mortgage.monthlyPayment)}. The expected rent of ${fmt(structuredData.mortgage.monthlyRent)} covers most of it, but you'd need to contribute ${fmt(structuredData.mortgage.monthlyContribution)} monthly from your own pocket. Think of it as forced savings – you're building equity while the tenant covers most of the cost.`
-                          : `Con ${structuredData.mortgage.financingPercent}% de hipoteca (${fmt(structuredData.mortgage.loanAmount)}), tu pago mensual sería ${fmt(structuredData.mortgage.monthlyPayment)}. La renta esperada de ${fmt(structuredData.mortgage.monthlyRent)} cubre la mayor parte, pero necesitarías aportar ${fmt(structuredData.mortgage.monthlyContribution)} mensualmente de tu bolsillo. Piénsalo como ahorro forzado – estás construyendo capital mientras el inquilino cubre la mayor parte del costo.`
+                          ? <>With {structuredData.mortgage.financingPercent}% mortgage ({fmt(structuredData.mortgage.loanAmount)}), your monthly payment would be <span className="text-red-400 font-medium">{fmt(structuredData.mortgage.monthlyPayment)}</span>. The expected rent of <span className="text-emerald-400 font-medium">{fmt(structuredData.mortgage.monthlyRent)}</span> covers {structuredData.mortgage.coveragePercent.toFixed(0)}% of it, but you'd need to contribute <span className="text-red-400 font-semibold">{fmt(structuredData.mortgage.monthlyContribution)}</span> monthly from your own pocket. Think of it as forced savings – you're building equity while the tenant covers most of the cost.</>
+                          : <>Con {structuredData.mortgage.financingPercent}% de hipoteca ({fmt(structuredData.mortgage.loanAmount)}), tu pago mensual sería <span className="text-red-400 font-medium">{fmt(structuredData.mortgage.monthlyPayment)}</span>. La renta esperada de <span className="text-emerald-400 font-medium">{fmt(structuredData.mortgage.monthlyRent)}</span> cubre {structuredData.mortgage.coveragePercent.toFixed(0)}% de esto, pero necesitarías aportar <span className="text-red-400 font-semibold">{fmt(structuredData.mortgage.monthlyContribution)}</span> mensualmente de tu bolsillo. Piénsalo como ahorro forzado – estás construyendo capital mientras el inquilino cubre la mayor parte del costo.</>
                         )
                     }
                   </p>
+                  
+                  {/* Airbnb Mortgage Comparison in Conversational View */}
+                  {structuredData.mortgage.showAirbnb && structuredData.mortgage.airbnbMonthlyRent !== undefined && (
+                    <div className="bg-[#1a1f2e] rounded-lg p-3 mt-2">
+                      <p className="text-gray-300">
+                        {language === 'en'
+                          ? <>With Airbnb, the monthly rent of <span className="text-orange-400 font-medium">{fmt(structuredData.mortgage.airbnbMonthlyRent)}</span> {structuredData.mortgage.airbnbIsPositive 
+                              ? <>covers the mortgage with <span className="text-emerald-400 font-semibold">+{fmt(structuredData.mortgage.airbnbContribution || 0)}</span> surplus</>
+                              : <>still leaves <span className="text-red-400 font-semibold">{fmt(structuredData.mortgage.airbnbContribution || 0)}</span> monthly out-of-pocket</>
+                            }. Coverage: {(structuredData.mortgage.airbnbCoveragePercent || 0).toFixed(0)}%.</>
+                          : <>Con Airbnb, la renta mensual de <span className="text-orange-400 font-medium">{fmt(structuredData.mortgage.airbnbMonthlyRent)}</span> {structuredData.mortgage.airbnbIsPositive 
+                              ? <>cubre la hipoteca con <span className="text-emerald-400 font-semibold">+{fmt(structuredData.mortgage.airbnbContribution || 0)}</span> de excedente</>
+                              : <>aún deja <span className="text-red-400 font-semibold">{fmt(structuredData.mortgage.airbnbContribution || 0)}</span> de aportación mensual</>
+                            }. Cobertura: {(structuredData.mortgage.airbnbCoveragePercent || 0).toFixed(0)}%.</>
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -571,11 +597,12 @@ export const CashflowSummaryCard = ({
                   label={t('downpayment')} 
                   value={fmt(structuredData.todaysCommitment.downpayment)} 
                   subtext={`(${structuredData.todaysCommitment.downpaymentPercent}%)`}
+                  variant="expense"
                 />
-                <SummaryRow label={t('dldFeePercent')} value={fmt(structuredData.todaysCommitment.dldFee)} />
-                <SummaryRow label={t('oqoodFee')} value={fmt(structuredData.todaysCommitment.oqoodFee)} />
+                <SummaryRow label={t('dldFeePercent')} value={fmt(structuredData.todaysCommitment.dldFee)} variant="expense" />
+                <SummaryRow label={t('oqoodFee')} value={fmt(structuredData.todaysCommitment.oqoodFee)} variant="expense" />
                 <div className="pt-2 mt-2 border-t border-theme-border/50">
-                  <SummaryRow label={t('totalToday')} value={fmt(structuredData.todaysCommitment.total)} highlight />
+                  <SummaryRow label={t('totalToday')} value={fmt(structuredData.todaysCommitment.total)} variant="expense" />
                 </div>
               </SummarySection>
 
@@ -590,11 +617,11 @@ export const CashflowSummaryCard = ({
                           <span className="text-[10px] sm:text-xs text-theme-text-muted">{p.percent}%</span>
                           <span className="text-[9px] sm:text-xs text-theme-text-muted">({p.timing})</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-mono text-theme-text">{fmt(p.amount)}</span>
+                        <span className="text-xs sm:text-sm font-mono text-red-400 font-semibold">{fmt(p.amount)}</span>
                       </div>
                     ))}
                     <div className="pt-2 mt-2 border-t border-theme-border/50">
-                      <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} highlight />
+                      <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} variant="expense" />
                     </div>
                   </>
                 ) : (
@@ -607,7 +634,7 @@ export const CashflowSummaryCard = ({
                 <SummaryRow 
                   label={t('finalPayment')} 
                   value={fmt(structuredData.handover.amount)} 
-                  highlight 
+                  variant="expense"
                   subtext={`(${structuredData.handover.percent}%)`}
                 />
               </SummarySection>
@@ -616,21 +643,21 @@ export const CashflowSummaryCard = ({
               {localToggles.showRental && structuredData.rental && (
                 <SummarySection icon={TrendingUp} iconColor="text-green-400" title={t('rentalPotentialSection')}>
                   <SummaryRow label={t('rentalYield')} value={`${structuredData.rental.yieldPercent}%`} />
-                  <SummaryRow label={t('grossAnnualRent')} value={fmt(structuredData.rental.grossAnnual)} />
-                  <SummaryRow label={t('netAnnualRent')} value={fmt(structuredData.rental.netAnnual)} highlight />
+                  <SummaryRow label={t('grossAnnualRent')} value={fmt(structuredData.rental.grossAnnual)} variant="income" />
+                  <SummaryRow label={t('netAnnualRent')} value={fmt(structuredData.rental.netAnnual)} variant="income" />
                   <SummaryRow label={t('yearsToPayOff')} value={structuredData.rental.yearsToPayOff.toFixed(1)} />
                   <SummaryRow label={t('effectiveYield')} value={`${structuredData.rental.effectiveYield.toFixed(1)}%`} highlight />
                   
                   {/* Airbnb Comparison */}
                   {structuredData.rental.showAirbnb && structuredData.rental.airbnbNetAnnual && structuredData.rental.airbnbNetAnnual > 0 && (
-                    <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
-                      <p className="text-xs text-gray-500 mb-2">{t('airbnbComparison')}</p>
-                      <SummaryRow label={t('airbnbNet')} value={fmt(structuredData.rental.airbnbNetAnnual)} />
+                    <div className="pt-2 mt-2 border-t border-theme-border/50">
+                      <p className="text-xs text-theme-text-muted mb-2">{t('airbnbComparison')}</p>
+                      <SummaryRow label={t('airbnbNet')} value={fmt(structuredData.rental.airbnbNetAnnual)} variant="income" />
                       {structuredData.rental.airbnbDifference !== undefined && (
                         <SummaryRow 
                           label={t('comparedToLongTerm')} 
                           value={`${structuredData.rental.airbnbDifference >= 0 ? '+' : ''}${fmt(structuredData.rental.airbnbDifference)}`}
-                          highlight={structuredData.rental.airbnbDifference > 0}
+                          variant={structuredData.rental.airbnbDifference >= 0 ? 'income' : 'expense'}
                         />
                       )}
                     </div>
@@ -642,22 +669,22 @@ export const CashflowSummaryCard = ({
               {localToggles.showExit && structuredData.exitScenarios && structuredData.exitScenarios.length > 0 && (
                 <SummarySection icon={DoorOpen} iconColor="text-pink-400" title={t('exitOptionsSection')}>
                   {structuredData.exitScenarios.map((scenario, idx) => (
-                    <div key={idx} className="py-2 first:pt-0 last:pb-0 border-b border-[#2a3142]/30 last:border-b-0">
+                    <div key={idx} className="py-2 first:pt-0 last:pb-0 border-b border-theme-border/30 last:border-b-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-gray-400">{t('monthLabel')} {scenario.month}</span>
+                        <span className="text-xs font-medium text-theme-text-muted">{t('monthLabel')} {scenario.month}</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
                         <div>
-                          <span className="text-gray-500">{t('value')}</span>
-                          <p className="text-white font-mono">{fmt(scenario.value)}</p>
+                          <span className="text-theme-text-muted">{t('value')}</span>
+                          <p className="text-theme-text font-mono">{fmt(scenario.value)}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">{t('profit')}</span>
-                          <p className="text-[#CCFF00] font-mono">{fmt(scenario.profit)}</p>
+                          <span className="text-theme-text-muted">{t('profit')}</span>
+                          <p className="text-emerald-400 font-mono font-semibold">{fmt(scenario.profit)}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">{t('roe')}</span>
-                          <p className="text-white font-mono">{scenario.roe.toFixed(1)}%</p>
+                          <span className="text-theme-text-muted">{t('roe')}</span>
+                          <p className="text-emerald-400 font-mono font-semibold">{scenario.roe.toFixed(1)}%</p>
                         </div>
                       </div>
                     </div>
@@ -670,21 +697,42 @@ export const CashflowSummaryCard = ({
                 <SummarySection icon={Landmark} iconColor="text-blue-400" title={t('mortgageSection')}>
                   <SummaryRow label={t('financing')} value={`${structuredData.mortgage.financingPercent}%`} />
                   <SummaryRow label={t('loanAmount')} value={fmt(structuredData.mortgage.loanAmount)} />
-                  <SummaryRow label={t('monthlyPayment')} value={fmt(structuredData.mortgage.monthlyPayment)} />
-                  <SummaryRow label={t('monthlyRent')} value={fmt(structuredData.mortgage.monthlyRent)} />
-                  <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
+                  <SummaryRow label={t('monthlyPayment')} value={fmt(structuredData.mortgage.monthlyPayment)} variant="expense" />
+                  <SummaryRow label={t('monthlyRent')} value={fmt(structuredData.mortgage.monthlyRent)} variant="income" />
+                  <SummaryRow label={t('coverage') || 'Coverage'} value={`${structuredData.mortgage.coveragePercent.toFixed(0)}%`} />
+                  <div className="pt-2 mt-2 border-t border-theme-border/50">
                     <SummaryRow 
                       label={structuredData.mortgage.isPositive ? t('surplus') : t('monthlyContribution')} 
                       value={`${structuredData.mortgage.isPositive ? '+' : '-'}${fmt(structuredData.mortgage.monthlyContribution)}`} 
-                      highlight 
+                      variant={structuredData.mortgage.isPositive ? 'income' : 'expense'}
                     />
                     <p className={cn(
                       "text-xs mt-1",
-                      structuredData.mortgage.isPositive ? "text-green-400" : "text-amber-400"
+                      structuredData.mortgage.isPositive ? "text-emerald-400" : "text-amber-400"
                     )}>
                       {structuredData.mortgage.isPositive ? '✅ ' + t('mortgageCovered') : '⚠️ ' + t('contributionRequired')}
                     </p>
                   </div>
+                  
+                  {/* Airbnb Mortgage Comparison */}
+                  {structuredData.mortgage.showAirbnb && structuredData.mortgage.airbnbMonthlyRent !== undefined && (
+                    <div className="pt-3 mt-3 border-t border-theme-border/50">
+                      <p className="text-xs text-theme-text-muted mb-2">{t('airbnbComparison')}</p>
+                      <SummaryRow label={t('airbnbNet') + '/mo'} value={fmt(structuredData.mortgage.airbnbMonthlyRent)} variant="income" />
+                      <SummaryRow label={t('coverage') || 'Coverage'} value={`${(structuredData.mortgage.airbnbCoveragePercent || 0).toFixed(0)}%`} />
+                      <SummaryRow 
+                        label={structuredData.mortgage.airbnbIsPositive ? t('surplus') : t('monthlyContribution')} 
+                        value={`${structuredData.mortgage.airbnbIsPositive ? '+' : '-'}${fmt(structuredData.mortgage.airbnbContribution || 0)}`} 
+                        variant={structuredData.mortgage.airbnbIsPositive ? 'income' : 'expense'}
+                      />
+                      <p className={cn(
+                        "text-xs mt-1",
+                        structuredData.mortgage.airbnbIsPositive ? "text-emerald-400" : "text-amber-400"
+                      )}>
+                        {structuredData.mortgage.airbnbIsPositive ? '✅ ' + t('mortgageCovered') : '⚠️ ' + t('contributionRequired')}
+                      </p>
+                    </div>
+                  )}
                 </SummarySection>
               )}
             </div>

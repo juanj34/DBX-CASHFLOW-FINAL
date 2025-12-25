@@ -96,6 +96,13 @@ export interface StructuredSummaryData {
     monthlyContribution: number; // renamed from gap
     isPositive: boolean;
     yearsUntilRentCoversMortgage?: number;
+    coveragePercent: number; // How much % rent covers mortgage
+    // Airbnb mortgage comparison
+    showAirbnb?: boolean;
+    airbnbMonthlyRent?: number;
+    airbnbContribution?: number;
+    airbnbIsPositive?: boolean;
+    airbnbCoveragePercent?: number;
   };
 }
 
@@ -319,6 +326,9 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
     const monthlyMortgageTotal = mortgageAnalysis.monthlyPayment + monthlyInsurance;
     const rentVsPayment = monthlyRent - monthlyMortgageTotal;
     
+    // Calculate coverage percentage
+    const coveragePercent = monthlyMortgageTotal > 0 ? (monthlyRent / monthlyMortgageTotal) * 100 : 0;
+    
     // Calculate years until rent covers mortgage (based on rent growth rate)
     let yearsUntilRentCoversMortgage: number | undefined;
     if (rentVsPayment < 0 && inputs.rentGrowthRate > 0) {
@@ -326,6 +336,21 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
       // n = log(monthlyMortgageTotal / monthlyRent) / log(1 + rate)
       const yearsNeeded = Math.log(monthlyMortgageTotal / monthlyRent) / Math.log(1 + inputs.rentGrowthRate / 100);
       yearsUntilRentCoversMortgage = Math.ceil(yearsNeeded);
+    }
+    
+    // Airbnb mortgage comparison (if toggled)
+    const showAirbnb = inputs.showAirbnbComparison || false;
+    let airbnbMonthlyRent: number | undefined;
+    let airbnbContribution: number | undefined;
+    let airbnbIsPositive: boolean | undefined;
+    let airbnbCoveragePercent: number | undefined;
+    
+    if (showAirbnb && firstFullRentalYear?.airbnbNetIncome) {
+      airbnbMonthlyRent = firstFullRentalYear.airbnbNetIncome / 12;
+      const airbnbRentVsPayment = airbnbMonthlyRent - monthlyMortgageTotal;
+      airbnbContribution = Math.abs(airbnbRentVsPayment);
+      airbnbIsPositive = airbnbRentVsPayment >= 0;
+      airbnbCoveragePercent = monthlyMortgageTotal > 0 ? (airbnbMonthlyRent / monthlyMortgageTotal) * 100 : 0;
     }
     
     structuredData.mortgage = {
@@ -336,6 +361,12 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
       monthlyContribution: Math.abs(rentVsPayment),
       isPositive: rentVsPayment >= 0,
       yearsUntilRentCoversMortgage,
+      coveragePercent,
+      showAirbnb,
+      airbnbMonthlyRent,
+      airbnbContribution,
+      airbnbIsPositive,
+      airbnbCoveragePercent,
     };
   }
 
