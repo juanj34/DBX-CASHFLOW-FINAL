@@ -33,6 +33,10 @@ export const ConfiguratorLayout = ({
   const [animationKey, setAnimationKey] = useState(0);
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['property']));
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
+  const contentScrollRef = useRef<HTMLDivElement>(null);
+
+  // Calculate progress percentage
+  const progressPercent = Math.round((visitedSections.size / SECTIONS.length) * 100);
 
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
@@ -61,6 +65,9 @@ export const ConfiguratorLayout = ({
       newSet.add(newSection);
       return newSet;
     });
+
+    // Smooth scroll to top of content area
+    contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const goToNextSection = useCallback(() => {
@@ -203,7 +210,7 @@ export const ConfiguratorLayout = ({
         </div>
 
         {/* Content Area - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-6">
+        <div ref={contentScrollRef} className="flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth">
           <div 
             key={animationKey}
             className={`max-w-3xl ${getAnimationClass()}`}
@@ -239,20 +246,25 @@ export const ConfiguratorLayout = ({
           Previous
         </Button>
 
-        <div className="flex items-center gap-1.5">
-          {SECTIONS.map((section, index) => (
-            <button
-              key={section}
-              onClick={() => navigateToSection(section)}
-              className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                section === activeSection 
-                  ? 'bg-[#CCFF00] w-6' 
-                  : visitedSections.has(section)
-                    ? 'bg-green-500'
-                    : 'bg-[#2a3142]'
-              }`}
-            />
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            {SECTIONS.map((section, index) => (
+              <button
+                key={section}
+                onClick={() => navigateToSection(section)}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  section === activeSection 
+                    ? 'bg-[#CCFF00] w-6' 
+                    : visitedSections.has(section)
+                      ? 'bg-green-500'
+                      : 'bg-[#2a3142]'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-xs font-medium text-gray-400">
+            {progressPercent}%
+          </span>
         </div>
 
         {isLastSection ? (
