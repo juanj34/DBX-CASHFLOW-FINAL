@@ -1,4 +1,4 @@
-import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown, FilePlus, History } from 'lucide-react';
+import { Save, Copy, FolderOpen, FileText, Check, Loader2, ChevronDown, FilePlus, History, LayoutGrid } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -124,6 +124,15 @@ export const QuotesDropdown = ({
         >
           <FolderOpen className="w-4 h-4" />
           {t('loadQuote')}
+        </DropdownMenuItem>
+
+        {/* Compare Quotes */}
+        <DropdownMenuItem
+          onClick={() => navigate('/compare')}
+          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+        >
+          <LayoutGrid className="w-4 h-4" />
+          Compare Quotes
         </DropdownMenuItem>
 
         {/* Version History - only show when editing existing quote */}
