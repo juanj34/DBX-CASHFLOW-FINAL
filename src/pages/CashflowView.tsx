@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard } from 'lucide-react';
+import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard, Building2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,8 @@ import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
 import { CashflowErrorBoundary } from '@/components/roi/ErrorBoundary';
 import { ClientOnboardingModal, useClientOnboarding } from '@/components/roi/ClientOnboardingModal';
 import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
+import { MortgageBreakdown } from '@/components/roi/MortgageBreakdown';
+import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from '@/components/roi/useMortgageCalculations';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
@@ -44,6 +46,7 @@ const CashflowViewContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);
   const [clientInfo, setClientInfo] = useState<ClientUnitData | null>(null);
+  const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
   const { showOnboarding, setShowOnboarding } = useClientOnboarding();
 
@@ -123,6 +126,13 @@ const CashflowViewContent = () => {
         splitEnabled: savedClientInfo?.splitEnabled || false,
         clientShares: savedClientInfo?.clientShares || [],
       });
+      
+      // Load mortgage inputs if saved
+      const savedMortgageInputs = (savedInputs as any)?._mortgageInputs;
+      if (savedMortgageInputs) {
+        setMortgageInputs(savedMortgageInputs);
+      }
+      
       setAdvisorProfile({
         full_name: (data.profiles as any)?.full_name || null,
         avatar_url: (data.profiles as any)?.avatar_url || null,
@@ -137,6 +147,11 @@ const CashflowViewContent = () => {
   }, [shareToken]);
 
   const calculations = inputs ? useOICalculations(inputs) : null;
+  const mortgageAnalysis = useMortgageCalculations({
+    mortgageInputs,
+    basePrice: calculations?.basePrice || 0,
+    preHandoverPercent: inputs?.preHandoverPercent || 20,
+  });
   // Load exit scenarios from saved inputs or auto-calculate, clamp to bounds
   const exitScenarios: number[] = useMemo(() => {
     const savedExitScenarios = (inputs as any)?._exitScenarios;
@@ -336,6 +351,43 @@ const CashflowViewContent = () => {
               <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} unitSizeSqf={clientInfo.unitSizeSqf} />
               <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
             </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Mortgage Analysis - Collapsible */}
+        {mortgageInputs.enabled && calculations && (
+          <CollapsibleSection
+            title={t('mortgageAnalysis') || "Mortgage Analysis"}
+            subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
+            icon={<Building2 className="w-5 h-5 text-blue-400" />}
+            defaultOpen={false}
+          >
+            {(() => {
+              const firstFullRentalYear = calculations.yearlyProjections.find(p => 
+                !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
+              );
+              const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
+              const monthlyLongTermRent = fullAnnualRent / 12;
+              const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
+              const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
+              const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
+              
+              return (
+                <MortgageBreakdown
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  basePrice={calculations.basePrice}
+                  currency={currency}
+                  rate={rate}
+                  preHandoverPercent={inputs.preHandoverPercent}
+                  monthlyLongTermRent={monthlyLongTermRent}
+                  monthlyServiceCharges={monthlyServiceCharges}
+                  monthlyAirbnbNet={monthlyAirbnbNet}
+                  showAirbnbComparison={calculations.showAirbnbComparison}
+                  rentGrowthRate={inputs.rentGrowthRate}
+                />
+              );
+            })()}
           </CollapsibleSection>
         )}
 

@@ -1,8 +1,11 @@
 import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
+import { Calendar, CreditCard, Home, Clock, Building2, User, ChevronDown, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InfoTooltip } from "./InfoTooltip";
+import { ClientUnitData } from "./ClientUnitInfo";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface PaymentBreakdownProps {
   inputs: OIInputs;
@@ -10,6 +13,7 @@ interface PaymentBreakdownProps {
   totalMonths: number;
   rate: number;
   unitSizeSqf?: number;
+  clientInfo?: ClientUnitData;
 }
 
 // Convert booking month/year to readable date string
@@ -34,8 +38,9 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0 }: PaymentBreakdownProps) => {
+export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0, clientInfo }: PaymentBreakdownProps) => {
   const { t, language } = useLanguage();
+  const [splitOpen, setSplitOpen] = useState(false);
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate amounts
@@ -241,7 +246,112 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
             <span className="text-sm sm:text-lg font-bold text-theme-accent font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
           </div>
         </div>
+
+        {/* Payment Split by Person - Collapsible */}
+        {clientInfo?.splitEnabled && clientInfo?.clients && clientInfo.clients.length >= 2 && (
+          <div className="mt-4 pt-4 border-t border-theme-border">
+            <button
+              onClick={() => setSplitOpen(!splitOpen)}
+              className="w-full flex items-center justify-between py-2 hover:bg-theme-card-alt/30 rounded-lg transition-colors -mx-2 px-2"
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-medium text-theme-text">{t('paymentSplitByPerson')}</span>
+                <span className="text-xs text-theme-text-muted">({clientInfo.clients.length} {t('clients').toLowerCase()})</span>
+              </div>
+              {splitOpen ? (
+                <ChevronDown className="w-4 h-4 text-theme-text-muted" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-theme-text-muted" />
+              )}
+            </button>
+            
+            <div className={cn(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              splitOpen ? "max-h-[2000px] opacity-100 mt-3" : "max-h-0 opacity-0"
+            )}>
+              <PaymentSplitContent
+                inputs={inputs}
+                clientInfo={clientInfo}
+                currency={currency}
+                totalMonths={totalMonths}
+                rate={rate}
+              />
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+};
+
+// Inline Payment Split Content (extracted from PaymentSplitBreakdown)
+interface PaymentSplitContentProps {
+  inputs: OIInputs;
+  clientInfo: ClientUnitData;
+  currency: Currency;
+  totalMonths: number;
+  rate: number;
+}
+
+const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }: PaymentSplitContentProps) => {
+  const { t } = useLanguage();
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee } = inputs;
+  const DLD_FEE_PERCENT = 4;
+  
+  const clients = clientInfo.clients || [];
+  const clientShares = clientInfo.clientShares || [];
+  
+  // Calculate totals
+  const downpaymentAmount = basePrice * downpaymentPercent / 100;
+  const eoiFeeActual = Math.min(eoiFee, downpaymentAmount);
+  const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
+  const handoverPercent = 100 - preHandoverPercent;
+  const handoverAmount = basePrice * handoverPercent / 100;
+  const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
+  const todayTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
+  const grandTotal = basePrice + dldFeeAmount + oqoodFee;
+
+  const getClientShare = (clientId: string): number => {
+    const share = clientShares.find(s => s.clientId === clientId);
+    return share?.sharePercent || 0;
+  };
+
+  return (
+    <div className="space-y-3">
+      {clients.map((client) => {
+        const sharePercent = getClientShare(client.id);
+        const clientGrandTotal = grandTotal * sharePercent / 100;
+        const clientTodayTotal = todayTotal * sharePercent / 100;
+        const clientHandover = handoverAmount * sharePercent / 100;
+        
+        return (
+          <div key={client.id} className="bg-theme-bg/50 border border-theme-border/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-theme-accent/20 flex items-center justify-center">
+                  <User className="w-3 h-3 text-theme-accent" />
+                </div>
+                <span className="text-sm font-medium text-theme-text">{client.name}</span>
+                <span className="text-xs text-cyan-400">({sharePercent.toFixed(1)}%)</span>
+              </div>
+              <span className="text-sm font-bold text-theme-accent font-mono">
+                {formatCurrency(clientGrandTotal, currency, rate)}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-theme-text-muted">{t('todayTotal')}</span>
+                <span className="text-theme-text font-mono">{formatCurrency(clientTodayTotal, currency, rate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-theme-text-muted">{t('atHandoverLabel')}</span>
+                <span className="text-theme-text font-mono">{formatCurrency(clientHandover, currency, rate)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
