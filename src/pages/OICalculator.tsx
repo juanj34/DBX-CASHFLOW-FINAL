@@ -196,8 +196,8 @@ const OICalculatorContent = () => {
   const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate]);
   const handleShare = useCallback(async () => {
-    // Always save first to ensure the client sees the latest data (including exit scenarios)
-    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios);
+    // Always save first to ensure the client sees the latest data (including exit scenarios and mortgage)
+    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs);
     if (!savedQuote) return null;
     
     const token = await generateShareToken(savedQuote.id);
