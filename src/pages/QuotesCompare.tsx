@@ -14,6 +14,7 @@ import { MetricsTable } from '@/components/roi/compare/MetricsTable';
 import { PaymentComparison } from '@/components/roi/compare/PaymentComparison';
 import { GrowthComparisonChart } from '@/components/roi/compare/GrowthComparisonChart';
 import { ExitComparison } from '@/components/roi/compare/ExitComparison';
+import { DifferentiatorsComparison } from '@/components/roi/compare/DifferentiatorsComparison';
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
 import { RecommendationSummary } from '@/components/roi/compare/RecommendationSummary';
@@ -264,6 +265,9 @@ const QuotesCompare = () => {
               <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
               <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
             </div>
+
+            {/* Value Differentiators Comparison */}
+            <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
 
             {/* Exit Scenarios */}
             <ExitComparison quotesWithCalcs={quotesWithCalcs} />

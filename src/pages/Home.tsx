@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Map, Rocket, TrendingUp, FileText, Settings, LogOut, SlidersHorizontal, Menu } from "lucide-react";
+import { Map, Rocket, TrendingUp, FileText, Settings, LogOut, SlidersHorizontal, Menu, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -40,6 +40,14 @@ const Home = () => {
       icon: Rocket,
       route: "/cashflow-generator",
       color: "#00EAFF",
+    },
+    {
+      id: "compare",
+      title: "Compare Quotes",
+      description: "Side-by-side comparison of multiple investment opportunities",
+      icon: Scale,
+      route: "/compare",
+      color: "#FFA500",
     },
     {
       id: "map",
