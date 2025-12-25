@@ -34,6 +34,7 @@ import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/Er
 import { MortgageModal } from "@/components/roi/MortgageModal";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
+import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
 import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
@@ -48,7 +49,7 @@ import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const DEFAULT_INPUTS: OIInputs = {
-  basePrice: 800000, rentalYieldPercent: 8.5, appreciationRate: 10, bookingMonth: 1, bookingYear: 2025, handoverQuarter: 4, handoverYear: 2027, downpaymentPercent: 20, preHandoverPercent: 20, additionalPayments: [], eoiFee: 50000, oqoodFee: 5000, minimumExitThreshold: 30, showAirbnbComparison: false, shortTermRental: { averageDailyRate: 800, occupancyPercent: 70, operatingExpensePercent: 25, managementFeePercent: 15 }, zoneMaturityLevel: 60, useZoneDefaults: true, constructionAppreciation: 12, growthAppreciation: 8, matureAppreciation: 4, growthPeriodYears: 5, rentGrowthRate: 4, serviceChargePerSqft: 18, adrGrowthRate: 3,
+  basePrice: 800000, rentalYieldPercent: 8.5, appreciationRate: 10, bookingMonth: 1, bookingYear: 2025, handoverQuarter: 4, handoverYear: 2027, downpaymentPercent: 20, preHandoverPercent: 20, additionalPayments: [], eoiFee: 50000, oqoodFee: 5000, minimumExitThreshold: 30, showAirbnbComparison: false, shortTermRental: { averageDailyRate: 800, occupancyPercent: 70, operatingExpensePercent: 25, managementFeePercent: 15 }, zoneMaturityLevel: 60, useZoneDefaults: true, constructionAppreciation: 12, growthAppreciation: 8, matureAppreciation: 4, growthPeriodYears: 5, rentGrowthRate: 4, serviceChargePerSqft: 18, adrGrowthRate: 3, valueDifferentiators: [],
 };
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' };
@@ -534,6 +535,12 @@ const OICalculatorContent = () => {
             >
               <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
             </CollapsibleSection>
+
+            {/* Value Differentiators Display */}
+            <ValueDifferentiatorsDisplay
+              selectedDifferentiators={inputs.valueDifferentiators || []}
+              onEditClick={() => setModalOpen(true)}
+            />
 
             {/* Hold Strategy Analysis - Collapsible */}
             <CollapsibleSection

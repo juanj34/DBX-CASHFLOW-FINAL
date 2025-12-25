@@ -21,6 +21,7 @@ import { ClientOnboardingModal, useClientOnboarding } from '@/components/roi/Cli
 import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
 import { MortgageBreakdown } from '@/components/roi/MortgageBreakdown';
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from '@/components/roi/useMortgageCalculations';
+import { ValueDifferentiatorsDisplay } from '@/components/roi/ValueDifferentiatorsDisplay';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
@@ -311,6 +312,12 @@ const CashflowViewContent = () => {
             <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
           </CollapsibleSection>
         )}
+
+        {/* Value Differentiators Display */}
+        <ValueDifferentiatorsDisplay
+          selectedDifferentiators={inputs.valueDifferentiators || []}
+          readOnly={true}
+        />
 
         {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
         {visibility.longTermHold && (
