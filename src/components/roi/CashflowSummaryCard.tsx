@@ -180,15 +180,15 @@ export const CashflowSummaryCard = ({
     <div className={cn("mb-6", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 sm:p-4 bg-theme-card border border-theme-border rounded-xl hover:bg-theme-card/80 transition-colors group"
+        className="w-full flex items-center justify-between p-4 bg-theme-card border border-theme-border rounded-xl hover:bg-theme-card/80 transition-colors group"
       >
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-theme-accent/10 rounded-lg">
-            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-theme-accent" />
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-theme-accent/10 rounded-lg">
+            <FileText className="w-5 h-5 text-theme-accent" />
           </div>
           <div className="text-left">
-            <h3 className="text-xs sm:text-base font-semibold text-theme-text">{t('summaryTitle')}</h3>
-            <p className="text-[10px] sm:text-xs text-theme-text-muted mt-0.5 hidden sm:block">{t('summarySubtitle')}</p>
+            <h3 className="text-sm sm:text-base font-semibold text-theme-text">{t('summaryTitle')}</h3>
+            <p className="text-xs text-theme-text-muted mt-0.5 hidden sm:block">{t('summarySubtitle')}</p>
           </div>
           {hasEdits && (
             <span className="text-[10px] sm:text-xs bg-amber-500/20 text-amber-400 px-1.5 sm:px-2 py-0.5 rounded">
