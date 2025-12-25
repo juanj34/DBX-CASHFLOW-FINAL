@@ -1,4 +1,4 @@
-import { Calendar, Percent, TrendingUp, Home, DollarSign } from "lucide-react";
+import { Calendar, Percent, TrendingUp, Home, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 import { OIInputs } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { calculateAppreciationBonus } from "../valueDifferentiators";
@@ -7,9 +7,86 @@ import { quarters } from "./types";
 interface ConfiguratorPreviewProps {
   inputs: OIInputs;
   currency: Currency;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const ConfiguratorPreview = ({ inputs, currency }: ConfiguratorPreviewProps) => {
+// Mini preview for collapsed state
+const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreviewProps) => {
+  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
+  
+  return (
+    <div className="h-full flex flex-col items-center py-4 gap-4">
+      <button
+        onClick={onToggleCollapse}
+        className="p-1.5 rounded-md hover:bg-[#2a3142] transition-colors text-gray-400 hover:text-white"
+        title="Expand preview (P)"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      
+      <div className="flex flex-col items-center gap-3 flex-1">
+        {/* Property indicator */}
+        <div className="flex flex-col items-center gap-1" title={`${formatCurrency(inputs.basePrice, currency)}`}>
+          <DollarSign className="w-4 h-4 text-[#CCFF00]" />
+          <span className="text-[10px] text-gray-500 font-mono">
+            {(inputs.basePrice / 1000000).toFixed(1)}M
+          </span>
+        </div>
+        
+        {/* Timeline indicator */}
+        <div className="flex flex-col items-center gap-1" title={`Q${inputs.handoverQuarter} ${inputs.handoverYear}`}>
+          <Calendar className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] text-gray-500 font-mono">
+            {inputs.handoverYear.toString().slice(-2)}
+          </span>
+        </div>
+        
+        {/* Payment split indicator */}
+        <div className="flex flex-col items-center gap-1" title={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent}`}>
+          <Percent className="w-4 h-4 text-purple-400" />
+          <span className="text-[10px] text-gray-500 font-mono">
+            {inputs.preHandoverPercent}
+          </span>
+        </div>
+        
+        {/* Rental indicator */}
+        <div className="flex flex-col items-center gap-1" title={`${inputs.rentalYieldPercent}% yield`}>
+          <Home className="w-4 h-4 text-green-400" />
+          <span className="text-[10px] text-gray-500 font-mono">
+            {inputs.rentalYieldPercent}%
+          </span>
+        </div>
+        
+        {/* Appreciation indicator */}
+        <div className="flex flex-col items-center gap-1" title={`Appreciation +${appreciationBonus.toFixed(1)}%`}>
+          <TrendingUp className="w-4 h-4 text-orange-400" />
+          {appreciationBonus > 0 && (
+            <span className="text-[10px] text-[#CCFF00] font-mono">
+              +{appreciationBonus.toFixed(0)}
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Differentiators count */}
+      {(inputs.valueDifferentiators?.length || 0) > 0 && (
+        <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center">
+          <span className="text-[10px] text-[#CCFF00] font-bold">
+            {inputs.valueDifferentiators?.length}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Full preview for expanded state
+export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCollapse }: ConfiguratorPreviewProps) => {
+  if (isCollapsed) {
+    return <MiniPreview inputs={inputs} currency={currency} onToggleCollapse={onToggleCollapse} />;
+  }
+
   const handoverPercent = 100 - inputs.preHandoverPercent;
   const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
   
@@ -23,13 +100,23 @@ export const ConfiguratorPreview = ({ inputs, currency }: ConfiguratorPreviewPro
   const annualRent = inputs.basePrice * (inputs.rentalYieldPercent / 100);
 
   return (
-    <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-4 space-y-4">
-      <div className="text-sm font-medium text-gray-400 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
-        Live Preview
+    <div className="space-y-4">
+      {/* Header with collapse button */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium text-gray-400 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
+          Live Preview
+        </div>
+        <button
+          onClick={onToggleCollapse}
+          className="p-1.5 rounded-md hover:bg-[#2a3142] transition-colors text-gray-400 hover:text-white"
+          title="Collapse preview (P)"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-4 space-y-3">
         {/* Property Value */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-500">
@@ -103,7 +190,7 @@ export const ConfiguratorPreview = ({ inputs, currency }: ConfiguratorPreviewPro
 
       {/* Value Differentiators Count */}
       {(inputs.valueDifferentiators?.length || 0) > 0 && (
-        <div className="pt-3 border-t border-[#2a3142]">
+        <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-3">
           <div className="flex items-center justify-between text-xs">
             <span className="text-[#CCFF00]">✨ {inputs.valueDifferentiators?.length} differentiators</span>
             <span className="text-[#CCFF00] font-mono">+{appreciationBonus.toFixed(1)}%</span>
@@ -112,7 +199,7 @@ export const ConfiguratorPreview = ({ inputs, currency }: ConfiguratorPreviewPro
       )}
 
       {/* Total Entry Cost */}
-      <div className="pt-3 border-t border-[#2a3142]">
+      <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-400">Today's Commitment</span>
           <span className="text-sm font-mono text-[#CCFF00] font-bold">

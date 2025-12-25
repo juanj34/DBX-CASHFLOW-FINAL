@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
@@ -28,32 +28,62 @@ export const ConfiguratorLayout = ({
   onClose 
 }: ConfiguratorLayoutProps) => {
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('property');
+  const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const [animationKey, setAnimationKey] = useState(0);
+  const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
 
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
   const canGoForward = currentIndex < SECTIONS.length - 1;
   const isLastSection = currentIndex === SECTIONS.length - 1;
 
+  const navigateToSection = useCallback((newSection: ConfiguratorSection) => {
+    const newIndex = SECTIONS.indexOf(newSection);
+    const oldIndex = SECTIONS.indexOf(previousSectionRef.current);
+    
+    if (newIndex > oldIndex) {
+      setAnimationDirection('right');
+    } else if (newIndex < oldIndex) {
+      setAnimationDirection('left');
+    } else {
+      setAnimationDirection(null);
+    }
+    
+    previousSectionRef.current = newSection;
+    setAnimationKey(prev => prev + 1);
+    setActiveSection(newSection);
+  }, []);
+
   const goToNextSection = useCallback(() => {
     if (canGoForward) {
-      setActiveSection(SECTIONS[currentIndex + 1]);
+      navigateToSection(SECTIONS[currentIndex + 1]);
     }
-  }, [canGoForward, currentIndex]);
+  }, [canGoForward, currentIndex, navigateToSection]);
 
   const goToPreviousSection = useCallback(() => {
     if (canGoBack) {
-      setActiveSection(SECTIONS[currentIndex - 1]);
+      navigateToSection(SECTIONS[currentIndex - 1]);
     }
-  }, [canGoBack, currentIndex]);
+  }, [canGoBack, currentIndex, navigateToSection]);
+
+  const togglePreview = useCallback(() => {
+    setIsPreviewCollapsed(prev => !prev);
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
       // Number keys 1-5 for section navigation
       if (e.key >= '1' && e.key <= '5') {
         const index = parseInt(e.key) - 1;
         if (index < SECTIONS.length) {
-          setActiveSection(SECTIONS[index]);
+          navigateToSection(SECTIONS[index]);
         }
       }
       // Arrow keys for next/prev
@@ -63,6 +93,10 @@ export const ConfiguratorLayout = ({
       if (e.key === 'ArrowLeft' && canGoBack) {
         goToPreviousSection();
       }
+      // P key to toggle preview
+      if (e.key.toLowerCase() === 'p') {
+        togglePreview();
+      }
       // Escape to close
       if (e.key === 'Escape') {
         onClose();
@@ -71,10 +105,15 @@ export const ConfiguratorLayout = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canGoBack, canGoForward, goToNextSection, goToPreviousSection, onClose]);
+  }, [canGoBack, canGoForward, goToNextSection, goToPreviousSection, navigateToSection, togglePreview, onClose]);
 
   const handleReset = () => {
     setInputs(DEFAULT_OI_INPUTS);
+  };
+
+  const getAnimationClass = () => {
+    if (!animationDirection) return '';
+    return animationDirection === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left';
   };
 
   const renderSection = () => {
@@ -105,9 +144,24 @@ export const ConfiguratorLayout = ({
             <span>sections</span>
             <span className="px-2 py-0.5 bg-[#1a1f2e] rounded ml-2">←/→</span>
             <span>navigate</span>
+            <span className="px-2 py-0.5 bg-[#1a1f2e] rounded ml-2">P</span>
+            <span>preview</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={togglePreview}
+            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+            title={isPreviewCollapsed ? "Show preview (P)" : "Hide preview (P)"}
+          >
+            {isPreviewCollapsed ? (
+              <PanelRight className="w-4 h-4" />
+            ) : (
+              <PanelRightClose className="w-4 h-4" />
+            )}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -133,7 +187,7 @@ export const ConfiguratorLayout = ({
         {/* Sidebar */}
         <ConfiguratorSidebar
           activeSection={activeSection}
-          onSectionChange={setActiveSection}
+          onSectionChange={navigateToSection}
           inputs={inputs}
         />
 
@@ -141,7 +195,10 @@ export const ConfiguratorLayout = ({
         <div className="flex-1 flex flex-col min-w-0">
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl">
+            <div 
+              key={animationKey}
+              className={`max-w-3xl ${getAnimationClass()}`}
+            >
               {renderSection()}
             </div>
           </div>
@@ -162,8 +219,8 @@ export const ConfiguratorLayout = ({
               {SECTIONS.map((section, index) => (
                 <button
                   key={section}
-                  onClick={() => setActiveSection(section)}
-                  className={`w-2 h-2 rounded-full transition-all ${
+                  onClick={() => navigateToSection(section)}
+                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
                     section === activeSection 
                       ? 'bg-[#CCFF00] w-6' 
                       : index < currentIndex
@@ -194,9 +251,18 @@ export const ConfiguratorLayout = ({
           </div>
         </div>
 
-        {/* Preview Panel */}
-        <div className="w-64 shrink-0 border-l border-[#2a3142] bg-[#0d1117] p-4 overflow-y-auto">
-          <ConfiguratorPreview inputs={inputs} currency={currency} />
+        {/* Preview Panel - Collapsible */}
+        <div 
+          className={`shrink-0 border-l border-[#2a3142] bg-[#0d1117] overflow-y-auto transition-all duration-300 ease-in-out ${
+            isPreviewCollapsed ? 'w-14 p-2' : 'w-64 p-4'
+          }`}
+        >
+          <ConfiguratorPreview 
+            inputs={inputs} 
+            currency={currency} 
+            isCollapsed={isPreviewCollapsed}
+            onToggleCollapse={togglePreview}
+          />
         </div>
       </div>
     </div>
