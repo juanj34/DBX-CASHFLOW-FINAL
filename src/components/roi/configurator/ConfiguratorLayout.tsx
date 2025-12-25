@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
@@ -21,6 +21,18 @@ interface ConfiguratorLayoutProps {
 
 const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'income', 'appreciation'];
 
+// Confetti particle component
+const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) => (
+  <div
+    className="absolute w-2 h-2 rounded-full animate-confetti"
+    style={{
+      backgroundColor: color,
+      left: `${Math.random() * 100}%`,
+      animationDelay: `${delay}ms`,
+    }}
+  />
+);
+
 export const ConfiguratorLayout = ({ 
   inputs, 
   setInputs, 
@@ -34,9 +46,56 @@ export const ConfiguratorLayout = ({
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['property']));
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-save indicator states
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastInputsRef = useRef<string>(JSON.stringify(inputs));
+  
+  // Celebration state
+  const [showCelebration, setShowCelebration] = useState(false);
+  const hasShownCelebrationRef = useRef(false);
 
   // Calculate progress percentage
   const progressPercent = Math.round((visitedSections.size / SECTIONS.length) * 100);
+
+  // Auto-save effect - detect input changes
+  useEffect(() => {
+    const currentInputs = JSON.stringify(inputs);
+    if (currentInputs !== lastInputsRef.current) {
+      lastInputsRef.current = currentInputs;
+      setSaveStatus('saving');
+      
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Simulate save delay (inputs are already being saved by parent)
+      saveTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('saved');
+        // Reset to idle after showing "saved"
+        saveTimeoutRef.current = setTimeout(() => {
+          setSaveStatus('idle');
+        }, 2000);
+      }, 500);
+    }
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [inputs]);
+
+  // Celebration effect when reaching 100%
+  useEffect(() => {
+    if (progressPercent === 100 && !hasShownCelebrationRef.current) {
+      hasShownCelebrationRef.current = true;
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
+    }
+  }, [progressPercent]);
 
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
@@ -149,18 +208,46 @@ export const ConfiguratorLayout = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#1a1f2e]">
+    <div className="flex flex-col h-full bg-[#1a1f2e] relative overflow-hidden">
+      {/* Celebration confetti overlay */}
+      {showCelebration && (
+        <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <ConfettiParticle 
+              key={i} 
+              delay={i * 50} 
+              color={['#CCFF00', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899'][i % 5]} 
+            />
+          ))}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center animate-scale-in">
+            <div className="bg-[#0d1117]/90 backdrop-blur-sm rounded-2xl px-8 py-6 border border-[#CCFF00]/30">
+              <Sparkles className="w-12 h-12 text-[#CCFF00] mx-auto mb-3 animate-pulse" />
+              <h3 className="text-xl font-bold text-white mb-1">All Set!</h3>
+              <p className="text-gray-400 text-sm">Your investment is fully configured</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header - Fixed */}
       <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#2a3142] bg-[#0d1117]">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold text-white">Investment Configurator</h2>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span className="px-2 py-0.5 bg-[#1a1f2e] rounded">1-5</span>
-            <span>sections</span>
-            <span className="px-2 py-0.5 bg-[#1a1f2e] rounded ml-2">←/→</span>
-            <span>navigate</span>
-            <span className="px-2 py-0.5 bg-[#1a1f2e] rounded ml-2">P</span>
-            <span>preview</span>
+          
+          {/* Auto-save indicator */}
+          <div className="flex items-center gap-1.5 text-xs">
+            {saveStatus === 'saving' && (
+              <>
+                <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />
+                <span className="text-gray-400">Saving...</span>
+              </>
+            )}
+            {saveStatus === 'saved' && (
+              <>
+                <Check className="w-3 h-3 text-green-400" />
+                <span className="text-green-400">Saved</span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">

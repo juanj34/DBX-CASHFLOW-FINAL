@@ -112,6 +112,14 @@ export default {
           "0%": { opacity: "0", transform: "scale(0.98)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "translate(-50%, -50%) scale(0.8)" },
+          "100%": { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+        },
+        "confetti": {
+          "0%": { transform: "translateY(-10px) rotate(0deg)", opacity: "1" },
+          "100%": { transform: "translateY(100vh) rotate(720deg)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -121,6 +129,8 @@ export default {
         "slide-in-right": "slide-in-right 0.2s ease-out",
         "slide-in-left": "slide-in-left 0.2s ease-out",
         "fade-scale": "fade-scale 0.2s ease-out",
+        "scale-in": "scale-in 0.3s ease-out forwards",
+        "confetti": "confetti 3s ease-out forwards",
       },
     },
   },
