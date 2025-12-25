@@ -4,7 +4,7 @@ import { Calendar, CreditCard, Home, Clock, Building2, User, ChevronDown, Chevro
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InfoTooltip } from "./InfoTooltip";
 import { ClientUnitData } from "./ClientUnitInfo";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getCountryByCode } from "@/data/countries";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -305,8 +305,20 @@ const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }
   const clients = clientInfo.clients || [];
   const clientShares = clientInfo.clientShares || [];
   
-  // State for controlled accordion
-  const [expandedClients, setExpandedClients] = useState<string[]>([]);
+  // State for controlled accordion - persist to localStorage
+  const [expandedClients, setExpandedClients] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('payment-split-expanded-clients');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  // Persist expanded state to localStorage
+  useEffect(() => {
+    localStorage.setItem('payment-split-expanded-clients', JSON.stringify(expandedClients));
+  }, [expandedClients]);
   
   // Calculate totals
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
@@ -354,7 +366,7 @@ const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }
       {/* Expand/Collapse All Button */}
       <div className="flex justify-end">
         <Button
-          variant="ghost"
+          variant="ghostDark"
           size="sm"
           onClick={toggleAll}
           className="text-xs text-theme-text-muted hover:text-theme-text h-7 px-2"
