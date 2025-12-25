@@ -597,12 +597,11 @@ export const CashflowSummaryCard = ({
                   label={t('downpayment')} 
                   value={fmt(structuredData.todaysCommitment.downpayment)} 
                   subtext={`(${structuredData.todaysCommitment.downpaymentPercent}%)`}
-                  variant="expense"
                 />
-                <SummaryRow label={t('dldFeePercent')} value={fmt(structuredData.todaysCommitment.dldFee)} variant="expense" />
-                <SummaryRow label={t('oqoodFee')} value={fmt(structuredData.todaysCommitment.oqoodFee)} variant="expense" />
+                <SummaryRow label={t('dldFeePercent')} value={fmt(structuredData.todaysCommitment.dldFee)} />
+                <SummaryRow label={t('oqoodFee')} value={fmt(structuredData.todaysCommitment.oqoodFee)} />
                 <div className="pt-2 mt-2 border-t border-theme-border/50">
-                  <SummaryRow label={t('totalToday')} value={fmt(structuredData.todaysCommitment.total)} variant="expense" />
+                  <SummaryRow label={t('totalToday')} value={fmt(structuredData.todaysCommitment.total)} highlight />
                 </div>
               </SummarySection>
 
@@ -617,11 +616,11 @@ export const CashflowSummaryCard = ({
                           <span className="text-[10px] sm:text-xs text-theme-text-muted">{p.percent}%</span>
                           <span className="text-[9px] sm:text-xs text-theme-text-muted">({p.timing})</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-mono text-red-400 font-semibold">{fmt(p.amount)}</span>
+                        <span className="text-xs sm:text-sm font-mono text-theme-text font-semibold">{fmt(p.amount)}</span>
                       </div>
                     ))}
                     <div className="pt-2 mt-2 border-t border-theme-border/50">
-                      <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} variant="expense" />
+                      <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} highlight />
                     </div>
                   </>
                 ) : (
@@ -634,7 +633,6 @@ export const CashflowSummaryCard = ({
                 <SummaryRow 
                   label={t('finalPayment')} 
                   value={fmt(structuredData.handover.amount)} 
-                  variant="expense"
                   subtext={`(${structuredData.handover.percent}%)`}
                 />
               </SummarySection>
@@ -643,8 +641,8 @@ export const CashflowSummaryCard = ({
               {localToggles.showRental && structuredData.rental && (
                 <SummarySection icon={TrendingUp} iconColor="text-green-400" title={t('rentalPotentialSection')}>
                   <SummaryRow label={t('rentalYield')} value={`${structuredData.rental.yieldPercent}%`} />
-                  <SummaryRow label={t('grossAnnualRent')} value={fmt(structuredData.rental.grossAnnual)} variant="income" />
-                  <SummaryRow label={t('netAnnualRent')} value={fmt(structuredData.rental.netAnnual)} variant="income" />
+                  <SummaryRow label={t('grossAnnualRent')} value={fmt(structuredData.rental.grossAnnual)} />
+                  <SummaryRow label={t('netAnnualRent')} value={fmt(structuredData.rental.netAnnual)} />
                   <SummaryRow label={t('yearsToPayOff')} value={structuredData.rental.yearsToPayOff.toFixed(1)} />
                   <SummaryRow label={t('effectiveYield')} value={`${structuredData.rental.effectiveYield.toFixed(1)}%`} highlight />
                   
@@ -652,12 +650,11 @@ export const CashflowSummaryCard = ({
                   {structuredData.rental.showAirbnb && structuredData.rental.airbnbNetAnnual && structuredData.rental.airbnbNetAnnual > 0 && (
                     <div className="pt-2 mt-2 border-t border-theme-border/50">
                       <p className="text-xs text-theme-text-muted mb-2">{t('airbnbComparison')}</p>
-                      <SummaryRow label={t('airbnbNet')} value={fmt(structuredData.rental.airbnbNetAnnual)} variant="income" />
+                      <SummaryRow label={t('airbnbNet')} value={fmt(structuredData.rental.airbnbNetAnnual)} />
                       {structuredData.rental.airbnbDifference !== undefined && (
                         <SummaryRow 
                           label={t('comparedToLongTerm')} 
                           value={`${structuredData.rental.airbnbDifference >= 0 ? '+' : ''}${fmt(structuredData.rental.airbnbDifference)}`}
-                          variant={structuredData.rental.airbnbDifference >= 0 ? 'income' : 'expense'}
                         />
                       )}
                     </div>
@@ -680,11 +677,11 @@ export const CashflowSummaryCard = ({
                         </div>
                         <div>
                           <span className="text-theme-text-muted">{t('profit')}</span>
-                          <p className="text-emerald-400 font-mono font-semibold">{fmt(scenario.profit)}</p>
+                          <p className="text-theme-accent font-mono font-semibold">{fmt(scenario.profit)}</p>
                         </div>
                         <div>
                           <span className="text-theme-text-muted">{t('roe')}</span>
-                          <p className="text-emerald-400 font-mono font-semibold">{scenario.roe.toFixed(1)}%</p>
+                          <p className="text-theme-accent font-mono font-semibold">{scenario.roe.toFixed(1)}%</p>
                         </div>
                       </div>
                     </div>
