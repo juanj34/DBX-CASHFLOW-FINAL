@@ -70,23 +70,23 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
   const grandTotal = totalPropertyPayments + totalEntryCosts;
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
-      <div className="p-3 sm:p-4 border-b border-[#2a3142] flex items-center gap-2">
-        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#CCFF00]" />
+    <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
+      <div className="p-3 sm:p-4 border-b border-theme-border flex items-center gap-2">
+        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-theme-accent" />
         <div>
-          <h3 className="font-semibold text-white text-sm sm:text-base">{t('paymentBreakdownTitle')}</h3>
-          <p className="text-[10px] sm:text-xs text-gray-400">{preHandoverPercent}/{handoverPercent} {t('paymentStructure')}</p>
+          <h3 className="font-semibold text-theme-text text-sm sm:text-base">{t('paymentBreakdownTitle')}</h3>
+          <p className="text-[10px] sm:text-xs text-theme-text-muted">{preHandoverPercent}/{handoverPercent} {t('paymentStructure')}</p>
         </div>
       </div>
 
       <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Base Price */}
-        <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-[#2a3142]">
-          <span className="text-xs sm:text-sm text-gray-400">{t('basePropertyPrice')}</span>
+        <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-theme-border">
+          <span className="text-xs sm:text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
           <div className="text-right">
-            <span className="text-sm sm:text-lg font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+            <span className="text-sm sm:text-lg font-bold text-theme-text font-mono">{formatCurrency(basePrice, currency, rate)}</span>
             {unitSizeSqf > 0 && (
-              <p className="text-[10px] text-gray-600 font-mono">
+              <p className="text-[10px] text-theme-text-muted font-mono">
                 {formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft
               </p>
             )}
@@ -95,7 +95,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
         {/* Section: At Booking */}
         <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[#CCFF00]">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-theme-accent">
             <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="text-xs sm:text-sm font-medium uppercase">{t('atBooking')} ({monthToDateString(bookingMonth, bookingYear, language)})</span>
           </div>
@@ -103,35 +103,35 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
           <div className="pl-4 sm:pl-6 space-y-2 sm:space-y-3">
             <div className="flex justify-between items-center gap-2">
               <div className="flex items-center gap-1 min-w-0 flex-1">
-                <span className="text-[10px] sm:text-sm text-gray-300 truncate">{t('eoiBookingFee')}</span>
+                <span className="text-[10px] sm:text-sm text-theme-text-muted truncate">{t('eoiBookingFee')}</span>
                 <InfoTooltip translationKey="tooltipEoiFee" />
               </div>
-              <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(eoiFeeActual, currency, rate)}</span>
+              <span className="text-[10px] sm:text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(eoiFeeActual, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center gap-2">
               <div className="flex items-center gap-1 min-w-0 flex-1">
-                <span className="text-[10px] sm:text-sm text-gray-300 truncate">{t('restOfDownpayment')} ({downpaymentPercent}% - EOI)</span>
+                <span className="text-[10px] sm:text-sm text-theme-text-muted truncate">{t('restOfDownpayment')} ({downpaymentPercent}% - EOI)</span>
                 <InfoTooltip translationKey="tooltipDownpayment" />
               </div>
-              <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(restOfDownpayment, currency, rate)}</span>
+              <span className="text-[10px] sm:text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(restOfDownpayment, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center gap-2">
               <div className="flex items-center gap-1 min-w-0 flex-1">
-                <span className="text-[10px] sm:text-sm text-gray-300 truncate">{t('dldFeePercent')}</span>
+                <span className="text-[10px] sm:text-sm text-theme-text-muted truncate">{t('dldFeePercent')}</span>
                 <InfoTooltip translationKey="tooltipDldFee" />
               </div>
-              <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(dldFeeAmount, currency, rate)}</span>
+              <span className="text-[10px] sm:text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(dldFeeAmount, currency, rate)}</span>
             </div>
             <div className="flex justify-between items-center gap-2">
               <div className="flex items-center gap-1 min-w-0 flex-1">
-                <span className="text-[10px] sm:text-sm text-gray-300 truncate">{t('oqoodFee')}</span>
+                <span className="text-[10px] sm:text-sm text-theme-text-muted truncate">{t('oqoodFee')}</span>
                 <InfoTooltip translationKey="tooltipOqoodFee" />
               </div>
-              <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(oqoodFee, currency, rate)}</span>
+              <span className="text-[10px] sm:text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(oqoodFee, currency, rate)}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
-              <span className="text-xs sm:text-sm font-medium text-[#CCFF00]">{t('totalToday')}</span>
-              <span className="text-xs sm:text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-theme-border/50">
+              <span className="text-xs sm:text-sm font-medium text-theme-accent">{t('totalToday')}</span>
+              <span className="text-xs sm:text-sm font-bold text-theme-accent font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
         {/* Section: During Construction */}
         {sortedAdditionalPayments.length > 0 && (
           <div className="space-y-2 sm:space-y-3">
-            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-theme-text-muted">
               <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="text-xs sm:text-sm font-medium uppercase">{t('duringConstruction')}</span>
             </div>
@@ -165,25 +165,25 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                   <div key={payment.id} className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
                       {isTimeBased ? (
-                        <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                        <Clock className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
                       ) : (
-                        <Building2 className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                        <Building2 className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
                       )}
-                      <span className="text-[10px] sm:text-sm text-gray-300 truncate">
+                      <span className="text-[10px] sm:text-sm text-theme-text-muted truncate">
                         {payment.paymentPercent}% @ <span className="sm:hidden">{triggerLabel}</span><span className="hidden sm:inline">{triggerLabelFull}</span>
                       </span>
                       {dateStr && (
-                        <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0">({dateStr})</span>
+                        <span className="text-[10px] sm:text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
                       )}
                     </div>
-                    <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(amount, currency, rate)}</span>
+                    <span className="text-[10px] sm:text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(amount, currency, rate)}</span>
                   </div>
                 );
               })}
               {additionalTotal > 0 && (
-                <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]/50">
-                  <span className="text-xs sm:text-sm text-gray-400">{t('subtotalInstallments')}</span>
-                  <span className="text-xs sm:text-sm text-gray-300 font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+                <div className="flex justify-between items-center pt-2 border-t border-theme-border/50">
+                  <span className="text-xs sm:text-sm text-theme-text-muted">{t('subtotalInstallments')}</span>
+                  <span className="text-xs sm:text-sm text-theme-text-muted font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
                 </div>
               )}
             </div>
@@ -191,20 +191,20 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
         )}
 
         {/* Pre-Handover Summary */}
-        <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-xl p-3 sm:p-4 space-y-2">
+        <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-xl p-3 sm:p-4 space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-xs sm:text-sm text-gray-300">{t('totalToday')}</span>
-            <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
+            <span className="text-xs sm:text-sm text-theme-text-muted">{t('totalToday')}</span>
+            <span className="text-xs sm:text-sm text-theme-text font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
           </div>
           {additionalTotal > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-xs sm:text-sm text-gray-300">{t('plusInstallments')}</span>
-              <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+              <span className="text-xs sm:text-sm text-theme-text-muted">{t('plusInstallments')}</span>
+              <span className="text-xs sm:text-sm text-theme-text font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
             </div>
           )}
-          <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30">
-            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">{t('totalPreHandover')} ({preHandoverPercent}%)</span>
-            <span className="text-sm sm:text-base font-bold text-[#CCFF00] font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
+          <div className="flex justify-between items-center pt-2 border-t border-theme-accent/30">
+            <span className="text-xs sm:text-sm font-bold text-theme-accent">{t('totalPreHandover')} ({preHandoverPercent}%)</span>
+            <span className="text-sm sm:text-base font-bold text-theme-accent font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
           </div>
         </div>
 
@@ -218,27 +218,27 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
           <div className="pl-4 sm:pl-6 space-y-2">
             <div className="flex justify-between items-center gap-2">
               <div className="flex items-center gap-1 min-w-0 flex-1">
-                <span className="text-[10px] sm:text-sm text-gray-300 truncate">{t('finalPayment')} ({handoverPercent}%)</span>
+                <span className="text-[10px] sm:text-sm text-theme-text-muted truncate">{t('finalPayment')} ({handoverPercent}%)</span>
                 <InfoTooltip translationKey="tooltipFinalPayment" />
               </div>
-              <span className="text-[10px] sm:text-sm text-white font-mono flex-shrink-0">{formatCurrency(handoverAmount, currency, rate)}</span>
+              <span className="text-[10px] sm:text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(handoverAmount, currency, rate)}</span>
             </div>
           </div>
         </div>
 
         {/* Grand Total */}
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#2a3142] space-y-2">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-theme-border space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-xs sm:text-sm text-gray-400">{t('propertyPayments')}</span>
-            <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
+            <span className="text-xs sm:text-sm text-theme-text-muted">{t('propertyPayments')}</span>
+            <span className="text-xs sm:text-sm text-theme-text font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs sm:text-sm text-gray-400">{t('entryCostsDldOqood')}</span>
-            <span className="text-xs sm:text-sm text-white font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
+            <span className="text-xs sm:text-sm text-theme-text-muted">{t('entryCostsDldOqood')}</span>
+            <span className="text-xs sm:text-sm text-theme-text font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
           </div>
-          <div className="flex justify-between items-center pt-2 border-t border-[#CCFF00]/30 bg-[#CCFF00]/5 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2">
-            <span className="text-xs sm:text-sm font-bold text-[#CCFF00]">{t('totalToDisburse')}</span>
-            <span className="text-sm sm:text-lg font-bold text-[#CCFF00] font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
+          <div className="flex justify-between items-center pt-2 border-t border-theme-accent/30 bg-theme-accent/5 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2">
+            <span className="text-xs sm:text-sm font-bold text-theme-accent">{t('totalToDisburse')}</span>
+            <span className="text-sm sm:text-lg font-bold text-theme-accent font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
           </div>
         </div>
       </div>

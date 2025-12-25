@@ -85,8 +85,8 @@ const AccountSettings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" />
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-accent" />
       </div>
     );
   }
@@ -97,16 +97,16 @@ const AccountSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-theme-bg">
+      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/home">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
                 <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="text-xl font-bold text-white">{t('accountSettingsTitle')}</h1>
+            <h1 className="text-xl font-bold text-theme-text">{t('accountSettingsTitle')}</h1>
           </div>
           <Button
             variant="outline"
@@ -119,11 +119,11 @@ const AccountSettings = () => {
       </header>
 
       <main className="container mx-auto px-6 py-8 max-w-2xl">
-        <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-8">
+        <div className="bg-theme-card border border-theme-border rounded-2xl p-8">
           {/* Avatar Section */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-[#2a3142] border-4 border-[#CCFF00]/20">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-theme-card-alt border-4 border-theme-accent/20">
                 {profile.avatar_url ? (
                   <img 
                     src={profile.avatar_url} 
@@ -132,19 +132,19 @@ const AccountSettings = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <User className="w-16 h-16 text-gray-500" />
+                    <User className="w-16 h-16 text-theme-text-muted" />
                   </div>
                 )}
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="absolute bottom-0 right-0 p-2 bg-[#CCFF00] rounded-full hover:bg-[#CCFF00]/90 transition-colors"
+                className="absolute bottom-0 right-0 p-2 bg-theme-accent rounded-full hover:bg-theme-accent/90 transition-colors"
               >
                 {uploading ? (
-                  <div className="w-5 h-5 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                  <div className="w-5 h-5 animate-spin rounded-full border-2 border-theme-bg border-t-transparent" />
                 ) : (
-                  <Camera className="w-5 h-5 text-black" />
+                  <Camera className="w-5 h-5 text-theme-bg" />
                 )}
               </button>
               <input
@@ -155,65 +155,65 @@ const AccountSettings = () => {
                 className="hidden"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2">{t('accountClickToUpload')}</p>
+            <p className="text-xs text-theme-text-muted mt-2">{t('accountClickToUpload')}</p>
           </div>
 
           {/* Form Fields */}
           <div className="space-y-6">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">{t('accountEmail')}</label>
+              <label className="block text-sm text-theme-text-muted mb-2">{t('accountEmail')}</label>
               <Input
                 value={profile.email}
                 disabled
-                className="bg-[#0d1117] border-[#2a3142] text-gray-500"
+                className="bg-theme-bg-alt border-theme-border text-theme-text-muted"
               />
-              <p className="text-xs text-gray-500 mt-1">{t('accountEmailCannotChange')}</p>
+              <p className="text-xs text-theme-text-muted mt-1">{t('accountEmailCannotChange')}</p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">{t('accountFullName')}</label>
+              <label className="block text-sm text-theme-text-muted mb-2">{t('accountFullName')}</label>
               <Input
                 value={fullName || profile.full_name || ''}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={t('accountEnterFullName')}
-                className="bg-[#0d1117] border-[#2a3142] text-white"
+                className="bg-theme-bg-alt border-theme-border text-theme-text"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">{t('accountBusinessEmail')}</label>
+              <label className="block text-sm text-theme-text-muted mb-2">{t('accountBusinessEmail')}</label>
               <Input
                 value={businessEmail}
                 onChange={(e) => setBusinessEmail(e.target.value)}
                 placeholder="your@business.com"
                 type="email"
-                className="bg-[#0d1117] border-[#2a3142] text-white"
+                className="bg-theme-bg-alt border-theme-border text-theme-text"
               />
-              <p className="text-xs text-gray-500 mt-1">{t('accountBusinessEmailDesc')}</p>
+              <p className="text-xs text-theme-text-muted mt-1">{t('accountBusinessEmailDesc')}</p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">{t('accountWhatsApp')}</label>
+              <label className="block text-sm text-theme-text-muted mb-2">{t('accountWhatsApp')}</label>
               <div className="flex gap-2">
                 <Input
                   value={whatsappCountryCode}
                   onChange={(e) => setWhatsappCountryCode(e.target.value)}
                   placeholder="+971"
-                  className="bg-[#0d1117] border-[#2a3142] text-white w-24"
+                  className="bg-theme-bg-alt border-theme-border text-theme-text w-24"
                 />
                 <Input
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
                   placeholder="501234567"
-                  className="bg-[#0d1117] border-[#2a3142] text-white flex-1"
+                  className="bg-theme-bg-alt border-theme-border text-theme-text flex-1"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">{t('accountWhatsAppDesc')}</p>
+              <p className="text-xs text-theme-text-muted mt-1">{t('accountWhatsAppDesc')}</p>
             </div>
 
             {/* Theme Selection */}
             <div>
-              <label className="block text-sm text-gray-400 mb-3">{t('themePreference')}</label>
+              <label className="block text-sm text-theme-text-muted mb-3">{t('themePreference')}</label>
               <div className="grid grid-cols-3 gap-3">
                 {(Object.entries(THEMES) as [ThemeKey, typeof THEMES[ThemeKey]][]).map(([key, config]) => {
                   const Icon = key === 'tech-dark' ? Zap : key === 'consultant' ? Briefcase : Moon;
@@ -225,32 +225,32 @@ const AccountSettings = () => {
                       onClick={() => setTheme(key)}
                       className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${
                         isSelected 
-                          ? 'border-[#CCFF00] bg-[#CCFF00]/10' 
-                          : 'border-[#2a3142] bg-[#0d1117] hover:border-[#3a4152]'
+                          ? 'border-theme-accent bg-theme-accent/10' 
+                          : 'border-theme-border bg-theme-bg-alt hover:border-theme-border-alt'
                       }`}
                     >
-                      <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-[#CCFF00]' : 'text-gray-400'}`} />
-                      <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                      <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
+                      <span className={`text-sm ${isSelected ? 'text-theme-text' : 'text-theme-text-muted'}`}>
                         {config.name}
                       </span>
                     </button>
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-500 mt-2">{t('themePreferenceDesc')}</p>
+              <p className="text-xs text-theme-text-muted mt-2">{t('themePreferenceDesc')}</p>
             </div>
 
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="w-full bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+              className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
             >
               {saving ? t('accountSaving') : t('accountSaveChanges')}
             </Button>
           </div>
 
           {/* Quick Links */}
-          <div className="mt-8 pt-6 border-t border-[#2a3142] space-y-3">
+          <div className="mt-8 pt-6 border-t border-theme-border space-y-3">
             <Link to="/my-quotes" className="block">
               <Button variant="outlineDark" className="w-full">
                 {t('accountViewGenerators')}

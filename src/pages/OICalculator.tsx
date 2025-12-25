@@ -226,28 +226,28 @@ const OICalculatorContent = () => {
 
   return (
     <CashflowErrorBoundary>
-      <div className="min-h-screen bg-[#0f172a]">
-      <div className="hidden print-only print:block bg-[#0f172a] text-white p-6 mb-6">
+      <div className="min-h-screen bg-theme-bg">
+      <div className="hidden print-only print:block bg-theme-bg text-theme-text p-6 mb-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold text-[#CCFF00]">CASHFLOW GENERATOR</h1><p className="text-gray-400 text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
-          {profile && <div className="text-right"><p className="text-sm text-gray-400">{t('advisor')}</p><p className="font-medium">{profile.full_name || 'Advisor'}</p></div>}
+          <div><h1 className="text-2xl font-bold text-theme-accent">CASHFLOW GENERATOR</h1><p className="text-theme-text-muted text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+          {profile && <div className="text-right"><p className="text-sm text-theme-text-muted">{t('advisor')}</p><p className="font-medium">{profile.full_name || 'Advisor'}</p></div>}
         </div>
       </div>
 
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
+      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
           {/* Main header row */}
           <div className="flex items-center justify-between gap-2 w-full min-w-0">
             {/* Left: Navigation + Advisor */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <Link to="/home" className="flex-shrink-0">
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-9 sm:w-9">
+                <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8 sm:h-9 sm:w-9">
                   <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
               {isAdmin && (
                 <Link to="/dashboard" className="flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e] h-8 w-8 sm:h-9 sm:w-9">
+                  <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8 sm:h-9 sm:w-9">
                     <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </Link>
@@ -297,7 +297,7 @@ const OICalculatorContent = () => {
                 <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
 
                 {/* Separator */}
-                <div className="w-px h-6 bg-[#2a3142] mx-0.5" />
+                <div className="w-px h-6 bg-theme-border mx-0.5" />
 
                 {/* Settings Dropdown */}
                 <SettingsDropdown
@@ -314,7 +314,7 @@ const OICalculatorContent = () => {
                   variant="outlineDark"
                   size="sm"
                   onClick={() => setMortgageModalOpen(true)}
-                  className={`h-8 px-2 sm:px-3 ${mortgageInputs.enabled ? 'border-[#CCFF00]/50 text-[#CCFF00]' : ''}`}
+                  className={`h-8 px-2 sm:px-3 ${mortgageInputs.enabled ? 'border-theme-accent/50 text-theme-accent' : ''}`}
                 >
                   <Building2 className="w-4 h-4" />
                   <span className="ml-1.5">{t('mortgage')}</span>
@@ -334,7 +334,7 @@ const OICalculatorContent = () => {
                 {/* Configure Button */}
                 <Button 
                   onClick={() => setModalOpen(true)}
-                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
                 >
                   <Settings2 className="w-4 h-4 mr-2" />
                   Configure
@@ -350,7 +350,7 @@ const OICalculatorContent = () => {
                 <Button 
                   size="sm"
                   onClick={() => setModalOpen(true)}
-                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold h-8 px-2"
+                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold h-8 px-2"
                 >
                   <Settings2 className="w-4 h-4" />
                 </Button>
@@ -358,15 +358,15 @@ const OICalculatorContent = () => {
                 {/* More Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
                       <MoreVertical className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#1a1f2e] border-[#2a3142] z-50 w-52">
+                  <DropdownMenuContent align="end" className="bg-theme-card border-theme-border z-50 w-52">
                     {/* Client Details */}
                     <DropdownMenuItem
                       onClick={() => setClientModalOpen(true)}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                     >
                       <Users className="w-4 h-4" />
                       {t('clientDetails')}
@@ -375,13 +375,13 @@ const OICalculatorContent = () => {
                     {/* Mortgage */}
                     <DropdownMenuItem
                       onClick={() => setMortgageModalOpen(true)}
-                      className={`text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2 ${mortgageInputs.enabled ? 'text-[#CCFF00]' : ''}`}
+                      className={`text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2 ${mortgageInputs.enabled ? 'text-theme-accent' : ''}`}
                     >
                       <Building2 className="w-4 h-4" />
                       {t('mortgage')}
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator className="bg-[#2a3142]" />
+                    <DropdownMenuSeparator className="bg-theme-border" />
 
                     {/* Quotes actions */}
                     <DropdownMenuItem
@@ -390,7 +390,7 @@ const OICalculatorContent = () => {
                         navigate('/cashflow-generator');
                         window.location.reload();
                       }}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                     >
                       <FilePlus className="w-4 h-4" />
                       {t('newQuote')}
@@ -398,7 +398,7 @@ const OICalculatorContent = () => {
 
                     <DropdownMenuItem
                       onClick={() => setLoadQuoteModalOpen(true)}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                     >
                       <FolderOpen className="w-4 h-4" />
                       {t('loadQuote')}
@@ -407,26 +407,26 @@ const OICalculatorContent = () => {
                     {quoteId && (
                       <DropdownMenuItem
                         onClick={() => setVersionHistoryOpen(true)}
-                        className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                        className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                       >
                         <History className="w-4 h-4" />
                         {t('versionHistory')}
                       </DropdownMenuItem>
                     )}
 
-                    <DropdownMenuSeparator className="bg-[#2a3142]" />
+                    <DropdownMenuSeparator className="bg-theme-border" />
 
                     {/* Settings section */}
                     <DropdownMenuItem
                       onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                     >
                       🌐 {language === 'en' ? 'Español' : 'English'}
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
                       onClick={() => setCurrency(currency === 'AED' ? 'USD' : 'AED')}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                     >
                       💰 {currency === 'AED' ? 'USD' : 'AED'}
                     </DropdownMenuItem>
@@ -485,22 +485,22 @@ const OICalculatorContent = () => {
 
         {!isFullyConfigured ? (
           /* Unconfigured State - Show what's missing */
-          <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-8 sm:p-12 text-center">
+          <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-12 text-center">
             <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-[#CCFF00]/20 flex items-center justify-center mx-auto mb-6">
-                {!hasClientDetails ? <AlertCircle className="w-8 h-8 text-[#CCFF00]" /> : <Settings2 className="w-8 h-8 text-[#CCFF00]" />}
+              <div className="w-16 h-16 rounded-2xl bg-theme-accent/20 flex items-center justify-center mx-auto mb-6">
+                {!hasClientDetails ? <AlertCircle className="w-8 h-8 text-theme-accent" /> : <Settings2 className="w-8 h-8 text-theme-accent" />}
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">
+              <h3 className="text-xl font-semibold text-theme-text mb-3">
                 {!hasClientDetails ? t('completeClientInfo') : t('configurePropertyFinancials')}
               </h3>
-              <p className="text-gray-400 mb-6">
+              <p className="text-theme-text-muted mb-6">
                 {!hasClientDetails ? t('completeClientInfoDesc') : t('configurePropertyFinancialsDesc')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 {!hasClientDetails ? (
                   <Button
                     onClick={() => setClientModalOpen(true)}
-                    className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
+                    className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
                   >
                     <Settings2 className="w-4 h-4" />
                     Set Client & Property
@@ -508,7 +508,7 @@ const OICalculatorContent = () => {
                 ) : (
                   <Button
                     onClick={() => setModalOpen(true)}
-                    className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
+                    className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
                   >
                     <TrendingUp className="w-4 h-4" />
                     Configure Financials
@@ -537,7 +537,7 @@ const OICalculatorContent = () => {
             <CollapsibleSection
               title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
               subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
-              icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
+              icon={<Home className="w-5 h-5 text-theme-accent" />}
               defaultOpen={false}
             >
               <div className="space-y-4 sm:space-y-6">
@@ -558,7 +558,7 @@ const OICalculatorContent = () => {
             <CollapsibleSection
               title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
               subtitle={t('whenToSell') || "When to sell for maximum returns"}
-              icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
+              icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
               defaultOpen={false}
             >
               <div className="space-y-4 sm:space-y-6">
