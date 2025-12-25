@@ -15,6 +15,7 @@ import ROICalculator from "./pages/ROICalculator";
 import OICalculator from "./pages/OICalculator";
 import AccountSettings from "./pages/AccountSettings";
 import QuotesDashboard from "./pages/QuotesDashboard";
+import QuotesCompare from "./pages/QuotesCompare";
 import CashflowView from "./pages/CashflowView";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/cashflow/:quoteId" element={<OICalculator />} />
                 <Route path="/account-settings" element={<AccountSettings />} />
                 <Route path="/my-quotes" element={<QuotesDashboard />} />
+                <Route path="/compare" element={<QuotesCompare />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
                 {/* Redirects for old routes */}
                 <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
