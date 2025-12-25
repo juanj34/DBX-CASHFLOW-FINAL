@@ -460,7 +460,7 @@ export const MortgageBreakdown = ({
                   <div className="text-center p-2 bg-[#0f172a] rounded-lg">
                     <div className="text-[10px] text-gray-500 mb-1">{t('year1')}</div>
                     <div className="text-sm font-mono text-emerald-400">{formatCurrency(displayNetRent, currency, rate)}</div>
-                    <div className={`text-[10px] mt-1 ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                    <div className={`text-[10px] mt-1 whitespace-nowrap ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
                       {longTermCoveragePercent}% {t('coverage')}
                     </div>
                   </div>
@@ -477,7 +477,7 @@ export const MortgageBreakdown = ({
                   <div className="text-center p-2 bg-[#0f172a] rounded-lg">
                     <div className="text-[10px] text-gray-500 mb-1">{t('year5')}</div>
                     <div className="text-sm font-mono text-emerald-400">{formatCurrency(displayYear5NetRent, currency, rate)}</div>
-                    <div className={`text-[10px] mt-1 ${year5CoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                    <div className={`text-[10px] mt-1 whitespace-nowrap ${year5CoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
                       {year5CoveragePercent}% {t('coverage')}
                     </div>
                   </div>

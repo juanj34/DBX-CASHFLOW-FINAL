@@ -95,6 +95,7 @@ export interface StructuredSummaryData {
     monthlyRent: number;
     monthlyContribution: number; // renamed from gap
     isPositive: boolean;
+    yearsUntilRentCoversMortgage?: number;
   };
 }
 
@@ -312,15 +313,29 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
     const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
     const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
     const monthlyRent = (fullAnnualRent / 12) - monthlyServiceCharges;
-    const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
+    
+    // Include insurance in total mortgage cost (matching MortgageBreakdown exactly)
+    const monthlyInsurance = mortgageAnalysis.totalAnnualInsurance / 12;
+    const monthlyMortgageTotal = mortgageAnalysis.monthlyPayment + monthlyInsurance;
+    const rentVsPayment = monthlyRent - monthlyMortgageTotal;
+    
+    // Calculate years until rent covers mortgage (based on rent growth rate)
+    let yearsUntilRentCoversMortgage: number | undefined;
+    if (rentVsPayment < 0 && inputs.rentGrowthRate > 0) {
+      // Formula: monthlyRent * (1 + rate)^n >= monthlyMortgageTotal
+      // n = log(monthlyMortgageTotal / monthlyRent) / log(1 + rate)
+      const yearsNeeded = Math.log(monthlyMortgageTotal / monthlyRent) / Math.log(1 + inputs.rentGrowthRate / 100);
+      yearsUntilRentCoversMortgage = Math.ceil(yearsNeeded);
+    }
     
     structuredData.mortgage = {
       financingPercent: mortgageInputs.financingPercent,
       loanAmount: mortgageAnalysis.loanAmount,
-      monthlyPayment: mortgageAnalysis.monthlyPayment,
+      monthlyPayment: monthlyMortgageTotal, // Include insurance in displayed payment
       monthlyRent,
       monthlyContribution: Math.abs(rentVsPayment),
       isPositive: rentVsPayment >= 0,
+      yearsUntilRentCoversMortgage,
     };
   }
 
@@ -442,35 +457,53 @@ ${scenarioLines}`;
   // Optional: Mortgage Impact
   let mortgageImpactSection: string | undefined;
   if (shouldShowMortgage && mortgageAnalysis && mortgageInputs) {
-    // Use same calculation as structured data for consistency
+    // Use same calculation as structured data for consistency (including insurance)
     const firstFullRentalYear = calculations.yearlyProjections.find(p => 
       !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
     );
     const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
     const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
     const monthlyRent = (fullAnnualRent / 12) - monthlyServiceCharges;
-    const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
+    
+    // Include insurance in total mortgage cost (matching MortgageBreakdown exactly)
+    const monthlyInsurance = mortgageAnalysis.totalAnnualInsurance / 12;
+    const monthlyMortgageTotal = mortgageAnalysis.monthlyPayment + monthlyInsurance;
+    const rentVsPayment = monthlyRent - monthlyMortgageTotal;
     const isPositive = rentVsPayment >= 0;
+    
+    // Calculate years until rent covers mortgage
+    let yearsUntilRentCoversMortgage: number | undefined;
+    if (!isPositive && inputs.rentGrowthRate > 0) {
+      const yearsNeeded = Math.log(monthlyMortgageTotal / monthlyRent) / Math.log(1 + inputs.rentGrowthRate / 100);
+      yearsUntilRentCoversMortgage = Math.ceil(yearsNeeded);
+    }
     
     const outcome = isPositive
       ? (lang === 'en' 
           ? `Rent covers the mortgage with ${fmt(Math.abs(rentVsPayment))} monthly surplus ✅` 
           : `La renta cubre la hipoteca con ${fmt(Math.abs(rentVsPayment))} de excedente mensual ✅`)
       : (lang === 'en'
-          ? `Monthly gap of ${fmt(Math.abs(rentVsPayment))} to cover ⚠️`
-          : `Diferencia mensual de ${fmt(Math.abs(rentVsPayment))} por cubrir ⚠️`);
+          ? `Monthly out-of-pocket of ${fmt(Math.abs(rentVsPayment))} to cover ⚠️`
+          : `Aportación mensual de ${fmt(Math.abs(rentVsPayment))} por cubrir ⚠️`);
+    
+    // Add rent growth impact line
+    const rentGrowthImpact = !isPositive && yearsUntilRentCoversMortgage !== undefined
+      ? (lang === 'en'
+          ? `\n• Based on ${inputs.rentGrowthRate}% annual rent growth, rent will cover the mortgage in approximately ${yearsUntilRentCoversMortgage} years`
+          : `\n• Basado en ${inputs.rentGrowthRate}% de crecimiento anual, la renta cubrirá la hipoteca en aproximadamente ${yearsUntilRentCoversMortgage} años`)
+      : '';
     
     mortgageImpactSection = lang === 'en'
       ? `🏦 MORTGAGE ANALYSIS
 With ${mortgageInputs.financingPercent}% financing (loan amount: ${fmt(mortgageAnalysis.loanAmount)}):
-• Monthly mortgage payment: ${fmt(mortgageAnalysis.monthlyPayment)}
+• Monthly mortgage payment (incl. insurance): ${fmt(monthlyMortgageTotal)}
 • Expected monthly rent: ${fmt(monthlyRent)}
-• ${outcome}`
+• ${outcome}${rentGrowthImpact}`
       : `🏦 ANÁLISIS DE HIPOTECA
 Con ${mortgageInputs.financingPercent}% de financiamiento (monto del préstamo: ${fmt(mortgageAnalysis.loanAmount)}):
-• Pago mensual de hipoteca: ${fmt(mortgageAnalysis.monthlyPayment)}
+• Pago mensual de hipoteca (incl. seguro): ${fmt(monthlyMortgageTotal)}
 • Renta mensual esperada: ${fmt(monthlyRent)}
-• ${outcome}`;
+• ${outcome}${rentGrowthImpact}`;
   }
 
   // Combine all sections

@@ -549,9 +549,9 @@ export const CashflowSummaryCard = ({
                       <span className="text-[10px] sm:text-xs text-theme-text-muted shrink-0">
                         {inst.percent}% – {inst.label}
                       </span>
-                      <div className="text-right whitespace-nowrap">
+                      <div className="text-right flex flex-col items-end">
                         <span className="text-xs sm:text-sm font-mono text-theme-text">{fmt(inst.amount)}</span>
-                        <span className="text-[9px] sm:text-xs text-theme-text-muted ml-1">({inst.timing})</span>
+                        <span className="text-[9px] sm:text-xs text-theme-text-muted">({inst.timing})</span>
                       </div>
                     </div>
                   ))}
@@ -586,7 +586,10 @@ export const CashflowSummaryCard = ({
                     <SummaryRow label={t('additionalPayments')} value={`${structuredData.construction.paymentsCount}`} />
                     {structuredData.construction.payments.map((p, idx) => (
                       <div key={idx} className="flex items-center justify-between gap-2 py-1">
-                        <span className="text-[10px] sm:text-xs text-theme-text-muted">{p.percent}% at {p.timing}</span>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] sm:text-xs text-theme-text-muted">{p.percent}%</span>
+                          <span className="text-[9px] sm:text-xs text-theme-text-muted">({p.timing})</span>
+                        </div>
                         <span className="text-xs sm:text-sm font-mono text-theme-text">{fmt(p.amount)}</span>
                       </div>
                     ))}
