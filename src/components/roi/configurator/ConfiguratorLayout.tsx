@@ -327,7 +327,7 @@ export const ConfiguratorLayout = ({
           variant="outline"
           onClick={goToPreviousSection}
           disabled={!canGoBack}
-          className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
+          className="border-[#2a3142] !bg-transparent text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Previous
