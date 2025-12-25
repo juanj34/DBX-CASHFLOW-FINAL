@@ -16,6 +16,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ZoneSelect } from "@/components/ui/zone-select";
 import { ValueDifferentiatorsSection } from "./ValueDifferentiatorsSection";
 import { calculateAppreciationBonus, APPRECIATION_BONUS_CAP } from "./valueDifferentiators";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ConfiguratorLayout } from "./configurator/ConfiguratorLayout";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -70,6 +72,7 @@ interface Zone {
 
 export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false }: OIInputModalProps) => {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   
   // Ensure shortTermRental has defaults if missing (for backward compatibility)
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
@@ -298,6 +301,33 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
     }));
   };
 
+  // Desktop: Use fullscreen configurator layout
+  if (!isMobile) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        {showTrigger && (
+          <DialogTrigger asChild>
+            <Button 
+              className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+            >
+              <Settings2 className="w-4 h-4 mr-2" />
+              Configure
+            </Button>
+          </DialogTrigger>
+        )}
+        <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-6xl w-[95vw] h-[90vh] p-0 overflow-hidden">
+          <ConfiguratorLayout
+            inputs={inputs}
+            setInputs={setInputs}
+            currency={currency}
+            onClose={() => onOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Mobile: Keep original narrow modal
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {showTrigger && (

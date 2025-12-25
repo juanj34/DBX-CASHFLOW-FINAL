@@ -1,12 +1,10 @@
 import { ConfiguratorSectionProps } from "./types";
 import { ValueDifferentiatorsSection } from "../ValueDifferentiatorsSection";
 import { calculateAppreciationBonus, APPRECIATION_BONUS_CAP } from "../valueDifferentiators";
+import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 
-interface ValueSectionProps extends ConfiguratorSectionProps {
-  customDifferentiators?: any[];
-}
-
-export const ValueSection = ({ inputs, setInputs, currency, customDifferentiators = [] }: ValueSectionProps) => {
+export const ValueSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
+  const { customDifferentiators } = useCustomDifferentiators();
   const selectedIds = inputs.valueDifferentiators || [];
   const appreciationBonus = calculateAppreciationBonus(selectedIds, customDifferentiators);
 
@@ -49,10 +47,8 @@ export const ValueSection = ({ inputs, setInputs, currency, customDifferentiator
       {/* Differentiators Grid */}
       <div className="p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
         <ValueDifferentiatorsSection
-          selectedIds={selectedIds}
+          selectedDifferentiators={selectedIds}
           onSelectionChange={(ids) => setInputs(prev => ({ ...prev, valueDifferentiators: ids }))}
-          customDifferentiators={customDifferentiators}
-          compactMode={false}
         />
       </div>
 
