@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
@@ -56,8 +56,31 @@ export const ConfiguratorLayout = ({
   const [showCelebration, setShowCelebration] = useState(false);
   const hasShownCelebrationRef = useRef(false);
 
-  // Calculate progress percentage
-  const progressPercent = Math.round((visitedSections.size / SECTIONS.length) * 100);
+  // Calculate completed sections count (visited + data valid)
+  const completedSectionsCount = useMemo(() => {
+    let count = 0;
+    
+    // Property: visited AND has valid base price
+    if (visitedSections.has('property') && inputs.basePrice > 0) count++;
+    
+    // Payment: visited AND has valid payment percentages (downpayment + preHandover should be reasonable)
+    if (visitedSections.has('payment') && inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0) count++;
+    
+    // Value: visited (differentiators are optional)
+    if (visitedSections.has('value')) count++;
+    
+    // Income: visited AND has rental yield set
+    if (visitedSections.has('income') && inputs.rentalYieldPercent > 0) count++;
+    
+    // Appreciation: visited AND has appreciation rates set
+    if (visitedSections.has('appreciation') && 
+        (inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0)) count++;
+    
+    return count;
+  }, [visitedSections, inputs]);
+
+  // Progress based on COMPLETED sections, not just visited
+  const progressPercent = Math.round((completedSectionsCount / SECTIONS.length) * 100);
 
   // Auto-save effect - detect input changes
   useEffect(() => {
