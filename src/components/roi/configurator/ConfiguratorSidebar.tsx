@@ -8,12 +8,14 @@ interface ConfiguratorSidebarProps {
   activeSection: ConfiguratorSection;
   onSectionChange: (section: ConfiguratorSection) => void;
   inputs: OIInputs;
+  visitedSections: Set<ConfiguratorSection>;
 }
 
 export const ConfiguratorSidebar = ({ 
   activeSection, 
   onSectionChange,
-  inputs 
+  inputs,
+  visitedSections
 }: ConfiguratorSidebarProps) => {
   // Calculate section completion status
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -27,47 +29,49 @@ export const ConfiguratorSidebar = ({
 
   const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
 
+  // Only show complete if section was visited AND data is valid
   const sections: SectionStatus[] = [
     {
       id: 'property',
       label: 'Property',
       icon: Building2,
-      isComplete: inputs.basePrice > 0 && isDateValid,
-      hasWarning: !isDateValid,
+      isComplete: visitedSections.has('property') && inputs.basePrice > 0 && isDateValid,
+      hasWarning: visitedSections.has('property') && !isDateValid,
     },
     {
       id: 'payment',
       label: 'Payment',
       icon: CreditCard,
-      isComplete: isPaymentValid,
-      hasWarning: !isPaymentValid,
+      isComplete: visitedSections.has('payment') && isPaymentValid,
+      hasWarning: visitedSections.has('payment') && !isPaymentValid,
     },
     {
       id: 'value',
       label: 'Value',
       icon: Sparkles,
-      isComplete: (inputs.valueDifferentiators?.length || 0) > 0,
+      isComplete: visitedSections.has('value'),
     },
     {
       id: 'income',
       label: 'Income',
       icon: Home,
-      isComplete: inputs.rentalYieldPercent > 0,
+      isComplete: visitedSections.has('income'),
     },
     {
       id: 'appreciation',
       label: 'Appreciation',
       icon: TrendingUp,
-      isComplete: true,
+      isComplete: visitedSections.has('appreciation'),
     },
   ];
 
   return (
-    <div className="w-48 shrink-0 border-r border-[#2a3142] bg-[#0d1117] p-4 flex flex-col">
+    <div className="w-48 shrink-0 h-full border-r border-[#2a3142] bg-[#0d1117] p-4 flex flex-col">
       <div className="space-y-1">
         {sections.map((section, index) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
+          const isVisited = visitedSections.has(section.id);
           
           return (
             <button
@@ -100,7 +104,7 @@ export const ConfiguratorSidebar = ({
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-medium truncate">{section.label}</span>
-                {section.id === 'value' && appreciationBonus > 0 && (
+                {section.id === 'value' && appreciationBonus > 0 && isVisited && (
                   <span className="text-[10px] text-[#CCFF00]">+{appreciationBonus.toFixed(1)}% bonus</span>
                 )}
               </div>
