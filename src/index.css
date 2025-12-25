@@ -55,6 +55,21 @@ All colors MUST be HSL.
     /* Transitions */
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Default theme variables (tech-dark as default) */
+    --theme-bg: 222 47% 11%;
+    --theme-bg-alt: 222 47% 7%;
+    --theme-card: 222 36% 14%;
+    --theme-card-alt: 222 27% 20%;
+    --theme-border: 222 27% 20%;
+    --theme-border-alt: 222 20% 27%;
+    --theme-accent: 75 100% 50%;
+    --theme-accent-secondary: 187 100% 50%;
+    --theme-text: 0 0% 100%;
+    --theme-text-muted: 220 9% 60%;
+    --theme-text-highlight: 75 100% 50%;
+    --theme-positive: 142 71% 45%;
+    --theme-negative: 0 84% 60%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
