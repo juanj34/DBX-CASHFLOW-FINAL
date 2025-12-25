@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Upload, User, Camera } from 'lucide-react';
+import { LayoutDashboard, User, Camera, Zap, Briefcase, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
@@ -10,6 +10,8 @@ import { optimizeImage, PROFILE_AVATAR_CONFIG } from '@/lib/imageUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { ThemeKey, THEMES } from '@/config/themes';
 
 const AccountSettings = () => {
   useDocumentTitle("Account Settings");
@@ -18,6 +20,7 @@ const AccountSettings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [fullName, setFullName] = useState('');
@@ -206,6 +209,35 @@ const AccountSettings = () => {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">{t('accountWhatsAppDesc')}</p>
+            </div>
+
+            {/* Theme Selection */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-3">{t('themePreference')}</label>
+              <div className="grid grid-cols-3 gap-3">
+                {(Object.entries(THEMES) as [ThemeKey, typeof THEMES[ThemeKey]][]).map(([key, config]) => {
+                  const Icon = key === 'tech-dark' ? Zap : key === 'consultant' ? Briefcase : Moon;
+                  const isSelected = theme === key;
+                  
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setTheme(key)}
+                      className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${
+                        isSelected 
+                          ? 'border-[#CCFF00] bg-[#CCFF00]/10' 
+                          : 'border-[#2a3142] bg-[#0d1117] hover:border-[#3a4152]'
+                      }`}
+                    >
+                      <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-[#CCFF00]' : 'text-gray-400'}`} />
+                      <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                        {config.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">{t('themePreferenceDesc')}</p>
             </div>
 
             <Button
