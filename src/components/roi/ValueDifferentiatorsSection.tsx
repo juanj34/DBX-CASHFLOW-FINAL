@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sparkles, TrendingUp, Info, Plus, Trash2, Loader2 } from "lucide-react";
 import {
   VALUE_DIFFERENTIATORS,
   APPRECIATION_BONUS_CAP,
@@ -10,20 +15,29 @@ import {
   calculateAppreciationBonus,
   getDifferentiatorsByCategory,
   DifferentiatorCategory,
+  ValueDifferentiator,
 } from "./valueDifferentiators";
+import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 
 interface ValueDifferentiatorsSectionProps {
   selectedDifferentiators: string[];
   onSelectionChange: (selected: string[]) => void;
 }
 
-const CATEGORIES: DifferentiatorCategory[] = ['location', 'unit', 'developer', 'transport', 'financial', 'amenities'];
+const CATEGORIES: DifferentiatorCategory[] = ['location', 'unit', 'developer', 'transport', 'financial', 'amenities', 'custom'];
 
 export const ValueDifferentiatorsSection = ({
   selectedDifferentiators,
   onSelectionChange,
 }: ValueDifferentiatorsSectionProps) => {
   const { language } = useLanguage();
+  const { customDifferentiators, loading, saving, createDifferentiator, deleteDifferentiator } = useCustomDifferentiators();
+  
+  // New custom differentiator form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newImpacts, setNewImpacts] = useState(false);
+  const [newBonus, setNewBonus] = useState(0.2);
 
   const toggleDifferentiator = (id: string) => {
     if (selectedDifferentiators.includes(id)) {
@@ -33,8 +47,100 @@ export const ValueDifferentiatorsSection = ({
     }
   };
 
-  const totalBonus = calculateAppreciationBonus(selectedDifferentiators);
+  const handleAddCustom = async () => {
+    if (!newName.trim()) return;
+    
+    const result = await createDifferentiator({
+      name: newName.trim(),
+      impactsAppreciation: newImpacts,
+      appreciationBonus: newImpacts ? newBonus : 0,
+    });
+    
+    if (result) {
+      setNewName('');
+      setNewImpacts(false);
+      setNewBonus(0.2);
+      setShowAddForm(false);
+    }
+  };
+
+  const handleDeleteCustom = async (id: string) => {
+    await deleteDifferentiator(id);
+    // Remove from selection if selected
+    if (selectedDifferentiators.includes(id)) {
+      onSelectionChange(selectedDifferentiators.filter(d => d !== id));
+    }
+  };
+
+  const totalBonus = calculateAppreciationBonus(selectedDifferentiators, customDifferentiators);
   const bonusProgress = (totalBonus / APPRECIATION_BONUS_CAP) * 100;
+
+  const renderDifferentiatorItem = (diff: ValueDifferentiator, isCustom: boolean = false) => {
+    const isSelected = selectedDifferentiators.includes(diff.id);
+    const Icon = diff.icon;
+    const tooltip = language === 'es' ? diff.tooltipEs : diff.tooltip;
+
+    return (
+      <div
+        key={diff.id}
+        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
+          isSelected
+            ? 'border-theme-accent/50 bg-theme-accent/10'
+            : 'border-[#2a3142] bg-[#0d1117] hover:border-[#3a4152]'
+        }`}
+      >
+        <label className="flex items-center gap-2 flex-1 cursor-pointer">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleDifferentiator(diff.id)}
+            className="border-[#3a4152] data-[state=checked]:bg-theme-accent data-[state=checked]:border-theme-accent"
+          />
+          <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-theme-accent' : 'text-gray-500'}`} />
+          <span className={`text-xs flex-1 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+            {language === 'es' ? diff.nameEs : diff.name}
+          </span>
+        </label>
+        
+        {/* Tooltip */}
+        {tooltip && (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-3 h-3 text-gray-500 hover:text-gray-300 cursor-help flex-shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[250px] bg-[#1a1f2e] border-[#2a3142] text-gray-200 text-xs">
+                <p>{tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        {/* Appreciation bonus badge */}
+        {diff.impactsAppreciation && (
+          <span className="text-[10px] text-theme-accent font-mono flex items-center gap-0.5 flex-shrink-0">
+            <TrendingUp className="w-2.5 h-2.5" />
+            +{diff.appreciationBonus}%
+          </span>
+        )}
+
+        {/* Delete button for custom */}
+        {isCustom && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCustom(diff.id);
+            }}
+            className="h-5 w-5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 flex-shrink-0"
+            disabled={saving}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -70,47 +176,112 @@ export const ValueDifferentiatorsSection = ({
       {/* Categories */}
       <div className="space-y-4">
         {CATEGORIES.map(category => {
-          const differentiators = getDifferentiatorsByCategory(category);
-          if (differentiators.length === 0) return null;
+          const builtInDifferentiators = getDifferentiatorsByCategory(category);
+          const customInCategory = category === 'custom' ? customDifferentiators : [];
+          const allDifferentiators = [...builtInDifferentiators, ...customInCategory];
+          
+          // Skip empty categories (except 'custom' which shows add button)
+          if (allDifferentiators.length === 0 && category !== 'custom') return null;
 
           return (
             <div key={category} className="space-y-2">
               <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                 {language === 'es' ? CATEGORY_LABELS[category].es : CATEGORY_LABELS[category].en}
               </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {differentiators.map(diff => {
-                  const isSelected = selectedDifferentiators.includes(diff.id);
-                  const Icon = diff.icon;
+              
+              {/* Built-in differentiators */}
+              {builtInDifferentiators.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {builtInDifferentiators.map(diff => renderDifferentiatorItem(diff, false))}
+                </div>
+              )}
 
-                  return (
-                    <label
-                      key={diff.id}
-                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-theme-accent/50 bg-theme-accent/10'
-                          : 'border-[#2a3142] bg-[#0d1117] hover:border-[#3a4152]'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleDifferentiator(diff.id)}
-                        className="border-[#3a4152] data-[state=checked]:bg-theme-accent data-[state=checked]:border-theme-accent"
-                      />
-                      <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-theme-accent' : 'text-gray-500'}`} />
-                      <span className={`text-xs flex-1 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
-                        {language === 'es' ? diff.nameEs : diff.name}
-                      </span>
-                      {diff.impactsAppreciation && (
-                        <span className="text-[10px] text-theme-accent font-mono flex items-center gap-0.5">
-                          <TrendingUp className="w-2.5 h-2.5" />
-                          +{diff.appreciationBonus}%
-                        </span>
+              {/* Custom differentiators */}
+              {category === 'custom' && (
+                <>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <>
+                      {customDifferentiators.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {customDifferentiators.map(diff => renderDifferentiatorItem(diff, true))}
+                        </div>
                       )}
-                    </label>
-                  );
-                })}
-              </div>
+
+                      {/* Add Custom Form */}
+                      {showAddForm ? (
+                        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142] space-y-3">
+                          <Input
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            placeholder={language === 'es' ? 'Nombre del diferenciador' : 'Differentiator name'}
+                            className="h-8 text-xs bg-[#0d1117] border-[#2a3142] text-white"
+                          />
+                          
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs text-gray-400 flex items-center gap-2">
+                              <Switch
+                                checked={newImpacts}
+                                onCheckedChange={setNewImpacts}
+                                className="data-[state=checked]:bg-theme-accent scale-75"
+                              />
+                              {language === 'es' ? 'Impacta apreciación' : 'Impacts appreciation'}
+                            </label>
+                            
+                            {newImpacts && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-500">+</span>
+                                <Input
+                                  type="number"
+                                  value={newBonus}
+                                  onChange={(e) => setNewBonus(Math.min(0.5, Math.max(0.1, parseFloat(e.target.value) || 0.1)))}
+                                  step="0.1"
+                                  min="0.1"
+                                  max="0.5"
+                                  className="w-16 h-6 text-xs text-center bg-[#0d1117] border-[#2a3142] text-theme-accent font-mono"
+                                />
+                                <span className="text-xs text-gray-500">%</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowAddForm(false)}
+                              className="flex-1 h-7 text-xs text-gray-400"
+                            >
+                              {language === 'es' ? 'Cancelar' : 'Cancel'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleAddCustom}
+                              disabled={!newName.trim() || saving}
+                              className="flex-1 h-7 text-xs bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                            >
+                              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : (language === 'es' ? 'Guardar' : 'Save')}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAddForm(true)}
+                          className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          {language === 'es' ? 'Agregar diferenciador personalizado' : 'Add custom differentiator'}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </div>
           );
         })}

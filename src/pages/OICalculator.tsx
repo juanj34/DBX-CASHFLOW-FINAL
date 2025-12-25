@@ -44,6 +44,7 @@ import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useQuoteVersions } from "@/hooks/useQuoteVersions";
 import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
+import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -74,6 +75,7 @@ const OICalculatorContent = () => {
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
+  const { customDifferentiators } = useCustomDifferentiators();
   const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
@@ -539,6 +541,7 @@ const OICalculatorContent = () => {
             {/* Value Differentiators Display */}
             <ValueDifferentiatorsDisplay
               selectedDifferentiators={inputs.valueDifferentiators || []}
+              customDifferentiators={customDifferentiators}
               onEditClick={() => setModalOpen(true)}
             />
 

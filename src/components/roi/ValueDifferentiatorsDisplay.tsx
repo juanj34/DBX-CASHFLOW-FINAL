@@ -1,20 +1,24 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp, Plus } from "lucide-react";
 import {
   VALUE_DIFFERENTIATORS,
   calculateAppreciationBonus,
   getSelectedDifferentiators,
+  CUSTOM_DIFFERENTIATOR_ICON,
+  ValueDifferentiator,
 } from "./valueDifferentiators";
 
 interface ValueDifferentiatorsDisplayProps {
   selectedDifferentiators: string[];
+  customDifferentiators?: ValueDifferentiator[];
   readOnly?: boolean;
   onEditClick?: () => void;
 }
 
 export const ValueDifferentiatorsDisplay = ({
   selectedDifferentiators,
+  customDifferentiators = [],
   readOnly = false,
   onEditClick,
 }: ValueDifferentiatorsDisplayProps) => {
@@ -25,8 +29,8 @@ export const ValueDifferentiatorsDisplay = ({
     return null;
   }
 
-  const { valueDrivers, features } = getSelectedDifferentiators(selectedDifferentiators);
-  const totalBonus = calculateAppreciationBonus(selectedDifferentiators);
+  const { valueDrivers, features } = getSelectedDifferentiators(selectedDifferentiators, customDifferentiators);
+  const totalBonus = calculateAppreciationBonus(selectedDifferentiators, customDifferentiators);
 
   return (
     <div 
@@ -60,7 +64,7 @@ export const ValueDifferentiatorsDisplay = ({
           </p>
           <div className="flex flex-wrap gap-1.5">
             {valueDrivers.map(diff => {
-              const Icon = diff.icon;
+              const Icon = diff.isCustom ? CUSTOM_DIFFERENTIATOR_ICON : diff.icon;
               return (
                 <Badge
                   key={diff.id}
@@ -85,7 +89,7 @@ export const ValueDifferentiatorsDisplay = ({
           </p>
           <div className="flex flex-wrap gap-1.5">
             {features.map(diff => {
-              const Icon = diff.icon;
+              const Icon = diff.isCustom ? CUSTOM_DIFFERENTIATOR_ICON : diff.icon;
               return (
                 <Badge
                   key={diff.id}

@@ -121,6 +121,48 @@ export type Database = {
           },
         ]
       }
+      custom_differentiators: {
+        Row: {
+          appreciation_bonus: number
+          category: string
+          created_at: string
+          id: string
+          impacts_appreciation: boolean
+          name: string
+          name_es: string | null
+          tooltip: string | null
+          tooltip_es: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appreciation_bonus?: number
+          category?: string
+          created_at?: string
+          id?: string
+          impacts_appreciation?: boolean
+          name: string
+          name_es?: string | null
+          tooltip?: string | null
+          tooltip_es?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appreciation_bonus?: number
+          category?: string
+          created_at?: string
+          id?: string
+          impacts_appreciation?: boolean
+          name?: string
+          name_es?: string | null
+          tooltip?: string | null
+          tooltip_es?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       developers: {
         Row: {
           created_at: string | null

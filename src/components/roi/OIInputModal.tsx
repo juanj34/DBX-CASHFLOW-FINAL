@@ -15,6 +15,7 @@ import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ZoneSelect } from "@/components/ui/zone-select";
 import { ValueDifferentiatorsSection } from "./ValueDifferentiatorsSection";
+import { calculateAppreciationBonus, APPRECIATION_BONUS_CAP } from "./valueDifferentiators";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -1164,39 +1165,91 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
                   </Select>
                 </div>
                 
+                {/* Appreciation Bonus from Differentiators - Info Banner */}
+                {(() => {
+                  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
+                  if (appreciationBonus > 0) {
+                    return (
+                      <div className="p-2 bg-theme-accent/10 rounded-lg border border-theme-accent/30">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-theme-accent flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Value Differentiators Bonus
+                          </span>
+                          <span className="text-xs text-theme-accent font-mono font-bold">+{appreciationBonus.toFixed(1)}%</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Added to all appreciation phases below</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                
                 <div className="text-xs text-gray-400 font-medium">Custom Appreciation Rates</div>
                 
                 {/* Construction */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs text-gray-500">Construction Phase</label>
-                    <span className="text-xs text-orange-400 font-mono">{inputs.constructionAppreciation ?? 12}%</span>
-                  </div>
-                  <Slider
-                    value={[inputs.constructionAppreciation ?? 12]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, constructionAppreciation: value }))}
-                    min={5}
-                    max={20}
-                    step={1}
-                    className="roi-slider-lime"
-                  />
-                </div>
+                {(() => {
+                  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
+                  const baseRate = inputs.constructionAppreciation ?? 12;
+                  const effectiveRate = baseRate + appreciationBonus;
+                  
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs text-gray-500">Construction Phase</label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-orange-400 font-mono">{baseRate}%</span>
+                          {appreciationBonus > 0 && (
+                            <>
+                              <span className="text-xs text-gray-500">→</span>
+                              <span className="text-xs text-theme-accent font-mono font-bold">{effectiveRate.toFixed(1)}%</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Slider
+                        value={[baseRate]}
+                        onValueChange={([value]) => setInputs(prev => ({ ...prev, constructionAppreciation: value }))}
+                        min={5}
+                        max={20}
+                        step={1}
+                        className="roi-slider-lime"
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Growth */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs text-gray-500">Growth Phase ({inputs.growthPeriodYears ?? 5}y)</label>
-                    <span className="text-xs text-green-400 font-mono">{inputs.growthAppreciation ?? 8}%</span>
-                  </div>
-                  <Slider
-                    value={[inputs.growthAppreciation ?? 8]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, growthAppreciation: value }))}
-                    min={3}
-                    max={15}
-                    step={1}
-                    className="roi-slider-lime"
-                  />
-                </div>
+                {(() => {
+                  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
+                  const baseRate = inputs.growthAppreciation ?? 8;
+                  const effectiveRate = baseRate + appreciationBonus;
+                  
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs text-gray-500">Growth Phase ({inputs.growthPeriodYears ?? 5}y)</label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-green-400 font-mono">{baseRate}%</span>
+                          {appreciationBonus > 0 && (
+                            <>
+                              <span className="text-xs text-gray-500">→</span>
+                              <span className="text-xs text-theme-accent font-mono font-bold">{effectiveRate.toFixed(1)}%</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Slider
+                        value={[baseRate]}
+                        onValueChange={([value]) => setInputs(prev => ({ ...prev, growthAppreciation: value }))}
+                        min={3}
+                        max={15}
+                        step={1}
+                        className="roi-slider-lime"
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Growth Period */}
                 <div className="space-y-1">
@@ -1215,20 +1268,36 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
                 </div>
 
                 {/* Mature */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs text-gray-500">Mature Phase</label>
-                    <span className="text-xs text-blue-400 font-mono">{inputs.matureAppreciation ?? 4}%</span>
-                  </div>
-                  <Slider
-                    value={[inputs.matureAppreciation ?? 4]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, matureAppreciation: value }))}
-                    min={1}
-                    max={8}
-                    step={1}
-                    className="roi-slider-lime"
-                  />
-                </div>
+                {(() => {
+                  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
+                  const baseRate = inputs.matureAppreciation ?? 4;
+                  const effectiveRate = baseRate + appreciationBonus;
+                  
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs text-gray-500">Mature Phase</label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-blue-400 font-mono">{baseRate}%</span>
+                          {appreciationBonus > 0 && (
+                            <>
+                              <span className="text-xs text-gray-500">→</span>
+                              <span className="text-xs text-theme-accent font-mono font-bold">{effectiveRate.toFixed(1)}%</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Slider
+                        value={[baseRate]}
+                        onValueChange={([value]) => setInputs(prev => ({ ...prev, matureAppreciation: value }))}
+                        min={1}
+                        max={8}
+                        step={1}
+                        className="roi-slider-lime"
+                      />
+                    </div>
+                  );
+                })()}
                 
                 {/* Save as Preset */}
                 <div className="pt-2 border-t border-[#2a3142]">
