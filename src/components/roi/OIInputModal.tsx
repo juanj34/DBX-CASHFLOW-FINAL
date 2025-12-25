@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ZoneSelect } from "@/components/ui/zone-select";
+import { ValueDifferentiatorsSection } from "./ValueDifferentiatorsSection";
 
 interface OIInputModalProps {
   inputs: OIInputs;
@@ -345,6 +346,7 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
                 rentGrowthRate: 4,
                 serviceChargePerSqft: 18,
                 adrGrowthRate: 3,
+                valueDifferentiators: [],
               });
               setBasePriceInput(currency === 'USD' ? Math.round(800000 / DEFAULT_RATE).toString() : '800000');
             }}
@@ -839,6 +841,14 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
               <span>10%</span>
               <span>100%</span>
             </div>
+          </div>
+
+          {/* VALUE DIFFERENTIATORS SECTION */}
+          <div className="space-y-3 p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+            <ValueDifferentiatorsSection
+              selectedDifferentiators={inputs.valueDifferentiators || []}
+              onSelectionChange={(selected) => setInputs(prev => ({ ...prev, valueDifferentiators: selected }))}
+            />
           </div>
 
           {/* RENTAL STRATEGY SECTION - Long-term always visible + optional Airbnb comparison */}

@@ -36,6 +36,7 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   rentGrowthRate: 4,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
+  valueDifferentiators: [],
 };
 
 /**
@@ -79,6 +80,7 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.useZoneDefaults ??= true;
     merged.showAirbnbComparison ??= false;
     merged.minimumExitThreshold ??= 30;
+    merged.valueDifferentiators ??= [];
     
     // Handle legacy rentalMode field
     if (saved.rentalMode === 'short-term' && !saved.showAirbnbComparison) {
@@ -86,6 +88,11 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     }
     
     console.log('[inputMigration] Migrated quote from v1 to v2');
+  }
+  
+  // Ensure valueDifferentiators is always an array
+  if (!Array.isArray(merged.valueDifferentiators)) {
+    merged.valueDifferentiators = [];
   }
 
   // Validate additionalPayments array

@@ -62,6 +62,9 @@ export interface OIInputs {
   // NEW: ADR growth for Airbnb
   adrGrowthRate: number; // Annual ADR growth % (default 3%)
   
+  // NEW: Value differentiators
+  valueDifferentiators?: string[]; // Array of differentiator IDs
+  
   // Schema version for migration support
   schemaVersion?: number;
 }
@@ -291,10 +294,25 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     eoiFee,
   } = inputs;
 
-  // Get appreciation rates (zone-based or manual)
-  const constructionAppreciation = inputs.constructionAppreciation ?? 12;
-  const growthAppreciation = inputs.growthAppreciation ?? 8;
-  const matureAppreciation = inputs.matureAppreciation ?? 4;
+  // Calculate appreciation bonus from value differentiators
+  const appreciationBonus = (() => {
+    const selectedIds = inputs.valueDifferentiators || [];
+    if (selectedIds.length === 0) return 0;
+    // Inline calculation to avoid circular import
+    const APPRECIATION_BONUS_CAP = 2.0;
+    const DIFFERENTIATOR_BONUSES: Record<string, number> = {
+      'waterfront': 0.5, 'ocean-view': 0.3, 'master-community': 0.3, 'emerging-zone': 0.3,
+      'corner-unit': 0.2, 'top-floor': 0.3, 'skyline-view': 0.2,
+      'premium-developer': 0.4, 'metro-adjacent': 0.3,
+    };
+    const totalBonus = selectedIds.reduce((sum, id) => sum + (DIFFERENTIATOR_BONUSES[id] || 0), 0);
+    return Math.min(totalBonus, APPRECIATION_BONUS_CAP);
+  })();
+
+  // Get appreciation rates (zone-based or manual) + apply bonus
+  const constructionAppreciation = (inputs.constructionAppreciation ?? 12) + appreciationBonus;
+  const growthAppreciation = (inputs.growthAppreciation ?? 8) + appreciationBonus;
+  const matureAppreciation = (inputs.matureAppreciation ?? 4) + appreciationBonus;
   const growthPeriodYears = inputs.growthPeriodYears ?? 5;
   const rentGrowthRate = inputs.rentGrowthRate ?? 4;
   const serviceChargePerSqft = inputs.serviceChargePerSqft ?? 18;
@@ -317,7 +335,7 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Year 1 = bookingYear, Year 2 = bookingYear+1, etc.
   const handoverYearIndex = handoverYear - bookingYear + 1;
 
-  // Helper: Get appreciation rate for a given year
+  // Helper: Get appreciation rate for a given year (bonus already applied above)
   const getAppreciationRate = (year: number): { rate: number; phase: 'construction' | 'growth' | 'mature' } => {
     if (year <= handoverYearIndex) {
       return { rate: constructionAppreciation, phase: 'construction' };
