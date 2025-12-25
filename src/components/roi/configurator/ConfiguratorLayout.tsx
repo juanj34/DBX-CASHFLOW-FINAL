@@ -31,6 +31,7 @@ export const ConfiguratorLayout = ({
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
+  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['property']));
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
 
   const currentIndex = SECTIONS.indexOf(activeSection);
@@ -53,6 +54,13 @@ export const ConfiguratorLayout = ({
     previousSectionRef.current = newSection;
     setAnimationKey(prev => prev + 1);
     setActiveSection(newSection);
+    
+    // Mark section as visited
+    setVisitedSections(prev => {
+      const newSet = new Set(prev);
+      newSet.add(newSection);
+      return newSet;
+    });
   }, []);
 
   const goToNextSection = useCallback(() => {
@@ -135,8 +143,8 @@ export const ConfiguratorLayout = ({
 
   return (
     <div className="flex flex-col h-full bg-[#1a1f2e]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a3142] bg-[#0d1117]">
+      {/* Header - Fixed */}
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#2a3142] bg-[#0d1117]">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold text-white">Investment Configurator</h2>
           <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -182,76 +190,29 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-1 min-h-0">
-        {/* Sidebar */}
-        <ConfiguratorSidebar
-          activeSection={activeSection}
-          onSectionChange={navigateToSection}
-          inputs={inputs}
-        />
+      {/* Middle Section - Flex row with scroll */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Sidebar - Fixed width, own scroll */}
+        <div className="shrink-0 overflow-y-auto">
+          <ConfiguratorSidebar
+            activeSection={activeSection}
+            onSectionChange={navigateToSection}
+            inputs={inputs}
+            visitedSections={visitedSections}
+          />
+        </div>
 
-        {/* Content Area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div 
-              key={animationKey}
-              className={`max-w-3xl ${getAnimationClass()}`}
-            >
-              {renderSection()}
-            </div>
-          </div>
-
-          {/* Footer Navigation */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-[#2a3142] bg-[#0d1117]">
-            <Button
-              variant="outline"
-              onClick={goToPreviousSection}
-              disabled={!canGoBack}
-              className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous
-            </Button>
-
-            <div className="flex items-center gap-1.5">
-              {SECTIONS.map((section, index) => (
-                <button
-                  key={section}
-                  onClick={() => navigateToSection(section)}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                    section === activeSection 
-                      ? 'bg-[#CCFF00] w-6' 
-                      : index < currentIndex
-                        ? 'bg-green-500'
-                        : 'bg-[#2a3142]'
-                  }`}
-                />
-              ))}
-            </div>
-
-            {isLastSection ? (
-              <Button
-                onClick={onClose}
-                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
-              >
-                Apply & Close
-              </Button>
-            ) : (
-              <Button
-                onClick={goToNextSection}
-                disabled={!canGoForward}
-                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30"
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
+        {/* Content Area - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
+          <div 
+            key={animationKey}
+            className={`max-w-3xl ${getAnimationClass()}`}
+          >
+            {renderSection()}
           </div>
         </div>
 
-        {/* Preview Panel - Collapsible */}
+        {/* Preview Panel - Collapsible, own scroll */}
         <div 
           className={`shrink-0 border-l border-[#2a3142] bg-[#0d1117] overflow-y-auto transition-all duration-300 ease-in-out ${
             isPreviewCollapsed ? 'w-14 p-2' : 'w-64 p-4'
@@ -264,6 +225,53 @@ export const ConfiguratorLayout = ({
             onToggleCollapse={togglePreview}
           />
         </div>
+      </div>
+
+      {/* Footer Navigation - Fixed at bottom, OUTSIDE scroll */}
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-[#2a3142] bg-[#0d1117]">
+        <Button
+          variant="outline"
+          onClick={goToPreviousSection}
+          disabled={!canGoBack}
+          className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Previous
+        </Button>
+
+        <div className="flex items-center gap-1.5">
+          {SECTIONS.map((section, index) => (
+            <button
+              key={section}
+              onClick={() => navigateToSection(section)}
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                section === activeSection 
+                  ? 'bg-[#CCFF00] w-6' 
+                  : visitedSections.has(section)
+                    ? 'bg-green-500'
+                    : 'bg-[#2a3142]'
+              }`}
+            />
+          ))}
+        </div>
+
+        {isLastSection ? (
+          <Button
+            onClick={onClose}
+            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+          >
+            Apply & Close
+          </Button>
+        ) : (
+          <Button
+            onClick={goToNextSection}
+            disabled={!canGoForward}
+            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30"
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        )}
       </div>
     </div>
   );
