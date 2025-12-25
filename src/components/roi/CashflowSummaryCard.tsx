@@ -188,7 +188,7 @@ export const CashflowSummaryCard = ({
           </div>
           <div className="text-left">
             <h3 className="text-sm sm:text-base font-semibold text-theme-text">{t('summaryTitle')}</h3>
-            <p className="text-xs text-theme-text-muted mt-0.5 hidden sm:block">{t('summarySubtitle')}</p>
+            <p className="text-xs text-theme-text-muted mt-0.5">{t('summarySubtitle')}</p>
           </div>
           {hasEdits && (
             <span className="text-[10px] sm:text-xs bg-amber-500/20 text-amber-400 px-1.5 sm:px-2 py-0.5 rounded">
