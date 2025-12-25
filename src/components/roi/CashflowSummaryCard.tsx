@@ -125,7 +125,7 @@ export const CashflowSummaryCard = ({
     showRental: showRentalPotential,
     showMortgage: showMortgageAnalysis,
   });
-  const [viewMode, setViewMode] = useState<'structured' | 'conversational'>('structured');
+  const [viewMode, setViewMode] = useState<'structured' | 'conversational'>('conversational');
 
   const isMortgageEnabled = mortgageInputs?.enabled ?? false;
   const fmt = useCallback((amount: number) => formatCurrency(amount, currency, rate), [currency, rate]);
@@ -223,78 +223,80 @@ export const CashflowSummaryCard = ({
         )}
       >
         <div className="bg-theme-bg-alt border border-theme-border rounded-xl p-3 sm:p-6">
-          {/* Toggle controls - only visible when not readOnly */}
-          {!readOnly && (
-            <div className="mb-4 pb-4 border-b border-theme-border">
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 mb-4">
-                <button
-                  onClick={() => setViewMode('structured')}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
-                    viewMode === 'structured' 
-                      ? "bg-theme-accent/20 text-theme-accent" 
-                      : "bg-theme-card text-theme-text-muted hover:text-theme-text"
-                  )}
-                >
-                  <LayoutList className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  {t('dataView')}
-                </button>
-                <button
-                  onClick={() => setViewMode('conversational')}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
-                    viewMode === 'conversational' 
-                      ? "bg-theme-accent/20 text-theme-accent" 
-                      : "bg-theme-card text-theme-text-muted hover:text-theme-text"
-                  )}
-                >
-                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  {t('explanationView')}
-                </button>
-              </div>
-              
-              <p className="text-[10px] sm:text-xs text-theme-text-muted mb-3">{t('sectionsToInclude')}</p>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-6">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="toggle-rental"
-                    checked={localToggles.showRental}
-                    onCheckedChange={(checked) => handleToggleChange('showRental', checked)}
-                    className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
-                  />
-                  <Label htmlFor="toggle-rental" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
-                    {t('includeRentalAnalysis')}
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="toggle-exit"
-                    checked={localToggles.showExit}
-                    onCheckedChange={(checked) => handleToggleChange('showExit', checked)}
-                    className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
-                  />
-                  <Label htmlFor="toggle-exit" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
-                    {t('includeExitScenarios')}
-                  </Label>
-                </div>
-                {/* Mortgage Toggle - Only show if mortgage is enabled */}
-                {isMortgageEnabled && (
+          {/* View Mode Toggle - ALWAYS visible (including client view) */}
+          <div className="mb-4 pb-4 border-b border-theme-border">
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                onClick={() => setViewMode('structured')}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
+                  viewMode === 'structured' 
+                    ? "bg-theme-accent/20 text-theme-accent" 
+                    : "bg-theme-card text-theme-text-muted hover:text-theme-text"
+                )}
+              >
+                <LayoutList className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {t('dataView')}
+              </button>
+              <button
+                onClick={() => setViewMode('conversational')}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
+                  viewMode === 'conversational' 
+                    ? "bg-theme-accent/20 text-theme-accent" 
+                    : "bg-theme-card text-theme-text-muted hover:text-theme-text"
+                )}
+              >
+                <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {t('explanationView')}
+              </button>
+            </div>
+            
+            {/* Section toggles - ONLY visible when not readOnly */}
+            {!readOnly && (
+              <>
+                <p className="text-[10px] sm:text-xs text-theme-text-muted mb-3">{t('sectionsToInclude')}</p>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-6">
                   <div className="flex items-center gap-2">
                     <Switch
-                      id="toggle-mortgage"
-                      checked={localToggles.showMortgage}
-                      onCheckedChange={(checked) => handleToggleChange('showMortgage', checked)}
+                      id="toggle-rental"
+                      checked={localToggles.showRental}
+                      onCheckedChange={(checked) => handleToggleChange('showRental', checked)}
                       className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
                     />
-                    <Label htmlFor="toggle-mortgage" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
-                      {t('includeMortgageAnalysis')}
+                    <Label htmlFor="toggle-rental" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
+                      {t('includeRentalAnalysis')}
                     </Label>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="toggle-exit"
+                      checked={localToggles.showExit}
+                      onCheckedChange={(checked) => handleToggleChange('showExit', checked)}
+                      className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
+                    />
+                    <Label htmlFor="toggle-exit" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
+                      {t('includeExitScenarios')}
+                    </Label>
+                  </div>
+                  {/* Mortgage Toggle - Only show if mortgage is enabled */}
+                  {isMortgageEnabled && (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="toggle-mortgage"
+                        checked={localToggles.showMortgage}
+                        onCheckedChange={(checked) => handleToggleChange('showMortgage', checked)}
+                        className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
+                      />
+                      <Label htmlFor="toggle-mortgage" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
+                        {t('includeMortgageAnalysis')}
+                      </Label>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Action buttons */}
           <div className="flex items-center justify-end gap-1 sm:gap-2 mb-4">
