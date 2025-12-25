@@ -628,6 +628,8 @@ const translations: Translations = {
   accountSaveChanges: { en: 'Save Changes', es: 'Guardar Cambios' },
   accountViewGenerators: { en: 'View My Cashflow Generators', es: 'Ver Mis Generadores de Cashflow' },
   accountAdminDashboard: { en: 'Admin Dashboard', es: 'Panel de Administración' },
+  themePreference: { en: 'Theme Preference', es: 'Preferencia de Tema' },
+  themePreferenceDesc: { en: 'Choose how the application looks. This will be saved to your profile.', es: 'Elige cómo se ve la aplicación. Esto se guardará en tu perfil.' },
   
   // Quotes Dashboard Page
   quotesTitle: { en: 'My Cashflow Generators', es: 'Mis Generadores de Cashflow' },
