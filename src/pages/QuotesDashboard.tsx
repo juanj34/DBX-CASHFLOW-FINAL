@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, LayoutGrid, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,8 @@ const QuotesDashboard = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [deletingQuote, setDeletingQuote] = useState<CashflowQuote | null>(null);
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
 
   const handleDeleteClick = (quote: CashflowQuote) => {
     setDeletingQuote(quote);
@@ -57,6 +59,20 @@ const QuotesDashboard = () => {
     });
   };
 
+  const toggleCompareSelection = (id: string) => {
+    if (selectedForCompare.includes(id)) {
+      setSelectedForCompare(prev => prev.filter(qId => qId !== id));
+    } else if (selectedForCompare.length < 4) {
+      setSelectedForCompare(prev => [...prev, id]);
+    }
+  };
+
+  const handleCompare = () => {
+    if (selectedForCompare.length >= 2) {
+      navigate(`/compare?ids=${selectedForCompare.join(',')}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
@@ -80,13 +96,49 @@ const QuotesDashboard = () => {
               <p className="text-sm text-gray-400">{quotes.length} {t('quotesSaved')}</p>
             </div>
           </div>
-          <Link to="/cashflow-generator">
-            <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
-              <Plus className="w-4 h-4" />
-              {t('quotesNewQuote')}
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            {quotes.length >= 2 && (
+              <Button
+                variant={compareMode ? "default" : "outline"}
+                onClick={() => {
+                  setCompareMode(!compareMode);
+                  setSelectedForCompare([]);
+                }}
+                className={compareMode 
+                  ? "bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2" 
+                  : "border-[#2a3142] text-gray-300 hover:bg-[#2a3142] gap-2"
+                }
+              >
+                <LayoutGrid className="w-4 h-4" />
+                {compareMode ? 'Cancel' : 'Compare'}
+              </Button>
+            )}
+            <Link to="/cashflow-generator">
+              <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
+                <Plus className="w-4 h-4" />
+                {t('quotesNewQuote')}
+              </Button>
+            </Link>
+          </div>
         </div>
+        
+        {/* Compare bar */}
+        {compareMode && selectedForCompare.length > 0 && (
+          <div className="container mx-auto px-6 pb-4">
+            <div className="flex items-center justify-between bg-[#1a1f2e] border border-[#CCFF00]/30 rounded-lg px-4 py-3">
+              <span className="text-gray-300 text-sm">
+                {selectedForCompare.length} quotes selected (min 2, max 4)
+              </span>
+              <Button
+                onClick={handleCompare}
+                disabled={selectedForCompare.length < 2}
+                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+              >
+                Compare Selected
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="container mx-auto px-6 py-8">
@@ -105,12 +157,29 @@ const QuotesDashboard = () => {
           </div>
         ) : (
           <div className="grid gap-4">
-            {quotes.map((quote) => (
+            {quotes.map((quote) => {
+              const isSelected = selectedForCompare.includes(quote.id);
+              
+              return (
               <div
                 key={quote.id}
-                className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-5 hover:border-[#CCFF00]/30 transition-colors"
+                onClick={() => compareMode && toggleCompareSelection(quote.id)}
+                className={`bg-[#1a1f2e] border rounded-xl p-5 transition-colors ${
+                  compareMode 
+                    ? isSelected 
+                      ? 'border-[#CCFF00] ring-1 ring-[#CCFF00]/30 cursor-pointer' 
+                      : 'border-[#2a3142] hover:border-[#CCFF00]/50 cursor-pointer'
+                    : 'border-[#2a3142] hover:border-[#CCFF00]/30'
+                }`}
               >
                 <div className="flex items-start justify-between gap-4">
+                  {compareMode && (
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
+                      isSelected ? 'bg-[#CCFF00] border-[#CCFF00]' : 'border-gray-500'
+                    }`}>
+                      {isSelected && <Check className="w-4 h-4 text-black" />}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-white truncate">
                       {quote.title || t('quotesUntitled')}
@@ -144,6 +213,7 @@ const QuotesDashboard = () => {
                     </div>
                   </div>
                   
+                  {!compareMode && (
                   <div className="flex items-center gap-2">
                     {quote.share_token && (
                       <Button
@@ -172,9 +242,10 @@ const QuotesDashboard = () => {
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
+                  )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </main>
