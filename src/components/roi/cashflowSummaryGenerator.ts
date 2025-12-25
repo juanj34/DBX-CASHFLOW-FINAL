@@ -2,6 +2,7 @@ import { OIInputs, OICalculations, quarterToMonth } from "./useOICalculations";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { formatCurrency, Currency } from "./currencyUtils";
+import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
 
 type Language = 'en' | 'es';
 
@@ -283,20 +284,34 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
 
   // Add exit scenarios if included
   if (includeExitScenarios && exitScenarios && exitScenarios.length > 0) {
+    const totalEntryCosts = dldFee + inputs.oqoodFee;
+    
     structuredData.exitScenarios = exitScenarios.slice(0, 3).map(month => {
-      const scenario = calculations.scenarios.find(s => s.exitMonths === month);
+      const exitPrice = calculatePhasedExitPrice(month, inputs, calculations.totalMonths, inputs.basePrice);
+      const amountPaid = calculateEquityAtExit(month, inputs, calculations.totalMonths, inputs.basePrice);
+      const profit = exitPrice - inputs.basePrice;
+      const trueProfit = profit - totalEntryCosts;
+      const totalCapital = amountPaid + totalEntryCosts;
+      const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+      
       return {
         month,
-        value: scenario?.exitPrice || 0,
-        profit: scenario?.profit || 0,
-        roe: scenario?.trueROE || 0,
+        value: exitPrice,
+        profit: trueProfit,
+        roe: trueROE,
       };
     }).filter(s => s.value > 0);
   }
 
   // Add mortgage data if enabled AND included
   if (shouldShowMortgage && mortgageAnalysis && mortgageInputs) {
-    const monthlyRent = calculations.holdAnalysis.netAnnualRent / 12;
+    // Get first full rental year for accurate rent calculation (matching MortgageBreakdown)
+    const firstFullRentalYear = calculations.yearlyProjections.find(p => 
+      !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
+    );
+    const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
+    const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
+    const monthlyRent = (fullAnnualRent / 12) - monthlyServiceCharges;
     const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
     
     structuredData.mortgage = {
@@ -398,12 +413,19 @@ Después de la entrega, basado en un rendimiento de renta inicial del ${inputs.r
   // Optional: Exit Scenarios (conditionally included)
   let exitScenariosSection: string | undefined;
   if (includeExitScenarios && exitScenarios && exitScenarios.length > 0) {
+    const exitTotalEntryCosts = dldFee + inputs.oqoodFee;
+    
     const scenarioLines = exitScenarios.slice(0, 3).map(month => {
-      const scenario = calculations.scenarios.find(s => s.exitMonths === month);
-      if (!scenario) return '';
+      const exitPrice = calculatePhasedExitPrice(month, inputs, calculations.totalMonths, inputs.basePrice);
+      const amountPaid = calculateEquityAtExit(month, inputs, calculations.totalMonths, inputs.basePrice);
+      const profit = exitPrice - inputs.basePrice;
+      const trueProfit = profit - exitTotalEntryCosts;
+      const totalCapital = amountPaid + exitTotalEntryCosts;
+      const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+      
       return lang === 'en'
-        ? `• At month ${month}: Property valued at ${fmt(scenario.exitPrice)}, profit of ${fmt(scenario.profit)} (ROE: ${scenario.trueROE.toFixed(1)}%)`
-        : `• En el mes ${month}: Propiedad valuada en ${fmt(scenario.exitPrice)}, ganancia de ${fmt(scenario.profit)} (ROE: ${scenario.trueROE.toFixed(1)}%)`;
+        ? `• At month ${month}: Property valued at ${fmt(exitPrice)}, profit of ${fmt(trueProfit)} (ROE: ${trueROE.toFixed(1)}%)`
+        : `• En el mes ${month}: Propiedad valuada en ${fmt(exitPrice)}, ganancia de ${fmt(trueProfit)} (ROE: ${trueROE.toFixed(1)}%)`;
     }).filter(Boolean).join('\n');
     
     if (scenarioLines) {
@@ -420,7 +442,13 @@ ${scenarioLines}`;
   // Optional: Mortgage Impact
   let mortgageImpactSection: string | undefined;
   if (shouldShowMortgage && mortgageAnalysis && mortgageInputs) {
-    const monthlyRent = calculations.holdAnalysis.netAnnualRent / 12;
+    // Use same calculation as structured data for consistency
+    const firstFullRentalYear = calculations.yearlyProjections.find(p => 
+      !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
+    );
+    const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
+    const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
+    const monthlyRent = (fullAnnualRent / 12) - monthlyServiceCharges;
     const rentVsPayment = monthlyRent - mortgageAnalysis.monthlyPayment;
     const isPositive = rentVsPayment >= 0;
     

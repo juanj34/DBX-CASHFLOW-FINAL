@@ -75,7 +75,7 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 mb-4">
       <div className="flex flex-wrap items-start gap-4">
         {/* Property Info Grid */}
-        <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
           {/* Developer */}
           {data.developer && (
             <div className="flex items-start gap-2">
@@ -136,7 +136,11 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
               <Navigation className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs text-gray-500">{t('zone')}</p>
-                <p className="text-sm font-medium text-cyan-400">{data.zoneName}</p>
+                <p className="text-sm font-medium text-cyan-400">
+                  {data.zoneName.split(' ').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                  ).join(' ')}
+                </p>
               </div>
             </div>
           )}

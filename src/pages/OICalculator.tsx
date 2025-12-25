@@ -523,13 +523,10 @@ const OICalculatorContent = () => {
             {/* Payment Breakdown 2/3 + Investment Snapshot 1/3 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
               <div className="lg:col-span-2 space-y-4">
-                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
+                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
               </div>
               <div className="lg:col-span-1 space-y-4">
                 <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-                {clientInfo.splitEnabled && clientInfo.clients.length >= 2 && (
-                  <PaymentSplitBreakdown inputs={inputs} clientInfo={clientInfo} currency={currency} totalMonths={calculations.totalMonths} rate={rate} />
-                )}
               </div>
             </div>
 

@@ -53,18 +53,18 @@ const SummarySection = ({
   title: string; 
   children: React.ReactNode;
 }) => (
-  <div className="py-4 first:pt-0 last:pb-0 border-b border-[#2a3142] last:border-b-0">
-    <div className="flex items-center gap-2 mb-3">
-      <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", iconColor)} />
-      <h4 className="text-sm sm:text-base font-semibold text-white">{title}</h4>
+  <div className="py-3 sm:py-4 first:pt-0 last:pb-0 border-b border-theme-border last:border-b-0">
+    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+      <Icon className={cn("w-4 h-4", iconColor)} />
+      <h4 className="text-xs sm:text-sm font-semibold text-theme-text">{title}</h4>
     </div>
-    <div className="space-y-2 pl-6 sm:pl-7">
+    <div className="space-y-1.5 sm:space-y-2 pl-5 sm:pl-6">
       {children}
     </div>
   </div>
 );
 
-// Row component for label/value pairs
+// Row component for label/value pairs - optimized for mobile
 const SummaryRow = ({ 
   label, 
   value, 
@@ -76,16 +76,16 @@ const SummaryRow = ({
   highlight?: boolean;
   subtext?: string;
 }) => (
-  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-4">
-    <span className="text-xs sm:text-sm text-gray-400">{label}</span>
-    <div className="text-right sm:text-right">
+  <div className="flex items-center justify-between gap-2 min-w-0">
+    <span className="text-[10px] sm:text-xs text-theme-text-muted shrink-0">{label}</span>
+    <div className="text-right whitespace-nowrap min-w-0">
       <span className={cn(
-        "text-sm sm:text-base font-mono",
-        highlight ? "text-[#CCFF00] font-semibold" : "text-white"
+        "text-xs sm:text-sm font-mono",
+        highlight ? "text-theme-accent font-semibold" : "text-theme-text"
       )}>
         {value}
       </span>
-      {subtext && <span className="text-xs text-gray-500 ml-1">{subtext}</span>}
+      {subtext && <span className="text-[9px] sm:text-xs text-theme-text-muted ml-1">{subtext}</span>}
     </div>
   </div>
 );
@@ -180,15 +180,15 @@ export const CashflowSummaryCard = ({
     <div className={cn("mb-6", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 sm:p-4 bg-[#1a1f2e] border border-[#2a3142] rounded-xl hover:bg-[#1a1f2e]/80 transition-colors group"
+        className="w-full flex items-center justify-between p-3 sm:p-4 bg-theme-card border border-theme-border rounded-xl hover:bg-theme-card/80 transition-colors group"
       >
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-[#CCFF00]/10 rounded-lg">
-            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-[#CCFF00]" />
+          <div className="p-1.5 sm:p-2 bg-theme-accent/10 rounded-lg">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-theme-accent" />
           </div>
           <div className="text-left">
-            <h3 className="text-xs sm:text-base font-semibold text-white">{t('summaryTitle')}</h3>
-            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 hidden sm:block">{t('summarySubtitle')}</p>
+            <h3 className="text-xs sm:text-base font-semibold text-theme-text">{t('summaryTitle')}</h3>
+            <p className="text-[10px] sm:text-xs text-theme-text-muted mt-0.5 hidden sm:block">{t('summarySubtitle')}</p>
           </div>
           {hasEdits && (
             <span className="text-[10px] sm:text-xs bg-amber-500/20 text-amber-400 px-1.5 sm:px-2 py-0.5 rounded">
@@ -197,13 +197,13 @@ export const CashflowSummaryCard = ({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] sm:text-xs text-gray-500 hidden sm:inline">
+          <span className="text-[10px] sm:text-xs text-theme-text-muted hidden sm:inline">
             {isOpen ? t('clickToCollapse') : t('clickToExpand')}
           </span>
           {isOpen ? (
-            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-white transition-colors" />
+            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-theme-text-muted group-hover:text-theme-text transition-colors" />
           ) : (
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-white transition-colors" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-theme-text-muted group-hover:text-theme-text transition-colors" />
           )}
         </div>
       </button>
@@ -214,48 +214,48 @@ export const CashflowSummaryCard = ({
           isOpen ? "max-h-[3000px] opacity-100 mt-3 sm:mt-4" : "max-h-0 opacity-0"
         )}
       >
-        <div className="bg-[#0d1117] border border-[#2a3142] rounded-xl p-3 sm:p-6">
+        <div className="bg-theme-bg-alt border border-theme-border rounded-xl p-3 sm:p-6">
           {/* Toggle controls - only visible when not readOnly */}
           {!readOnly && (
-            <div className="mb-4 pb-4 border-b border-[#2a3142]">
+            <div className="mb-4 pb-4 border-b border-theme-border">
               {/* View Mode Toggle */}
               <div className="flex items-center gap-2 mb-4">
                 <button
                   onClick={() => setViewMode('structured')}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
                     viewMode === 'structured' 
-                      ? "bg-[#CCFF00]/20 text-[#CCFF00]" 
-                      : "bg-[#1a1f2e] text-gray-400 hover:text-white"
+                      ? "bg-theme-accent/20 text-theme-accent" 
+                      : "bg-theme-card text-theme-text-muted hover:text-theme-text"
                   )}
                 >
-                  <LayoutList className="w-3.5 h-3.5" />
+                  <LayoutList className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   {t('dataView')}
                 </button>
                 <button
                   onClick={() => setViewMode('conversational')}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                    "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
                     viewMode === 'conversational' 
-                      ? "bg-[#CCFF00]/20 text-[#CCFF00]" 
-                      : "bg-[#1a1f2e] text-gray-400 hover:text-white"
+                      ? "bg-theme-accent/20 text-theme-accent" 
+                      : "bg-theme-card text-theme-text-muted hover:text-theme-text"
                   )}
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
+                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   {t('explanationView')}
                 </button>
               </div>
               
-              <p className="text-xs text-gray-500 mb-3">{t('sectionsToInclude')}</p>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+              <p className="text-[10px] sm:text-xs text-theme-text-muted mb-3">{t('sectionsToInclude')}</p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-6">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="toggle-rental"
                     checked={localToggles.showRental}
                     onCheckedChange={(checked) => handleToggleChange('showRental', checked)}
-                    className="data-[state=checked]:bg-[#CCFF00]"
+                    className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
                   />
-                  <Label htmlFor="toggle-rental" className="text-xs sm:text-sm text-gray-300 cursor-pointer">
+                  <Label htmlFor="toggle-rental" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
                     {t('includeRentalAnalysis')}
                   </Label>
                 </div>
@@ -264,9 +264,9 @@ export const CashflowSummaryCard = ({
                     id="toggle-exit"
                     checked={localToggles.showExit}
                     onCheckedChange={(checked) => handleToggleChange('showExit', checked)}
-                    className="data-[state=checked]:bg-[#CCFF00]"
+                    className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
                   />
-                  <Label htmlFor="toggle-exit" className="text-xs sm:text-sm text-gray-300 cursor-pointer">
+                  <Label htmlFor="toggle-exit" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
                     {t('includeExitScenarios')}
                   </Label>
                 </div>
@@ -277,9 +277,9 @@ export const CashflowSummaryCard = ({
                       id="toggle-mortgage"
                       checked={localToggles.showMortgage}
                       onCheckedChange={(checked) => handleToggleChange('showMortgage', checked)}
-                      className="data-[state=checked]:bg-[#CCFF00]"
+                      className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
                     />
-                    <Label htmlFor="toggle-mortgage" className="text-xs sm:text-sm text-gray-300 cursor-pointer">
+                    <Label htmlFor="toggle-mortgage" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
                       {t('includeMortgageAnalysis')}
                     </Label>
                   </div>
@@ -341,7 +341,7 @@ export const CashflowSummaryCard = ({
             <Textarea
               value={editedText || ''}
               onChange={(e) => setEditedText(e.target.value)}
-              className="min-h-[400px] bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs sm:text-sm leading-relaxed resize-y"
+              className="min-h-[400px] bg-theme-card border-theme-border text-theme-text font-mono text-xs sm:text-sm leading-relaxed resize-y"
               placeholder="Edit summary..."
             />
           ) : viewMode === 'conversational' ? (
@@ -520,7 +520,7 @@ export const CashflowSummaryCard = ({
             /* Structured View - Data tables */
             <div className="space-y-0">
               {/* Property Overview */}
-              <SummarySection icon={Home} iconColor="text-[#CCFF00]" title={t('propertyOverviewSection')}>
+              <SummarySection icon={Home} iconColor="text-theme-accent" title={t('propertyOverviewSection')}>
                 <SummaryRow label={t('projectLabel')} value={`${structuredData.property.projectName}`} />
                 <SummaryRow label={t('developer')} value={structuredData.property.developer} />
                 <SummaryRow label={t('unit')} value={`${structuredData.property.unit} (${structuredData.property.unitType})`} />
@@ -542,16 +542,16 @@ export const CashflowSummaryCard = ({
                     highlight
                   />
                 </div>
-                <div className="border-t border-[#2a3142]/50 pt-2 mt-2">
-                  <p className="text-xs text-gray-500 mb-2">{t('installmentBreakdown') || 'Breakdown by installment:'}</p>
+                <div className="border-t border-theme-border/50 pt-2 mt-2">
+                  <p className="text-[10px] sm:text-xs text-theme-text-muted mb-2">{t('installmentBreakdown') || 'Breakdown by installment:'}</p>
                   {structuredData.paymentStructure.installments.map((inst, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 py-1 border-b border-[#2a3142]/30 last:border-b-0">
-                      <span className="text-xs text-gray-400">
+                    <div key={idx} className="flex items-center justify-between gap-2 py-1 border-b border-theme-border/30 last:border-b-0">
+                      <span className="text-[10px] sm:text-xs text-theme-text-muted shrink-0">
                         {inst.percent}% – {inst.label}
                       </span>
-                      <div className="text-right">
-                        <span className="text-sm font-mono text-white">{fmt(inst.amount)}</span>
-                        <span className="text-xs text-gray-500 ml-1">({inst.timing})</span>
+                      <div className="text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm font-mono text-theme-text">{fmt(inst.amount)}</span>
+                        <span className="text-[9px] sm:text-xs text-theme-text-muted ml-1">({inst.timing})</span>
                       </div>
                     </div>
                   ))}
@@ -574,7 +574,7 @@ export const CashflowSummaryCard = ({
                 />
                 <SummaryRow label={t('dldFeePercent')} value={fmt(structuredData.todaysCommitment.dldFee)} />
                 <SummaryRow label={t('oqoodFee')} value={fmt(structuredData.todaysCommitment.oqoodFee)} />
-                <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
+                <div className="pt-2 mt-2 border-t border-theme-border/50">
                   <SummaryRow label={t('totalToday')} value={fmt(structuredData.todaysCommitment.total)} highlight />
                 </div>
               </SummarySection>
@@ -585,17 +585,17 @@ export const CashflowSummaryCard = ({
                   <>
                     <SummaryRow label={t('additionalPayments')} value={`${structuredData.construction.paymentsCount}`} />
                     {structuredData.construction.payments.map((p, idx) => (
-                      <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 py-1">
-                        <span className="text-xs text-gray-500">{p.percent}% at {p.timing}</span>
-                        <span className="text-sm font-mono text-white">{fmt(p.amount)}</span>
+                      <div key={idx} className="flex items-center justify-between gap-2 py-1">
+                        <span className="text-[10px] sm:text-xs text-theme-text-muted">{p.percent}% at {p.timing}</span>
+                        <span className="text-xs sm:text-sm font-mono text-theme-text">{fmt(p.amount)}</span>
                       </div>
                     ))}
-                    <div className="pt-2 mt-2 border-t border-[#2a3142]/50">
+                    <div className="pt-2 mt-2 border-t border-theme-border/50">
                       <SummaryRow label={t('total')} value={fmt(structuredData.construction.totalAmount)} highlight />
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs sm:text-sm text-gray-500 italic">{t('noAdditionalPaymentsMsg')}</p>
+                  <p className="text-[10px] sm:text-xs text-theme-text-muted italic">{t('noAdditionalPaymentsMsg')}</p>
                 )}
               </SummarySection>
 
