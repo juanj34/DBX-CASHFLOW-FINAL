@@ -6,6 +6,8 @@ import { InfoTooltip } from "./InfoTooltip";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { getCountryByCode } from "@/data/countries";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface PaymentBreakdownProps {
   inputs: OIInputs;
@@ -295,8 +297,8 @@ interface PaymentSplitContentProps {
 }
 
 const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }: PaymentSplitContentProps) => {
-  const { t } = useLanguage();
-  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee } = inputs;
+  const { t, language } = useLanguage();
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear } = inputs;
   const DLD_FEE_PERCENT = 4;
   
   const clients = clientInfo.clients || [];
@@ -305,53 +307,167 @@ const PaymentSplitContent = ({ inputs, clientInfo, currency, totalMonths, rate }
   // Calculate totals
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const eoiFeeActual = Math.min(eoiFee, downpaymentAmount);
+  const restOfDownpayment = downpaymentAmount - eoiFeeActual;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
   const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
   const todayTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
+  const totalPreHandover = todayTotal + additionalTotal;
   const grandTotal = basePrice + dldFeeAmount + oqoodFee;
+
+  // Sort additional payments
+  const sortedAdditionalPayments = [...additionalPayments].sort((a, b) => {
+    if (a.type === 'time' && b.type === 'time') return a.triggerValue - b.triggerValue;
+    if (a.type === 'construction' && b.type === 'construction') return a.triggerValue - b.triggerValue;
+    const aMonths = a.type === 'time' ? a.triggerValue : (a.triggerValue / 100) * totalMonths;
+    const bMonths = b.type === 'time' ? b.triggerValue : (b.triggerValue / 100) * totalMonths;
+    return aMonths - bMonths;
+  });
 
   const getClientShare = (clientId: string): number => {
     const share = clientShares.find(s => s.clientId === clientId);
     return share?.sharePercent || 0;
   };
 
+  const getClientDisplay = (client: { id: string; name: string; country: string }) => {
+    const country = getCountryByCode(client.country);
+    return { name: client.name || t('client'), flag: country?.flag };
+  };
+
   return (
-    <div className="space-y-3">
+    <Accordion type="multiple" className="space-y-2">
       {clients.map((client) => {
         const sharePercent = getClientShare(client.id);
-        const clientGrandTotal = grandTotal * sharePercent / 100;
+        const clientDisplay = getClientDisplay(client);
+        
+        // Calculate all client-specific amounts
+        const clientEoi = eoiFeeActual * sharePercent / 100;
+        const clientRestDownpayment = restOfDownpayment * sharePercent / 100;
+        const clientDld = dldFeeAmount * sharePercent / 100;
+        const clientOqood = oqoodFee * sharePercent / 100;
         const clientTodayTotal = todayTotal * sharePercent / 100;
+        const clientAdditionalTotal = additionalTotal * sharePercent / 100;
+        const clientPreHandover = totalPreHandover * sharePercent / 100;
         const clientHandover = handoverAmount * sharePercent / 100;
+        const clientGrandTotal = grandTotal * sharePercent / 100;
         
         return (
-          <div key={client.id} className="bg-theme-bg/50 border border-theme-border/50 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-theme-accent/20 flex items-center justify-center">
-                  <User className="w-3 h-3 text-theme-accent" />
+          <AccordionItem 
+            key={client.id} 
+            value={client.id}
+            className="bg-theme-bg/50 border border-theme-border/50 rounded-lg overflow-hidden"
+          >
+            <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-theme-card-alt/30">
+              <div className="flex items-center justify-between w-full pr-2">
+                <div className="flex items-center gap-2">
+                  {clientDisplay.flag && <span className="text-base">{clientDisplay.flag}</span>}
+                  <span className="text-sm font-medium text-theme-text">{clientDisplay.name}</span>
+                  <span className="text-xs text-cyan-400">({sharePercent.toFixed(1)}%)</span>
                 </div>
-                <span className="text-sm font-medium text-theme-text">{client.name}</span>
-                <span className="text-xs text-cyan-400">({sharePercent.toFixed(1)}%)</span>
+                <span className="text-sm font-bold text-theme-accent font-mono">
+                  {formatCurrency(clientGrandTotal, currency, rate)}
+                </span>
               </div>
-              <span className="text-sm font-bold text-theme-accent font-mono">
-                {formatCurrency(clientGrandTotal, currency, rate)}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('todayTotal')}</span>
-                <span className="text-theme-text font-mono">{formatCurrency(clientTodayTotal, currency, rate)}</span>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-3">
+              <div className="space-y-3 pt-2">
+                {/* At Booking Section */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-theme-accent">
+                    <Calendar className="w-3 h-3" />
+                    <span className="text-xs font-medium">{t('atBooking')}</span>
+                  </div>
+                  <div className="pl-4 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">{t('eoiBookingFee')}</span>
+                      <span className="text-theme-text font-mono">{formatCurrency(clientEoi, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">{t('restOfDownpayment')}</span>
+                      <span className="text-theme-text font-mono">{formatCurrency(clientRestDownpayment, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">{t('dldFeePercent')}</span>
+                      <span className="text-theme-text font-mono">{formatCurrency(clientDld, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">{t('oqoodFee')}</span>
+                      <span className="text-theme-text font-mono">{formatCurrency(clientOqood, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-theme-border/50 font-medium">
+                      <span className="text-theme-accent">{t('totalToday')}</span>
+                      <span className="text-theme-accent font-mono">{formatCurrency(clientTodayTotal, currency, rate)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* During Construction Section */}
+                {sortedAdditionalPayments.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-theme-text-muted">
+                      <Building2 className="w-3 h-3" />
+                      <span className="text-xs font-medium">{t('duringConstruction')}</span>
+                    </div>
+                    <div className="pl-4 space-y-1 text-xs">
+                      {sortedAdditionalPayments.map((payment, index) => {
+                        const paymentAmount = basePrice * payment.paymentPercent / 100;
+                        const clientPaymentAmount = paymentAmount * sharePercent / 100;
+                        const triggerLabel = payment.type === 'time' 
+                          ? `M${payment.triggerValue}` 
+                          : `${payment.triggerValue}%`;
+                        
+                        return (
+                          <div key={payment.id} className="flex justify-between">
+                            <span className="text-theme-text-muted">{payment.paymentPercent}% @ {triggerLabel}</span>
+                            <span className="text-theme-text font-mono">{formatCurrency(clientPaymentAmount, currency, rate)}</span>
+                          </div>
+                        );
+                      })}
+                      {clientAdditionalTotal > 0 && (
+                        <div className="flex justify-between pt-1 border-t border-theme-border/50">
+                          <span className="text-theme-text-muted">{t('subtotalInstallments')}</span>
+                          <span className="text-theme-text font-mono">{formatCurrency(clientAdditionalTotal, currency, rate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pre-Handover Total */}
+                <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-theme-accent">{t('totalPreHandover')}</span>
+                    <span className="font-bold text-theme-accent font-mono">{formatCurrency(clientPreHandover, currency, rate)}</span>
+                  </div>
+                </div>
+
+                {/* At Handover Section */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-cyan-400">
+                    <Home className="w-3 h-3" />
+                    <span className="text-xs font-medium">{t('atHandoverLabel')}</span>
+                  </div>
+                  <div className="pl-4 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">{t('finalPayment')} ({handoverPercent}%)</span>
+                      <span className="text-theme-text font-mono">{formatCurrency(clientHandover, currency, rate)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grand Total */}
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-emerald-400">{t('totalToDisburse')}</span>
+                    <span className="font-bold text-emerald-400 font-mono">{formatCurrency(clientGrandTotal, currency, rate)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('atHandoverLabel')}</span>
-                <span className="text-theme-text font-mono">{formatCurrency(clientHandover, currency, rate)}</span>
-              </div>
-            </div>
-          </div>
+            </AccordionContent>
+          </AccordionItem>
         );
       })}
-    </div>
+    </Accordion>
   );
 };
