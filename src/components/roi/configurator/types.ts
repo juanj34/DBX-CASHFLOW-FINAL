@@ -1,5 +1,7 @@
 import { OIInputs, PaymentMilestone } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
+import { ClientUnitData } from "../ClientUnitInfo";
+import { MortgageInputs } from "../useMortgageCalculations";
 
 export type ConfiguratorSection = 'client' | 'property' | 'payment' | 'value' | 'appreciation' | 'exits' | 'rent' | 'mortgage';
 
@@ -77,7 +79,45 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   rentGrowthRate: 4,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
-  valueDifferentiators: [],
+  valueDifferentiators: ['waterfront', 'master-community', 'premium-finishes'],
+  _exitScenarios: [18, 24, 36, 48],
+  unitSizeSqf: 1250,
+};
+
+// Sample client info for demo scenarios
+export const SAMPLE_CLIENT_INFO: ClientUnitData = {
+  developer: 'Emaar Properties',
+  projectName: 'The Valley',
+  clients: [
+    { id: '1', name: 'John Smith', country: 'GB' },
+    { id: '2', name: 'Sarah Johnson', country: 'US' }
+  ],
+  brokerName: 'Ahmed Hassan',
+  unit: 'V-3011',
+  unitSizeSqf: 1250,
+  unitSizeM2: 116,
+  unitType: 'apartment',
+  bedrooms: 2,
+  splitEnabled: true,
+  clientShares: [
+    { clientId: '1', sharePercent: 60 },
+    { clientId: '2', sharePercent: 40 }
+  ],
+  zoneId: '9162ec48-761d-4e3d-a7cf-1da0551bb6ea',
+  zoneName: 'Downtown Dubai',
+};
+
+// Sample mortgage inputs for demo scenarios
+export const SAMPLE_MORTGAGE_INPUTS: MortgageInputs = {
+  enabled: true,
+  financingPercent: 60,
+  loanTermYears: 25,
+  interestRate: 4.5,
+  processingFeePercent: 1,
+  valuationFee: 3000,
+  mortgageRegistrationPercent: 0.25,
+  lifeInsurancePercent: 0.4,
+  propertyInsurance: 1500,
 };
 
 // Empty defaults for NEW quotes (no progress indicators until user enters data)

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
-import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS } from "./types";
+import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS, SAMPLE_CLIENT_INFO, SAMPLE_MORTGAGE_INPUTS } from "./types";
+import { toast } from "sonner";
 import { ConfiguratorSidebar } from "./ConfiguratorSidebar";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
 import { ClientSection } from "./ClientSection";
@@ -308,11 +309,24 @@ export const ConfiguratorLayout = ({
   };
 
   const handleLoadSample = () => {
+    // Set all OI inputs with sample data
     setInputs(DEFAULT_OI_INPUTS);
+    
+    // Set client info with sample data
+    setClientInfo(SAMPLE_CLIENT_INFO);
+    
+    // Set mortgage inputs with sample data
+    setMortgageInputs(SAMPLE_MORTGAGE_INPUTS);
+    
+    // Mark all sections as visited
     setVisitedSections(new Set(SECTIONS));
+    
     // Trigger flash animation
     setShowSampleFlash(true);
     setTimeout(() => setShowSampleFlash(false), 1500);
+    
+    // Show toast notification
+    toast.success('Sample data loaded! Explore all sections to see how the tool works.');
   };
 
   const getAnimationClass = () => {
