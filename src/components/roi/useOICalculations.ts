@@ -33,11 +33,14 @@ export interface OIInputs {
   
   // Exit Threshold
   minimumExitThreshold: number; // % mínimo requerido por developer para permitir reventa (default 30)
-  
+
+  // Persisted exit points (months from booking)
+  _exitScenarios?: number[];
+
   // Rental Strategy - NEW: Long-term always + optional Airbnb comparison
   showAirbnbComparison?: boolean; // Toggle to show Airbnb comparison
   shortTermRental?: ShortTermRentalConfig;
-  
+
   // Legacy field for backward compatibility
   rentalMode?: 'long-term' | 'short-term';
   

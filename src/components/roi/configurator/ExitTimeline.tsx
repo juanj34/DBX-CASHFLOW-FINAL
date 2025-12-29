@@ -213,18 +213,21 @@ export const ExitTimeline = ({
         {/* Threshold indicator line */}
         <div
           className="absolute top-1/2 -translate-y-1/2 h-8 w-0.5 pointer-events-none"
-          style={{ 
+          style={{
             left: `${thresholdPosition}%`,
-            background: 'repeating-linear-gradient(to bottom, hsl(var(--theme-accent)) 0, hsl(var(--theme-accent)) 2px, transparent 2px, transparent 4px)',
+            background:
+              "repeating-linear-gradient(to bottom, hsl(var(--theme-accent)) 0, hsl(var(--theme-accent)) 2px, transparent 2px, transparent 4px)",
           }}
         />
         <div
-          className="absolute -bottom-6 text-[9px] text-theme-accent whitespace-nowrap pointer-events-none font-medium"
-          style={{ left: `${thresholdPosition}%`, transform: 'translateX(-50%)' }}
+          className="absolute -top-7 text-[9px] whitespace-nowrap pointer-events-none font-medium"
+          style={{ left: `${thresholdPosition}%`, transform: "translateX(-50%)" }}
         >
-          {minimumThreshold}% min
+          <span className="px-1.5 py-0.5 rounded-md bg-theme-bg-alt border border-theme-border text-theme-accent">
+            {minimumThreshold}% min
+          </span>
         </div>
-        
+
         {/* Exit markers */}
         {timelineMarkers.map((marker) => {
           const isDragging = draggingId === marker.id;
@@ -246,23 +249,28 @@ export const ExitTimeline = ({
               {/* Marker dot - draggable */}
               <div 
                 onMouseDown={(e) => handleMouseDown(e, marker.id, marker.monthsFromBooking)}
-                className={`relative w-5 h-5 rounded-full border-2 shadow-lg transition-all ${
-                  !marker.meetsThreshold
-                    ? 'bg-red-500/60 border-red-400/60'
-                    : 'bg-theme-accent border-theme-accent/80'
-                } ${canInteract ? 'cursor-grab active:cursor-grabbing hover:scale-110' : ''} ${isDragging ? 'scale-125 ring-2 ring-theme-accent/50' : ''}`}
-              >
-                {/* Delete button on hover */}
-                {canInteract && isHovered && !isDragging && onRemoveExit && (
-                  <button
-                    onClick={(e) => handleRemoveClick(e, marker.id)}
-                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-400 transition-colors shadow-md"
-                  >
-                    <X className="w-2.5 h-2.5 text-white" />
-                  </button>
-                )}
-              </div>
-              
+                 className={`relative w-5 h-5 rounded-full border-2 shadow-lg transition-all ${
+                   !marker.meetsThreshold
+                     ? 'bg-destructive/40 border-destructive/50'
+                     : 'bg-theme-accent border-theme-accent/80'
+                 } ${canInteract ? 'cursor-grab active:cursor-grabbing hover:scale-110' : ''} ${isDragging ? 'scale-125 ring-2 ring-theme-accent/50' : ''}`}
+               >
+                 {/* Delete button on hover */}
+                 {canInteract && isHovered && !isDragging && onRemoveExit && (
+                   <button
+                     type="button"
+                     onMouseDown={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                     }}
+                     onClick={(e) => handleRemoveClick(e, marker.id)}
+                     className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:opacity-90 transition-opacity shadow-md pointer-events-auto"
+                   >
+                     <X className="w-2.5 h-2.5" />
+                   </button>
+                 )}
+               </div>
+
               {/* Label below - positioned to avoid overlap */}
               <div 
                 className={`absolute whitespace-nowrap text-center pointer-events-none transition-all ${
