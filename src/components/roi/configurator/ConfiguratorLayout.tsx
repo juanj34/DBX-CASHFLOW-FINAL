@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
@@ -299,6 +299,11 @@ export const ConfiguratorLayout = ({
     setVisitedSections(new Set(['client']));
   };
 
+  const handleLoadSample = () => {
+    setInputs(DEFAULT_OI_INPUTS);
+    setVisitedSections(new Set(SECTIONS));
+  };
+
   const getAnimationClass = () => {
     if (!animationDirection) return '';
     return animationDirection === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left';
@@ -462,11 +467,21 @@ export const ConfiguratorLayout = ({
           <Button
             variant="ghost"
             size="sm"
+            onClick={handleLoadSample}
+            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+            title="Load sample data"
+          >
+            <FileText className="w-4 h-4 mr-1" />
+            Sample
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleReset}
             className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
           >
             <RotateCcw className="w-4 h-4 mr-1" />
-            Reset
+            Clear
           </Button>
           <Button
             variant="ghost"
