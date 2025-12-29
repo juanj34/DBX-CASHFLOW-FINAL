@@ -57,7 +57,7 @@ export const CollapsibleSection = ({
       
       <div
         className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
+          "collapsible-content overflow-hidden transition-all duration-300 ease-in-out",
           isOpen ? "max-h-[5000px] opacity-100 mt-4" : "max-h-0 opacity-0"
         )}
       >

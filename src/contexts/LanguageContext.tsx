@@ -777,6 +777,11 @@ const translations: Translations = {
   noAdditionalPaymentsMsg: { en: 'No additional payments during construction', es: 'Sin pagos adicionales durante la construcción' },
   surplus: { en: 'Surplus', es: 'Excedente' },
   gap: { en: 'Gap', es: 'Diferencia' },
+  
+  // Export
+  exportReport: { en: 'Export Report', es: 'Exportar Reporte' },
+  exportingReport: { en: 'Generating image...', es: 'Generando imagen...' },
+  exportSuccess: { en: 'Report downloaded successfully!', es: '¡Reporte descargado con éxito!' },
 };
 
 interface LanguageContextType {
