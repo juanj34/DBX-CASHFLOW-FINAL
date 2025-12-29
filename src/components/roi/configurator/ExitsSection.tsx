@@ -271,56 +271,59 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             </div>
           </div>
 
-          {/* Controls Row: Generate Defaults + Presets */}
-          <div className="flex items-center gap-2">
-            {/* Generate Defaults Button - shown when no exits */}
-            {exits.length === 0 ? (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleGenerateDefaults}
-                className="flex-1 h-8 text-xs bg-theme-accent hover:bg-theme-accent/90 text-black"
-              >
-                <Wand2 className="w-3 h-3 mr-1.5" />
-                Generate Default Exits
-              </Button>
-            ) : (
+          {/* Controls Row: Generate Defaults + Presets (always visible) */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Generate Defaults Button */}
+            <Button
+              variant={exits.length === 0 ? "default" : "outline"}
+              size="sm"
+              onClick={handleGenerateDefaults}
+              className={exits.length === 0 
+                ? "h-8 text-xs bg-theme-accent hover:bg-theme-accent/90 text-black" 
+                : "h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"}
+            >
+              <Wand2 className="w-3 h-3 mr-1.5" />
+              {exits.length === 0 ? 'Generate Default Exits' : 'Regenerate'}
+            </Button>
+            
+            {/* Preset Loading - always shown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text-muted">
+                  <FolderOpen className="w-3 h-3 mr-1.5" />
+                  Load preset
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {presets.length === 0 ? (
+                  <div className="px-2 py-2 text-xs text-theme-text-muted">No presets saved</div>
+                ) : (
+                  presets.map(preset => (
+                    <DropdownMenuItem key={preset.id} className="flex items-center justify-between group" onSelect={() => handleLoadPreset(preset)}>
+                      <span className="text-xs">{preset.name} ({preset.exit_months.length} exits)</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDeletePreset(e, preset.id)}
+                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-theme-text-muted hover:text-red-400"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Save and Reset - only when exits exist */}
+            {exits.length > 0 && (
               <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text-muted justify-start">
-                      <FolderOpen className="w-3 h-3 mr-1.5" />
-                      Load preset...
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    {presets.length === 0 ? (
-                      <div className="px-2 py-2 text-xs text-theme-text-muted">No presets saved</div>
-                    ) : (
-                      presets.map(preset => (
-                        <DropdownMenuItem key={preset.id} className="flex items-center justify-between group" onSelect={() => handleLoadPreset(preset)}>
-                          <span className="text-xs">{preset.name} ({preset.exit_months.length} exits)</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleDeletePreset(e, preset.id)}
-                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-theme-text-muted hover:text-red-400"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </DropdownMenuItem>
-                      ))
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
                 {!isSavingPreset ? (
                   <>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setIsSavingPreset(true)}
-                      disabled={exits.length === 0}
                       className="h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"
                     >
                       <Save className="w-3 h-3 mr-1" />
@@ -330,9 +333,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                       variant="outline"
                       size="sm"
                       onClick={handleResetToDefaults}
-                      disabled={exits.length === 0 && inputs.minimumExitThreshold === 30}
                       className="h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"
-                      title="Reset to defaults"
+                      title="Clear all exits"
                     >
                       <RotateCcw className="w-3 h-3" />
                     </Button>

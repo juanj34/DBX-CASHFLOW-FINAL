@@ -223,7 +223,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     [toast]
   );
 
-  // Auto-save with debounce
+  // Auto-save with debounce - uses _exitScenarios from inputs as source of truth
   const scheduleAutoSave = useCallback(
     (
       inputs: OIInputs,
@@ -249,9 +249,12 @@ export const useCashflowQuote = (quoteId?: string) => {
           return;
         }
 
+        // Use _exitScenarios from inputs as source of truth (set by configurator or ExitScenariosCards)
+        const exitScenarios = inputs._exitScenarios || [];
+
         if (targetExistingId) {
-          // Update existing quote after 15 seconds
-          await saveQuote(inputs, clientInfo, targetExistingId, undefined, mortgageInputs);
+          // Update existing quote after 15 seconds - pass exitScenarios from inputs
+          await saveQuote(inputs, clientInfo, targetExistingId, exitScenarios, mortgageInputs);
           return;
         }
 
@@ -284,7 +287,8 @@ export const useCashflowQuote = (quoteId?: string) => {
               zoneId: clientInfo.zoneId,
               zoneName: clientInfo.zoneName,
             },
-            _exitScenarios: [],
+            // Preserve _exitScenarios from inputs
+            _exitScenarios: exitScenarios,
             _mortgageInputs: mortgageInputs,
           };
 
