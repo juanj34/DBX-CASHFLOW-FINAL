@@ -1,50 +1,50 @@
-import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
-import { PaymentSplitBreakdown } from "@/components/roi/PaymentSplitBreakdown";
+import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
-import { OIInputs } from "@/components/roi/useOICalculations";
+import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
 import { Currency } from "@/components/roi/currencyUtils";
-import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
 
 interface PropertyTabContentProps {
   inputs: OIInputs;
+  calculations: OICalculations;
   currency: Currency;
-  totalMonths: number;
   rate: number;
   clientInfo: ClientUnitData;
   customDifferentiators?: any[];
   onEditConfig: () => void;
+  onEditClient: () => void;
 }
 
 export const PropertyTabContent = ({
   inputs,
+  calculations,
   currency,
-  totalMonths,
   rate,
   clientInfo,
   customDifferentiators = [],
   onEditConfig,
+  onEditClient,
 }: PropertyTabContentProps) => {
   return (
     <div className="space-y-6">
-      <PaymentBreakdown 
-        inputs={inputs} 
-        currency={currency} 
-        totalMonths={totalMonths} 
-        rate={rate} 
-        unitSizeSqf={clientInfo.unitSizeSqf} 
-        clientInfo={clientInfo} 
-      />
-      
-      {clientInfo.splitEnabled && clientInfo.clients && clientInfo.clients.length > 1 && (
-        <PaymentSplitBreakdown
-          inputs={inputs}
-          clientInfo={clientInfo}
-          currency={currency}
-          totalMonths={totalMonths}
-          rate={rate}
+      {/* Row 1: Client Info + Investment Snapshot */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ClientUnitInfo 
+          data={clientInfo} 
+          onEditClick={onEditClient} 
         />
-      )}
+        <InvestmentSnapshot 
+          inputs={inputs} 
+          currency={currency} 
+          totalMonths={calculations.totalMonths} 
+          totalEntryCosts={calculations.totalEntryCosts} 
+          rate={rate} 
+          holdAnalysis={calculations.holdAnalysis} 
+          unitSizeSqf={clientInfo.unitSizeSqf} 
+        />
+      </div>
       
+      {/* Row 2: Value Differentiators */}
       <ValueDifferentiatorsDisplay
         selectedDifferentiators={inputs.valueDifferentiators || []}
         customDifferentiators={customDifferentiators}

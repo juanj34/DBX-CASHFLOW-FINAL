@@ -780,6 +780,7 @@ const translations: Translations = {
   
   // Dashboard Tabs
   tabProperty: { en: 'Property', es: 'Propiedad' },
+  tabPayments: { en: 'Payments', es: 'Pagos' },
   tabHold: { en: 'Hold', es: 'Retención' },
   tabExit: { en: 'Exit', es: 'Salida' },
   tabMortgage: { en: 'Mortgage', es: 'Hipoteca' },

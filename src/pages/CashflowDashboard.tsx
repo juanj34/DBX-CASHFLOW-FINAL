@@ -10,8 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OIInputModal } from "@/components/roi/OIInputModal";
-import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
-import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { QuotesDropdown } from "@/components/roi/QuotesDropdown";
 import { SettingsDropdown } from "@/components/roi/SettingsDropdown";
@@ -36,7 +35,8 @@ import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { DashboardTabs } from "@/components/roi/tabs";
+import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
+import { PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -65,6 +65,7 @@ const CashflowDashboardContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<SectionId>('property');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -460,11 +461,9 @@ const CashflowDashboardContent = () => {
           </div>
         )}
 
-        <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
-          <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
-
-          {!isFullyConfigured ? (
-            /* Unconfigured State */
+        {!isFullyConfigured ? (
+          /* Unconfigured State */
+          <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
             <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-12 text-center">
               <div className="max-w-md mx-auto">
                 <div className="w-16 h-16 rounded-2xl bg-theme-accent/20 flex items-center justify-center mx-auto mb-6">
@@ -497,39 +496,88 @@ const CashflowDashboardContent = () => {
                 </div>
               </div>
             </div>
-          ) : (
-            /* Configured State - Dashboard with Tabs */
-            <>
-              {/* Investment Snapshot at top */}
-              <div className="mb-6">
-                <InvestmentSnapshot 
-                  inputs={inputs} 
-                  currency={currency} 
-                  totalMonths={calculations.totalMonths} 
-                  totalEntryCosts={calculations.totalEntryCosts} 
-                  rate={rate} 
-                  holdAnalysis={calculations.holdAnalysis} 
-                  unitSizeSqf={clientInfo.unitSizeSqf} 
+          </main>
+        ) : (
+          /* Configured State - Dashboard with Sidebar Navigation */
+          <DashboardLayout
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+            inputs={inputs}
+            mortgageInputs={mortgageInputs}
+          >
+            <div className="p-4 sm:p-6">
+              {activeSection === 'property' && (
+                <PropertyTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  currency={currency}
+                  rate={rate}
+                  clientInfo={clientInfo}
+                  customDifferentiators={customDifferentiators}
+                  onEditConfig={() => setModalOpen(true)}
+                  onEditClient={() => setClientModalOpen(true)}
                 />
-              </div>
+              )}
 
-              {/* Dashboard Tabs */}
-              <DashboardTabs
-                inputs={inputs}
-                calculations={calculations}
-                clientInfo={clientInfo}
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                exitScenarios={exitScenarios}
-                setExitScenarios={setExitScenarios}
-                currency={currency}
-                rate={rate}
-                onEditConfig={() => setModalOpen(true)}
-                customDifferentiators={customDifferentiators}
-              />
-            </>
-          )}
-        </main>
+              {activeSection === 'payments' && (
+                <PaymentsTabContent
+                  inputs={inputs}
+                  currency={currency}
+                  totalMonths={calculations.totalMonths}
+                  rate={rate}
+                  clientInfo={clientInfo}
+                />
+              )}
+
+              {activeSection === 'hold' && (
+                <HoldTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  currency={currency}
+                  rate={rate}
+                  totalCapitalInvested={calculations.basePrice + calculations.totalEntryCosts}
+                  unitSizeSqf={clientInfo.unitSizeSqf}
+                />
+              )}
+
+              {activeSection === 'exit' && (
+                <ExitTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  currency={currency}
+                  rate={rate}
+                  exitScenarios={exitScenarios}
+                  setExitScenarios={setExitScenarios}
+                  unitSizeSqf={clientInfo.unitSizeSqf}
+                />
+              )}
+
+              {activeSection === 'mortgage' && (
+                <MortgageTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+
+              {activeSection === 'summary' && (
+                <SummaryTabContent
+                  inputs={inputs}
+                  clientInfo={clientInfo}
+                  calculations={calculations}
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </div>
+          </DashboardLayout>
+        )}
       </div>
     </CashflowErrorBoundary>
   );

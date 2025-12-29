@@ -79,12 +79,13 @@ export const DashboardTabs = ({
       <TabsContent value="property" className="mt-0">
         <PropertyTabContent
           inputs={inputs}
+          calculations={calculations}
           currency={currency}
-          totalMonths={calculations.totalMonths}
           rate={rate}
           clientInfo={clientInfo}
           customDifferentiators={customDifferentiators}
           onEditConfig={onEditConfig}
+          onEditClient={onEditConfig}
         />
       </TabsContent>
 
