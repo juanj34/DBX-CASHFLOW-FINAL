@@ -7,4 +7,5 @@ export { PaymentSection } from './PaymentSection';
 export { ValueSection } from './ValueSection';
 export { IncomeSection } from './IncomeSection';
 export { AppreciationSection } from './AppreciationSection';
+export { MortgageSection } from './MortgageSection';
 export * from './types';

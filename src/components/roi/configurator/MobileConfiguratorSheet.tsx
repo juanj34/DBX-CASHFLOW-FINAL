@@ -28,7 +28,7 @@ interface MobileConfiguratorSheetProps {
   currency: Currency;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent'];
+const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   property: 'Property',
@@ -37,6 +37,7 @@ const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   appreciation: 'Growth',
   exits: 'Exits',
   rent: 'Rent',
+  mortgage: 'Mortgage',
 };
 
 // Mini preview strip component
