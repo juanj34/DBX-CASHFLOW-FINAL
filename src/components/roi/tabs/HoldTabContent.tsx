@@ -12,6 +12,7 @@ interface HoldTabContentProps {
   rate: number;
   totalCapitalInvested: number;
   unitSizeSqf?: number;
+  variant?: 'default' | 'dashboard';
 }
 
 export const HoldTabContent = ({
@@ -21,11 +22,13 @@ export const HoldTabContent = ({
   rate,
   totalCapitalInvested,
   unitSizeSqf,
+  variant = 'default',
 }: HoldTabContentProps) => {
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
+  const isDashboard = variant === 'dashboard';
 
   return (
-    <div className="space-y-6">
+    <div className={isDashboard ? "space-y-4" : "space-y-6"}>
       {/* Row 1: RentSnapshot + WealthSummary (2 columns on desktop) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RentSnapshot 
@@ -46,14 +49,16 @@ export const HoldTabContent = ({
         />
       </div>
       
-      {/* Row 2: Cumulative Chart (full width) */}
-      <CumulativeIncomeChart 
-        projections={calculations.yearlyProjections} 
-        currency={currency} 
-        rate={rate} 
-        totalCapitalInvested={totalCapitalInvested} 
-        showAirbnbComparison={calculations.showAirbnbComparison} 
-      />
+      {/* Row 2: Cumulative Chart (full width, reduced height in dashboard) */}
+      <div className={isDashboard ? "max-h-[300px]" : ""}>
+        <CumulativeIncomeChart 
+          projections={calculations.yearlyProjections} 
+          currency={currency} 
+          rate={rate} 
+          totalCapitalInvested={totalCapitalInvested} 
+          showAirbnbComparison={calculations.showAirbnbComparison} 
+        />
+      </div>
       
       {/* Row 3: Yearly Projection Table (full width) */}
       <OIYearlyProjectionTable 

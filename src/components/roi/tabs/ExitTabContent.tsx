@@ -11,6 +11,7 @@ interface ExitTabContentProps {
   exitScenarios: number[];
   setExitScenarios: (scenarios: number[]) => void;
   unitSizeSqf?: number;
+  variant?: 'default' | 'dashboard';
 }
 
 export const ExitTabContent = ({
@@ -21,9 +22,12 @@ export const ExitTabContent = ({
   exitScenarios,
   setExitScenarios,
   unitSizeSqf,
+  variant = 'default',
 }: ExitTabContentProps) => {
+  const isDashboard = variant === 'dashboard';
+
   return (
-    <div className="space-y-6">
+    <div className={isDashboard ? "space-y-4" : "space-y-6"}>
       <ExitScenariosCards 
         inputs={inputs} 
         currency={currency} 
@@ -36,13 +40,16 @@ export const ExitTabContent = ({
         unitSizeSqf={unitSizeSqf} 
       />
       
-      <OIGrowthCurve 
-        calculations={calculations} 
-        inputs={inputs} 
-        currency={currency} 
-        exitScenarios={exitScenarios} 
-        rate={rate} 
-      />
+      {/* Growth curve with reduced height in dashboard */}
+      <div className={isDashboard ? "max-h-[350px]" : ""}>
+        <OIGrowthCurve 
+          calculations={calculations} 
+          inputs={inputs} 
+          currency={currency} 
+          exitScenarios={exitScenarios} 
+          rate={rate} 
+        />
+      </div>
     </div>
   );
 };

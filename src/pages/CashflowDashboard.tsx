@@ -505,77 +505,78 @@ const CashflowDashboardContent = () => {
             inputs={inputs}
             mortgageInputs={mortgageInputs}
           >
-            <div className="p-4 sm:p-6">
-              {activeSection === 'property' && (
-                <PropertyTabContent
-                  inputs={inputs}
-                  calculations={calculations}
-                  currency={currency}
-                  rate={rate}
-                  clientInfo={clientInfo}
-                  customDifferentiators={customDifferentiators}
-                  onEditConfig={() => setModalOpen(true)}
-                  onEditClient={() => setClientModalOpen(true)}
-                />
-              )}
+            {activeSection === 'property' && (
+              <PropertyTabContent
+                inputs={inputs}
+                calculations={calculations}
+                currency={currency}
+                rate={rate}
+                clientInfo={clientInfo}
+                customDifferentiators={customDifferentiators}
+                onEditConfig={() => setModalOpen(true)}
+                onEditClient={() => setClientModalOpen(true)}
+                variant="dashboard"
+              />
+            )}
 
-              {activeSection === 'payments' && (
-                <PaymentsTabContent
-                  inputs={inputs}
-                  currency={currency}
-                  totalMonths={calculations.totalMonths}
-                  rate={rate}
-                  clientInfo={clientInfo}
-                />
-              )}
+            {activeSection === 'payments' && (
+              <PaymentsTabContent
+                inputs={inputs}
+                currency={currency}
+                totalMonths={calculations.totalMonths}
+                rate={rate}
+                clientInfo={clientInfo}
+              />
+            )}
 
-              {activeSection === 'hold' && (
-                <HoldTabContent
-                  inputs={inputs}
-                  calculations={calculations}
-                  currency={currency}
-                  rate={rate}
-                  totalCapitalInvested={calculations.basePrice + calculations.totalEntryCosts}
-                  unitSizeSqf={clientInfo.unitSizeSqf}
-                />
-              )}
+            {activeSection === 'hold' && (
+              <HoldTabContent
+                inputs={inputs}
+                calculations={calculations}
+                currency={currency}
+                rate={rate}
+                totalCapitalInvested={calculations.basePrice + calculations.totalEntryCosts}
+                unitSizeSqf={clientInfo.unitSizeSqf}
+                variant="dashboard"
+              />
+            )}
 
-              {activeSection === 'exit' && (
-                <ExitTabContent
-                  inputs={inputs}
-                  calculations={calculations}
-                  currency={currency}
-                  rate={rate}
-                  exitScenarios={exitScenarios}
-                  setExitScenarios={setExitScenarios}
-                  unitSizeSqf={clientInfo.unitSizeSqf}
-                />
-              )}
+            {activeSection === 'exit' && (
+              <ExitTabContent
+                inputs={inputs}
+                calculations={calculations}
+                currency={currency}
+                rate={rate}
+                exitScenarios={exitScenarios}
+                setExitScenarios={setExitScenarios}
+                unitSizeSqf={clientInfo.unitSizeSqf}
+                variant="dashboard"
+              />
+            )}
 
-              {activeSection === 'mortgage' && (
-                <MortgageTabContent
-                  inputs={inputs}
-                  calculations={calculations}
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
+            {activeSection === 'mortgage' && (
+              <MortgageTabContent
+                inputs={inputs}
+                calculations={calculations}
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                currency={currency}
+                rate={rate}
+              />
+            )}
 
-              {activeSection === 'summary' && (
-                <SummaryTabContent
-                  inputs={inputs}
-                  clientInfo={clientInfo}
-                  calculations={calculations}
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  exitScenarios={exitScenarios}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-            </div>
+            {activeSection === 'summary' && (
+              <SummaryTabContent
+                inputs={inputs}
+                clientInfo={clientInfo}
+                calculations={calculations}
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+              />
+            )}
           </DashboardLayout>
         )}
       </div>
