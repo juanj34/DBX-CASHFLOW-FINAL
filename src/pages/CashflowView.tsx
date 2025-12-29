@@ -359,7 +359,7 @@ const CashflowViewContent = () => {
           <CollapsibleSection
             title={t('mortgageAnalysis') || "Mortgage Analysis"}
             subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
-            icon={<Building2 className="w-5 h-5 text-blue-400" />}
+            icon={<Building2 className="w-5 h-5 text-theme-accent" />}
             defaultOpen={false}
           >
             {(() => {
