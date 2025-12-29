@@ -1,11 +1,12 @@
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, AlertTriangle, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InfoTooltip } from "./InfoTooltip";
+import { calculateEquityAtExitWithDetails, timelineToConstruction } from "./constructionProgress";
 
 interface ExitScenario {
   months: number;
@@ -16,6 +17,8 @@ interface ExitScenario {
   trueProfit: number;
   roe: number;
   trueROE: number;
+  advanceRequired: number;
+  isThresholdMet: boolean;
 }
 
 interface ExitScenariosCardsProps {
@@ -31,45 +34,15 @@ interface ExitScenariosCardsProps {
   unitSizeSqf?: number;
 }
 
-// Calculate equity deployed at exit - returns MAX of plan equity vs threshold requirement
+// Calculate equity deployed at exit using S-curve and threshold logic
 export const calculateEquityAtExit = (
   exitMonths: number,
   inputs: OIInputs,
   totalMonths: number,
   basePrice: number
 ): number => {
-  let planEquity = 0;
-  
-  // Downpayment - always paid
-  planEquity += basePrice * inputs.downpaymentPercent / 100;
-  
-  // Additional payments
-  inputs.additionalPayments.forEach(m => {
-    let triggered = false;
-    
-    if (m.type === 'time') {
-      triggered = m.triggerValue <= exitMonths;
-    } else {
-      // Construction-based: assume linear construction
-      const exitPercent = (exitMonths / totalMonths) * 100;
-      triggered = m.triggerValue <= exitPercent;
-    }
-    
-    if (triggered && m.paymentPercent > 0) {
-      planEquity += basePrice * m.paymentPercent / 100;
-    }
-  });
-  
-  // Handover payment - only if at or after handover
-  if (exitMonths >= totalMonths) {
-    const handoverPercent = 100 - inputs.preHandoverPercent;
-    planEquity += basePrice * handoverPercent / 100;
-  }
-  
-  // KEY: Return MAX of plan equity vs threshold requirement
-  // If threshold is higher than what we've paid, we need to advance payments
-  const thresholdAmount = basePrice * (inputs.minimumExitThreshold || 30) / 100;
-  return Math.max(planEquity, thresholdAmount);
+  const result = calculateEquityAtExitWithDetails(exitMonths, inputs, totalMonths, basePrice);
+  return result.finalEquity;
 };
 
 // Calculate exit price using phased appreciation (matching useOICalculations logic)
@@ -125,9 +98,13 @@ const calculateScenario = (
   basePrice: number,
   totalEntryCosts: number
 ): ExitScenario => {
-  // Use phased appreciation instead of legacy appreciationRate
+  // Use phased appreciation
   const exitPrice = calculatePhasedExitPrice(months, inputs, totalMonths, basePrice);
-  const amountPaid = calculateEquityAtExit(months, inputs, totalMonths, basePrice);
+  
+  // Use S-curve based equity calculation
+  const equityResult = calculateEquityAtExitWithDetails(months, inputs, totalMonths, basePrice);
+  const amountPaid = equityResult.finalEquity;
+  
   const profit = exitPrice - basePrice;
   const trueProfit = profit - totalEntryCosts;
   const totalCapital = amountPaid + totalEntryCosts;
@@ -143,6 +120,8 @@ const calculateScenario = (
     trueProfit,
     roe,
     trueROE,
+    advanceRequired: equityResult.advanceRequired,
+    isThresholdMet: equityResult.isThresholdMet,
   };
 };
 

@@ -1,5 +1,7 @@
 import { useMemo, useRef, useCallback, useState } from "react";
-import { X } from "lucide-react";
+import { X, AlertTriangle } from "lucide-react";
+import { getMonthWhenThresholdMet } from "../constructionProgress";
+import { OIInputs } from "../useOICalculations";
 
 interface ExitPoint {
   id: string;
@@ -20,6 +22,8 @@ interface ExitTimelineProps {
   onRemoveExit?: (exitId: string) => void;
   onMoveExit?: (exitId: string, newMonth: number) => void;
   readOnly?: boolean;
+  inputs?: OIInputs; // For calculating when threshold is met
+  basePrice?: number;
 }
 
 export const ExitTimeline = ({ 
@@ -32,16 +36,30 @@ export const ExitTimeline = ({
   onRemoveExit,
   onMoveExit,
   readOnly = false,
+  inputs,
+  basePrice,
 }: ExitTimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragMonth, setDragMonth] = useState<number | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // Calculate threshold position on timeline
-  const thresholdPosition = useMemo(() => {
-    return Math.min(minimumThreshold, 100);
-  }, [minimumThreshold]);
+  // Calculate threshold position: the month when payment plan naturally reaches threshold
+  const { thresholdPosition, thresholdMonth } = useMemo(() => {
+    if (inputs && basePrice) {
+      const month = getMonthWhenThresholdMet(inputs, totalMonths, basePrice);
+      return {
+        thresholdPosition: (month / totalMonths) * 100,
+        thresholdMonth: month,
+      };
+    }
+    // Fallback: use threshold as direct percentage of timeline
+    const fallbackMonth = Math.round((minimumThreshold / 100) * totalMonths);
+    return {
+      thresholdPosition: minimumThreshold,
+      thresholdMonth: fallbackMonth,
+    };
+  }, [inputs, basePrice, totalMonths, minimumThreshold]);
 
   // Generate month tick marks
   const monthTicks = useMemo(() => {
@@ -67,7 +85,8 @@ export const ExitTimeline = ({
         d.setMonth(d.getMonth() + exit.monthsFromBooking);
         return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       })();
-      const meetsThreshold = position >= thresholdPosition;
+      // Exit meets threshold if it's at or after the threshold month
+      const meetsThreshold = exit.monthsFromBooking >= thresholdMonth;
       
       // Calculate label level based on proximity to neighbors (closer = more stacking)
       let labelLevel = 0;
@@ -110,7 +129,7 @@ export const ExitTimeline = ({
     });
 
     return markers;
-  }, [exits, totalMonths, bookingDate, thresholdPosition]);
+  }, [exits, totalMonths, bookingDate, thresholdMonth]);
 
   const getMonthFromPosition = useCallback((clientX: number): number => {
     if (!timelineRef.current) return 0;
@@ -239,8 +258,9 @@ export const ExitTimeline = ({
           className="absolute -top-7 text-[9px] whitespace-nowrap pointer-events-none font-medium"
           style={{ left: `${thresholdPosition}%`, transform: "translateX(-50%)" }}
         >
-          <span className="px-1.5 py-0.5 rounded-md bg-theme-bg-alt border border-theme-border text-theme-accent">
-            {minimumThreshold}% min
+          <span className="px-1.5 py-0.5 rounded-md bg-theme-bg-alt border border-theme-border text-theme-accent flex items-center gap-1">
+            <AlertTriangle className="w-2.5 h-2.5" />
+            {minimumThreshold}% @ mo {thresholdMonth}
           </span>
         </div>
 

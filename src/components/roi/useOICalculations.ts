@@ -242,6 +242,9 @@ export const getZoneAppreciationProfile = (maturityLevel: number): ZoneAppreciat
 };
 
 // Calculate equity deployed at exit based on new payment structure
+// Now uses S-curve for construction-based payments
+import { timelineToConstruction, calculateEquityAtExitWithDetails, EquityAtExitResult } from "./constructionProgress";
+
 const calculateEquityAtExit = (
   exitPercent: number,
   inputs: OIInputs,
@@ -250,6 +253,9 @@ const calculateEquityAtExit = (
 ): { equity: number; installmentsPaid: number } => {
   const exitMonth = (exitPercent / 100) * totalMonths;
   const handoverPercent = 100 - inputs.preHandoverPercent;
+  
+  // Use S-curve for construction progress
+  const exitConstructionPercent = timelineToConstruction(exitPercent);
   
   let equity = 0;
   let installmentsPaid = 0;
@@ -266,8 +272,8 @@ const calculateEquityAtExit = (
       // Time-based: triggered if we've passed that month (absolute from booking)
       triggered = m.triggerValue <= exitMonth;
     } else {
-      // Construction-based: triggered if construction reached that %
-      triggered = m.triggerValue <= exitPercent;
+      // Construction-based: use S-curve adjusted construction progress
+      triggered = m.triggerValue <= exitConstructionPercent;
     }
     
     if (triggered && m.paymentPercent > 0) {
