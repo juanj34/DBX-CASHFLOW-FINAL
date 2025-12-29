@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, LayoutGrid } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Columns3, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -36,6 +36,11 @@ import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
 import { FloatingNav, useFloatingNavSections } from "@/components/roi/FloatingNav";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
@@ -158,6 +163,14 @@ const OICalculatorContent = () => {
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
+  // Redirect to preferred view if set to dashboard
+  useEffect(() => {
+    const preference = localStorage.getItem('cashflow_view_preference');
+    if (preference === 'dashboard' && dataLoaded) {
+      navigate(quoteId ? `/cashflow-dashboard/${quoteId}` : '/cashflow-dashboard', { replace: true });
+    }
+  }, [dataLoaded, navigate, quoteId]);
+
   useEffect(() => {
     // Prevent autosave from writing into the wrong quote during route transitions
     if (!dataLoaded) return;
@@ -220,6 +233,12 @@ const OICalculatorContent = () => {
       visibility,
     });
   }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
+
+  // Navigate to dashboard view and save preference
+  const handleSwitchToDashboard = useCallback(() => {
+    localStorage.setItem('cashflow_view_preference', 'dashboard');
+    navigate(quoteId ? `/cashflow-dashboard/${quoteId}` : '/cashflow-dashboard');
+  }, [quoteId, navigate]);
 
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
@@ -319,15 +338,22 @@ const OICalculatorContent = () => {
                 />
 
                 {/* Switch to Dashboard View */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate(quoteId ? `/cashflow-dashboard/${quoteId}` : '/cashflow-dashboard')}
-                  className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8"
-                  title={t('switchToDashboard')}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSwitchToDashboard}
+                      className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 gap-1.5"
+                    >
+                      <Columns3 className="w-4 h-4" />
+                      <span className="text-xs">Dashboard</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Switch to sidebar dashboard layout</p>
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* Configure Button */}
                 <Button 
@@ -466,45 +492,38 @@ const OICalculatorContent = () => {
       )}
 
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
-        <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
-
         {!isFullyConfigured ? (
-          /* Unconfigured State - Show what's missing */
-          <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-theme-accent/20 flex items-center justify-center mx-auto mb-6">
-                {!hasClientDetails ? <AlertCircle className="w-8 h-8 text-theme-accent" /> : <Settings2 className="w-8 h-8 text-theme-accent" />}
+          /* Unconfigured State - Simple welcome with Configure CTA */
+          <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-16 text-center">
+            <div className="max-w-lg mx-auto">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 flex items-center justify-center mx-auto mb-8">
+                <Rocket className="w-10 h-10 text-theme-accent" />
               </div>
-              <h3 className="text-xl font-semibold text-theme-text mb-3">
-                {!hasClientDetails ? t('completeClientInfo') : t('configurePropertyFinancials')}
-              </h3>
-              <p className="text-theme-text-muted mb-6">
-                {!hasClientDetails ? t('completeClientInfoDesc') : t('configurePropertyFinancialsDesc')}
+              <h2 className="text-2xl sm:text-3xl font-bold text-theme-text mb-4">
+                Start Your Cashflow Analysis
+              </h2>
+              <p className="text-theme-text-muted mb-8 text-base sm:text-lg leading-relaxed">
+                Configure your property details, payment plan, and investment assumptions to generate a comprehensive cashflow projection.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {!hasClientDetails ? (
-                  <Button
-                    onClick={() => setClientModalOpen(true)}
-                    className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
-                  >
-                    <Settings2 className="w-4 h-4" />
-                    Set Client & Property
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setModalOpen(true)}
-                    className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    Configure Financials
-                  </Button>
-                )}
+              <div className="flex flex-col gap-4 items-center">
+                <Button 
+                  onClick={() => setModalOpen(true)}
+                  size="lg"
+                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold gap-2 px-8 h-12"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Start Configuration
+                </Button>
+                <p className="text-sm text-theme-text-muted">
+                  Set up property, client info, and financial parameters
+                </p>
               </div>
             </div>
           </div>
         ) : (
-          /* Configured State - Show full content */
+          /* Configured State - Show full content with ClientUnitInfo */
           <>
+            <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
             {/* Floating Navigation */}
             <FloatingNav sections={floatingNavSections} />
 
