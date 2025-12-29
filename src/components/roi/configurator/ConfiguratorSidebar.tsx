@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle } from "lucide-react";
+import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfiguratorSection, SectionStatus } from "./types";
 import { OIInputs } from "../useOICalculations";
@@ -52,16 +52,22 @@ export const ConfiguratorSidebar = ({
       isComplete: visitedSections.has('value'),
     },
     {
-      id: 'income',
-      label: 'Income',
-      icon: Home,
-      isComplete: visitedSections.has('income'),
-    },
-    {
       id: 'appreciation',
       label: 'Appreciation',
       icon: TrendingUp,
       isComplete: visitedSections.has('appreciation'),
+    },
+    {
+      id: 'exits',
+      label: 'Exits',
+      icon: LogOut,
+      isComplete: visitedSections.has('exits'),
+    },
+    {
+      id: 'rent',
+      label: 'Rent',
+      icon: Home,
+      isComplete: visitedSections.has('rent'),
     },
   ];
 
@@ -118,7 +124,7 @@ export const ConfiguratorSidebar = ({
         <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
-            <span className="font-mono">1-5</span>
+            <span className="font-mono">1-6</span>
           </div>
           <div className="flex justify-between">
             <span>Next/Prev</span>

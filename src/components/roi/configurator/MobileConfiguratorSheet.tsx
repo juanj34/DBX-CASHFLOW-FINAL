@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet, LogOut } from "lucide-react";
 
 // Haptic feedback utility for tactile response on mobile devices
 const triggerHapticFeedback = (pattern: number | number[] = 10) => {
@@ -15,8 +15,9 @@ import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
 import { PropertySection } from "./PropertySection";
 import { PaymentSection } from "./PaymentSection";
 import { ValueSection } from "./ValueSection";
-import { IncomeSection } from "./IncomeSection";
 import { AppreciationSection } from "./AppreciationSection";
+import { ExitsSection } from "./ExitsSection";
+import { RentSection } from "./RentSection";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MobileConfiguratorSheetProps {
@@ -27,14 +28,15 @@ interface MobileConfiguratorSheetProps {
   currency: Currency;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'income', 'appreciation'];
+const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   property: 'Property',
   payment: 'Payment',
   value: 'Value',
-  income: 'Income',
   appreciation: 'Growth',
+  exits: 'Exits',
+  rent: 'Rent',
 };
 
 // Mini preview strip component
@@ -100,10 +102,12 @@ export const MobileConfiguratorSheet = ({
         return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
       case 'value':
         return true;
-      case 'income':
-        return inputs.rentalYieldPercent > 0;
       case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
+      case 'exits':
+        return true;
+      case 'rent':
+        return inputs.rentalYieldPercent > 0;
       default:
         return false;
     }
@@ -200,10 +204,12 @@ export const MobileConfiguratorSheet = ({
         return <PaymentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'value':
         return <ValueSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'income':
-        return <IncomeSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'appreciation':
         return <AppreciationSection inputs={inputs} setInputs={setInputs} currency={currency} />;
+      case 'exits':
+        return <ExitsSection inputs={inputs} setInputs={setInputs} currency={currency} />;
+      case 'rent':
+        return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       default:
         return null;
     }
