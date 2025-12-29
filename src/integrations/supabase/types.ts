@@ -199,6 +199,7 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          flagship_project: string | null
           founded_year: number | null
           headquarters: string | null
           id: string
@@ -212,6 +213,7 @@ export type Database = {
           rating_quality: number | null
           rating_sales: number | null
           rating_track_record: number | null
+          score_maintenance: number | null
           short_bio: string | null
           total_valuation: number | null
           units_sold: number | null
@@ -221,6 +223,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          flagship_project?: string | null
           founded_year?: number | null
           headquarters?: string | null
           id?: string
@@ -234,6 +237,7 @@ export type Database = {
           rating_quality?: number | null
           rating_sales?: number | null
           rating_track_record?: number | null
+          score_maintenance?: number | null
           short_bio?: string | null
           total_valuation?: number | null
           units_sold?: number | null
@@ -243,6 +247,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          flagship_project?: string | null
           founded_year?: number | null
           headquarters?: string | null
           id?: string
@@ -256,6 +261,7 @@ export type Database = {
           rating_quality?: number | null
           rating_sales?: number | null
           rating_track_record?: number | null
+          score_maintenance?: number | null
           short_bio?: string | null
           total_valuation?: number | null
           units_sold?: number | null

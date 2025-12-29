@@ -1,29 +1,17 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building2, Globe, MapPin, Calendar, TrendingUp, Star, X } from "lucide-react";
+import { Building2, Globe, MapPin, Calendar, TrendingUp, Trophy, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-
-interface Developer {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  description: string | null;
-  short_bio: string | null;
-  founded_year: number | null;
-  headquarters: string | null;
-  website: string | null;
-  projects_launched: number | null;
-  units_sold: number | null;
-  on_time_delivery_rate: number | null;
-  total_valuation: number | null;
-  rating_quality: number | null;
-  rating_track_record: number | null;
-  rating_sales: number | null;
-  rating_design: number | null;
-  rating_flip_potential: number | null;
-  updated_at: string | null;
-}
+import { 
+  calculateTrustScore, 
+  getTierInfo, 
+  getSuperpower, 
+  Developer 
+} from "./developerTrustScore";
+import { TierBadge } from "./TierBadge";
+import { DeveloperRadarChart } from "./DeveloperRadarChart";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DeveloperInfoModalProps {
   developerId: string | null;
@@ -31,34 +19,8 @@ interface DeveloperInfoModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const RatingBar = ({ label, value, maxValue = 10 }: { label: string; value: number; maxValue?: number }) => {
-  const percentage = (value / maxValue) * 100;
-  
-  // Color gradient based on value
-  const getColor = (val: number) => {
-    if (val >= 8) return 'bg-green-500';
-    if (val >= 6) return 'bg-[#CCFF00]';
-    if (val >= 4) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-400">{label}</span>
-        <span className="font-medium text-white">{value.toFixed(1)}</span>
-      </div>
-      <div className="h-2 bg-[#2a3142] rounded-full overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-500 ${getColor(value)}`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
-};
-
 export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: DeveloperInfoModalProps) => {
+  const { language } = useLanguage();
   const [developer, setDeveloper] = useState<Developer | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +36,7 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
         .maybeSingle();
       
       if (!error && data) {
-        setDeveloper(data);
+        setDeveloper(data as Developer);
       }
       setLoading(false);
     };
@@ -88,37 +50,52 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
     return null;
   }
 
+  const trustScore = developer ? calculateTrustScore(developer) : 0;
+  const tier = developer ? getTierInfo(trustScore) : null;
+  const superpower = developer ? getSuperpower(developer) : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : developer && (
+        ) : developer && tier && (
           <>
             <DialogHeader className="space-y-4">
-              {/* Logo and Name */}
-              <div className="flex items-center gap-4">
+              {/* Logo, Name, and Tier */}
+              <div className="flex items-start gap-4">
                 {developer.logo_url ? (
                   <img 
                     src={developer.logo_url} 
                     alt={developer.name}
-                    className="w-16 h-16 rounded-xl object-cover border border-[#2a3142]"
+                    className="w-16 h-16 rounded-xl object-cover border border-border"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-xl bg-[#2a3142] flex items-center justify-center">
-                    <Building2 className="w-8 h-8 text-gray-500" />
+                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
+                    <Building2 className="w-8 h-8 text-muted-foreground" />
                   </div>
                 )}
-                <div>
-                  <DialogTitle className="text-xl font-bold text-white">
-                    {developer.name}
-                  </DialogTitle>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <DialogTitle className="text-xl font-bold text-foreground">
+                      {developer.name}
+                    </DialogTitle>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <TierBadge score={trustScore} variant="default" />
+                    <span 
+                      className="text-2xl font-bold"
+                      style={{ color: tier.color }}
+                    >
+                      {trustScore.toFixed(1)}
+                    </span>
+                  </div>
                   {developer.founded_year && (
-                    <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-2">
                       <Calendar className="w-3 h-3" />
-                      Founded {developer.founded_year}
+                      {language === 'es' ? 'Fundado en' : 'Founded'} {developer.founded_year}
                     </p>
                   )}
                 </div>
@@ -126,9 +103,38 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
             </DialogHeader>
 
             <div className="space-y-6 mt-4">
+              {/* Radar Chart - The main visual */}
+              <div className="bg-muted/30 rounded-xl p-4">
+                <DeveloperRadarChart developer={developer} size="md" />
+              </div>
+
+              {/* Superpower Badge */}
+              {superpower && (
+                <div 
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+                  style={{ 
+                    backgroundColor: tier.bgColor,
+                    borderColor: `${tier.color}40`
+                  }}
+                >
+                  <Trophy className="w-5 h-5" style={{ color: tier.color }} />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      🏆 {language === 'es' ? 'Punto Fuerte' : 'Superpower'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'es' 
+                        ? `Este developer destaca en ${superpower.categoryEs}`
+                        : `This developer excels in ${superpower.category}`
+                      } ({superpower.score.toFixed(1)}/10)
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Bio */}
               {(developer.short_bio || developer.description) && (
-                <p className="text-sm text-gray-300 leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {developer.short_bio || developer.description}
                 </p>
               )}
@@ -136,61 +142,73 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-3">
                 {developer.projects_launched && (
-                  <div className="bg-[#0d1117] rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-[#CCFF00]">
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-primary">
                       {developer.projects_launched}
                     </p>
-                    <p className="text-xs text-gray-400">Projects</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'es' ? 'Proyectos' : 'Projects'}
+                    </p>
                   </div>
                 )}
                 {developer.units_sold && (
-                  <div className="bg-[#0d1117] rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-[#00EAFF]">
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-cyan-500">
                       {(developer.units_sold / 1000).toFixed(1)}K
                     </p>
-                    <p className="text-xs text-gray-400">Units Sold</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'es' ? 'Unidades' : 'Units Sold'}
+                    </p>
                   </div>
                 )}
                 {developer.on_time_delivery_rate && (
-                  <div className="bg-[#0d1117] rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-green-400">
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-emerald-500">
                       {developer.on_time_delivery_rate}%
                     </p>
-                    <p className="text-xs text-gray-400">On-time</p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'es' ? 'A tiempo' : 'On-time'}
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Valuation Badge */}
+              {/* Flagship Project */}
+              {developer.flagship_project && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border border-border">
+                  <Award className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">
+                    {language === 'es' ? 'Proyecto Insignia:' : 'Flagship Project:'}
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {developer.flagship_project}
+                  </span>
+                </div>
+              )}
+
+              {/* Total Valuation */}
               {developer.total_valuation && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#CCFF00]/10 to-transparent rounded-lg border border-[#CCFF00]/20">
-                  <TrendingUp className="w-4 h-4 text-[#CCFF00]" />
-                  <span className="text-sm text-gray-300">Total Valuation:</span>
-                  <span className="font-bold text-white">
+                <div 
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                  style={{ 
+                    backgroundColor: tier.bgColor,
+                    borderColor: `${tier.color}30`
+                  }}
+                >
+                  <TrendingUp className="w-4 h-4" style={{ color: tier.color }} />
+                  <span className="text-sm text-muted-foreground">
+                    {language === 'es' ? 'Valoración Total:' : 'Total Valuation:'}
+                  </span>
+                  <span className="font-bold text-foreground">
                     AED {developer.total_valuation}B
                   </span>
                 </div>
               )}
 
-              {/* Ratings Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-[#CCFF00]" />
-                  <h3 className="text-sm font-semibold text-white">Our Ratings</h3>
-                </div>
-                <div className="space-y-3 bg-[#0d1117] rounded-lg p-4">
-                  <RatingBar label="Quality" value={developer.rating_quality || 0} />
-                  <RatingBar label="Track Record" value={developer.rating_track_record || 0} />
-                  <RatingBar label="Sales Performance" value={developer.rating_sales || 0} />
-                  <RatingBar label="Design" value={developer.rating_design || 0} />
-                  <RatingBar label="Flip Potential" value={developer.rating_flip_potential || 0} />
-                </div>
-              </div>
-
               {/* Additional Info */}
               <div className="space-y-2 text-sm">
                 {developer.headquarters && (
-                  <div className="flex items-center gap-2 text-gray-400">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="w-4 h-4" />
                     <span>{developer.headquarters}</span>
                   </div>
@@ -200,7 +218,7 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
                     href={developer.website} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-[#00EAFF] hover:underline"
+                    className="flex items-center gap-2 text-cyan-500 hover:underline"
                   >
                     <Globe className="w-4 h-4" />
                     <span>{developer.website}</span>
@@ -210,8 +228,8 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
 
               {/* Last Updated */}
               {developer.updated_at && (
-                <p className="text-xs text-gray-500 text-center pt-2 border-t border-[#2a3142]">
-                  Last updated: {format(new Date(developer.updated_at), 'MMM d, yyyy')}
+                <p className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+                  {language === 'es' ? 'Actualizado:' : 'Last updated:'} {format(new Date(developer.updated_at), 'MMM d, yyyy')}
                 </p>
               )}
             </div>
