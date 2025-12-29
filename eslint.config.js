@@ -21,6 +21,23 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Contrast accessibility: warn when using low-contrast text colors on dark backgrounds
+      // See src/docs/DESIGN_SYSTEM.md for guidelines
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "Literal[value=/text-gray-500/]",
+          message: "⚠️ Contrast issue: text-gray-500 has insufficient contrast on dark backgrounds. Use text-theme-text-muted or text-gray-400 instead. See src/docs/DESIGN_SYSTEM.md"
+        },
+        {
+          selector: "Literal[value=/text-gray-600/]",
+          message: "⚠️ Contrast issue: text-gray-600 has insufficient contrast on dark backgrounds. Use text-theme-text-muted instead. See src/docs/DESIGN_SYSTEM.md"
+        },
+        {
+          selector: "Literal[value=/text-gray-700/]",
+          message: "⚠️ Contrast issue: text-gray-700 is nearly invisible on dark backgrounds. Use text-theme-text-muted instead. See src/docs/DESIGN_SYSTEM.md"
+        }
+      ],
     },
   },
 );

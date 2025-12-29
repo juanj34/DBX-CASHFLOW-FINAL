@@ -145,7 +145,7 @@ const QuotesDashboard = () => {
         {quotes.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#1a1f2e] flex items-center justify-center">
-              <DollarSign className="w-8 h-8 text-gray-500" />
+              <DollarSign className="w-8 h-8 text-theme-text-muted" />
             </div>
             <h2 className="text-xl text-white mb-2">{t('quotesNoQuotes')}</h2>
             <p className="text-gray-400 mb-6">{t('quotesNoQuotesDesc')}</p>
@@ -201,7 +201,7 @@ const QuotesDashboard = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 mt-3 text-xs text-theme-text-muted">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDate(quote.updated_at)}

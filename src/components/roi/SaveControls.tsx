@@ -52,7 +52,7 @@ export const SaveControls = ({
           Saving...
         </span>
       ) : lastSaved ? (
-        <span className="text-xs text-gray-500 flex items-center gap-1">
+        <span className="text-xs text-theme-text-muted flex items-center gap-1">
           <Check className="w-3 h-3 text-green-500" />
           {formatLastSaved()}
         </span>

@@ -66,7 +66,7 @@ export const RecommendationSummary = ({ result, focus }: RecommendationSummaryPr
           const Icon = getIcon(f);
           return (
             <div key={f} className="flex items-start gap-2 text-gray-300">
-              <Icon className="w-3.5 h-3.5 mt-0.5 text-gray-500" />
+              <Icon className="w-3.5 h-3.5 mt-0.5 text-theme-text-muted" />
               <span>{result.explanation[f]}</span>
             </div>
           );

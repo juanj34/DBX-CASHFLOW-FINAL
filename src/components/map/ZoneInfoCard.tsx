@@ -80,9 +80,9 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
                 <div className="space-y-1">
                   <Progress value={zone.maturity_level} className="h-2" />
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">{zone.maturity_level}%</span>
+                    <span className="text-theme-text-muted">{zone.maturity_level}%</span>
                     {zone.maturity_label && (
-                      <span className="text-gray-500">{zone.maturity_label}</span>
+                      <span className="text-theme-text-muted">{zone.maturity_label}</span>
                     )}
                   </div>
                 </div>

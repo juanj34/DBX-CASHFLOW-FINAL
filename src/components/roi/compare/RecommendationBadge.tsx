@@ -70,7 +70,7 @@ export const ScoreDisplay = ({ scores, focus }: ScoreDisplayProps) => {
             <div className={`text-sm font-bold ${isHighlighted ? 'text-[#CCFF00]' : 'text-white'}`}>
               {score}
             </div>
-            <div className="text-[10px] text-gray-500">{label}</div>
+            <div className="text-[10px] text-theme-text-muted">{label}</div>
           </div>
         );
       })}

@@ -29,7 +29,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
         {/* Property indicator */}
         <div className="flex flex-col items-center gap-1" title={`${formatCurrency(inputs.basePrice, currency)}`}>
           <DollarSign className="w-4 h-4 text-[#CCFF00]" />
-          <span className="text-[10px] text-gray-500 font-mono">
+          <span className="text-[10px] text-theme-text-muted font-mono">
             {(inputs.basePrice / 1000000).toFixed(1)}M
           </span>
         </div>
@@ -37,7 +37,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
         {/* Timeline indicator */}
         <div className="flex flex-col items-center gap-1" title={`Q${inputs.handoverQuarter} ${inputs.handoverYear}`}>
           <Calendar className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] text-gray-500 font-mono">
+          <span className="text-[10px] text-theme-text-muted font-mono">
             {inputs.handoverYear.toString().slice(-2)}
           </span>
         </div>
@@ -45,7 +45,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
         {/* Payment split indicator */}
         <div className="flex flex-col items-center gap-1" title={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent}`}>
           <Percent className="w-4 h-4 text-purple-400" />
-          <span className="text-[10px] text-gray-500 font-mono">
+          <span className="text-[10px] text-theme-text-muted font-mono">
             {inputs.preHandoverPercent}
           </span>
         </div>
@@ -53,7 +53,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
         {/* Rental indicator */}
         <div className="flex flex-col items-center gap-1" title={`${inputs.rentalYieldPercent}% yield`}>
           <Home className="w-4 h-4 text-green-400" />
-          <span className="text-[10px] text-gray-500 font-mono">
+          <span className="text-[10px] text-theme-text-muted font-mono">
             {inputs.rentalYieldPercent}%
           </span>
         </div>
@@ -119,7 +119,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
       <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-4 space-y-3">
         {/* Property Value */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-theme-text-muted">
             <DollarSign className="w-3.5 h-3.5" />
             <span className="text-xs">Property</span>
           </div>
@@ -130,19 +130,19 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
 
         {/* Timeline */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-theme-text-muted">
             <Calendar className="w-3.5 h-3.5" />
             <span className="text-xs">Handover</span>
           </div>
           <span className="text-sm font-mono text-white">
             {quarters.find(q => q.value === inputs.handoverQuarter)?.label} {inputs.handoverYear}
-            <span className="text-xs text-gray-500 ml-1">({monthsToHandover}mo)</span>
+            <span className="text-xs text-theme-text-muted ml-1">({monthsToHandover}mo)</span>
           </span>
         </div>
 
         {/* Payment Split */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-theme-text-muted">
             <Percent className="w-3.5 h-3.5" />
             <span className="text-xs">Payment</span>
           </div>
@@ -153,13 +153,13 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
 
         {/* Rental Yield */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-theme-text-muted">
             <Home className="w-3.5 h-3.5" />
             <span className="text-xs">Rental</span>
           </div>
           <span className="text-sm font-mono text-white">
             {inputs.rentalYieldPercent}%
-            <span className="text-xs text-gray-500 ml-1">
+            <span className="text-xs text-theme-text-muted ml-1">
               ({formatCurrency(annualRent, currency)}/yr)
             </span>
           </span>
@@ -167,16 +167,16 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
 
         {/* Appreciation */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-theme-text-muted">
             <TrendingUp className="w-3.5 h-3.5" />
             <span className="text-xs">Appreciation</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="text-xs font-mono">
               <span className="text-orange-400">{inputs.constructionAppreciation ?? 12}%</span>
-              <span className="text-gray-600 mx-0.5">→</span>
+              <span className="text-theme-text-muted mx-0.5">→</span>
               <span className="text-green-400">{inputs.growthAppreciation ?? 8}%</span>
-              <span className="text-gray-600 mx-0.5">→</span>
+              <span className="text-theme-text-muted mx-0.5">→</span>
               <span className="text-blue-400">{inputs.matureAppreciation ?? 4}%</span>
             </span>
             {appreciationBonus > 0 && (
@@ -209,7 +209,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
             )}
           </span>
         </div>
-        <div className="text-[10px] text-gray-600 mt-1">
+        <div className="text-[10px] text-theme-text-muted mt-1">
           EOI + DLD 4% + Oqood
         </div>
       </div>

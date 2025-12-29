@@ -54,7 +54,7 @@ export const PropertySection = ({ inputs, setInputs, currency }: ConfiguratorSec
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">Property Details</h3>
-        <p className="text-sm text-gray-500">Set the base price and key dates for your investment</p>
+        <p className="text-sm text-theme-text-muted">Set the base price and key dates for your investment</p>
       </div>
 
       {/* Base Property Price */}
@@ -92,10 +92,10 @@ export const PropertySection = ({ inputs, setInputs, currency }: ConfiguratorSec
           step={50000}
           className="roi-slider-lime"
         />
-        <div className="text-xs text-gray-500 text-right">
+        <div className="text-xs text-theme-text-muted text-right">
           {formatCurrency(inputs.basePrice, currency)}
           {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
-            <span className="ml-2 text-[10px] text-gray-600">
+            <span className="ml-2 text-[10px] text-theme-text-muted">
               ({formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}/sqft)
             </span>
           )}
