@@ -12,7 +12,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "
 import { OIInputs } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
-import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
+import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS } from "./types";
 import { PropertySection } from "./PropertySection";
 import { PaymentSection } from "./PaymentSection";
 import { ValueSection } from "./ValueSection";
@@ -214,25 +214,27 @@ export const MobileConfiguratorSheet = ({
   };
 
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
-    if (!visitedSections.has(section)) return false;
-    
+    // Only complete if section has ACTUAL DATA (not just visited)
     switch (section) {
       case 'client':
-        return true; // Client details are optional
+        // Client is complete when there's a zone selected or property has data
+        return Boolean(inputs.zoneId) || inputs.basePrice > 0;
       case 'property':
         return inputs.basePrice > 0;
       case 'payment':
         return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
       case 'value':
-        return true;
+        // Value is optional - complete if visited and has data or moved past
+        return visitedSections.has('value') && visitedSections.has('appreciation');
       case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
       case 'exits':
-        return true;
+        return inputs._exitScenarios && inputs._exitScenarios.length > 0;
       case 'rent':
         return inputs.rentalYieldPercent > 0;
       case 'mortgage':
-        return true; // mortgage is optional
+        // Mortgage is truly optional - complete when visited
+        return visitedSections.has('mortgage');
       default:
         return false;
     }
@@ -309,7 +311,8 @@ export const MobileConfiguratorSheet = ({
   };
 
   const handleReset = () => {
-    setInputs(DEFAULT_OI_INPUTS);
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setVisitedSections(new Set(['client']));
   };
 
   const handleClose = () => {
