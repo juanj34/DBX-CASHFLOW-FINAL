@@ -297,7 +297,12 @@ const OICalculatorContent = () => {
                 />
 
                 {/* Share Controls */}
-                <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
+                <ViewVisibilityControls 
+                  shareUrl={shareUrl} 
+                  onGenerateShareUrl={handleShare} 
+                  onExportPDF={handleExportPDF}
+                  enabledSections={inputs.enabledSections || { exitStrategy: true, longTermHold: true }}
+                />
 
                 {/* Separator */}
                 <div className="w-px h-6 bg-theme-border mx-0.5" />
@@ -527,39 +532,43 @@ const OICalculatorContent = () => {
               onEditClick={() => setModalOpen(true)}
             />
 
-            {/* Hold Strategy Analysis - Collapsible */}
-            <CollapsibleSection
-              title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
-              subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
-              icon={<Home className="w-5 h-5 text-theme-accent" />}
-              defaultOpen={false}
-            >
-              <div className="space-y-4 sm:space-y-6">
-                <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-                <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-                <OIYearlyProjectionTable 
-                  projections={calculations.yearlyProjections} 
-                  currency={currency} 
-                  rate={rate} 
-                  showAirbnbComparison={calculations.showAirbnbComparison} 
-                  unitSizeSqf={clientInfo.unitSizeSqf}
-                />
-                <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-              </div>
-            </CollapsibleSection>
+            {/* Hold Strategy Analysis - Collapsible - Only show if enabled */}
+            {(inputs.enabledSections?.longTermHold !== false) && (
+              <CollapsibleSection
+                title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
+                subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
+                icon={<Home className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                <div className="space-y-4 sm:space-y-6">
+                  <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+                  <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
+                  <OIYearlyProjectionTable 
+                    projections={calculations.yearlyProjections} 
+                    currency={currency} 
+                    rate={rate} 
+                    showAirbnbComparison={calculations.showAirbnbComparison} 
+                    unitSizeSqf={clientInfo.unitSizeSqf}
+                  />
+                  <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                </div>
+              </CollapsibleSection>
+            )}
 
-            {/* Exit Scenarios - Collapsible */}
-            <CollapsibleSection
-              title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
-              subtitle={t('whenToSell') || "When to sell for maximum returns"}
-              icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
-              defaultOpen={false}
-            >
-              <div className="space-y-4 sm:space-y-6">
-                <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
-                <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-              </div>
-            </CollapsibleSection>
+            {/* Exit Scenarios - Collapsible - Only show if enabled */}
+            {(inputs.enabledSections?.exitStrategy !== false) && (
+              <CollapsibleSection
+                title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
+                subtitle={t('whenToSell') || "When to sell for maximum returns"}
+                icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                <div className="space-y-4 sm:space-y-6">
+                  <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
+                  <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+                </div>
+              </CollapsibleSection>
+            )}
 
             {/* Mortgage Analysis - Collapsible */}
             {mortgageInputs.enabled && (

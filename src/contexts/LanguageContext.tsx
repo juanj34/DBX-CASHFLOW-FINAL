@@ -496,6 +496,16 @@ const translations: Translations = {
   appreciationBonus: { en: 'Appreciation %', es: 'Apreciación %' },
   viewMyQuote: { en: 'View My Quote', es: 'Ver Mi Cotización' },
   
+  // Enabled Sections & Visibility Presets
+  enabledAnalysisSections: { en: 'Enabled Analysis Sections', es: 'Secciones de Análisis Habilitadas' },
+  enabledSectionsTooltip: { en: 'Disabled sections will not appear in your view or the shared client view.', es: 'Las secciones deshabilitadas no aparecerán en tu vista ni en la vista compartida del cliente.' },
+  exitStrategy: { en: 'Exit Strategy', es: 'Estrategia de Salida' },
+  exitStrategyDesc: { en: 'When to sell for maximum returns', es: 'Cuándo vender para máximos retornos' },
+  longTermHold: { en: 'Long-Term Hold', es: 'Retención a Largo Plazo' },
+  longTermHoldDesc: { en: 'Rental projections & wealth', es: 'Proyecciones de renta y patrimonio' },
+  quickPresets: { en: 'Quick Presets', es: 'Preajustes Rápidos' },
+  savePreset: { en: 'Save Preset', es: 'Guardar Preajuste' },
+  
   // Summary View Mode
   dataView: { en: 'Data View', es: 'Vista de Datos' },
   explanationView: { en: 'Explanation View', es: 'Vista Explicativa' },

@@ -321,7 +321,7 @@ const CashflowViewContent = () => {
         />
 
         {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
-        {visibility.longTermHold && (
+        {visibility.longTermHold && (inputs.enabledSections?.longTermHold !== false) && (
           <CollapsibleSection
             title={t('holdStrategyAnalysis')}
             subtitle={t('holdStrategySubtitle')}
@@ -340,7 +340,7 @@ const CashflowViewContent = () => {
         )}
 
         {/* Exit Strategy - Collapsible */}
-        {visibility.exitStrategy && (
+        {visibility.exitStrategy && (inputs.enabledSections?.exitStrategy !== false) && (
           <CollapsibleSection
             title={t('exitStrategyAnalysis')}
             subtitle={t('whenToSell')}
