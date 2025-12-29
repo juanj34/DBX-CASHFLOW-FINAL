@@ -322,10 +322,13 @@ const OICalculatorContent = () => {
                 {/* Configure Button */}
                 <Button 
                   onClick={() => setModalOpen(true)}
-                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
+                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold relative"
                 >
                   <Settings2 className="w-4 h-4 mr-2" />
                   Configure
+                  {mortgageInputs.enabled && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-theme-bg" />
+                  )}
                 </Button>
               </div>
 
@@ -338,9 +341,12 @@ const OICalculatorContent = () => {
                 <Button 
                   size="sm"
                   onClick={() => setModalOpen(true)}
-                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold h-8 px-2"
+                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold h-8 px-2 relative"
                 >
                   <Settings2 className="w-4 h-4" />
+                  {mortgageInputs.enabled && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-theme-bg" />
+                  )}
                 </Button>
 
                 {/* More Menu */}
