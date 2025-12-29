@@ -28,7 +28,7 @@ export const HoldTabContent = ({
   const isDashboard = variant === 'dashboard';
 
   return (
-    <div className={isDashboard ? "space-y-4" : "space-y-6"}>
+    <div className="space-y-6">
       {/* Row 1: RentSnapshot (full width) */}
       <RentSnapshot 
         inputs={inputs} 
@@ -37,8 +37,8 @@ export const HoldTabContent = ({
         holdAnalysis={calculations.holdAnalysis} 
       />
       
-      {/* Row 2: WealthSummary + CumulativeChart (2 columns on desktop) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Row 2: WealthSummary + CumulativeChart (2 columns, equal height) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <WealthSummaryCard 
           propertyValueYear10={lastProjection.propertyValue} 
           cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
@@ -49,15 +49,13 @@ export const HoldTabContent = ({
           showAirbnbComparison={calculations.showAirbnbComparison} 
         />
         
-        <div className={isDashboard ? "max-h-[300px]" : ""}>
-          <CumulativeIncomeChart 
-            projections={calculations.yearlyProjections} 
-            currency={currency} 
-            rate={rate} 
-            totalCapitalInvested={totalCapitalInvested} 
-            showAirbnbComparison={calculations.showAirbnbComparison} 
-          />
-        </div>
+        <CumulativeIncomeChart 
+          projections={calculations.yearlyProjections} 
+          currency={currency} 
+          rate={rate} 
+          totalCapitalInvested={totalCapitalInvested} 
+          showAirbnbComparison={calculations.showAirbnbComparison} 
+        />
       </div>
       
       {/* Row 3: Yearly Projection Table (full width) */}

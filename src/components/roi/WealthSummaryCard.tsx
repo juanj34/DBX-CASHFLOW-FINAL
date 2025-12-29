@@ -35,14 +35,14 @@ export const WealthSummaryCard = ({
     : 0;
 
   return (
-    <div className="bg-gradient-to-br from-[#1a1f2e] to-[#0f172a] border border-[#CCFF00]/30 rounded-2xl overflow-hidden">
+    <div className="bg-gradient-to-br from-[#1a1f2e] to-[#0f172a] border border-[#CCFF00]/30 rounded-2xl overflow-hidden h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
         <Gem className="w-5 h-5 text-[#CCFF00]" />
         <h3 className="font-semibold text-white">{t('wealthCreated10Years')}</h3>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-3 flex-1">
         {/* Property Value */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
