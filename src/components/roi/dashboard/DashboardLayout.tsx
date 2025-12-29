@@ -1,11 +1,10 @@
-import { ReactNode, useEffect, useCallback } from "react";
+import { ReactNode, useEffect, useCallback, useState } from "react";
 import { DashboardSidebar, SectionId } from "./DashboardSidebar";
 import { OIInputs } from "@/components/roi/useOICalculations";
 import { MortgageInputs } from "@/components/roi/useMortgageCalculations";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
-import { useState } from "react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -23,6 +22,7 @@ export const DashboardLayout = ({
   mortgageInputs,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   // Get visible sections for keyboard navigation
   const getVisibleSections = useCallback((): SectionId[] => {
@@ -59,14 +59,16 @@ export const DashboardLayout = ({
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-60px)]">
+    <div className="flex h-[calc(100vh-60px)]">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:flex h-full sticky top-0">
         <DashboardSidebar
           activeSection={activeSection}
           onSectionChange={onSectionChange}
           inputs={inputs}
           mortgageInputs={mortgageInputs}
+          collapsed={collapsed}
+          onCollapsedChange={setCollapsed}
         />
       </div>
 
@@ -81,20 +83,24 @@ export const DashboardLayout = ({
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[240px] bg-[#0d1117] border-theme-border p-0">
+          <SheetContent side="left" className="w-[240px] bg-theme-card border-theme-border p-0">
             <DashboardSidebar
               activeSection={activeSection}
               onSectionChange={handleSectionChange}
               inputs={inputs}
               mortgageInputs={mortgageInputs}
+              collapsed={false}
+              onCollapsedChange={() => {}}
             />
           </SheetContent>
         </Sheet>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {children}
+      <main className="flex-1 overflow-auto bg-theme-bg">
+        <div className="p-6">
+          {children}
+        </div>
       </main>
     </div>
   );
