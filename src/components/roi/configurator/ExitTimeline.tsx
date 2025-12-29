@@ -77,8 +77,8 @@ export const ExitTimeline = ({
   const timelineMarkers = useMemo(() => {
     const sortedExits = [...exits].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
     
-    // Assign label levels to avoid overlap - use stacking when markers are close
-    const markers = sortedExits.map((exit, index) => {
+    // First pass: calculate basic marker data
+    const basicMarkers = sortedExits.map((exit) => {
       const position = (exit.monthsFromBooking / totalMonths) * 100;
       const date = (() => {
         const d = new Date(bookingDate);
@@ -88,13 +88,23 @@ export const ExitTimeline = ({
       // Exit meets threshold if it's at or after the threshold month
       const meetsThreshold = exit.monthsFromBooking >= thresholdMonth;
       
-      // Calculate label level based on proximity to neighbors (closer = more stacking)
+      return {
+        ...exit,
+        position,
+        date,
+        meetsThreshold,
+        labelLevel: 0,
+      };
+    });
+    
+    // Second pass: assign label levels to avoid overlap
+    const markersWithLevels = basicMarkers.map((marker, index) => {
       let labelLevel = 0;
       
       // Check distance to ALL previous markers to assign proper level
       for (let i = 0; i < index; i++) {
-        const prevPos = (sortedExits[i].monthsFromBooking / totalMonths) * 100;
-        const distance = position - prevPos;
+        const prevMarker = basicMarkers[i];
+        const distance = marker.position - prevMarker.position;
         
         // Very close (within 8%) - need maximum stacking
         if (distance < 8) {
@@ -103,7 +113,7 @@ export const ExitTimeline = ({
         // Moderately close (8-15%) - need some stacking  
         else if (distance < 15) {
           // Only stack if previous marker would overlap
-          const prevMarkerLevel = markers[i]?.labelLevel || 0;
+          const prevMarkerLevel = markersWithLevels[i]?.labelLevel || 0;
           if (prevMarkerLevel === labelLevel) {
             labelLevel = Math.max(labelLevel, 1);
           }
@@ -112,23 +122,20 @@ export const ExitTimeline = ({
       
       // Ensure alternating levels for very close markers
       if (index > 0) {
-        const prevPos = (sortedExits[index - 1].monthsFromBooking / totalMonths) * 100;
-        const prevLevel = markers[index - 1]?.labelLevel || 0;
-        if (position - prevPos < 10 && labelLevel === prevLevel) {
+        const prevMarker = basicMarkers[index - 1];
+        const prevLevel = markersWithLevels[index - 1]?.labelLevel || 0;
+        if (marker.position - prevMarker.position < 10 && labelLevel === prevLevel) {
           labelLevel = (prevLevel + 1) % 3;
         }
       }
       
       return {
-        ...exit,
-        position,
-        date,
-        meetsThreshold,
+        ...marker,
         labelLevel,
       };
     });
 
-    return markers;
+    return markersWithLevels;
   }, [exits, totalMonths, bookingDate, thresholdMonth]);
 
   const getMonthFromPosition = useCallback((clientX: number): number => {
