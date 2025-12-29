@@ -104,7 +104,7 @@ export const ExitTimeline = ({
   }, [totalMonths]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, exitId: string, currentMonth: number) => {
-    if (readOnly || exitId === 'handover') return;
+    if (readOnly) return;
     e.preventDefault();
     e.stopPropagation();
     setDraggingId(exitId);
@@ -146,7 +146,7 @@ export const ExitTimeline = ({
   const handleRemoveClick = useCallback((e: React.MouseEvent, exitId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onRemoveExit && exitId !== 'handover') {
+    if (onRemoveExit) {
       onRemoveExit(exitId);
     }
   }, [onRemoveExit]);
@@ -233,8 +233,7 @@ export const ExitTimeline = ({
             : marker.position;
           const displayMonth = isDragging && dragMonth !== null ? dragMonth : marker.monthsFromBooking;
           const isHovered = hoveredId === marker.id;
-          const isHandover = marker.id === 'handover';
-          const canInteract = !readOnly && !isHandover;
+          const canInteract = !readOnly;
           
           return (
             <div
@@ -248,11 +247,9 @@ export const ExitTimeline = ({
               <div 
                 onMouseDown={(e) => handleMouseDown(e, marker.id, marker.monthsFromBooking)}
                 className={`relative w-5 h-5 rounded-full border-2 shadow-lg transition-all ${
-                  isHandover
-                    ? 'bg-blue-500 border-blue-400'
-                    : !marker.meetsThreshold
-                      ? 'bg-red-500/60 border-red-400/60'
-                      : 'bg-theme-accent border-theme-accent/80'
+                  !marker.meetsThreshold
+                    ? 'bg-red-500/60 border-red-400/60'
+                    : 'bg-theme-accent border-theme-accent/80'
                 } ${canInteract ? 'cursor-grab active:cursor-grabbing hover:scale-110' : ''} ${isDragging ? 'scale-125 ring-2 ring-theme-accent/50' : ''}`}
               >
                 {/* Delete button on hover */}
@@ -284,8 +281,7 @@ export const ExitTimeline = ({
                 )}
                 <div className={`text-[11px] font-semibold ${
                   isDragging ? 'text-theme-accent' : 
-                  !marker.meetsThreshold ? 'text-red-400' : 
-                  isHandover ? 'text-blue-400' : 'text-theme-text'
+                  !marker.meetsThreshold ? 'text-red-400' : 'text-theme-text'
                 }`}>
                   {displayMonth}mo
                 </div>
@@ -309,15 +305,11 @@ export const ExitTimeline = ({
       <div className="flex items-center justify-center gap-4 mt-3 pt-2 border-t border-theme-border/50">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-theme-accent" />
-          <span className="text-[9px] text-theme-text-muted">Exit</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-          <span className="text-[9px] text-theme-text-muted">Handover</span>
+          <span className="text-[9px] text-theme-text-muted">Exit Point</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-          <span className="text-[9px] text-theme-text-muted">Below min</span>
+          <span className="text-[9px] text-theme-text-muted">Below min threshold</span>
         </div>
         {!readOnly && (
           <div className="flex items-center gap-1.5">
