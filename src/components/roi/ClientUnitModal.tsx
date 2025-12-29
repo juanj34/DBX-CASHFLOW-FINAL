@@ -206,6 +206,32 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigge
               </Select>
             </div>
 
+            {/* Bedroom Count - only for villa/townhouse */}
+            {(data.unitType === 'villa' || data.unitType === 'townhouse') && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400">{language === 'es' ? 'Habitaciones' : 'Bedrooms'}</label>
+                <Select 
+                  value={data.bedrooms?.toString() || ''} 
+                  onValueChange={(v) => handleChange('bedrooms', parseInt(v) || 0)}
+                >
+                  <SelectTrigger className="bg-[#0d1117] border-[#2a3142] text-white">
+                    <SelectValue placeholder={language === 'es' ? 'Seleccionar' : 'Select'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                    {[2, 3, 4, 5, 6, 7, 8].map((num) => (
+                      <SelectItem 
+                        key={num} 
+                        value={num.toString()}
+                        className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]"
+                      >
+                        {num} {language === 'es' ? 'Habitaciones' : 'Bedrooms'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Unit Size sqf */}
             <div className="space-y-1.5">
               <label className="text-xs text-gray-400">{t('unitSizeSqf')}</label>

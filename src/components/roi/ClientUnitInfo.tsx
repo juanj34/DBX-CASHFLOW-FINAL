@@ -21,6 +21,8 @@ export interface ClientUnitData {
   unitSizeSqf: number;
   unitSizeM2: number;
   unitType: string;
+  // Bedroom count for villa/townhouse
+  bedrooms?: number;
   // Payment split feature
   splitEnabled?: boolean;
   clientShares?: ClientShare[];
@@ -108,6 +110,9 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
                 {unitType && (
                   <p className="text-xs text-gray-400">
                     {language === 'es' ? unitType.labelEs : unitType.labelEn}
+                    {data.bedrooms && (data.unitType === 'villa' || data.unitType === 'townhouse') && (
+                      <span> - {data.bedrooms} {language === 'es' ? 'Hab.' : 'BR'}</span>
+                    )}
                   </p>
                 )}
               </div>
