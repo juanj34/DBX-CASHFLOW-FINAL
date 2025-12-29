@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { ZoneSelect } from "@/components/ui/zone-select";
-import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, Image } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, Image, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "../ClientUnitInfo";
 import { Client, UNIT_TYPES } from "../ClientUnitModal";
@@ -45,6 +46,24 @@ export const ClientSection = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [manualDeveloper, setManualDeveloper] = useState(false);
   const [manualProject, setManualProject] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        setIsAdmin(!!data);
+      }
+    };
+    checkAdminRole();
+  }, []);
 
   // Get clients array, handling legacy format
   const clients: Client[] = clientInfo.clients?.length > 0 
@@ -164,7 +183,28 @@ export const ClientSection = ({
           {/* Developer Selection */}
           {manualDeveloper ? (
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('developer')}</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400">{t('developer')}</label>
+                {isAdmin && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          onClick={() => window.open('/map-config?tab=developers', '_blank')}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Add new developer</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               <Input
                 value={clientInfo.developer}
                 onChange={(e) => handleChange('developer', e.target.value)}
@@ -174,7 +214,28 @@ export const ClientSection = ({
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('developer')}</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400">{t('developer')}</label>
+                {isAdmin && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          onClick={() => window.open('/map-config?tab=developers', '_blank')}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Add new developer</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               <DeveloperSelect
                 value={selectedDeveloperId}
                 manualValue={clientInfo.developer}
@@ -187,7 +248,28 @@ export const ClientSection = ({
           {/* Project Selection */}
           {manualProject ? (
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('projectName')}</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400">{t('projectName')}</label>
+                {isAdmin && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          onClick={() => window.open('/map-config?tab=projects', '_blank')}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Add new project</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               <Input
                 value={clientInfo.projectName || ''}
                 onChange={(e) => handleChange('projectName', e.target.value)}
@@ -197,7 +279,28 @@ export const ClientSection = ({
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('projectName')}</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400">{t('projectName')}</label>
+                {isAdmin && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          onClick={() => window.open('/map-config?tab=projects', '_blank')}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Add new project</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               <ProjectSelect
                 value={selectedProjectId}
                 developerId={selectedDeveloperId}
