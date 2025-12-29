@@ -18,7 +18,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Upload, X, Home, Building2, Store } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
@@ -29,6 +30,19 @@ interface ProjectFormProps {
   onClose: () => void;
   onSaved: () => void;
 }
+
+// Unit type options
+const UNIT_TYPE_OPTIONS = [
+  { value: "studio", label: "Studio", category: "residential" },
+  { value: "1br", label: "1BR", category: "residential" },
+  { value: "2br", label: "2BR", category: "residential" },
+  { value: "3br", label: "3BR", category: "residential" },
+  { value: "4br", label: "4BR+", category: "residential" },
+  { value: "penthouse", label: "Penthouse", category: "residential" },
+  { value: "villa", label: "Villa", category: "special" },
+  { value: "townhouse", label: "Townhouse", category: "special" },
+  { value: "commercial", label: "Commercial", category: "special" },
+];
 
 const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
   const { toast } = useToast();
@@ -48,11 +62,26 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
     starting_price: project?.starting_price || "",
     price_per_sqft: project?.price_per_sqft || "",
     areas_from: project?.areas_from || "",
-    unit_types: project?.unit_types?.join(", ") || "",
+    unit_types: project?.unit_types || [],
     launch_date: project?.launch_date || "",
     delivery_date: project?.delivery_date || "",
     construction_status: project?.construction_status || "off_plan",
   });
+  
+  // Helper to check if unit type is selected
+  const isUnitTypeSelected = (type: string) => {
+    return Array.isArray(formData.unit_types) && formData.unit_types.includes(type);
+  };
+  
+  // Toggle unit type selection
+  const toggleUnitType = (type: string) => {
+    const currentTypes = Array.isArray(formData.unit_types) ? formData.unit_types : [];
+    const newTypes = currentTypes.includes(type)
+      ? currentTypes.filter((t) => t !== type)
+      : [...currentTypes, type];
+    setFormData({ ...formData, unit_types: newTypes });
+  };
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(project?.image_url || null);
   const [developers, setDevelopers] = useState<any[]>([]);
@@ -228,8 +257,8 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
         starting_price: formData.starting_price ? parseFloat(formData.starting_price) : null,
         price_per_sqft: formData.price_per_sqft ? parseFloat(formData.price_per_sqft) : null,
         areas_from: formData.areas_from ? parseInt(formData.areas_from) : null,
-        unit_types: formData.unit_types
-          ? formData.unit_types.split(",").map((t) => t.trim())
+        unit_types: Array.isArray(formData.unit_types) && formData.unit_types.length > 0 
+          ? formData.unit_types 
           : null,
         launch_date: formData.launch_date || null,
         delivery_date: formData.delivery_date || null,
@@ -437,14 +466,64 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="unit_types">Unit Types (comma-separated)</Label>
-              <Input
-                id="unit_types"
-                value={formData.unit_types}
-                onChange={(e) => setFormData({ ...formData, unit_types: e.target.value })}
-                placeholder="e.g., Studio, 1BR, 2BR"
-              />
+          </div>
+
+          {/* Unit Types Section */}
+          <div className="space-y-3">
+            <Label>Unit Types</Label>
+            
+            {/* Residential Types */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                <Home className="h-3.5 w-3.5" />
+                <span>Residential</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {UNIT_TYPE_OPTIONS.filter(t => t.category === "residential").map((type) => (
+                  <label
+                    key={type.value}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border cursor-pointer transition-colors ${
+                      isUnitTypeSelected(type.value)
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isUnitTypeSelected(type.value)}
+                      onCheckedChange={() => toggleUnitType(type.value)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="text-sm">{type.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Special Types (Villa, Townhouse, Commercial) */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                <Building2 className="h-3.5 w-3.5" />
+                <span>Special Unit Types</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {UNIT_TYPE_OPTIONS.filter(t => t.category === "special").map((type) => (
+                  <label
+                    key={type.value}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border cursor-pointer transition-colors ${
+                      isUnitTypeSelected(type.value)
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isUnitTypeSelected(type.value)}
+                      onCheckedChange={() => toggleUnitType(type.value)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="text-sm">{type.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 

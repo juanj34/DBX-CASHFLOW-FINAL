@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, Star, TrendingUp, DollarSign, Paintbrush, Repeat } from "lucide-react";
 import { optimizeImage, LOGO_CONFIG } from "@/lib/imageUtils";
 
 interface DeveloperFormProps {
@@ -27,6 +28,7 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
   const [formData, setFormData] = useState({
     name: developer?.name || "",
     description: developer?.description || "",
+    short_bio: developer?.short_bio || "",
     founded_year: developer?.founded_year || "",
     headquarters: developer?.headquarters || "",
     website: developer?.website || "",
@@ -34,6 +36,12 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
     units_sold: developer?.units_sold || "",
     occupancy_rate: developer?.occupancy_rate || "",
     on_time_delivery_rate: developer?.on_time_delivery_rate || "",
+    total_valuation: developer?.total_valuation || "",
+    rating_quality: developer?.rating_quality || 0,
+    rating_track_record: developer?.rating_track_record || 0,
+    rating_sales: developer?.rating_sales || 0,
+    rating_design: developer?.rating_design || 0,
+    rating_flip_potential: developer?.rating_flip_potential || 0,
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(developer?.logo_url || null);
@@ -106,6 +114,7 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
       const developerData = {
         name: formData.name,
         description: formData.description || null,
+        short_bio: formData.short_bio || null,
         logo_url: logoUrl,
         founded_year: formData.founded_year ? parseInt(formData.founded_year) : null,
         headquarters: formData.headquarters || null,
@@ -114,6 +123,12 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
         units_sold: formData.units_sold ? parseInt(formData.units_sold) : null,
         occupancy_rate: formData.occupancy_rate ? parseFloat(formData.occupancy_rate) : null,
         on_time_delivery_rate: formData.on_time_delivery_rate ? parseFloat(formData.on_time_delivery_rate) : null,
+        total_valuation: formData.total_valuation ? parseFloat(formData.total_valuation) : null,
+        rating_quality: formData.rating_quality || 0,
+        rating_track_record: formData.rating_track_record || 0,
+        rating_sales: formData.rating_sales || 0,
+        rating_design: formData.rating_design || 0,
+        rating_flip_potential: formData.rating_flip_potential || 0,
       };
 
       let error;
@@ -290,6 +305,135 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
                 onChange={(e) => setFormData({ ...formData, on_time_delivery_rate: e.target.value })}
                 placeholder="e.g., 98.0"
               />
+            </div>
+          </div>
+
+          {/* Total Valuation */}
+          <div className="space-y-2">
+            <Label htmlFor="total_valuation">Total Valuation (Billion AED)</Label>
+            <Input
+              id="total_valuation"
+              type="number"
+              step="0.1"
+              value={formData.total_valuation}
+              onChange={(e) => setFormData({ ...formData, total_valuation: e.target.value })}
+              placeholder="e.g., 12.5"
+            />
+          </div>
+
+          {/* Short Bio */}
+          <div className="space-y-2">
+            <Label htmlFor="short_bio">Short Bio</Label>
+            <Input
+              id="short_bio"
+              value={formData.short_bio}
+              onChange={(e) => setFormData({ ...formData, short_bio: e.target.value })}
+              placeholder="e.g., UAE's largest developer since 1997"
+            />
+          </div>
+
+          {/* Performance Ratings Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <Star className="h-4 w-4 text-yellow-500" />
+              Performance Ratings (0-10)
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {/* Quality Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Star className="h-3.5 w-3.5 text-blue-400" />
+                    Quality
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_quality}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_quality]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_quality: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Track Record Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <TrendingUp className="h-3.5 w-3.5 text-green-400" />
+                    Track Record
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_track_record}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_track_record]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_track_record: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Sales Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
+                    Sales Performance
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_sales}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_sales]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_sales: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Design Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Paintbrush className="h-3.5 w-3.5 text-purple-400" />
+                    Design
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_design}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_design]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_design: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Flip Potential Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Repeat className="h-3.5 w-3.5 text-orange-400" />
+                    Flip Potential
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_flip_potential}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_flip_potential]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_flip_potential: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
 
