@@ -14,6 +14,7 @@ interface ValueDifferentiatorsDisplayProps {
   customDifferentiators?: ValueDifferentiator[];
   readOnly?: boolean;
   onEditClick?: () => void;
+  showAppreciationBonus?: boolean;
 }
 
 export const ValueDifferentiatorsDisplay = ({
@@ -21,6 +22,7 @@ export const ValueDifferentiatorsDisplay = ({
   customDifferentiators = [],
   readOnly = false,
   onEditClick,
+  showAppreciationBonus = true,
 }: ValueDifferentiatorsDisplayProps) => {
   const { language } = useLanguage();
 
@@ -45,7 +47,7 @@ export const ValueDifferentiatorsDisplay = ({
             {language === 'es' ? 'Diferenciadores de Valor' : 'Value Differentiators'}
           </span>
         </div>
-        {totalBonus > 0 && (
+        {showAppreciationBonus && totalBonus > 0 && (
           <Badge 
             variant="outline" 
             className="bg-theme-accent/20 text-theme-accent border-theme-accent/30 text-xs font-mono flex items-center gap-1"
@@ -63,7 +65,7 @@ export const ValueDifferentiatorsDisplay = ({
             {language === 'es' ? 'Impulsores de Valor' : 'Value Drivers'}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {valueDrivers.map(diff => {
+                {valueDrivers.map(diff => {
               const Icon = diff.isCustom ? CUSTOM_DIFFERENTIATOR_ICON : diff.icon;
               return (
                 <Badge
@@ -73,7 +75,7 @@ export const ValueDifferentiatorsDisplay = ({
                 >
                   <Icon className="w-3 h-3" />
                   <span>{language === 'es' ? diff.nameEs : diff.name}</span>
-                  <span className="text-[10px] opacity-70">+{diff.appreciationBonus}%</span>
+                  {showAppreciationBonus && <span className="text-[10px] opacity-70">+{diff.appreciationBonus}%</span>}
                 </Badge>
               );
             })}

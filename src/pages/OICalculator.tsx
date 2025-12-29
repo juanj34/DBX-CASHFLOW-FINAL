@@ -323,16 +323,6 @@ const OICalculatorContent = () => {
                   <span className="ml-1.5">{t('mortgage')}</span>
                 </Button>
 
-                {/* Client Details Button */}
-                <Button
-                  variant="outlineDark"
-                  size="sm"
-                  onClick={() => setClientModalOpen(true)}
-                  className="gap-2"
-                >
-                  <Users className="w-4 h-4" />
-                  {t('clientDetails')}
-                </Button>
 
                 {/* Configure Button */}
                 <Button 
@@ -366,14 +356,6 @@ const OICalculatorContent = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-theme-card border-theme-border z-50 w-52">
-                    {/* Client Details */}
-                    <DropdownMenuItem
-                      onClick={() => setClientModalOpen(true)}
-                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                    >
-                      <Users className="w-4 h-4" />
-                      {t('clientDetails')}
-                    </DropdownMenuItem>
 
                     {/* Mortgage */}
                     <DropdownMenuItem

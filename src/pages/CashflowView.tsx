@@ -317,6 +317,7 @@ const CashflowViewContent = () => {
         <ValueDifferentiatorsDisplay
           selectedDifferentiators={inputs.valueDifferentiators || []}
           readOnly={true}
+          showAppreciationBonus={visibility.showAppreciationBonus}
         />
 
         {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
