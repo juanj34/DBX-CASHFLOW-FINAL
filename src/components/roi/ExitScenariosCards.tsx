@@ -1,25 +1,17 @@
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InfoTooltip } from "./InfoTooltip";
-import { calculateEquityAtExitWithDetails, timelineToConstruction } from "./constructionProgress";
-
-interface ExitScenario {
-  months: number;
-  exitPrice: number;
-  amountPaid: number;
-  entryCosts: number;
-  profit: number;
-  trueProfit: number;
-  roe: number;
-  trueROE: number;
-  advanceRequired: number;
-  isThresholdMet: boolean;
-}
+import { 
+  calculateExitScenario, 
+  calculateExitPrice, 
+  ExitScenarioResult 
+} from "./constructionProgress";
+import { ROEBreakdownTooltip } from "./ROEBreakdownTooltip";
 
 interface ExitScenariosCardsProps {
   inputs: OIInputs;
@@ -34,106 +26,25 @@ interface ExitScenariosCardsProps {
   unitSizeSqf?: number;
 }
 
-// Calculate equity deployed at exit using S-curve and threshold logic
+// Re-export for backwards compatibility
 export const calculateEquityAtExit = (
   exitMonths: number,
   inputs: OIInputs,
   totalMonths: number,
   basePrice: number
 ): number => {
-  const result = calculateEquityAtExitWithDetails(exitMonths, inputs, totalMonths, basePrice);
-  return result.finalEquity;
+  const result = calculateExitScenario(exitMonths, basePrice, totalMonths, inputs, 0);
+  return result.equityDeployed;
 };
 
-// Calculate exit price using phased appreciation (matching useOICalculations logic)
+// Re-export for backwards compatibility
 export const calculatePhasedExitPrice = (
   months: number,
   inputs: OIInputs,
   totalMonths: number,
   basePrice: number
 ): number => {
-  const { 
-    constructionAppreciation = 12, 
-    growthAppreciation = 8, 
-    matureAppreciation = 4, 
-    growthPeriodYears = 5 
-  } = inputs;
-  
-  let currentValue = basePrice;
-  
-  // Phase 1: Construction period (using constructionAppreciation)
-  const constructionMonths = Math.min(months, totalMonths);
-  if (constructionMonths > 0) {
-    const monthlyConstructionRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyConstructionRate, constructionMonths);
-  }
-  
-  // If exit is during construction, return here
-  if (months <= totalMonths) {
-    return currentValue;
-  }
-  
-  // Phase 2: Growth period (post-handover, first growthPeriodYears years)
-  const postHandoverMonths = months - totalMonths;
-  const growthMonths = Math.min(postHandoverMonths, growthPeriodYears * 12);
-  if (growthMonths > 0) {
-    const monthlyGrowthRate = Math.pow(1 + growthAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyGrowthRate, growthMonths);
-  }
-  
-  // Phase 3: Mature period (after growthPeriodYears)
-  const matureMonths = Math.max(0, postHandoverMonths - growthPeriodYears * 12);
-  if (matureMonths > 0) {
-    const monthlyMatureRate = Math.pow(1 + matureAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyMatureRate, matureMonths);
-  }
-  
-  return currentValue;
-};
-
-const calculateScenario = (
-  months: number,
-  inputs: OIInputs,
-  totalMonths: number,
-  basePrice: number,
-  totalEntryCosts: number
-): ExitScenario => {
-  // Use phased appreciation
-  const exitPrice = calculatePhasedExitPrice(months, inputs, totalMonths, basePrice);
-  
-  // Use S-curve based equity calculation
-  const equityResult = calculateEquityAtExitWithDetails(months, inputs, totalMonths, basePrice);
-  const amountPaid = equityResult.finalEquity;
-  
-  const profit = exitPrice - basePrice;
-  const trueProfit = profit - totalEntryCosts;
-  const totalCapital = amountPaid + totalEntryCosts;
-  const roe = amountPaid > 0 ? (profit / amountPaid) * 100 : 0;
-  const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
-  
-  return {
-    months,
-    exitPrice,
-    amountPaid,
-    entryCosts: totalEntryCosts,
-    profit,
-    trueProfit,
-    roe,
-    trueROE,
-    advanceRequired: equityResult.advanceRequired,
-    isThresholdMet: equityResult.isThresholdMet,
-  };
-};
-
-// Convert months to readable date using booking month/year
-const monthsToDate = (months: number, bookingMonth: number, bookingYear: number, language: string): string => {
-  const totalMonthsFromJan = bookingMonth + months;
-  const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
-  const month = ((totalMonthsFromJan - 1) % 12) + 1;
-  const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  const monthNames = language === 'es' ? monthNamesEs : monthNamesEn;
-  return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
+  return calculateExitPrice(months, basePrice, totalMonths, inputs);
 };
 
 // Auto-calculate exit scenarios based on project timeline
@@ -155,6 +66,17 @@ export const calculateAutoExitScenarios = (totalMonths: number): number[] => {
   ];
 };
 
+// Convert months to readable date using booking month/year
+const monthsToDate = (months: number, bookingMonth: number, bookingYear: number, language: string): string => {
+  const totalMonthsFromJan = bookingMonth + months;
+  const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
+  const month = ((totalMonthsFromJan - 1) % 12) + 1;
+  const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const monthNames = language === 'es' ? monthNamesEs : monthNamesEn;
+  return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
+};
+
 export const ExitScenariosCards = ({ 
   inputs, 
   currency, 
@@ -170,8 +92,9 @@ export const ExitScenariosCards = ({
   const { t, language } = useLanguage();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   
+  // Use shared calculation function for all scenarios
   const scenarios = exitScenarios.map(months => 
-    calculateScenario(months, inputs, totalMonths, basePrice, totalEntryCosts)
+    calculateExitScenario(months, basePrice, totalMonths, inputs, totalEntryCosts)
   );
 
   const handleAddExit = () => {
@@ -281,10 +204,10 @@ export const ExitScenariosCards = ({
             <div className="mb-3 p-2 bg-[#1a1f2e] rounded-lg">
               <div className="flex items-center gap-2 text-white">
                 <Calendar className="w-4 h-4 text-gray-400" />
-                <span className="text-lg font-bold font-mono">{scenario.months} {t('months')}</span>
+                <span className="text-lg font-bold font-mono">{exitScenarios[index]} {t('months')}</span>
               </div>
               <div className="text-xs text-gray-500 ml-6">
-                {monthsToDate(scenario.months, inputs.bookingMonth, inputs.bookingYear, language)}
+                {monthsToDate(exitScenarios[index], inputs.bookingMonth, inputs.bookingYear, language)}
               </div>
             </div>
 
@@ -311,7 +234,7 @@ export const ExitScenariosCards = ({
                   <Wallet className="w-3 h-3" />
                   {t('payments')}
                 </span>
-                <span className="text-sm text-gray-300 font-mono">{formatCurrency(scenario.amountPaid, currency, rate)}</span>
+                <span className="text-sm text-gray-300 font-mono">{formatCurrency(scenario.equityDeployed, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -327,7 +250,7 @@ export const ExitScenariosCards = ({
                   {t('totalCapitalEquals')}
                   <InfoTooltip translationKey="tooltipTotalCapital" />
                 </span>
-                <span className="text-sm text-white font-mono font-medium">{formatCurrency(scenario.amountPaid + scenario.entryCosts, currency, rate)}</span>
+                <span className="text-sm text-white font-mono font-medium">{formatCurrency(scenario.totalCapital, currency, rate)}</span>
               </div>
               
               <div className="flex justify-between items-center">
@@ -352,18 +275,20 @@ export const ExitScenariosCards = ({
                 </span>
               </div>
               
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400 flex items-center gap-1">
-                  {t('roe')}
-                  <InfoTooltip translationKey="tooltipRoe" />
-                </span>
-                <span className={`text-lg font-bold font-mono ${scenario.trueROE >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
-                  {scenario.trueROE.toFixed(1)}%
-                </span>
-              </div>
+              <ROEBreakdownTooltip scenario={scenario} currency={currency} rate={rate}>
+                <div className="flex justify-between items-center cursor-help hover:bg-[#1a1f2e] rounded px-1 -mx-1 transition-colors">
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    {t('roe')}
+                    <Info className="w-3 h-3" />
+                  </span>
+                  <span className={`text-lg font-bold font-mono ${scenario.trueROE >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
+                    {scenario.trueROE.toFixed(1)}%
+                  </span>
+                </div>
+              </ROEBreakdownTooltip>
 
               <div className="text-xs text-gray-500 pt-1">
-                {(scenario.trueROE / (scenario.months / 12)).toFixed(1)}% {t('annualized')}
+                {scenario.annualizedROE.toFixed(1)}% {t('annualized')}
               </div>
             </div>
           </div>

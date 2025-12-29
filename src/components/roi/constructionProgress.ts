@@ -12,6 +12,17 @@
 
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
 
+/**
+ * Inputs required for exit price calculation
+ */
+export interface ExitPriceInputs {
+  constructionAppreciation?: number;
+  growthAppreciation?: number;
+  matureAppreciation?: number;
+  growthPeriodYears?: number;
+  entryCosts?: number;
+}
+
 // S-curve parameters based on typical Dubai construction patterns
 // Key milestones:
 // - 20% construction at ~15% of timeline (fast start for escrow)
@@ -308,4 +319,128 @@ export const getMonthWhenThresholdMet = (
   }
   
   return totalMonths;
+};
+
+/**
+ * Calculate exit price using phased appreciation with monthly compounding
+ * This is the canonical exit price calculation used across the app
+ */
+export const calculateExitPrice = (
+  months: number,
+  basePrice: number,
+  totalMonths: number,
+  inputs: ExitPriceInputs
+): number => {
+  const { 
+    constructionAppreciation = 12, 
+    growthAppreciation = 8, 
+    matureAppreciation = 4, 
+    growthPeriodYears = 5 
+  } = inputs;
+  
+  let currentValue = basePrice;
+  
+  // Phase 1: Construction period (using constructionAppreciation)
+  const constructionMonths = Math.min(months, totalMonths);
+  if (constructionMonths > 0) {
+    const monthlyConstructionRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyConstructionRate, constructionMonths);
+  }
+  
+  // If exit is during construction, return here
+  if (months <= totalMonths) {
+    return currentValue;
+  }
+  
+  // Phase 2: Growth period (post-handover, first growthPeriodYears years)
+  const postHandoverMonths = months - totalMonths;
+  const growthMonths = Math.min(postHandoverMonths, growthPeriodYears * 12);
+  if (growthMonths > 0) {
+    const monthlyGrowthRate = Math.pow(1 + growthAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyGrowthRate, growthMonths);
+  }
+  
+  // Phase 3: Mature period (after growthPeriodYears)
+  const matureMonths = Math.max(0, postHandoverMonths - growthPeriodYears * 12);
+  if (matureMonths > 0) {
+    const monthlyMatureRate = Math.pow(1 + matureAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyMatureRate, matureMonths);
+  }
+  
+  return currentValue;
+};
+
+/**
+ * Full exit scenario result with ROE breakdown for tooltips
+ */
+export interface ExitScenarioResult {
+  exitPrice: number;
+  basePrice: number;
+  appreciation: number;
+  appreciationPercent: number;
+  equityDeployed: number;
+  equityPercent: number;
+  planEquityPercent: number;
+  entryCosts: number;
+  totalCapital: number;
+  profit: number;
+  trueProfit: number;
+  roe: number;
+  trueROE: number;
+  annualizedROE: number;
+  advanceRequired: number;
+  advancedPayments: EquityAtExitResult['advancedPayments'];
+  isThresholdMet: boolean;
+}
+
+/**
+ * Calculate complete exit scenario with all metrics
+ * Unified calculation used by both configurator and quote analysis
+ */
+export const calculateExitScenario = (
+  monthsFromBooking: number,
+  basePrice: number,
+  totalMonths: number,
+  inputs: OIInputs,
+  entryCosts: number = 0
+): ExitScenarioResult => {
+  // Calculate exit price using phased appreciation
+  const exitPrice = calculateExitPrice(monthsFromBooking, basePrice, totalMonths, inputs);
+  const appreciation = exitPrice - basePrice;
+  const appreciationPercent = (appreciation / basePrice) * 100;
+  
+  // Calculate equity using S-curve and threshold logic
+  const equityResult = calculateEquityAtExitWithDetails(monthsFromBooking, inputs, totalMonths, basePrice);
+  const equityDeployed = equityResult.finalEquity;
+  const equityPercent = (equityDeployed / basePrice) * 100;
+  
+  // Calculate profits
+  const totalCapital = equityDeployed + entryCosts;
+  const profit = appreciation;
+  const trueProfit = profit - entryCosts;
+  
+  // Calculate ROE
+  const roe = equityDeployed > 0 ? (profit / equityDeployed) * 100 : 0;
+  const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+  const annualizedROE = monthsFromBooking > 0 ? (trueROE / (monthsFromBooking / 12)) : 0;
+  
+  return {
+    exitPrice,
+    basePrice,
+    appreciation,
+    appreciationPercent,
+    equityDeployed,
+    equityPercent,
+    planEquityPercent: equityResult.planEquityPercent,
+    entryCosts,
+    totalCapital,
+    profit,
+    trueProfit,
+    roe,
+    trueROE,
+    annualizedROE,
+    advanceRequired: equityResult.advanceRequired,
+    advancedPayments: equityResult.advancedPayments,
+    isThresholdMet: equityResult.isThresholdMet,
+  };
 };
