@@ -172,13 +172,13 @@ const CashflowViewContent = () => {
 
   if (error || !inputs || !clientInfo || !calculations) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="p-4 bg-red-500/20 rounded-full inline-flex mb-4">
             <Rocket className="w-8 h-8 text-red-400" />
           </div>
-          <h1 className="text-2xl text-white mb-2">{t('quoteNotFound')}</h1>
-          <p className="text-gray-400">{error || t('quoteNotFoundDesc')}</p>
+          <h1 className="text-2xl text-theme-text mb-2">{t('quoteNotFound')}</h1>
+          <p className="text-theme-text-muted">{error || t('quoteNotFoundDesc')}</p>
         </div>
       </div>
     );
@@ -208,17 +208,17 @@ const CashflowViewContent = () => {
       advisorName={advisorProfile?.full_name || undefined}
       onContactAdvisor={handleWhatsAppAdvisor}
     />
-    <div className="min-h-screen bg-[#0f172a]">
+    <div className="min-h-screen bg-theme-bg">
       {/* Header */}
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
           {/* Top row - Title and controls */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-[#CCFF00]/20 rounded-xl">
-                <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-[#CCFF00]" />
+              <div className="p-1.5 sm:p-2 bg-theme-accent/20 rounded-xl">
+                <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-theme-accent" />
               </div>
-              <h1 className="text-sm sm:text-xl font-bold text-white">{t('cashflowStatement')}</h1>
+              <h1 className="text-sm sm:text-xl font-bold text-theme-text">{t('cashflowStatement')}</h1>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outlineDark" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
@@ -227,13 +227,13 @@ const CashflowViewContent = () => {
                 <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
               </Button>
               <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
-                <SelectTrigger className="w-[80px] sm:w-[140px] h-7 sm:h-9 text-xs sm:text-sm border-[#2a3142] bg-[#1a1f2e] text-gray-300 hover:bg-[#2a3142]" title={t('currency')}>
-                  <Coins className="w-3.5 h-3.5 mr-1 text-[#CCFF00]" />
+                <SelectTrigger className="w-[80px] sm:w-[140px] h-7 sm:h-9 text-xs sm:text-sm border-theme-border bg-theme-card text-theme-text hover:bg-theme-card-alt" title={t('currency')}>
+                  <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                <SelectContent className="bg-theme-card border-theme-border">
                   {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-                    <SelectItem key={key} value={key} className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]">{config.flag} {key}</SelectItem>
+                    <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt">{config.flag} {key}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -244,22 +244,22 @@ const CashflowViewContent = () => {
 
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {/* Advisor info panel - scrolls with content */}
-        <div className="mb-4 sm:mb-6 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+        <div className="mb-4 sm:mb-6 p-4 bg-theme-card rounded-xl border border-theme-border">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             {/* Avatar and info */}
             <div className="flex items-center gap-4 flex-1">
               {advisorProfile?.avatar_url ? (
-                <img src={advisorProfile.avatar_url} alt={advisorProfile.full_name || 'Advisor'} className="w-14 h-14 rounded-full object-cover border-2 border-[#CCFF00]/30" />
+                <img src={advisorProfile.avatar_url} alt={advisorProfile.full_name || 'Advisor'} className="w-14 h-14 rounded-full object-cover border-2 border-theme-accent/30" />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-[#2a3142] flex items-center justify-center text-white text-xl font-medium border-2 border-[#CCFF00]/30">
-                  {advisorProfile?.full_name ? advisorProfile.full_name.charAt(0).toUpperCase() : <User className="w-6 h-6 text-gray-400" />}
+                <div className="w-14 h-14 rounded-full bg-theme-card-alt flex items-center justify-center text-theme-text text-xl font-medium border-2 border-theme-accent/30">
+                  {advisorProfile?.full_name ? advisorProfile.full_name.charAt(0).toUpperCase() : <User className="w-6 h-6 text-theme-text-muted" />}
                 </div>
               )}
               <div>
-                <p className="text-lg font-medium text-white">{advisorProfile?.full_name || t('wealthAdvisor')}</p>
-                <p className="text-sm text-[#CCFF00]">{t('wealthAdvisor')}</p>
+                <p className="text-lg font-medium text-theme-text">{advisorProfile?.full_name || t('wealthAdvisor')}</p>
+                <p className="text-sm text-theme-accent">{t('wealthAdvisor')}</p>
                 {advisorProfile?.business_email && (
-                  <p className="text-xs text-gray-400 mt-0.5">{advisorProfile.business_email}</p>
+                  <p className="text-xs text-theme-text-muted mt-0.5">{advisorProfile.business_email}</p>
                 )}
               </div>
             </div>
@@ -271,7 +271,7 @@ const CashflowViewContent = () => {
                   onClick={handleEmailAdvisor}
                   variant="outline" 
                   size="sm"
-                  className="border-[#2a3142] bg-[#0d1117] text-white hover:bg-[#2a3142]"
+                  className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-card-alt"
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   {t('emailAdvisor')}
@@ -306,7 +306,7 @@ const CashflowViewContent = () => {
           <CollapsibleSection
             title={t('paymentBreakdownTitle')}
             subtitle={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent} ${t('paymentStructure')}`}
-            icon={<CreditCard className="w-5 h-5 text-[#CCFF00]" />}
+            icon={<CreditCard className="w-5 h-5 text-theme-accent" />}
             defaultOpen={false}
           >
             <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
@@ -325,7 +325,7 @@ const CashflowViewContent = () => {
           <CollapsibleSection
             title={t('holdStrategyAnalysis')}
             subtitle={t('holdStrategySubtitle')}
-            icon={<Home className="w-5 h-5 text-[#CCFF00]" />}
+            icon={<Home className="w-5 h-5 text-theme-accent" />}
             defaultOpen={false}
           >
             <div className="space-y-4 sm:space-y-6">
@@ -344,7 +344,7 @@ const CashflowViewContent = () => {
           <CollapsibleSection
             title={t('exitStrategyAnalysis')}
             subtitle={t('whenToSell')}
-            icon={<TrendingUp className="w-5 h-5 text-[#CCFF00]" />}
+            icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
             defaultOpen={false}
           >
             <div className="space-y-4 sm:space-y-6">
@@ -372,6 +372,15 @@ const CashflowViewContent = () => {
               const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
               const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
               
+              // Year 5 calculations (matching OICalculator)
+              const handoverYearIndex = calculations.yearlyProjections.findIndex(p => p.isHandover);
+              const year5Index = handoverYearIndex + 5;
+              const year5Projection = calculations.yearlyProjections.find((p, idx) => 
+                idx === year5Index || (p.year === (firstFullRentalYear?.year || 0) + 4)
+              );
+              const year5LongTermRent = year5Projection?.annualRent ? (year5Projection.annualRent / 12) : undefined;
+              const year5AirbnbNet = year5Projection?.airbnbNetIncome ? (year5Projection.airbnbNetIncome / 12) : undefined;
+              
               return (
                 <MortgageBreakdown
                   mortgageInputs={mortgageInputs}
@@ -385,6 +394,8 @@ const CashflowViewContent = () => {
                   monthlyAirbnbNet={monthlyAirbnbNet}
                   showAirbnbComparison={calculations.showAirbnbComparison}
                   rentGrowthRate={inputs.rentGrowthRate}
+                  year5LongTermRent={year5LongTermRent}
+                  year5AirbnbNet={year5AirbnbNet}
                 />
               );
             })()}
@@ -408,8 +419,8 @@ const CashflowViewContent = () => {
           defaultOpen={false}
         />
 
-        <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">
-          <p className="text-xs text-gray-400">{t('disclaimerText')}</p>
+        <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-theme-border text-center">
+          <p className="text-xs text-theme-text-muted">{t('disclaimerText')}</p>
         </footer>
       </main>
     </div>
