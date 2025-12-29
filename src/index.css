@@ -191,6 +191,40 @@ All colors MUST be HSL.
   .transition-smooth {
     transition: var(--transition-smooth);
   }
+
+  /* =====================================================
+   * SEMANTIC TEXT CLASSES
+   * =====================================================
+   * ALWAYS use these instead of raw text-gray-* classes.
+   * These classes adapt automatically to the current theme,
+   * ensuring proper contrast on both light and dark backgrounds.
+   * See src/docs/DESIGN_SYSTEM.md for full guidelines.
+   */
+  
+  /* Primary content text - for headings, labels, key values */
+  .text-primary-content {
+    color: hsl(var(--theme-text));
+  }
+  
+  /* Secondary content text - for descriptions, hints, less important info */
+  .text-secondary-content {
+    color: hsl(var(--theme-text-muted));
+  }
+  
+  /* Tertiary content text - for footnotes, timestamps, minor details */
+  .text-tertiary-content {
+    color: hsl(var(--theme-text-muted) / 0.75);
+  }
+  
+  /* Highlight content text - for key metrics, CTAs, emphasized values */
+  .text-highlight-content {
+    color: hsl(var(--theme-text-highlight));
+  }
+  
+  /* Legacy alias - for safe migration from text-gray-* */
+  .text-muted-safe {
+    color: hsl(var(--theme-text-muted));
+  }
 }
 
 /* Landing page animations */

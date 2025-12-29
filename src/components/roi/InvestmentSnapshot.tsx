@@ -56,7 +56,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
           <div className="text-right">
             <span className="text-sm font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
             {pricePerSqft > 0 && (
-              <p className="text-xs text-gray-400 font-mono">
+              <p className="text-xs text-theme-text-muted font-mono">
                 {formatCurrency(pricePerSqft, currency, rate)}/sqft
               </p>
             )}
@@ -118,7 +118,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
         </div>
 
         {/* Timeline */}
-        <div className="pt-2 text-xs text-gray-400 text-center">
+        <div className="pt-2 text-xs text-theme-text-muted text-center">
           {monthNames[bookingMonth - 1]} {bookingYear} → Q{handoverQuarter} {handoverYear}
         </div>
       </div>

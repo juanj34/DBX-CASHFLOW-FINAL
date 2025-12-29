@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { useContrastChecker } from "@/hooks/useContrastChecker";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -21,15 +22,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Component to run contrast checker in development
+function ContrastCheckerProvider({ children }: { children: React.ReactNode }) {
+  useContrastChecker({ scanOnMount: true, scanOnMutation: false, debounceMs: 2000 });
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <ThemeProvider>
           <TooltipProvider delayDuration={0}>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+            <ContrastCheckerProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
@@ -51,7 +59,8 @@ function App() {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
+              </BrowserRouter>
+            </ContrastCheckerProvider>
           </TooltipProvider>
         </ThemeProvider>
       </LanguageProvider>
