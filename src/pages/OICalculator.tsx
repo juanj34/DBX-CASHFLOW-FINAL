@@ -317,16 +317,6 @@ const OICalculatorContent = () => {
                   isLive={isLive}
                 />
 
-                {/* Mortgage Calculator Button */}
-                <Button
-                  variant="outlineDark"
-                  size="sm"
-                  onClick={() => setMortgageModalOpen(true)}
-                  className={`h-8 px-2 sm:px-3 ${mortgageInputs.enabled ? 'border-theme-accent/50 text-theme-accent' : ''}`}
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span className="ml-1.5">{t('mortgage')}</span>
-                </Button>
 
 
                 {/* Configure Button */}
@@ -361,17 +351,6 @@ const OICalculatorContent = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-theme-card border-theme-border z-50 w-52">
-
-                    {/* Mortgage */}
-                    <DropdownMenuItem
-                      onClick={() => setMortgageModalOpen(true)}
-                      className={`text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2 ${mortgageInputs.enabled ? 'text-theme-accent' : ''}`}
-                    >
-                      <Building2 className="w-4 h-4" />
-                      {t('mortgage')}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator className="bg-theme-border" />
 
                     {/* Quotes actions */}
                     <DropdownMenuItem
@@ -433,7 +412,7 @@ const OICalculatorContent = () => {
                 onOpenChange={setMortgageModalOpen}
               />
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-              <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} />
+              <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />
               <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
               <VersionHistoryModal 
                 open={versionHistoryOpen} 

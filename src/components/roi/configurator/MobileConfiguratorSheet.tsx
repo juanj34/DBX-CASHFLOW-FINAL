@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { OIInputs } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
+import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
 import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
 import { PropertySection } from "./PropertySection";
 import { PaymentSection } from "./PaymentSection";
@@ -18,6 +19,7 @@ import { ValueSection } from "./ValueSection";
 import { AppreciationSection } from "./AppreciationSection";
 import { ExitsSection } from "./ExitsSection";
 import { RentSection } from "./RentSection";
+import { MortgageSection } from "./MortgageSection";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MobileConfiguratorSheetProps {
@@ -26,6 +28,8 @@ interface MobileConfiguratorSheetProps {
   inputs: OIInputs;
   setInputs: React.Dispatch<React.SetStateAction<OIInputs>>;
   currency: Currency;
+  mortgageInputs: MortgageInputs;
+  setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
 }
 
 const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
@@ -76,6 +80,8 @@ export const MobileConfiguratorSheet = ({
   inputs,
   setInputs,
   currency,
+  mortgageInputs,
+  setMortgageInputs,
 }: MobileConfiguratorSheetProps) => {
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('property');
@@ -109,6 +115,8 @@ export const MobileConfiguratorSheet = ({
         return true;
       case 'rent':
         return inputs.rentalYieldPercent > 0;
+      case 'mortgage':
+        return true; // mortgage is optional
       default:
         return false;
     }
@@ -211,6 +219,8 @@ export const MobileConfiguratorSheet = ({
         return <ExitsSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'rent':
         return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
+      case 'mortgage':
+        return <MortgageSection inputs={inputs} setInputs={setInputs} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />;
       default:
         return null;
     }

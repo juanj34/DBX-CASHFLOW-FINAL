@@ -3,6 +3,7 @@ import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, C
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
+import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
 import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
 import { ConfiguratorSidebar } from "./ConfiguratorSidebar";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
@@ -12,12 +13,15 @@ import { ValueSection } from "./ValueSection";
 import { AppreciationSection } from "./AppreciationSection";
 import { ExitsSection } from "./ExitsSection";
 import { RentSection } from "./RentSection";
+import { MortgageSection } from "./MortgageSection";
 
 interface ConfiguratorLayoutProps {
   inputs: OIInputs;
   setInputs: React.Dispatch<React.SetStateAction<OIInputs>>;
   currency: Currency;
   onClose: () => void;
+  mortgageInputs: MortgageInputs;
+  setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
 }
 
 const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
@@ -38,7 +42,9 @@ export const ConfiguratorLayout = ({
   inputs, 
   setInputs, 
   currency, 
-  onClose 
+  onClose,
+  mortgageInputs,
+  setMortgageInputs
 }: ConfiguratorLayoutProps) => {
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('property');
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
@@ -74,6 +80,8 @@ export const ConfiguratorLayout = ({
         return true; // exits are optional
       case 'rent':
         return inputs.rentalYieldPercent > 0;
+      case 'mortgage':
+        return true; // mortgage is optional
       default:
         return false;
     }
@@ -225,6 +233,8 @@ export const ConfiguratorLayout = ({
         return <ExitsSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'rent':
         return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
+      case 'mortgage':
+        return <MortgageSection inputs={inputs} setInputs={setInputs} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />;
       default:
         return null;
     }

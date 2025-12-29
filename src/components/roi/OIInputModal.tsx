@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Settings2, AlertCircle, CheckCircle2, Plus, Trash2, Clock, Building2, CreditCard, Home, Target, Zap, Building, DollarSign, TrendingUp, MapPin, Save, FolderOpen } from "lucide-react";
 import { OIInputs, PaymentMilestone, getZoneAppreciationProfile } from "./useOICalculations";
 import { Currency, formatCurrency, DEFAULT_RATE } from "./currencyUtils";
+import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "./useMortgageCalculations";
 import { ZoneAppreciationIndicator } from "./ZoneAppreciationIndicator";
 import { InfoTooltip } from "./InfoTooltip";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,8 @@ interface OIInputModalProps {
   onOpenChange: (open: boolean) => void;
   currency: Currency;
   showTrigger?: boolean;
+  mortgageInputs: MortgageInputs;
+  setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
 }
 
 const months = [
@@ -71,7 +74,7 @@ interface Zone {
   maturity_label: string | null;
 }
 
-export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false }: OIInputModalProps) => {
+export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false, mortgageInputs, setMortgageInputs }: OIInputModalProps) => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   
@@ -322,6 +325,8 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
             setInputs={setInputs}
             currency={currency}
             onClose={() => onOpenChange(false)}
+            mortgageInputs={mortgageInputs}
+            setMortgageInputs={setMortgageInputs}
           />
         </DialogContent>
       </Dialog>
@@ -346,6 +351,8 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
         inputs={inputs}
         setInputs={setInputs}
         currency={currency}
+        mortgageInputs={mortgageInputs}
+        setMortgageInputs={setMortgageInputs}
       />
     </>
   );
