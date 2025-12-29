@@ -52,6 +52,14 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   const handoverDate = useMemo(() => new Date(inputs.handoverYear, handoverQuarterMonth - 1), [inputs.handoverYear, handoverQuarterMonth]);
   const totalMonths = useMemo(() => Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30))), [bookingDate, handoverDate]);
 
+  // Calculate entry costs (DLD 4% + Oqood fee)
+  const DLD_FEE_PERCENT = 4;
+  const entryCosts = useMemo(() => {
+    const dldFee = inputs.basePrice * DLD_FEE_PERCENT / 100;
+    const oqoodFee = inputs.oqoodFee || 0;
+    return dldFee + oqoodFee;
+  }, [inputs.basePrice, inputs.oqoodFee]);
+
   // Generate default exits based on timeline - called on button click
   const generateDefaultExits = useCallback((): ExitScenario[] => {
     const newExits: ExitScenario[] = [];
@@ -77,15 +85,15 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   }, [exits]);
 
   const getExitDetails = useCallback((monthsFromBooking: number): ExitScenarioResult => {
-    // Use shared calculation function for consistent results
+    // Use shared calculation function with entry costs for accurate ROE
     return calculateExitScenario(
       monthsFromBooking,
       inputs.basePrice,
       totalMonths,
       inputs,
-      0 // Entry costs not used in configurator
+      entryCosts
     );
-  }, [inputs, totalMonths]);
+  }, [inputs, totalMonths, entryCosts]);
 
   const handleToggle = (enabled: boolean) => {
     setExitScenariosEnabled(enabled);

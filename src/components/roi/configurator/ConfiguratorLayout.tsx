@@ -38,6 +38,34 @@ const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) =>
   />
 );
 
+// Storage key for configurator state
+const CONFIGURATOR_STATE_KEY = 'cashflow-configurator-state';
+
+interface ConfiguratorState {
+  activeSection: ConfiguratorSection;
+  visitedSections: ConfiguratorSection[];
+}
+
+const loadConfiguratorState = (): ConfiguratorState | null => {
+  try {
+    const saved = localStorage.getItem(CONFIGURATOR_STATE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error loading configurator state:', e);
+  }
+  return null;
+};
+
+const saveConfiguratorState = (state: ConfiguratorState) => {
+  try {
+    localStorage.setItem(CONFIGURATOR_STATE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('Error saving configurator state:', e);
+  }
+};
+
 export const ConfiguratorLayout = ({ 
   inputs, 
   setInputs, 
@@ -46,11 +74,18 @@ export const ConfiguratorLayout = ({
   mortgageInputs,
   setMortgageInputs
 }: ConfiguratorLayoutProps) => {
-  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('property');
+  // Load initial state from localStorage
+  const savedState = loadConfiguratorState();
+  
+  const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
+    savedState?.activeSection || 'property'
+  );
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
-  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['property']));
+  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
+    new Set(savedState?.visitedSections || ['property'])
+  );
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
   const contentScrollRef = useRef<HTMLDivElement>(null);
   
@@ -62,6 +97,14 @@ export const ConfiguratorLayout = ({
   // Celebration state
   const [showCelebration, setShowCelebration] = useState(false);
   const hasShownCelebrationRef = useRef(false);
+
+  // Persist configurator state to localStorage
+  useEffect(() => {
+    saveConfiguratorState({
+      activeSection,
+      visitedSections: Array.from(visitedSections),
+    });
+  }, [activeSection, visitedSections]);
 
   // Check if a specific section is complete (visited + valid data)
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
