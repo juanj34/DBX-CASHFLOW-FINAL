@@ -173,25 +173,24 @@ const OICalculatorContent = () => {
     );
   }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded]);
 
-  // Exit scenarios state - load from saved quote or auto-calculate
-  const [exitScenarios, setExitScenarios] = useState<number[]>(() => calculateAutoExitScenarios(calculations.totalMonths));
-  const [exitScenariosInitialized, setExitScenariosInitialized] = useState(false);
-  
-  // Initialize exit scenarios from saved quote (once) and clamp to bounds
-  useEffect(() => {
-    if (!dataLoaded || exitScenariosInitialized) return;
-    const savedExitScenarios = (quote?.inputs as any)?._exitScenarios;
-    if (savedExitScenarios && Array.isArray(savedExitScenarios) && savedExitScenarios.length > 0) {
-      // Clamp saved exit scenarios to valid bounds (1 to totalMonths)
-      const clampedScenarios = savedExitScenarios
+  // Exit scenarios - derived from inputs._exitScenarios as single source of truth
+  // Only use auto-generated fallback if no custom exits exist
+  const exitScenarios = useMemo(() => {
+    const saved = inputs._exitScenarios;
+    if (saved && Array.isArray(saved) && saved.length > 0) {
+      // Clamp to valid bounds and remove duplicates
+      return saved
         .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))
-        .filter((m: number, i: number, arr: number[]) => arr.indexOf(m) === i); // Remove duplicates
-      setExitScenarios(clampedScenarios.length > 0 ? clampedScenarios : calculateAutoExitScenarios(calculations.totalMonths));
-    } else {
-      setExitScenarios(calculateAutoExitScenarios(calculations.totalMonths));
+        .filter((m: number, i: number, arr: number[]) => arr.indexOf(m) === i)
+        .sort((a, b) => a - b);
     }
-    setExitScenariosInitialized(true);
-  }, [dataLoaded, quote, calculations.totalMonths, exitScenariosInitialized]);
+    // Only return auto-calculated exits if user hasn't configured any (empty array means user cleared them)
+    return [];
+  }, [inputs._exitScenarios, calculations.totalMonths]);
+
+  const setExitScenarios = useCallback((newScenarios: number[]) => {
+    setInputs(prev => ({ ...prev, _exitScenarios: newScenarios.sort((a, b) => a - b) }));
+  }, []);
 
   const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate]);

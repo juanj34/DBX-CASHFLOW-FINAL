@@ -55,11 +55,11 @@ export const ExitTimeline = ({
     return ticks;
   }, [totalMonths]);
 
-  // Calculate smart label positions to avoid overlap
+  // Calculate smart label positions to avoid overlap with compact stacking
   const timelineMarkers = useMemo(() => {
     const sortedExits = [...exits].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
     
-    // Assign label levels to avoid overlap
+    // Assign label levels to avoid overlap - use stacking when markers are close
     const markers = sortedExits.map((exit, index) => {
       const position = (exit.monthsFromBooking / totalMonths) * 100;
       const date = (() => {
@@ -69,18 +69,34 @@ export const ExitTimeline = ({
       })();
       const meetsThreshold = position >= thresholdPosition;
       
-      // Calculate label level based on proximity to neighbors
+      // Calculate label level based on proximity to neighbors (closer = more stacking)
       let labelLevel = 0;
+      
+      // Check distance to ALL previous markers to assign proper level
+      for (let i = 0; i < index; i++) {
+        const prevPos = (sortedExits[i].monthsFromBooking / totalMonths) * 100;
+        const distance = position - prevPos;
+        
+        // Very close (within 8%) - need maximum stacking
+        if (distance < 8) {
+          labelLevel = Math.max(labelLevel, 2);
+        }
+        // Moderately close (8-15%) - need some stacking  
+        else if (distance < 15) {
+          // Only stack if previous marker would overlap
+          const prevMarkerLevel = markers[i]?.labelLevel || 0;
+          if (prevMarkerLevel === labelLevel) {
+            labelLevel = Math.max(labelLevel, 1);
+          }
+        }
+      }
+      
+      // Ensure alternating levels for very close markers
       if (index > 0) {
         const prevPos = (sortedExits[index - 1].monthsFromBooking / totalMonths) * 100;
-        if (Math.abs(position - prevPos) < 12) {
-          labelLevel = 1;
-        }
-        if (index > 1) {
-          const prevPrev = (sortedExits[index - 2].monthsFromBooking / totalMonths) * 100;
-          if (Math.abs(position - prevPrev) < 18) {
-            labelLevel = Math.max(labelLevel, 2);
-          }
+        const prevLevel = markers[index - 1]?.labelLevel || 0;
+        if (position - prevPos < 10 && labelLevel === prevLevel) {
+          labelLevel = (prevLevel + 1) % 3;
         }
       }
       
@@ -271,10 +287,10 @@ export const ExitTimeline = ({
                  )}
                </div>
 
-              {/* Label below - positioned to avoid overlap */}
+              {/* Label below - positioned to avoid overlap with compact stacking */}
               <div 
                 className={`absolute whitespace-nowrap text-center pointer-events-none transition-all ${
-                  marker.labelLevel === 0 ? 'top-7' : marker.labelLevel === 1 ? 'top-12' : 'top-[68px]'
+                  marker.labelLevel === 0 ? 'top-6' : marker.labelLevel === 1 ? 'top-[52px]' : 'top-[76px]'
                 }`}
               >
                 {/* Connecting line for offset labels */}
@@ -282,20 +298,23 @@ export const ExitTimeline = ({
                   <div 
                     className="absolute left-1/2 -translate-x-1/2 w-px bg-theme-text-muted/30"
                     style={{ 
-                      top: marker.labelLevel === 1 ? '-20px' : '-36px',
-                      height: marker.labelLevel === 1 ? '20px' : '36px',
+                      top: marker.labelLevel === 1 ? '-28px' : '-52px',
+                      height: marker.labelLevel === 1 ? '28px' : '52px',
                     }}
                   />
                 )}
-                <div className={`text-[11px] font-semibold ${
-                  isDragging ? 'text-theme-accent' : 
-                  !marker.meetsThreshold ? 'text-red-400' : 'text-theme-text'
-                }`}>
-                  {displayMonth}mo
-                </div>
-                <div className="text-[9px] text-theme-text-muted">{marker.date}</div>
-                <div className={`text-[9px] font-mono font-medium ${!marker.meetsThreshold ? 'text-red-400' : 'text-green-400'}`}>
-                  +{marker.appreciationPercent.toFixed(0)}%
+                {/* Compact stacked label */}
+                <div className={`px-1 py-0.5 rounded ${marker.labelLevel > 0 ? 'bg-theme-bg-alt/80' : ''}`}>
+                  <div className={`text-[10px] font-semibold leading-tight ${
+                    isDragging ? 'text-theme-accent' : 
+                    !marker.meetsThreshold ? 'text-red-400' : 'text-theme-text'
+                  }`}>
+                    {displayMonth}mo
+                  </div>
+                  <div className="text-[8px] text-theme-text-muted leading-tight">{marker.date}</div>
+                  <div className={`text-[9px] font-mono font-medium leading-tight ${!marker.meetsThreshold ? 'text-red-400' : 'text-green-400'}`}>
+                    +{marker.appreciationPercent.toFixed(0)}%
+                  </div>
                 </div>
               </div>
             </div>
