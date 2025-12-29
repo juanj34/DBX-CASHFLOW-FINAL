@@ -80,17 +80,66 @@ export const MortgageModal = ({
 
           {mortgageInputs.enabled && (
             <>
-              {/* Gap Warning */}
+              {/* Gap Warning with Timeline Visual */}
               {hasGap && (
                 <div className="p-4 bg-amber-900/30 border border-amber-700/50 rounded-xl">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 mb-4">
                     <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-amber-200 font-medium">{t('gapRequired')}: {gapPercent.toFixed(1)}%</p>
+                      <p className="text-amber-200 font-medium">{t('additionalPaymentRequired') || 'Additional Payment Required'}</p>
                       <p className="text-amber-300/70 text-sm mt-1">
                         {t('gapExplanation')} ({preHandoverPercent}% → {equityRequired}%)
                       </p>
                     </div>
+                  </div>
+                  
+                  {/* Payment Timeline Visual - Matching Client View */}
+                  <div className="space-y-4">
+                    {/* Timeline bar */}
+                    <div className="relative h-3 bg-[#1e293b] rounded-full overflow-hidden">
+                      <div 
+                        className="absolute left-0 top-0 h-full bg-green-500 rounded-l-full"
+                        style={{ width: `${preHandoverPercent}%` }}
+                      />
+                      <div 
+                        className="absolute top-0 h-full bg-yellow-400"
+                        style={{ left: `${preHandoverPercent}%`, width: `${gapPercent}%` }}
+                      />
+                      <div 
+                        className="absolute top-0 h-full bg-blue-500 rounded-r-full"
+                        style={{ left: `${equityRequired}%`, width: `${mortgageInputs.financingPercent}%` }}
+                      />
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+                        <div>
+                          <p className="text-gray-400">{t('preHandover') || 'Pre-Handover'}</p>
+                          <p className="text-green-400 font-mono">{preHandoverPercent}%</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-yellow-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-gray-400">{t('gap') || 'Gap'}</p>
+                          <p className="text-yellow-300 font-mono font-semibold">{gapPercent.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0" />
+                        <div>
+                          <p className="text-gray-400">{t('mortgage')}</p>
+                          <p className="text-blue-400 font-mono">{mortgageInputs.financingPercent}%</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-3 border-t border-amber-700/30 flex justify-between">
+                    <span className="text-sm text-gray-400">{t('totalBeforeHandover') || 'Total Before Handover'}</span>
+                    <span className="text-sm font-mono text-white font-bold">{equityRequired}%</span>
                   </div>
                 </div>
               )}

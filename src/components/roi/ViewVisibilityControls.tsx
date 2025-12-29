@@ -13,6 +13,7 @@ export interface ViewVisibility {
   exitStrategy: boolean;
   longTermHold: boolean;
   mortgage: boolean;
+  showAppreciationBonus: boolean;
 }
 
 const DEFAULT_VISIBILITY: ViewVisibility = {
@@ -22,6 +23,7 @@ const DEFAULT_VISIBILITY: ViewVisibility = {
   exitStrategy: true,
   longTermHold: true,
   mortgage: true,
+  showAppreciationBonus: true,
 };
 
 interface ViewVisibilityControlsProps {
@@ -38,6 +40,7 @@ export const encodeVisibility = (visibility: ViewVisibility): string => {
     visibility.exitStrategy ? '1' : '0',
     visibility.longTermHold ? '1' : '0',
     visibility.mortgage ? '1' : '0',
+    visibility.showAppreciationBonus ? '1' : '0',
   ].join('');
   return bits;
 };
@@ -51,6 +54,7 @@ export const decodeVisibility = (encoded: string | null): ViewVisibility => {
     exitStrategy: encoded[3] === '1',
     longTermHold: encoded[4] === '1',
     mortgage: encoded.length > 5 ? encoded[5] === '1' : true,
+    showAppreciationBonus: encoded.length > 6 ? encoded[6] === '1' : true,
   };
 };
 
@@ -117,6 +121,7 @@ export const ViewVisibilityControls = ({ shareUrl, onGenerateShareUrl, onExportP
     { key: 'exitStrategy' as const, label: t('exitStrategyAnalysis') },
     { key: 'longTermHold' as const, label: t('longTermHoldAnalysis') },
     { key: 'mortgage' as const, label: t('mortgageBreakdown') },
+    { key: 'showAppreciationBonus' as const, label: t('appreciationBonus') || 'Appreciation %' },
   ];
 
   return (

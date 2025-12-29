@@ -143,30 +143,56 @@ export const MortgageBreakdown = ({
               </div>
             </div>
             
-            {/* Payment Timeline Visual */}
-            <div className="space-y-3 mt-4 pl-2 border-l-2 border-amber-500/50">
-              <div className="flex justify-between items-center pl-4 relative">
-                <div className="absolute -left-[9px] w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-sm text-gray-300">{t('preHandoverPayments')}</span>
-                <span className="text-sm font-mono text-green-400">
-                  {formatCurrency(preHandoverAmount, currency, rate)} ({preHandoverPercent}%)
-                </span>
+            {/* Payment Timeline Visual - Enhanced */}
+            <div className="space-y-4 mt-4">
+              {/* Stage labels */}
+              <div className="flex items-center justify-between text-[10px] text-gray-500 uppercase tracking-wider px-1">
+                <span>{t('beforeHandover') || 'Before Handover'}</span>
+                <span>{t('atHandover') || 'At Handover'}</span>
               </div>
               
-              <div className="flex justify-between items-center pl-4 relative min-w-0">
-                <div className="absolute -left-[9px] w-3 h-3 rounded-full bg-yellow-400" />
-                <span className="text-sm text-gray-300 font-medium">{t('gapPaymentBeforeHandover')}</span>
-                <span className="text-sm font-mono text-yellow-300 font-bold flex-shrink-0">
-                  {formatCurrency(gapAmount, currency, rate)} ({gapPercent.toFixed(1)}%)
-                </span>
+              {/* Timeline bar */}
+              <div className="relative h-3 bg-[#1e293b] rounded-full overflow-hidden">
+                <div 
+                  className="absolute left-0 top-0 h-full bg-green-500 rounded-l-full"
+                  style={{ width: `${preHandoverPercent}%` }}
+                />
+                <div 
+                  className="absolute top-0 h-full bg-yellow-400"
+                  style={{ left: `${preHandoverPercent}%`, width: `${gapPercent}%` }}
+                />
+                <div 
+                  className="absolute top-0 h-full bg-blue-500 rounded-r-full"
+                  style={{ left: `${equityRequiredPercent}%`, width: `${mortgageInputs.financingPercent}%` }}
+                />
               </div>
               
-              <div className="flex justify-between items-center pl-4 relative">
-                <div className="absolute -left-[9px] w-3 h-3 rounded-full bg-blue-500" />
-                <span className="text-sm text-gray-300">{t('mortgageAtHandover')}</span>
-                <span className="text-sm font-mono text-blue-400">
-                  {formatCurrency(loanAmount, currency, rate)} ({mortgageInputs.financingPercent}%)
-                </span>
+              {/* Legend */}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <div>
+                    <p className="text-gray-400">{t('preHandoverPayments')}</p>
+                    <p className="text-green-400 font-mono">{formatCurrency(preHandoverAmount, currency, rate)}</p>
+                    <p className="text-[10px] text-gray-500">{preHandoverPercent}%</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                  <div>
+                    <p className="text-gray-400">{t('gapPayment')}</p>
+                    <p className="text-yellow-300 font-mono font-semibold">{formatCurrency(gapAmount, currency, rate)}</p>
+                    <p className="text-[10px] text-gray-500">{gapPercent.toFixed(1)}%</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <div>
+                    <p className="text-gray-400">{t('mortgage')}</p>
+                    <p className="text-blue-400 font-mono">{formatCurrency(loanAmount, currency, rate)}</p>
+                    <p className="text-[10px] text-gray-500">{mortgageInputs.financingPercent}%</p>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -605,36 +631,68 @@ export const MortgageBreakdown = ({
           </DialogContent>
         </Dialog>
 
-        {/* Total Cost Summary - Restructured */}
-        <div className="p-3 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl border border-blue-700/30">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-gray-300">{t('totalCostSummary')}</span>
+        {/* Client-Focused Summary */}
+        <div className="p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl border border-blue-700/30">
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard className="w-5 h-5 text-blue-400" />
+            <span className="text-base font-semibold text-white">{t('yourCashRequirements') || 'Your Cash Requirements'}</span>
           </div>
-          <div className="space-y-2">
-            {/* Gap Payment (if exists) */}
-            {hasGap && (
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">{t('gapPayment')}</span>
-                <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
+          
+          <div className="space-y-4">
+            {/* Before Handover */}
+            <div className="p-3 bg-[#0f172a] rounded-lg">
+              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">{t('beforeHandover') || 'Before Handover'}</p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">{t('preHandoverPayments')}</span>
+                  <span className="text-white font-mono">{formatCurrency(preHandoverAmount, currency, rate)}</span>
+                </div>
+                {hasGap && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">+ {t('gapPayment')}</span>
+                    <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-400">+ {t('upfrontFees')}</span>
+                  <span className="text-white font-mono">{formatCurrency(totalUpfrontFees, currency, rate)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-[#2a3142]">
+                  <span className="text-white font-medium">{t('totalCashNeeded') || 'Total Cash Needed'}</span>
+                  <span className="text-[#CCFF00] font-mono font-bold">{formatCurrency(preHandoverAmount + gapAmount + totalUpfrontFees, currency, rate)}</span>
+                </div>
               </div>
-            )}
-            {/* Total Loan Payments */}
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{t('totalLoanPayments')}</span>
-              <span className="text-white font-mono">{formatCurrency(totalLoanPayments, currency, rate)}</span>
             </div>
-            {/* Interest & Fees */}
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400">{t('interestAndFees')}</span>
-              <span className="text-red-400 font-mono">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
+            
+            {/* Monthly After Handover */}
+            <div className="p-3 bg-[#0f172a] rounded-lg">
+              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">{t('monthlyAfterHandover') || 'Monthly After Handover'}</p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">{t('mortgagePayment')}</span>
+                  <span className="text-white font-mono">{formatCurrency(monthlyPayment, currency, rate)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">+ {t('insurance')}</span>
+                  <span className="text-white font-mono">{formatCurrency(totalAnnualInsurance / 12, currency, rate)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-[#2a3142]">
+                  <span className="text-white font-medium">{t('monthlyCommitment') || 'Monthly Commitment'}</span>
+                  <span className="text-blue-400 font-mono font-bold">{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
+                </div>
+              </div>
             </div>
-            {/* Grand Total */}
-            <div className="flex justify-between pt-2 border-t border-blue-700/30">
-              <span className="text-gray-200 font-medium">{t('grandTotal')}</span>
-              <span className="text-blue-400 font-mono font-bold text-lg">{formatCurrency(grandTotal, currency, rate)}</span>
+            
+            {/* Total Interest */}
+            <div className="p-3 bg-[#0f172a] rounded-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-gray-400 text-sm">{t('totalInterestPaid') || 'Total Interest Paid'}</span>
+                  <p className="text-[10px] text-gray-500">({mortgageInputs.loanTermYears} {t('years')})</p>
+                </div>
+                <span className="text-red-400 font-mono font-bold">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
+              </div>
             </div>
-            <p className="text-[10px] text-gray-500 mt-1">{t('grandTotalExplanation')}</p>
           </div>
         </div>
       </div>

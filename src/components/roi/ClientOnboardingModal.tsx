@@ -44,9 +44,7 @@ export const ClientOnboardingModal = ({
     } else {
       localStorage.setItem(STORAGE_KEY, "true");
       onOpenChange(false);
-      if (onContactAdvisor) {
-        onContactAdvisor();
-      }
+      // Don't trigger contact advisor - just close modal and let user view the quote
     }
   };
 
@@ -123,11 +121,7 @@ export const ClientOnboardingModal = ({
             )}
             <Button
               onClick={handleNext}
-              className={`flex-1 font-semibold ${
-                currentStep === steps.length - 1
-                  ? "bg-green-500 text-white hover:bg-green-600"
-                  : "bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
-              }`}
+              className="flex-1 font-semibold bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
             >
               {currentStep < steps.length - 1 ? (
                 <>
@@ -136,8 +130,8 @@ export const ClientOnboardingModal = ({
                 </>
               ) : (
                 <>
-                  <MessageCircle className="w-4 h-4 mr-1" />
-                  {t('contactAdvisor')}
+                  <Rocket className="w-4 h-4 mr-1" />
+                  {t('viewMyQuote') || "View My Quote"}
                 </>
               )}
             </Button>
