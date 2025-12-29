@@ -693,7 +693,7 @@ export const CashflowSummaryCard = ({
 
               {/* Mortgage Analysis - Conditional */}
               {localToggles.showMortgage && structuredData.mortgage && (
-                <SummarySection icon={Landmark} iconColor="text-blue-400" title={t('mortgageSection')}>
+                <SummarySection icon={Landmark} iconColor="text-theme-accent" title={t('mortgageSection')}>
                   <SummaryRow label={t('financing')} value={`${structuredData.mortgage.financingPercent}%`} />
                   <SummaryRow label={t('loanAmount')} value={fmt(structuredData.mortgage.loanAmount)} />
                   <SummaryRow label={t('monthlyPayment')} value={fmt(structuredData.mortgage.monthlyPayment)} variant="expense" />

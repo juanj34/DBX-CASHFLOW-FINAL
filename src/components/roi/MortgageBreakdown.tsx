@@ -122,8 +122,8 @@ export const MortgageBreakdown = ({
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 rounded-lg bg-blue-500/20">
-          <Building2 className="w-5 h-5 text-blue-400" />
+        <div className="p-2 rounded-lg bg-theme-accent/20">
+          <Building2 className="w-5 h-5 text-theme-accent" />
         </div>
         <div>
           <h3 className="font-semibold text-white">{t('mortgageBreakdown')}</h3>
