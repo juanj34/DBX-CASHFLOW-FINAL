@@ -1,9 +1,9 @@
-import { useState, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight, Check, RotateCcw } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { OIInputs } from "../useOICalculations";
-import { Currency } from "../currencyUtils";
+import { Currency, formatCurrency } from "../currencyUtils";
 import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
 import { PropertySection } from "./PropertySection";
 import { PaymentSection } from "./PaymentSection";
@@ -30,6 +30,36 @@ const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   appreciation: 'Growth',
 };
 
+// Mini preview strip component
+const MiniPreviewStrip = ({ inputs, currency }: { inputs: OIInputs; currency: Currency }) => {
+  const paymentSplit = `${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent}`;
+  
+  return (
+    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Wallet className="w-3.5 h-3.5 text-[#CCFF00] flex-shrink-0" />
+        <span className="text-[10px] text-gray-400 truncate">
+          {formatCurrency(inputs.basePrice, currency)}
+        </span>
+      </div>
+      <div className="w-px h-4 bg-[#2a3142]" />
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Home className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+        <span className="text-[10px] text-gray-400 truncate">
+          {paymentSplit}
+        </span>
+      </div>
+      <div className="w-px h-4 bg-[#2a3142]" />
+      <div className="flex items-center gap-1.5 min-w-0">
+        <TrendingUp className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+        <span className="text-[10px] text-gray-400 truncate">
+          {inputs.rentalYieldPercent}% yield
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const MobileConfiguratorSheet = ({
   open,
   onOpenChange,
@@ -40,6 +70,13 @@ export const MobileConfiguratorSheet = ({
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('property');
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['property']));
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  
+  // Swipe gesture state
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const minSwipeDistance = 50;
 
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
@@ -68,21 +105,62 @@ export const MobileConfiguratorSheet = ({
   const completedCount = SECTIONS.filter(s => isSectionComplete(s)).length;
   const progressPercent = Math.round((completedCount / SECTIONS.length) * 100);
 
-  const navigateToSection = useCallback((newSection: ConfiguratorSection) => {
+  const navigateToSection = useCallback((newSection: ConfiguratorSection, direction?: 'left' | 'right') => {
+    const newIndex = SECTIONS.indexOf(newSection);
+    const oldIndex = SECTIONS.indexOf(activeSection);
+    
+    if (direction) {
+      setAnimationDirection(direction);
+    } else if (newIndex > oldIndex) {
+      setAnimationDirection('right');
+    } else if (newIndex < oldIndex) {
+      setAnimationDirection('left');
+    }
+    
     setActiveSection(newSection);
     setVisitedSections(prev => new Set(prev).add(newSection));
-  }, []);
+    
+    // Reset animation after transition
+    setTimeout(() => setAnimationDirection(null), 300);
+  }, [activeSection]);
 
-  const goToNextSection = () => {
+  const goToNextSection = useCallback(() => {
     if (canGoForward) {
-      navigateToSection(SECTIONS[currentIndex + 1]);
+      navigateToSection(SECTIONS[currentIndex + 1], 'right');
     }
+  }, [canGoForward, currentIndex, navigateToSection]);
+
+  const goToPreviousSection = useCallback(() => {
+    if (canGoBack) {
+      navigateToSection(SECTIONS[currentIndex - 1], 'left');
+    }
+  }, [canGoBack, currentIndex, navigateToSection]);
+
+  // Touch handlers for swipe gestures
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndX.current = null;
+    touchStartX.current = e.targetTouches[0].clientX;
   };
 
-  const goToPreviousSection = () => {
-    if (canGoBack) {
-      navigateToSection(SECTIONS[currentIndex - 1]);
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && canGoForward) {
+      goToNextSection();
+    } else if (isRightSwipe && canGoBack) {
+      goToPreviousSection();
     }
+    
+    touchStartX.current = null;
+    touchEndX.current = null;
   };
 
   const handleReset = () => {
@@ -91,6 +169,11 @@ export const MobileConfiguratorSheet = ({
 
   const handleClose = () => {
     onOpenChange(false);
+  };
+
+  const getAnimationClass = () => {
+    if (!animationDirection) return '';
+    return animationDirection === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left';
   };
 
   const renderSection = () => {
@@ -114,7 +197,7 @@ export const MobileConfiguratorSheet = ({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="bg-[#1a1f2e] border-t border-[#2a3142] max-h-[90vh]">
         {/* Header */}
-        <DrawerHeader className="border-b border-[#2a3142] pb-3">
+        <DrawerHeader className="border-b border-[#2a3142] pb-3 space-y-3">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-lg font-bold text-white">
               {t('investmentConfigurator') || 'Investment Configurator'}
@@ -139,8 +222,11 @@ export const MobileConfiguratorSheet = ({
             </div>
           </div>
 
+          {/* Mini Preview Strip */}
+          <MiniPreviewStrip inputs={inputs} currency={currency} />
+
           {/* Section Pills */}
-          <div className="flex items-center gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
             {SECTIONS.map((section, index) => {
               const isActive = section === activeSection;
               const isComplete = isSectionComplete(section);
@@ -165,9 +251,13 @@ export const MobileConfiguratorSheet = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-3">
+          <div>
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>{t('progress') || 'Progress'}</span>
+              <span className="flex items-center gap-1">
+                <ChevronLeft className="w-3 h-3" />
+                <span>{t('swipeToNavigate') || 'Swipe to navigate'}</span>
+                <ChevronRight className="w-3 h-3" />
+              </span>
               <span>{progressPercent}%</span>
             </div>
             <div className="h-1 bg-[#2a3142] rounded-full overflow-hidden">
@@ -179,9 +269,17 @@ export const MobileConfiguratorSheet = ({
           </div>
         </DrawerHeader>
 
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 max-h-[50vh]">
-          {renderSection()}
+        {/* Content - Scrollable with swipe gestures */}
+        <div 
+          ref={contentRef}
+          className="flex-1 overflow-y-auto p-4 max-h-[50vh]"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div className={`transition-transform duration-300 ${getAnimationClass()}`}>
+            {renderSection()}
+          </div>
         </div>
 
         {/* Footer Navigation */}
