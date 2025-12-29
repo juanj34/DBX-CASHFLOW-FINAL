@@ -9,8 +9,9 @@ import { ConfiguratorPreview } from "./ConfiguratorPreview";
 import { PropertySection } from "./PropertySection";
 import { PaymentSection } from "./PaymentSection";
 import { ValueSection } from "./ValueSection";
-import { IncomeSection } from "./IncomeSection";
 import { AppreciationSection } from "./AppreciationSection";
+import { ExitsSection } from "./ExitsSection";
+import { RentSection } from "./RentSection";
 
 interface ConfiguratorLayoutProps {
   inputs: OIInputs;
@@ -19,7 +20,7 @@ interface ConfiguratorLayoutProps {
   onClose: () => void;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'income', 'appreciation'];
+const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent'];
 
 // Confetti particle component
 const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) => (
@@ -67,10 +68,12 @@ export const ConfiguratorLayout = ({
         return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
       case 'value':
         return true; // differentiators are optional
-      case 'income':
-        return inputs.rentalYieldPercent > 0;
       case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
+      case 'exits':
+        return true; // exits are optional
+      case 'rent':
+        return inputs.rentalYieldPercent > 0;
       default:
         return false;
     }
@@ -113,14 +116,7 @@ export const ConfiguratorLayout = ({
     };
   }, [inputs]);
 
-  // Celebration effect when reaching 100%
-  useEffect(() => {
-    if (progressPercent === 100 && !hasShownCelebrationRef.current) {
-      hasShownCelebrationRef.current = true;
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3000);
-    }
-  }, [progressPercent]);
+  // Celebration removed from progressPercent - will trigger on Apply & Close instead
 
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
@@ -223,14 +219,30 @@ export const ConfiguratorLayout = ({
         return <PaymentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'value':
         return <ValueSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'income':
-        return <IncomeSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'appreciation':
         return <AppreciationSection inputs={inputs} setInputs={setInputs} currency={currency} />;
+      case 'exits':
+        return <ExitsSection inputs={inputs} setInputs={setInputs} currency={currency} />;
+      case 'rent':
+        return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       default:
         return null;
     }
   };
+
+  // Handle Apply & Close with celebration
+  const handleApplyAndClose = useCallback(() => {
+    if (!hasShownCelebrationRef.current) {
+      hasShownCelebrationRef.current = true;
+      setShowCelebration(true);
+      setTimeout(() => {
+        setShowCelebration(false);
+        onClose();
+      }, 2500);
+    } else {
+      onClose();
+    }
+  }, [onClose]);
 
   return (
     <div className="flex flex-col h-full bg-[#1a1f2e] relative overflow-hidden">
@@ -420,7 +432,7 @@ export const ConfiguratorLayout = ({
 
         {isLastSection ? (
           <Button
-            onClick={onClose}
+            onClick={handleApplyAndClose}
             className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
           >
             Apply & Close

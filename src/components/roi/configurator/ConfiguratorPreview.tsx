@@ -166,13 +166,13 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
         </div>
 
         {/* Appreciation */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-theme-text-muted">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2 text-theme-text-muted shrink-0">
             <TrendingUp className="w-3.5 h-3.5" />
             <span className="text-xs">Appreciation</span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-mono">
+          <div className="flex flex-col items-end min-w-0">
+            <span className="text-xs font-mono whitespace-nowrap">
               <span className="text-orange-400">{inputs.constructionAppreciation ?? 12}%</span>
               <span className="text-theme-text-muted mx-0.5">→</span>
               <span className="text-green-400">{inputs.growthAppreciation ?? 8}%</span>
@@ -180,7 +180,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
               <span className="text-blue-400">{inputs.matureAppreciation ?? 4}%</span>
             </span>
             {appreciationBonus > 0 && (
-              <span className="text-xs text-[#CCFF00] font-mono ml-1">
+              <span className="text-xs text-[#CCFF00] font-mono">
                 (+{appreciationBonus.toFixed(1)}%)
               </span>
             )}
