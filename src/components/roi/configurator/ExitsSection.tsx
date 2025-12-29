@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { LogOut, Plus, Trash2, Calendar, Sparkles, Pencil, Check, X, Save, FolderOpen, AlertTriangle, RotateCcw, Wand2, ArrowUpRight } from "lucide-react";
+import { LogOut, Plus, Trash2, Calendar, Sparkles, Pencil, Check, X, Save, FolderOpen, AlertTriangle, RotateCcw, Wand2, ArrowUpRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,8 @@ import { ConfiguratorSectionProps } from "./types";
 import { formatCurrency } from "../currencyUtils";
 import { ExitTimeline } from "./ExitTimeline";
 import { useExitPresets, ExitPreset } from "@/hooks/useExitPresets";
-import { calculateEquityAtExitWithDetails, timelineToConstruction } from "../constructionProgress";
+import { calculateExitScenario, ExitScenarioResult } from "../constructionProgress";
+import { ROEBreakdownTooltip } from "../ROEBreakdownTooltip";
 
 interface ExitScenario {
   id: string;
@@ -75,40 +76,15 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     return [...exits].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
   }, [exits]);
 
-  const getExitDetails = useCallback((monthsFromBooking: number) => {
-    const exitYears = monthsFromBooking / 12;
-    
-    // Calculate appreciation using phased rates (construction phase)
-    const annualRate = inputs.constructionAppreciation ?? 12;
-    const exitValue = inputs.basePrice * Math.pow(1 + annualRate / 100, exitYears);
-    const appreciation = exitValue - inputs.basePrice;
-    const appreciationPercent = (appreciation / inputs.basePrice) * 100;
-    
-    // Use S-curve based equity calculation with threshold logic
-    const equityResult = calculateEquityAtExitWithDetails(
+  const getExitDetails = useCallback((monthsFromBooking: number): ExitScenarioResult => {
+    // Use shared calculation function for consistent results
+    return calculateExitScenario(
       monthsFromBooking,
-      inputs,
+      inputs.basePrice,
       totalMonths,
-      inputs.basePrice
+      inputs,
+      0 // Entry costs not used in configurator
     );
-    
-    // ROE uses final equity (includes any required advances)
-    const profit = appreciation;
-    const roe = equityResult.finalEquity > 0 ? (profit / equityResult.finalEquity) * 100 : 0;
-    
-    return { 
-      exitValue, 
-      appreciation, 
-      appreciationPercent, 
-      equityDeployed: equityResult.finalEquity, 
-      equityPercent: (equityResult.finalEquity / inputs.basePrice) * 100, 
-      planEquityPercent: equityResult.planEquityPercent,
-      profit, 
-      roe,
-      advanceRequired: equityResult.advanceRequired,
-      advancedPayments: equityResult.advancedPayments,
-      isThresholdMet: equityResult.isThresholdMet,
-    };
   }, [inputs, totalMonths]);
 
   const handleToggle = (enabled: boolean) => {
@@ -238,7 +214,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   const timelineExits = useMemo(() => {
     return allExits.map(exit => {
       const details = getExitDetails(exit.monthsFromBooking);
-      return { ...exit, exitValue: details.exitValue, appreciationPercent: details.appreciationPercent };
+      return { ...exit, exitValue: details.exitPrice, appreciationPercent: details.appreciationPercent };
     });
   }, [allExits, getExitDetails]);
 
@@ -448,17 +424,22 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
-                      <div className="text-sm font-mono text-theme-text font-semibold">{formatCurrency(details.exitValue, currency)}</div>
+                      <div className="text-sm font-mono text-theme-text font-semibold">{formatCurrency(details.exitPrice, currency)}</div>
                       <div className="text-[10px] text-theme-text-muted">Exit Value</div>
                     </div>
                     <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
                       <div className="text-sm font-mono text-green-400 font-semibold">+{details.appreciationPercent.toFixed(1)}%</div>
                       <div className="text-[10px] text-theme-text-muted">Appreciation</div>
                     </div>
-                    <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
-                      <div className="text-sm font-mono text-theme-accent font-semibold">{details.roe.toFixed(0)}%</div>
-                      <div className="text-[10px] text-theme-text-muted">Return on Equity</div>
-                    </div>
+                    <ROEBreakdownTooltip scenario={details} currency={currency}>
+                      <div className="bg-theme-bg-alt rounded-lg p-2 text-center cursor-help hover:bg-theme-accent/10 transition-colors">
+                        <div className="text-sm font-mono text-theme-accent font-semibold flex items-center justify-center gap-1">
+                          {details.trueROE.toFixed(0)}%
+                          <Info className="w-3 h-3 text-theme-text-muted" />
+                        </div>
+                        <div className="text-[10px] text-theme-text-muted">ROE</div>
+                      </div>
+                    </ROEBreakdownTooltip>
                   </div>
 
                   {/* Equity Info with Advance Payment Warning */}
