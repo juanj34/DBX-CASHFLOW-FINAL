@@ -146,40 +146,43 @@ export const PropertyTabContent = ({
           </div>
         )}
         
-        {/* Investment + Developer/Differentiators - 2 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CompactInvestmentSnapshot 
-            inputs={inputs} 
-            currency={currency} 
-            totalMonths={calculations.totalMonths} 
-            totalEntryCosts={calculations.totalEntryCosts} 
-            rate={rate} 
-            unitSizeSqf={clientInfo.unitSizeSqf} 
-          />
-          
-          {hasDeveloper ? (
-            <DeveloperCard
-              developerId={developerId || null}
-              developerName={clientInfo.developer}
-              onClick={() => developer && setDeveloperModalOpen(true)}
-            />
-          ) : (
-            <ValueDifferentiatorsDisplay
-              selectedDifferentiators={inputs.valueDifferentiators || []}
-              customDifferentiators={customDifferentiators}
-              onEditClick={onEditConfig}
-            />
-          )}
-        </div>
+        {/* Investment Snapshot */}
+        <CompactInvestmentSnapshot 
+          inputs={inputs} 
+          currency={currency} 
+          totalMonths={calculations.totalMonths} 
+          totalEntryCosts={calculations.totalEntryCosts} 
+          rate={rate} 
+          unitSizeSqf={clientInfo.unitSizeSqf} 
+        />
 
-        {/* Value Differentiators - if developer card is shown, show differentiators below */}
-        {hasDeveloper && (
-          <ValueDifferentiatorsDisplay
-            selectedDifferentiators={inputs.valueDifferentiators || []}
-            customDifferentiators={customDifferentiators}
-            onEditClick={onEditConfig}
-          />
+        {/* Developer + Project Cards - 2 columns */}
+        {(hasDeveloper || hasProject) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {hasDeveloper && (
+              <DeveloperCard
+                developerId={developerId || null}
+                developerName={clientInfo.developer}
+                onClick={() => developer && setDeveloperModalOpen(true)}
+              />
+            )}
+            
+            {hasProject && (
+              <ProjectCard
+                projectId={projectId || project?.id || null}
+                projectName={clientInfo.projectName}
+                onClick={() => project && setProjectModalOpen(true)}
+              />
+            )}
+          </div>
         )}
+        
+        {/* Value Differentiators */}
+        <ValueDifferentiatorsDisplay
+          selectedDifferentiators={inputs.valueDifferentiators || []}
+          customDifferentiators={customDifferentiators}
+          onEditClick={onEditConfig}
+        />
 
         {/* Lightbox */}
         {floorPlanUrl && (
@@ -196,6 +199,16 @@ export const PropertyTabContent = ({
             developerId={developer.id}
             open={developerModalOpen}
             onOpenChange={setDeveloperModalOpen}
+          />
+        )}
+
+        {/* Project Modal */}
+        {project && (
+          <ProjectInfoModal
+            project={project}
+            zoneName={clientInfo.zoneName}
+            open={projectModalOpen}
+            onOpenChange={setProjectModalOpen}
           />
         )}
       </div>

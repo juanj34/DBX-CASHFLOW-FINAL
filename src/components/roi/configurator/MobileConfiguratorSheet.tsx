@@ -20,7 +20,11 @@ import { AppreciationSection } from "./AppreciationSection";
 import { ExitsSection } from "./ExitsSection";
 import { RentSection } from "./RentSection";
 import { MortgageSection } from "./MortgageSection";
+import { ClientSection } from "./ClientSection";
+import { ClientUnitData } from "../ClientUnitInfo";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface MobileConfiguratorSheetProps {
   open: boolean;
@@ -30,6 +34,9 @@ interface MobileConfiguratorSheetProps {
   currency: Currency;
   mortgageInputs: MortgageInputs;
   setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
+  clientInfo?: ClientUnitData;
+  setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
+  quoteId?: string;
 }
 
 const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
@@ -105,11 +112,38 @@ export const MobileConfiguratorSheet = ({
   currency,
   mortgageInputs,
   setMortgageInputs,
+  clientInfo,
+  setClientInfo,
+  quoteId,
 }: MobileConfiguratorSheetProps) => {
   const { t } = useLanguage();
-  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('property');
-  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['property']));
+  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('client');
+  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['client']));
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  
+  // Image upload state
+  const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
+  const [buildingRenderUrl, setBuildingRenderUrl] = useState<string | null>(null);
+  const [showLogoOverlay, setShowLogoOverlay] = useState(false);
+  
+  // Internal client info state if not provided externally
+  const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>({
+    clientName: '',
+    clientCountry: '',
+    projectName: '',
+    developer: '',
+    brokerName: '',
+    unit: '',
+    unitType: '',
+    unitSizeSqf: 0,
+    unitSizeM2: 0,
+    clients: [],
+    clientShares: [],
+    splitEnabled: false,
+  });
+  
+  const effectiveClientInfo = clientInfo || internalClientInfo;
+  const effectiveSetClientInfo = setClientInfo || setInternalClientInfo;
   
   // Swipe gesture state
   const touchStartX = useRef<number | null>(null);
@@ -121,6 +155,63 @@ export const MobileConfiguratorSheet = ({
   const canGoBack = currentIndex > 0;
   const canGoForward = currentIndex < SECTIONS.length - 1;
   const isLastSection = currentIndex === SECTIONS.length - 1;
+
+  // Image upload handlers
+  const handleFloorPlanUpload = async (file: File | null) => {
+    if (!file) {
+      setFloorPlanUrl(null);
+      return;
+    }
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${quoteId || 'temp'}/floor-plan-${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('quote-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('quote-images')
+        .getPublicUrl(data.path);
+      
+      setFloorPlanUrl(urlData.publicUrl);
+      toast.success('Floor plan uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload floor plan');
+    }
+  };
+
+  const handleBuildingRenderUpload = async (file: File | null) => {
+    if (!file) {
+      setBuildingRenderUrl(null);
+      return;
+    }
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${quoteId || 'temp'}/building-render-${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('quote-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('quote-images')
+        .getPublicUrl(data.path);
+      
+      setBuildingRenderUrl(urlData.publicUrl);
+      toast.success('Building render uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload building render');
+    }
+  };
 
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
     if (!visitedSections.has(section)) return false;
@@ -233,7 +324,19 @@ export const MobileConfiguratorSheet = ({
   const renderSection = () => {
     switch (activeSection) {
       case 'client':
-        return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />; // TODO: Replace with ClientSection
+        return (
+          <ClientSection
+            clientInfo={effectiveClientInfo}
+            onClientInfoChange={effectiveSetClientInfo}
+            floorPlanUrl={floorPlanUrl}
+            buildingRenderUrl={buildingRenderUrl}
+            onFloorPlanChange={handleFloorPlanUpload}
+            onBuildingRenderChange={handleBuildingRenderUpload}
+            showLogoOverlay={showLogoOverlay}
+            onShowLogoOverlayChange={setShowLogoOverlay}
+            quoteId={quoteId}
+          />
+        );
       case 'property':
         return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'payment':
