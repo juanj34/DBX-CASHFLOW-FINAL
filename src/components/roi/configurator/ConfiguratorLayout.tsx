@@ -94,8 +94,9 @@ export const ConfiguratorLayout = ({
   setClientInfo: externalSetClientInfo,
   quoteId,
 }: ConfiguratorLayoutProps) => {
-  // Load initial state from localStorage
-  const savedState = loadConfiguratorState();
+  // Only load saved state if we have a quoteId (editing existing quote)
+  // For new quotes (no quoteId), always start fresh
+  const savedState = quoteId ? loadConfiguratorState() : null;
   
   // Internal client info state (used if external not provided)
   const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
@@ -116,6 +117,13 @@ export const ConfiguratorLayout = ({
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
     new Set(savedState?.visitedSections || ['client'])
   );
+  
+  // Clear localStorage when starting a new quote (no quoteId)
+  useEffect(() => {
+    if (!quoteId) {
+      localStorage.removeItem(CONFIGURATOR_STATE_KEY);
+    }
+  }, [quoteId]);
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
   const contentScrollRef = useRef<HTMLDivElement>(null);
   
@@ -136,27 +144,28 @@ export const ConfiguratorLayout = ({
     });
   }, [activeSection, visitedSections]);
 
-  // Check if a specific section is complete (visited + valid data)
+  // Check if a specific section is complete (based on actual data, not just visited)
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
-    if (!visitedSections.has(section)) return false;
-    
     switch (section) {
       case 'client':
-        return true; // Client details are optional
+        // Client is complete when there's a zone selected or property has data
+        return Boolean(inputs.zoneId) || inputs.basePrice > 0;
       case 'property':
         return inputs.basePrice > 0;
       case 'payment':
         return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
       case 'value':
-        return true; // differentiators are optional
+        // Value is optional - complete if visited and moved past
+        return visitedSections.has('value') && visitedSections.has('appreciation');
       case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
       case 'exits':
-        return true; // exits are optional
+        return inputs._exitScenarios && inputs._exitScenarios.length > 0;
       case 'rent':
         return inputs.rentalYieldPercent > 0;
       case 'mortgage':
-        return true; // mortgage is optional
+        // Mortgage is truly optional - complete when visited
+        return visitedSections.has('mortgage');
       default:
         return false;
     }

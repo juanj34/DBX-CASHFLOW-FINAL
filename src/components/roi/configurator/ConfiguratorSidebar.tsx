@@ -29,56 +29,64 @@ export const ConfiguratorSidebar = ({
 
   const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
 
-  // Only show complete if section was visited AND data is valid
+  // Only show complete if section has ACTUAL DATA (not just visited)
+  const hasAppreciationData = inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
+  const hasExitData = inputs._exitScenarios && inputs._exitScenarios.length > 0;
+  const hasRentData = inputs.rentalYieldPercent > 0;
+  const hasValueData = inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0;
+  
   const sections: SectionStatus[] = [
     {
       id: 'client',
       label: 'Client',
       icon: Users,
-      isComplete: visitedSections.has('client'),
+      // Client is complete when there's a zone selected or property has data
+      isComplete: Boolean(inputs.zoneId) || inputs.basePrice > 0,
     },
     {
       id: 'property',
       label: 'Property',
       icon: Building2,
-      isComplete: visitedSections.has('property') && inputs.basePrice > 0 && isDateValid,
-      hasWarning: visitedSections.has('property') && !isDateValid,
+      isComplete: inputs.basePrice > 0 && isDateValid,
+      hasWarning: visitedSections.has('property') && inputs.basePrice > 0 && !isDateValid,
     },
     {
       id: 'payment',
       label: 'Payment',
       icon: CreditCard,
-      isComplete: visitedSections.has('payment') && isPaymentValid,
-      hasWarning: visitedSections.has('payment') && !isPaymentValid,
+      isComplete: inputs.downpaymentPercent > 0 && isPaymentValid,
+      hasWarning: visitedSections.has('payment') && inputs.downpaymentPercent > 0 && !isPaymentValid,
     },
     {
       id: 'value',
       label: 'Value',
       icon: Sparkles,
-      isComplete: visitedSections.has('value'),
+      // Value is optional - show complete if visited (user consciously skipped or added differentiators)
+      isComplete: visitedSections.has('value') && (hasValueData || visitedSections.has('appreciation')),
     },
     {
       id: 'appreciation',
       label: 'Appreciation',
       icon: TrendingUp,
-      isComplete: visitedSections.has('appreciation'),
+      isComplete: hasAppreciationData,
     },
     {
       id: 'exits',
       label: 'Exits',
       icon: LogOut,
-      isComplete: visitedSections.has('exits'),
+      isComplete: hasExitData,
     },
     {
       id: 'rent',
       label: 'Rent',
       icon: Home,
-      isComplete: visitedSections.has('rent'),
+      isComplete: hasRentData,
     },
     {
       id: 'mortgage',
       label: 'Mortgage',
       icon: Building2,
+      // Mortgage is truly optional - mark complete when visited AND user has moved past it
       isComplete: visitedSections.has('mortgage'),
     },
   ];
