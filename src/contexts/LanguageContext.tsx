@@ -164,7 +164,8 @@ const translations: Translations = {
   amountUntilSPA: { en: 'At Booking (SPA)', es: 'En Reserva (SPA)' },
   amountDuringConstruction: { en: 'During Construction', es: 'Durante Construcción' },
   amountAtHandover: { en: 'At Handover', es: 'En Entrega' },
-  yearsToPayOff: { en: 'Years to Pay Off', es: 'Años para Recuperar' },
+  paybackPeriod: { en: 'Payback Period', es: 'Período de Recuperación' },
+  paybackPeriodDesc: { en: 'Time to recover investment from rental income', es: 'Tiempo para recuperar inversión con ingresos de renta' },
   longTermRental: { en: 'Long-Term Rental', es: 'Renta a Largo Plazo' },
   basedOnNetRentalIncome: { en: 'Based on net rental income', es: 'Basado en renta neta' },
   
@@ -179,9 +180,11 @@ const translations: Translations = {
   occupancy: { en: 'Occupancy', es: 'Ocupación' },
   adrGrowth: { en: 'ADR Growth', es: 'Crecimiento ADR' },
   grossAnnual: { en: 'Gross Annual', es: 'Bruto Anual' },
-  operatingExpenses: { en: 'Operating Expenses', es: 'Gastos Operativos' },
+  utilitiesAndUpkeep: { en: 'Utilities & Upkeep', es: 'Servicios y Mantenimiento' },
   managementFee: { en: 'Management Fee', es: 'Comisión de Gestión' },
   netAnnual: { en: 'Net Annual', es: 'Neto Anual' },
+  basedOnOccupancy: { en: 'Based on', es: 'Basado en' },
+  occupancyEst: { en: 'Occupancy Est.', es: 'Ocupación Est.' },
   longTermOnly: { en: 'Long-Term Only', es: 'Solo Largo Plazo' },
   ltPlusAirbnb: { en: 'LT + Airbnb', es: 'LP + Airbnb' },
   incomeComparison: { en: 'Income Comparison', es: 'Comparación de Ingresos' },
@@ -417,6 +420,9 @@ const translations: Translations = {
   tooltipGrossYield: { en: 'Annual rent as a percentage of property price, before expenses', es: 'Renta anual como porcentaje del precio de la propiedad, antes de gastos' },
   tooltipNetYield: { en: 'Annual rent as a percentage of property price, after deducting expenses', es: 'Renta anual como porcentaje del precio de la propiedad, después de descontar gastos' },
   tooltipConstructionPeriod: { en: 'Time from booking to receiving the keys (handover)', es: 'Tiempo desde la reserva hasta recibir las llaves (entrega)' },
+  tooltipOperatingExpenses: { en: 'Covers DEWA (utilities), internet, consumables, and minor maintenance costs', es: 'Cubre DEWA (servicios), internet, consumibles y costos menores de mantenimiento' },
+  tooltipManagementFee: { en: 'Standard fee for holiday home agencies handling check-in, cleaning, and guest relations', es: 'Tarifa estándar para agencias de casas vacacionales que manejan check-in, limpieza y relaciones con huéspedes' },
+  tooltipOccupancyRate: { en: 'Percentage of nights booked per year. Dubai market average is 65-80% for well-managed properties', es: 'Porcentaje de noches reservadas por año. El promedio de Dubai es 65-80% para propiedades bien gestionadas' },
   
   // Appreciation Presets
   appreciationPresets: { en: 'Appreciation Presets', es: 'Preajustes de Apreciación' },
