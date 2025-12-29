@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet, LogOut, Building2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet, LogOut, Building2, FileText } from "lucide-react";
 
 // Haptic feedback utility for tactile response on mobile devices
 const triggerHapticFeedback = (pattern: number | number[] = 10) => {
@@ -315,6 +315,11 @@ export const MobileConfiguratorSheet = ({
     setVisitedSections(new Set(['client']));
   };
 
+  const handleLoadSample = () => {
+    setInputs(DEFAULT_OI_INPUTS);
+    setVisitedSections(new Set(SECTIONS));
+  };
+
   const handleClose = () => {
     onOpenChange(false);
   };
@@ -369,6 +374,15 @@ export const MobileConfiguratorSheet = ({
               {t('investmentConfigurator') || 'Investment Configurator'}
             </DrawerTitle>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLoadSample}
+                className="text-gray-400 hover:text-white hover:bg-[#2a3142] h-8 px-2"
+                title="Load sample data"
+              >
+                <FileText className="w-4 h-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
