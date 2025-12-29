@@ -75,7 +75,7 @@ export const QuickNavigate = ({ map }: QuickNavigateProps) => {
         `}
       >
         <div className="p-2">
-          <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
+          <div className="text-xs font-semibold text-theme-text-muted px-2 py-1 mb-1">
             Quick Navigate
           </div>
           <div className="max-h-[60vh] overflow-y-auto space-y-0.5 pr-1 scrollbar-thin">
@@ -101,7 +101,7 @@ export const QuickNavigate = ({ map }: QuickNavigateProps) => {
                   <div className="text-sm font-medium truncate">
                     {location.name}
                   </div>
-                  <div className="text-[10px] text-gray-500 truncate">
+                  <div className="text-[10px] text-theme-text-muted truncate">
                     {location.description}
                   </div>
                 </div>

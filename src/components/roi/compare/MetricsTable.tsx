@@ -56,7 +56,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
       {/* Header row with quote names */}
       <div className="grid border-b border-[#2a3142] pb-3 mb-2" 
         style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, minmax(120px, 1fr))` }}>
-        <span className="text-gray-400 text-sm">Metric</span>
+        <span className="text-theme-text-muted text-sm">Metric</span>
         {quotesWithCalcs.map((q, idx) => (
           <span 
             key={q.quote.id} 

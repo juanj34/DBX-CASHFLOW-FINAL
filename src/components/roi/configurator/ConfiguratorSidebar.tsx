@@ -92,7 +92,7 @@ export const ConfiguratorSidebar = ({
                     ? "bg-amber-500/20 text-amber-400"
                     : isActive
                       ? "bg-[#CCFF00]/30 text-[#CCFF00]"
-                      : "bg-[#2a3142] text-gray-500"
+                      : "bg-[#2a3142] text-theme-text-muted"
               )}>
                 {section.isComplete && !section.hasWarning ? (
                   <Check className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ export const ConfiguratorSidebar = ({
       
       {/* Keyboard hint */}
       <div className="mt-auto pt-4 border-t border-[#2a3142]">
-        <div className="text-[10px] text-gray-600 space-y-1">
+        <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
             <span className="font-mono">1-5</span>

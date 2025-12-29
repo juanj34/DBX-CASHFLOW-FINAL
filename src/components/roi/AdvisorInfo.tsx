@@ -32,7 +32,7 @@ export const AdvisorInfo = ({ profile, size = 'sm', showSubtitle = false }: Advi
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <User className={`${config.icon} text-gray-500`} />
+            <User className={`${config.icon} text-theme-text-muted`} />
           </div>
         )}
       </div>

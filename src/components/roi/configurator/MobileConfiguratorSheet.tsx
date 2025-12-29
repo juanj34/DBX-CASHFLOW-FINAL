@@ -268,7 +268,7 @@ export const MobileConfiguratorSheet = ({
 
           {/* Progress Bar */}
           <div>
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <div className="flex items-center justify-between text-xs text-theme-text-muted mb-1">
               <span className="flex items-center gap-1">
                 <ChevronLeft className="w-3 h-3" />
                 <span>{t('swipeToNavigate') || 'Swipe to navigate'}</span>

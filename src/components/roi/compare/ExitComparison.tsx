@@ -51,7 +51,7 @@ export const ExitComparison = ({ quotesWithCalcs }: ExitComparisonProps) => {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#2a3142]">
-              <th className="text-left py-3 px-2 text-gray-500 text-sm font-medium">Exit Point</th>
+              <th className="text-left py-3 px-2 text-theme-text-muted text-sm font-medium">Exit Point</th>
               {quotesWithCalcs.map((item, idx) => (
                 <th 
                   key={item.quote.id} 
@@ -94,7 +94,7 @@ export const ExitComparison = ({ quotesWithCalcs }: ExitComparisonProps) => {
         </table>
       </div>
 
-      <p className="text-xs text-gray-500 mt-4">
+      <p className="text-xs text-theme-text-muted mt-4">
         💡 Exit availability depends on minimum threshold requirements and handover timing.
       </p>
     </div>
