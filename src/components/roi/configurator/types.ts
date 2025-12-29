@@ -51,6 +51,7 @@ export const DEFAULT_SHORT_TERM_RENTAL = {
   managementFeePercent: 15,
 };
 
+// Demo defaults (used for template/sample scenarios)
 export const DEFAULT_OI_INPUTS: OIInputs = {
   basePrice: 800000,
   rentalYieldPercent: 8.5,
@@ -74,6 +75,35 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   matureAppreciation: 4,
   growthPeriodYears: 5,
   rentGrowthRate: 4,
+  serviceChargePerSqft: 18,
+  adrGrowthRate: 3,
+  valueDifferentiators: [],
+};
+
+// Empty defaults for NEW quotes (no progress indicators until user enters data)
+export const NEW_QUOTE_OI_INPUTS: OIInputs = {
+  basePrice: 0,
+  rentalYieldPercent: 0,
+  appreciationRate: 0,
+  bookingMonth: new Date().getMonth() + 1,
+  bookingYear: new Date().getFullYear(),
+  handoverQuarter: 4,
+  handoverYear: new Date().getFullYear() + 2,
+  downpaymentPercent: 0,
+  preHandoverPercent: 0,
+  additionalPayments: [],
+  eoiFee: 0,
+  oqoodFee: 0,
+  minimumExitThreshold: 30,
+  showAirbnbComparison: false,
+  shortTermRental: DEFAULT_SHORT_TERM_RENTAL,
+  zoneMaturityLevel: 60,
+  useZoneDefaults: true,
+  constructionAppreciation: 0,
+  growthAppreciation: 0,
+  matureAppreciation: 0,
+  growthPeriodYears: 5,
+  rentGrowthRate: 0,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
   valueDifferentiators: [],

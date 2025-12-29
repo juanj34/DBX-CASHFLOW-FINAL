@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
-import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
+import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS } from "./types";
 import { ConfiguratorSidebar } from "./ConfiguratorSidebar";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
 import { ClientSection } from "./ClientSection";
@@ -295,7 +295,8 @@ export const ConfiguratorLayout = ({
   }, [canGoBack, canGoForward, goToNextSection, goToPreviousSection, navigateToSection, togglePreview, onClose]);
 
   const handleReset = () => {
-    setInputs(DEFAULT_OI_INPUTS);
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setVisitedSections(new Set(['client']));
   };
 
   const getAnimationClass = () => {

@@ -43,9 +43,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const DEFAULT_INPUTS: OIInputs = {
-  basePrice: 800000, rentalYieldPercent: 8.5, appreciationRate: 10, bookingMonth: 1, bookingYear: 2025, handoverQuarter: 4, handoverYear: 2027, downpaymentPercent: 20, preHandoverPercent: 20, additionalPayments: [], eoiFee: 50000, oqoodFee: 5000, minimumExitThreshold: 30, showAirbnbComparison: false, shortTermRental: { averageDailyRate: 800, occupancyPercent: 70, operatingExpensePercent: 25, managementFeePercent: 15 }, zoneMaturityLevel: 60, useZoneDefaults: true, constructionAppreciation: 12, growthAppreciation: 8, matureAppreciation: 4, growthPeriodYears: 5, rentGrowthRate: 4, serviceChargePerSqft: 18, adrGrowthRate: 3, valueDifferentiators: [],
-};
+import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' };
 
@@ -60,7 +58,7 @@ const CashflowDashboardContent = () => {
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [mortgageModalOpen, setMortgageModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
-  const [inputs, setInputs] = useState<OIInputs>(DEFAULT_INPUTS);
+  const [inputs, setInputs] = useState<OIInputs>(NEW_QUOTE_OI_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -91,7 +89,7 @@ const CashflowDashboardContent = () => {
   }, [clientInfo.developer, clientInfo.projectName, clientInfo.unit, clientInfo.unitSizeSqf]);
 
   const hasPropertyConfigured = useMemo(() => {
-    return inputs.basePrice !== 800000 || !!quoteId;
+    return inputs.basePrice > 0 || !!quoteId;
   }, [inputs.basePrice, quoteId]);
 
   const isFullyConfigured = hasClientDetails && hasPropertyConfigured;
@@ -101,7 +99,7 @@ const CashflowDashboardContent = () => {
       !!quoteId ||
       !!clientInfo.developer ||
       !!clientInfo.projectName ||
-      inputs.basePrice !== 800000
+      inputs.basePrice > 0
     );
   }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
