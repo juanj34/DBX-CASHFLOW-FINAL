@@ -372,32 +372,6 @@ All colors MUST be HSL.
   box-shadow: 0 0 10px #FF00FF;
 }
 
-/* Export Mode Styles - For PNG export with expanded sections */
-body.export-mode .collapsible-content {
-  max-height: none !important;
-  opacity: 1 !important;
-  margin-top: 1rem !important;
-}
-
-body.export-mode .export-hidden,
-body.export-mode header button,
-body.export-mode .currency-selector,
-body.export-mode .language-selector {
-  display: none !important;
-}
-
-body.export-mode .collapsible-hint {
-  display: none !important;
-}
-
-body.export-mode .recharts-wrapper {
-  width: 100% !important;
-}
-
-body.export-mode .overflow-hidden {
-  overflow: visible !important;
-}
-
 /* Print Styles for Cashflow Generator PDF Export */
 @media print {
   /* Page setup */
@@ -513,11 +487,5 @@ body.export-mode .overflow-hidden {
   .border-b,
   .border-t {
     border-color: #2a3142 !important;
-  }
-  
-  /* Force collapsible sections open in print too */
-  .collapsible-content {
-    max-height: none !important;
-    opacity: 1 !important;
   }
 }
