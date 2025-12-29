@@ -17,6 +17,11 @@ import { RentSection } from "./RentSection";
 import { MortgageSection } from "./MortgageSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { 
   developer: '', 
@@ -135,6 +140,9 @@ export const ConfiguratorLayout = ({
   // Celebration state
   const [showCelebration, setShowCelebration] = useState(false);
   const hasShownCelebrationRef = useRef(false);
+  
+  // Sample data flash animation
+  const [showSampleFlash, setShowSampleFlash] = useState(false);
 
   // Persist configurator state to localStorage
   useEffect(() => {
@@ -302,6 +310,9 @@ export const ConfiguratorLayout = ({
   const handleLoadSample = () => {
     setInputs(DEFAULT_OI_INPUTS);
     setVisitedSections(new Set(SECTIONS));
+    // Trigger flash animation
+    setShowSampleFlash(true);
+    setTimeout(() => setShowSampleFlash(false), 1500);
   };
 
   const getAnimationClass = () => {
@@ -464,16 +475,28 @@ export const ConfiguratorLayout = ({
               <PanelRightClose className="w-4 h-4" />
             )}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLoadSample}
-            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
-            title="Load sample data"
-          >
-            <FileText className="w-4 h-4 mr-1" />
-            Sample
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLoadSample}
+                className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+              >
+                <FileText className="w-4 h-4 mr-1" />
+                Sample
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs">
+              <p className="font-medium mb-1">Load demo scenario:</p>
+              <ul className="text-xs space-y-0.5 text-muted-foreground">
+                <li>• AED 800,000 property</li>
+                <li>• 20/80 payment split</li>
+                <li>• 8.5% rental yield</li>
+                <li>• 12% construction / 8% growth appreciation</li>
+              </ul>
+            </TooltipContent>
+          </Tooltip>
           <Button
             variant="ghost"
             size="sm"
@@ -507,10 +530,15 @@ export const ConfiguratorLayout = ({
         </div>
 
         {/* Content Area - Scrollable */}
-        <div ref={contentScrollRef} className="flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth">
+        <div 
+          ref={contentScrollRef} 
+          className={`flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth transition-all duration-300 ${
+            showSampleFlash ? 'bg-[#CCFF00]/5 ring-2 ring-[#CCFF00]/30 ring-inset' : ''
+          }`}
+        >
           <div 
             key={animationKey}
-            className={`max-w-3xl ${getAnimationClass()}`}
+            className={`max-w-3xl ${getAnimationClass()} ${showSampleFlash ? 'animate-pulse' : ''}`}
           >
             {renderSection()}
           </div>
