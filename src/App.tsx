@@ -14,6 +14,7 @@ import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
 import ROICalculator from "./pages/ROICalculator";
 import OICalculator from "./pages/OICalculator";
+import CashflowDashboard from "./pages/CashflowDashboard";
 import AccountSettings from "./pages/AccountSettings";
 import QuotesDashboard from "./pages/QuotesDashboard";
 import QuotesCompare from "./pages/QuotesCompare";
@@ -47,6 +48,8 @@ function App() {
                 <Route path="/roi-calculator" element={<ROICalculator />} />
                 <Route path="/cashflow-generator" element={<OICalculator />} />
                 <Route path="/cashflow/:quoteId" element={<OICalculator />} />
+                <Route path="/cashflow-dashboard" element={<CashflowDashboard />} />
+                <Route path="/cashflow-dashboard/:quoteId" element={<CashflowDashboard />} />
                 <Route path="/account-settings" element={<AccountSettings />} />
                 <Route path="/my-quotes" element={<QuotesDashboard />} />
                 <Route path="/compare" element={<QuotesCompare />} />

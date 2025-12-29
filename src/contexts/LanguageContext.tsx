@@ -777,6 +777,15 @@ const translations: Translations = {
   noAdditionalPaymentsMsg: { en: 'No additional payments during construction', es: 'Sin pagos adicionales durante la construcción' },
   surplus: { en: 'Surplus', es: 'Excedente' },
   gap: { en: 'Gap', es: 'Diferencia' },
+  
+  // Dashboard Tabs
+  tabProperty: { en: 'Property', es: 'Propiedad' },
+  tabHold: { en: 'Hold', es: 'Retención' },
+  tabExit: { en: 'Exit', es: 'Salida' },
+  tabMortgage: { en: 'Mortgage', es: 'Hipoteca' },
+  tabSummary: { en: 'Summary', es: 'Resumen' },
+  switchToClassic: { en: 'Classic View', es: 'Vista Clásica' },
+  switchToDashboard: { en: 'Dashboard View', es: 'Vista Dashboard' },
 };
 
 interface LanguageContextType {

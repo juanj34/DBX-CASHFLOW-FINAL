@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -316,7 +316,16 @@ const OICalculatorContent = () => {
                   isLive={isLive}
                 />
 
-
+                {/* Switch to Dashboard View */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(quoteId ? `/cashflow-dashboard/${quoteId}` : '/cashflow-dashboard')}
+                  className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8"
+                  title={t('switchToDashboard')}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
 
                 {/* Configure Button */}
                 <Button 
