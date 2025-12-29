@@ -9,6 +9,8 @@ import { FloorPlanLightbox } from "@/components/roi/FloorPlanLightbox";
 import { BuildingRenderCard } from "@/components/roi/BuildingRenderCard";
 import { DeveloperCard } from "@/components/roi/DeveloperCard";
 import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
+import { ProjectCard } from "@/components/roi/ProjectCard";
+import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,6 +28,7 @@ interface PropertyTabContentProps {
   buildingRenderUrl?: string | null;
   showLogoOverlay?: boolean;
   developerId?: string | null;
+  projectId?: string | null;
 }
 
 export const PropertyTabContent = ({
@@ -42,9 +45,11 @@ export const PropertyTabContent = ({
   buildingRenderUrl,
   showLogoOverlay = false,
   developerId,
+  projectId,
 }: PropertyTabContentProps) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [developerModalOpen, setDeveloperModalOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
 
   // Fetch developer data if developerId is provided or developer name exists
   const { data: developer } = useQuery({
@@ -71,8 +76,34 @@ export const PropertyTabContent = ({
     enabled: !!(developerId || clientInfo.developer),
   });
 
+  // Fetch project data if projectId is provided or project name exists
+  const { data: project } = useQuery({
+    queryKey: ['project', projectId, clientInfo.projectName],
+    queryFn: async () => {
+      if (projectId) {
+        const { data } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .single();
+        return data;
+      }
+      if (clientInfo.projectName) {
+        const { data } = await supabase
+          .from('projects')
+          .select('*')
+          .ilike('name', clientInfo.projectName)
+          .maybeSingle();
+        return data;
+      }
+      return null;
+    },
+    enabled: !!(projectId || clientInfo.projectName),
+  });
+
   const hasImages = floorPlanUrl || buildingRenderUrl;
   const hasDeveloper = developer || clientInfo.developer;
+  const hasProject = project || clientInfo.projectName;
 
   if (variant === 'dashboard') {
     return (

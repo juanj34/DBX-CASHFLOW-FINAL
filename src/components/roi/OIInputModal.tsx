@@ -21,6 +21,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ConfiguratorLayout } from "./configurator/ConfiguratorLayout";
 import { MobileConfiguratorSheet } from "./configurator/MobileConfiguratorSheet";
 
+import { ClientUnitData } from "./ClientUnitInfo";
+
 interface OIInputModalProps {
   inputs: OIInputs;
   setInputs: React.Dispatch<React.SetStateAction<OIInputs>>;
@@ -30,6 +32,9 @@ interface OIInputModalProps {
   showTrigger?: boolean;
   mortgageInputs: MortgageInputs;
   setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
+  clientInfo?: ClientUnitData;
+  setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
+  quoteId?: string;
 }
 
 const months = [
@@ -74,7 +79,7 @@ interface Zone {
   maturity_label: string | null;
 }
 
-export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false, mortgageInputs, setMortgageInputs }: OIInputModalProps) => {
+export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false, mortgageInputs, setMortgageInputs, clientInfo, setClientInfo, quoteId }: OIInputModalProps) => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   
@@ -327,6 +332,9 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
             onClose={() => onOpenChange(false)}
             mortgageInputs={mortgageInputs}
             setMortgageInputs={setMortgageInputs}
+            clientInfo={clientInfo}
+            setClientInfo={setClientInfo}
+            quoteId={quoteId}
           />
         </DialogContent>
       </Dialog>

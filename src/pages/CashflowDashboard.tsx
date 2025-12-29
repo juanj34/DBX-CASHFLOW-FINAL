@@ -148,6 +148,15 @@ const CashflowDashboardContent = () => {
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
+  // Auto-open configurator for new quotes (no quoteId)
+  useEffect(() => {
+    if (!quoteId && dataLoaded && !isQuoteConfigured) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => setModalOpen(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [quoteId, dataLoaded, isQuoteConfigured]);
+
   // Autosave
   useEffect(() => {
     if (!dataLoaded) return;
@@ -425,7 +434,7 @@ const CashflowDashboardContent = () => {
                   onOpenChange={setMortgageModalOpen}
                 />
                 <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-                <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />
+                <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} clientInfo={clientInfo} setClientInfo={setClientInfo} quoteId={quoteId} />
                 <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
                 <VersionHistoryModal 
                   open={versionHistoryOpen} 
