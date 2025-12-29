@@ -32,9 +32,10 @@ interface MobileConfiguratorSheetProps {
   setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
+const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
+  client: 'Client',
   property: 'Property',
   payment: 'Payment',
   value: 'Value',
@@ -125,6 +126,8 @@ export const MobileConfiguratorSheet = ({
     if (!visitedSections.has(section)) return false;
     
     switch (section) {
+      case 'client':
+        return true; // Client details are optional
       case 'property':
         return inputs.basePrice > 0;
       case 'payment':
@@ -229,6 +232,8 @@ export const MobileConfiguratorSheet = ({
 
   const renderSection = () => {
     switch (activeSection) {
+      case 'client':
+        return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />; // TODO: Replace with ClientSection
       case 'property':
         return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'payment':

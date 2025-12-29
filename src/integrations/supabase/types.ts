@@ -53,6 +53,38 @@ export type Database = {
         }
         Relationships: []
       }
+      cashflow_images: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_type: string
+          image_url: string
+          quote_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_type: string
+          image_url: string
+          quote_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_type?: string
+          image_url?: string
+          quote_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflow_images_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cashflow_quotes: {
         Row: {
           broker_id: string
@@ -175,6 +207,13 @@ export type Database = {
           occupancy_rate: number | null
           on_time_delivery_rate: number | null
           projects_launched: number | null
+          rating_design: number | null
+          rating_flip_potential: number | null
+          rating_quality: number | null
+          rating_sales: number | null
+          rating_track_record: number | null
+          short_bio: string | null
+          total_valuation: number | null
           units_sold: number | null
           updated_at: string | null
           website: string | null
@@ -190,6 +229,13 @@ export type Database = {
           occupancy_rate?: number | null
           on_time_delivery_rate?: number | null
           projects_launched?: number | null
+          rating_design?: number | null
+          rating_flip_potential?: number | null
+          rating_quality?: number | null
+          rating_sales?: number | null
+          rating_track_record?: number | null
+          short_bio?: string | null
+          total_valuation?: number | null
           units_sold?: number | null
           updated_at?: string | null
           website?: string | null
@@ -205,6 +251,13 @@ export type Database = {
           occupancy_rate?: number | null
           on_time_delivery_rate?: number | null
           projects_launched?: number | null
+          rating_design?: number | null
+          rating_flip_potential?: number | null
+          rating_quality?: number | null
+          rating_sales?: number | null
+          rating_track_record?: number | null
+          short_bio?: string | null
+          total_valuation?: number | null
           units_sold?: number | null
           updated_at?: string | null
           website?: string | null
@@ -427,14 +480,21 @@ export type Database = {
           hotspot_id: string | null
           id: string
           image_url: string | null
+          is_masterplan: boolean | null
           latitude: number | null
           launch_date: string | null
+          logo_url: string | null
           longitude: number | null
           name: string | null
+          phases: number | null
           price_per_sqft: number | null
           starting_price: number | null
+          total_towers: number | null
+          total_units: number | null
+          total_villas: number | null
           unit_types: string[] | null
           updated_at: string
+          zone_id: string | null
         }
         Insert: {
           areas_from?: number | null
@@ -449,14 +509,21 @@ export type Database = {
           hotspot_id?: string | null
           id?: string
           image_url?: string | null
+          is_masterplan?: boolean | null
           latitude?: number | null
           launch_date?: string | null
+          logo_url?: string | null
           longitude?: number | null
           name?: string | null
+          phases?: number | null
           price_per_sqft?: number | null
           starting_price?: number | null
+          total_towers?: number | null
+          total_units?: number | null
+          total_villas?: number | null
           unit_types?: string[] | null
           updated_at?: string
+          zone_id?: string | null
         }
         Update: {
           areas_from?: number | null
@@ -471,14 +538,21 @@ export type Database = {
           hotspot_id?: string | null
           id?: string
           image_url?: string | null
+          is_masterplan?: boolean | null
           latitude?: number | null
           launch_date?: string | null
+          logo_url?: string | null
           longitude?: number | null
           name?: string | null
+          phases?: number | null
           price_per_sqft?: number | null
           starting_price?: number | null
+          total_towers?: number | null
+          total_units?: number | null
+          total_villas?: number | null
           unit_types?: string[] | null
           updated_at?: string
+          zone_id?: string | null
         }
         Relationships: [
           {
@@ -493,6 +567,13 @@ export type Database = {
             columns: ["hotspot_id"]
             isOneToOne: true
             referencedRelation: "hotspots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]

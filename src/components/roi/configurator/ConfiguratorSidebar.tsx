@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle, LogOut } from "lucide-react";
+import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfiguratorSection, SectionStatus } from "./types";
 import { OIInputs } from "../useOICalculations";
@@ -31,6 +31,12 @@ export const ConfiguratorSidebar = ({
 
   // Only show complete if section was visited AND data is valid
   const sections: SectionStatus[] = [
+    {
+      id: 'client',
+      label: 'Client',
+      icon: Users,
+      isComplete: visitedSections.has('client'),
+    },
     {
       id: 'property',
       label: 'Property',
