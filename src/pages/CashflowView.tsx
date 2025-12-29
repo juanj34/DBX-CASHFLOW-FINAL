@@ -409,7 +409,7 @@ const CashflowViewContent = () => {
         />
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-[#2a3142] text-center">
-          <p className="text-xs text-gray-500">{t('disclaimerText')}</p>
+          <p className="text-xs text-gray-400">{t('disclaimerText')}</p>
         </footer>
       </main>
     </div>

@@ -289,7 +289,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
               </div>
             )}
           </div>
-          <p className="text-[10px] text-gray-600 mt-2 text-center">{t('basedOnNetRentalIncome')}</p>
+          <p className="text-[10px] text-gray-400 mt-2 text-center">{t('basedOnNetRentalIncome')}</p>
         </div>
       )}
     </div>

@@ -122,7 +122,7 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                     {formatCurrency(proj.propertyValue, currency, rate)}
                   </div>
                   {unitSizeSqf && unitSizeSqf > 0 && (
-                    <div className="text-[10px] text-gray-600 font-mono">
+                    <div className="text-[10px] text-gray-400 font-mono">
                       {formatCurrency(proj.propertyValue / unitSizeSqf, currency, rate)}/sqft
                     </div>
                   )}
