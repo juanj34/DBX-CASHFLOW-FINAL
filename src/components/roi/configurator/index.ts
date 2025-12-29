@@ -1,6 +1,7 @@
 export { ConfiguratorLayout } from './ConfiguratorLayout';
 export { ConfiguratorSidebar } from './ConfiguratorSidebar';
 export { ConfiguratorPreview } from './ConfiguratorPreview';
+export { MobileConfiguratorSheet } from './MobileConfiguratorSheet';
 export { PropertySection } from './PropertySection';
 export { PaymentSection } from './PaymentSection';
 export { ValueSection } from './ValueSection';
