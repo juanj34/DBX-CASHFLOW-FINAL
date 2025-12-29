@@ -291,6 +291,40 @@ export const ClientSection = ({
                 className="bg-[#0d1117] border-[#2a3142] text-white h-9"
               />
             </div>
+
+            {/* Plot Size - only for villa/townhouse */}
+            {(clientInfo.unitType === 'villa' || clientInfo.unitType === 'townhouse') && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-gray-400">{language === 'es' ? 'Terreno (sqf)' : 'Plot Size (sqf)'}</label>
+                  <Input
+                    type="number"
+                    value={clientInfo.plotSizeSqf || ''}
+                    onChange={(e) => {
+                      const sqf = parseFloat(e.target.value) || 0;
+                      const m2 = Math.round(sqf * 0.092903 * 10) / 10;
+                      onClientInfoChange({ ...clientInfo, plotSizeSqf: sqf, plotSizeM2: m2 });
+                    }}
+                    placeholder="sqf"
+                    className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-gray-400">{language === 'es' ? 'Terreno (m²)' : 'Plot Size (m²)'}</label>
+                  <Input
+                    type="number"
+                    value={clientInfo.plotSizeM2 || ''}
+                    onChange={(e) => {
+                      const m2 = parseFloat(e.target.value) || 0;
+                      const sqf = Math.round(m2 / 0.092903);
+                      onClientInfoChange({ ...clientInfo, plotSizeSqf: sqf, plotSizeM2: m2 });
+                    }}
+                    placeholder="m²"
+                    className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Zone Selection */}
