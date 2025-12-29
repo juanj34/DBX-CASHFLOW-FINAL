@@ -23,6 +23,7 @@ const QuotesDashboard = () => {
   const { quotes, loading, deleteQuote } = useQuotesList();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { t } = useLanguage();
   const [deletingQuote, setDeletingQuote] = useState<CashflowQuote | null>(null);
   const [compareMode, setCompareMode] = useState(false);
@@ -45,8 +46,10 @@ const QuotesDashboard = () => {
 
   const handleShare = async (quote: CashflowQuote) => {
     if (quote.share_token) {
-      const url = `${window.location.origin}/view/${quote.share_token}`;
-      await navigator.clipboard.writeText(url);
+      const url = new URL(`${window.location.origin}/view/${quote.share_token}`);
+      // Keep shared view theme consistent with broker's current theme
+      url.searchParams.set('t', theme);
+      await navigator.clipboard.writeText(url.toString());
       toast({ title: 'Share link copied!' });
     }
   };

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,6 +48,9 @@ import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useTheme } from "@/contexts/ThemeContext";
+import { exportPageAsPng } from "@/lib/fullPageExport";
+import { toast } from "@/hooks/use-toast";
 
 const DEFAULT_INPUTS: OIInputs = {
   basePrice: 800000, rentalYieldPercent: 8.5, appreciationRate: 10, bookingMonth: 1, bookingYear: 2025, handoverQuarter: 4, handoverYear: 2027, downpaymentPercent: 20, preHandoverPercent: 20, additionalPayments: [], eoiFee: 50000, oqoodFee: 5000, minimumExitThreshold: 30, showAirbnbComparison: false, shortTermRental: { averageDailyRate: 800, occupancyPercent: 70, operatingExpensePercent: 25, managementFeePercent: 15 }, zoneMaturityLevel: 60, useZoneDefaults: true, constructionAppreciation: 12, growthAppreciation: 8, matureAppreciation: 4, growthPeriodYears: 5, rentGrowthRate: 4, serviceChargePerSqft: 18, adrGrowthRate: 3, valueDifferentiators: [],
@@ -60,6 +63,7 @@ const OICalculatorContent = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
+  const { theme } = useTheme();
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [loadQuoteModalOpen, setLoadQuoteModalOpen] = useState(false);
@@ -71,7 +75,7 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  
+  const [exportingPng, setExportingPng] = useState(false);
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -201,10 +205,29 @@ const OICalculatorContent = () => {
     
     const token = await generateShareToken(savedQuote.id);
     if (token) {
-      return `${window.location.origin}/view/${token}`;
+      const url = new URL(`${window.location.origin}/view/${token}`);
+      url.searchParams.set('t', theme);
+      return url.toString();
     }
     return null;
-  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken]);
+  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, theme]);
+
+  const handleExportPng = useCallback(async () => {
+    const projectName = clientInfo.projectName || 'Investment';
+    const clientName = clientInfo.clients?.[0]?.name || 'Report';
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `${projectName}-${clientName}-${date}.png`;
+
+    await exportPageAsPng(
+      '#cashflow-content',
+      filename,
+      () => setExportingPng(true),
+      () => {
+        setExportingPng(false);
+        toast({ title: t('exportSuccess'), description: filename });
+      }
+    );
+  }, [clientInfo.projectName, clientInfo.clients, t]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
@@ -228,7 +251,7 @@ const OICalculatorContent = () => {
 
   return (
     <CashflowErrorBoundary>
-      <div className="min-h-screen bg-theme-bg">
+      <div id="cashflow-content" className="min-h-screen bg-theme-bg">
       <div className="hidden print-only print:block bg-theme-bg text-theme-text p-6 mb-6">
         <div className="flex items-center justify-between">
           <div><h1 className="text-2xl font-bold text-theme-accent">Cashflow Generator</h1><p className="text-theme-text-muted text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
@@ -283,38 +306,51 @@ const OICalculatorContent = () => {
               </div>
 
               {/* Desktop: Show all buttons */}
-              <div className="hidden sm:flex items-center gap-2">
-                {/* Quotes Dropdown */}
-                <QuotesDropdown
-                  saving={saving}
-                  lastSaved={lastSaved}
-                  onSave={handleSave}
-                  onSaveAs={handleSaveAs}
-                  onLoadQuote={() => setLoadQuoteModalOpen(true)}
-                  onViewHistory={() => setVersionHistoryOpen(true)}
-                  hasQuoteId={!!quoteId}
-                />
+                <div className="hidden sm:flex items-center gap-2">
+                  {/* Quotes Dropdown */}
+                  <QuotesDropdown
+                    saving={saving}
+                    lastSaved={lastSaved}
+                    onSave={handleSave}
+                    onSaveAs={handleSaveAs}
+                    onLoadQuote={() => setLoadQuoteModalOpen(true)}
+                    onViewHistory={() => setVersionHistoryOpen(true)}
+                    hasQuoteId={!!quoteId}
+                  />
 
-                {/* Share Controls */}
-                <ViewVisibilityControls 
-                  shareUrl={shareUrl} 
-                  onGenerateShareUrl={handleShare} 
-                  onExportPDF={handleExportPDF}
-                  enabledSections={inputs.enabledSections || { exitStrategy: true, longTermHold: true }}
-                />
+                  {/* Export PNG */}
+                  <Button
+                    variant="outlineDark"
+                    size="sm"
+                    onClick={handleExportPng}
+                    disabled={exportingPng}
+                    className="gap-2"
+                    title={t('exportReport')}
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{exportingPng ? t('exportingReport') : t('exportReport')}</span>
+                  </Button>
 
-                {/* Separator */}
-                <div className="w-px h-6 bg-theme-border mx-0.5" />
+                  {/* Share Controls */}
+                  <ViewVisibilityControls 
+                    shareUrl={shareUrl} 
+                    onGenerateShareUrl={handleShare} 
+                    onExportPDF={handleExportPDF}
+                    enabledSections={inputs.enabledSections || { exitStrategy: true, longTermHold: true }}
+                  />
 
-                {/* Settings Dropdown */}
-                <SettingsDropdown
-                  language={language}
-                  setLanguage={setLanguage}
-                  currency={currency}
-                  setCurrency={setCurrency}
-                  exchangeRate={rate}
-                  isLive={isLive}
-                />
+                  {/* Separator */}
+                  <div className="w-px h-6 bg-theme-border mx-0.5" />
+
+                  {/* Settings Dropdown */}
+                  <SettingsDropdown
+                    language={language}
+                    setLanguage={setLanguage}
+                    currency={currency}
+                    setCurrency={setCurrency}
+                    exchangeRate={rate}
+                    isLive={isLive}
+                  />
 
 
 

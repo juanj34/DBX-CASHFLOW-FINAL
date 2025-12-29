@@ -15,7 +15,11 @@ const THEME_STORAGE_KEY = 'app-theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeKey>(() => {
-    // Load from localStorage first for immediate display
+    // 1) URL param (for shared views) takes priority
+    const urlTheme = new URLSearchParams(window.location.search).get('t');
+    if (urlTheme && urlTheme in THEMES) return urlTheme as ThemeKey;
+
+    // 2) localStorage for immediate display
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     return (stored && stored in THEMES) ? stored as ThemeKey : DEFAULT_THEME;
   });
