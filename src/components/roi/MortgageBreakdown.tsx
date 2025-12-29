@@ -146,7 +146,7 @@ export const MortgageBreakdown = ({
             {/* Payment Timeline Visual - Enhanced */}
             <div className="space-y-4 mt-4">
               {/* Stage labels */}
-              <div className="flex items-center justify-between text-[10px] text-gray-500 uppercase tracking-wider px-1">
+              <div className="flex items-center justify-between text-[10px] text-gray-400 uppercase tracking-wider px-1">
                 <span>{t('beforeHandover') || 'Before Handover'}</span>
                 <span>{t('atHandover') || 'At Handover'}</span>
               </div>
@@ -172,25 +172,25 @@ export const MortgageBreakdown = ({
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                   <div>
-                    <p className="text-gray-400">{t('preHandoverPayments')}</p>
+                    <p className="text-gray-300">{t('preHandoverPayments')}</p>
                     <p className="text-green-400 font-mono">{formatCurrency(preHandoverAmount, currency, rate)}</p>
-                    <p className="text-[10px] text-gray-500">{preHandoverPercent}%</p>
+                    <p className="text-[10px] text-gray-400">{preHandoverPercent}%</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-yellow-400" />
                   <div>
-                    <p className="text-gray-400">{t('gapPayment')}</p>
+                    <p className="text-gray-300">{t('gapPayment')}</p>
                     <p className="text-yellow-300 font-mono font-semibold">{formatCurrency(gapAmount, currency, rate)}</p>
-                    <p className="text-[10px] text-gray-500">{gapPercent.toFixed(1)}%</p>
+                    <p className="text-[10px] text-gray-400">{gapPercent.toFixed(1)}%</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500" />
                   <div>
-                    <p className="text-gray-400">{t('mortgage')}</p>
+                    <p className="text-gray-300">{t('mortgage')}</p>
                     <p className="text-blue-400 font-mono">{formatCurrency(loanAmount, currency, rate)}</p>
-                    <p className="text-[10px] text-gray-500">{mortgageInputs.financingPercent}%</p>
+                    <p className="text-[10px] text-gray-400">{mortgageInputs.financingPercent}%</p>
                   </div>
                 </div>
               </div>
