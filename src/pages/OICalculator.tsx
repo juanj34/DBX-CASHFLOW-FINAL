@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Download } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Download, AlertTriangle, Save, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,7 +35,7 @@ import { MortgageModal } from "@/components/roi/MortgageModal";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
-import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
+
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";

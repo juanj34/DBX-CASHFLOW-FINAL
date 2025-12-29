@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, La
 import { Button } from '@/components/ui/button';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/contexts/ThemeContext';
 import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';

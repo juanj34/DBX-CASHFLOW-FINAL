@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas';
 import { toast } from '@/hooks/use-toast';
 
 export const exportPageAsPng = async (
@@ -20,6 +19,8 @@ export const exportPageAsPng = async (
     if (!container) {
       throw new Error('Container not found');
     }
+
+    const { default: html2canvas } = await import('html2canvas');
 
     // Capture the container
     const canvas = await html2canvas(container, {
