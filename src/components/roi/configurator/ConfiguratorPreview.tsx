@@ -96,8 +96,17 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
   const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
   const monthsToHandover = Math.max(0, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-  // Calculate first year rent
-  const annualRent = inputs.basePrice * (inputs.rentalYieldPercent / 100);
+  // Calculate first year rent using base price at handover (with appreciation)
+  const constructionAppreciation = inputs.constructionAppreciation ?? 12;
+  const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+  const valueAtHandover = inputs.basePrice * Math.pow(1 + monthlyRate, monthsToHandover);
+  const annualRent = valueAtHandover * (inputs.rentalYieldPercent / 100);
+
+  // Calculate total entry costs
+  const totalEntryCosts = inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee;
+  
+  // Calculate downpayment amount
+  const downpaymentAmount = inputs.basePrice * (inputs.downpaymentPercent / 100);
 
   return (
     <div className="space-y-4">
@@ -198,19 +207,26 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
         </div>
       )}
 
-      {/* Total Entry Cost */}
-      <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-3">
+      {/* Entry Costs Summary - Useful for broker to communicate with clients */}
+      <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400">Today's Commitment</span>
-          <span className="text-sm font-mono text-[#CCFF00] font-bold">
-            {formatCurrency(
-              inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee,
-              currency
-            )}
+          <span className="text-xs text-gray-400">Total Entry Costs</span>
+          <span className="text-sm font-mono text-red-400 font-bold">
+            {formatCurrency(totalEntryCosts, currency)}
           </span>
         </div>
-        <div className="text-[10px] text-theme-text-muted mt-1">
-          EOI + DLD 4% + Oqood
+        <div className="text-[10px] text-theme-text-muted flex justify-between">
+          <span>EOI + DLD 4% + Oqood</span>
+        </div>
+        
+        {/* Downpayment */}
+        <div className="pt-2 border-t border-[#2a3142]">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400">Downpayment ({inputs.downpaymentPercent}%)</span>
+            <span className="text-sm font-mono text-white font-medium">
+              {formatCurrency(downpaymentAmount, currency)}
+            </span>
+          </div>
         </div>
       </div>
     </div>
