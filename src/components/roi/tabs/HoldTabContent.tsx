@@ -29,15 +29,16 @@ export const HoldTabContent = ({
 
   return (
     <div className={isDashboard ? "space-y-4" : "space-y-6"}>
-      {/* Row 1: RentSnapshot + WealthSummary (2 columns on desktop) */}
+      {/* Row 1: RentSnapshot (full width) */}
+      <RentSnapshot 
+        inputs={inputs} 
+        currency={currency} 
+        rate={rate} 
+        holdAnalysis={calculations.holdAnalysis} 
+      />
+      
+      {/* Row 2: WealthSummary + CumulativeChart (2 columns on desktop) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RentSnapshot 
-          inputs={inputs} 
-          currency={currency} 
-          rate={rate} 
-          holdAnalysis={calculations.holdAnalysis} 
-        />
-        
         <WealthSummaryCard 
           propertyValueYear10={lastProjection.propertyValue} 
           cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
@@ -47,17 +48,16 @@ export const HoldTabContent = ({
           rate={rate} 
           showAirbnbComparison={calculations.showAirbnbComparison} 
         />
-      </div>
-      
-      {/* Row 2: Cumulative Chart (full width, reduced height in dashboard) */}
-      <div className={isDashboard ? "max-h-[300px]" : ""}>
-        <CumulativeIncomeChart 
-          projections={calculations.yearlyProjections} 
-          currency={currency} 
-          rate={rate} 
-          totalCapitalInvested={totalCapitalInvested} 
-          showAirbnbComparison={calculations.showAirbnbComparison} 
-        />
+        
+        <div className={isDashboard ? "max-h-[300px]" : ""}>
+          <CumulativeIncomeChart 
+            projections={calculations.yearlyProjections} 
+            currency={currency} 
+            rate={rate} 
+            totalCapitalInvested={totalCapitalInvested} 
+            showAirbnbComparison={calculations.showAirbnbComparison} 
+          />
+        </div>
       </div>
       
       {/* Row 3: Yearly Projection Table (full width) */}
