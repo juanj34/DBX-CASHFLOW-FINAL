@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, SlidersHorizontal, Settings2, AlertCircle, MoreVertical, FolderOpen, FilePlus, History, Save, Loader2, Check, List } from "lucide-react";
+import { LayoutDashboard, SlidersHorizontal, Settings2, AlertCircle, MoreVertical, FolderOpen, FilePlus, History, Save, Loader2, Check, Rows3, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -145,6 +145,15 @@ const CashflowDashboardContent = () => {
   }, [quote, quoteId, dataLoaded, loadDraft]);
 
   useEffect(() => { setDataLoaded(false); }, [quoteId]);
+
+  // Redirect to preferred view if set to vertical
+  useEffect(() => {
+    const preference = localStorage.getItem('cashflow_view_preference');
+    if (preference === 'vertical' && dataLoaded) {
+      navigate(quoteId ? `/cashflow/${quoteId}` : '/cashflow-generator', { replace: true });
+    }
+  }, [dataLoaded, navigate, quoteId]);
+
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
@@ -217,8 +226,9 @@ const CashflowDashboardContent = () => {
     });
   }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
-  // Navigate to classic view
+  // Navigate to vertical view and save preference
   const handleSwitchToClassic = useCallback(() => {
+    localStorage.setItem('cashflow_view_preference', 'vertical');
     if (quoteId) {
       navigate(`/cashflow/${quoteId}`);
     } else {
@@ -313,20 +323,21 @@ const CashflowDashboardContent = () => {
                     isLive={isLive}
                   />
 
-                  {/* Switch to Classic View */}
+                  {/* Switch to Vertical View */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={handleSwitchToClassic}
-                        className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8"
+                        className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 gap-1.5"
                       >
-                        <List className="w-4 h-4" />
+                        <Rows3 className="w-4 h-4" />
+                        <span className="text-xs">Vertical</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{t('switchToClassic')}</p>
+                      <p>Switch to vertical scrolling layout</p>
                     </TooltipContent>
                   </Tooltip>
 
@@ -402,8 +413,8 @@ const CashflowDashboardContent = () => {
                         onClick={handleSwitchToClassic}
                         className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
                       >
-                        <List className="w-4 h-4" />
-                        {t('switchToClassic')}
+                        <Rows3 className="w-4 h-4" />
+                        Vertical View
                       </DropdownMenuItem>
 
                       <DropdownMenuSeparator className="bg-theme-border" />
@@ -471,37 +482,31 @@ const CashflowDashboardContent = () => {
         )}
 
         {!isFullyConfigured ? (
-          /* Unconfigured State */
+          /* Unconfigured State - Simple welcome with Configure CTA */
           <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
-            <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 rounded-2xl bg-theme-accent/20 flex items-center justify-center mx-auto mb-6">
-                  {!hasClientDetails ? <AlertCircle className="w-8 h-8 text-theme-accent" /> : <Settings2 className="w-8 h-8 text-theme-accent" />}
+            <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-16 text-center">
+              <div className="max-w-lg mx-auto">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 flex items-center justify-center mx-auto mb-8">
+                  <Rocket className="w-10 h-10 text-theme-accent" />
                 </div>
-                <h3 className="text-xl font-semibold text-theme-text mb-3">
-                  {!hasClientDetails ? t('completeClientInfo') : t('configurePropertyFinancials')}
-                </h3>
-                <p className="text-theme-text-muted mb-6">
-                  {!hasClientDetails ? t('completeClientInfoDesc') : t('configurePropertyFinancialsDesc')}
+                <h2 className="text-2xl sm:text-3xl font-bold text-theme-text mb-4">
+                  Start Your Cashflow Analysis
+                </h2>
+                <p className="text-theme-text-muted mb-8 text-base sm:text-lg leading-relaxed">
+                  Configure your property details, payment plan, and investment assumptions to generate a comprehensive cashflow projection.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  {!hasClientDetails ? (
-                    <Button
-                      onClick={() => setClientModalOpen(true)}
-                      className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
-                    >
-                      <Settings2 className="w-4 h-4" />
-                      Set Client & Property
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => setModalOpen(true)}
-                      className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
-                    >
-                      <TrendingUp className="w-4 h-4" />
-                      Configure Financials
-                    </Button>
-                  )}
+                <div className="flex flex-col gap-4 items-center">
+                  <Button 
+                    onClick={() => setModalOpen(true)}
+                    size="lg"
+                    className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold gap-2 px-8 h-12"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Start Configuration
+                  </Button>
+                  <p className="text-sm text-theme-text-muted">
+                    Set up property, client info, and financial parameters
+                  </p>
                 </div>
               </div>
             </div>
