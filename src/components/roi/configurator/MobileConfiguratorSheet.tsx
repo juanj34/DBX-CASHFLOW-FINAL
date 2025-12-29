@@ -1,5 +1,12 @@
 import { useState, useCallback, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet } from "lucide-react";
+
+// Haptic feedback utility for tactile response on mobile devices
+const triggerHapticFeedback = (pattern: number | number[] = 10) => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { OIInputs } from "../useOICalculations";
@@ -38,21 +45,21 @@ const MiniPreviewStrip = ({ inputs, currency }: { inputs: OIInputs; currency: Cu
     <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#0d1117] rounded-lg border border-[#2a3142]">
       <div className="flex items-center gap-1.5 min-w-0">
         <Wallet className="w-3.5 h-3.5 text-[#CCFF00] flex-shrink-0" />
-        <span className="text-[10px] text-gray-400 truncate">
+        <span className="text-[10px] text-theme-text-muted truncate">
           {formatCurrency(inputs.basePrice, currency)}
         </span>
       </div>
       <div className="w-px h-4 bg-[#2a3142]" />
       <div className="flex items-center gap-1.5 min-w-0">
         <Home className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-        <span className="text-[10px] text-gray-400 truncate">
+        <span className="text-[10px] text-theme-text-muted truncate">
           {paymentSplit}
         </span>
       </div>
       <div className="w-px h-4 bg-[#2a3142]" />
       <div className="flex items-center gap-1.5 min-w-0">
         <TrendingUp className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-        <span className="text-[10px] text-gray-400 truncate">
+        <span className="text-[10px] text-theme-text-muted truncate">
           {inputs.rentalYieldPercent}% yield
         </span>
       </div>
@@ -117,6 +124,9 @@ export const MobileConfiguratorSheet = ({
       setAnimationDirection('left');
     }
     
+    // Trigger haptic feedback on section navigation
+    triggerHapticFeedback(15);
+    
     setActiveSection(newSection);
     setVisitedSections(prev => new Set(prev).add(newSection));
     
@@ -126,12 +136,14 @@ export const MobileConfiguratorSheet = ({
 
   const goToNextSection = useCallback(() => {
     if (canGoForward) {
+      triggerHapticFeedback(10);
       navigateToSection(SECTIONS[currentIndex + 1], 'right');
     }
   }, [canGoForward, currentIndex, navigateToSection]);
 
   const goToPreviousSection = useCallback(() => {
     if (canGoBack) {
+      triggerHapticFeedback(10);
       navigateToSection(SECTIONS[currentIndex - 1], 'left');
     }
   }, [canGoBack, currentIndex, navigateToSection]);
@@ -154,8 +166,12 @@ export const MobileConfiguratorSheet = ({
     const isRightSwipe = distance < -minSwipeDistance;
     
     if (isLeftSwipe && canGoForward) {
+      // Haptic feedback on successful swipe
+      triggerHapticFeedback(10);
       goToNextSection();
     } else if (isRightSwipe && canGoBack) {
+      // Haptic feedback on successful swipe
+      triggerHapticFeedback(10);
       goToPreviousSection();
     }
     
