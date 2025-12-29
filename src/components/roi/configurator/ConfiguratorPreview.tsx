@@ -159,17 +159,19 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
         </div>
 
         {/* Rental */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 text-theme-text-muted">
             <Home className="w-3.5 h-3.5" />
             <span className="text-xs">Rental</span>
           </div>
-          <span className="text-sm font-mono text-white">
-            {inputs.rentalYieldPercent}%
-            <span className="text-xs text-theme-text-muted ml-1">
-              ({formatCurrency(annualRent, currency)}/yr)
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-mono text-white">
+              {inputs.rentalYieldPercent}%
             </span>
-          </span>
+            <span className="text-[10px] text-theme-text-muted font-mono">
+              {formatCurrency(annualRent, currency)}/yr
+            </span>
+          </div>
         </div>
 
         {/* Appreciation */}
