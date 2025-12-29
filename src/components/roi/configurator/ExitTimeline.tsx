@@ -1,4 +1,5 @@
-import { useMemo, useRef, useCallback } from "react";
+import { useMemo, useRef, useCallback, useState } from "react";
+import { X } from "lucide-react";
 
 interface ExitPoint {
   id: string;
@@ -16,63 +17,188 @@ interface ExitTimelineProps {
   currency: string;
   minimumThreshold?: number;
   onAddExit?: (monthsFromBooking: number) => void;
+  onRemoveExit?: (exitId: string) => void;
+  onMoveExit?: (exitId: string, newMonth: number) => void;
+  readOnly?: boolean;
 }
 
-export const ExitTimeline = ({ exits, totalMonths, bookingDate, currency, minimumThreshold = 30, onAddExit }: ExitTimelineProps) => {
+export const ExitTimeline = ({ 
+  exits, 
+  totalMonths, 
+  bookingDate, 
+  currency, 
+  minimumThreshold = 30, 
+  onAddExit,
+  onRemoveExit,
+  onMoveExit,
+  readOnly = false,
+}: ExitTimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragMonth, setDragMonth] = useState<number | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // Calculate threshold position on timeline based on payment percentage
-  // Threshold represents min % paid before developer allows resale
+  // Calculate threshold position on timeline
   const thresholdPosition = useMemo(() => {
-    // Simple approximation: if threshold is X%, we assume the exit point 
-    // at roughly X% of timeline would have paid that amount
     return Math.min(minimumThreshold, 100);
   }, [minimumThreshold]);
 
+  // Generate month tick marks
+  const monthTicks = useMemo(() => {
+    const ticks = [];
+    for (let month = 0; month <= totalMonths; month++) {
+      const position = (month / totalMonths) * 100;
+      const isHandover = month === totalMonths;
+      const showLabel = month === 0 || isHandover || month % 6 === 0;
+      ticks.push({ month, position, showLabel, isHandover });
+    }
+    return ticks;
+  }, [totalMonths]);
+
+  // Calculate smart label positions to avoid overlap
   const timelineMarkers = useMemo(() => {
-    return exits.map(exit => ({
-      ...exit,
-      position: (exit.monthsFromBooking / totalMonths) * 100,
-      date: (() => {
-        const date = new Date(bookingDate);
-        date.setMonth(date.getMonth() + exit.monthsFromBooking);
-        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      })(),
-      // Check if this exit meets the minimum threshold
-      meetsThreshold: (exit.monthsFromBooking / totalMonths) * 100 >= thresholdPosition,
-    }));
+    const sortedExits = [...exits].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+    
+    // Assign label levels to avoid overlap
+    const markers = sortedExits.map((exit, index) => {
+      const position = (exit.monthsFromBooking / totalMonths) * 100;
+      const date = (() => {
+        const d = new Date(bookingDate);
+        d.setMonth(d.getMonth() + exit.monthsFromBooking);
+        return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      })();
+      const meetsThreshold = position >= thresholdPosition;
+      
+      // Calculate label level based on proximity to neighbors
+      let labelLevel = 0;
+      if (index > 0) {
+        const prevPos = (sortedExits[index - 1].monthsFromBooking / totalMonths) * 100;
+        if (Math.abs(position - prevPos) < 12) {
+          labelLevel = 1;
+        }
+        if (index > 1) {
+          const prevPrev = (sortedExits[index - 2].monthsFromBooking / totalMonths) * 100;
+          if (Math.abs(position - prevPrev) < 18) {
+            labelLevel = Math.max(labelLevel, 2);
+          }
+        }
+      }
+      
+      return {
+        ...exit,
+        position,
+        date,
+        meetsThreshold,
+        labelLevel,
+      };
+    });
+
+    return markers;
   }, [exits, totalMonths, bookingDate, thresholdPosition]);
 
-  const handleTimelineClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!onAddExit || !timelineRef.current) return;
-    
+  const getMonthFromPosition = useCallback((clientX: number): number => {
+    if (!timelineRef.current) return 0;
     const rect = timelineRef.current.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percentage = (clickX / rect.width) * 100;
-    const clickedMonth = Math.round((percentage / 100) * totalMonths);
-    
-    // Don't add if too close to existing exit (within 2 months)
-    const tooClose = exits.some(exit => Math.abs(exit.monthsFromBooking - clickedMonth) < 2);
-    
-    if (!tooClose && clickedMonth > 0 && clickedMonth < totalMonths) {
-      onAddExit(clickedMonth);
+    const percentage = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    return Math.round((percentage / 100) * totalMonths);
+  }, [totalMonths]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, exitId: string, currentMonth: number) => {
+    if (readOnly || exitId === 'handover') return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingId(exitId);
+    setDragMonth(currentMonth);
+  }, [readOnly]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!draggingId) return;
+    const month = getMonthFromPosition(e.clientX);
+    if (month > 0 && month < totalMonths) {
+      setDragMonth(month);
     }
-  }, [onAddExit, totalMonths, exits]);
+  }, [draggingId, getMonthFromPosition, totalMonths]);
+
+  const handleMouseUp = useCallback(() => {
+    if (draggingId && dragMonth !== null && onMoveExit) {
+      const originalExit = exits.find(e => e.id === draggingId);
+      if (originalExit && originalExit.monthsFromBooking !== dragMonth) {
+        onMoveExit(draggingId, dragMonth);
+      }
+    }
+    setDraggingId(null);
+    setDragMonth(null);
+  }, [draggingId, dragMonth, exits, onMoveExit]);
+
+  const handleTimelineClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onAddExit || readOnly || draggingId) return;
+    
+    const month = getMonthFromPosition(e.clientX);
+    
+    // Don't add if too close to existing exit (within 2 months) or if month is 0 or handover
+    const tooClose = exits.some(exit => Math.abs(exit.monthsFromBooking - month) < 2);
+    
+    if (!tooClose && month > 0 && month < totalMonths) {
+      onAddExit(month);
+    }
+  }, [onAddExit, readOnly, draggingId, getMonthFromPosition, totalMonths, exits]);
+
+  const handleRemoveClick = useCallback((e: React.MouseEvent, exitId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onRemoveExit && exitId !== 'handover') {
+      onRemoveExit(exitId);
+    }
+  }, [onRemoveExit]);
+
+  const getLabelTopOffset = (level: number) => {
+    const offsets = ['top-6', 'top-12', 'top-18'];
+    return offsets[level] || offsets[0];
+  };
 
   return (
-    <div className="p-3 bg-theme-bg-alt rounded-lg border border-theme-border">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] text-theme-text-muted uppercase tracking-wider">Exit Timeline</div>
-        {onAddExit && (
+    <div 
+      className="p-4 bg-theme-bg-alt rounded-lg border border-theme-border select-none"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] text-theme-text-muted uppercase tracking-wider font-medium">Exit Timeline</div>
+        {!readOnly && onAddExit && (
           <div className="text-[10px] text-theme-accent/70">Click timeline to add exit</div>
         )}
+      </div>
+      
+      {/* Month ruler with tick marks */}
+      <div className="relative mb-2">
+        <div className="flex justify-between h-4">
+          {monthTicks.map(tick => (
+            <div 
+              key={tick.month}
+              className="relative flex flex-col items-center"
+              style={{ 
+                position: 'absolute', 
+                left: `${tick.position}%`, 
+                transform: 'translateX(-50%)',
+              }}
+            >
+              <div className={`w-px ${tick.isHandover || tick.month === 0 ? 'h-3 bg-theme-text-muted' : tick.showLabel ? 'h-2 bg-theme-text-muted/60' : 'h-1.5 bg-theme-text-muted/30'}`} />
+              {tick.showLabel && (
+                <span className="text-[8px] text-theme-text-muted/80 mt-0.5 whitespace-nowrap">
+                  {tick.month === 0 ? '0' : tick.isHandover ? `${tick.month}mo` : `${tick.month}`}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       
       {/* Timeline bar - clickable */}
       <div 
         ref={timelineRef}
         onClick={handleTimelineClick}
-        className={`relative h-3 bg-theme-card rounded-full mb-8 ${onAddExit ? 'cursor-crosshair hover:bg-theme-card-alt transition-colors' : ''}`}
+        className={`relative h-4 bg-theme-card rounded-full mb-20 ${!readOnly && onAddExit ? 'cursor-crosshair hover:bg-theme-card-alt transition-colors' : ''}`}
       >
         {/* Progress gradient */}
         <div 
@@ -80,70 +206,101 @@ export const ExitTimeline = ({ exits, totalMonths, bookingDate, currency, minimu
           style={{
             width: '100%',
             background: 'linear-gradient(90deg, hsl(var(--theme-accent)) 0%, hsl(142 71% 45%) 50%, hsl(221 83% 53%) 100%)',
-            opacity: 0.25,
+            opacity: 0.2,
           }}
         />
         
         {/* Threshold indicator line */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 h-6 w-0.5 pointer-events-none"
+          className="absolute top-1/2 -translate-y-1/2 h-8 w-0.5 pointer-events-none"
           style={{ 
             left: `${thresholdPosition}%`,
             background: 'repeating-linear-gradient(to bottom, hsl(var(--theme-accent)) 0, hsl(var(--theme-accent)) 2px, transparent 2px, transparent 4px)',
           }}
         />
         <div
-          className="absolute -bottom-5 text-[9px] text-theme-accent whitespace-nowrap pointer-events-none"
+          className="absolute -bottom-6 text-[9px] text-theme-accent whitespace-nowrap pointer-events-none font-medium"
           style={{ left: `${thresholdPosition}%`, transform: 'translateX(-50%)' }}
         >
           {minimumThreshold}% min
         </div>
         
-        {/* Hover hint markers every 10% */}
-        {onAddExit && Array.from({ length: 9 }, (_, i) => (i + 1) * 10).map(pct => (
-          <div
-            key={pct}
-            className="absolute top-1/2 -translate-y-1/2 w-0.5 h-1.5 bg-theme-text-muted/30 pointer-events-none"
-            style={{ left: `${pct}%` }}
-          />
-        ))}
-        
         {/* Exit markers */}
-        {timelineMarkers.map((marker, index) => (
-          <div
-            key={marker.id}
-            className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none"
-            style={{ left: `${marker.position}%`, transform: 'translate(-50%, -50%)' }}
-          >
-            {/* Marker dot */}
-            <div 
-              className={`w-4 h-4 rounded-full border-2 shadow-lg ${
-                marker.id === 'handover'
-                  ? 'bg-blue-500 border-blue-400'
-                  : !marker.meetsThreshold
-                    ? 'bg-red-500/60 border-red-400/60'
-                    : marker.isAutoGenerated 
-                      ? 'bg-theme-accent border-theme-accent/80' 
-                      : 'bg-purple-500 border-purple-400'
-              }`}
-            />
-            
-            {/* Label below - alternating positions to avoid overlap */}
-            <div 
-              className={`absolute whitespace-nowrap text-center ${
-                index % 2 === 0 ? 'top-5' : 'top-10'
-              }`}
+        {timelineMarkers.map((marker) => {
+          const isDragging = draggingId === marker.id;
+          const currentPosition = isDragging && dragMonth !== null 
+            ? (dragMonth / totalMonths) * 100 
+            : marker.position;
+          const displayMonth = isDragging && dragMonth !== null ? dragMonth : marker.monthsFromBooking;
+          const isHovered = hoveredId === marker.id;
+          const isHandover = marker.id === 'handover';
+          const canInteract = !readOnly && !isHandover;
+          
+          return (
+            <div
+              key={marker.id}
+              className={`absolute top-1/2 -translate-y-1/2 flex flex-col items-center ${isDragging ? 'z-20' : 'z-10'}`}
+              style={{ left: `${currentPosition}%`, transform: 'translate(-50%, -50%)' }}
+              onMouseEnter={() => setHoveredId(marker.id)}
+              onMouseLeave={() => setHoveredId(null)}
             >
-              <div className={`text-[10px] font-medium ${!marker.meetsThreshold ? 'text-red-400' : 'text-theme-text'}`}>{marker.monthsFromBooking}mo</div>
-              <div className="text-[9px] text-theme-text-muted">{marker.date}</div>
-              <div className={`text-[9px] font-mono ${!marker.meetsThreshold ? 'text-red-400' : 'text-green-400'}`}>+{marker.appreciationPercent.toFixed(0)}%</div>
+              {/* Marker dot - draggable */}
+              <div 
+                onMouseDown={(e) => handleMouseDown(e, marker.id, marker.monthsFromBooking)}
+                className={`relative w-5 h-5 rounded-full border-2 shadow-lg transition-all ${
+                  isHandover
+                    ? 'bg-blue-500 border-blue-400'
+                    : !marker.meetsThreshold
+                      ? 'bg-red-500/60 border-red-400/60'
+                      : 'bg-theme-accent border-theme-accent/80'
+                } ${canInteract ? 'cursor-grab active:cursor-grabbing hover:scale-110' : ''} ${isDragging ? 'scale-125 ring-2 ring-theme-accent/50' : ''}`}
+              >
+                {/* Delete button on hover */}
+                {canInteract && isHovered && !isDragging && onRemoveExit && (
+                  <button
+                    onClick={(e) => handleRemoveClick(e, marker.id)}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-400 transition-colors shadow-md"
+                  >
+                    <X className="w-2.5 h-2.5 text-white" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Label below - positioned to avoid overlap */}
+              <div 
+                className={`absolute whitespace-nowrap text-center pointer-events-none transition-all ${
+                  marker.labelLevel === 0 ? 'top-7' : marker.labelLevel === 1 ? 'top-12' : 'top-[68px]'
+                }`}
+              >
+                {/* Connecting line for offset labels */}
+                {marker.labelLevel > 0 && (
+                  <div 
+                    className="absolute left-1/2 -translate-x-1/2 w-px bg-theme-text-muted/30"
+                    style={{ 
+                      top: marker.labelLevel === 1 ? '-20px' : '-36px',
+                      height: marker.labelLevel === 1 ? '20px' : '36px',
+                    }}
+                  />
+                )}
+                <div className={`text-[11px] font-semibold ${
+                  isDragging ? 'text-theme-accent' : 
+                  !marker.meetsThreshold ? 'text-red-400' : 
+                  isHandover ? 'text-blue-400' : 'text-theme-text'
+                }`}>
+                  {displayMonth}mo
+                </div>
+                <div className="text-[9px] text-theme-text-muted">{marker.date}</div>
+                <div className={`text-[9px] font-mono font-medium ${!marker.meetsThreshold ? 'text-red-400' : 'text-green-400'}`}>
+                  +{marker.appreciationPercent.toFixed(0)}%
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       {/* Start and end labels */}
-      <div className="flex justify-between text-[10px] text-theme-text-muted mt-10">
+      <div className="flex justify-between text-[10px] text-theme-text-muted mt-2">
         <span>Booking</span>
         <span>Handover ({totalMonths}mo)</span>
       </div>
@@ -152,11 +309,7 @@ export const ExitTimeline = ({ exits, totalMonths, bookingDate, currency, minimu
       <div className="flex items-center justify-center gap-4 mt-3 pt-2 border-t border-theme-border/50">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-theme-accent" />
-          <span className="text-[9px] text-theme-text-muted">Auto</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-          <span className="text-[9px] text-theme-text-muted">Custom</span>
+          <span className="text-[9px] text-theme-text-muted">Exit</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
@@ -166,6 +319,11 @@ export const ExitTimeline = ({ exits, totalMonths, bookingDate, currency, minimu
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
           <span className="text-[9px] text-theme-text-muted">Below min</span>
         </div>
+        {!readOnly && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-theme-text-muted/60">• Drag to move</span>
+          </div>
+        )}
       </div>
     </div>
   );
