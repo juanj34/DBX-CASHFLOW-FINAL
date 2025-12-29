@@ -372,12 +372,10 @@ const CashflowViewContent = () => {
               const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
               const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
               
-              // Year 5 calculations (matching OICalculator)
-              const handoverYearIndex = calculations.yearlyProjections.findIndex(p => p.isHandover);
-              const year5Index = handoverYearIndex + 5;
-              const year5Projection = calculations.yearlyProjections.find((p, idx) => 
-                idx === year5Index || (p.year === (firstFullRentalYear?.year || 0) + 4)
-              );
+              // Year 5 = first full rental year + 4 years of rent growth
+              // With 4% growth: 1.04^4 = 1.1699 = +17% growth over 4 years
+              const year5RentalYear = (firstFullRentalYear?.year || 0) + 4;
+              const year5Projection = calculations.yearlyProjections.find(p => p.year === year5RentalYear);
               const year5LongTermRent = year5Projection?.annualRent ? (year5Projection.annualRent / 12) : undefined;
               const year5AirbnbNet = year5Projection?.airbnbNetIncome ? (year5Projection.airbnbNetIncome / 12) : undefined;
               
