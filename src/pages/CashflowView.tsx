@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard, Building2 } from 'lucide-react';
+import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard, Building2, Download } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,8 @@ import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { exportPageAsPng } from '@/lib/fullPageExport';
+import { toast } from '@/hooks/use-toast';
 
 interface AdvisorProfile {
   full_name: string | null;
@@ -45,10 +47,12 @@ const CashflowViewContent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [clientInfo, setClientInfo] = useState<ClientUnitData | null>(null);
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
   const { showOnboarding, setShowOnboarding } = useClientOnboarding();
+  const [exporting, setExporting] = useState(false);
 
   const { rate } = useExchangeRate(currency);
   
@@ -200,6 +204,26 @@ const CashflowViewContent = () => {
     }
   };
 
+  const handleExportReport = async () => {
+    const projectName = clientInfo?.projectName || 'Investment';
+    const clientName = clientInfo?.clients?.[0]?.name || 'Report';
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `${projectName}-${clientName}-${date}.png`;
+    
+    await exportPageAsPng(
+      '#cashflow-content',
+      filename,
+      () => setExporting(true),
+      () => {
+        setExporting(false);
+        toast({
+          title: t('exportSuccess'),
+          description: filename,
+        });
+      }
+    );
+  };
+
   return (
     <CashflowErrorBoundary>
     <ClientOnboardingModal 
@@ -208,7 +232,7 @@ const CashflowViewContent = () => {
       advisorName={advisorProfile?.full_name || undefined}
       onContactAdvisor={handleWhatsAppAdvisor}
     />
-    <div className="min-h-screen bg-theme-bg">
+    <div id="cashflow-content" className="min-h-screen bg-theme-bg">
       {/* Header */}
       <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
@@ -220,14 +244,25 @@ const CashflowViewContent = () => {
               </div>
               <h1 className="text-sm sm:text-xl font-bold text-theme-text">{t('cashflowStatement')}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outlineDark" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
+            <div className="flex items-center gap-2 export-hidden">
+              <Button 
+                variant="outlineDark" 
+                size="sm" 
+                onClick={handleExportReport}
+                disabled={exporting}
+                className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm"
+                title={t('exportReport')}
+              >
+                <Download className="w-3.5 h-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">{exporting ? t('exportingReport') : t('exportReport')}</span>
+              </Button>
+              <Button variant="outlineDark" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm language-selector" title={t('language')}>
                 <Globe className="w-3.5 h-3.5 sm:mr-1" />
                 {language === 'en' ? '🇬🇧' : '🇪🇸'}
                 <span className="hidden sm:inline ml-1">{language === 'en' ? 'EN' : 'ES'}</span>
               </Button>
               <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
-                <SelectTrigger className="w-[80px] sm:w-[140px] h-7 sm:h-9 text-xs sm:text-sm border-theme-border bg-theme-card text-theme-text hover:bg-theme-card-alt" title={t('currency')}>
+                <SelectTrigger className="w-[80px] sm:w-[140px] h-7 sm:h-9 text-xs sm:text-sm border-theme-border bg-theme-card text-theme-text hover:bg-theme-card-alt currency-selector" title={t('currency')}>
                   <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
                   <SelectValue />
                 </SelectTrigger>
