@@ -1,7 +1,7 @@
 import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal } from "lucide-react";
+import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "./InfoTooltip";
 
@@ -74,125 +74,140 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
         </Badge>
       </div>
 
-      {/* Long-Term Rental Section - Clear Breakdown */}
-      <div className="p-4 space-y-3 flex-1">
-        <div className="flex items-center gap-2 mb-3">
-          <Building className="w-4 h-4 text-cyan-400" />
-          <h4 className="text-sm font-medium text-white">{t('longTermRental')}</h4>
-        </div>
-
-        {/* Gross Annual Rent */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-3.5 h-3.5 text-gray-500" />
-            <span className="text-sm text-gray-400">{t('grossAnnualRent')}</span>
-            <InfoTooltip translationKey="tooltipGrossRent" />
-          </div>
-          <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAnnualRent, currency, rate)}</span>
-        </div>
-
-        {/* Service Charges (subtracted) */}
-        {unitSizeSqf > 0 && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Minus className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
-              <InfoTooltip translationKey="tooltipServiceCharge" />
-            </div>
-            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
-          </div>
-        )}
-
-        {/* Divider */}
-        <div className="border-t border-[#2a3142] pt-2"></div>
-
-        {/* Net Annual Rent */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
-            <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
-            <InfoTooltip translationKey="tooltipNetRent" />
-          </div>
-          <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
-        </div>
-
-        {/* Yield Summary */}
-        <div className="bg-[#0d1117] rounded-lg p-3 mt-2 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Percent className="w-3.5 h-3.5 text-gray-500" />
-              <span className="text-sm text-gray-400">{t('grossYield')}</span>
-              <InfoTooltip translationKey="tooltipGrossYield" />
-            </div>
-            <span className="text-sm font-bold text-white font-mono">{rentalYieldPercent.toFixed(1)}%</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Percent className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-sm text-gray-400">{t('netYieldAfterCharges')}</span>
-              <InfoTooltip translationKey="tooltipNetYield" />
-            </div>
-            <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Airbnb Section (conditional) */}
-      {showAirbnbComparison && (
-        <div className="p-4 space-y-3 border-t border-[#2a3142] bg-orange-500/5">
+      {/* Main Content - Side by Side on Desktop when Airbnb is enabled */}
+      <div className={showAirbnbComparison ? "grid md:grid-cols-2 gap-0" : ""}>
+        {/* Long-Term Rental Section */}
+        <div className="p-4 space-y-3 flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <Calendar className="w-4 h-4 text-orange-400" />
-            <h4 className="text-sm font-medium text-white">{t('airbnbComparison')}</h4>
+            <Building className="w-4 h-4 text-cyan-400" />
+            <h4 className="text-sm font-medium text-white">{t('longTermRental')}</h4>
           </div>
 
-          {/* ADR */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">{t('averageDailyRate')}</span>
-            <span className="text-sm font-bold text-white font-mono">{formatCurrency(adrValue, currency, rate)}</span>
-          </div>
-
-          {/* Gross Annual */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">{t('grossAnnual')}</span>
-            <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAirbnbAnnual, currency, rate)}</span>
-          </div>
-
-          {/* Operating Expenses */}
+          {/* Gross Annual Rent */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Minus className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-sm text-gray-400">{t('operatingExpenses')} ({operatingExpensePercent}%)</span>
+              <DollarSign className="w-3.5 h-3.5 text-gray-500" />
+              <span className="text-sm text-gray-400">{t('grossAnnualRent')}</span>
+              <InfoTooltip translationKey="tooltipGrossRent" />
             </div>
-            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (operatingExpensePercent / 100), currency, rate)}</span>
+            <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAnnualRent, currency, rate)}</span>
           </div>
 
-          {/* Management Fee */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Minus className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-sm text-gray-400">{t('managementFee')} ({managementFeePercent}%)</span>
-            </div>
-            <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (managementFeePercent / 100), currency, rate)}</span>
-          </div>
-
-          {/* Service Charges */}
+          {/* Service Charges (subtracted) */}
           {unitSizeSqf > 0 && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Minus className="w-3.5 h-3.5 text-red-400" />
                 <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+                <InfoTooltip translationKey="tooltipServiceCharge" />
               </div>
               <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
             </div>
           )}
 
-          {/* Net Annual Airbnb */}
-          <div className="flex items-center justify-between pt-2 border-t border-orange-500/20">
-            <span className="text-sm text-gray-300 font-medium">{t('netAnnual')}</span>
-            <span className="text-sm font-bold text-orange-400 font-mono">{formatCurrency(netAirbnbAnnual, currency, rate)}</span>
+          {/* Divider */}
+          <div className="border-t border-[#2a3142] pt-2"></div>
+
+          {/* Net Annual Rent - HERO NUMBER */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
+              <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
+              <InfoTooltip translationKey="tooltipNetRent" />
+            </div>
+            <span className="text-xl font-bold text-[#CCFF00] font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
+          </div>
+
+          {/* Yield Summary */}
+          <div className="bg-[#0d1117] rounded-lg p-3 mt-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Percent className="w-3.5 h-3.5 text-gray-500" />
+                <span className="text-sm text-gray-400">{t('grossYield')}</span>
+                <InfoTooltip translationKey="tooltipGrossYield" />
+              </div>
+              <span className="text-sm font-bold text-white font-mono">{rentalYieldPercent.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Percent className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-sm text-gray-400">{t('netYieldAfterCharges')}</span>
+                <InfoTooltip translationKey="tooltipNetYield" />
+              </div>
+              <span className="text-sm font-bold text-cyan-400 font-mono">{netYieldPercent.toFixed(1)}%</span>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Airbnb Section (conditional) */}
+        {showAirbnbComparison && (
+          <div className="p-4 space-y-3 border-t md:border-t-0 md:border-l border-[#2a3142] bg-orange-500/5">
+            {/* Airbnb Header with Occupancy Badge */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-orange-400" />
+                <h4 className="text-sm font-medium text-white">{t('airbnbComparison')}</h4>
+              </div>
+              <Badge 
+                variant="outline" 
+                className="bg-orange-500/10 text-orange-300 border-orange-500/30 text-[10px] px-2 py-0.5 flex items-center gap-1"
+              >
+                {occupancyPercent}% {t('occupancy')}
+                <InfoTooltip translationKey="tooltipOccupancyRate" />
+              </Badge>
+            </div>
+
+            {/* ADR */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">{t('averageDailyRate')}</span>
+              <span className="text-sm font-bold text-white font-mono">{formatCurrency(adrValue, currency, rate)}</span>
+            </div>
+
+            {/* Gross Annual */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">{t('grossAnnual')}</span>
+              <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAirbnbAnnual, currency, rate)}</span>
+            </div>
+
+            {/* Utilities & Upkeep (renamed from Operating Expenses) */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Minus className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-sm text-gray-400">{t('utilitiesAndUpkeep')} ({operatingExpensePercent}%)</span>
+                <InfoTooltip translationKey="tooltipOperatingExpenses" />
+              </div>
+              <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (operatingExpensePercent / 100), currency, rate)}</span>
+            </div>
+
+            {/* Management Fee */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Minus className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-sm text-gray-400">{t('managementFee')} ({managementFeePercent}%)</span>
+                <InfoTooltip translationKey="tooltipManagementFee" />
+              </div>
+              <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (managementFeePercent / 100), currency, rate)}</span>
+            </div>
+
+            {/* Service Charges */}
+            {unitSizeSqf > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Minus className="w-3.5 h-3.5 text-red-400" />
+                  <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+                </div>
+                <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
+              </div>
+            )}
+
+            {/* Net Annual Airbnb - HERO NUMBER */}
+            <div className="flex items-center justify-between pt-2 border-t border-orange-500/20">
+              <span className="text-sm text-gray-300 font-medium">{t('netAnnual')}</span>
+              <span className="text-xl font-bold text-orange-400 font-mono">{formatCurrency(netAirbnbAnnual, currency, rate)}</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Visual Comparison Bar */}
       {showAirbnbComparison && (
@@ -225,23 +240,32 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             </div>
           </div>
 
-          {/* Difference */}
+          {/* Winner Badge - Prominent styling */}
           <div className="mt-3 text-center">
-            <span className={`text-xs font-bold ${airbnbDifferencePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <Badge 
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold ${
+                airbnbDifferencePercent >= 0 
+                  ? 'bg-green-500/20 text-green-400 border-green-500/40' 
+                  : 'bg-red-500/20 text-red-400 border-red-500/40'
+              }`}
+            >
+              <TrendingUp className={`w-4 h-4 ${airbnbDifferencePercent < 0 ? 'rotate-180' : ''}`} />
               {airbnbDifferencePercent >= 0 ? '+' : ''}{airbnbDifferencePercent.toFixed(0)}% {t('vsLongTerm')}
-            </span>
+            </Badge>
           </div>
         </div>
       )}
 
-      {/* Years to Pay Off Section */}
+      {/* Payback Period Section (renamed from Years to Pay Off) */}
       {holdAnalysis && holdAnalysis.yearsToPayOff < 999 && (
         <div className="p-4 border-t border-[#2a3142] bg-[#0f172a]/50">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-1">
             <Target className="w-4 h-4 text-[#CCFF00]" />
-            <span className="text-sm font-medium text-white">{t('yearsToPayOff')}</span>
+            <span className="text-sm font-medium text-white">{t('paybackPeriod')}</span>
             <InfoTooltip translationKey="tooltipYearsToPayOff" />
           </div>
+          <p className="text-[10px] text-gray-500 mb-3 ml-6">{t('paybackPeriodDesc')}</p>
+          
           <div className="space-y-2">
             {/* Long-Term Rental */}
             <div className="flex items-center justify-between">
