@@ -96,11 +96,8 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
   const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
   const monthsToHandover = Math.max(0, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-  // Calculate first year rent using base price at handover (with appreciation)
-  const constructionAppreciation = inputs.constructionAppreciation ?? 12;
-  const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
-  const valueAtHandover = inputs.basePrice * Math.pow(1 + monthlyRate, monthsToHandover);
-  const annualRent = valueAtHandover * (inputs.rentalYieldPercent / 100);
+  // Calculate first year rent using base price (matches Year 1 projection)
+  const annualRent = inputs.basePrice * (inputs.rentalYieldPercent / 100);
 
   // Calculate entry costs (DLD 4% + Oqood - EOI is part of downpayment, not entry cost)
   const dldFee = inputs.basePrice * 0.04;
