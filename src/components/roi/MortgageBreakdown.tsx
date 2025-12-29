@@ -215,20 +215,20 @@ export const MortgageBreakdown = ({
             {/* Gap Payment - only if exists */}
             {hasGap && (
               <div>
-                <p className="text-xs text-gray-500">{t('gapPayment')}</p>
+                <p className="text-xs text-gray-400">{t('gapPayment')}</p>
                 <p className="text-sm font-mono text-yellow-300">{formatCurrency(gapAmount, currency, rate)}</p>
               </div>
             )}
             <div>
-              <p className="text-xs text-gray-500">{t('loanAmount')}</p>
+              <p className="text-xs text-gray-400">{t('loanAmount')}</p>
               <p className="text-sm font-mono text-white">{formatCurrency(loanAmount, currency, rate)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">{t('monthlyPayment')}</p>
+              <p className="text-xs text-gray-400">{t('monthlyPayment')}</p>
               <p className="text-sm font-mono text-[#CCFF00]">{formatCurrency(monthlyPayment, currency, rate)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">{t('loanTerm')}</p>
+              <p className="text-xs text-gray-400">{t('loanTerm')}</p>
               <p className="text-sm font-mono text-white">{mortgageInputs.loanTermYears} {t('years')}</p>
             </div>
           </div>
@@ -245,24 +245,24 @@ export const MortgageBreakdown = ({
             <div className="space-y-2 text-xs">
               {hasGap && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('gapPayment')}</span>
+                  <span className="text-gray-400">{t('gapPayment')}</span>
                   <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('processingFee')} ({mortgageInputs.processingFeePercent}%)</span>
+                <span className="text-gray-400">{t('processingFee')} ({mortgageInputs.processingFeePercent}%)</span>
                 <span className="text-white font-mono">{formatCurrency(processingFee, currency, rate)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('valuationFee')}</span>
+                <span className="text-gray-400">{t('valuationFee')}</span>
                 <span className="text-white font-mono">{formatCurrency(valuationFee, currency, rate)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('mortgageRegistration')} ({mortgageInputs.mortgageRegistrationPercent}%)</span>
+                <span className="text-gray-400">{t('mortgageRegistration')} ({mortgageInputs.mortgageRegistrationPercent}%)</span>
                 <span className="text-white font-mono">{formatCurrency(mortgageRegistration, currency, rate)}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-[#2a3142]">
-                <span className="text-gray-400 font-medium">{t('total')}</span>
+                <span className="text-gray-300 font-medium">{t('total')}</span>
                 <span className="text-purple-400 font-mono font-medium">{formatCurrency(totalUpfrontFees + gapAmount, currency, rate)}</span>
               </div>
             </div>
@@ -276,19 +276,19 @@ export const MortgageBreakdown = ({
             </div>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('lifeInsurance')} ({mortgageInputs.lifeInsurancePercent}%)</span>
+                <span className="text-gray-400">{t('lifeInsurance')} ({mortgageInputs.lifeInsurancePercent}%)</span>
                 <span className="text-white font-mono">{formatCurrency(annualLifeInsurance, currency, rate)}/{t('yr')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('propertyInsurance')}</span>
+                <span className="text-gray-400">{t('propertyInsurance')}</span>
                 <span className="text-white font-mono">{formatCurrency(annualPropertyInsurance, currency, rate)}/{t('yr')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('totalAnnual')}</span>
+                <span className="text-gray-400">{t('totalAnnual')}</span>
                 <span className="text-white font-mono">{formatCurrency(totalAnnualInsurance, currency, rate)}/{t('yr')}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-[#2a3142]">
-                <span className="text-gray-400 font-medium">{t('overTerm')} ({mortgageInputs.loanTermYears}y)</span>
+                <span className="text-gray-300 font-medium">{t('overTerm')} ({mortgageInputs.loanTermYears}y)</span>
                 <span className="text-green-400 font-mono font-medium">{formatCurrency(totalInsuranceOverTerm, currency, rate)}</span>
               </div>
             </div>
@@ -641,7 +641,7 @@ export const MortgageBreakdown = ({
           <div className="space-y-4">
             {/* Before Handover */}
             <div className="p-3 bg-[#0f172a] rounded-lg">
-              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">{t('beforeHandover') || 'Before Handover'}</p>
+              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">{t('beforeHandover') || 'Before Handover'}</p>
               <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-400">{t('preHandoverPayments')}</span>
@@ -666,7 +666,7 @@ export const MortgageBreakdown = ({
             
             {/* Monthly After Handover */}
             <div className="p-3 bg-[#0f172a] rounded-lg">
-              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">{t('monthlyAfterHandover') || 'Monthly After Handover'}</p>
+              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">{t('monthlyAfterHandover') || 'Monthly After Handover'}</p>
               <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-400">{t('mortgagePayment')}</span>
@@ -687,8 +687,8 @@ export const MortgageBreakdown = ({
             <div className="p-3 bg-[#0f172a] rounded-lg">
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="text-gray-400 text-sm">{t('totalInterestPaid') || 'Total Interest Paid'}</span>
-                  <p className="text-[10px] text-gray-500">({mortgageInputs.loanTermYears} {t('years')})</p>
+                  <span className="text-gray-300 text-sm">{t('totalInterestPaid') || 'Total Interest Paid'}</span>
+                  <p className="text-[10px] text-gray-400">({mortgageInputs.loanTermYears} {t('years')})</p>
                 </div>
                 <span className="text-red-400 font-mono font-bold">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
               </div>

@@ -320,7 +320,7 @@ export const ExitScenariosCards = ({
                 <div className="text-right">
                   <span className="text-sm text-gray-400 font-mono">{formatCurrency(basePrice, currency, rate)}</span>
                   {unitSizeSqf && unitSizeSqf > 0 && (
-                    <p className="text-[10px] text-gray-600 font-mono">
+                    <p className="text-[10px] text-gray-400 font-mono">
                       {formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft
                     </p>
                   )}
@@ -356,7 +356,7 @@ export const ExitScenariosCards = ({
                 <div className="text-right">
                   <span className="text-sm text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
                   {unitSizeSqf && unitSizeSqf > 0 && (
-                    <p className="text-[10px] text-gray-600 font-mono">
+                    <p className="text-[10px] text-gray-400 font-mono">
                       {formatCurrency(scenario.exitPrice / unitSizeSqf, currency, rate)}/sqft
                     </p>
                   )}

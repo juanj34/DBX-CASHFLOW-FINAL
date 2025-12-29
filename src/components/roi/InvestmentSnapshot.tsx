@@ -56,7 +56,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
           <div className="text-right">
             <span className="text-sm font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
             {pricePerSqft > 0 && (
-              <p className="text-xs text-gray-500 font-mono">
+              <p className="text-xs text-gray-400 font-mono">
                 {formatCurrency(pricePerSqft, currency, rate)}/sqft
               </p>
             )}
@@ -111,14 +111,14 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
         {/* Total Entry Costs */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-500">{t('totalEntryCosts')}</span>
+            <span className="text-xs text-gray-400">{t('totalEntryCosts')}</span>
             <InfoTooltip translationKey="tooltipEntryCosts" />
           </div>
           <span className="text-xs text-red-400 font-mono">-{formatCurrency(totalEntryCosts, currency, rate)}</span>
         </div>
 
         {/* Timeline */}
-        <div className="pt-2 text-xs text-gray-500 text-center">
+        <div className="pt-2 text-xs text-gray-400 text-center">
           {monthNames[bookingMonth - 1]} {bookingYear} → Q{handoverQuarter} {handoverYear}
         </div>
       </div>

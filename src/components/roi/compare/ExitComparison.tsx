@@ -79,12 +79,12 @@ export const ExitComparison = ({ quotesWithCalcs }: ExitComparisonProps) => {
                           </span>
                           {scenario.isBest && <Trophy className="w-3.5 h-3.5 text-emerald-400" />}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           {scenario.roe !== null ? `${scenario.roe.toFixed(1)}% ROE/yr` : 'N/A'}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-xs text-gray-600">Not available</span>
+                      <span className="text-xs text-gray-400">Not available</span>
                     )}
                   </td>
                 ))}
