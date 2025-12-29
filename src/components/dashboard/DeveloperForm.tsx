@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Star, TrendingUp, DollarSign, Paintbrush, Repeat } from "lucide-react";
+import { Loader2, Upload, X, Star, TrendingUp, DollarSign, Paintbrush, Repeat, Wrench, Award } from "lucide-react";
 import { optimizeImage, LOGO_CONFIG } from "@/lib/imageUtils";
+import { calculateTrustScore, getTierInfo } from "@/components/roi/developerTrustScore";
+import { TierBadge } from "@/components/roi/TierBadge";
 
 interface DeveloperFormProps {
   developer?: any;
@@ -37,15 +39,29 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
     occupancy_rate: developer?.occupancy_rate || "",
     on_time_delivery_rate: developer?.on_time_delivery_rate || "",
     total_valuation: developer?.total_valuation || "",
-    rating_quality: developer?.rating_quality || 0,
-    rating_track_record: developer?.rating_track_record || 0,
-    rating_sales: developer?.rating_sales || 0,
-    rating_design: developer?.rating_design || 0,
-    rating_flip_potential: developer?.rating_flip_potential || 0,
+    flagship_project: developer?.flagship_project || "",
+    rating_quality: developer?.rating_quality || 5,
+    rating_track_record: developer?.rating_track_record || 5,
+    rating_sales: developer?.rating_sales || 5,
+    rating_design: developer?.rating_design || 5,
+    rating_flip_potential: developer?.rating_flip_potential || 5,
+    score_maintenance: developer?.score_maintenance || 5,
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(developer?.logo_url || null);
   const [saving, setSaving] = useState(false);
+
+  // Calculate Trust Score in real-time
+  const trustScorePreview = useMemo(() => {
+    return calculateTrustScore({
+      rating_track_record: formData.rating_track_record,
+      rating_quality: formData.rating_quality,
+      rating_flip_potential: formData.rating_flip_potential,
+      score_maintenance: formData.score_maintenance,
+    });
+  }, [formData.rating_track_record, formData.rating_quality, formData.rating_flip_potential, formData.score_maintenance]);
+
+  const tierPreview = useMemo(() => getTierInfo(trustScorePreview), [trustScorePreview]);
 
   const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -124,11 +140,13 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
         occupancy_rate: formData.occupancy_rate ? parseFloat(formData.occupancy_rate) : null,
         on_time_delivery_rate: formData.on_time_delivery_rate ? parseFloat(formData.on_time_delivery_rate) : null,
         total_valuation: formData.total_valuation ? parseFloat(formData.total_valuation) : null,
-        rating_quality: formData.rating_quality || 0,
-        rating_track_record: formData.rating_track_record || 0,
-        rating_sales: formData.rating_sales || 0,
-        rating_design: formData.rating_design || 0,
-        rating_flip_potential: formData.rating_flip_potential || 0,
+        flagship_project: formData.flagship_project || null,
+        rating_quality: formData.rating_quality || 5,
+        rating_track_record: formData.rating_track_record || 5,
+        rating_sales: formData.rating_sales || 5,
+        rating_design: formData.rating_design || 5,
+        rating_flip_potential: formData.rating_flip_potential || 5,
+        score_maintenance: formData.score_maintenance || 5,
       };
 
       let error;
@@ -164,6 +182,26 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Trust Score Preview */}
+          <div 
+            className="flex items-center justify-between p-4 rounded-xl border"
+            style={{ 
+              backgroundColor: tierPreview.bgColor,
+              borderColor: `${tierPreview.color}40`
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <TierBadge score={trustScorePreview} variant="default" />
+              <span className="text-sm text-muted-foreground">Trust Score Preview</span>
+            </div>
+            <span 
+              className="text-3xl font-bold"
+              style={{ color: tierPreview.color }}
+            >
+              {trustScorePreview.toFixed(1)}
+            </span>
+          </div>
+
           {/* Logo Upload */}
           <div className="space-y-2">
             <Label>Logo (200x200px recomendado)</Label>
@@ -258,6 +296,20 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
             />
           </div>
 
+          {/* Flagship Project */}
+          <div className="space-y-2">
+            <Label htmlFor="flagship_project" className="flex items-center gap-2">
+              <Award className="h-4 w-4 text-primary" />
+              Flagship Project
+            </Label>
+            <Input
+              id="flagship_project"
+              value={formData.flagship_project}
+              onChange={(e) => setFormData({ ...formData, flagship_project: e.target.value })}
+              placeholder="e.g., Burj Khalifa, Downtown Dubai"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="projects_launched">Projects Launched</Label>
@@ -332,39 +384,23 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
             />
           </div>
 
-          {/* Performance Ratings Section */}
+          {/* Trust Score Ratings Section */}
           <div className="border-t pt-4 mt-4">
-            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
               <Star className="h-4 w-4 text-yellow-500" />
-              Performance Ratings (0-10)
+              Trust Score Pillars (0-10)
             </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              These 4 ratings determine the Trust Score: Track Record (40%) + Quality (25%) + ROI Potential (25%) + Maintenance (10%)
+            </p>
             
-            <div className="grid grid-cols-1 gap-4">
-              {/* Quality Rating */}
+            <div className="grid grid-cols-1 gap-4 bg-muted/30 rounded-lg p-4">
+              {/* Track Record Rating - 40% */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
-                    <Star className="h-3.5 w-3.5 text-blue-400" />
-                    Quality
-                  </Label>
-                  <span className="text-sm font-medium text-primary">{formData.rating_quality}/10</span>
-                </div>
-                <Slider
-                  value={[formData.rating_quality]}
-                  onValueChange={(v) => setFormData({ ...formData, rating_quality: v[0] })}
-                  min={0}
-                  max={10}
-                  step={0.5}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Track Record Rating */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <TrendingUp className="h-3.5 w-3.5 text-green-400" />
-                    Track Record
+                    <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                    Track Record <span className="text-xs text-muted-foreground">(40%)</span>
                   </Label>
                   <span className="text-sm font-medium text-primary">{formData.rating_track_record}/10</span>
                 </div>
@@ -378,11 +414,77 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
                 />
               </div>
 
+              {/* Quality Rating - 25% */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Star className="h-3.5 w-3.5 text-blue-400" />
+                    Build Quality <span className="text-xs text-muted-foreground">(25%)</span>
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_quality}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_quality]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_quality: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Flip Potential Rating - 25% */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Repeat className="h-3.5 w-3.5 text-cyan-400" />
+                    ROI Potential <span className="text-xs text-muted-foreground">(25%)</span>
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.rating_flip_potential}/10</span>
+                </div>
+                <Slider
+                  value={[formData.rating_flip_potential]}
+                  onValueChange={(v) => setFormData({ ...formData, rating_flip_potential: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Maintenance Rating - 10% */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Wrench className="h-3.5 w-3.5 text-orange-400" />
+                    Maintenance & Management <span className="text-xs text-muted-foreground">(10%)</span>
+                  </Label>
+                  <span className="text-sm font-medium text-primary">{formData.score_maintenance}/10</span>
+                </div>
+                <Slider
+                  value={[formData.score_maintenance]}
+                  onValueChange={(v) => setFormData({ ...formData, score_maintenance: v[0] })}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Ratings Section (not part of Trust Score) */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              Additional Metrics (0-10)
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-4">
               {/* Sales Rating */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
-                    <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
+                    <DollarSign className="h-3.5 w-3.5 text-green-400" />
                     Sales Performance
                   </Label>
                   <span className="text-sm font-medium text-primary">{formData.rating_sales}/10</span>
@@ -409,25 +511,6 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
                 <Slider
                   value={[formData.rating_design]}
                   onValueChange={(v) => setFormData({ ...formData, rating_design: v[0] })}
-                  min={0}
-                  max={10}
-                  step={0.5}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Flip Potential Rating */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Repeat className="h-3.5 w-3.5 text-orange-400" />
-                    Flip Potential
-                  </Label>
-                  <span className="text-sm font-medium text-primary">{formData.rating_flip_potential}/10</span>
-                </div>
-                <Slider
-                  value={[formData.rating_flip_potential]}
-                  onValueChange={(v) => setFormData({ ...formData, rating_flip_potential: v[0] })}
                   min={0}
                   max={10}
                   step={0.5}

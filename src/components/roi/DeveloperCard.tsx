@@ -1,29 +1,24 @@
 import { useState, useEffect } from "react";
-import { Building2, Star, ChevronRight } from "lucide-react";
+import { Building2, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-
-interface Developer {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  rating_quality: number | null;
-  rating_track_record: number | null;
-  on_time_delivery_rate: number | null;
-}
+import { calculateTrustScore, getTierInfo, Developer } from "./developerTrustScore";
+import { TierBadge } from "./TierBadge";
 
 interface DeveloperCardProps {
   developerId: string | null;
   developerName?: string;
   onClick?: () => void;
   className?: string;
+  variant?: 'default' | 'compact';
 }
 
 export const DeveloperCard = ({ 
   developerId, 
   developerName,
   onClick,
-  className 
+  className,
+  variant = 'default'
 }: DeveloperCardProps) => {
   const [developer, setDeveloper] = useState<Developer | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,12 +30,12 @@ export const DeveloperCard = ({
       setLoading(true);
       const { data, error } = await supabase
         .from('developers')
-        .select('id, name, logo_url, rating_quality, rating_track_record, on_time_delivery_rate')
+        .select('id, name, logo_url, rating_quality, rating_track_record, rating_flip_potential, score_maintenance, on_time_delivery_rate, projects_launched, units_sold, founded_year, flagship_project')
         .eq('id', developerId)
         .maybeSingle();
       
       if (!error && data) {
-        setDeveloper(data);
+        setDeveloper(data as Developer);
       }
       setLoading(false);
     };
@@ -48,10 +43,8 @@ export const DeveloperCard = ({
     fetchDeveloper();
   }, [developerId]);
 
-  // Calculate average rating
-  const avgRating = developer 
-    ? ((developer.rating_quality || 0) + (developer.rating_track_record || 0)) / 2
-    : 0;
+  const trustScore = developer ? calculateTrustScore(developer) : 0;
+  const tier = developer ? getTierInfo(trustScore) : null;
 
   if (!developerId && !developerName) return null;
 
@@ -59,8 +52,8 @@ export const DeveloperCard = ({
     <div 
       onClick={onClick}
       className={cn(
-        "bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-4 transition-all",
-        onClick && "cursor-pointer hover:border-[#CCFF00]/30 hover:bg-[#1a1f2e]/80",
+        "bg-card border border-border rounded-xl p-4 transition-all",
+        onClick && "cursor-pointer hover:border-primary/30 hover:bg-card/80",
         className
       )}
     >
@@ -70,30 +63,41 @@ export const DeveloperCard = ({
           <img 
             src={developer.logo_url} 
             alt={developer.name}
-            className="w-12 h-12 rounded-lg object-cover border border-[#2a3142]"
+            className="w-12 h-12 rounded-lg object-cover border border-border"
           />
         ) : (
-          <div className="w-12 h-12 rounded-lg bg-[#2a3142] flex items-center justify-center">
-            <Building2 className="w-6 h-6 text-gray-500" />
+          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-muted-foreground" />
           </div>
         )}
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">
-            {developer?.name || developerName || 'Unknown Developer'}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-medium text-foreground truncate">
+              {developer?.name || developerName || 'Unknown Developer'}
+            </p>
+            {tier && variant === 'default' && (
+              <TierBadge score={trustScore} variant="compact" />
+            )}
+          </div>
           
           {developer && (
             <div className="flex items-center gap-3 mt-1">
-              {avgRating > 0 && (
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3 text-[#CCFF00] fill-[#CCFF00]" />
-                  <span className="text-xs text-gray-400">{avgRating.toFixed(1)}</span>
+              {/* Trust Score */}
+              {tier && (
+                <div className="flex items-center gap-1.5">
+                  <span 
+                    className="text-lg font-bold"
+                    style={{ color: tier.color }}
+                  >
+                    {trustScore.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Trust</span>
                 </div>
               )}
-              {developer.on_time_delivery_rate && (
-                <span className="text-xs text-green-400">
+              {developer.on_time_delivery_rate && variant === 'default' && (
+                <span className="text-xs text-emerald-500">
                   {developer.on_time_delivery_rate}% on-time
                 </span>
               )}
@@ -103,7 +107,7 @@ export const DeveloperCard = ({
 
         {/* Arrow */}
         {onClick && (
-          <ChevronRight className="w-4 h-4 text-gray-500" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
         )}
       </div>
     </div>

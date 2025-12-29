@@ -19,6 +19,7 @@ import AccountSettings from "./pages/AccountSettings";
 import QuotesDashboard from "./pages/QuotesDashboard";
 import QuotesCompare from "./pages/QuotesCompare";
 import CashflowView from "./pages/CashflowView";
+import DeveloperRanking from "./pages/DeveloperRanking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/my-quotes" element={<QuotesDashboard />} />
                 <Route path="/compare" element={<QuotesCompare />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
+                <Route path="/developer-ranking" element={<DeveloperRanking />} />
                 {/* Redirects for old routes */}
                 <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
