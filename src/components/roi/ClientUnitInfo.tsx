@@ -23,6 +23,9 @@ export interface ClientUnitData {
   unitType: string;
   // Bedroom count for villa/townhouse
   bedrooms?: number;
+  // Plot size for villa/townhouse (in sqf)
+  plotSizeSqf?: number;
+  plotSizeM2?: number;
   // Payment split feature
   splitEnabled?: boolean;
   clientShares?: ClientShare[];
@@ -131,6 +134,12 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
                 <p className="text-xs text-gray-400">
                   ({data.unitSizeM2.toLocaleString()} m²)
                 </p>
+                {/* Plot size for villa/townhouse */}
+                {data.plotSizeSqf && data.plotSizeSqf > 0 && (data.unitType === 'villa' || data.unitType === 'townhouse') && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {language === 'es' ? 'Terreno' : 'Plot'}: {data.plotSizeSqf.toLocaleString()} sqf
+                  </p>
+                )}
               </div>
             </div>
           )}

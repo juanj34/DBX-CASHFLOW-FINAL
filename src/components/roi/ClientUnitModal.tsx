@@ -255,6 +255,40 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigge
                 className="bg-[#0d1117] border-[#2a3142] text-white"
               />
             </div>
+
+            {/* Plot Size - only for villa/townhouse */}
+            {(data.unitType === 'villa' || data.unitType === 'townhouse') && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-gray-400">{language === 'es' ? 'Terreno (sqf)' : 'Plot Size (sqf)'}</label>
+                  <Input
+                    type="number"
+                    value={data.plotSizeSqf || ''}
+                    onChange={(e) => {
+                      const sqf = parseFloat(e.target.value) || 0;
+                      const m2 = Math.round(sqf * 0.092903 * 10) / 10;
+                      onChange({ ...data, plotSizeSqf: sqf, plotSizeM2: m2 });
+                    }}
+                    placeholder="sqf"
+                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-gray-400">{language === 'es' ? 'Terreno (m²)' : 'Plot Size (m²)'}</label>
+                  <Input
+                    type="number"
+                    value={data.plotSizeM2 || ''}
+                    onChange={(e) => {
+                      const m2 = parseFloat(e.target.value) || 0;
+                      const sqf = Math.round(m2 / 0.092903);
+                      onChange({ ...data, plotSizeSqf: sqf, plotSizeM2: m2 });
+                    }}
+                    placeholder="m²"
+                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Zone Selection */}
