@@ -211,6 +211,36 @@ export type Database = {
         }
         Relationships: []
       }
+      exit_presets: {
+        Row: {
+          created_at: string
+          exit_months: Json
+          id: string
+          minimum_exit_threshold: number
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exit_months?: Json
+          id?: string
+          minimum_exit_threshold?: number
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exit_months?: Json
+          id?: string
+          minimum_exit_threshold?: number
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
