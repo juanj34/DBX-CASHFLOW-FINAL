@@ -485,6 +485,17 @@ const translations: Translations = {
   mortgageAtHandover: { en: 'Mortgage at Handover', es: 'Hipoteca en Entrega' },
   totalBeforeHandover: { en: 'Total Before Handover', es: 'Total Antes de Entrega' },
   
+  // New Mortgage Client-Focused Labels
+  yourCashRequirements: { en: 'Your Cash Requirements', es: 'Sus Requisitos de Efectivo' },
+  totalCashNeeded: { en: 'Total Cash Needed', es: 'Efectivo Total Requerido' },
+  monthlyAfterHandover: { en: 'Monthly After Handover', es: 'Mensual Después de Entrega' },
+  monthlyCommitment: { en: 'Monthly Commitment', es: 'Compromiso Mensual' },
+  totalInterestPaid: { en: 'Total Interest Paid', es: 'Interés Total Pagado' },
+  beforeHandover: { en: 'Before Handover', es: 'Antes de Entrega' },
+  additionalPaymentRequired: { en: 'Additional Payment Required', es: 'Pago Adicional Requerido' },
+  appreciationBonus: { en: 'Appreciation %', es: 'Apreciación %' },
+  viewMyQuote: { en: 'View My Quote', es: 'Ver Mi Cotización' },
+  
   // Summary View Mode
   dataView: { en: 'Data View', es: 'Vista de Datos' },
   explanationView: { en: 'Explanation View', es: 'Vista Explicativa' },
