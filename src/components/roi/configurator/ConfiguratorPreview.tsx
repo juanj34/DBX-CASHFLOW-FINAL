@@ -167,14 +167,12 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
             <Home className="w-3.5 h-3.5" />
             <span className="text-xs">Rental</span>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-mono text-white">
-              {formatCurrency(annualRent, currency)}/yr
+          <span className="text-sm font-mono text-white">
+            {inputs.rentalYieldPercent}%
+            <span className="text-xs text-theme-text-muted ml-1">
+              ({formatCurrency(annualRent, currency)}/yr)
             </span>
-            <span className="text-[10px] text-theme-text-muted font-mono">
-              +{inputs.rentGrowthRate ?? 3}%/yr
-            </span>
-          </div>
+          </span>
         </div>
 
         {/* Appreciation */}
