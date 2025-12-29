@@ -35,6 +35,9 @@ export const UNIT_TYPES = [
   { value: '3bed', labelEn: '3 Bedrooms', labelEs: '3 Habitaciones' },
   { value: '4bed', labelEn: '4 Bedrooms', labelEs: '4 Habitaciones' },
   { value: 'penthouse', labelEn: 'Penthouse', labelEs: 'Penthouse' },
+  { value: 'villa', labelEn: 'Villa', labelEs: 'Villa' },
+  { value: 'townhouse', labelEn: 'Townhouse', labelEs: 'Casa Adosada' },
+  { value: 'commercial', labelEn: 'Commercial', labelEs: 'Comercial' },
 ];
 
 export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigger = false }: ClientUnitModalProps) => {
