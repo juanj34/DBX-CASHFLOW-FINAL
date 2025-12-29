@@ -9,6 +9,11 @@ const triggerHapticFeedback = (pattern: number | number[] = 10) => {
 };
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { OIInputs } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
@@ -120,6 +125,7 @@ export const MobileConfiguratorSheet = ({
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('client');
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['client']));
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const [showSampleFlash, setShowSampleFlash] = useState(false);
   
   // Image upload state
   const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
@@ -318,6 +324,8 @@ export const MobileConfiguratorSheet = ({
   const handleLoadSample = () => {
     setInputs(DEFAULT_OI_INPUTS);
     setVisitedSections(new Set(SECTIONS));
+    setShowSampleFlash(true);
+    setTimeout(() => setShowSampleFlash(false), 1500);
   };
 
   const handleClose = () => {
@@ -374,15 +382,26 @@ export const MobileConfiguratorSheet = ({
               {t('investmentConfigurator') || 'Investment Configurator'}
             </DrawerTitle>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLoadSample}
-                className="text-gray-400 hover:text-white hover:bg-[#2a3142] h-8 px-2"
-                title="Load sample data"
-              >
-                <FileText className="w-4 h-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLoadSample}
+                    className="text-gray-400 hover:text-white hover:bg-[#2a3142] h-8 px-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-medium mb-1">Load demo scenario:</p>
+                  <ul className="text-xs space-y-0.5 text-muted-foreground">
+                    <li>• AED 800,000 property</li>
+                    <li>• 20/80 payment split</li>
+                    <li>• 8.5% rental yield</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
               <Button
                 variant="ghost"
                 size="sm"
@@ -457,12 +476,14 @@ export const MobileConfiguratorSheet = ({
         {/* Content - Scrollable with swipe gestures */}
         <div 
           ref={contentRef}
-          className="flex-1 overflow-y-auto p-4 max-h-[50vh]"
+          className={`flex-1 overflow-y-auto p-4 max-h-[50vh] transition-all duration-300 ${
+            showSampleFlash ? 'bg-[#CCFF00]/5 ring-2 ring-[#CCFF00]/30 ring-inset' : ''
+          }`}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          <div className={`transition-transform duration-300 ${getAnimationClass()}`}>
+          <div className={`transition-transform duration-300 ${getAnimationClass()} ${showSampleFlash ? 'animate-pulse' : ''}`}>
             {renderSection()}
           </div>
         </div>
