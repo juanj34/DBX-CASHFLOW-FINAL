@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { LogOut, Plus, Trash2, Calendar, Sparkles, Pencil, Check, X, Save, FolderOpen, AlertTriangle, RotateCcw, Wand2 } from "lucide-react";
+import { LogOut, Plus, Trash2, Calendar, Sparkles, Pencil, Check, X, Save, FolderOpen, AlertTriangle, RotateCcw, Wand2, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { ConfiguratorSectionProps } from "./types";
 import { formatCurrency } from "../currencyUtils";
 import { ExitTimeline } from "./ExitTimeline";
 import { useExitPresets, ExitPreset } from "@/hooks/useExitPresets";
+import { calculateEquityAtExitWithDetails, timelineToConstruction } from "../constructionProgress";
 
 interface ExitScenario {
   id: string;
@@ -75,30 +76,39 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   }, [exits]);
 
   const getExitDetails = useCallback((monthsFromBooking: number) => {
-    const exitPercent = (monthsFromBooking / totalMonths) * 100;
     const exitYears = monthsFromBooking / 12;
     
+    // Calculate appreciation using phased rates (construction phase)
     const annualRate = inputs.constructionAppreciation ?? 12;
     const exitValue = inputs.basePrice * Math.pow(1 + annualRate / 100, exitYears);
     const appreciation = exitValue - inputs.basePrice;
     const appreciationPercent = (appreciation / inputs.basePrice) * 100;
     
-    let equityPercent = inputs.downpaymentPercent;
-    inputs.additionalPayments.forEach(p => {
-      if (p.type === 'time' && p.triggerValue <= monthsFromBooking) {
-        equityPercent += p.paymentPercent;
-      } else if (p.type === 'construction' && p.triggerValue <= exitPercent) {
-        equityPercent += p.paymentPercent;
-      }
-    });
+    // Use S-curve based equity calculation with threshold logic
+    const equityResult = calculateEquityAtExitWithDetails(
+      monthsFromBooking,
+      inputs,
+      totalMonths,
+      inputs.basePrice
+    );
     
-    if (monthsFromBooking >= totalMonths) equityPercent = 100;
-    
-    const equityDeployed = inputs.basePrice * (equityPercent / 100);
+    // ROE uses final equity (includes any required advances)
     const profit = appreciation;
-    const roe = equityDeployed > 0 ? (profit / equityDeployed) * 100 : 0;
+    const roe = equityResult.finalEquity > 0 ? (profit / equityResult.finalEquity) * 100 : 0;
     
-    return { exitValue, appreciation, appreciationPercent, equityDeployed, equityPercent, profit, roe };
+    return { 
+      exitValue, 
+      appreciation, 
+      appreciationPercent, 
+      equityDeployed: equityResult.finalEquity, 
+      equityPercent: (equityResult.finalEquity / inputs.basePrice) * 100, 
+      planEquityPercent: equityResult.planEquityPercent,
+      profit, 
+      roe,
+      advanceRequired: equityResult.advanceRequired,
+      advancedPayments: equityResult.advancedPayments,
+      isThresholdMet: equityResult.isThresholdMet,
+    };
   }, [inputs, totalMonths]);
 
   const handleToggle = (enabled: boolean) => {
@@ -369,6 +379,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             onAddExit={handleAddExit}
             onRemoveExit={handleRemoveExit}
             onMoveExit={handleMoveExit}
+            inputs={inputs}
+            basePrice={inputs.basePrice}
           />
 
           {/* Timeline Info */}
@@ -388,12 +400,11 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             {allExits.map((exit) => {
               const details = getExitDetails(exit.monthsFromBooking);
               const isEditing = editingExitId === exit.id;
-              const isMinimumMet = details.equityPercent >= inputs.minimumExitThreshold;
               
               return (
                 <div
                   key={exit.id}
-                  className="p-3 rounded-xl border bg-theme-card border-theme-border"
+                  className={`p-3 rounded-xl border bg-theme-card ${!details.isThresholdMet ? 'border-amber-500/50' : 'border-theme-border'}`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -450,13 +461,50 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-theme-border/50 text-xs">
-                    <span className="text-theme-text-muted">Equity: {formatCurrency(details.equityDeployed, currency)} ({details.equityPercent.toFixed(0)}%)</span>
-                    {!isMinimumMet && (
-                      <span className="flex items-center gap-1 text-amber-400">
-                        <AlertTriangle className="w-3 h-3" />
-                        Below {inputs.minimumExitThreshold}%
+                  {/* Equity Info with Advance Payment Warning */}
+                  <div className="mt-2 pt-2 border-t border-theme-border/50 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-theme-text-muted">
+                        Equity: {formatCurrency(details.equityDeployed, currency)} ({details.equityPercent.toFixed(0)}%)
                       </span>
+                      {details.isThresholdMet ? (
+                        <span className="flex items-center gap-1 text-green-400 text-[10px]">
+                          ✓ Threshold met
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-amber-400">
+                          <AlertTriangle className="w-3 h-3" />
+                          Advance required
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Show advance payment details if not met */}
+                    {!details.isThresholdMet && details.advanceRequired > 0 && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-amber-400 font-medium flex items-center gap-1">
+                            <ArrowUpRight className="w-3 h-3" />
+                            Advance to reach {inputs.minimumExitThreshold}%:
+                          </span>
+                          <span className="text-xs text-amber-300 font-mono font-semibold">
+                            {formatCurrency(details.advanceRequired, currency)}
+                          </span>
+                        </div>
+                        {details.advancedPayments.length > 0 && (
+                          <div className="text-[10px] text-theme-text-muted space-y-0.5">
+                            {details.advancedPayments.map((p, idx) => (
+                              <div key={idx} className="flex justify-between">
+                                <span>{p.milestone.label || `${p.milestone.type === 'time' ? `Month ${p.milestone.triggerValue}` : `${p.milestone.triggerValue}% construction`}`}</span>
+                                <span className="font-mono">{formatCurrency(p.amountAdvanced, currency)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-[9px] text-amber-400/70 italic">
+                          Plan paid: {details.planEquityPercent.toFixed(0)}% → Need: {inputs.minimumExitThreshold}%
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
