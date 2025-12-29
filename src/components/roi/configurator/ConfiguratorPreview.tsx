@@ -102,10 +102,11 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
   const valueAtHandover = inputs.basePrice * Math.pow(1 + monthlyRate, monthsToHandover);
   const annualRent = valueAtHandover * (inputs.rentalYieldPercent / 100);
 
-  // Calculate total entry costs
-  const totalEntryCosts = inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee;
+  // Calculate entry costs (DLD 4% + Oqood - EOI is part of downpayment, not entry cost)
+  const dldFee = inputs.basePrice * 0.04;
+  const totalEntryCosts = dldFee + inputs.oqoodFee;
   
-  // Calculate downpayment amount
+  // Calculate downpayment amount (includes EOI)
   const downpaymentAmount = inputs.basePrice * (inputs.downpaymentPercent / 100);
 
   return (
