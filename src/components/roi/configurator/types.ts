@@ -1,7 +1,7 @@
 import { OIInputs, PaymentMilestone } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
 
-export type ConfiguratorSection = 'property' | 'payment' | 'value' | 'appreciation' | 'exits' | 'rent';
+export type ConfiguratorSection = 'property' | 'payment' | 'value' | 'appreciation' | 'exits' | 'rent' | 'mortgage';
 
 export interface ConfiguratorSectionProps {
   inputs: OIInputs;

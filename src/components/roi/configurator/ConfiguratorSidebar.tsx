@@ -69,6 +69,12 @@ export const ConfiguratorSidebar = ({
       icon: Home,
       isComplete: visitedSections.has('rent'),
     },
+    {
+      id: 'mortgage',
+      label: 'Mortgage',
+      icon: Building2,
+      isComplete: visitedSections.has('mortgage'),
+    },
   ];
 
   return (
@@ -124,7 +130,7 @@ export const ConfiguratorSidebar = ({
         <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
-            <span className="font-mono">1-6</span>
+            <span className="font-mono">1-7</span>
           </div>
           <div className="flex justify-between">
             <span>Next/Prev</span>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { LogOut, Plus, Trash2, Calendar, Sparkles, Pencil, Check, X, Save, FolderOpen, AlertTriangle } from "lucide-react";
+import { LogOut, Plus, Trash2, Calendar, Sparkles, Pencil, Check, X, Save, FolderOpen, AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -173,6 +173,11 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     setInputs(prev => ({ ...prev, minimumExitThreshold: value[0] }));
   };
 
+  const handleResetToDefaults = () => {
+    setCustomExits([]);
+    setInputs(prev => ({ ...prev, minimumExitThreshold: 30 }));
+  };
+
   const timelineExits = useMemo(() => {
     return allExits.map(exit => {
       const details = getExitDetails(exit.monthsFromBooking);
@@ -183,26 +188,26 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-0.5">Exit Scenarios</h3>
-        <p className="text-xs text-gray-500">Configure when you might exit this investment</p>
+        <h3 className="text-lg font-semibold text-theme-text mb-0.5">Exit Scenarios</h3>
+        <p className="text-xs text-theme-text-muted">Configure when you might exit this investment</p>
       </div>
 
       {/* Enable Toggle */}
-      <div className="flex items-center justify-between p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+      <div className="flex items-center justify-between p-3 bg-theme-card rounded-lg border border-theme-border">
         <div className="flex items-center gap-2">
-          <LogOut className="w-4 h-4 text-[#CCFF00]" />
-          <span className="text-sm text-gray-300">Enable Exit Analysis</span>
+          <LogOut className="w-4 h-4 text-theme-accent" />
+          <span className="text-sm text-theme-text-muted">Enable Exit Analysis</span>
         </div>
-        <Switch checked={exitScenariosEnabled} onCheckedChange={handleToggle} className="data-[state=checked]:bg-[#CCFF00]" />
+        <Switch checked={exitScenariosEnabled} onCheckedChange={handleToggle} className="data-[state=checked]:bg-theme-accent" />
       </div>
 
       {exitScenariosEnabled && (
         <>
           {/* Minimum Exit Threshold - MOVED UP with Slider */}
-          <div className="p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142] space-y-3">
+          <div className="p-3 bg-theme-card rounded-xl border border-theme-border space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-300">Minimum Exit Threshold</label>
-              <span className="text-sm text-[#CCFF00] font-mono font-semibold">{inputs.minimumExitThreshold}%</span>
+              <label className="text-sm text-theme-text-muted">Minimum Exit Threshold</label>
+              <span className="text-sm text-theme-accent font-mono font-semibold">{inputs.minimumExitThreshold}%</span>
             </div>
             <Slider
               value={[inputs.minimumExitThreshold]}
@@ -212,25 +217,25 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               step={5}
               className="w-full"
             />
-            <div className="flex justify-between text-[10px] text-gray-500">
+            <div className="flex justify-between text-[10px] text-theme-text-muted">
               <span>20%</span>
               <span>Min % paid before developer allows resale</span>
               <span>80%</span>
             </div>
           </div>
 
-          {/* Presets Controls with Delete */}
+          {/* Presets Controls with Delete and Reset */}
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs bg-[#0d1117] border-[#2a3142] text-gray-300 justify-start">
+                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text-muted justify-start">
                   <FolderOpen className="w-3 h-3 mr-1.5" />
                   Load preset...
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
                 {presets.length === 0 ? (
-                  <div className="px-2 py-2 text-xs text-gray-500">No presets saved</div>
+                  <div className="px-2 py-2 text-xs text-theme-text-muted">No presets saved</div>
                 ) : (
                   presets.map(preset => (
                     <DropdownMenuItem key={preset.id} className="flex items-center justify-between group" onSelect={() => handleLoadPreset(preset)}>
@@ -239,7 +244,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                         variant="ghost"
                         size="sm"
                         onClick={(e) => handleDeletePreset(e, preset.id)}
-                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
+                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-theme-text-muted hover:text-red-400"
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -250,28 +255,40 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             </DropdownMenu>
             
             {!isSavingPreset ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSavingPreset(true)}
-                disabled={customExits.length === 0}
-                className="h-8 text-xs border-[#2a3142] text-gray-400 hover:text-white"
-              >
-                <Save className="w-3 h-3 mr-1" />
-                Save
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSavingPreset(true)}
+                  disabled={customExits.length === 0}
+                  className="h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"
+                >
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetToDefaults}
+                  disabled={customExits.length === 0 && inputs.minimumExitThreshold === 30}
+                  className="h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"
+                  title="Reset to defaults"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </Button>
+              </>
             ) : (
               <div className="flex items-center gap-1.5">
                 <Input
                   value={presetName}
                   onChange={(e) => setPresetName(e.target.value)}
                   placeholder="Preset name"
-                  className="w-28 h-8 text-xs bg-[#0d1117] border-[#2a3142] text-white"
+                  className="w-28 h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text"
                 />
-                <Button size="sm" onClick={handleSavePreset} disabled={!presetName.trim() || savingPresets} className="h-8 px-2 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90">
+                <Button size="sm" onClick={handleSavePreset} disabled={!presetName.trim() || savingPresets} className="h-8 px-2 bg-theme-accent text-black hover:bg-theme-accent/90">
                   <Check className="w-3 h-3" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setIsSavingPreset(false); setPresetName(''); }} className="h-8 px-2 text-gray-500">
+                <Button variant="ghost" size="sm" onClick={() => { setIsSavingPreset(false); setPresetName(''); }} className="h-8 px-2 text-theme-text-muted">
                   <X className="w-3 h-3" />
                 </Button>
               </div>
@@ -284,18 +301,19 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             totalMonths={totalMonths}
             bookingDate={bookingDate}
             currency={currency}
+            minimumThreshold={inputs.minimumExitThreshold}
             onAddExit={handleAddCustomExit}
           />
 
           {/* Timeline Info */}
-          <div className="flex items-center justify-between p-2 bg-[#1a1f2e]/50 rounded-lg border border-[#2a3142]/50">
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+          <div className="flex items-center justify-between p-2 bg-theme-card/50 rounded-lg border border-theme-border/50">
+            <div className="flex items-center gap-2 text-xs text-theme-text-muted">
               <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span>{totalMonths} month construction</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#CCFF00]" />
-              <span className="text-xs text-[#CCFF00]">{autoGeneratedExits.length} auto + {customExits.length} custom</span>
+              <Sparkles className="w-3 h-3 text-theme-accent" />
+              <span className="text-xs text-theme-accent">{autoGeneratedExits.length} auto + {customExits.length} custom</span>
             </div>
           </div>
 
@@ -309,32 +327,32 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               return (
                 <div
                   key={exit.id}
-                  className={`p-3 rounded-xl border ${exit.isAutoGenerated ? 'bg-[#1a1f2e] border-[#2a3142]' : 'bg-[#1a1f2e] border-purple-500/30'}`}
+                  className={`p-3 rounded-xl border ${exit.isAutoGenerated ? 'bg-theme-card border-theme-border' : 'bg-theme-card border-purple-500/30'}`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {isEditing ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-gray-400">Month:</span>
+                          <span className="text-xs text-theme-text-muted">Month:</span>
                           <Input
                             type="number"
                             value={editingMonths}
                             onChange={(e) => setEditingMonths(parseInt(e.target.value) || 0)}
                             min={1}
                             max={totalMonths - 1}
-                            className="w-16 h-6 text-xs bg-[#0d1117] border-[#2a3142] text-white font-mono"
+                            className="w-16 h-6 text-xs bg-theme-bg-alt border-theme-border text-theme-text font-mono"
                           />
                           <Button variant="ghost" size="sm" onClick={() => handleSaveEdit(exit.id)} className="h-6 w-6 p-0 text-green-400 hover:text-green-300">
                             <Check className="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-6 w-6 p-0 text-gray-500 hover:text-gray-300">
+                          <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-6 w-6 p-0 text-theme-text-muted hover:text-theme-text">
                             <X className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       ) : (
                         <>
-                          <span className="text-sm font-medium text-white">{exit.label}</span>
-                          <span className="text-xs text-gray-500">• {getExitDate(exit.monthsFromBooking)}</span>
+                          <span className="text-sm font-medium text-theme-text">{exit.label}</span>
+                          <span className="text-xs text-theme-text-muted">• {getExitDate(exit.monthsFromBooking)}</span>
                           {!exit.isAutoGenerated && (
                             <span className="text-[10px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded">Custom</span>
                           )}
@@ -344,10 +362,10 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                     
                     {!exit.isAutoGenerated && !isEditing && (
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleStartEdit(exit)} className="h-6 w-6 p-0 text-gray-500 hover:text-blue-400">
+                        <Button variant="ghost" size="sm" onClick={() => handleStartEdit(exit)} className="h-6 w-6 p-0 text-theme-text-muted hover:text-blue-400">
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleRemoveExit(exit.id)} className="h-6 w-6 p-0 text-gray-500 hover:text-red-400">
+                        <Button variant="ghost" size="sm" onClick={() => handleRemoveExit(exit.id)} className="h-6 w-6 p-0 text-theme-text-muted hover:text-red-400">
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -355,22 +373,22 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-[#0d1117] rounded-lg p-2 text-center">
-                      <div className="text-sm font-mono text-white font-semibold">{formatCurrency(details.exitValue, currency)}</div>
-                      <div className="text-[10px] text-gray-500">Exit Value</div>
+                    <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
+                      <div className="text-sm font-mono text-theme-text font-semibold">{formatCurrency(details.exitValue, currency)}</div>
+                      <div className="text-[10px] text-theme-text-muted">Exit Value</div>
                     </div>
-                    <div className="bg-[#0d1117] rounded-lg p-2 text-center">
+                    <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
                       <div className="text-sm font-mono text-green-400 font-semibold">+{details.appreciationPercent.toFixed(1)}%</div>
-                      <div className="text-[10px] text-gray-500">Appreciation</div>
+                      <div className="text-[10px] text-theme-text-muted">Appreciation</div>
                     </div>
-                    <div className="bg-[#0d1117] rounded-lg p-2 text-center">
-                      <div className="text-sm font-mono text-[#CCFF00] font-semibold">{details.roe.toFixed(0)}%</div>
-                      <div className="text-[10px] text-gray-500">Return on Equity</div>
+                    <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
+                      <div className="text-sm font-mono text-theme-accent font-semibold">{details.roe.toFixed(0)}%</div>
+                      <div className="text-[10px] text-theme-text-muted">Return on Equity</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#2a3142]/50 text-xs">
-                    <span className="text-gray-500">Equity: {formatCurrency(details.equityDeployed, currency)} ({details.equityPercent.toFixed(0)}%)</span>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-theme-border/50 text-xs">
+                    <span className="text-theme-text-muted">Equity: {formatCurrency(details.equityDeployed, currency)} ({details.equityPercent.toFixed(0)}%)</span>
                     {!isMinimumMet && (
                       <span className="flex items-center gap-1 text-amber-400">
                         <AlertTriangle className="w-3 h-3" />
@@ -389,30 +407,30 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               variant="outline"
               size="sm"
               onClick={() => setIsAddingCustom(true)}
-              className="w-full h-9 text-xs bg-[#0d1117] border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+              className="w-full h-9 text-xs bg-theme-bg-alt border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
             >
               <Plus className="w-3.5 h-3.5 mr-1.5" />
               Add Custom Exit Point
             </Button>
           ) : (
-            <div className="p-3 bg-[#1a1f2e] rounded-xl border border-purple-500/30 space-y-3">
+            <div className="p-3 bg-theme-card rounded-xl border border-purple-500/30 space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-400 shrink-0">Exit at month:</label>
+                <label className="text-xs text-theme-text-muted shrink-0">Exit at month:</label>
                 <Input
                   type="number"
                   value={customMonths}
                   onChange={(e) => setCustomMonths(parseInt(e.target.value) || 0)}
                   min={1}
                   max={totalMonths - 1}
-                  className="w-20 h-8 text-sm bg-[#0d1117] border-[#2a3142] text-white font-mono"
+                  className="w-20 h-8 text-sm bg-theme-bg-alt border-theme-border text-theme-text font-mono"
                 />
-                <span className="text-xs text-gray-500">of {totalMonths} total</span>
+                <span className="text-xs text-theme-text-muted">of {totalMonths} total</span>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleAddCustomExit()} disabled={customMonths <= 0 || customMonths >= totalMonths} className="flex-1 h-8 text-xs bg-purple-500 text-white hover:bg-purple-600">
                   Add Exit Point
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsAddingCustom(false)} className="h-8 text-xs border-[#2a3142] text-gray-400">
+                <Button variant="outline" size="sm" onClick={() => setIsAddingCustom(false)} className="h-8 text-xs border-theme-border text-theme-text-muted">
                   Cancel
                 </Button>
               </div>
