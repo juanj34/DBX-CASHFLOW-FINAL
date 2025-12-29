@@ -65,6 +65,13 @@ export interface OIInputs {
   // NEW: Value differentiators
   valueDifferentiators?: string[]; // Array of differentiator IDs
   
+  // NEW: Enabled sections (lazy configuration)
+  enabledSections?: {
+    exitStrategy: boolean;
+    longTermHold: boolean;
+    // mortgage is controlled separately via mortgageInputs.enabled
+  };
+  
   // Schema version for migration support
   schemaVersion?: number;
 }

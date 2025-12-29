@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { ConfiguratorSectionProps, DEFAULT_SHORT_TERM_RENTAL } from "./types";
 import { formatCurrency } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
+import { EnabledSectionsToggle, DEFAULT_ENABLED_SECTIONS } from "../EnabledSectionsToggle";
 
 export const IncomeSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
   const rentalMode = inputs.rentalMode || 'long-term';
+  const enabledSections = inputs.enabledSections || DEFAULT_ENABLED_SECTIONS;
 
   const handleNumberChange = (field: keyof typeof inputs, value: string, min: number, max: number) => {
     const num = parseFloat(value);
@@ -28,6 +30,14 @@ export const IncomeSection = ({ inputs, setInputs, currency }: ConfiguratorSecti
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">Rental Income</h3>
         <p className="text-sm text-gray-500">Configure long-term rental and optional short-term comparison</p>
+      </div>
+
+      {/* Enabled Sections Toggle */}
+      <div className="p-4 bg-[#0d1117] rounded-xl border border-[#2a3142]">
+        <EnabledSectionsToggle
+          enabledSections={enabledSections}
+          onChange={(sections) => setInputs(prev => ({ ...prev, enabledSections: sections }))}
+        />
       </div>
 
       {/* Long-Term Rental */}
