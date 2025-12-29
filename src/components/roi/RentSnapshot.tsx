@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp } from "lucide-react";
+import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "./InfoTooltip";
+import { Slider } from "@/components/ui/slider";
 
 interface RentSnapshotProps {
   inputs: OIInputs;
@@ -23,20 +25,37 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
     shortTermRental
   } = inputs;
 
+  // Base values from inputs
+  const baseAdrValue = shortTermRental?.averageDailyRate || 800;
+  const baseOccupancyPercent = shortTermRental?.occupancyPercent || 70;
+  const operatingExpensePercent = shortTermRental?.operatingExpensePercent || 25;
+  const managementFeePercent = shortTermRental?.managementFeePercent || 15;
+
+  // Scenario playground state - local overrides for "what if" exploration
+  const [scenarioAdr, setScenarioAdr] = useState(baseAdrValue);
+  const [scenarioOccupancy, setScenarioOccupancy] = useState(baseOccupancyPercent);
+  const [isPlaygroundActive, setIsPlaygroundActive] = useState(false);
+
+  // Sync with input changes
+  useEffect(() => {
+    if (!isPlaygroundActive) {
+      setScenarioAdr(baseAdrValue);
+      setScenarioOccupancy(baseOccupancyPercent);
+    }
+  }, [baseAdrValue, baseOccupancyPercent, isPlaygroundActive]);
+
+  // Use scenario values when playground is active, otherwise use base values
+  const adrValue = isPlaygroundActive ? scenarioAdr : baseAdrValue;
+  const occupancyPercent = isPlaygroundActive ? scenarioOccupancy : baseOccupancyPercent;
+
   // Rental yields are calculated on PURCHASE PRICE (rent compression principle)
-  // When property appreciates, rental yield % on appreciated value compresses
   const { basePrice } = inputs;
   const grossAnnualRent = basePrice * (rentalYieldPercent / 100);
   const annualServiceCharges = unitSizeSqf * serviceChargePerSqft;
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
   const netYieldPercent = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
 
-  // Airbnb calculations (if enabled)
-  const adrValue = shortTermRental?.averageDailyRate || 800;
-  const occupancyPercent = shortTermRental?.occupancyPercent || 70;
-  const operatingExpensePercent = shortTermRental?.operatingExpensePercent || 25;
-  const managementFeePercent = shortTermRental?.managementFeePercent || 15;
-
+  // Airbnb calculations with scenario values
   const grossAirbnbAnnual = adrValue * 365 * (occupancyPercent / 100);
   const totalExpensePercent = operatingExpensePercent + managementFeePercent;
   const airbnbOperatingExpenses = grossAirbnbAnnual * (totalExpensePercent / 100);
@@ -51,6 +70,23 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
   const maxIncome = Math.max(netAnnualRent, netAirbnbAnnual);
   const ltBarWidth = maxIncome > 0 ? (netAnnualRent / maxIncome) * 100 : 50;
   const airbnbBarWidth = maxIncome > 0 ? (netAirbnbAnnual / maxIncome) * 100 : 50;
+
+  // Handle slider changes - activate playground mode
+  const handleAdrChange = (value: number[]) => {
+    setIsPlaygroundActive(true);
+    setScenarioAdr(value[0]);
+  };
+
+  const handleOccupancyChange = (value: number[]) => {
+    setIsPlaygroundActive(true);
+    setScenarioOccupancy(value[0]);
+  };
+
+  const resetPlayground = () => {
+    setIsPlaygroundActive(false);
+    setScenarioAdr(baseAdrValue);
+    setScenarioOccupancy(baseOccupancyPercent);
+  };
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden h-fit mt-4 flex flex-col">
@@ -73,6 +109,78 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           {showAirbnbComparison ? t('ltPlusAirbnb') : t('longTermOnly')}
         </Badge>
       </div>
+
+      {/* Scenario Playground - Only when Airbnb is enabled */}
+      {showAirbnbComparison && (
+        <div className="p-4 border-b border-[#2a3142] bg-gradient-to-r from-orange-500/5 to-purple-500/5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-medium text-white">{t('scenarioPlayground')}</span>
+            </div>
+            {isPlaygroundActive && (
+              <button
+                onClick={resetPlayground}
+                className="text-xs text-gray-400 hover:text-white transition-colors underline"
+              >
+                {t('resetToDefault')}
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* ADR Slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">{t('averageDailyRate')}</span>
+                <span className={`text-sm font-bold font-mono ${isPlaygroundActive && scenarioAdr !== baseAdrValue ? 'text-purple-400' : 'text-white'}`}>
+                  {formatCurrency(adrValue, currency, rate)}
+                </span>
+              </div>
+              <Slider
+                value={[adrValue]}
+                onValueChange={handleAdrChange}
+                min={400}
+                max={1500}
+                step={50}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-gray-500">
+                <span>{formatCurrency(400, currency, rate)}</span>
+                <span>{formatCurrency(1500, currency, rate)}</span>
+              </div>
+            </div>
+
+            {/* Occupancy Slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">{t('occupancy')}</span>
+                <span className={`text-sm font-bold font-mono ${isPlaygroundActive && scenarioOccupancy !== baseOccupancyPercent ? 'text-purple-400' : 'text-white'}`}>
+                  {occupancyPercent}%
+                </span>
+              </div>
+              <Slider
+                value={[occupancyPercent]}
+                onValueChange={handleOccupancyChange}
+                min={50}
+                max={95}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-gray-500">
+                <span>50%</span>
+                <span>95%</span>
+              </div>
+            </div>
+          </div>
+
+          {isPlaygroundActive && (
+            <p className="text-[10px] text-purple-400 mt-2 text-center">
+              ✨ {t('scenarioModeActive')}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Main Content - Side by Side on Desktop when Airbnb is enabled */}
       <div className={showAirbnbComparison ? "grid md:grid-cols-2 gap-0" : ""}>
@@ -150,7 +258,11 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
               </div>
               <Badge 
                 variant="outline" 
-                className="bg-orange-500/10 text-orange-300 border-orange-500/30 text-[10px] px-2 py-0.5 flex items-center gap-1"
+                className={`text-[10px] px-2 py-0.5 flex items-center gap-1 ${
+                  isPlaygroundActive 
+                    ? 'bg-purple-500/10 text-purple-300 border-purple-500/30' 
+                    : 'bg-orange-500/10 text-orange-300 border-orange-500/30'
+                }`}
               >
                 {occupancyPercent}% {t('occupancy')}
                 <InfoTooltip translationKey="tooltipOccupancyRate" />
@@ -160,13 +272,17 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             {/* ADR */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">{t('averageDailyRate')}</span>
-              <span className="text-sm font-bold text-white font-mono">{formatCurrency(adrValue, currency, rate)}</span>
+              <span className={`text-sm font-bold font-mono ${isPlaygroundActive ? 'text-purple-400' : 'text-white'}`}>
+                {formatCurrency(adrValue, currency, rate)}
+              </span>
             </div>
 
             {/* Gross Annual */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">{t('grossAnnual')}</span>
-              <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAirbnbAnnual, currency, rate)}</span>
+              <span className={`text-sm font-bold font-mono ${isPlaygroundActive ? 'text-purple-400' : 'text-white'}`}>
+                {formatCurrency(grossAirbnbAnnual, currency, rate)}
+              </span>
             </div>
 
             {/* Utilities & Upkeep (renamed from Operating Expenses) */}
@@ -203,7 +319,9 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
             {/* Net Annual Airbnb - HERO NUMBER */}
             <div className="flex items-center justify-between pt-2 border-t border-orange-500/20">
               <span className="text-sm text-gray-300 font-medium">{t('netAnnual')}</span>
-              <span className="text-xl font-bold text-orange-400 font-mono">{formatCurrency(netAirbnbAnnual, currency, rate)}</span>
+              <span className={`text-xl font-bold font-mono ${isPlaygroundActive ? 'text-purple-400' : 'text-orange-400'}`}>
+                {formatCurrency(netAirbnbAnnual, currency, rate)}
+              </span>
             </div>
           </div>
         )}
@@ -232,20 +350,24 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
               <span className="text-xs text-gray-400 w-16 shrink-0">Airbnb</span>
               <div className="flex-1 h-3 bg-[#2a3142] rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-orange-400 rounded-full transition-all duration-300"
+                  className={`h-full rounded-full transition-all duration-300 ${isPlaygroundActive ? 'bg-purple-400' : 'bg-orange-400'}`}
                   style={{ width: `${airbnbBarWidth}%` }}
                 />
               </div>
-              <span className="text-xs font-mono text-orange-400 w-20 text-right">{formatCurrency(netAirbnbAnnual, currency, rate)}</span>
+              <span className={`text-xs font-mono w-20 text-right ${isPlaygroundActive ? 'text-purple-400' : 'text-orange-400'}`}>
+                {formatCurrency(netAirbnbAnnual, currency, rate)}
+              </span>
             </div>
           </div>
 
           {/* Winner Badge - Prominent styling */}
           <div className="mt-3 text-center">
             <Badge 
-              className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-bold transition-all duration-300 ${
                 airbnbDifferencePercent >= 0 
-                  ? 'bg-green-500/20 text-green-400 border-green-500/40' 
+                  ? isPlaygroundActive 
+                    ? 'bg-purple-500/20 text-purple-400 border-purple-500/40'
+                    : 'bg-green-500/20 text-green-400 border-green-500/40' 
                   : 'bg-red-500/20 text-red-400 border-red-500/40'
               }`}
             >
