@@ -26,13 +26,27 @@ export const HoldTabContent = ({
 
   return (
     <div className="space-y-6">
-      <RentSnapshot 
-        inputs={inputs} 
-        currency={currency} 
-        rate={rate} 
-        holdAnalysis={calculations.holdAnalysis} 
-      />
+      {/* Row 1: RentSnapshot + WealthSummary (2 columns on desktop) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RentSnapshot 
+          inputs={inputs} 
+          currency={currency} 
+          rate={rate} 
+          holdAnalysis={calculations.holdAnalysis} 
+        />
+        
+        <WealthSummaryCard 
+          propertyValueYear10={lastProjection.propertyValue} 
+          cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
+          airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} 
+          initialInvestment={totalCapitalInvested} 
+          currency={currency} 
+          rate={rate} 
+          showAirbnbComparison={calculations.showAirbnbComparison} 
+        />
+      </div>
       
+      {/* Row 2: Cumulative Chart (full width) */}
       <CumulativeIncomeChart 
         projections={calculations.yearlyProjections} 
         currency={currency} 
@@ -41,22 +55,13 @@ export const HoldTabContent = ({
         showAirbnbComparison={calculations.showAirbnbComparison} 
       />
       
+      {/* Row 3: Yearly Projection Table (full width) */}
       <OIYearlyProjectionTable 
         projections={calculations.yearlyProjections} 
         currency={currency} 
         rate={rate} 
         showAirbnbComparison={calculations.showAirbnbComparison} 
         unitSizeSqf={unitSizeSqf}
-      />
-      
-      <WealthSummaryCard 
-        propertyValueYear10={lastProjection.propertyValue} 
-        cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
-        airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} 
-        initialInvestment={totalCapitalInvested} 
-        currency={currency} 
-        rate={rate} 
-        showAirbnbComparison={calculations.showAirbnbComparison} 
       />
     </div>
   );
