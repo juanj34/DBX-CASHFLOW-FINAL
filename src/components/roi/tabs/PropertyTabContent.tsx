@@ -102,8 +102,9 @@ export const PropertyTabContent = ({
   });
 
   const hasImages = floorPlanUrl || buildingRenderUrl;
-  const hasDeveloper = developer || clientInfo.developer;
-  const hasProject = project || clientInfo.projectName;
+  // Only show cards if actual database records exist, not just name strings
+  const hasDeveloper = !!developer;
+  const hasProject = !!project;
 
   if (variant === 'dashboard') {
     return (
