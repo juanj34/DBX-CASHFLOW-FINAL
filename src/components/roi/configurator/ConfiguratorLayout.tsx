@@ -7,6 +7,7 @@ import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculati
 import { ConfiguratorSection, DEFAULT_OI_INPUTS } from "./types";
 import { ConfiguratorSidebar } from "./ConfiguratorSidebar";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
+import { ClientSection } from "./ClientSection";
 import { PropertySection } from "./PropertySection";
 import { PaymentSection } from "./PaymentSection";
 import { ValueSection } from "./ValueSection";
@@ -14,6 +15,19 @@ import { AppreciationSection } from "./AppreciationSection";
 import { ExitsSection } from "./ExitsSection";
 import { RentSection } from "./RentSection";
 import { MortgageSection } from "./MortgageSection";
+import { ClientUnitData } from "../ClientUnitInfo";
+import { supabase } from "@/integrations/supabase/client";
+
+const DEFAULT_CLIENT_INFO: ClientUnitData = { 
+  developer: '', 
+  projectName: '', 
+  clients: [], 
+  brokerName: '', 
+  unit: '', 
+  unitSizeSqf: 0, 
+  unitSizeM2: 0, 
+  unitType: '' 
+};
 
 interface ConfiguratorLayoutProps {
   inputs: OIInputs;
@@ -22,6 +36,9 @@ interface ConfiguratorLayoutProps {
   onClose: () => void;
   mortgageInputs: MortgageInputs;
   setMortgageInputs: React.Dispatch<React.SetStateAction<MortgageInputs>>;
+  clientInfo?: ClientUnitData;
+  setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
+  quoteId?: string;
 }
 
 const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
@@ -72,19 +89,32 @@ export const ConfiguratorLayout = ({
   currency, 
   onClose,
   mortgageInputs,
-  setMortgageInputs
+  setMortgageInputs,
+  clientInfo: externalClientInfo,
+  setClientInfo: externalSetClientInfo,
+  quoteId,
 }: ConfiguratorLayoutProps) => {
   // Load initial state from localStorage
   const savedState = loadConfiguratorState();
   
+  // Internal client info state (used if external not provided)
+  const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
+  const clientInfo = externalClientInfo || internalClientInfo;
+  const setClientInfo = externalSetClientInfo || setInternalClientInfo;
+  
+  // Image state
+  const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
+  const [buildingRenderUrl, setBuildingRenderUrl] = useState<string | null>(null);
+  const [showLogoOverlay, setShowLogoOverlay] = useState(true);
+  
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
-    savedState?.activeSection || 'property'
+    savedState?.activeSection || 'client'  // Start from client section
   );
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
-    new Set(savedState?.visitedSections || ['property'])
+    new Set(savedState?.visitedSections || ['client'])
   );
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
   const contentScrollRef = useRef<HTMLDivElement>(null);
@@ -264,10 +294,71 @@ export const ConfiguratorLayout = ({
     return animationDirection === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left';
   };
 
+  // Image upload handlers
+  const handleFloorPlanUpload = async (file: File | null) => {
+    if (!file) {
+      setFloorPlanUrl(null);
+      return;
+    }
+    
+    try {
+      const fileName = `floor-plan-${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('quote-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('quote-images')
+        .getPublicUrl(data.path);
+      
+      setFloorPlanUrl(urlData.publicUrl);
+    } catch (error) {
+      console.error('Error uploading floor plan:', error);
+    }
+  };
+
+  const handleBuildingRenderUpload = async (file: File | null) => {
+    if (!file) {
+      setBuildingRenderUrl(null);
+      return;
+    }
+    
+    try {
+      const fileName = `building-render-${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('quote-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('quote-images')
+        .getPublicUrl(data.path);
+      
+      setBuildingRenderUrl(urlData.publicUrl);
+    } catch (error) {
+      console.error('Error uploading building render:', error);
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case 'client':
-        return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />; // TODO: Replace with ClientSection
+        return (
+          <ClientSection
+            clientInfo={clientInfo}
+            onClientInfoChange={setClientInfo}
+            floorPlanUrl={floorPlanUrl}
+            buildingRenderUrl={buildingRenderUrl}
+            onFloorPlanChange={handleFloorPlanUpload}
+            onBuildingRenderChange={handleBuildingRenderUpload}
+            showLogoOverlay={showLogoOverlay}
+            onShowLogoOverlayChange={setShowLogoOverlay}
+            quoteId={quoteId}
+          />
+        );
       case 'property':
         return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'payment':
