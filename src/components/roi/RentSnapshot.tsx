@@ -52,7 +52,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
   const airbnbBarWidth = maxIncome > 0 ? (netAirbnbAnnual / maxIncome) * 100 : 50;
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden h-fit mt-4 flex flex-col">
+    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-[#2a3142] flex items-center justify-between">
         <div className="flex items-center gap-2">
