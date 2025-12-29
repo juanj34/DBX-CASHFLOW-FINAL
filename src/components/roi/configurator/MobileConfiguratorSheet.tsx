@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet, LogOut } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet, LogOut, Building2 } from "lucide-react";
 
 // Haptic feedback utility for tactile response on mobile devices
 const triggerHapticFeedback = (pattern: number | number[] = 10) => {
@@ -44,8 +44,18 @@ const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   mortgage: 'Mortgage',
 };
 
-// Mini preview strip component
-const MiniPreviewStrip = ({ inputs, currency }: { inputs: OIInputs; currency: Currency }) => {
+// Mini preview strip component with mortgage toggle
+const MiniPreviewStrip = ({ 
+  inputs, 
+  currency, 
+  mortgageEnabled, 
+  onToggleMortgage 
+}: { 
+  inputs: OIInputs; 
+  currency: Currency; 
+  mortgageEnabled: boolean;
+  onToggleMortgage: () => void;
+}) => {
   const paymentSplit = `${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent}`;
   
   return (
@@ -70,6 +80,18 @@ const MiniPreviewStrip = ({ inputs, currency }: { inputs: OIInputs; currency: Cu
           {inputs.rentalYieldPercent}% yield
         </span>
       </div>
+      <div className="w-px h-4 bg-[#2a3142]" />
+      <button
+        onClick={onToggleMortgage}
+        className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
+          mortgageEnabled 
+            ? 'bg-blue-500/20 text-blue-400' 
+            : 'bg-[#2a3142] text-gray-500'
+        }`}
+      >
+        <Building2 className="w-3 h-3 flex-shrink-0" />
+        <span className="text-[9px] font-medium">{mortgageEnabled ? 'ON' : 'OFF'}</span>
+      </button>
     </div>
   );
 };
@@ -256,7 +278,12 @@ export const MobileConfiguratorSheet = ({
           </div>
 
           {/* Mini Preview Strip */}
-          <MiniPreviewStrip inputs={inputs} currency={currency} />
+          <MiniPreviewStrip 
+            inputs={inputs} 
+            currency={currency} 
+            mortgageEnabled={mortgageInputs.enabled}
+            onToggleMortgage={() => setMortgageInputs(prev => ({ ...prev, enabled: !prev.enabled }))}
+          />
 
           {/* Section Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
