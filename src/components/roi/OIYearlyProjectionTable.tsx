@@ -50,8 +50,8 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
             🏢 {t('longTerm')}
           </span>
           {showAirbnbComparison && (
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
-              🏠 Airbnb
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400">
+              🏠 {t('shortTerm')}
             </span>
           )}
         </div>
@@ -66,16 +66,16 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
           </div>
           <div className="text-center p-3 bg-[#CCFF00]/10 rounded-lg border border-[#CCFF00]/30">
             <div className="text-xs text-gray-400">{t('difference')}</div>
-            <div className={`text-lg font-bold ${winner === 'airbnb' ? 'text-purple-400' : 'text-blue-400'}`}>
+            <div className={`text-lg font-bold ${winner === 'airbnb' ? 'text-orange-400' : 'text-blue-400'}`}>
               +{formatCurrency(difference, currency, rate)}
             </div>
             <div className="text-xs text-gray-500">
-              {winner === 'airbnb' ? t('airbnbWins') : t('longTermWins')}
+              {winner === 'airbnb' ? t('shortTermPremium') : t('longTermAdvantage')}
             </div>
           </div>
-          <div className="text-center p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
-            <div className="text-xs text-gray-400">{t('airbnbTenYear')}</div>
-            <div className="text-lg font-bold text-purple-400">{formatCurrency(airbnbTotal, currency, rate)}</div>
+          <div className="text-center p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+            <div className="text-xs text-gray-400">{t('shortTermTenYear')}</div>
+            <div className="text-lg font-bold text-orange-400">{formatCurrency(airbnbTotal, currency, rate)}</div>
           </div>
         </div>
       )}
@@ -89,7 +89,7 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
               <th className="px-2 py-3 text-right text-xs font-medium text-gray-400 tracking-wider whitespace-nowrap">{t('value')}</th>
               <th className="px-2 py-3 text-right text-xs font-medium text-cyan-400 tracking-wider whitespace-nowrap">{t('netRent')}</th>
               {showAirbnbComparison && (
-                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 tracking-wider whitespace-nowrap">{t('airbnbNet')}</th>
+                <th className="px-2 py-3 text-right text-xs font-medium text-orange-400 tracking-wider whitespace-nowrap">{t('shortTermNet')}</th>
               )}
               <th className="px-2 py-3 text-center text-xs font-medium text-gray-400 tracking-wider whitespace-nowrap">{t('status')}</th>
             </tr>
@@ -167,7 +167,11 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
                     </span>
                   )}
                   {!proj.isConstruction && !proj.isHandover && !proj.isBreakEven && (
-                    <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      proj.phase === 'growth' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
                       {proj.phase === 'growth' ? t('growth') : t('mature')}
                     </span>
                   )}
@@ -194,8 +198,8 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
               {t('ltLabel')} {formatCurrency(longTermTotal, currency, rate)}
             </span>
             {showAirbnbComparison && (
-              <span className="text-purple-400 font-mono font-bold">
-                {t('airbnbLabel')} {formatCurrency(airbnbTotal, currency, rate)}
+              <span className="text-orange-400 font-mono font-bold">
+                {t('stLabel')} {formatCurrency(airbnbTotal, currency, rate)}
               </span>
             )}
           </div>

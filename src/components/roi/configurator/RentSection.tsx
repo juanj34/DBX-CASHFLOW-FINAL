@@ -40,7 +40,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">Rental Strategy</h3>
-        <p className="text-sm text-gray-500">Configure long-term rental and optional Airbnb comparison</p>
+        <p className="text-sm text-gray-500">Configure long-term rental and optional short-term comparison</p>
       </div>
 
       {/* Long-Term Rental Toggle & Config */}
@@ -114,17 +114,17 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         )}
       </div>
 
-      {/* Airbnb Comparison Toggle & Config */}
+      {/* Short-Term Comparison Toggle & Config */}
       <div className="space-y-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Plane className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-gray-300 font-medium">Airbnb Comparison</span>
+            <Plane className="w-4 h-4 text-orange-400" />
+            <span className="text-sm text-gray-300 font-medium">Short-Term Comparison</span>
           </div>
           <Switch
             checked={airbnbEnabled}
             onCheckedChange={handleAirbnbToggle}
-            className="data-[state=checked]:bg-purple-500"
+            className="data-[state=checked]:bg-orange-500"
           />
         </div>
 
@@ -166,7 +166,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs text-gray-400">ADR Growth Rate</label>
-                <span className="text-sm text-purple-400 font-mono">{inputs.adrGrowthRate ?? 3}%</span>
+                <span className="text-sm text-orange-400 font-mono">{inputs.adrGrowthRate ?? 3}%</span>
               </div>
               <Slider
                 value={[inputs.adrGrowthRate ?? 3]}
@@ -238,8 +238,8 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               </div>
             </div>
 
-            {/* Airbnb Income Summary */}
-            <div className="p-3 bg-[#0d1117] rounded-lg border border-purple-500/30 space-y-2">
+            {/* Short-Term Income Summary */}
+            <div className="p-3 bg-[#0d1117] rounded-lg border border-orange-500/30 space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Gross Income</span>
                 <span className="text-white font-mono">{formatCurrency(grossAirbnbIncome, currency)}</span>
@@ -249,7 +249,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                 <span className="text-red-400 font-mono">-{formatCurrency(airbnbExpenses, currency)}</span>
               </div>
               <div className="flex justify-between text-sm pt-2 border-t border-[#2a3142]">
-                <span className="text-purple-400 font-medium">Net Income</span>
+                <span className="text-orange-400 font-medium">Net Income</span>
                 <span className="text-[#CCFF00] font-mono font-bold">{formatCurrency(netAirbnbIncome, currency)}</span>
               </div>
               {/* Comparison */}

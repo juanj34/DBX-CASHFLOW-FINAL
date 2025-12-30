@@ -63,13 +63,10 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           </div>
         </div>
         <Badge 
-          variant={showAirbnbComparison ? "default" : "secondary"}
-          className={showAirbnbComparison 
-            ? "bg-orange-500/20 text-orange-400 border-orange-500/30" 
-            : "bg-[#2a3142] text-gray-400 border-[#2a3142]"
-          }
+          variant="secondary"
+          className="bg-[#2a3142] text-gray-400 border-[#2a3142] text-[10px]"
         >
-          {showAirbnbComparison ? t('ltPlusAirbnb') : t('longTermOnly')}
+          {showAirbnbComparison ? t('ltPlusShortTerm') : t('longTermOnly')}
         </Badge>
       </div>
 
@@ -138,14 +135,14 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           </div>
         </div>
 
-        {/* Airbnb Section (conditional) */}
+        {/* Short-Term Section (conditional) */}
         {showAirbnbComparison && (
           <div className="p-4 space-y-3 border-t md:border-t-0 md:border-l border-[#2a3142] bg-orange-500/5">
-            {/* Airbnb Header with Occupancy Badge */}
+            {/* Short-Term Header with Occupancy Badge */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-orange-400" />
-                <h4 className="text-sm font-medium text-white">{t('airbnbComparison')}</h4>
+                <h4 className="text-sm font-medium text-white">{t('shortTermComparison')}</h4>
               </div>
               <Badge 
                 variant="outline" 
@@ -199,7 +196,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
               </div>
             )}
 
-            {/* Net Annual Airbnb - HERO NUMBER */}
+            {/* Net Annual Short-Term - HERO NUMBER */}
             <div className="flex items-center justify-between pt-2 border-t border-orange-500/20">
               <span className="text-sm text-gray-300 font-medium">{t('netAnnual')}</span>
               <span className="text-xl font-bold text-orange-400 font-mono">{formatCurrency(netAirbnbAnnual, currency, rate)}</span>
@@ -226,9 +223,9 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
               <span className="text-xs font-mono text-cyan-400 w-20 text-right">{formatCurrency(netAnnualRent, currency, rate)}</span>
             </div>
 
-            {/* Airbnb Bar */}
+            {/* Short-Term Bar */}
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400 w-16 shrink-0">Airbnb</span>
+              <span className="text-xs text-gray-400 w-16 shrink-0">{t('shortTerm')}</span>
               <div className="flex-1 h-3 bg-[#2a3142] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-orange-400 rounded-full transition-all duration-300"
@@ -266,51 +263,66 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
           <p className="text-[10px] text-gray-500 mb-3 ml-6">{t('paybackPeriodDesc')}</p>
           
           <div className="space-y-2">
-            {/* Long-Term Rental */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{t('longTermRental')}</span>
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-[#2a3142] rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full ${
-                      holdAnalysis.yearsToPayOff <= 15 ? 'bg-green-400' :
-                      holdAnalysis.yearsToPayOff <= 20 ? 'bg-yellow-400' : 'bg-red-400'
-                    }`}
-                    style={{ width: `${Math.min(100, (15 / holdAnalysis.yearsToPayOff) * 100)}%` }}
-                  />
-                </div>
-                <span className={`text-sm font-bold font-mono ${
-                  holdAnalysis.yearsToPayOff <= 15 ? 'text-green-400' :
-                  holdAnalysis.yearsToPayOff <= 20 ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  {holdAnalysis.yearsToPayOff.toFixed(1)}y
-                </span>
-              </div>
-            </div>
-            
-            {/* Airbnb (if enabled) */}
-            {holdAnalysis.airbnbYearsToPayOff && holdAnalysis.airbnbYearsToPayOff < 999 && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Airbnb</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-1.5 bg-[#2a3142] rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${
-                        holdAnalysis.airbnbYearsToPayOff <= 12 ? 'bg-green-400' :
-                        holdAnalysis.airbnbYearsToPayOff <= 18 ? 'bg-yellow-400' : 'bg-red-400'
-                      }`}
-                      style={{ width: `${Math.min(100, (12 / holdAnalysis.airbnbYearsToPayOff) * 100)}%` }}
-                    />
+            {/* Calculate bar widths based on max payback for proportional display */}
+            {(() => {
+              const ltPayback = holdAnalysis.yearsToPayOff;
+              const stPayback = holdAnalysis.airbnbYearsToPayOff && holdAnalysis.airbnbYearsToPayOff < 999 
+                ? holdAnalysis.airbnbYearsToPayOff 
+                : null;
+              const maxPayback = Math.max(ltPayback, stPayback || 0);
+              const ltBarWidth = maxPayback > 0 ? (ltPayback / maxPayback) * 100 : 50;
+              const stBarWidth = stPayback && maxPayback > 0 ? (stPayback / maxPayback) * 100 : 0;
+              
+              return (
+                <>
+                  {/* Long-Term Rental */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">{t('longTermRental')}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-1.5 bg-[#2a3142] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            ltPayback <= 15 ? 'bg-green-400' :
+                            ltPayback <= 20 ? 'bg-yellow-400' : 'bg-red-400'
+                          }`}
+                          style={{ width: `${ltBarWidth}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-bold font-mono ${
+                        ltPayback <= 15 ? 'text-green-400' :
+                        ltPayback <= 20 ? 'text-yellow-400' : 'text-red-400'
+                      }`}>
+                        {ltPayback.toFixed(1)}y
+                      </span>
+                    </div>
                   </div>
-                  <span className={`text-sm font-bold font-mono ${
-                    holdAnalysis.airbnbYearsToPayOff <= 12 ? 'text-green-400' :
-                    holdAnalysis.airbnbYearsToPayOff <= 18 ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
-                    {holdAnalysis.airbnbYearsToPayOff.toFixed(1)}y
-                  </span>
-                </div>
-              </div>
-            )}
+                  
+                  {/* Short-Term (if enabled) */}
+                  {stPayback && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{t('shortTerm')}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-[#2a3142] rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              stPayback <= 12 ? 'bg-green-400' :
+                              stPayback <= 18 ? 'bg-yellow-400' : 'bg-red-400'
+                            }`}
+                            style={{ width: `${stBarWidth}%` }}
+                          />
+                        </div>
+                        <span className={`text-sm font-bold font-mono ${
+                          stPayback <= 12 ? 'text-green-400' :
+                          stPayback <= 18 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          {stPayback.toFixed(1)}y
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
           <p className="text-[10px] text-gray-400 mt-2 text-center">{t('basedOnNetRentalIncome')}</p>
         </div>
