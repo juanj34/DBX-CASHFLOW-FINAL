@@ -57,12 +57,12 @@ export const DeveloperRadarChart: React.FC<DeveloperRadarChartProps> = ({
             <PolarAngleAxis
               dataKey="displayCategory"
               tick={({ x, y, payload, index }) => {
-                // Position adjustments for each label
+                // Enhanced position adjustments for better label readability
                 const offsetMap: Record<number, { dx: number; dy: number }> = {
-                  0: { dx: 0, dy: -8 },   // Top
-                  1: { dx: 12, dy: 0 },   // Right
-                  2: { dx: 0, dy: 12 },   // Bottom
-                  3: { dx: -12, dy: 0 },  // Left
+                  0: { dx: 0, dy: -12 },   // Top - push up more
+                  1: { dx: 18, dy: 4 },    // Right - push out more
+                  2: { dx: 0, dy: 16 },    // Bottom - push down more
+                  3: { dx: -18, dy: 4 },   // Left - push out more
                 };
                 const offset = offsetMap[index] || { dx: 0, dy: 0 };
                 
@@ -70,10 +70,9 @@ export const DeveloperRadarChart: React.FC<DeveloperRadarChartProps> = ({
                   <g transform={`translate(${x + offset.dx},${y + offset.dy})`}>
                     <text
                       textAnchor="middle"
-                      fill="#94a3b8"
-                      fontSize={config.fontSize}
+                      fill="#e2e8f0"
+                      fontSize={config.fontSize + 1}
                       fontWeight={600}
-                      className="uppercase tracking-wider"
                     >
                       {payload.value}
                     </text>

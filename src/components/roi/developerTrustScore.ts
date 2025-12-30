@@ -162,20 +162,20 @@ export const getRadarData = (developer: Partial<Developer>) => {
       fullMark: 10 
     },
     { 
-      category: 'Build Quality', 
+      category: 'Quality', 
       categoryEs: 'Calidad',
       value: developer.rating_quality ?? 5,
       fullMark: 10 
     },
     { 
-      category: 'ROI Potential', 
+      category: 'ROI', 
       categoryEs: 'ROI',
       value: developer.rating_flip_potential ?? 5,
       fullMark: 10 
     },
     { 
-      category: 'Maintenance', 
-      categoryEs: 'Gestión',
+      category: 'Service', 
+      categoryEs: 'Servicio',
       value: developer.score_maintenance ?? 5,
       fullMark: 10 
     },

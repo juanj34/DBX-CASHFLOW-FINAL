@@ -154,8 +154,8 @@ export const ExitScenariosCards = ({
           <div className="flex items-center gap-2">
             <Target className="w-5 h-5 text-[#CCFF00]" />
             <div>
-              <h3 className="font-semibold text-white">{t('exitScenarios')}</h3>
-              <p className="text-xs text-gray-400">{scenarioCount} {scenarioLabel} • {t('clickToEdit')}</p>
+              <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">Exit Strategy</h3>
+              <p className="text-xs text-gray-500">{scenarioCount} {scenarioLabel} • {t('clickToEdit')}</p>
             </div>
           </div>
           {!readOnly && exitScenarios.length < 5 && setExitScenarios && (
