@@ -133,6 +133,7 @@ export const PropertyTabContent = ({
                 developerId={developerId || null}
                 developerName={clientInfo.developer}
                 onClick={() => developer && setDeveloperModalOpen(true)}
+                variant="compact"
               />
             )}
             
