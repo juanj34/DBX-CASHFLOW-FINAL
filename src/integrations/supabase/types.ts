@@ -473,10 +473,14 @@ export type Database = {
         Row: {
           avatar_url: string | null
           business_email: string | null
+          commission_rate: number | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          market_dubai_yield: number | null
+          market_mortgage_rate: number | null
+          market_top_area: string | null
           theme_preference: string | null
           updated_at: string
           whatsapp_country_code: string | null
@@ -485,10 +489,14 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           business_email?: string | null
+          commission_rate?: number | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          market_dubai_yield?: number | null
+          market_mortgage_rate?: number | null
+          market_top_area?: string | null
           theme_preference?: string | null
           updated_at?: string
           whatsapp_country_code?: string | null
@@ -497,10 +505,14 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           business_email?: string | null
+          commission_rate?: number | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          market_dubai_yield?: number | null
+          market_mortgage_rate?: number | null
+          market_top_area?: string | null
           theme_preference?: string | null
           updated_at?: string
           whatsapp_country_code?: string | null

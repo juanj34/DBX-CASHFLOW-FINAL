@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
   SlidersHorizontal, Menu, Scale, DollarSign, MessageCircle, 
-  Download, Edit, Sun, Moon, Cloud
+  Edit, Sun, Moon, Cloud, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { MarketPulseModal } from "@/components/dashboard/MarketPulseModal";
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 
@@ -59,6 +60,18 @@ const Home = () => {
   const { t } = useLanguage();
   const [quotes, setQuotes] = useState<QuoteWithDetails[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
+  const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('month');
+
+  // Get commission rate from profile
+  const commissionRate = profile?.commission_rate ?? 2;
+
+  // Get market pulse data from profile
+  const marketData = {
+    yield: profile?.market_dubai_yield ?? 6.8,
+    mortgage: profile?.market_mortgage_rate ?? 4.5,
+    topArea: profile?.market_top_area ?? 'Rashid Yachts & Marina'
+  };
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -75,7 +88,31 @@ const Home = () => {
     return <Moon className="w-5 h-5 text-blue-300" />;
   };
 
-  // Calculate pipeline stats
+  // Filter quotes based on status and date
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter(quote => {
+      // Status filter
+      if (statusFilter !== 'all' && quote.status !== statusFilter) return false;
+      
+      // Date filter
+      const created = new Date(quote.created_at);
+      const now = new Date();
+      
+      if (dateFilter === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (created < weekAgo) return false;
+      } else if (dateFilter === 'month') {
+        if (created.getMonth() !== now.getMonth() || created.getFullYear() !== now.getFullYear()) return false;
+      } else if (dateFilter === '30days') {
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (created < thirtyDaysAgo) return false;
+      }
+      
+      return true;
+    });
+  }, [quotes, statusFilter, dateFilter]);
+
+  // Calculate pipeline stats from filtered quotes
   const pipelineStats = useMemo(() => {
     const thisMonth = quotes.filter(q => {
       const created = new Date(q.created_at);
@@ -84,14 +121,14 @@ const Home = () => {
     });
     
     const pipelineVolume = quotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
-    const potentialCommission = pipelineVolume * 0.02;
+    const potentialCommission = pipelineVolume * (commissionRate / 100);
     
     return {
       activeProposals: thisMonth.length,
       pipelineVolume,
       potentialCommission
     };
-  }, [quotes]);
+  }, [quotes, commissionRate]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -316,11 +353,12 @@ const Home = () => {
             <Cloud className="w-4 h-4" />
             <span className="font-medium text-theme-accent">{t("marketPulse")}:</span>
             <span className="hidden sm:inline">
-              {t("dubaiYield")}: 6.8% • {t("mortgageRates")}: 4.5% • {t("topArea")}: Rashid Yachts & Marina
+              {t("dubaiYield")}: {marketData.yield}% • {t("mortgageRates")}: {marketData.mortgage}% • {t("topArea")}: {marketData.topArea}
             </span>
             <span className="sm:hidden">
-              {t("dubaiYield")}: 6.8% • {t("topArea")}: Rashid Yachts
+              {t("dubaiYield")}: {marketData.yield}% • {t("topArea")}: {marketData.topArea.split(' ')[0]}
             </span>
+            <MarketPulseModal />
           </div>
         </div>
 
@@ -361,7 +399,7 @@ const Home = () => {
                 <span className="text-sm text-theme-text-muted uppercase tracking-wide">{t("potentialCommission")}</span>
               </div>
               <p className="text-3xl sm:text-4xl font-bold text-green-400">{formatCurrency(pipelineStats.potentialCommission)}</p>
-              <p className="text-xs text-theme-text-muted mt-1">2% {t("ofVolume")}</p>
+              <p className="text-xs text-theme-text-muted mt-1">{commissionRate}% {t("ofVolume")}</p>
             </div>
           </div>
         </div>
@@ -400,16 +438,49 @@ const Home = () => {
 
         {/* Active Opportunities Table */}
         <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-theme-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-theme-border gap-4">
             <h3 className="font-semibold text-theme-text">{t("activeOpportunities")}</h3>
-            <Link to="/my-quotes">
-              <Button variant="link" className="text-theme-accent hover:text-theme-accent/80 p-0">
-                {t('homeViewAll')} →
-              </Button>
-            </Link>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-theme-text-muted" />
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as QuoteStatus | 'all')}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
+                    <SelectValue placeholder={t("allStatuses")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-theme-card border-theme-border">
+                    <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allStatuses")}</SelectItem>
+                    {Object.entries(statusConfig).map(([key, config]) => (
+                      <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt">
+                        {config.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as 'week' | 'month' | '30days' | 'all')}>
+                <SelectTrigger className="w-[130px] h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-theme-card border-theme-border">
+                  <SelectItem value="week" className="text-theme-text hover:bg-theme-card-alt">{t("thisWeek")}</SelectItem>
+                  <SelectItem value="month" className="text-theme-text hover:bg-theme-card-alt">{t("thisMonth")}</SelectItem>
+                  <SelectItem value="30days" className="text-theme-text hover:bg-theme-card-alt">{t("last30Days")}</SelectItem>
+                  <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allTime")}</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Link to="/my-quotes">
+                <Button variant="link" className="text-theme-accent hover:text-theme-accent/80 p-0 text-sm">
+                  {t('homeViewAll')} →
+                </Button>
+              </Link>
+            </div>
           </div>
           
-          {quotes.length > 0 ? (
+          {filteredQuotes.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -422,7 +493,7 @@ const Home = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {quotes.map((quote) => {
+                  {filteredQuotes.map((quote) => {
                     const keyMetric = getKeyMetric(quote.inputs);
                     const currentStatus = quote.status || "draft";
                     
