@@ -2,6 +2,7 @@ import { Rocket, Home } from "lucide-react";
 import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
 import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
+import { cn } from "@/lib/utils";
 
 interface OIGrowthCurveProps {
   calculations: OICalculations;
@@ -9,9 +10,19 @@ interface OIGrowthCurveProps {
   currency: Currency;
   exitScenarios: number[];
   rate: number;
+  highlightedExit?: number | null;
+  onExitHover?: (index: number | null) => void;
 }
 
-export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, rate }: OIGrowthCurveProps) => {
+export const OIGrowthCurve = ({ 
+  calculations, 
+  inputs, 
+  currency, 
+  exitScenarios, 
+  rate,
+  highlightedExit,
+  onExitHover 
+}: OIGrowthCurveProps) => {
   const { basePrice, totalMonths, totalEntryCosts } = calculations;
   
   // Calculate handover price using the SAME function as exit scenario cards
@@ -244,9 +255,20 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
             opacity="0.2"
           />
 
-          {/* Exit markers */}
-          {exitMarkersData.map(({ scenario, label, yOffset }, index) => (
-            <g key={label}>
+          {/* Exit markers - Interactive */}
+          {exitMarkersData.map(({ scenario, label, yOffset }, index) => {
+            const isHighlighted = highlightedExit === index;
+            const markerRadius = isHighlighted ? 12 : 8;
+            const innerRadius = isHighlighted ? 6 : 4;
+            
+            return (
+            <g 
+              key={label}
+              className="cursor-pointer transition-all duration-200"
+              onMouseEnter={() => onExitHover?.(index)}
+              onMouseLeave={() => onExitHover?.(null)}
+              style={{ filter: isHighlighted ? 'drop-shadow(0 0 12px rgba(204,255,0,0.6))' : undefined }}
+            >
               {/* Connection line if offset */}
               {yOffset !== 0 && (
                 <line
@@ -261,20 +283,30 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
                 />
               )}
               
-              {/* Point circle */}
+              {/* Hit area for easier touch/hover (invisible but larger) */}
               <circle
                 cx={xScale(scenario.exitMonths)}
                 cy={yScale(scenario.exitPrice)}
-                r="8"
+                r="20"
+                fill="transparent"
+              />
+              
+              {/* Point circle - larger when highlighted */}
+              <circle
+                cx={xScale(scenario.exitMonths)}
+                cy={yScale(scenario.exitPrice)}
+                r={markerRadius}
                 fill="#0f172a"
                 stroke="#CCFF00"
-                strokeWidth="2"
+                strokeWidth={isHighlighted ? 3 : 2}
+                className="transition-all duration-200"
               />
               <circle
                 cx={xScale(scenario.exitMonths)}
                 cy={yScale(scenario.exitPrice)}
-                r="4"
+                r={innerRadius}
                 fill="#CCFF00"
+                className="transition-all duration-200"
               />
 
               {/* Exit label badge */}
@@ -285,13 +317,15 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
                   width="56"
                   height="20"
                   rx="10"
-                  fill="#CCFF00"
+                  fill={isHighlighted ? "#CCFF00" : "#CCFF00"}
+                  opacity={isHighlighted ? 1 : 0.9}
+                  className="transition-all duration-200"
                 />
                 <text
                   x="0"
                   y="4"
                   fill="#0f172a"
-                  fontSize="10"
+                  fontSize={isHighlighted ? "11" : "10"}
                   fontWeight="bold"
                   textAnchor="middle"
                 >
@@ -323,7 +357,8 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
                 ROE: {scenario.trueROE.toFixed(0)}%
               </text>
             </g>
-          ))}
+            );
+          })}
 
           {/* Handover marker */}
           <g>
