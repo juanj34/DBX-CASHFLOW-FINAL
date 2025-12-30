@@ -376,8 +376,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   const monthsRemainingInFirstYear = 13 - bookingMonth; // 12 - bookingMonth + 1
   const firstYearProRataFactor = monthsRemainingInFirstYear / 12;
   
-  // Calculate how many years we need: handover year + 10 years of rent
-  const totalProjectionYears = handoverYearIndex + 10;
+  // Fixed 10-year projection window (construction + rental within 10 years)
+  const totalProjectionYears = 10;
   
   for (let i = 1; i <= totalProjectionYears; i++) {
     const { rate: yearRate } = getAppreciationRate(i);

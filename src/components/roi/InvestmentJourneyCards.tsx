@@ -132,7 +132,7 @@ export const InvestmentJourneyCards = ({
         <div className="flex items-center gap-2 mb-4">
           <Zap className="w-5 h-5 text-[#CCFF00]" />
           <h3 className="font-semibold text-white">
-            The {totalYears}-Year Journey
+            The 10-Year Journey
           </h3>
           <TooltipProvider>
             <Tooltip>
@@ -141,7 +141,7 @@ export const InvestmentJourneyCards = ({
               </TooltipTrigger>
               <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
                 <p className="text-xs">
-                  {constructionYears.length} years construction + {rentalYears} years of rental income = {totalYears} total years
+                  {constructionYears.length} years construction + {rentalYears} years of rental income within a 10-year window
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -367,7 +367,7 @@ export const InvestmentJourneyCards = ({
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
                       <div className="space-y-2">
-                        <p className="text-xs font-medium">Wealth created over {totalYears} years:</p>
+                        <p className="text-xs font-medium">Wealth created over 10 years:</p>
                         <div className="text-[10px] space-y-1 text-gray-400">
                           <p>Final Property Value: {formatCurrency(finalPropertyValue, currency, rate)}</p>
                           <p>+ Total Rental Income: {formatCurrency(showAirbnbComparison ? Math.max(totalLTIncome, totalSTIncome) : totalLTIncome, currency, rate)}</p>
@@ -378,7 +378,7 @@ export const InvestmentJourneyCards = ({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <p className="text-sm text-gray-500">Over {totalYears} years ({constructionYears.length}yr build + {rentalYears}yr rental)</p>
+              <p className="text-sm text-gray-500">Over 10 years ({constructionYears.length}yr build + {rentalYears}yr rental)</p>
             </div>
             <div className="text-center sm:text-right">
               <p className="text-3xl sm:text-4xl font-bold text-[#CCFF00] font-mono">
@@ -389,7 +389,7 @@ export const InvestmentJourneyCards = ({
                 )}
               </p>
               <p className="text-xs text-green-400">
-                +{totalAppreciation.toFixed(0)}% property appreciation over {totalYears} years
+                +{totalAppreciation.toFixed(0)}% property appreciation over 10 years
               </p>
             </div>
           </div>
