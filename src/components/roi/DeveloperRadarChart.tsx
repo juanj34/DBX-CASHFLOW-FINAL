@@ -31,7 +31,7 @@ export const DeveloperRadarChart: React.FC<DeveloperRadarChartProps> = ({
 
   const sizeConfig = {
     sm: { width: 180, height: 180, fontSize: 10 },
-    md: { width: 280, height: 280, fontSize: 12 },
+    md: { width: 300, height: 300, fontSize: 11 },
     lg: { width: 350, height: 350, fontSize: 14 },
   };
 
@@ -46,18 +46,39 @@ export const DeveloperRadarChart: React.FC<DeveloperRadarChartProps> = ({
   return (
     <div className={`flex items-center justify-center ${className}`}>
       <ResponsiveContainer width={config.width} height={config.height}>
-        <RadarChart data={chartData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+        <RadarChart data={chartData} margin={{ top: 30, right: 40, bottom: 30, left: 40 }}>
+          {/* Custom styled polar grid with gradient effect */}
           <PolarGrid 
-            stroke="hsl(var(--border))" 
-            strokeOpacity={0.3}
+            stroke="#3a4255" 
+            strokeOpacity={0.6}
+            gridType="polygon"
           />
           {showLabels && (
             <PolarAngleAxis
               dataKey="displayCategory"
-              tick={{ 
-                fill: 'hsl(var(--muted-foreground))', 
-                fontSize: config.fontSize,
-                fontWeight: 500,
+              tick={({ x, y, payload, index }) => {
+                // Position adjustments for each label
+                const offsetMap: Record<number, { dx: number; dy: number }> = {
+                  0: { dx: 0, dy: -8 },   // Top
+                  1: { dx: 12, dy: 0 },   // Right
+                  2: { dx: 0, dy: 12 },   // Bottom
+                  3: { dx: -12, dy: 0 },  // Left
+                };
+                const offset = offsetMap[index] || { dx: 0, dy: 0 };
+                
+                return (
+                  <g transform={`translate(${x + offset.dx},${y + offset.dy})`}>
+                    <text
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize={config.fontSize}
+                      fontWeight={600}
+                      className="uppercase tracking-wider"
+                    >
+                      {payload.value}
+                    </text>
+                  </g>
+                );
               }}
               tickLine={false}
             />
@@ -65,30 +86,66 @@ export const DeveloperRadarChart: React.FC<DeveloperRadarChartProps> = ({
           <PolarRadiusAxis
             angle={90}
             domain={[0, 10]}
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 9, fill: '#64748b' }}
             tickCount={6}
             axisLine={false}
           />
+          {/* Background radar for depth effect */}
+          <Radar
+            name="Background"
+            dataKey={() => 10}
+            stroke="transparent"
+            fill="#1e293b"
+            fillOpacity={0.3}
+          />
+          {/* Main radar with glow effect */}
           <Radar
             name="Score"
             dataKey="value"
             stroke={tier.color}
             fill={tier.color}
-            fillOpacity={0.4}
-            strokeWidth={2}
-            animationDuration={800}
+            fillOpacity={0.25}
+            strokeWidth={2.5}
+            animationDuration={1000}
             animationEasing="ease-out"
+            dot={{
+              r: 4,
+              fill: tier.color,
+              stroke: '#1a1f2e',
+              strokeWidth: 2,
+            }}
+            activeDot={{
+              r: 6,
+              fill: tier.color,
+              stroke: '#fff',
+              strokeWidth: 2,
+            }}
           />
           <Tooltip
             content={({ payload }) => {
               if (!payload || !payload.length) return null;
               const item = payload[0].payload;
               return (
-                <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
-                  <p className="font-medium text-foreground">{item.displayCategory}</p>
-                  <p className="text-sm" style={{ color: tier.color }}>
-                    {item.value.toFixed(1)} / 10
+                <div 
+                  className="rounded-lg px-4 py-3 shadow-2xl border animate-scale-in"
+                  style={{ 
+                    backgroundColor: '#1a1f2e',
+                    borderColor: tier.color + '40',
+                  }}
+                >
+                  <p className="font-semibold text-white text-sm mb-1">
+                    {item.displayCategory}
                   </p>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: tier.color }}
+                    />
+                    <p className="text-lg font-bold" style={{ color: tier.color }}>
+                      {item.value.toFixed(1)}
+                      <span className="text-xs text-gray-500 ml-1">/10</span>
+                    </p>
+                  </div>
                 </div>
               );
             }}
