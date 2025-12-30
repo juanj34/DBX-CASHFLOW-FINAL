@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator, Home, CheckCircle, AlertCircle, Building, Info } from "lucide-react";
+import { Building2, AlertTriangle, TrendingUp, Shield, CreditCard, Calculator, Home, CheckCircle, AlertCircle, Building, Info, ChevronDown, ChevronUp, ArrowRight, DollarSign } from "lucide-react";
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 interface MortgageBreakdownProps {
   mortgageInputs: MortgageInputs;
   mortgageAnalysis: MortgageAnalysis;
@@ -44,6 +45,7 @@ export const MortgageBreakdown = ({
   const [showLongTermBreakdown, setShowLongTermBreakdown] = useState(false);
   const [showAirbnbBreakdown, setShowAirbnbBreakdown] = useState(false);
   const [viewMode, setViewMode] = useState<'monthly' | 'annual'>('monthly');
+  const [feesOpen, setFeesOpen] = useState(false);
 
   if (!mortgageInputs.enabled) return null;
 
@@ -118,88 +120,88 @@ export const MortgageBreakdown = ({
   // Grand total calculation: gap + total loan payments + fees + insurance
   const grandTotal = gapAmount + totalLoanPayments + totalUpfrontFees + totalInsuranceOverTerm;
 
+  // Estimated appreciation for wealth position (5% CAGR estimate)
+  const appreciationCAGR = 0.05;
+  const projectedValue = basePrice * Math.pow(1 + appreciationCAGR, mortgageInputs.loanTermYears);
+  const projectedAppreciation = projectedValue - basePrice;
+  const netWealthPosition = projectedAppreciation - totalInterestAndFees;
+
   return (
     <div className="bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 rounded-lg bg-theme-accent/20">
-          <Building2 className="w-5 h-5 text-theme-accent" />
+      {/* Header with Mo/Yr Toggle */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-theme-accent/20">
+            <Building2 className="w-5 h-5 text-theme-accent" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-theme-text">{t('mortgageBreakdown')}</h3>
+            <p className="text-xs text-theme-text-muted">{mortgageInputs.financingPercent}% {t('financing')} · {mortgageInputs.loanTermYears} {t('years')} · {mortgageInputs.interestRate}%</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-theme-text">{t('mortgageBreakdown')}</h3>
-          <p className="text-xs text-theme-text-muted">{mortgageInputs.financingPercent}% {t('financing')} · {mortgageInputs.loanTermYears} {t('years')} · {mortgageInputs.interestRate}%</p>
+        
+        {/* Mo/Yr Toggle in Header */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-theme-text-muted hidden sm:inline">View:</span>
+          <div className="flex items-center gap-0.5 bg-theme-card-alt rounded-lg p-0.5 border border-theme-border">
+            <button
+              onClick={() => setViewMode('monthly')}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium rounded-md transition-all",
+                viewMode === 'monthly' 
+                  ? "bg-theme-accent text-white" 
+                  : "text-theme-text-muted hover:text-theme-text"
+              )}
+            >
+              Mo
+            </button>
+            <button
+              onClick={() => setViewMode('annual')}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium rounded-md transition-all",
+                viewMode === 'annual' 
+                  ? "bg-theme-accent text-white" 
+                  : "text-theme-text-muted hover:text-theme-text"
+              )}
+            >
+              Yr
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="space-y-4">
         {/* Enhanced Gap Alert with Timeline */}
+        {/* Simplified Gap Alert - Visual Approach */}
         {hasGap && (
-          <div className="p-4 bg-amber-900/30 border border-amber-700/50 rounded-xl">
-            <div className="flex items-start gap-2 mb-4">
-              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-amber-400 font-semibold">{t('gapPaymentRequired')}</h4>
-                <p className="text-sm text-theme-text-muted">{t('gapPaymentDesc')}</p>
+          <div className="p-3 bg-amber-900/30 border border-amber-700/50 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <span className="text-sm font-semibold text-amber-400">Cash Shortfall</span>
               </div>
+              <span className="text-lg font-bold text-amber-300 font-mono">
+                {formatCurrency(gapAmount, currency, rate)}
+              </span>
             </div>
+            <p className="text-xs text-theme-text-muted mb-3">
+              Payable at handover — Bank requires {equityRequiredPercent}% equity, you pay {preHandoverPercent}% pre-handover
+            </p>
             
-            {/* Payment Timeline Visual - Enhanced */}
-            <div className="space-y-4 mt-4">
-              {/* Stage labels */}
-              <div className="flex items-center justify-between text-[10px] text-theme-text-muted uppercase tracking-wider px-1">
-                <span>{t('beforeHandover') || 'Before Handover'}</span>
-                <span>{t('atHandover') || 'At Handover'}</span>
-              </div>
-              
-              {/* Timeline bar */}
-              <div className="relative h-3 bg-theme-card-alt rounded-full overflow-hidden">
+            {/* Visual Gap Timeline */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 rounded-full bg-theme-bg overflow-hidden flex">
                 <div 
-                  className="absolute left-0 top-0 h-full bg-green-500 rounded-l-full"
-                  style={{ width: `${preHandoverPercent}%` }}
+                  className="h-full bg-emerald-500"
+                  style={{ width: `${(preHandoverPercent / equityRequiredPercent) * 100}%` }}
                 />
                 <div 
-                  className="absolute top-0 h-full bg-yellow-400"
-                  style={{ left: `${preHandoverPercent}%`, width: `${gapPercent}%` }}
-                />
-                <div 
-                  className="absolute top-0 h-full bg-blue-500 rounded-r-full"
-                  style={{ left: `${equityRequiredPercent}%`, width: `${mortgageInputs.financingPercent}%` }}
+                  className="h-full bg-amber-500"
+                  style={{ width: `${(gapPercent / equityRequiredPercent) * 100}%` }}
                 />
               </div>
-              
-              {/* Legend */}
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <div>
-                    <p className="text-theme-text-muted">{t('preHandoverPayments')}</p>
-                    <p className="text-green-400 font-mono">{formatCurrency(preHandoverAmount, currency, rate)}</p>
-                    <p className="text-[10px] text-theme-text-muted">{preHandoverPercent}%</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div>
-                    <p className="text-theme-text-muted">{t('gapPayment')}</p>
-                    <p className="text-yellow-300 font-mono font-semibold">{formatCurrency(gapAmount, currency, rate)}</p>
-                    <p className="text-[10px] text-theme-text-muted">{gapPercent.toFixed(1)}%</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <div>
-                    <p className="text-theme-text-muted">{t('mortgage')}</p>
-                    <p className="text-blue-400 font-mono">{formatCurrency(loanAmount, currency, rate)}</p>
-                    <p className="text-[10px] text-theme-text-muted">{mortgageInputs.financingPercent}%</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4 pt-3 border-t border-amber-700/30 flex justify-between">
-              <span className="text-sm text-theme-text-muted">{t('totalBeforeHandover')}</span>
-              <span className="text-sm font-mono text-theme-text font-bold">
-                {formatCurrency(totalBeforeHandover, currency, rate)} ({equityRequiredPercent}%)
+              <span className="text-[10px] text-amber-400 font-mono whitespace-nowrap">
+                Gap: {gapPercent.toFixed(1)}%
               </span>
             </div>
           </div>
@@ -234,173 +236,154 @@ export const MortgageBreakdown = ({
           </div>
         </div>
 
-        {/* Fees & Insurance Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Fees */}
-          <div className="p-3 bg-theme-bg-alt rounded-xl border border-theme-border">
-            <div className="flex items-center gap-2 mb-3">
-              <Calculator className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-medium text-theme-text-muted">{t('upfrontFees')}</span>
-            </div>
-            <div className="space-y-2 text-xs">
-              {hasGap && (
-                <div className="flex justify-between">
-                  <span className="text-theme-text-muted">{t('gapPayment')}</span>
-                  <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('processingFee')} ({mortgageInputs.processingFeePercent}%)</span>
-                <span className="text-theme-text font-mono">{formatCurrency(processingFee, currency, rate)}</span>
+        {/* Collapsible Upfront Fees - Progressive Disclosure */}
+        <Collapsible open={feesOpen} onOpenChange={setFeesOpen}>
+          <CollapsibleTrigger className="w-full">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-theme-bg-alt border border-theme-border hover:border-theme-accent/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-purple-400" />
+                <span className="text-sm text-theme-text">Bank & Gov Fees</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('valuationFee')}</span>
-                <span className="text-theme-text font-mono">{formatCurrency(valuationFee, currency, rate)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('mortgageRegistration')} ({mortgageInputs.mortgageRegistrationPercent}%)</span>
-                <span className="text-theme-text font-mono">{formatCurrency(mortgageRegistration, currency, rate)}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-theme-border">
-                <span className="text-theme-text-muted font-medium">{t('total')}</span>
-                <span className="text-purple-400 font-mono font-medium">{formatCurrency(totalUpfrontFees + gapAmount, currency, rate)}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold font-mono text-theme-text">
+                  {formatCurrency(totalUpfrontFees + gapAmount, currency, rate)}
+                </span>
+                {feesOpen ? (
+                  <ChevronUp className="w-4 h-4 text-theme-text-muted" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-theme-text-muted" />
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Insurance */}
-          <div className="p-3 bg-theme-bg-alt rounded-xl border border-theme-border">
-            <div className="flex items-center gap-2 mb-3">
-              <Shield className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-medium text-theme-text-muted">{t('insurance')}</span>
-            </div>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('lifeInsurance')} ({mortgageInputs.lifeInsurancePercent}%)</span>
-                <span className="text-theme-text font-mono">{formatCurrency(annualLifeInsurance, currency, rate)}/{t('yr')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('propertyInsurance')}</span>
-                <span className="text-theme-text font-mono">{formatCurrency(annualPropertyInsurance, currency, rate)}/{t('yr')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-theme-text-muted">{t('totalAnnual')}</span>
-                <span className="text-theme-text font-mono">{formatCurrency(totalAnnualInsurance, currency, rate)}/{t('yr')}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-theme-border">
-                <span className="text-theme-text-muted font-medium">{t('overTerm')} ({mortgageInputs.loanTermYears}y)</span>
-                <span className="text-green-400 font-mono font-medium">{formatCurrency(totalInsuranceOverTerm, currency, rate)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Rent vs Mortgage Coverage - Collapsible Side-by-Side Comparison */}
-        {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
-          <CollapsibleSection
-            title={t('rentVsMortgage')}
-            subtitle={`${periodLabel}: ${formatCurrency(displayMortgageTotal, currency, rate)}`}
-            icon={<Home className="w-5 h-5 text-purple-400" />}
-            defaultOpen={false}
-            headerAction={
-              <div 
-                className="flex items-center gap-1 bg-theme-card-alt rounded-lg p-0.5 ml-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => setViewMode('monthly')}
-                  className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
-                    viewMode === 'monthly' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'text-theme-text-muted hover:text-theme-text'
-                  }`}
-                >
-                  {t('monthlyShort')}
-                </button>
-                <button
-                  onClick={() => setViewMode('annual')}
-                  className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
-                    viewMode === 'annual' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'text-theme-text-muted hover:text-theme-text'
-                  }`}
-                >
-                  {t('annualShort')}
-                </button>
-              </div>
-            }
-          >
-            {/* Two columns comparison */}
-            <div className={`grid gap-3 ${showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-              
-              {/* Long-Term Rental Column */}
-              <div className="p-3 bg-theme-bg-alt rounded-xl border border-emerald-500/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <Home className="w-4 h-4 text-emerald-400" />
-                  <span className="text-sm font-medium text-emerald-400">{t('longTerm')}</span>
-                </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 p-3 rounded-xl bg-theme-bg-alt border border-theme-border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Fees */}
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-theme-text-muted">{t('netMonthlyRent')}</span>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-3 h-3 text-theme-text-muted cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-theme-card border-theme-border text-theme-text max-w-xs">
-                            <p>{t('longTermNetRentTooltip')}</p>
-                            <p className="text-theme-text-muted mt-1">
-                              {t('grossMonthlyRent')}: {formatCurrency(monthlyLongTermRent || 0, currency, rate)} − {t('serviceCharges')}: {formatCurrency(monthlyServiceCharges || 0, currency, rate)}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="w-3 h-3 text-purple-400" />
+                    <span className="text-xs font-medium text-theme-text-muted">{t('upfrontFees')}</span>
+                  </div>
+                  {hasGap && (
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">{t('gapPayment')}</span>
+                      <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
                     </div>
-                    <span className="text-emerald-400 font-mono">{formatCurrency(displayNetRent, currency, rate)}</span>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-theme-text-muted">{t('processingFee')} ({mortgageInputs.processingFeePercent}%)</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(processingFee, currency, rate)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-theme-text-muted">− {t('mortgage')}</span>
-                    <span className="text-purple-400 font-mono">−{formatCurrency(displayMortgageTotal, currency, rate)}</span>
+                    <span className="text-theme-text-muted">{t('valuationFee')}</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(valuationFee, currency, rate)}</span>
                   </div>
-                  {/* Cashflow result */}
-                  <div className={`flex justify-between items-center pt-2 mt-2 border-t border-theme-border ${isCovered ? 'text-emerald-400' : 'text-red-400'}`}>
-                    <div className="flex items-center gap-1">
-                      {isCovered ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                      <span className="font-medium">{t('cashflow')}</span>
-                    </div>
-                    <span className="font-mono font-bold">
-                      {displayCashflow >= 0 ? '+' : ''}{formatCurrency(displayCashflow, currency, rate)}
-                    </span>
-                  </div>
-                  {/* Coverage percentage indicator with progress bar - Clickable */}
-                  <div 
-                    className="mt-3 pt-2 border-t border-theme-border cursor-pointer hover:bg-theme-card/50 rounded-lg p-1 -m-1 transition-colors"
-                    onClick={() => setShowLongTermBreakdown(true)}
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-theme-text-muted">{t('covers')}</span>
-                      <span className={`text-xs font-bold ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : longTermCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
-                        {longTermCoveragePercent}%
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-theme-card-alt rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          longTermCoveragePercent >= 100 ? 'bg-emerald-500' : 
-                          longTermCoveragePercent >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                        }`}
-                        style={{ width: `${Math.min(longTermCoveragePercent, 100)}%` }}
-                      />
-                    </div>
-                    {longTermCoveragePercent > 100 && (
-                      <div className="text-center mt-1">
-                        <span className="text-[10px] text-emerald-400">+{longTermCoveragePercent - 100}% surplus</span>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-theme-text-muted text-center mt-1">{t('clickForDetails')}</p>
+                  <div className="flex justify-between">
+                    <span className="text-theme-text-muted">{t('mortgageRegistration')} ({mortgageInputs.mortgageRegistrationPercent}%)</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(mortgageRegistration, currency, rate)}</span>
                   </div>
                 </div>
+
+                {/* Insurance */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-3 h-3 text-emerald-400" />
+                    <span className="text-xs font-medium text-theme-text-muted">{t('insurance')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-theme-text-muted">{t('lifeInsurance')} ({mortgageInputs.lifeInsurancePercent}%)</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(annualLifeInsurance, currency, rate)}/{t('yr')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-theme-text-muted">{t('propertyInsurance')}</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(annualPropertyInsurance, currency, rate)}/{t('yr')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-theme-text-muted">{t('totalAnnual')}</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(totalAnnualInsurance, currency, rate)}/{t('yr')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* ===== ACT 2: SUSTAINABILITY - RENT VS MORTGAGE ===== */}
+        {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
+          <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-900/20 to-theme-card border border-emerald-700/30">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-theme-text">{t('rentVsMortgage')}</span>
+            </div>
+
+            {/* Coverage Cards - Clickable */}
+            <div className={`grid gap-3 ${showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+              
+              {/* Long-Term Rental Card - Clickable with Hero Number */}
+              <div 
+                onClick={() => setShowLongTermBreakdown(true)}
+                className="p-4 rounded-xl bg-theme-card border border-emerald-700/30 hover:border-emerald-500/50 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4 text-emerald-400" />
+                    <span className="text-sm font-medium text-emerald-400">{t('longTerm')}</span>
+                  </div>
+                  <span className={cn(
+                    "text-xs font-semibold px-2 py-0.5 rounded-full",
+                    isCovered 
+                      ? "bg-emerald-500/20 text-emerald-400" 
+                      : "bg-red-500/20 text-red-400"
+                  )}>
+                    {isCovered ? 'Positive' : 'Negative'}
+                  </span>
+                </div>
+
+                {/* HERO NUMBER - Cashflow (Largest on screen) */}
+                <div className="text-center py-3">
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <span className={cn(
+                      "text-3xl font-bold font-mono",
+                      isCovered ? "text-emerald-400" : "text-red-400"
+                    )}>
+                      {displayCashflow >= 0 ? '+' : ''}{formatCurrency(Math.abs(displayCashflow), currency, rate)}
+                    </span>
+                    {longTermCoveragePercent > 100 && (
+                      <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded-full">
+                        +{longTermCoveragePercent - 100}% surplus
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-theme-text-muted mt-2">
+                    {t('rent')} {formatCurrency(displayNetRent, currency, rate)} − {t('mortgage')} {formatCurrency(displayMortgageTotal, currency, rate)}
+                  </p>
+                </div>
+
+                {/* Coverage Bar */}
+                <div className="mt-3">
+                  <div className="flex justify-between text-[10px] text-theme-text-muted mb-1">
+                    <span>{t('covers')}</span>
+                    <span className="font-mono">{longTermCoveragePercent}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-theme-bg overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        longTermCoveragePercent >= 100 
+                          ? "bg-gradient-to-r from-emerald-500 to-emerald-400" 
+                          : longTermCoveragePercent >= 80 
+                            ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                            : "bg-gradient-to-r from-red-500 to-red-400"
+                      )}
+                      style={{ width: `${Math.min(longTermCoveragePercent, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                
+                <p className="text-[10px] text-theme-text-muted text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Click for breakdown
+                </p>
               </div>
 
               {/* Airbnb Column (if enabled) */}
