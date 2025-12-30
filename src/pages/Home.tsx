@@ -24,15 +24,9 @@ const Home = () => {
   const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Note: "investor-type" tool temporarily removed from dashboard access
+  // The ROICalculator component is kept but not linked from here
   const solutions = [
-    {
-      id: "investor-type",
-      title: t('homeInvestorType'),
-      description: t('homeInvestorTypeDesc'),
-      icon: TrendingUp,
-      route: "/roi-calculator",
-      color: "#CCFF00",
-    },
     {
       id: "cashflow",
       title: t('homeCashflowGenerator'),
