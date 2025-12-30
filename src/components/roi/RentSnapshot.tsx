@@ -170,17 +170,16 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
               </div>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Badge 
-                    variant="outline" 
-                    className={`cursor-pointer transition-all hover:scale-105 ${
+                  <button 
+                    className={`cursor-pointer transition-all hover:scale-105 rounded-full border text-[10px] px-2 py-0.5 flex items-center gap-1 ${
                       isScenarioMode 
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' 
                         : 'bg-orange-500/10 text-orange-300 border-orange-500/30'
-                    } text-[10px] px-2 py-0.5 flex items-center gap-1`}
+                    }`}
                   >
                     <SlidersHorizontal className="w-3 h-3" />
                     {occupancyPercent}% {t('occupancy')}
-                  </Badge>
+                  </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 bg-[#1a1f2e] border-[#2a3142] p-4" side="bottom" align="end">
                   <div className="space-y-4">
