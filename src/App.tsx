@@ -20,6 +20,11 @@ import QuotesDashboard from "./pages/QuotesDashboard";
 import QuotesCompare from "./pages/QuotesCompare";
 import CashflowView from "./pages/CashflowView";
 import DeveloperRanking from "./pages/DeveloperRanking";
+import ResetPassword from "./pages/ResetPassword";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +61,12 @@ function App() {
                 <Route path="/compare" element={<QuotesCompare />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
                 <Route path="/developer-ranking" element={<DeveloperRanking />} />
+                {/* Auth & Legal Routes */}
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/help" element={<Help />} />
                 {/* Redirects for old routes */}
                 <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
