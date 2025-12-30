@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
-import { CompactInvestmentSnapshot } from "@/components/roi/dashboard/CompactInvestmentSnapshot";
+import { PropertyPaymentCards } from "@/components/roi/dashboard/PropertyPaymentCards";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
 import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -115,14 +115,13 @@ export const PropertyTabContent = ({
           onEditClick={onEditClient} 
         />
         
-        {/* Investment Snapshot */}
-        <CompactInvestmentSnapshot 
-          inputs={inputs} 
-          currency={currency} 
-          totalMonths={calculations.totalMonths} 
-          totalEntryCosts={calculations.totalEntryCosts} 
-          rate={rate} 
-          unitSizeSqf={clientInfo.unitSizeSqf} 
+        {/* Property & Payment Cards */}
+        <PropertyPaymentCards 
+          inputs={inputs}
+          calculations={calculations}
+          currency={currency}
+          rate={rate}
+          unitSizeSqf={clientInfo.unitSizeSqf}
         />
 
         {/* Developer + Project Cards - 2 columns */}
