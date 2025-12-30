@@ -130,10 +130,10 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
           {/* Detailed Breakdown Card */}
           <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-5">
               {/* Asset Value */}
               <div className="flex justify-between items-center pb-3 border-b border-theme-border">
-                <span className="text-sm text-theme-text-muted">{t('assetValue') || 'Asset Value'}</span>
+                <span className="text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
                 <div className="text-right">
                   <span className="text-lg font-bold text-theme-text font-mono">{formatCurrency(basePrice, currency, rate)}</span>
                   {unitSizeSqf > 0 && (
@@ -151,74 +151,74 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                     <Calendar className="w-3.5 h-3.5 text-theme-accent" />
                   </div>
                   <span className="text-sm font-semibold text-theme-accent uppercase tracking-wide">
-                    {t('theEntryLabel') || 'The Entry'}
+                    {t('theEntry')}
                   </span>
                   <span className="text-xs text-theme-text-muted">
                     ({monthToDateString(bookingMonth, bookingYear, language)})
                   </span>
                 </div>
                 
-                <div className="bg-theme-accent/5 border border-theme-accent/20 rounded-xl p-4 space-y-2">
+                <div className="bg-emerald-900/20 border border-emerald-600/30 rounded-xl p-4 space-y-2">
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <span className="text-sm text-theme-text-muted truncate">{t('eoiBookingFee')}</span>
                       <InfoTooltip translationKey="tooltipEoiFee" />
                     </div>
-                    <span className="text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(eoiFeeActual, currency, rate)}</span>
+                    <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(eoiFeeActual, currency, rate)}</span>
                   </div>
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <span className="text-sm text-theme-text-muted truncate">{t('restOfDownpayment')} ({downpaymentPercent}% - EOI)</span>
                       <InfoTooltip translationKey="tooltipDownpayment" />
                     </div>
-                    <span className="text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(restOfDownpayment, currency, rate)}</span>
+                    <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(restOfDownpayment, currency, rate)}</span>
                   </div>
                   
                   {/* DLD Fee - RED HIGHLIGHTED */}
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
-                      <span className="text-sm text-red-400 truncate">
-                        {t('govRegistrationDld') || 'Gov. Registration (DLD)'}
+                      <span className="text-sm text-theme-text-muted truncate">
+                        {t('dldRegistrationFee')}
                       </span>
-                      <span className="ml-1 text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">
-                        {t('govFeeLabel')}
+                      <span className="ml-1 text-[10px] bg-slate-700 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded">
+                        {t('govtFee')}
                       </span>
                       <InfoTooltip translationKey="tooltipDldFee" />
                     </div>
-                    <span className="text-sm text-red-400 font-mono flex-shrink-0">{formatCurrency(dldFeeAmount, currency, rate)}</span>
+                    <span className="text-sm text-red-400 font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(dldFeeAmount, currency, rate)}</span>
                   </div>
                   
                   {/* Oqood Fee - RED HIGHLIGHTED */}
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
-                      <span className="text-sm text-red-400 truncate">{t('oqoodFee')}</span>
-                      <span className="ml-1 text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">
-                        {t('govFeeLabel')}
+                      <span className="text-sm text-theme-text-muted truncate">{t('oqoodFee')}</span>
+                      <span className="ml-1 text-[10px] bg-slate-700 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded">
+                        {t('govtFee')}
                       </span>
                       <InfoTooltip translationKey="tooltipOqoodFee" />
                     </div>
-                    <span className="text-sm text-red-400 font-mono flex-shrink-0">{formatCurrency(oqoodFee, currency, rate)}</span>
+                    <span className="text-sm text-red-400 font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(oqoodFee, currency, rate)}</span>
                   </div>
                   
-                  <div className="flex justify-between items-center pt-2 border-t border-theme-accent/30">
-                    <span className="text-sm font-semibold text-theme-accent">{t('initialCashRequired') || 'Initial Cash Required'}</span>
-                    <span className="text-base font-bold text-theme-accent font-mono">{formatCurrency(todayTotal, currency, rate)}</span>
+                  <div className="flex justify-between items-center pt-2 border-t border-emerald-600/30">
+                    <span className="text-sm font-semibold text-theme-accent">{t('totalCashNow')}</span>
+                    <span className="text-base font-bold text-theme-accent font-mono tabular-nums">{formatCurrency(todayTotal, currency, rate)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Section: THE JOURNEY */}
               {sortedAdditionalPayments.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-slate-500/20 flex items-center justify-center">
                       <Building2 className="w-3.5 h-3.5 text-slate-400" />
                     </div>
                     <span className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
-                      {t('theJourneyLabel') || 'The Journey'}
+                      {t('theJourney')}
                     </span>
                     <span className="text-xs text-theme-text-muted">
-                      ({constructionMonths} {t('months') || 'months'})
+                      ({constructionMonths} {t('months')})
                     </span>
                   </div>
                   
@@ -227,7 +227,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                       const amount = basePrice * payment.paymentPercent / 100;
                       const isTimeBased = payment.type === 'time';
                       const triggerLabel = isTimeBased
-                        ? `${t('constructionMilestone') || 'Milestone'} ${payment.triggerValue}`
+                        ? `${t('milestone')} M${payment.triggerValue}`
                         : `${payment.triggerValue}% ${t('constructionPercent')}`;
                       
                       const dateStr = isTimeBased 
@@ -249,7 +249,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                               <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
                             )}
                           </div>
-                          <span className="text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(amount, currency, rate)}</span>
+                          <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(amount, currency, rate)}</span>
                         </div>
                       );
                     })}
@@ -257,12 +257,12 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                       <>
                         <div className="flex justify-between items-center pt-2 border-t border-slate-500/30">
                           <span className="text-sm text-slate-400">{t('subtotalInstallments')}</span>
-                          <span className="text-sm text-slate-300 font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+                          <span className="text-sm text-slate-300 font-mono tabular-nums">{formatCurrency(additionalTotal, currency, rate)}</span>
                         </div>
                         {avgMonthlyPayment > 0 && (
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-theme-text-muted">{t('avgMonthlyPayment') || 'Avg. monthly'}</span>
-                            <span className="text-theme-text-muted font-mono">~{formatCurrency(avgMonthlyPayment, currency, rate)}/mo</span>
+                            <span className="text-theme-text-muted">{t('avgMonthly')}</span>
+                            <span className="text-theme-text-muted font-mono tabular-nums">~{formatCurrency(avgMonthlyPayment, currency, rate)}/mo</span>
                           </div>
                         )}
                       </>
@@ -275,18 +275,18 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
               <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-xl p-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-semibold text-theme-accent">{t('totalPreHandover')} ({preHandoverPercent}%)</span>
-                  <span className="text-lg font-bold text-theme-accent font-mono">{formatCurrency(totalPreHandover, currency, rate)}</span>
+                  <span className="text-lg font-bold text-theme-accent font-mono tabular-nums">{formatCurrency(totalPreHandover, currency, rate)}</span>
                 </div>
               </div>
 
               {/* Section: COMPLETION */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
                     <Home className="w-3.5 h-3.5 text-cyan-400" />
                   </div>
                   <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wide">
-                    {t('completionSettlement') || 'Completion Settlement'}
+                    {t('completionHandover')}
                   </span>
                   <span className="text-xs text-theme-text-muted">
                     (Q{handoverQuarter} {handoverYear})
@@ -299,7 +299,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                       <span className="text-sm text-theme-text-muted truncate">{t('finalPayment')} ({handoverPercent}%)</span>
                       <InfoTooltip translationKey="tooltipFinalPayment" />
                     </div>
-                    <span className="text-sm text-theme-text font-mono flex-shrink-0">{formatCurrency(handoverAmount, currency, rate)}</span>
+                    <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(handoverAmount, currency, rate)}</span>
                   </div>
                 </div>
               </div>
@@ -307,21 +307,21 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
               {/* Grand Total */}
               <div className="pt-4 border-t border-theme-border space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-theme-text-muted">{t('assetValue') || 'Asset Value'}</span>
-                  <span className="text-sm text-theme-text font-mono">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
+                  <span className="text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
+                  <span className="text-sm text-theme-text font-mono tabular-nums">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-theme-text-muted">{t('entryCostsDldOqood')}</span>
-                    <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">
-                      {t('govFeeLabel')}
+                    <span className="text-[10px] bg-slate-700 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded">
+                      {t('govtFee')}
                     </span>
                   </div>
-                  <span className="text-sm text-red-400 font-mono">{formatCurrency(totalEntryCosts, currency, rate)}</span>
+                  <span className="text-sm text-red-400 font-mono tabular-nums">{formatCurrency(totalEntryCosts, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 bg-gradient-to-r from-emerald-500/10 to-transparent border-t border-emerald-500/30 -mx-4 px-4 py-3 rounded-b-xl">
                   <span className="text-sm font-bold text-emerald-400">{t('totalToDisburse')}</span>
-                  <span className="text-xl font-bold text-emerald-400 font-mono">{formatCurrency(grandTotal, currency, rate)}</span>
+                  <span className="text-xl font-bold text-emerald-400 font-mono tabular-nums">{formatCurrency(grandTotal, currency, rate)}</span>
                 </div>
               </div>
             </div>
@@ -337,13 +337,13 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
               currency={currency}
               rate={rate}
               onViewDetails={(clientId) => setSelectedClientId(clientId)}
-              vertical
+              vertical={true}
             />
           </div>
         )}
       </div>
 
-      {/* Client Payment Sheet */}
+      {/* Client Payment Sheet Modal */}
       {clientInfo && (
         <ClientPaymentSheet
           isOpen={!!selectedClientId}

@@ -14,7 +14,7 @@ interface PaymentSummaryCardsProps {
 const DLD_FEE_PERCENT = 4;
 
 export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: PaymentSummaryCardsProps) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate Initial Cash Required (Booking + DLD + Oqood + Downpayment)
@@ -44,7 +44,9 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: Pay
   const handoverLabel = `${quarterLabels[handoverQuarter - 1]} ${handoverYear}`;
 
   // Format booking date
-  const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNamesShort = language === 'es' 
+    ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const bookingLabel = `${monthNamesShort[bookingMonth - 1]} ${bookingYear}`;
 
   return (
@@ -56,14 +58,14 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: Pay
             <Wallet className="w-4 h-4 text-theme-accent" />
           </div>
           <span className="text-xs uppercase tracking-wide text-theme-accent font-medium">
-            {t('initialCashRequired') || 'Initial Cash Required'}
+            {t('initialCashRequired')}
           </span>
         </div>
         <div className="text-xl font-bold text-theme-text font-mono">
           {formatCurrency(initialCashRequired, currency, rate)}
         </div>
         <div className="text-xs text-theme-text-muted mt-1">
-          {t('dueLabel') || 'Due'} {bookingLabel}
+          {t('dueBy')} {bookingLabel}
         </div>
       </div>
 
@@ -74,14 +76,14 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: Pay
             <TrendingUp className="w-4 h-4 text-slate-400" />
           </div>
           <span className="text-xs uppercase tracking-wide text-slate-400 font-medium">
-            {t('monthlyBurnRate') || 'Monthly Burn Rate'}
+            {t('monthlyBurnRate')}
           </span>
         </div>
         <div className="text-xl font-bold text-theme-text font-mono">
           {monthlyBurnRate > 0 ? `~${formatCurrency(monthlyBurnRate, currency, rate)}` : '—'}
         </div>
         <div className="text-xs text-theme-text-muted mt-1">
-          {constructionMonths} {t('months') || 'months'} {t('constructionPeriodLabel') || 'construction'}
+          {constructionMonths} {t('months')} {t('construction')}
         </div>
       </div>
 
@@ -92,7 +94,7 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: Pay
             <Home className="w-4 h-4 text-cyan-400" />
           </div>
           <span className="text-xs uppercase tracking-wide text-cyan-400 font-medium">
-            {t('completionBalance') || 'Completion Balance'}
+            {t('completionBalance')}
           </span>
         </div>
         <div className="text-xl font-bold text-theme-text font-mono">
