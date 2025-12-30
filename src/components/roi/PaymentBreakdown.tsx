@@ -87,11 +87,8 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
   return (
     <div className="space-y-6">
-      {/* Header with Payment Plan Badge */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-theme-text uppercase tracking-wide">
-          {t('investmentSchedule')}
-        </h3>
+      {/* Header with Payment Plan Badge - SINGLE BADGE ONLY */}
+      <div className="flex items-center justify-end">
         <PaymentPlanBadge
           preHandoverPercent={preHandoverPercent}
           handoverPercent={handoverPercent}
@@ -116,7 +113,14 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
           {/* Detailed Breakdown Card */}
           <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
-            <div className="p-4 space-y-5">
+            {/* Payment Breakdown Title */}
+            <div className="px-4 pt-4 pb-2">
+              <h4 className="text-sm font-semibold text-theme-text uppercase tracking-wide">
+                {t('paymentBreakdown')}
+              </h4>
+            </div>
+            
+            <div className="p-4 pt-2 space-y-5">
               {/* Base Property Price Header */}
               <div className="flex justify-between items-center pb-3 border-b border-theme-border">
                 <span className="text-xs text-theme-text-muted uppercase tracking-wide font-medium">{t('basePropertyPrice')}</span>
@@ -174,16 +178,16 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                     <span className="text-sm text-red-400 font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(dldFeeAmount, currency, rate)}</span>
                   </div>
                   
-                  {/* Oqood Fee */}
+                  {/* Oqood Fee - Admin Fee, not Govt */}
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <span className="text-sm text-theme-text-muted truncate">{t('oqoodFee')}</span>
-                      <span className="ml-1 text-[10px] bg-slate-700 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded">
-                        {t('govtFee')}
+                      <span className="ml-1 text-[10px] bg-slate-700 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                        {t('adminFee')}
                       </span>
                       <InfoTooltip translationKey="tooltipOqoodFee" />
                     </div>
-                    <span className="text-sm text-red-400 font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(oqoodFee, currency, rate)}</span>
+                    <span className="text-sm text-amber-400 font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(oqoodFee, currency, rate)}</span>
                   </div>
                   
                   <div className="flex justify-between items-center pt-2 border-t border-emerald-600/30">
