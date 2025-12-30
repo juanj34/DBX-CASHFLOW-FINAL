@@ -222,11 +222,14 @@ const translations: Translations = {
   // Wealth Summary
   wealthCreated10Years: { en: 'Wealth Created (10 Years)', es: 'Riqueza Generada (10 Años)' },
   propertyValueYear10: { en: 'Property Value (Y10)', es: 'Valor de Propiedad (A10)' },
+  estMarketValue: { en: 'Est. Market Value (Y10)', es: 'Valor de Mercado Est. (A10)' },
   cumulativeRentLT: { en: 'Cumulative Rent (LT)', es: 'Renta Acumulada (LP)' },
   cumulativeRentShortTerm: { en: 'Cumulative Rent (ST)', es: 'Renta Acumulada (CP)' },
   initialInvestment: { en: 'Initial Investment', es: 'Inversión Inicial' },
   netWealthLT: { en: 'Net Wealth (Long-Term)', es: 'Riqueza Neta (Largo Plazo)' },
   netWealthShortTerm: { en: 'Net Wealth (Short-Term)', es: 'Riqueza Neta (Corto Plazo)' },
+  tooltipEstMarketValue: { en: 'Projected property value based on market appreciation estimates. Actual value may vary.', es: 'Valor proyectado de la propiedad basado en estimaciones de apreciación de mercado. El valor real puede variar.' },
+  tooltipUnrealizedProfit: { en: 'Unrealized paper profit based on market projections. Actual returns depend on sale price at exit.', es: 'Ganancia no realizada en papel basada en proyecciones de mercado. Los retornos reales dependen del precio de venta.' },
   
   // Visibility Controls
   share: { en: 'Share', es: 'Compartir' },

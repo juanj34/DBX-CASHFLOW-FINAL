@@ -83,11 +83,11 @@ export const DeveloperCard = ({
               {developer?.name || developerName || 'Unknown Developer'}
             </p>
             {tier && (
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="flex items-center gap-2 mt-1">
+                <TierBadge score={trustScore} variant="compact" />
                 <span className="text-sm font-bold" style={{ color: tier.color }}>
                   {trustScore.toFixed(1)}
                 </span>
-                <span className="text-xs text-gray-400">Trust</span>
               </div>
             )}
           </div>

@@ -135,7 +135,7 @@ export const MortgageBreakdown = ({
             <Building2 className="w-5 h-5 text-theme-accent" />
           </div>
           <div>
-            <h3 className="font-semibold text-theme-text">{t('mortgageBreakdown')}</h3>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">Leverage & Financing</h3>
             <p className="text-xs text-theme-text-muted">{mortgageInputs.financingPercent}% {t('financing')} · {mortgageInputs.loanTermYears} {t('years')} · {mortgageInputs.interestRate}%</p>
           </div>
         </div>

@@ -78,7 +78,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
         <div className="flex items-center gap-2">
           <Home className="w-5 h-5 text-[#CCFF00]" />
           <div>
-            <h3 className="font-semibold text-white">{t('rentSnapshot')}</h3>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">Yield & Income</h3>
             <p className="text-[10px] text-gray-500">{t('basedOnPurchasePrice')}</p>
           </div>
         </div>
