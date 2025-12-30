@@ -46,7 +46,7 @@ export const SignupForm = () => {
     try {
       const redirectUrl = `${window.location.origin}/home`;
       
-      const { error } = await supabase.auth.signUp({
+      const { error, data: authData } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -64,6 +64,19 @@ export const SignupForm = () => {
           throw error;
         }
         return;
+      }
+
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userName: data.fullName,
+            userEmail: data.email,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't block signup if email fails
       }
 
       toast.success(t('signupSuccess'));

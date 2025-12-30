@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Share2, Copy, Check, FileDown, Save, FolderOpen, Trash2, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Share2, Copy, Check, FileDown, Save, FolderOpen, Trash2, Sparkles, Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ViewVisibility {
   investmentSnapshot: boolean;
@@ -100,6 +101,15 @@ interface ViewVisibilityControlsProps {
     exitStrategy: boolean;
     longTermHold: boolean;
   };
+  // Client info for email sending
+  clientInfo?: {
+    clientName: string;
+    clientEmail: string;
+    projectName: string;
+    unitType: string;
+    advisorName: string;
+    advisorEmail?: string;
+  };
 }
 
 export const encodeVisibility = (visibility: ViewVisibility): string => {
@@ -132,13 +142,15 @@ export const ViewVisibilityControls = ({
   shareUrl, 
   onGenerateShareUrl, 
   onExportPDF,
-  enabledSections = { exitStrategy: true, longTermHold: true }
+  enabledSections = { exitStrategy: true, longTermHold: true },
+  clientInfo
 }: ViewVisibilityControlsProps) => {
   const { t } = useLanguage();
   const [visibility, setVisibility] = useState<ViewVisibility>(DEFAULT_VISIBILITY);
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(shareUrl);
   
   // Presets state
@@ -209,6 +221,37 @@ export const ViewVisibilityControls = ({
       } finally {
         setExporting(false);
       }
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!clientInfo?.clientEmail || !generatedUrl) {
+      toast.error('Please generate a share link first and ensure client email is provided');
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-quote-email', {
+        body: {
+          clientName: clientInfo.clientName || 'Valued Client',
+          clientEmail: clientInfo.clientEmail,
+          projectName: clientInfo.projectName || 'Investment Property',
+          unitType: clientInfo.unitType || 'Unit',
+          quoteUrl: generatedUrl,
+          advisorName: clientInfo.advisorName || 'Your Advisor',
+          advisorEmail: clientInfo.advisorEmail,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Quote sent to ${clientInfo.clientEmail}`);
+    } catch (error: any) {
+      console.error('Failed to send email:', error);
+      toast.error('Failed to send email. Please try again.');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -431,6 +474,23 @@ export const ViewVisibilityControls = ({
                     {t('generateLink')}
                   </>
                 )}
+              </Button>
+            )}
+
+            {/* Send Email Button - only show if client info with email is provided */}
+            {clientInfo?.clientEmail && generatedUrl && (
+              <Button
+                onClick={handleSendEmail}
+                disabled={sendingEmail}
+                variant="outline"
+                className="w-full border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500"
+              >
+                {sendingEmail ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4 mr-2" />
+                )}
+                {sendingEmail ? 'Sending...' : `Email to ${clientInfo.clientEmail}`}
               </Button>
             )}
 

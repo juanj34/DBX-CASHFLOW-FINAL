@@ -298,6 +298,14 @@ const CashflowDashboardContent = () => {
                     onGenerateShareUrl={handleShare} 
                     onExportPDF={handleExportPDF}
                     enabledSections={inputs.enabledSections || { exitStrategy: true, longTermHold: true }}
+                    clientInfo={{
+                      clientName: clientInfo.clients?.[0]?.name || '',
+                      clientEmail: clientInfo.clients?.[0]?.email || '',
+                      projectName: clientInfo.projectName || '',
+                      unitType: clientInfo.unitType || '',
+                      advisorName: profile?.full_name || '',
+                      advisorEmail: profile?.business_email || profile?.email || '',
+                    }}
                   />
 
                   {/* Separator */}
