@@ -51,7 +51,8 @@ function App() {
                 <Route path="/home" element={<Home />} />
                 <Route path="/map" element={<Map />} />
                 <Route path="/map-config" element={<Dashboard />} />
-                <Route path="/roi-calculator" element={<ROICalculator />} />
+            {/* ROI Calculator temporarily disabled - redirect to home */}
+            <Route path="/roi-calculator" element={<Navigate to="/home" replace />} />
                 <Route path="/cashflow-generator" element={<OICalculator />} />
                 <Route path="/cashflow/:quoteId" element={<OICalculator />} />
                 <Route path="/cashflow-dashboard" element={<CashflowDashboard />} />

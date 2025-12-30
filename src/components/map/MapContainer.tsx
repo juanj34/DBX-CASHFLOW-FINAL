@@ -788,16 +788,18 @@ export const MapContainer = ({ userRole }: MapContainerProps) => {
           <Home className="w-4 h-4" />
         </Button>
 
-        {/* Map Config button (wheelhouse) */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => navigate("/map-config")}
-          className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142]"
-          title="Map Configuration"
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
+        {/* Map Config button (wheelhouse) - Only visible to admins */}
+        {userRole === 'admin' && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate("/map-config")}
+            className="bg-[#1a1f2e]/95 border-[#2a3142] backdrop-blur-xl text-gray-400 hover:text-white hover:bg-[#2a3142]"
+            title="Map Configuration"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+        )}
 
         {/* Presentation Mode Toggle */}
         <Button
