@@ -114,7 +114,7 @@ export const CountrySelect = ({ value, onValueChange, placeholder, className, di
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0 bg-[#1a1f2e] border-[#2a3142]" align="start">
+      <PopoverContent className="w-[280px] p-0 bg-theme-card border-theme-border" align="start">
         {error ? (
           <div className="p-4 text-center">
             <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
@@ -130,15 +130,15 @@ export const CountrySelect = ({ value, onValueChange, placeholder, className, di
           </div>
         ) : (
           <Command className="bg-transparent">
-            <div className="flex items-center border-b border-[#2a3142] px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 text-gray-400" />
+            <div className="flex items-center border-b border-theme-border px-3">
+              <Search className="mr-2 h-4 w-4 shrink-0 text-theme-text-muted" />
               <CommandInput 
                 placeholder={language === 'es' ? 'Buscar país...' : 'Search country...'}
-                className="h-10 bg-transparent text-white placeholder:text-gray-500 border-0 focus:ring-0"
+                className="h-10 bg-transparent text-theme-text placeholder:text-theme-text-muted border-0 focus:ring-0"
               />
             </div>
             <CommandList className="max-h-[300px] overflow-y-auto">
-              <CommandEmpty className="py-4 text-center text-sm text-gray-400">
+              <CommandEmpty className="py-4 text-center text-sm text-theme-text-muted">
                 {language === 'es' ? 'No se encontró país.' : 'No country found.'}
               </CommandEmpty>
               
@@ -151,14 +151,14 @@ export const CountrySelect = ({ value, onValueChange, placeholder, className, di
                   <CommandGroup 
                     key={continent} 
                     heading={language === 'es' ? label.es : label.en}
-                    className="text-gray-400 [&_[cmdk-group-heading]]:text-gray-500 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
+                    className="text-theme-text-muted [&_[cmdk-group-heading]]:text-theme-text-muted [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
                   >
                     {countries.map((country) => (
                       <CommandItem
                         key={country.code}
                         value={`${country.name} ${country.nameEs} ${country.code}`}
                         onSelect={() => handleSelect(country.code)}
-                        className="flex items-center gap-2 px-2 py-1.5 text-white cursor-pointer hover:bg-[#2a3142] data-[selected]:bg-[#2a3142] aria-selected:bg-[#2a3142]"
+                        className="flex items-center gap-2 px-2 py-1.5 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border"
                       >
                         <Check
                           className={cn(

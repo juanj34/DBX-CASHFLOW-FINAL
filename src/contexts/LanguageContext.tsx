@@ -219,6 +219,15 @@ const translations: Translations = {
   underConstruction: { en: 'Under Construction', es: 'En Construcción' },
   breakEven: { en: 'Break-Even', es: 'Punto de Equilibrio' },
   
+  // OI Growth Curve
+  priceAppreciationOverTime: { en: 'Price Appreciation Over Time', es: 'Apreciación de Precio en el Tiempo' },
+  exitValueAtDifferentTimePoints: { en: 'Exit value at different time points', es: 'Valor de salida en diferentes momentos' },
+  monthsFromBooking: { en: 'Months from Booking', es: 'Meses desde Reserva' },
+  
+  // Yield & Income
+  yieldAndIncome: { en: 'Yield & Income', es: 'Rendimiento e Ingresos' },
+  operatingExpenses: { en: 'Operating Expenses', es: 'Gastos Operativos' },
+  
   // Wealth Summary
   wealthCreated10Years: { en: 'Wealth Created (10 Years)', es: 'Riqueza Generada (10 Años)' },
   propertyValueYear10: { en: 'Property Value (Y10)', es: 'Valor de Propiedad (A10)' },
