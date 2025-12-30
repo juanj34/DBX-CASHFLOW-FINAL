@@ -75,25 +75,25 @@ const QuotesDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" />
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-accent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-theme-bg">
+      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/home">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white">{t('quotesTitle')}</h1>
-              <p className="text-sm text-gray-400">{quotes.length} {t('quotesSaved')}</p>
+              <h1 className="text-xl font-bold text-theme-text">{t('quotesTitle')}</h1>
+              <p className="text-sm text-theme-text-muted">{quotes.length} {t('quotesSaved')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -105,8 +105,8 @@ const QuotesDashboard = () => {
                   setSelectedForCompare([]);
                 }}
                 className={compareMode 
-                  ? "bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2" 
-                  : "border-[#2a3142] text-gray-300 hover:bg-[#2a3142] gap-2"
+                  ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2" 
+                  : "border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
                 }
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -114,7 +114,7 @@ const QuotesDashboard = () => {
               </Button>
             )}
             <Link to="/cashflow-generator">
-              <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
+              <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2">
                 <Plus className="w-4 h-4" />
                 {t('quotesNewQuote')}
               </Button>
@@ -125,14 +125,14 @@ const QuotesDashboard = () => {
         {/* Compare bar */}
         {compareMode && selectedForCompare.length > 0 && (
           <div className="container mx-auto px-6 pb-4">
-            <div className="flex items-center justify-between bg-[#1a1f2e] border border-[#CCFF00]/30 rounded-lg px-4 py-3">
-              <span className="text-gray-300 text-sm">
+            <div className="flex items-center justify-between bg-theme-card border border-theme-accent/30 rounded-lg px-4 py-3">
+              <span className="text-theme-text-muted text-sm">
                 {selectedForCompare.length} quotes selected (min 2, max 4)
               </span>
               <Button
                 onClick={handleCompare}
                 disabled={selectedForCompare.length < 2}
-                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
               >
                 Compare Selected
               </Button>
