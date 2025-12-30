@@ -286,7 +286,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             <Button
               size="sm"
               onClick={handleAddExit}
-              className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+              className="h-8 text-xs bg-theme-accent hover:bg-theme-accent/90 text-black font-medium"
             >
               <Plus className="w-3 h-3 mr-1.5" />
               Add Exit
