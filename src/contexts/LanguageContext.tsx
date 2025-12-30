@@ -1168,7 +1168,7 @@ const translations: Translations = {
   yrs: { en: 'yrs', es: 'años' },
   yearsLabel: { en: 'Years', es: 'Años' },
 
-  
+
   // Common (only new keys not already defined)
   title: { en: 'Title', es: 'Título' },
   category: { en: 'Category', es: 'Categoría' },
@@ -1176,6 +1176,44 @@ const translations: Translations = {
   actions: { en: 'Actions', es: 'Acciones' },
   actionCannotBeUndone: { en: 'This action cannot be undone.', es: 'Esta acción no se puede deshacer.' },
   loading: { en: 'Loading', es: 'Cargando' },
+  
+  // Home Dashboard - Wealth Advisor Edition
+  goodMorning: { en: 'Good morning', es: 'Buenos días' },
+  goodAfternoon: { en: 'Good afternoon', es: 'Buenas tardes' },
+  goodEvening: { en: 'Good evening', es: 'Buenas noches' },
+  marketPulse: { en: 'Market Pulse', es: 'Pulso del Mercado' },
+  dubaiYield: { en: 'Dubai Avg Yield', es: 'Yield Promedio Dubai' },
+  mortgageRates: { en: 'Mortgage Rates', es: 'Tasas Hipotecarias' },
+  topArea: { en: 'Top Area', es: 'Zona Top' },
+  activeProposals: { en: 'Active Proposals', es: 'Propuestas Activas' },
+  pipelineVolume: { en: 'Pipeline Volume', es: 'Volumen Pipeline' },
+  potentialCommission: { en: 'Potential Commission', es: 'Comisión Potencial' },
+  thisMonth: { en: 'This month', es: 'Este mes' },
+  totalDeals: { en: 'Total deals', es: 'Total de tratos' },
+  ofVolume: { en: 'of volume', es: 'del volumen' },
+  createStrategy: { en: 'Create Strategy', es: 'Crear Estrategia' },
+  createStrategyDesc: { en: 'New client proposal & analysis', es: 'Nueva propuesta y análisis para cliente' },
+  compareOpportunities: { en: 'Compare Opportunities', es: 'Comparar Oportunidades' },
+  compareOpportunitiesDesc: { en: 'Side-by-side ROI analysis', es: 'Análisis ROI lado a lado' },
+  marketIntelligence: { en: 'Market Intelligence', es: 'Inteligencia de Mercado' },
+  marketIntelligenceDesc: { en: 'Area heatmaps & trends', es: 'Mapas de calor y tendencias por zona' },
+  startNew: { en: 'Start New +', es: 'Nuevo +' },
+  analyze: { en: 'Analyze >', es: 'Analizar >' },
+  explore: { en: 'Explore >', es: 'Explorar >' },
+  activeOpportunities: { en: 'Active Opportunities', es: 'Oportunidades Activas' },
+  clientProject: { en: 'Client / Project', es: 'Cliente / Proyecto' },
+  dealValue: { en: 'Deal Value', es: 'Valor del Trato' },
+  keyStat: { en: 'Key Stat', es: 'Métrica Clave' },
+  statusDraft: { en: 'Draft', es: 'Borrador' },
+  statusPresented: { en: 'Presented', es: 'Presentado' },
+  statusNegotiating: { en: 'Negotiating', es: 'Negociando' },
+  statusSold: { en: 'Sold', es: 'Vendido' },
+  noOpportunities: { en: 'No opportunities yet. Create your first proposal.', es: 'Sin oportunidades aún. Crea tu primera propuesta.' },
+  createFirst: { en: 'Create First Proposal', es: 'Crear Primera Propuesta' },
+  checkOutProperty: { en: 'Check out this investment property', es: 'Mira esta propiedad de inversión' },
+  property: { en: 'Property', es: 'Propiedad' },
+  errorUpdatingStatus: { en: 'Error updating status', es: 'Error actualizando estado' },
+  statusUpdated: { en: 'Status updated', es: 'Estado actualizado' },
 };
 
 interface LanguageContextType {
