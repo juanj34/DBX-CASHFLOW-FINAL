@@ -102,12 +102,40 @@ export const ROEBreakdownTooltip = ({
             <div className="border-t border-[#2a3142] pt-2 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">
-                  {scenario.entryCosts > 0 ? 'True Profit' : 'Profit'}
+                  {scenario.entryCosts > 0 ? 'Gross Profit' : 'Profit'}
                 </span>
                 <span className={`text-xs font-mono ${scenario.trueProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, currency, rate)}
                 </span>
               </div>
+              
+              {/* Exit Costs */}
+              {scenario.exitCosts > 0 && (
+                <>
+                  {scenario.agentCommission > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Agent (2%)</span>
+                      <span className="text-xs font-mono text-red-400">
+                        -{formatCurrency(scenario.agentCommission, currency, rate)}
+                      </span>
+                    </div>
+                  )}
+                  {scenario.nocFee > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">NOC Fee</span>
+                      <span className="text-xs font-mono text-red-400">
+                        -{formatCurrency(scenario.nocFee, currency, rate)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between border-t border-[#2a3142]/50 pt-1">
+                    <span className="text-xs text-gray-400 font-medium">= Net Profit</span>
+                    <span className={`text-xs font-mono font-medium ${scenario.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {scenario.netProfit >= 0 ? '+' : ''}{formatCurrency(scenario.netProfit, currency, rate)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* ROE Calculation */}
@@ -115,13 +143,13 @@ export const ROEBreakdownTooltip = ({
               <div className="flex items-center gap-1.5 text-xs mb-2">
                 <span className="text-gray-400">ROE =</span>
                 <span className="text-white font-mono">
-                  {scenario.entryCosts > 0 ? 'True Profit' : 'Profit'} ÷ Total Capital
+                  {scenario.exitCosts > 0 ? 'Net Profit' : (scenario.entryCosts > 0 ? 'True Profit' : 'Profit')} ÷ Total Capital
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-xs">
                 <span className="text-gray-400">=</span>
                 <span className="text-white font-mono">
-                  {formatCurrency(scenario.trueProfit, currency, rate)}
+                  {formatCurrency(scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit, currency, rate)}
                 </span>
                 <span className="text-gray-400">÷</span>
                 <span className="text-white font-mono">
@@ -130,11 +158,11 @@ export const ROEBreakdownTooltip = ({
               </div>
               <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#2a3142]">
                 <ArrowRight className="w-3 h-3 text-[#CCFF00]" />
-                <span className={`text-lg font-bold font-mono ${scenario.trueROE >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
-                  {scenario.trueROE.toFixed(1)}%
+                <span className={`text-lg font-bold font-mono ${(scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE) >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
+                  {(scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE).toFixed(1)}%
                 </span>
                 <span className="text-xs text-gray-500">
-                  ({scenario.annualizedROE.toFixed(1)}% annualized)
+                  ({(scenario.exitCosts > 0 ? scenario.netAnnualizedROE : scenario.annualizedROE).toFixed(1)}% annualized)
                 </span>
               </div>
             </div>

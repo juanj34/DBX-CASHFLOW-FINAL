@@ -268,12 +268,42 @@ export const ExitScenariosCards = ({
               <div className="flex justify-between items-center pt-2 border-t border-[#2a3142]">
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  {t('profit')}
+                  {t('grossProfit')}
                 </span>
                 <span className={`text-sm font-mono ${scenario.trueProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, currency, rate)}
                 </span>
               </div>
+              
+              {/* Exit Costs Deductions */}
+              {scenario.exitCosts > 0 && (
+                <div className="space-y-1">
+                  {scenario.agentCommission > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-red-400 flex items-center gap-1">
+                        {t('agentCommission')}
+                      </span>
+                      <span className="text-sm text-red-400 font-mono">-{formatCurrency(scenario.agentCommission, currency, rate)}</span>
+                    </div>
+                  )}
+                  {scenario.nocFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-red-400 flex items-center gap-1">
+                        {t('nocFee')}
+                      </span>
+                      <span className="text-sm text-red-400 font-mono">-{formatCurrency(scenario.nocFee, currency, rate)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center border-t border-[#2a3142] pt-1">
+                    <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                      {t('netProfit')}
+                    </span>
+                    <span className={`text-sm font-mono font-medium ${scenario.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {scenario.netProfit >= 0 ? '+' : ''}{formatCurrency(scenario.netProfit, currency, rate)}
+                    </span>
+                  </div>
+                </div>
+              )}
               
               <ROEBreakdownTooltip scenario={scenario} currency={currency} rate={rate}>
                 <div className="flex justify-between items-center cursor-help hover:bg-[#1a1f2e] rounded px-1 -mx-1 transition-colors">
@@ -281,14 +311,14 @@ export const ExitScenariosCards = ({
                     {t('roe')}
                     <Info className="w-3 h-3" />
                   </span>
-                  <span className={`text-lg font-bold font-mono ${scenario.trueROE >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
-                    {scenario.trueROE.toFixed(1)}%
+                  <span className={`text-lg font-bold font-mono ${(scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE) >= 0 ? 'text-[#CCFF00]' : 'text-red-400'}`}>
+                    {(scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE).toFixed(1)}%
                   </span>
                 </div>
               </ROEBreakdownTooltip>
 
               <div className="text-xs text-gray-500 pt-1">
-                {scenario.annualizedROE.toFixed(1)}% {t('annualized')}
+                {(scenario.exitCosts > 0 ? scenario.netAnnualizedROE : scenario.annualizedROE).toFixed(1)}% {t('annualized')}
               </div>
             </div>
           </div>

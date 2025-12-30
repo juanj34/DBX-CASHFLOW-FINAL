@@ -25,6 +25,8 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,
+  exitAgentCommissionEnabled: false,
+  exitNocFee: 5000,
   showAirbnbComparison: false,
   shortTermRental: DEFAULT_SHORT_TERM_RENTAL,
   zoneMaturityLevel: 60,
@@ -80,6 +82,8 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.useZoneDefaults ??= true;
     merged.showAirbnbComparison ??= false;
     merged.minimumExitThreshold ??= 30;
+    merged.exitAgentCommissionEnabled ??= false;
+    merged.exitNocFee ??= 5000;
     merged.valueDifferentiators ??= [];
     
     // Handle legacy rentalMode field

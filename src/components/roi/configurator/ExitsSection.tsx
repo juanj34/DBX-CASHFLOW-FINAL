@@ -265,6 +265,43 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             </div>
           </div>
 
+          {/* Exit Costs Section */}
+          <div className="p-3 bg-theme-card rounded-xl border border-theme-border space-y-3">
+            <h4 className="text-sm font-medium text-theme-text">Exit Costs</h4>
+            
+            {/* Agent Commission Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-theme-text-muted">Agent Commission (2%)</span>
+              </div>
+              <Switch 
+                checked={inputs.exitAgentCommissionEnabled ?? false} 
+                onCheckedChange={(checked) => setInputs(prev => ({ ...prev, exitAgentCommissionEnabled: checked }))}
+                className="data-[state=checked]:bg-theme-accent"
+              />
+            </div>
+            
+            {/* Developer NOC Fee */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-theme-text-muted">Developer NOC Fee</label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-theme-text-muted">AED</span>
+                <Input
+                  type="number"
+                  value={inputs.exitNocFee ?? 5000}
+                  onChange={(e) => setInputs(prev => ({ ...prev, exitNocFee: parseFloat(e.target.value) || 0 }))}
+                  className="w-24 h-8 text-sm bg-theme-bg-alt border-theme-border text-theme-text font-mono text-right"
+                  min={0}
+                  step={1000}
+                />
+              </div>
+            </div>
+            
+            <p className="text-[10px] text-theme-text-muted">
+              These costs are deducted from your exit profit
+            </p>
+          </div>
+
           {/* Controls Row: Generate Defaults + Presets (always visible) */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Generate Defaults Button */}
