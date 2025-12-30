@@ -12,12 +12,13 @@ interface ClientSplitCardsProps {
   currency: Currency;
   rate: number;
   onViewDetails?: (clientId: string) => void;
+  vertical?: boolean;
 }
 
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDetails }: ClientSplitCardsProps) => {
+export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDetails, vertical = false }: ClientSplitCardsProps) => {
   const { t } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, oqoodFee } = inputs;
 
@@ -43,6 +44,15 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
 
   if (!clients || clients.length < 2) return null;
 
+  // Dynamic grid based on client count and vertical prop
+  const getGridClass = () => {
+    if (vertical) return 'flex flex-col gap-3';
+    const count = clients.length;
+    if (count === 2) return 'grid grid-cols-2 gap-3';
+    if (count === 3) return 'grid grid-cols-3 gap-3';
+    return 'grid grid-cols-2 lg:grid-cols-4 gap-3';
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -54,7 +64,7 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className={getGridClass()}>
         {clients.map((client) => {
           const sharePercent = getClientShare(client.id);
           const clientDisplay = getClientDisplay(client);

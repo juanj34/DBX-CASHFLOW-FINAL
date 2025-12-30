@@ -41,7 +41,7 @@ export const PaymentVisualBar = ({ inputs, currency, rate, accentColor = '#CCFF0
       </div>
 
       {/* Visual bar */}
-      <div className="h-10 rounded-xl overflow-hidden flex shadow-inner">
+      <div className="h-12 rounded-xl overflow-hidden flex shadow-inner">
         {/* Downpayment segment */}
         <div 
           className="flex items-center justify-center text-xs font-semibold transition-all"
@@ -50,20 +50,21 @@ export const PaymentVisualBar = ({ inputs, currency, rate, accentColor = '#CCFF0
             backgroundColor: accentColor,
             color: '#000',
             minWidth: downpaymentPercent > 5 ? 'auto' : '24px',
+            borderRight: '2px solid rgba(255,255,255,0.3)',
           }}
         >
           {downpaymentPercent > 8 ? `${downpaymentPercent}%` : ''}
         </div>
         
-        {/* Installments segment */}
+        {/* Installments segment - using distinct slate color for contrast */}
         {installmentsPercent > 0 && (
           <div 
-            className="flex items-center justify-center text-xs font-semibold transition-all"
+            className="flex items-center justify-center text-xs font-semibold transition-all bg-slate-500"
             style={{ 
               width: `${installmentsPercent}%`,
-              backgroundColor: `${accentColor}60`,
               color: '#fff',
               minWidth: installmentsPercent > 5 ? 'auto' : '24px',
+              borderRight: '2px solid rgba(255,255,255,0.3)',
             }}
           >
             {installmentsPercent > 8 ? `${installmentsPercent}%` : ''}
@@ -97,10 +98,7 @@ export const PaymentVisualBar = ({ inputs, currency, rate, accentColor = '#CCFF0
         {installmentsPercent > 0 && (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
-              <span 
-                className="w-3 h-3 rounded-sm flex-shrink-0" 
-                style={{ backgroundColor: `${accentColor}60` }} 
-              />
+              <span className="w-3 h-3 rounded-sm flex-shrink-0 bg-slate-500" />
               <span className="text-theme-text-muted truncate">{t('journeyLabel') || 'Journey'}</span>
             </div>
             <span className="text-theme-text font-mono font-medium pl-4">
