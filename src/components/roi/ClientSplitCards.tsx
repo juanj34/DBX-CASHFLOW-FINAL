@@ -87,14 +87,16 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate }: ClientS
 
           return (
             <AccordionItem key={client.id} value={client.id} className="border-b border-theme-border/10 last:border-0">
-              <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-theme-bg/30 [&[data-state=open]>svg]:rotate-180">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {clientDisplay.flag && (
-                    <span className="text-lg flex-shrink-0">{clientDisplay.flag}</span>
-                  )}
-                  <span className="text-sm font-medium text-theme-text truncate">{clientDisplay.name}</span>
-                  <span className="text-xs text-cyan-400 font-medium flex-shrink-0">{sharePercent.toFixed(1)}%</span>
-                  <span className="ml-auto text-sm font-mono font-bold text-theme-text tabular-nums flex-shrink-0">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-theme-bg/30 [&[data-state=open]>svg]:rotate-180">
+                <div className="flex items-center w-full pr-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {clientDisplay.flag && (
+                      <span className="text-base flex-shrink-0">{clientDisplay.flag}</span>
+                    )}
+                    <span className="text-sm font-medium text-theme-text truncate">{clientDisplay.name}</span>
+                  </div>
+                  <span className="text-xs text-cyan-400 font-medium w-14 text-right">{sharePercent.toFixed(1)}%</span>
+                  <span className="text-sm font-mono font-bold text-theme-text tabular-nums w-28 text-right">
                     {formatCurrency(clientGrandTotal, currency, rate)}
                   </span>
                 </div>

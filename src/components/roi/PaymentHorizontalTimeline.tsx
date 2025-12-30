@@ -3,6 +3,7 @@ import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { constructionToMonth } from "./constructionProgress";
 
 interface PaymentHorizontalTimelineProps {
   inputs: OIInputs;
@@ -21,7 +22,7 @@ interface TimelinePayment {
   positionPercent: number;
   type: 'entry' | 'milestone' | 'handover';
   date: string;
-  monthLabel: string;
+  isEstimate: boolean;
 }
 
 // DLD Fee is always 4%
@@ -89,21 +90,28 @@ export const PaymentHorizontalTimeline = ({
     positionPercent: 0,
     type: 'entry',
     date: monthToDateString(bookingMonth, bookingYear),
-    monthLabel: 'M0',
+    isEstimate: false,
   });
 
-  // Additional payments (milestones) - TRUE proportional positioning
-  additionalPayments.forEach((payment, index) => {
+  // Additional payments (milestones) - use S-curve for construction-linked
+  additionalPayments.forEach((payment) => {
     const amount = basePrice * payment.paymentPercent / 100;
     const isTimeBased = payment.type === 'time';
     
-    // Calculate months from booking
+    // Calculate months from booking using S-curve for construction milestones
     let monthsFromBooking: number;
+    let label: string;
+    let isEstimate: boolean;
+    
     if (isTimeBased) {
       monthsFromBooking = payment.triggerValue;
+      label = `${payment.paymentPercent}%`;
+      isEstimate = false;
     } else {
-      // Construction-based: convert percentage to months
-      monthsFromBooking = Math.round((payment.triggerValue / 100) * totalMonths);
+      // Construction-based: use S-curve to estimate month
+      monthsFromBooking = constructionToMonth(payment.triggerValue, totalMonths);
+      label = `${payment.triggerValue}% const`;
+      isEstimate = true;
     }
     
     // TRUE proportional positioning: (months / totalMonths) * 100 - NO CLAMPING
@@ -111,14 +119,14 @@ export const PaymentHorizontalTimeline = ({
     
     payments.push({
       id: payment.id,
-      label: `M${index + 1}`,
+      label,
       percent: payment.paymentPercent,
       amount,
       monthsFromBooking,
       positionPercent,
       type: 'milestone',
       date: estimateDateFromMonths(monthsFromBooking),
-      monthLabel: `M${monthsFromBooking}`,
+      isEstimate,
     });
   });
 
@@ -132,7 +140,7 @@ export const PaymentHorizontalTimeline = ({
     positionPercent: 100,
     type: 'handover',
     date: `Q${handoverQuarter} ${handoverYear}`,
-    monthLabel: `M${totalMonths}`,
+    isEstimate: false,
   });
 
   // Sort by position
@@ -180,8 +188,8 @@ export const PaymentHorizontalTimeline = ({
       </div>
 
       {/* Timeline Container */}
-      <div className="relative h-28 px-4">
-        {/* Track - neutral gray, no green fill */}
+      <div className="relative h-24 px-4">
+        {/* Track - neutral gray */}
         <div className="absolute top-1/2 left-4 right-4 h-1.5 bg-theme-border/50 rounded-full transform -translate-y-1/2" />
 
         {/* Payment Markers */}
@@ -208,7 +216,7 @@ export const PaymentHorizontalTimeline = ({
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     {/* Percent label above marker */}
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
                       <div className={`text-xs font-bold ${
                         payment.type === 'handover' ? 'text-cyan-400' : 
                         payment.type === 'entry' ? 'text-theme-accent' : 
@@ -229,7 +237,7 @@ export const PaymentHorizontalTimeline = ({
                       style={style.custom}
                     />
                     
-                    {/* Labels below marker */}
+                    {/* Labels below marker: milestone label + date (with ~ for estimates) */}
                     <div className="absolute top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
                       <div className={`text-[10px] font-semibold ${
                         payment.type === 'handover' ? 'text-cyan-400' : 
@@ -239,10 +247,7 @@ export const PaymentHorizontalTimeline = ({
                         {payment.label}
                       </div>
                       <div className="text-[9px] text-theme-text-muted mt-0.5">
-                        {payment.monthLabel}
-                      </div>
-                      <div className="text-[9px] text-theme-text-muted">
-                        {payment.date}
+                        {payment.isEstimate ? '~' : ''}{payment.date}
                       </div>
                     </div>
                   </div>
@@ -255,7 +260,10 @@ export const PaymentHorizontalTimeline = ({
                     <div className="font-semibold text-sm text-theme-text">
                       {payment.label}
                     </div>
-                    <div className="text-xs text-theme-text-muted">{payment.date}</div>
+                    <div className="text-xs text-theme-text-muted">
+                      {payment.isEstimate ? '~' : ''}{payment.date}
+                      {payment.isEstimate && <span className="text-amber-400 ml-1">(estimate)</span>}
+                    </div>
                     <div className="text-sm font-bold font-mono" style={{ color: payment.type === 'handover' ? '#22d3ee' : accentColor }}>
                       {formatCurrency(payment.amount, currency, rate)}
                     </div>
@@ -283,7 +291,7 @@ export const PaymentHorizontalTimeline = ({
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-          <span>{t('milestone')}</span>
+          <span>{t('construction') || 'Construction'}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3.5 h-3.5 rounded-full bg-cyan-400" />
