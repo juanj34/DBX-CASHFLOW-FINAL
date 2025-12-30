@@ -1,13 +1,11 @@
 import { useState, useCallback, useMemo } from "react";
-import { LogOut, Plus, Trash2, Calendar, Sparkles, Save, FolderOpen, AlertTriangle, RotateCcw, Wand2, ArrowUpRight, Info, Check, X } from "lucide-react";
+import { LogOut, Plus, Trash2, Calendar, Sparkles, AlertTriangle, ArrowUpRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfiguratorSectionProps } from "./types";
 import { formatCurrency } from "../currencyUtils";
-import { useExitPresets, ExitPreset } from "@/hooks/useExitPresets";
 import { calculateExitScenario, ExitScenarioResult } from "../constructionProgress";
 import { ROEBreakdownTooltip } from "../ROEBreakdownTooltip";
 
@@ -30,11 +28,6 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
         monthsFromBooking,
       }));
   });
-
-  const [isSavingPreset, setIsSavingPreset] = useState(false);
-  const [presetName, setPresetName] = useState('');
-  
-  const { presets, saving: savingPresets, savePreset, deletePreset, applyPreset } = useExitPresets();
 
   // Calculate months from booking to handover
   const bookingDate = useMemo(() => new Date(inputs.bookingYear, inputs.bookingMonth - 1), [inputs.bookingYear, inputs.bookingMonth]);
@@ -136,39 +129,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  const handleSavePreset = async () => {
-    if (!presetName.trim()) return;
-    const exitMonths = exits.map(e => e.monthsFromBooking);
-    const success = await savePreset(presetName.trim(), { exitMonths, minimumExitThreshold: inputs.minimumExitThreshold });
-    if (success) { setIsSavingPreset(false); setPresetName(''); }
-  };
-
-  const handleLoadPreset = (preset: ExitPreset) => {
-    const values = applyPreset(preset);
-    const loadedExits: ExitScenario[] = values.exitMonths.map((months, index) => ({
-      id: `preset-${Date.now()}-${index}`,
-      monthsFromBooking: months,
-    }));
-    setExits(loadedExits);
-    setInputs((prev) => ({
-      ...prev,
-      minimumExitThreshold: values.minimumExitThreshold,
-      _exitScenarios: values.exitMonths.slice().sort((a, b) => a - b),
-    }));
-  };
-
-  const handleDeletePreset = async (e: React.MouseEvent, presetId: string) => {
-    e.stopPropagation();
-    await deletePreset(presetId);
-  };
-
   const handleThresholdChange = (value: number[]) => {
     setInputs(prev => ({ ...prev, minimumExitThreshold: value[0] }));
-  };
-
-  const handleResetToDefaults = () => {
-    setExits([]);
-    setInputs((prev) => ({ ...prev, minimumExitThreshold: 30, _exitScenarios: [] }));
   };
 
   // Get the ROE to display (net if exit costs, otherwise true)
@@ -248,171 +210,87 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             </p>
           </div>
 
-          {/* Quick Preset Buttons */}
-          <div className="flex flex-wrap gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const earlyMonth = Math.min(12, totalMonths - 1);
-                if (earlyMonth > 0 && !exits.some(e => e.monthsFromBooking === earlyMonth)) {
-                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: earlyMonth };
-                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                  setExits(newExits);
-                  syncExitsToInputs(newExits);
-                }
-              }}
-              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-            >
-              Early (12m)
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const midMonth = Math.round(totalMonths / 2);
-                if (midMonth > 0 && !exits.some(e => e.monthsFromBooking === midMonth)) {
-                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: midMonth };
-                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                  setExits(newExits);
-                  syncExitsToInputs(newExits);
-                }
-              }}
-              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-            >
-              Mid-Build
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const nearHandover = Math.max(6, totalMonths - 3);
-                if (!exits.some(e => e.monthsFromBooking === nearHandover)) {
-                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: nearHandover };
-                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                  setExits(newExits);
-                  syncExitsToInputs(newExits);
-                }
-              }}
-              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-            >
-              Near Handover
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const atHandover = totalMonths - 1;
-                if (atHandover > 0 && !exits.some(e => e.monthsFromBooking === atHandover)) {
-                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: atHandover };
-                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                  setExits(newExits);
-                  syncExitsToInputs(newExits);
-                }
-              }}
-              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-            >
-              At Handover
-            </Button>
-          </div>
-
-          {/* Action Buttons Row */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Auto Generate Button */}
-            <Button
-              variant={exits.length === 0 ? "default" : "outline"}
-              size="sm"
-              onClick={handleGenerateDefaults}
-              className={exits.length === 0 
-                ? "h-8 text-xs bg-theme-accent hover:bg-theme-accent/90 text-black" 
-                : "h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"}
-            >
-              <Wand2 className="w-3 h-3 mr-1.5" />
-              {exits.length === 0 ? 'Auto Generate' : 'Regenerate'}
-            </Button>
+          {/* Add Exit Section */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-theme-text">Add Exit Points</h4>
+            
+            {/* Quick Preset Buttons */}
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const earlyMonth = Math.min(12, totalMonths - 1);
+                  if (earlyMonth > 0 && !exits.some(e => e.monthsFromBooking === earlyMonth)) {
+                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: earlyMonth };
+                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                    setExits(newExits);
+                    syncExitsToInputs(newExits);
+                  }
+                }}
+                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+              >
+                Early (12m)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const midMonth = Math.round(totalMonths / 2);
+                  if (midMonth > 0 && !exits.some(e => e.monthsFromBooking === midMonth)) {
+                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: midMonth };
+                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                    setExits(newExits);
+                    syncExitsToInputs(newExits);
+                  }
+                }}
+                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+              >
+                Mid-Build
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const nearHandover = Math.max(6, totalMonths - 3);
+                  if (!exits.some(e => e.monthsFromBooking === nearHandover)) {
+                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: nearHandover };
+                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                    setExits(newExits);
+                    syncExitsToInputs(newExits);
+                  }
+                }}
+                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+              >
+                Near Handover
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const atHandover = totalMonths - 1;
+                  if (atHandover > 0 && !exits.some(e => e.monthsFromBooking === atHandover)) {
+                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: atHandover };
+                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                    setExits(newExits);
+                    syncExitsToInputs(newExits);
+                  }
+                }}
+                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+              >
+                At Handover
+              </Button>
+            </div>
 
             {/* Add Exit Button */}
             <Button
-              variant="outline"
               size="sm"
               onClick={handleAddExit}
-              className="h-8 text-xs border-theme-accent/50 text-theme-accent hover:bg-theme-accent/10"
+              className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
             >
               <Plus className="w-3 h-3 mr-1.5" />
               Add Exit
             </Button>
-            
-            {/* Preset Loading */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text-muted">
-                  <FolderOpen className="w-3 h-3 mr-1.5" />
-                  Load preset
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 bg-theme-card border-theme-border">
-                {presets.length === 0 ? (
-                  <div className="px-2 py-2 text-xs text-theme-text-muted">No presets saved</div>
-                ) : (
-                  presets.map(preset => (
-                    <DropdownMenuItem key={preset.id} className="flex items-center justify-between group" onSelect={() => handleLoadPreset(preset)}>
-                      <span className="text-xs">{preset.name} ({preset.exit_months.length} exits)</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDeletePreset(e, preset.id)}
-                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-theme-text-muted hover:text-red-400"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </DropdownMenuItem>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Save and Reset */}
-            {exits.length > 0 && (
-              <>
-                {!isSavingPreset ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsSavingPreset(true)}
-                      className="h-8 text-xs border-theme-border text-theme-text-muted hover:text-theme-text"
-                    >
-                      <Save className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetToDefaults}
-                      className="h-8 w-8 p-0 text-theme-text-muted hover:text-theme-text"
-                      title="Clear all exits"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      value={presetName}
-                      onChange={(e) => setPresetName(e.target.value)}
-                      placeholder="Preset name"
-                      className="w-28 h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text"
-                    />
-                    <Button size="sm" onClick={handleSavePreset} disabled={!presetName.trim() || savingPresets} className="h-8 px-2 bg-theme-accent text-black hover:bg-theme-accent/90">
-                      <Check className="w-3 h-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setIsSavingPreset(false); setPresetName(''); }} className="h-8 px-2 text-theme-text-muted">
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
           </div>
 
           {/* Timeline Info */}
