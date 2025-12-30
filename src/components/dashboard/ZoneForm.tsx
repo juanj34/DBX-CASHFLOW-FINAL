@@ -18,6 +18,7 @@ import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import { Loader2, Upload, X } from "lucide-react";
 import { optimizeImage, ZONE_IMAGE_CONFIG } from "@/lib/imageUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ZoneFormProps {
   zone?: any;
@@ -26,6 +27,7 @@ interface ZoneFormProps {
 }
 
 const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
+  const { t } = useLanguage();
   const { data: token, isLoading } = useMapboxToken();
   const { toast } = useToast();
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -173,8 +175,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
-        title: "Error subiendo imagen",
-        description: "No se pudo subir la imagen. Intenta de nuevo.",
+        title: t('errorUploadingImage'),
+        description: t('couldNotUploadImage'),
         variant: "destructive",
       });
       return formData.image_url || null;
@@ -184,8 +186,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({
-        title: "Error de validación",
-        description: "El nombre de la zona es requerido",
+        title: t('validationError'),
+        description: t('zoneNameRequired'),
         variant: "destructive",
       });
       return;
@@ -193,8 +195,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
     if (!draw.current) {
       toast({
-        title: "Error de validación",
-        description: "Por favor dibuja un polígono en el mapa",
+        title: t('validationError'),
+        description: t('pleaseDrawPolygon'),
         variant: "destructive",
       });
       return;
@@ -203,8 +205,8 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     const data = draw.current.getAll();
     if (data.features.length === 0) {
       toast({
-        title: "Error de validación",
-        description: "Por favor dibuja un polígono en el mapa",
+        title: t('validationError'),
+        description: t('pleaseDrawPolygon'),
         variant: "destructive",
       });
       return;
@@ -252,14 +254,14 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
     if (error) {
       toast({
-        title: "Error guardando zona",
+        title: t('errorSavingZone'),
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Zona guardada",
-        description: `La zona "${formData.name}" ha sido ${zone ? "actualizada" : "creada"} exitosamente.`,
+        title: t('zoneSaved'),
+        description: `${t('theZone')} "${formData.name}" ${t('hasBeenSuccessfully')} ${zone ? t('updated') : t('created')}.`,
       });
       onSaved();
     }
@@ -267,57 +269,60 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
         <DialogHeader>
-          <DialogTitle>{zone ? "Editar Zona" : "Crear Nueva Zona"}</DialogTitle>
+          <DialogTitle className="text-theme-text">{zone ? t('editZone') : t('createNewZone')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Section 1: Basic Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b pb-2">Información Básica</h3>
+            <h3 className="font-semibold text-lg border-b border-theme-border pb-2 text-theme-text">{t('basicInformation')}</h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre de la Zona *</Label>
+                <Label htmlFor="name" className="text-theme-text">{t('zoneName')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="ej: Downtown Dubai"
+                  placeholder={t('zoneNamePlaceholder')}
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="color">Color del Polígono</Label>
+                <Label htmlFor="color" className="text-theme-text">{t('polygonColor')}</Label>
                 <Input
                   id="color"
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="bg-theme-bg border-theme-border"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tagline">Tagline</Label>
+              <Label htmlFor="tagline" className="text-theme-text">{t('tagline')}</Label>
               <Input
                 id="tagline"
                 value={formData.tagline}
                 onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                placeholder='ej: "El Centro del Mundo"'
+                placeholder={t('taglinePlaceholder')}
+                className="bg-theme-bg border-theme-border text-theme-text"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Imagen de la Zona (800×450px recomendado)</Label>
+              <Label className="text-theme-text">{t('zoneImage')}</Label>
               <div className="flex items-start gap-4">
                 {imagePreview ? (
                   <div className="relative">
                     <img 
                       src={imagePreview} 
                       alt="Preview" 
-                      className="w-48 h-28 object-cover rounded-lg border" 
+                      className="w-48 h-28 object-cover rounded-lg border border-theme-border" 
                     />
                     <button 
                       type="button"
@@ -330,10 +335,10 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
                 ) : (
                   <div 
                     onClick={() => fileInputRef.current?.click()} 
-                    className="w-48 h-28 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                    className="w-48 h-28 border-2 border-dashed border-theme-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-theme-accent/50 transition-colors"
                   >
-                    <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                    <span className="text-xs text-muted-foreground">Click o Ctrl+V</span>
+                    <Upload className="h-6 w-6 text-theme-text-muted mb-1" />
+                    <span className="text-xs text-theme-text-muted">{t('clickOrPaste')}</span>
                   </div>
                 )}
                 <input 
@@ -349,48 +354,52 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
           {/* Section 2: Investment Profile */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b pb-2">Perfil de Inversión</h3>
+            <h3 className="font-semibold text-lg border-b border-theme-border pb-2 text-theme-text">{t('investmentProfile')}</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="concept">Concepto</Label>
+              <Label htmlFor="concept" className="text-theme-text">{t('concept')}</Label>
               <Textarea
                 id="concept"
                 value={formData.concept}
                 onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
-                placeholder="ej: El kilómetro cuadrado más prestigioso y turístico."
+                placeholder={t('conceptPlaceholder')}
                 rows={2}
+                className="bg-theme-bg border-theme-border text-theme-text"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="property_types">Tipos de Propiedad</Label>
+              <Label htmlFor="property_types" className="text-theme-text">{t('propertyTypes')}</Label>
               <Textarea
                 id="property_types"
                 value={formData.property_types}
                 onChange={(e) => setFormData({ ...formData, property_types: e.target.value })}
-                placeholder="ej: Torres Residenciales, Penthouses, Villas, Townhouses..."
+                placeholder={t('propertyTypesPlaceholder')}
                 rows={2}
+                className="bg-theme-bg border-theme-border text-theme-text"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="investment_focus">Enfoque de Inversión</Label>
+                <Label htmlFor="investment_focus" className="text-theme-text">{t('investmentFocus')}</Label>
                 <Input
                   id="investment_focus"
                   value={formData.investment_focus}
                   onChange={(e) => setFormData({ ...formData, investment_focus: e.target.value })}
-                  placeholder="ej: Airbnb + Preservación de Capital"
+                  placeholder={t('investmentFocusPlaceholder')}
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="main_developer">Desarrollador Principal</Label>
+                <Label htmlFor="main_developer" className="text-theme-text">{t('mainDeveloper')}</Label>
                 <Input
                   id="main_developer"
                   value={formData.main_developer}
                   onChange={(e) => setFormData({ ...formData, main_developer: e.target.value })}
-                  placeholder="ej: Emaar"
+                  placeholder={t('mainDeveloperPlaceholder')}
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
             </div>
@@ -398,11 +407,11 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
           {/* Section 3: Maturity Level */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b pb-2">Nivel de Madurez</h3>
+            <h3 className="font-semibold text-lg border-b border-theme-border pb-2 text-theme-text">{t('maturityLevel')}</h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="maturity_level">Nivel de Madurez: {formData.maturity_level}%</Label>
+                <Label htmlFor="maturity_level" className="text-theme-text">{t('maturityLevel')}: {formData.maturity_level}%</Label>
                 <Slider
                   value={[formData.maturity_level]}
                   onValueChange={(value) => setFormData({ ...formData, maturity_level: value[0] })}
@@ -414,12 +423,13 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="maturity_label">Etiqueta de Madurez</Label>
+                <Label htmlFor="maturity_label" className="text-theme-text">{t('maturityLabel')}</Label>
                 <Input
                   id="maturity_label"
                   value={formData.maturity_label}
                   onChange={(e) => setFormData({ ...formData, maturity_label: e.target.value })}
-                  placeholder="ej: Saturado / Escasez"
+                  placeholder={t('maturityLabelPlaceholder')}
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
             </div>
@@ -427,52 +437,56 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
           {/* Section 4: Prices */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b pb-2">Precios</h3>
+            <h3 className="font-semibold text-lg border-b border-theme-border pb-2 text-theme-text">{t('prices')}</h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price_range_min">Precio Mínimo (AED/sqft)</Label>
+                <Label htmlFor="price_range_min" className="text-theme-text">{t('minPrice')} (AED/sqft)</Label>
                 <Input
                   id="price_range_min"
                   type="number"
                   value={formData.price_range_min}
                   onChange={(e) => setFormData({ ...formData, price_range_min: e.target.value })}
-                  placeholder="ej: 2200"
+                  placeholder="e.g. 2200"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price_range_max">Precio Máximo (AED/sqft)</Label>
+                <Label htmlFor="price_range_max" className="text-theme-text">{t('maxPrice')} (AED/sqft)</Label>
                 <Input
                   id="price_range_max"
                   type="number"
                   value={formData.price_range_max}
                   onChange={(e) => setFormData({ ...formData, price_range_max: e.target.value })}
-                  placeholder="ej: 4500"
+                  placeholder="e.g. 4500"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="ticket_1br_min">Ticket 1BR Mínimo (AED)</Label>
+                <Label htmlFor="ticket_1br_min" className="text-theme-text">{t('ticket1brMin')} (AED)</Label>
                 <Input
                   id="ticket_1br_min"
                   type="number"
                   value={formData.ticket_1br_min}
                   onChange={(e) => setFormData({ ...formData, ticket_1br_min: e.target.value })}
-                  placeholder="ej: 2000000"
+                  placeholder="e.g. 2000000"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ticket_1br_max">Ticket 1BR Máximo (AED)</Label>
+                <Label htmlFor="ticket_1br_max" className="text-theme-text">{t('ticket1brMax')} (AED)</Label>
                 <Input
                   id="ticket_1br_max"
                   type="number"
                   value={formData.ticket_1br_max}
                   onChange={(e) => setFormData({ ...formData, ticket_1br_max: e.target.value })}
-                  placeholder="ej: 3500000"
+                  placeholder="e.g. 3500000"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
             </div>
@@ -480,30 +494,30 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
 
           {/* Section 5: Map */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b pb-2">Polígono de la Zona</h3>
+            <h3 className="font-semibold text-lg border-b border-theme-border pb-2 text-theme-text">{t('zonePolygon')}</h3>
             
-            <p className="text-sm text-muted-foreground">
-              Usa la herramienta de polígono para dibujar el límite de la zona en el mapa
+            <p className="text-sm text-theme-text-muted">
+              {t('drawPolygonInstruction')}
             </p>
             <div
               ref={mapContainer}
-              className="h-96 rounded-lg border"
+              className="h-96 rounded-lg border border-theme-border"
               style={{ display: isLoading ? "none" : "block" }}
             />
             {isLoading && (
-              <div className="h-96 rounded-lg border flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="h-96 rounded-lg border border-theme-border flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-theme-accent" />
               </div>
             )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose} disabled={saving}>
-              Cancelar
+            <Button variant="outline" onClick={onClose} disabled={saving} className="border-theme-border text-theme-text hover:bg-theme-card-alt">
+              {t('cancel')}
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {zone ? "Actualizar Zona" : "Crear Zona"}
+              {zone ? t('updateZone') : t('createZone')}
             </Button>
           </div>
         </div>
