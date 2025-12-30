@@ -43,11 +43,15 @@ interface QuoteWithDetails {
   id: string;
   client_name: string | null;
   project_name: string | null;
+  developer: string | null;
   created_at: string;
   status: QuoteStatus | null;
   inputs: {
     basePrice?: number;
     rentalYieldPercent?: number;
+    _clientInfo?: {
+      zoneName?: string;
+    };
     [key: string]: any;
   };
 }
@@ -220,7 +224,7 @@ const Home = () => {
 
     const { data, error } = await supabase
       .from("cashflow_quotes")
-      .select("id, client_name, project_name, created_at, status, inputs")
+      .select("id, client_name, project_name, developer, created_at, status, inputs")
       .eq("broker_id", session.user.id)
       .order("updated_at", { ascending: false })
       .limit(10);
@@ -242,7 +246,12 @@ const Home = () => {
     }
 
     setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status } : q));
-    toast.success(t("statusUpdated"));
+    
+    if (status === 'sold') {
+      toast.success("🎉 " + t("dealClosed"));
+    } else {
+      toast.success(t("statusUpdated"));
+    }
   };
 
   const handleWhatsAppShare = (quote: QuoteWithDetails) => {
@@ -269,7 +278,7 @@ const Home = () => {
       <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card gap-2">
           <FileText className="w-4 h-4" />
-          {t('homeMyGenerators')}
+          {t('allOpportunities')}
         </Button>
       </Link>
       {isAdmin && (
@@ -281,9 +290,9 @@ const Home = () => {
         </Link>
       )}
       <Link to="/account-settings" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto sm:px-3 text-theme-text-muted hover:text-theme-text hover:bg-theme-card gap-2">
-          <Settings className="w-5 h-5" />
-          <span className="sm:hidden">{t('homeAccountSettings')}</span>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card gap-2">
+          <Settings className="w-4 h-4" />
+          {t('homeAccountSettings')}
         </Button>
       </Link>
       <Button 
@@ -358,6 +367,7 @@ const Home = () => {
             <span className="sm:hidden">
               {t("dubaiYield")}: {marketData.yield}% • {t("topArea")}: {marketData.topArea.split(' ')[0]}
             </span>
+            <span className="text-xs opacity-60">({t("yourData")})</span>
             <MarketPulseModal />
           </div>
         </div>
@@ -487,7 +497,8 @@ const Home = () => {
                   <TableRow className="border-theme-border hover:bg-transparent">
                     <TableHead className="text-theme-text-muted font-medium">{t("clientProject")}</TableHead>
                     <TableHead className="text-theme-text-muted font-medium">{t("dealValue")}</TableHead>
-                    <TableHead className="text-theme-text-muted font-medium hidden sm:table-cell">{t("keyStat")}</TableHead>
+                    <TableHead className="text-theme-text-muted font-medium hidden md:table-cell">{t("developer")}</TableHead>
+                    <TableHead className="text-theme-text-muted font-medium hidden lg:table-cell">{t("zone")}</TableHead>
                     <TableHead className="text-theme-text-muted font-medium">{t("status")}</TableHead>
                     <TableHead className="text-theme-text-muted font-medium text-right">{t("actions")}</TableHead>
                   </TableRow>
@@ -512,14 +523,15 @@ const Home = () => {
                         <TableCell className="text-theme-text font-medium">
                           {quote.inputs?.basePrice ? formatCurrency(quote.inputs.basePrice) : "—"}
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {keyMetric ? (
-                            <Badge variant="outline" className={`${keyMetric.type === "roe" ? "border-green-500/50 text-green-400" : "border-blue-500/50 text-blue-400"}`}>
-                              {keyMetric.label}
-                            </Badge>
-                          ) : (
-                            <span className="text-theme-text-muted">—</span>
-                          )}
+                        <TableCell className="hidden md:table-cell">
+                          <span className="text-theme-text text-sm">
+                            {quote.developer || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-theme-text-muted text-sm">
+                            {quote.inputs?._clientInfo?.zoneName || "—"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Select
