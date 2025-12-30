@@ -787,6 +787,14 @@ const translations: Translations = {
   tabSummary: { en: 'Summary', es: 'Resumen' },
   switchToClassic: { en: 'Classic View', es: 'Vista Clásica' },
   switchToDashboard: { en: 'Dashboard View', es: 'Vista Dashboard' },
+  
+  // Payment Timeline (unique keys to avoid duplicates)
+  paymentTimelineLabel: { en: 'Payment Timeline', es: 'Cronograma de Pagos' },
+  govFeeLabel: { en: 'Govt', es: 'Gob.' },
+  preHandoverLabel: { en: 'Pre-Handover', es: 'Pre-Entrega' },
+  atHandoverTimelineLabel: { en: 'At Handover', es: 'En Entrega' },
+  payBeforeKeys: { en: 'Pay before receiving keys', es: 'Pagar antes de recibir llaves' },
+  payAtCompletion: { en: 'Pay at completion', es: 'Pagar en la entrega' },
 };
 
 interface LanguageContextType {
