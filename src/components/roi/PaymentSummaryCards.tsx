@@ -8,12 +8,13 @@ interface PaymentSummaryCardsProps {
   currency: Currency;
   rate: number;
   totalMonths: number;
+  vertical?: boolean;
 }
 
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: PaymentSummaryCardsProps) => {
+export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, vertical = false }: PaymentSummaryCardsProps) => {
   const { t, language } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
@@ -49,61 +50,69 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths }: Pay
     : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const bookingLabel = `${monthNamesShort[bookingMonth - 1]} ${bookingYear}`;
 
+  const cards = [
+    {
+      icon: Wallet,
+      label: t('initialCashRequired'),
+      value: initialCashRequired,
+      subLabel: `${t('dueBy')} ${bookingLabel}`,
+      bgFrom: 'from-theme-accent/20',
+      bgTo: 'to-theme-accent/5',
+      borderColor: 'border-theme-accent/30',
+      iconBg: 'bg-theme-accent/20',
+      iconColor: 'text-theme-accent',
+      labelColor: 'text-theme-accent',
+    },
+    {
+      icon: TrendingUp,
+      label: t('monthlyBurnRate'),
+      value: monthlyBurnRate,
+      subLabel: `${constructionMonths} ${t('months')} ${t('construction') || 'construction'}`,
+      bgFrom: 'from-slate-500/20',
+      bgTo: 'to-slate-500/5',
+      borderColor: 'border-slate-500/30',
+      iconBg: 'bg-slate-500/20',
+      iconColor: 'text-slate-400',
+      labelColor: 'text-slate-400',
+      prefix: '~',
+    },
+    {
+      icon: Home,
+      label: t('completionBalance'),
+      value: handoverBalance,
+      subLabel: `${handoverLabel} (${handoverPercent}%)`,
+      bgFrom: 'from-cyan-500/20',
+      bgTo: 'to-cyan-500/5',
+      borderColor: 'border-cyan-500/30',
+      iconBg: 'bg-cyan-500/20',
+      iconColor: 'text-cyan-400',
+      labelColor: 'text-cyan-400',
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {/* Initial Cash Required */}
-      <div className="bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 border border-theme-accent/30 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-theme-accent/20 flex items-center justify-center">
-            <Wallet className="w-4 h-4 text-theme-accent" />
+    <div className={vertical ? 'flex flex-col gap-3' : 'grid grid-cols-1 sm:grid-cols-3 gap-3'}>
+      {cards.map((card, index) => (
+        <div 
+          key={index}
+          className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} border ${card.borderColor} rounded-xl p-4`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
+              <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+            </div>
+            <span className={`text-xs uppercase tracking-wide ${card.labelColor} font-medium`}>
+              {card.label}
+            </span>
           </div>
-          <span className="text-xs uppercase tracking-wide text-theme-accent font-medium">
-            {t('initialCashRequired')}
-          </span>
-        </div>
-        <div className="text-xl font-bold text-theme-text font-mono">
-          {formatCurrency(initialCashRequired, currency, rate)}
-        </div>
-        <div className="text-xs text-theme-text-muted mt-1">
-          {t('dueBy')} {bookingLabel}
-        </div>
-      </div>
-
-      {/* Monthly Burn Rate */}
-      <div className="bg-gradient-to-br from-slate-500/20 to-slate-500/5 border border-slate-500/30 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-slate-500/20 flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-slate-400" />
+          <div className="text-xl font-bold text-theme-text font-mono tabular-nums text-right">
+            {card.value > 0 ? `${card.prefix || ''}${formatCurrency(card.value, currency, rate)}` : '—'}
           </div>
-          <span className="text-xs uppercase tracking-wide text-slate-400 font-medium">
-            {t('monthlyBurnRate')}
-          </span>
-        </div>
-        <div className="text-xl font-bold text-theme-text font-mono">
-          {monthlyBurnRate > 0 ? `~${formatCurrency(monthlyBurnRate, currency, rate)}` : '—'}
-        </div>
-        <div className="text-xs text-theme-text-muted mt-1">
-          {constructionMonths} {t('months')} {t('construction')}
-        </div>
-      </div>
-
-      {/* Handover Balance */}
-      <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-            <Home className="w-4 h-4 text-cyan-400" />
+          <div className="text-xs text-theme-text-muted mt-1 text-right">
+            {card.subLabel}
           </div>
-          <span className="text-xs uppercase tracking-wide text-cyan-400 font-medium">
-            {t('completionBalance')}
-          </span>
         </div>
-        <div className="text-xl font-bold text-theme-text font-mono">
-          {formatCurrency(handoverBalance, currency, rate)}
-        </div>
-        <div className="text-xs text-theme-text-muted mt-1">
-          {handoverLabel} ({handoverPercent}%)
-        </div>
-      </div>
+      ))}
     </div>
   );
 };

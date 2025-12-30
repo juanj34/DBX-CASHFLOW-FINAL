@@ -19,9 +19,9 @@ interface TimelinePayment {
   amount: number;
   monthsFromBooking: number;
   positionPercent: number;
-  type: 'entry' | 'milestone' | 'govt-fee' | 'handover';
+  type: 'entry' | 'milestone' | 'handover';
   date: string;
-  isGovFee: boolean;
+  monthLabel: string;
 }
 
 // DLD Fee is always 4%
@@ -67,27 +67,29 @@ export const PaymentHorizontalTimeline = ({
     return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
   };
 
-  // Calculate amounts
+  // Calculate amounts - Entry includes DLD (24% typically)
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
+  const entryTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
+  const entryPercent = downpaymentPercent + DLD_FEE_PERCENT; // Show combined 24%
+  
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
 
   // Build payments array with TRUE proportional positioning
   const payments: TimelinePayment[] = [];
 
-  // Entry cluster (position 0%) - combine downpayment + govt fees
-  const entryTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
+  // Entry (position 0%)
   payments.push({
     id: 'entry',
-    label: t('theEntry'),
-    percent: downpaymentPercent,
+    label: t('entry') || 'Entry',
+    percent: entryPercent,
     amount: entryTotal,
     monthsFromBooking: 0,
     positionPercent: 0,
     type: 'entry',
     date: monthToDateString(bookingMonth, bookingYear),
-    isGovFee: false,
+    monthLabel: 'M0',
   });
 
   // Additional payments (milestones) - TRUE proportional positioning
@@ -101,11 +103,11 @@ export const PaymentHorizontalTimeline = ({
       monthsFromBooking = payment.triggerValue;
     } else {
       // Construction-based: convert percentage to months
-      monthsFromBooking = (payment.triggerValue / 100) * totalMonths;
+      monthsFromBooking = Math.round((payment.triggerValue / 100) * totalMonths);
     }
     
-    // TRUE proportional positioning: (months / totalMonths) * 100
-    const positionPercent = Math.min(90, Math.max(10, (monthsFromBooking / totalMonths) * 100));
+    // TRUE proportional positioning: (months / totalMonths) * 100 - NO CLAMPING
+    const positionPercent = (monthsFromBooking / totalMonths) * 100;
     
     payments.push({
       id: payment.id,
@@ -116,28 +118,28 @@ export const PaymentHorizontalTimeline = ({
       positionPercent,
       type: 'milestone',
       date: estimateDateFromMonths(monthsFromBooking),
-      isGovFee: false,
+      monthLabel: `M${monthsFromBooking}`,
     });
   });
 
   // Handover payment (position 100%)
   payments.push({
     id: 'handover',
-    label: t('handover'),
+    label: t('completion') || 'Handover',
     percent: handoverPercent,
     amount: handoverAmount,
     monthsFromBooking: totalMonths,
     positionPercent: 100,
     type: 'handover',
     date: `Q${handoverQuarter} ${handoverYear}`,
-    isGovFee: false,
+    monthLabel: `M${totalMonths}`,
   });
 
   // Sort by position
   const sortedPayments = [...payments].sort((a, b) => a.positionPercent - b.positionPercent);
 
   const getMarkerStyle = (payment: TimelinePayment, isHovered: boolean) => {
-    const baseSize = payment.type === 'handover' ? 'w-5 h-5' : payment.type === 'entry' ? 'w-4 h-4' : 'w-3 h-3';
+    const baseSize = payment.type === 'handover' ? 'w-5 h-5' : payment.type === 'entry' ? 'w-4 h-4' : 'w-3.5 h-3.5';
     const hoverSize = payment.type === 'handover' ? 'w-6 h-6' : payment.type === 'entry' ? 'w-5 h-5' : 'w-4 h-4';
     
     if (payment.type === 'handover') {
@@ -168,16 +170,6 @@ export const PaymentHorizontalTimeline = ({
   const startDate = monthToDateString(bookingMonth, bookingYear);
   const endDate = `Q${handoverQuarter} ${handoverYear}`;
 
-  // Generate month markers
-  const monthMarkers = [];
-  const markerInterval = totalMonths > 24 ? 12 : 6;
-  for (let m = markerInterval; m < totalMonths; m += markerInterval) {
-    monthMarkers.push({
-      month: m,
-      position: (m / totalMonths) * 100,
-    });
-  }
-
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -188,32 +180,9 @@ export const PaymentHorizontalTimeline = ({
       </div>
 
       {/* Timeline Container */}
-      <div className="relative h-24 px-4">
-        {/* Track */}
+      <div className="relative h-28 px-4">
+        {/* Track - neutral gray, no green fill */}
         <div className="absolute top-1/2 left-4 right-4 h-1.5 bg-theme-border/50 rounded-full transform -translate-y-1/2" />
-        
-        {/* Filled portion (pre-handover) */}
-        <div 
-          className="absolute top-1/2 left-4 h-1.5 rounded-full transform -translate-y-1/2 transition-all"
-          style={{ 
-            width: `calc(${100 - handoverPercent}% - 8px)`,
-            backgroundColor: `${accentColor}50`,
-          }}
-        />
-
-        {/* Month Markers on track */}
-        {monthMarkers.map((marker) => (
-          <div
-            key={marker.month}
-            className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `calc(${marker.position}% + 16px - ${marker.position * 0.32}px)` }}
-          >
-            <div className="w-0.5 h-3 bg-theme-border/60 rounded-full" />
-            <span className="absolute top-4 left-1/2 transform -translate-x-1/2 text-[10px] text-theme-text-muted whitespace-nowrap">
-              {marker.month}mo
-            </span>
-          </div>
-        ))}
 
         {/* Payment Markers */}
         <TooltipProvider delayDuration={0}>
@@ -238,6 +207,17 @@ export const PaymentHorizontalTimeline = ({
                     onMouseEnter={() => setHoveredId(payment.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
+                    {/* Percent label above marker */}
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                      <div className={`text-xs font-bold ${
+                        payment.type === 'handover' ? 'text-cyan-400' : 
+                        payment.type === 'entry' ? 'text-theme-accent' : 
+                        'text-slate-400'
+                      }`}>
+                        {payment.percent}%
+                      </div>
+                    </div>
+                    
                     {/* Marker */}
                     <div 
                       className={`
@@ -249,25 +229,22 @@ export const PaymentHorizontalTimeline = ({
                       style={style.custom}
                     />
                     
-                    {/* Label above marker */}
-                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
-                      <div className={`text-[11px] font-semibold ${
+                    {/* Labels below marker */}
+                    <div className="absolute top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                      <div className={`text-[10px] font-semibold ${
                         payment.type === 'handover' ? 'text-cyan-400' : 
                         payment.type === 'entry' ? 'text-theme-accent' : 
                         'text-slate-400'
                       }`}>
-                        {payment.percent}%
+                        {payment.label}
+                      </div>
+                      <div className="text-[9px] text-theme-text-muted mt-0.5">
+                        {payment.monthLabel}
+                      </div>
+                      <div className="text-[9px] text-theme-text-muted">
+                        {payment.date}
                       </div>
                     </div>
-                    
-                    {/* Label below marker for entry and handover */}
-                    {(payment.type === 'entry' || payment.type === 'handover') && (
-                      <div className="absolute top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
-                        <div className="text-[10px] font-medium text-theme-text-muted">
-                          {payment.type === 'entry' ? t('booking') : t('handover')}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent 
@@ -287,7 +264,7 @@ export const PaymentHorizontalTimeline = ({
                     </div>
                     {payment.type === 'entry' && (
                       <div className="text-[10px] text-red-400 pt-1 border-t border-theme-border">
-                        Incl. DLD + Oqood fees
+                        Incl. DLD ({DLD_FEE_PERCENT}%) + Oqood fees
                       </div>
                     )}
                   </div>
@@ -302,7 +279,7 @@ export const PaymentHorizontalTimeline = ({
       <div className="flex items-center justify-center gap-5 text-[11px] text-theme-text-muted pt-1">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
-          <span>{t('booking')}</span>
+          <span>{t('entry') || 'Entry'}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
@@ -310,7 +287,7 @@ export const PaymentHorizontalTimeline = ({
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3.5 h-3.5 rounded-full bg-cyan-400" />
-          <span>{t('handover')}</span>
+          <span>{t('completion') || 'Completion'}</span>
         </div>
       </div>
     </div>

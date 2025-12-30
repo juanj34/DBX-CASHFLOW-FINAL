@@ -3,24 +3,23 @@ import { Currency, formatCurrency } from "./currencyUtils";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { getCountryByCode } from "@/data/countries";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Users, ChevronDown } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ClientSplitCardsProps {
   inputs: OIInputs;
   clientInfo: ClientUnitData;
   currency: Currency;
   rate: number;
-  onViewDetails?: (clientId: string) => void;
   vertical?: boolean;
 }
 
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDetails, vertical = false }: ClientSplitCardsProps) => {
-  const { t } = useLanguage();
-  const { basePrice, downpaymentPercent, additionalPayments, oqoodFee } = inputs;
+export const ClientSplitCards = ({ inputs, clientInfo, currency, rate }: ClientSplitCardsProps) => {
+  const { t, language } = useLanguage();
+  const { basePrice, downpaymentPercent, additionalPayments, oqoodFee, eoiFee, preHandoverPercent, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   const clients = clientInfo.clients || [];
   const clientShares = clientInfo.clientShares || [];
@@ -28,8 +27,17 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
   // Calculate total amounts
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
+  const eoiFeeActual = Math.min(eoiFee, downpaymentAmount);
+  const restOfDownpayment = downpaymentAmount - eoiFeeActual;
   const todayTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
   const grandTotal = basePrice + dldFeeAmount + oqoodFee;
+  
+  // Additional payments
+  const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
+  
+  // Handover
+  const handoverPercent = 100 - preHandoverPercent;
+  const handoverAmount = basePrice * handoverPercent / 100;
 
   const getClientShare = (clientId: string): number => {
     const share = clientShares.find(s => s.clientId === clientId);
@@ -41,82 +49,128 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
     return { name: client.name || t('client'), flag: country?.flag };
   };
 
+  // Format booking date
+  const monthNamesShort = language === 'es' 
+    ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const bookingLabel = `${monthNamesShort[bookingMonth - 1]} ${bookingYear}`;
+  const handoverLabel = `Q${handoverQuarter} ${handoverYear}`;
+
   if (!clients || clients.length < 2) return null;
 
-  // Dynamic grid based on client count and vertical prop
-  const getGridClass = () => {
-    if (vertical) return 'flex flex-col gap-3';
-    const count = clients.length;
-    if (count === 2) return 'grid grid-cols-2 gap-3';
-    if (count === 3) return 'grid grid-cols-3 gap-3';
-    return 'grid grid-cols-2 lg:grid-cols-4 gap-3';
-  };
-
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-theme-text flex items-center gap-2">
-          👥 {t('ownershipStructure')}
+    <div className="bg-theme-card/50 rounded-xl border border-theme-border/30 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 p-3 border-b border-theme-border/20">
+        <Users className="w-4 h-4 text-theme-accent" />
+        <span className="text-xs text-theme-text-muted uppercase tracking-wide font-medium">
+          {t('ownershipStructure')}
         </span>
-        <span className="text-xs text-theme-text-muted">
-          {clients.length} {t('clients').toLowerCase()}
+        <span className="ml-auto text-xs text-theme-text-muted">
+          {clients.length} {t('clients')?.toLowerCase() || 'partners'}
         </span>
       </div>
 
-      <div className={getGridClass()}>
-        {clients.map((client) => {
+      {/* Accordion */}
+      <Accordion type="single" collapsible className="w-full">
+        {clients.map((client, index) => {
           const sharePercent = getClientShare(client.id);
           const clientDisplay = getClientDisplay(client);
-          const clientEntryTotal = todayTotal * sharePercent / 100;
           const clientGrandTotal = grandTotal * sharePercent / 100;
+          const clientTodayTotal = todayTotal * sharePercent / 100;
+          const clientEoi = eoiFeeActual * sharePercent / 100;
+          const clientRest = restOfDownpayment * sharePercent / 100;
+          const clientDld = dldFeeAmount * sharePercent / 100;
+          const clientOqood = oqoodFee * sharePercent / 100;
+          const clientJourney = additionalTotal * sharePercent / 100;
+          const clientHandover = handoverAmount * sharePercent / 100;
 
           return (
-            <div 
-              key={client.id}
-              className="bg-theme-card-alt/50 border border-theme-border/50 rounded-xl p-4 hover:border-cyan-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+            <AccordionItem key={client.id} value={client.id} className="border-b border-theme-border/10 last:border-0">
+              <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-theme-bg/30 [&[data-state=open]>svg]:rotate-180">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   {clientDisplay.flag && (
-                    <span className="text-xl">{clientDisplay.flag}</span>
+                    <span className="text-lg flex-shrink-0">{clientDisplay.flag}</span>
                   )}
-                  <div>
-                    <div className="text-sm font-medium text-theme-text">
-                      {clientDisplay.name}
+                  <span className="text-sm font-medium text-theme-text truncate">{clientDisplay.name}</span>
+                  <span className="text-xs text-cyan-400 font-medium flex-shrink-0">{sharePercent.toFixed(1)}%</span>
+                  <span className="ml-auto text-sm font-mono font-bold text-theme-text tabular-nums flex-shrink-0">
+                    {formatCurrency(clientGrandTotal, currency, rate)}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3">
+                <div className="space-y-3 pt-2">
+                  {/* Entry */}
+                  <div className="bg-emerald-900/20 rounded-lg p-2.5 border border-emerald-500/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-emerald-400 uppercase tracking-wide font-medium">
+                        {t('theEntry')}
+                      </span>
+                      <span className="text-[10px] text-emerald-400/70">{bookingLabel}</span>
                     </div>
-                    <div className="text-xs text-cyan-400 font-medium">
-                      {sharePercent.toFixed(1)}% {t('shareLabel')}
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-theme-text-muted">{t('eoiBookingFee')}</span>
+                        <span className="font-mono text-theme-text tabular-nums text-right">{formatCurrency(clientEoi, currency, rate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-theme-text-muted">{t('restOfDownpayment')}</span>
+                        <span className="font-mono text-theme-text tabular-nums text-right">{formatCurrency(clientRest, currency, rate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-theme-text-muted">{t('dldFeePercent')}</span>
+                        <span className="font-mono text-theme-text tabular-nums text-right">{formatCurrency(clientDld, currency, rate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-theme-text-muted">{t('oqoodFee')}</span>
+                        <span className="font-mono text-theme-text tabular-nums text-right">{formatCurrency(clientOqood, currency, rate)}</span>
+                      </div>
+                      <div className="flex justify-between pt-1.5 border-t border-emerald-500/20">
+                        <span className="text-emerald-400 font-medium">{t('totalCashNow')}</span>
+                        <span className="font-mono font-bold text-emerald-400 tabular-nums text-right">{formatCurrency(clientTodayTotal, currency, rate)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-theme-text-muted">{t('booking')}</span>
-                  <span className="text-theme-text font-mono">{formatCurrency(clientEntryTotal, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm pt-1 border-t border-theme-border/30">
-                  <span className="text-theme-accent font-medium">{t('total')}</span>
-                  <span className="text-theme-accent font-bold font-mono">{formatCurrency(clientGrandTotal, currency, rate)}</span>
-                </div>
-              </div>
+                  {/* Journey */}
+                  {additionalTotal > 0 && (
+                    <div className="bg-slate-700/30 rounded-lg p-2.5 border border-slate-500/20">
+                      <div className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mb-2">
+                        {t('theJourney')}
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-theme-text-muted">{t('duringConstruction')}</span>
+                        <span className="font-mono font-medium text-theme-text tabular-nums text-right">{formatCurrency(clientJourney, currency, rate)}</span>
+                      </div>
+                    </div>
+                  )}
 
-              {onViewDetails && (
-                <Button
-                  variant="ghostDark"
-                  size="sm"
-                  onClick={() => onViewDetails(client.id)}
-                  className="w-full mt-3 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-                >
-                  <Eye className="w-3 h-3 mr-1" />
-                  {t('viewBreakdown')}
-                </Button>
-              )}
-            </div>
+                  {/* Completion */}
+                  <div className="bg-cyan-900/20 rounded-lg p-2.5 border border-cyan-500/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-cyan-400 uppercase tracking-wide font-medium">
+                        {t('completionHandover')}
+                      </span>
+                      <span className="text-[10px] text-cyan-400/70">{handoverLabel}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-theme-text-muted">{t('finalPayment')} ({handoverPercent}%)</span>
+                      <span className="font-mono font-medium text-theme-text tabular-nums text-right">{formatCurrency(clientHandover, currency, rate)}</span>
+                    </div>
+                  </div>
+
+                  {/* Grand Total */}
+                  <div className="flex justify-between items-center pt-2 border-t border-theme-border/30">
+                    <span className="text-xs text-theme-text-muted font-medium uppercase">{t('totalToDisburse')}</span>
+                    <span className="text-base font-mono font-bold text-theme-accent tabular-nums">{formatCurrency(clientGrandTotal, currency, rate)}</span>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           );
         })}
-      </div>
+      </Accordion>
     </div>
   );
 };

@@ -4,11 +4,9 @@ import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InfoTooltip } from "./InfoTooltip";
 import { ClientUnitData } from "./ClientUnitInfo";
-import { useState } from "react";
 import { PaymentSummaryCards } from "./PaymentSummaryCards";
 import { PaymentVisualBar } from "./PaymentVisualBar";
 import { ClientSplitCards } from "./ClientSplitCards";
-import { ClientPaymentSheet } from "./ClientPaymentSheet";
 import { PaymentPlanBadge } from "./PaymentPlanBadge";
 import { PaymentHorizontalTimeline } from "./PaymentHorizontalTimeline";
 
@@ -45,12 +43,11 @@ const DLD_FEE_PERCENT = 4;
 
 export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0, clientInfo }: PaymentBreakdownProps) => {
   const { t, language } = useLanguage();
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
   // Calculate amounts
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
-  const eoiFeeActual = Math.min(eoiFee, downpaymentAmount); // EOI can't exceed downpayment
+  const eoiFeeActual = Math.min(eoiFee, downpaymentAmount);
   const restOfDownpayment = downpaymentAmount - eoiFeeActual;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const handoverPercent = 100 - preHandoverPercent;
@@ -65,10 +62,8 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
   
   // Sort additional payments by trigger
   const sortedAdditionalPayments = [...additionalPayments].sort((a, b) => {
-    // Time-based come before construction-based at same effective time
     if (a.type === 'time' && b.type === 'time') return a.triggerValue - b.triggerValue;
     if (a.type === 'construction' && b.type === 'construction') return a.triggerValue - b.triggerValue;
-    // Convert to comparable time
     const aMonths = a.type === 'time' ? a.triggerValue : (a.triggerValue / 100) * totalMonths;
     const bMonths = b.type === 'time' ? b.triggerValue : (b.triggerValue / 100) * totalMonths;
     return aMonths - bMonths;
@@ -92,12 +87,17 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
   return (
     <div className="space-y-6">
-      {/* Payment Plan Badge - Full Width */}
-      <PaymentPlanBadge
-        preHandoverPercent={preHandoverPercent}
-        handoverPercent={handoverPercent}
-        constructionMonths={constructionMonths}
-      />
+      {/* Header with Payment Plan Badge */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-theme-text uppercase tracking-wide">
+          {t('investmentSchedule')}
+        </h3>
+        <PaymentPlanBadge
+          preHandoverPercent={preHandoverPercent}
+          handoverPercent={handoverPercent}
+          constructionMonths={constructionMonths}
+        />
+      </div>
 
       {/* Interactive Horizontal Timeline - Full Width */}
       <div className="bg-theme-card border border-theme-border rounded-2xl p-4">
@@ -109,18 +109,10 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
         />
       </div>
 
-      {/* 2:1 Column Layout */}
-      <div className={`grid grid-cols-1 ${hasClientSplit ? 'lg:grid-cols-[2fr_1fr]' : ''} gap-6`}>
-        {/* Left Column: Detailed Breakdown */}
-        <div className="space-y-4">
-          {/* Summary Cards */}
-          <PaymentSummaryCards 
-            inputs={inputs} 
-            currency={currency} 
-            rate={rate} 
-            totalMonths={totalMonths} 
-          />
-
+      {/* 2:1 Column Layout - KPIs & Ownership on RIGHT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Detailed Breakdown (2/3 width) */}
+        <div className="lg:col-span-2 space-y-4">
           {/* Visual Bar */}
           <PaymentVisualBar 
             inputs={inputs} 
@@ -131,13 +123,13 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
           {/* Detailed Breakdown Card */}
           <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
             <div className="p-4 space-y-5">
-              {/* Asset Value */}
+              {/* Base Property Price Header */}
               <div className="flex justify-between items-center pb-3 border-b border-theme-border">
-                <span className="text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
+                <span className="text-xs text-theme-text-muted uppercase tracking-wide font-medium">{t('basePropertyPrice')}</span>
                 <div className="text-right">
-                  <span className="text-lg font-bold text-theme-text font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+                  <span className="text-lg font-bold text-theme-text font-mono tabular-nums">{formatCurrency(basePrice, currency, rate)}</span>
                   {unitSizeSqf > 0 && (
-                    <p className="text-xs text-theme-text-muted font-mono">
+                    <p className="text-xs text-theme-text-muted font-mono tabular-nums">
                       {formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft
                     </p>
                   )}
@@ -174,7 +166,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                     <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(restOfDownpayment, currency, rate)}</span>
                   </div>
                   
-                  {/* DLD Fee - RED HIGHLIGHTED */}
+                  {/* DLD Fee */}
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <span className="text-sm text-theme-text-muted truncate">
@@ -188,7 +180,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                     <span className="text-sm text-red-400 font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(dldFeeAmount, currency, rate)}</span>
                   </div>
                   
-                  {/* Oqood Fee - RED HIGHLIGHTED */}
+                  {/* Oqood Fee */}
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <span className="text-sm text-theme-text-muted truncate">{t('oqoodFee')}</span>
@@ -328,34 +320,28 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
           </div>
         </div>
 
-        {/* Right Column: Client Splits (only if split enabled) */}
-        {hasClientSplit && (
-          <div className="space-y-4">
+        {/* Right Column: KPIs + Ownership (1/3 width) */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* KPI Cards - Vertical Stack */}
+          <PaymentSummaryCards 
+            inputs={inputs} 
+            currency={currency} 
+            rate={rate} 
+            totalMonths={totalMonths}
+            vertical={true}
+          />
+
+          {/* Ownership Structure - Accordion */}
+          {hasClientSplit && clientInfo && (
             <ClientSplitCards
               inputs={inputs}
-              clientInfo={clientInfo!}
+              clientInfo={clientInfo}
               currency={currency}
               rate={rate}
-              onViewDetails={(clientId) => setSelectedClientId(clientId)}
-              vertical={true}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
-      {/* Client Payment Sheet Modal */}
-      {clientInfo && (
-        <ClientPaymentSheet
-          isOpen={!!selectedClientId}
-          onClose={() => setSelectedClientId(null)}
-          clientId={selectedClientId}
-          inputs={inputs}
-          clientInfo={clientInfo}
-          currency={currency}
-          rate={rate}
-          totalMonths={totalMonths}
-        />
-      )}
     </div>
   );
 };
