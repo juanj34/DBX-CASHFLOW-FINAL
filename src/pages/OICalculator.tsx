@@ -281,12 +281,12 @@ const OICalculatorContent = () => {
               {/* Autosave Status Indicator */}
               <div className="flex items-center gap-1.5 mr-1">
                 {saving ? (
-                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                  <span className="text-[10px] text-gray-400 flex items-center gap-1 animate-fade-in">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     <span className="hidden sm:inline">Saving...</span>
                   </span>
                 ) : lastSaved ? (
-                  <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                  <span className="text-[10px] text-gray-500 flex items-center gap-1 animate-fade-in">
                     <Check className="w-3 h-3 text-green-500" />
                     <span className="hidden sm:inline">Autosaved</span>
                   </span>
