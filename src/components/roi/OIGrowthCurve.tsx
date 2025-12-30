@@ -155,23 +155,23 @@ export const OIGrowthCurve = ({
   };
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-6 relative overflow-hidden">
+    <div className="bg-theme-card border border-theme-border rounded-2xl p-6 relative overflow-hidden">
       {/* Background grid */}
       <div className="absolute inset-0 opacity-5">
         <div className="w-full h-full" style={{ 
-          backgroundImage: 'linear-gradient(to right, #CCFF00 1px, transparent 1px), linear-gradient(to bottom, #CCFF00 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(to right, hsl(var(--theme-accent)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--theme-accent)) 1px, transparent 1px)',
           backgroundSize: '40px 40px'
         }} />
       </div>
 
       <div className="relative">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-[#CCFF00]/20 rounded-xl">
-            <Rocket className="w-5 h-5 text-[#CCFF00]" />
+          <div className="p-2 bg-theme-accent/20 rounded-xl">
+            <Rocket className="w-5 h-5 text-theme-accent" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">Price Appreciation Over Time</h3>
-            <p className="text-xs text-gray-400">Exit value at different time points</p>
+            <h3 className="font-semibold text-theme-text">Price Appreciation Over Time</h3>
+            <p className="text-xs text-theme-text-muted">Exit value at different time points</p>
           </div>
         </div>
 

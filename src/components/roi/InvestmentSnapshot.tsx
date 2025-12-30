@@ -39,22 +39,22 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden h-fit">
-      <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-[#CCFF00]" />
-        <h3 className="font-semibold text-white">{t('investmentSnapshot')}</h3>
+    <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden h-fit">
+      <div className="p-4 border-b border-theme-border flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-theme-accent" />
+        <h3 className="font-semibold text-theme-text">{t('investmentSnapshot')}</h3>
       </div>
 
       <div className="p-4 space-y-3">
         {/* Property Price */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Banknote className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-400">{t('basePropertyPrice')}</span>
+            <Banknote className="w-4 h-4 text-theme-text-muted" />
+            <span className="text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
             <InfoTooltip translationKey="tooltipBasePrice" />
           </div>
           <div className="text-right">
-            <span className="text-sm font-bold text-white font-mono">{formatCurrency(basePrice, currency, rate)}</span>
+            <span className="text-sm font-bold text-theme-text font-mono">{formatCurrency(basePrice, currency, rate)}</span>
             {pricePerSqft > 0 && (
               <p className="text-xs text-theme-text-muted font-mono">
                 {formatCurrency(pricePerSqft, currency, rate)}/sqft
@@ -66,55 +66,55 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
         {/* Payment Plan */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-400">{t('paymentPlan')}</span>
+            <CreditCard className="w-4 h-4 text-theme-text-muted" />
+            <span className="text-sm text-theme-text-muted">{t('paymentPlan')}</span>
             <InfoTooltip translationKey="tooltipPaymentPlan" />
           </div>
-          <span className="text-sm font-bold text-[#CCFF00] font-mono">{preHandoverPercent}/{handoverPercent}</span>
+          <span className="text-sm font-bold text-theme-accent font-mono">{preHandoverPercent}/{handoverPercent}</span>
         </div>
 
         {/* Construction Period */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-400">{t('constructionPeriod')}</span>
+            <Calendar className="w-4 h-4 text-theme-text-muted" />
+            <span className="text-sm text-theme-text-muted">{t('constructionPeriod')}</span>
             <InfoTooltip translationKey="tooltipConstructionPeriod" />
           </div>
-          <span className="text-sm font-bold text-white font-mono">{totalMonths} {t('months')}</span>
+          <span className="text-sm font-bold text-theme-text font-mono">{totalMonths} {t('months')}</span>
         </div>
 
-        <div className="border-t border-[#2a3142] my-2" />
+        <div className="border-t border-theme-border my-2" />
 
         {/* Amount Until SPA (at booking) */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-400">{t('amountUntilSPA')}</span>
-          <span className="text-sm font-bold text-[#CCFF00] font-mono">{formatCurrency(amountUntilSPA, currency, rate)}</span>
+          <span className="text-sm text-theme-text-muted">{t('amountUntilSPA')}</span>
+          <span className="text-sm font-bold text-theme-accent font-mono">{formatCurrency(amountUntilSPA, currency, rate)}</span>
         </div>
 
         {/* Amount During Construction */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-400">{t('amountDuringConstruction')}</span>
-          <span className="text-sm font-bold text-white font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
+          <span className="text-sm text-theme-text-muted">{t('amountDuringConstruction')}</span>
+          <span className="text-sm font-bold text-theme-text font-mono">{formatCurrency(additionalTotal, currency, rate)}</span>
         </div>
 
         {/* Amount at Handover */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Home className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-gray-400">{t('amountAtHandover')}</span>
+            <Home className="w-4 h-4 text-theme-accent-secondary" />
+            <span className="text-sm text-theme-text-muted">{t('amountAtHandover')}</span>
           </div>
-          <span className="text-sm font-bold text-cyan-400 font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
+          <span className="text-sm font-bold text-theme-accent-secondary font-mono">{formatCurrency(handoverAmount, currency, rate)}</span>
         </div>
 
-        <div className="border-t border-[#2a3142] my-2" />
+        <div className="border-t border-theme-border my-2" />
 
         {/* Total Entry Costs */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-400">{t('totalEntryCosts')}</span>
+            <span className="text-xs text-theme-text-muted">{t('totalEntryCosts')}</span>
             <InfoTooltip translationKey="tooltipEntryCosts" />
           </div>
-          <span className="text-xs text-red-400 font-mono">-{formatCurrency(totalEntryCosts, currency, rate)}</span>
+          <span className="text-xs text-theme-negative font-mono">-{formatCurrency(totalEntryCosts, currency, rate)}</span>
         </div>
 
         {/* Timeline */}

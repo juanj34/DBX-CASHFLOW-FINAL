@@ -35,22 +35,22 @@ export const WealthSummaryCard = ({
     : 0;
 
   return (
-    <div className="bg-gradient-to-br from-[#1a1f2e] to-[#0f172a] border border-[#CCFF00]/30 rounded-2xl overflow-hidden h-full flex flex-col">
+    <div className="bg-gradient-to-br from-theme-card to-theme-bg border border-theme-accent/30 rounded-2xl overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-[#2a3142] flex items-center gap-2">
-        <Gem className="w-5 h-5 text-[#CCFF00]" />
-        <h3 className="font-semibold text-white">{t('wealthCreated10Years')}</h3>
+      <div className="p-4 border-b border-theme-border flex items-center gap-2">
+        <Gem className="w-5 h-5 text-theme-accent" />
+        <h3 className="font-semibold text-theme-text">{t('wealthCreated10Years')}</h3>
       </div>
 
       <div className="p-4 space-y-3 flex-1">
         {/* Property Value */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-400">{t('estMarketValue')}</span>
+            <TrendingUp className="w-4 h-4 text-theme-text-muted" />
+            <span className="text-sm text-theme-text-muted">{t('estMarketValue')}</span>
             <InfoTooltip translationKey="tooltipEstMarketValue" />
           </div>
-          <span className="text-sm font-bold text-white font-mono">
+          <span className="text-sm font-bold text-theme-text font-mono">
             {formatCurrency(propertyValueYear10, currency, rate)}
           </span>
         </div>
@@ -58,11 +58,11 @@ export const WealthSummaryCard = ({
         {/* Cumulative Rent - Long Term */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-gray-400">{t('cumulativeRentLT')}</span>
+            <Wallet className="w-4 h-4 text-theme-accent-secondary" />
+            <span className="text-sm text-theme-text-muted">{t('cumulativeRentLT')}</span>
             <InfoTooltip translationKey="tooltipCumulativeRent" />
           </div>
-          <span className="text-sm font-bold text-cyan-400 font-mono">
+          <span className="text-sm font-bold text-theme-accent-secondary font-mono">
             +{formatCurrency(cumulativeRentIncome, currency, rate)}
           </span>
         </div>
@@ -72,7 +72,7 @@ export const WealthSummaryCard = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Wallet className="w-4 h-4 text-orange-400" />
-              <span className="text-sm text-gray-400">{t('cumulativeRentShortTerm')}</span>
+              <span className="text-sm text-theme-text-muted">{t('cumulativeRentShortTerm')}</span>
             </div>
             <span className="text-sm font-bold text-orange-400 font-mono">
               +{formatCurrency(airbnbCumulativeIncome, currency, rate)}
@@ -83,28 +83,28 @@ export const WealthSummaryCard = ({
         {/* Initial Investment */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Minus className="w-4 h-4 text-red-400" />
-            <span className="text-sm text-gray-400">{t('initialInvestment')}</span>
+            <Minus className="w-4 h-4 text-theme-negative" />
+            <span className="text-sm text-theme-text-muted">{t('initialInvestment')}</span>
           </div>
-          <span className="text-sm font-bold text-red-400 font-mono">
+          <span className="text-sm font-bold text-theme-negative font-mono">
             -{formatCurrency(initialInvestment, currency, rate)}
           </span>
         </div>
 
-        <div className="border-t border-[#2a3142] my-2" />
+        <div className="border-t border-theme-border my-2" />
 
         {/* Net Wealth - Long Term */}
-        <div className="flex items-center justify-between bg-cyan-500/10 -mx-4 px-4 py-3">
+        <div className="flex items-center justify-between bg-theme-accent-secondary/10 -mx-4 px-4 py-3">
           <div className="flex items-center gap-2">
-            <Equal className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-white font-medium">{t('netWealthLT')}</span>
+            <Equal className="w-4 h-4 text-theme-accent-secondary" />
+            <span className="text-sm text-theme-text font-medium">{t('netWealthLT')}</span>
             <InfoTooltip translationKey="tooltipUnrealizedProfit" />
           </div>
           <div className="text-right">
-            <span className="text-lg font-bold text-cyan-400 font-mono">
+            <span className="text-lg font-bold text-theme-accent-secondary font-mono">
               {formatCurrency(netWealthLongTerm, currency, rate)}
             </span>
-            <span className="text-xs text-green-400 ml-2">
+            <span className="text-xs text-theme-positive ml-2">
               (+{percentGainLongTerm.toFixed(0)}%)
             </span>
           </div>
@@ -115,13 +115,13 @@ export const WealthSummaryCard = ({
           <div className="flex items-center justify-between bg-orange-500/10 -mx-4 px-4 py-3">
             <div className="flex items-center gap-2">
               <Equal className="w-4 h-4 text-orange-400" />
-              <span className="text-sm text-white font-medium">{t('netWealthShortTerm')}</span>
+              <span className="text-sm text-theme-text font-medium">{t('netWealthShortTerm')}</span>
             </div>
             <div className="text-right">
               <span className="text-lg font-bold text-orange-400 font-mono">
                 {formatCurrency(netWealthAirbnb, currency, rate)}
               </span>
-              <span className="text-xs text-green-400 ml-2">
+              <span className="text-xs text-theme-positive ml-2">
                 (+{percentGainAirbnb.toFixed(0)}%)
               </span>
             </div>
