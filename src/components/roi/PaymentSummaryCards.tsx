@@ -56,10 +56,7 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
       label: t('initialCashRequired'),
       value: initialCashRequired,
       subLabel: `${t('dueBy')} ${bookingLabel}`,
-      bgFrom: 'from-theme-accent/20',
-      bgTo: 'to-theme-accent/5',
-      borderColor: 'border-theme-accent/30',
-      iconBg: 'bg-theme-accent/20',
+      borderColor: 'border-theme-accent',
       iconColor: 'text-theme-accent',
       labelColor: 'text-theme-accent',
     },
@@ -68,10 +65,7 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
       label: t('monthlyBurnRate'),
       value: monthlyBurnRate,
       subLabel: `${constructionMonths} ${t('months')} ${t('construction') || 'construction'}`,
-      bgFrom: 'from-slate-500/20',
-      bgTo: 'to-slate-500/5',
-      borderColor: 'border-slate-500/30',
-      iconBg: 'bg-slate-500/20',
+      borderColor: 'border-slate-500',
       iconColor: 'text-slate-400',
       labelColor: 'text-slate-400',
       prefix: '~',
@@ -81,35 +75,32 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
       label: t('completionBalance'),
       value: handoverBalance,
       subLabel: `${handoverLabel} (${handoverPercent}%)`,
-      bgFrom: 'from-cyan-500/20',
-      bgTo: 'to-cyan-500/5',
-      borderColor: 'border-cyan-500/30',
-      iconBg: 'bg-cyan-500/20',
+      borderColor: 'border-cyan-500',
       iconColor: 'text-cyan-400',
       labelColor: 'text-cyan-400',
     },
   ];
 
   return (
-    <div className={vertical ? 'flex flex-col gap-3' : 'grid grid-cols-1 sm:grid-cols-3 gap-3'}>
+    <div className={vertical ? 'flex flex-col gap-2' : 'grid grid-cols-1 sm:grid-cols-3 gap-3'}>
       {cards.map((card, index) => (
         <div 
           key={index}
-          className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} border ${card.borderColor} rounded-xl p-4`}
+          className={`bg-theme-card/50 border-l-4 ${card.borderColor} rounded-lg px-3 py-2.5 flex items-center justify-between gap-3`}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
-              <card.icon className={`w-4 h-4 ${card.iconColor}`} />
-            </div>
-            <span className={`text-xs uppercase tracking-wide ${card.labelColor} font-medium`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <card.icon className={`w-4 h-4 ${card.iconColor} flex-shrink-0`} />
+            <span className={`text-[11px] uppercase tracking-wide ${card.labelColor} font-medium truncate`}>
               {card.label}
             </span>
           </div>
-          <div className="text-xl font-bold text-theme-text font-mono tabular-nums text-right">
-            {card.value > 0 ? `${card.prefix || ''}${formatCurrency(card.value, currency, rate)}` : '—'}
-          </div>
-          <div className="text-xs text-theme-text-muted mt-1 text-right">
-            {card.subLabel}
+          <div className="text-right flex-shrink-0">
+            <div className="text-base font-bold text-theme-text font-mono tabular-nums">
+              {card.value > 0 ? `${card.prefix || ''}${formatCurrency(card.value, currency, rate)}` : '—'}
+            </div>
+            <div className="text-[10px] text-theme-text-muted">
+              {card.subLabel}
+            </div>
           </div>
         </div>
       ))}

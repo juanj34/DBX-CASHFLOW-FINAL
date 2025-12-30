@@ -113,12 +113,6 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Detailed Breakdown (2/3 width) */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Visual Bar */}
-          <PaymentVisualBar 
-            inputs={inputs} 
-            currency={currency} 
-            rate={rate} 
-          />
 
           {/* Detailed Breakdown Card */}
           <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
