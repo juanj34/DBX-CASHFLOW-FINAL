@@ -1,6 +1,6 @@
 import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
 import { MortgageInputs, MortgageAnalysis } from "@/components/roi/useMortgageCalculations";
-import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
+import { InvestmentStoryDashboard } from "@/components/roi/InvestmentStoryDashboard";
 import { Currency } from "@/components/roi/currencyUtils";
 
 interface OverviewTabContentProps {
@@ -24,11 +24,11 @@ export const OverviewTabContent = ({
 }: OverviewTabContentProps) => {
   return (
     <div className="space-y-6">
-      <InvestmentOverviewGrid
+      <InvestmentStoryDashboard
         inputs={inputs}
         calculations={calculations}
+        mortgageInputs={mortgageInputs}
         mortgageAnalysis={mortgageAnalysis}
-        mortgageEnabled={mortgageInputs.enabled}
         exitScenarios={exitScenarios}
         currency={currency}
         rate={rate}
