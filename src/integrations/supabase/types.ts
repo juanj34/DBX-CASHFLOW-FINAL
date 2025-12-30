@@ -96,9 +96,13 @@ export type Database = {
           id: string
           inputs: Json
           is_draft: boolean | null
+          negotiation_started_at: string | null
+          presented_at: string | null
           project_name: string | null
           share_token: string | null
+          sold_at: string | null
           status: string | null
+          status_changed_at: string | null
           title: string | null
           unit: string | null
           unit_size_m2: number | null
@@ -116,9 +120,13 @@ export type Database = {
           id?: string
           inputs?: Json
           is_draft?: boolean | null
+          negotiation_started_at?: string | null
+          presented_at?: string | null
           project_name?: string | null
           share_token?: string | null
+          sold_at?: string | null
           status?: string | null
+          status_changed_at?: string | null
           title?: string | null
           unit?: string | null
           unit_size_m2?: number | null
@@ -136,9 +144,13 @@ export type Database = {
           id?: string
           inputs?: Json
           is_draft?: boolean | null
+          negotiation_started_at?: string | null
+          presented_at?: string | null
           project_name?: string | null
           share_token?: string | null
+          sold_at?: string | null
           status?: string | null
+          status_changed_at?: string | null
           title?: string | null
           unit?: string | null
           unit_size_m2?: number | null

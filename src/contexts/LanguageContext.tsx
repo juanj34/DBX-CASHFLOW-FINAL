@@ -1235,6 +1235,23 @@ const translations: Translations = {
   saveFailed: { en: 'Save failed', es: 'Error al guardar' },
   saved: { en: 'Saved', es: 'Guardado' },
   saving: { en: 'Saving...', es: 'Guardando...' },
+  
+  // Quick Search & Pipeline Analytics
+  searchPlaceholder: { en: 'Search client, project, or developer...', es: 'Buscar cliente, proyecto o desarrollador...' },
+  pipelineAnalytics: { en: 'Pipeline Analytics', es: 'Análisis de Pipeline' },
+  lastSixMonths: { en: 'Last 6 Months', es: 'Últimos 6 Meses' },
+  dealVolume: { en: 'Deal Volume', es: 'Volumen de Tratos' },
+  earnedCommission: { en: 'Earned Commission', es: 'Comisión Ganada' },
+  soldDeals: { en: 'Sold Deals', es: 'Tratos Cerrados' },
+  deals: { en: 'Deals', es: 'Tratos' },
+  pending: { en: 'Pending', es: 'Pendiente' },
+  closedDeals: { en: 'Closed deals', es: 'Tratos cerrados' },
+  dealClosed: { en: 'Deal closed! Congratulations!', es: '¡Trato cerrado! ¡Felicitaciones!' },
+  totalQuotes: { en: 'Total Quotes', es: 'Total Cotizaciones' },
+  compare: { en: 'Compare', es: 'Comparar' },
+  quotesSelected: { en: 'quotes selected', es: 'cotizaciones seleccionadas' },
+  min2Max4: { en: 'min 2, max 4', es: 'mín 2, máx 4' },
+  compareSelected: { en: 'Compare Selected', es: 'Comparar Seleccionados' },
 };
 
 interface LanguageContextType {
