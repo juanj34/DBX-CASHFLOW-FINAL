@@ -70,8 +70,8 @@ const ZonesManager = () => {
       });
     } else {
       toast({
-        title: "Zona eliminada",
-        description: "La zona ha sido eliminada exitosamente.",
+        title: "Zone deleted",
+        description: "The zone has been deleted successfully.",
       });
       fetchZones();
     }
@@ -92,67 +92,71 @@ const ZonesManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-semibold">Gestión de Zonas</h2>
-        <Button onClick={() => setShowForm(true)}>
+        <h2 className="text-3xl font-semibold text-theme-text">Zones Management</h2>
+        <Button 
+          onClick={() => setShowForm(true)}
+          className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+        >
           <Plus className="mr-2 h-4 w-4" />
-          Añadir Zona
+          Add Zone
         </Button>
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-3 h-4 w-4 text-theme-text-muted" />
         <Input
-          placeholder="Buscar zonas..."
+          placeholder="Search zones..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
         />
       </div>
 
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      <div className="rounded-lg border border-theme-border bg-theme-card overflow-x-auto">
         <Table className="min-w-[700px]">
           <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Tagline</TableHead>
-              <TableHead>Madurez</TableHead>
-              <TableHead>Rango de Precios</TableHead>
-              <TableHead>Desarrollador</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+            <TableRow className="border-theme-border hover:bg-theme-card-alt">
+              <TableHead className="text-theme-text-muted">Name</TableHead>
+              <TableHead className="text-theme-text-muted">Tagline</TableHead>
+              <TableHead className="text-theme-text-muted">Maturity</TableHead>
+              <TableHead className="text-theme-text-muted">Price Range</TableHead>
+              <TableHead className="text-theme-text-muted">Developer</TableHead>
+              <TableHead className="text-right text-theme-text-muted">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredZones.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  No se encontraron zonas. Crea tu primera zona para comenzar.
+              <TableRow className="border-theme-border hover:bg-theme-card-alt">
+                <TableCell colSpan={6} className="text-center text-theme-text-muted">
+                  No zones found. Create your first zone to get started.
                 </TableCell>
               </TableRow>
             ) : (
               filteredZones.map((zone) => (
-                <TableRow key={zone.id}>
-                  <TableCell className="font-medium">{zone.name}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm max-w-[150px] truncate">
+                <TableRow key={zone.id} className="border-theme-border hover:bg-theme-card-alt">
+                  <TableCell className="font-medium text-theme-text">{zone.name}</TableCell>
+                  <TableCell className="text-theme-text-muted text-sm max-w-[150px] truncate">
                     {zone.tagline || "—"}
                   </TableCell>
                   <TableCell>
                     {zone.maturity_level ? (
                       <div className="flex items-center gap-2">
                         <Progress value={zone.maturity_level} className="h-2 w-16" />
-                        <span className="text-sm">{zone.maturity_level}%</span>
+                        <span className="text-sm text-theme-text">{zone.maturity_level}%</span>
                       </div>
                     ) : (
-                      "—"
+                      <span className="text-theme-text-muted">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="text-sm text-theme-text">
                     {formatPriceRange(zone.price_range_min, zone.price_range_max)}
                   </TableCell>
-                  <TableCell>{zone.main_developer || "—"}</TableCell>
+                  <TableCell className="text-theme-text">{zone.main_developer || "—"}</TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
                       onClick={() => {
                         setEditingZone(zone);
                         setShowForm(true);
@@ -163,6 +167,7 @@ const ZonesManager = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="text-theme-text-muted hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setDeletingZone(zone)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -191,16 +196,16 @@ const ZonesManager = () => {
       )}
 
       <AlertDialog open={!!deletingZone} onOpenChange={() => setDeletingZone(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar Zona</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que deseas eliminar "{deletingZone?.name}"? Esta acción no se puede deshacer.
+            <AlertDialogTitle className="text-theme-text">Delete Zone</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              Are you sure you want to delete "{deletingZone?.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Eliminar</AlertDialogAction>
+            <AlertDialogCancel className="bg-theme-card-alt border-theme-border text-theme-text hover:bg-theme-border">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
