@@ -293,7 +293,8 @@ const translations: Translations = {
   // Timeline Legend
   booking: { en: 'Booking', es: 'Reserva' },
   milestone: { en: 'Milestone', es: 'Hito' },
-  govtFee: { en: 'Govt Fee', es: 'Tarifa Gob.' },
+  govtFee: { en: 'Govt', es: 'Gob.' },
+  adminFee: { en: 'Admin', es: 'Admin' },
   
   // Government Fees
   dldRegistrationFee: { en: 'DLD Registration Fee (4%)', es: 'Tarifa Registro DLD (4%)' },
@@ -826,6 +827,7 @@ const translations: Translations = {
   atHandoverTimelineLabel: { en: 'At Handover', es: 'En Entrega' },
   payBeforeKeys: { en: 'Pay before receiving keys', es: 'Pagar antes de recibir llaves' },
   payAtCompletion: { en: 'Pay at completion', es: 'Pagar en la entrega' },
+  clickPaymentForDetails: { en: 'Click on a payment for more details', es: 'Haz clic en un pago para más detalles' },
 };
 
 interface LanguageContextType {

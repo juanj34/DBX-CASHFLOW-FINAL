@@ -3,7 +3,7 @@ import { Currency, formatCurrency } from "./currencyUtils";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { getCountryByCode } from "@/data/countries";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Users, ChevronDown } from "lucide-react";
+import { Users, ChevronRight } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ClientSplitCardsProps {
@@ -87,8 +87,9 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate }: ClientS
 
           return (
             <AccordionItem key={client.id} value={client.id} className="border-b border-theme-border/10 last:border-0">
-              <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-theme-bg/30 [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-theme-bg/30 group">
                 <div className="flex items-center w-full pr-2">
+                  <ChevronRight className="w-3.5 h-3.5 text-theme-text-muted mr-2 transition-transform group-data-[state=open]:rotate-90" />
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {clientDisplay.flag && (
                       <span className="text-base flex-shrink-0">{clientDisplay.flag}</span>

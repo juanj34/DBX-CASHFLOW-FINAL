@@ -56,7 +56,9 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
       label: t('initialCashRequired'),
       value: initialCashRequired,
       subLabel: `${t('dueBy')} ${bookingLabel}`,
-      borderColor: 'border-theme-accent',
+      bgFrom: 'from-theme-accent/20',
+      bgTo: 'to-theme-accent/5',
+      borderColor: 'border-theme-accent/40',
       iconColor: 'text-theme-accent',
       labelColor: 'text-theme-accent',
     },
@@ -65,7 +67,9 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
       label: t('monthlyBurnRate'),
       value: monthlyBurnRate,
       subLabel: `${constructionMonths} ${t('months')} ${t('construction') || 'construction'}`,
-      borderColor: 'border-slate-500',
+      bgFrom: 'from-slate-500/20',
+      bgTo: 'to-slate-500/5',
+      borderColor: 'border-slate-500/40',
       iconColor: 'text-slate-400',
       labelColor: 'text-slate-400',
       prefix: '~',
@@ -75,32 +79,32 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
       label: t('completionBalance'),
       value: handoverBalance,
       subLabel: `${handoverLabel} (${handoverPercent}%)`,
-      borderColor: 'border-cyan-500',
+      bgFrom: 'from-cyan-500/20',
+      bgTo: 'to-cyan-500/5',
+      borderColor: 'border-cyan-500/40',
       iconColor: 'text-cyan-400',
       labelColor: 'text-cyan-400',
     },
   ];
 
   return (
-    <div className={vertical ? 'flex flex-col gap-2' : 'grid grid-cols-1 sm:grid-cols-3 gap-3'}>
+    <div className={vertical ? 'flex flex-col gap-3' : 'grid grid-cols-1 sm:grid-cols-3 gap-3'}>
       {cards.map((card, index) => (
         <div 
           key={index}
-          className={`bg-theme-card/50 border-l-4 ${card.borderColor} rounded-lg px-3 py-2.5 flex items-center justify-between gap-3`}
+          className={`bg-gradient-to-br ${card.bgFrom} ${card.bgTo} border ${card.borderColor} rounded-xl p-3.5`}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <card.icon className={`w-4 h-4 ${card.iconColor} flex-shrink-0`} />
-            <span className={`text-[11px] uppercase tracking-wide ${card.labelColor} font-medium truncate`}>
+          <div className="flex items-center gap-2 mb-2">
+            <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+            <span className={`text-[11px] uppercase tracking-wide ${card.labelColor} font-medium`}>
               {card.label}
             </span>
           </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-base font-bold text-theme-text font-mono tabular-nums">
-              {card.value > 0 ? `${card.prefix || ''}${formatCurrency(card.value, currency, rate)}` : '—'}
-            </div>
-            <div className="text-[10px] text-theme-text-muted">
-              {card.subLabel}
-            </div>
+          <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
+            {card.value > 0 ? `${card.prefix || ''}${formatCurrency(card.value, currency, rate)}` : '—'}
+          </div>
+          <div className="text-[10px] text-theme-text-muted mt-1">
+            {card.subLabel}
           </div>
         </div>
       ))}

@@ -284,19 +284,24 @@ export const PaymentHorizontalTimeline = ({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-5 text-[11px] text-theme-text-muted pt-1">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
-          <span>{t('entry') || 'Entry'}</span>
+      <div className="flex flex-col items-center gap-1.5 pt-1">
+        <div className="flex items-center justify-center gap-5 text-[11px] text-theme-text-muted">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
+            <span>{t('entry') || 'Entry'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+            <span>{t('construction') || 'Construction'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3.5 h-3.5 rounded-full bg-cyan-400" />
+            <span>{t('completion') || 'Completion'}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-          <span>{t('construction') || 'Construction'}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3.5 h-3.5 rounded-full bg-cyan-400" />
-          <span>{t('completion') || 'Completion'}</span>
-        </div>
+        <span className="text-[10px] text-theme-text-muted/60 italic">
+          {t('clickPaymentForDetails') || 'Click on a payment for more details'}
+        </span>
       </div>
     </div>
   );
