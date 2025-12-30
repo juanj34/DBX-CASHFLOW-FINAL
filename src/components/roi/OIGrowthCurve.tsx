@@ -74,14 +74,26 @@ export const OIGrowthCurve = ({ calculations, inputs, currency, exitScenarios, r
     const profit = exitPrice - basePrice;
     const trueProfit = profit - calculations.totalEntryCosts;
     const totalCapital = equityDeployed + calculations.totalEntryCosts;
+    
+    // Calculate exit costs (agent commission + NOC fee)
+    const agentCommission = inputs.exitAgentCommissionEnabled ? exitPrice * 0.02 : 0;
+    const nocFee = inputs.exitNocFee || 0;
+    const exitCosts = agentCommission + nocFee;
+    
+    // Net profit after exit costs
+    const netProfit = trueProfit - exitCosts;
+    
+    // Use net ROE when exit costs exist, otherwise use true ROE
     const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+    const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
+    const displayROE = exitCosts > 0 ? netROE : trueROE;
     
     return {
       exitMonths: exitMonth,
       exitPrice,
       equityDeployed,
       profit,
-      trueROE,
+      trueROE: displayROE,
       totalCapitalDeployed: totalCapital
     };
   };
