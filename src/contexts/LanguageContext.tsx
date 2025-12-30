@@ -837,17 +837,16 @@ const translations: Translations = {
   payAtCompletion: { en: 'Pay at completion', es: 'Pagar en la entrega' },
   clickPaymentForDetails: { en: 'Click on a payment for more details', es: 'Haz clic en un pago para más detalles' },
   
-  // Auth - Login
+  // Auth - Login (additional keys)
   loginEmail: { en: 'Email', es: 'Correo electrónico' },
   loginPassword: { en: 'Password', es: 'Contraseña' },
   loginForgotPassword: { en: 'Forgot password?', es: '¿Olvidaste tu contraseña?' },
-  loginSignIn: { en: 'Sign in', es: 'Iniciar sesión' },
   loginSigningIn: { en: 'Signing in...', es: 'Iniciando sesión...' },
   loginWelcomeBack: { en: 'Welcome back!', es: '¡Bienvenido de nuevo!' },
   loginInvalidCredentials: { en: 'Invalid email or password', es: 'Correo o contraseña inválidos' },
   loginFailed: { en: 'Failed to login', es: 'Error al iniciar sesión' },
   
-  // Auth - Signup
+  // Auth - Signup (additional keys)
   signupFullName: { en: 'Full Name', es: 'Nombre Completo' },
   signupCreateAccount: { en: 'Create account', es: 'Crear cuenta' },
   signupCreatingAccount: { en: 'Creating account...', es: 'Creando cuenta...' },
