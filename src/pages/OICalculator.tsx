@@ -278,27 +278,19 @@ const OICalculatorContent = () => {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {/* Save Button with Status - Always visible */}
-              <div className="flex items-center gap-1.5">
+              {/* Autosave Status Indicator */}
+              <div className="flex items-center gap-1.5 mr-1">
                 {saving ? (
-                  <span className="text-xs text-gray-400 flex items-center">
+                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin" />
+                    <span className="hidden sm:inline">Saving...</span>
                   </span>
                 ) : lastSaved ? (
-                  <span className="text-xs text-gray-500 flex items-center">
+                  <span className="text-[10px] text-gray-500 flex items-center gap-1">
                     <Check className="w-3 h-3 text-green-500" />
+                    <span className="hidden sm:inline">Autosaved</span>
                   </span>
                 ) : null}
-                <Button
-                  variant="outlineDark"
-                  size="icon"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="h-8 w-8 sm:h-8 sm:w-auto sm:px-3"
-                >
-                  <Save className="w-4 h-4" />
-                  <span className="hidden sm:inline">Save</span>
-                </Button>
               </div>
 
               {/* Desktop: Show all buttons */}

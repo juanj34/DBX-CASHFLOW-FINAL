@@ -93,18 +93,6 @@ export const QuotesDropdown = ({
           {t('newQuote')}
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className="bg-[#2a3142]" />
-
-        {/* Save */}
-        <DropdownMenuItem
-          onClick={handleSave}
-          disabled={saving}
-          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
-        >
-          <Save className="w-4 h-4" />
-          {t('save')}
-        </DropdownMenuItem>
-
         {/* Save as New */}
         <DropdownMenuItem
           onClick={handleSaveAs}
