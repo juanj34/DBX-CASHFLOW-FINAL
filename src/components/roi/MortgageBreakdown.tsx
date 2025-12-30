@@ -615,95 +615,203 @@ export const MortgageBreakdown = ({
           </DialogContent>
         </Dialog>
 
-        {/* Client-Focused Summary */}
-        <div className="p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl border border-blue-700/30">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard className="w-5 h-5 text-blue-400" />
-            <span className="text-base font-semibold text-theme-text">{t('yourCashRequirements') || 'Your Cash Requirements'}</span>
+        {/* ===== ACT 3: THE WEALTH EQUATION - Redesigned for Client Psychology ===== */}
+        <div className="p-4 bg-gradient-to-br from-[#1a1f2e] to-[#0d1117] rounded-2xl border border-[#CCFF00]/30">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="p-2 rounded-lg bg-[#CCFF00]/20">
+              <TrendingUp className="w-5 h-5 text-[#CCFF00]" />
+            </div>
+            <div>
+              <span className="text-base font-semibold text-theme-text">The Wealth Equation</span>
+              <p className="text-[10px] text-theme-text-muted">Your path to ownership</p>
+            </div>
           </div>
           
-          <div className="space-y-4">
-            {/* Before Handover */}
-            <div className="p-3 bg-theme-bg-alt rounded-lg">
-              <p className="text-xs text-theme-text-muted mb-2 uppercase tracking-wider">{t('beforeHandover') || 'Before Handover'}</p>
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-theme-text-muted">{t('preHandoverPayments')}</span>
-                  <span className="text-theme-text font-mono">{formatCurrency(preHandoverAmount, currency, rate)}</span>
+          <div className="space-y-6">
+            {/* Card 1: Cash to Keys - Visual Donut */}
+            <div className="p-4 bg-theme-bg-alt rounded-xl border border-theme-border">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-[#CCFF00]" />
+                  <span className="text-sm font-medium text-theme-text">Cash to Keys</span>
                 </div>
-                {hasGap && (
-                  <div className="flex justify-between">
-                    <span className="text-theme-text-muted">+ {t('gapPayment')}</span>
-                    <span className="text-yellow-300 font-mono">{formatCurrency(gapAmount, currency, rate)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-theme-text-muted">+ {t('upfrontFees')}</span>
-                  <span className="text-theme-text font-mono">{formatCurrency(totalUpfrontFees, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-theme-border">
-                  <span className="text-theme-text font-medium">{t('totalCashNeeded') || 'Total Cash Needed'}</span>
-                  <span className="text-theme-accent font-mono font-bold">{formatCurrency(preHandoverAmount + gapAmount + totalUpfrontFees, currency, rate)}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Monthly After Handover */}
-            <div className="p-3 bg-theme-bg-alt rounded-lg">
-              <p className="text-xs text-theme-text-muted mb-2 uppercase tracking-wider">{t('monthlyAfterHandover') || 'Monthly After Handover'}</p>
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-theme-text-muted">{t('mortgagePayment')}</span>
-                  <span className="text-theme-text font-mono">{formatCurrency(monthlyPayment, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-theme-text-muted">+ {t('insurance')}</span>
-                  <span className="text-theme-text font-mono">{formatCurrency(totalAnnualInsurance / 12, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-theme-border">
-                  <span className="text-theme-text font-medium">{t('monthlyCommitment') || 'Monthly Commitment'}</span>
-                  <span className="text-blue-400 font-mono font-bold">{formatCurrency(monthlyMortgageTotal, currency, rate)}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Total Interest - NEUTRAL color (not scary red) + Appreciation offset */}
-            <div className="p-3 bg-theme-bg-alt rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="text-theme-text-muted text-sm">{t('totalInterestPaid') || 'Total Interest Paid'}</span>
-                  <p className="text-[10px] text-theme-text-muted">({mortgageInputs.loanTermYears} {t('years')})</p>
-                </div>
-                <span className="text-theme-text-muted font-mono">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
-              </div>
-              
-              {/* Projected Appreciation - GREEN */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <span className="text-theme-text-muted text-sm">Projected Appreciation</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-theme-text-muted cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-theme-card border-theme-border text-theme-text">
-                        <p className="text-xs">Based on ~5% annual appreciation</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <span className="text-emerald-400 font-mono">+{formatCurrency(projectedAppreciation, currency, rate)}</span>
-              </div>
-              
-              {/* Net Wealth Position */}
-              <div className="flex justify-between items-center pt-2 border-t border-theme-border">
-                <span className="text-theme-text font-medium text-sm">Net Wealth Position</span>
-                <span className={cn(
-                  "font-mono font-bold",
-                  netWealthPosition >= 0 ? "text-emerald-400" : "text-red-400"
-                )}>
-                  {netWealthPosition >= 0 ? '+' : ''}{formatCurrency(netWealthPosition, currency, rate)}
+                <span className="text-lg font-bold text-[#CCFF00] font-mono">
+                  {formatCurrency(preHandoverAmount + gapAmount + totalUpfrontFees, currency, rate)}
                 </span>
+              </div>
+              
+              {/* Visual Stacked Bar Chart */}
+              <div className="space-y-3">
+                <div className="flex h-6 rounded-lg overflow-hidden bg-theme-bg">
+                  {/* Pre-Handover - Largest */}
+                  <div 
+                    className="bg-emerald-500 flex items-center justify-center transition-all"
+                    style={{ width: `${(preHandoverAmount / (preHandoverAmount + gapAmount + totalUpfrontFees)) * 100}%` }}
+                  >
+                    <span className="text-[9px] text-white font-medium truncate px-1">Paid</span>
+                  </div>
+                  {/* Gap - Yellow */}
+                  {hasGap && (
+                    <div 
+                      className="bg-amber-500 flex items-center justify-center transition-all"
+                      style={{ width: `${(gapAmount / (preHandoverAmount + gapAmount + totalUpfrontFees)) * 100}%` }}
+                    >
+                      <span className="text-[9px] text-black font-medium truncate px-1">Gap</span>
+                    </div>
+                  )}
+                  {/* Fees - Gray */}
+                  <div 
+                    className="bg-gray-500 flex items-center justify-center transition-all"
+                    style={{ width: `${(totalUpfrontFees / (preHandoverAmount + gapAmount + totalUpfrontFees)) * 100}%` }}
+                  >
+                    <span className="text-[9px] text-white font-medium truncate px-1">Fees</span>
+                  </div>
+                </div>
+                
+                {/* Legend */}
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                    <span className="text-theme-text-muted">Pre-Handover</span>
+                    <span className="font-mono text-emerald-400">{formatCurrency(preHandoverAmount, currency, rate)}</span>
+                  </div>
+                  {hasGap && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+                      <span className="text-theme-text-muted">Gap</span>
+                      <span className="font-mono text-amber-400">{formatCurrency(gapAmount, currency, rate)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm bg-gray-500" />
+                    <span className="text-theme-text-muted">Fees</span>
+                    <span className="font-mono text-gray-400">{formatCurrency(totalUpfrontFees, currency, rate)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-[10px] text-theme-text-muted mt-3 text-center">
+                This is all you need to own a {formatCurrency(basePrice, currency, rate)} asset
+              </p>
+            </div>
+            
+            {/* Card 2: Monthly Installment with Rental Coverage Badge */}
+            <div className="p-4 bg-theme-bg-alt rounded-xl border border-theme-border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-medium text-theme-text">Monthly Installment</span>
+                </div>
+                
+                {/* Rental Coverage Badge */}
+                {monthlyLongTermRent && monthlyLongTermRent > 0 && (
+                  <span className={cn(
+                    "flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full",
+                    longTermCoveragePercent >= 100 
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : longTermCoveragePercent >= 80
+                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                        : "bg-red-500/20 text-red-400 border border-red-500/30"
+                  )}>
+                    {longTermCoveragePercent >= 100 ? (
+                      <>
+                        <CheckCircle className="w-3 h-3" />
+                        {longTermCoveragePercent}% Covered by Rent
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-3 h-3" />
+                        {longTermCoveragePercent}% Rent Coverage
+                      </>
+                    )}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between gap-8">
+                    <span className="text-theme-text-muted">Mortgage Payment</span>
+                    <span className="font-mono text-theme-text">{formatCurrency(monthlyPayment, currency, rate)}</span>
+                  </div>
+                  <div className="flex justify-between gap-8">
+                    <span className="text-theme-text-muted">+ Insurance</span>
+                    <span className="font-mono text-theme-text">{formatCurrency(totalAnnualInsurance / 12, currency, rate)}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-blue-400 font-mono">
+                    {formatCurrency(monthlyMortgageTotal, currency, rate)}
+                  </span>
+                  <p className="text-[10px] text-theme-text-muted">/month</p>
+                </div>
+              </div>
+              
+              {/* Visual reminder that tenant pays */}
+              {monthlyLongTermRent && longTermCoveragePercent >= 80 && (
+                <div className="mt-3 p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                  <p className="text-[10px] text-emerald-400 text-center">
+                    💡 Your tenant essentially pays this for you
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Card 3: The Wealth Equation - Visual Comparison Bar */}
+            <div className="p-4 bg-gradient-to-r from-theme-bg-alt to-emerald-900/20 rounded-xl border border-emerald-500/30">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-theme-text">Cost of Debt vs Wealth Created</span>
+              </div>
+              
+              {/* Visual Comparison Bars */}
+              <div className="space-y-3 mb-4">
+                {/* Cost of Debt - Small, gray/red */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400">Cost of Debt ({mortgageInputs.loanTermYears}Y)</span>
+                    <span className="font-mono text-gray-400">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
+                  </div>
+                  <div className="h-4 rounded-full bg-theme-bg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all"
+                      style={{ width: `${Math.min((totalInterestAndFees / projectedAppreciation) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                
+                {/* Wealth Created - Large, green */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-400">Projected Appreciation</span>
+                    <span className="font-mono text-emerald-400">+{formatCurrency(projectedAppreciation, currency, rate)}</span>
+                  </div>
+                  <div className="h-4 rounded-full bg-theme-bg overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-500 to-[#CCFF00] rounded-full transition-all"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* NET WEALTH - Hero Number (3x larger) */}
+              <div className="p-4 bg-[#CCFF00]/10 rounded-xl border border-[#CCFF00]/30 text-center">
+                <p className="text-xs text-theme-text-muted uppercase tracking-wider mb-2">Net Wealth Created</p>
+                <div className="flex items-center justify-center gap-3">
+                  <span className={cn(
+                    "text-4xl sm:text-5xl font-bold font-mono",
+                    netWealthPosition >= 0 ? "text-[#CCFF00]" : "text-red-400"
+                  )}>
+                    {netWealthPosition >= 0 ? '+' : ''}{formatCurrency(Math.abs(netWealthPosition), currency, rate)}
+                  </span>
+                  {netWealthPosition >= 0 && (
+                    <span className="text-2xl">🚀</span>
+                  )}
+                </div>
+                <p className="text-xs text-theme-text-muted mt-2">
+                  Property growth crushes debt cost by {((projectedAppreciation / totalInterestAndFees) * 100).toFixed(0)}%
+                </p>
               </div>
             </div>
           </div>
