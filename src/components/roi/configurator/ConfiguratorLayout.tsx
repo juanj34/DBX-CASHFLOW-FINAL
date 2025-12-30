@@ -45,6 +45,13 @@ interface ConfiguratorLayoutProps {
   clientInfo?: ClientUnitData;
   setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
   quoteId?: string;
+  // Image props
+  floorPlanUrl?: string | null;
+  buildingRenderUrl?: string | null;
+  showLogoOverlay?: boolean;
+  onFloorPlanChange?: (url: string | null) => void;
+  onBuildingRenderChange?: (url: string | null) => void;
+  onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
 const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
@@ -99,6 +106,12 @@ export const ConfiguratorLayout = ({
   clientInfo: externalClientInfo,
   setClientInfo: externalSetClientInfo,
   quoteId,
+  floorPlanUrl: externalFloorPlanUrl,
+  buildingRenderUrl: externalBuildingRenderUrl,
+  showLogoOverlay: externalShowLogoOverlay,
+  onFloorPlanChange,
+  onBuildingRenderChange,
+  onShowLogoOverlayChange,
 }: ConfiguratorLayoutProps) => {
   // Only load saved state if we have a quoteId (editing existing quote)
   // For new quotes (no quoteId), always start fresh
@@ -109,10 +122,18 @@ export const ConfiguratorLayout = ({
   const clientInfo = externalClientInfo || internalClientInfo;
   const setClientInfo = externalSetClientInfo || setInternalClientInfo;
   
-  // Image state
-  const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
-  const [buildingRenderUrl, setBuildingRenderUrl] = useState<string | null>(null);
-  const [showLogoOverlay, setShowLogoOverlay] = useState(true);
+  // Image state - use external if provided, otherwise internal
+  const [internalFloorPlanUrl, setInternalFloorPlanUrl] = useState<string | null>(null);
+  const [internalBuildingRenderUrl, setInternalBuildingRenderUrl] = useState<string | null>(null);
+  const [internalShowLogoOverlay, setInternalShowLogoOverlay] = useState(true);
+  
+  const floorPlanUrl = externalFloorPlanUrl !== undefined ? externalFloorPlanUrl : internalFloorPlanUrl;
+  const buildingRenderUrl = externalBuildingRenderUrl !== undefined ? externalBuildingRenderUrl : internalBuildingRenderUrl;
+  const showLogoOverlay = externalShowLogoOverlay !== undefined ? externalShowLogoOverlay : internalShowLogoOverlay;
+  
+  const setFloorPlanUrl = onFloorPlanChange || setInternalFloorPlanUrl;
+  const setBuildingRenderUrl = onBuildingRenderChange || setInternalBuildingRenderUrl;
+  const setShowLogoOverlay = onShowLogoOverlayChange || setInternalShowLogoOverlay;
   
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
     savedState?.activeSection || 'client'  // Start from client section

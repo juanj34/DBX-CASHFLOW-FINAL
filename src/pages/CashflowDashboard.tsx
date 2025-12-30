@@ -68,7 +68,7 @@ const CashflowDashboardContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
@@ -198,7 +198,7 @@ const CashflowDashboardContent = () => {
   }, []);
 
   // Handlers
-  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion]);
+  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion, { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl }), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion, quoteImages]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs); if (newQuote) navigate(`/cashflow-dashboard/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate]);
   const handleShare = useCallback(async () => {
     const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs);
@@ -520,6 +520,9 @@ const CashflowDashboardContent = () => {
                 onEditConfig={() => setModalOpen(true)}
                 onEditClient={() => setClientModalOpen(true)}
                 variant="dashboard"
+                floorPlanUrl={quoteImages.floorPlanUrl}
+                buildingRenderUrl={quoteImages.buildingRenderUrl}
+                showLogoOverlay={quoteImages.showLogoOverlay}
               />
             )}
 

@@ -35,6 +35,13 @@ interface OIInputModalProps {
   clientInfo?: ClientUnitData;
   setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
   quoteId?: string;
+  // Image props
+  floorPlanUrl?: string | null;
+  buildingRenderUrl?: string | null;
+  showLogoOverlay?: boolean;
+  onFloorPlanChange?: (url: string | null) => void;
+  onBuildingRenderChange?: (url: string | null) => void;
+  onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
 const months = [

@@ -28,11 +28,22 @@ export interface CashflowQuote {
 
 const LOCAL_STORAGE_KEY = 'cashflow_quote_draft';
 
+export interface QuoteImages {
+  floorPlanUrl: string | null;
+  buildingRenderUrl: string | null;
+  showLogoOverlay: boolean;
+}
+
 export const useCashflowQuote = (quoteId?: string) => {
   const [quote, setQuote] = useState<CashflowQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [quoteImages, setQuoteImages] = useState<QuoteImages>({
+    floorPlanUrl: null,
+    buildingRenderUrl: null,
+    showLogoOverlay: true,
+  });
   const { toast } = useToast();
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -51,6 +62,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     const loadQuote = async () => {
       try {
         if (quoteId) {
+          // Load quote data
           const { data, error } = await supabase
             .from('cashflow_quotes')
             .select('*')
@@ -64,6 +76,22 @@ export const useCashflowQuote = (quoteId?: string) => {
               ...data,
               inputs: migratedInputs,
             });
+            
+            // Load images from cashflow_images table
+            const { data: imagesData } = await supabase
+              .from('cashflow_images')
+              .select('image_type, image_url')
+              .eq('quote_id', quoteId);
+            
+            if (imagesData) {
+              const floorPlan = imagesData.find(img => img.image_type === 'floor_plan');
+              const buildingRender = imagesData.find(img => img.image_type === 'building_render');
+              setQuoteImages({
+                floorPlanUrl: floorPlan?.image_url || null,
+                buildingRenderUrl: buildingRender?.image_url || null,
+                showLogoOverlay: true, // Default to true
+              });
+            }
           }
         } else {
           // Load from localStorage for new quotes
@@ -112,7 +140,8 @@ export const useCashflowQuote = (quoteId?: string) => {
       existingId?: string,
       exitScenarios?: number[],
       mortgageInputs?: MortgageInputs,
-      saveVersionFn?: (data: any) => Promise<any>
+      saveVersionFn?: (data: any) => Promise<any>,
+      images?: { floorPlanUrl?: string | null; buildingRenderUrl?: string | null }
     ) => {
       setSaving(true);
 
@@ -207,6 +236,45 @@ export const useCashflowQuote = (quoteId?: string) => {
       if (result.error) {
         toast({ title: 'Failed to save', description: result.error.message, variant: 'destructive' });
         return null;
+      }
+
+      const savedQuoteId = result.data.id;
+      
+      // Save images to cashflow_images table if provided
+      if (images && savedQuoteId) {
+        // Delete existing images for this quote first
+        await supabase
+          .from('cashflow_images')
+          .delete()
+          .eq('quote_id', savedQuoteId);
+        
+        // Insert new images
+        const imagesToInsert = [];
+        if (images.floorPlanUrl) {
+          imagesToInsert.push({
+            quote_id: savedQuoteId,
+            image_type: 'floor_plan',
+            image_url: images.floorPlanUrl,
+          });
+        }
+        if (images.buildingRenderUrl) {
+          imagesToInsert.push({
+            quote_id: savedQuoteId,
+            image_type: 'building_render',
+            image_url: images.buildingRenderUrl,
+          });
+        }
+        
+        if (imagesToInsert.length > 0) {
+          await supabase.from('cashflow_images').insert(imagesToInsert);
+        }
+        
+        // Update local state
+        setQuoteImages({
+          floorPlanUrl: images.floorPlanUrl || null,
+          buildingRenderUrl: images.buildingRenderUrl || null,
+          showLogoOverlay: true,
+        });
       }
 
       setQuote({
@@ -386,6 +454,8 @@ export const useCashflowQuote = (quoteId?: string) => {
     loading,
     saving,
     lastSaved,
+    quoteImages,
+    setQuoteImages,
     saveQuote,
     saveAsNew,
     scheduleAutoSave,
