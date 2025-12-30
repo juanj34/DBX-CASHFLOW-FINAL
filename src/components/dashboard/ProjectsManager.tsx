@@ -24,8 +24,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ProjectsManager = () => {
+  const { t } = useLanguage();
   const [projects, setProjects] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -41,7 +43,7 @@ const ProjectsManager = () => {
 
     if (error) {
       toast({
-        title: "Error fetching projects",
+        title: t('errorFetchingProjects'),
         description: error.message,
         variant: "destructive",
       });
@@ -64,14 +66,14 @@ const ProjectsManager = () => {
 
     if (error) {
       toast({
-        title: "Error deleting project",
+        title: t('errorDeletingProject'),
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Project deleted",
-        description: "The project has been successfully deleted.",
+        title: t('projectDeleted'),
+        description: t('projectDeletedSuccess'),
       });
       fetchProjects();
     }
@@ -85,54 +87,54 @@ const ProjectsManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-semibold">Projects Management</h2>
-        <Button onClick={() => setShowForm(true)}>
+        <h2 className="text-3xl font-semibold text-theme-text">{t('projectsManagement')}</h2>
+        <Button onClick={() => setShowForm(true)} className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90">
           <Plus className="mr-2 h-4 w-4" />
-          Add Project
+          {t('addProject')}
         </Button>
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-3 h-4 w-4 text-theme-text-muted" />
         <Input
-          placeholder="Search projects..."
+          placeholder={t('searchProjects')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
         />
       </div>
 
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      <div className="rounded-lg border border-theme-border bg-theme-card overflow-x-auto">
         <Table className="min-w-[600px]">
           <TableHeader>
-            <TableRow>
-              <TableHead>Project Name</TableHead>
-              <TableHead>Developer</TableHead>
-              <TableHead>Starting Price</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-theme-border hover:bg-theme-card-alt">
+              <TableHead className="text-theme-text">{t('projectName')}</TableHead>
+              <TableHead className="text-theme-text">{t('developer')}</TableHead>
+              <TableHead className="text-theme-text">{t('startingPrice')}</TableHead>
+              <TableHead className="text-theme-text">{t('status')}</TableHead>
+              <TableHead className="text-right text-theme-text">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No projects found. Create your first project to get started.
+                <TableCell colSpan={5} className="text-center text-theme-text-muted">
+                  {t('noProjectsFound')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell className="font-medium">{project.name || "Unnamed Project"}</TableCell>
-                  <TableCell>{project.developer || "—"}</TableCell>
-                  <TableCell>
+                <TableRow key={project.id} className="border-theme-border hover:bg-theme-card-alt">
+                  <TableCell className="font-medium text-theme-text">{project.name || t('unnamedProject')}</TableCell>
+                  <TableCell className="text-theme-text">{project.developer || "—"}</TableCell>
+                  <TableCell className="text-theme-text">
                     {project.starting_price
                       ? `AED ${parseFloat(project.starting_price).toLocaleString()}`
                       : "—"}
                   </TableCell>
                   <TableCell>
                     {project.construction_status && (
-                      <Badge variant="outline">{project.construction_status}</Badge>
+                      <Badge variant="outline" className="border-theme-border text-theme-text">{project.construction_status}</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
@@ -143,6 +145,7 @@ const ProjectsManager = () => {
                         setEditingProject(project);
                         setShowForm(true);
                       }}
+                      className="hover:bg-theme-card-alt"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -150,6 +153,7 @@ const ProjectsManager = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => setDeletingProject(project)}
+                      className="hover:bg-theme-card-alt"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -177,16 +181,16 @@ const ProjectsManager = () => {
       )}
 
       <AlertDialog open={!!deletingProject} onOpenChange={() => setDeletingProject(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Project</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this project? This action cannot be undone.
+            <AlertDialogTitle className="text-theme-text">{t('deleteProject')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {t('deleteProjectConfirm')} {t('actionCannotBeUndone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel className="bg-theme-card border-theme-border text-theme-text hover:bg-theme-card-alt">{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t('delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -31,8 +31,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const HotspotsManager = () => {
+  const { t } = useLanguage();
   const [hotspots, setHotspots] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -49,7 +51,7 @@ const HotspotsManager = () => {
 
     if (error) {
       toast({
-        title: "Error fetching hotspots",
+        title: t('errorFetchingHotspots'),
         description: error.message,
         variant: "destructive",
       });
@@ -72,14 +74,14 @@ const HotspotsManager = () => {
 
     if (error) {
       toast({
-        title: "Error deleting hotspot",
+        title: t('errorDeletingHotspot'),
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Hotspot deleted",
-        description: "The hotspot has been successfully deleted.",
+        title: t('hotspotDeleted'),
+        description: t('hotspotDeletedSuccess'),
       });
       fetchHotspots();
     }
@@ -104,7 +106,6 @@ const HotspotsManager = () => {
       golf: "bg-green-500",
       infrastructure: "bg-slate-500",
       heritage: "bg-purple-500",
-      // Legacy
       metro: "bg-purple-500",
       attraction: "bg-pink-500",
       project: "bg-emerald-500",
@@ -115,70 +116,70 @@ const HotspotsManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-semibold">Hotspots Management</h2>
-        <Button onClick={() => setShowForm(true)}>
+        <h2 className="text-3xl font-semibold text-theme-text">{t('hotspotsManagement')}</h2>
+        <Button onClick={() => setShowForm(true)} className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90">
           <Plus className="mr-2 h-4 w-4" />
-          Add Hotspot
+          {t('addHotspot')}
         </Button>
       </div>
 
       <div className="flex gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-theme-text-muted" />
           <Input
-            placeholder="Search hotspots..."
+            placeholder={t('searchHotspots')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
           />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by category" />
+          <SelectTrigger className="w-48 bg-theme-card border-theme-border text-theme-text">
+            <SelectValue placeholder={t('filterByCategory')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="landmark">🏛️ Landmark</SelectItem>
-            <SelectItem value="district">🏙️ District</SelectItem>
-            <SelectItem value="masterplan">🗺️ Masterplan</SelectItem>
-            <SelectItem value="residential">🏠 Residential</SelectItem>
-            <SelectItem value="waterfront">🌊 Waterfront</SelectItem>
-            <SelectItem value="retail">🛍️ Retail</SelectItem>
-            <SelectItem value="leisure">⭐ Leisure</SelectItem>
-            <SelectItem value="golf">⛳ Golf</SelectItem>
-            <SelectItem value="infrastructure">✈️ Infrastructure</SelectItem>
-            <SelectItem value="heritage">🧭 Heritage</SelectItem>
+            <SelectItem value="all">{t('allCategories')}</SelectItem>
+            <SelectItem value="landmark">🏛️ {t('catLandmark')}</SelectItem>
+            <SelectItem value="district">🏙️ {t('catDistrict')}</SelectItem>
+            <SelectItem value="masterplan">🗺️ {t('catMasterplan')}</SelectItem>
+            <SelectItem value="residential">🏠 {t('catResidential')}</SelectItem>
+            <SelectItem value="waterfront">🌊 {t('catWaterfront')}</SelectItem>
+            <SelectItem value="retail">🛍️ {t('catRetail')}</SelectItem>
+            <SelectItem value="leisure">⭐ {t('catLeisure')}</SelectItem>
+            <SelectItem value="golf">⛳ {t('catGolf')}</SelectItem>
+            <SelectItem value="infrastructure">✈️ {t('catInfrastructure')}</SelectItem>
+            <SelectItem value="heritage">🧭 {t('catHeritage')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      <div className="rounded-lg border border-theme-border bg-theme-card overflow-x-auto">
         <Table className="min-w-[600px]">
           <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-theme-border hover:bg-theme-card-alt">
+              <TableHead className="text-theme-text">{t('title')}</TableHead>
+              <TableHead className="text-theme-text">{t('category')}</TableHead>
+              <TableHead className="text-theme-text">{t('location')}</TableHead>
+              <TableHead className="text-right text-theme-text">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredHotspots.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                  No hotspots found. Create your first hotspot to get started.
+                <TableCell colSpan={4} className="text-center text-theme-text-muted">
+                  {t('noHotspotsFound')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredHotspots.map((hotspot) => (
-                <TableRow key={hotspot.id}>
-                  <TableCell className="font-medium">{hotspot.title}</TableCell>
+                <TableRow key={hotspot.id} className="border-theme-border hover:bg-theme-card-alt">
+                  <TableCell className="font-medium text-theme-text">{hotspot.title}</TableCell>
                   <TableCell>
                     <Badge className={getCategoryColor(hotspot.category)}>
                       {hotspot.category}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-theme-text-muted">
                     {hotspot.latitude.toFixed(4)}, {hotspot.longitude.toFixed(4)}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
@@ -189,6 +190,7 @@ const HotspotsManager = () => {
                         setEditingHotspot(hotspot);
                         setShowForm(true);
                       }}
+                      className="hover:bg-theme-card-alt"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -196,6 +198,7 @@ const HotspotsManager = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => setDeletingHotspot(hotspot)}
+                      className="hover:bg-theme-card-alt"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -223,16 +226,16 @@ const HotspotsManager = () => {
       )}
 
       <AlertDialog open={!!deletingHotspot} onOpenChange={() => setDeletingHotspot(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Hotspot</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{deletingHotspot?.title}"? This action cannot be undone.
+            <AlertDialogTitle className="text-theme-text">{t('deleteHotspot')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {t('deleteHotspotConfirm')} "{deletingHotspot?.title}"? {t('actionCannotBeUndone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel className="bg-theme-card border-theme-border text-theme-text hover:bg-theme-card-alt">{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t('delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -24,6 +24,7 @@ import {
 import { Plus, Search, Edit, Trash2, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import LandmarkForm from "./LandmarkForm";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Landmark {
   id: string;
@@ -35,6 +36,7 @@ interface Landmark {
 }
 
 const LandmarksManager = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,14 +68,14 @@ const LandmarksManager = () => {
 
     if (error) {
       toast({
-        title: "Error deleting landmark",
+        title: t('errorDeletingLandmark'),
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Landmark deleted",
-        description: `"${deletingLandmark.title}" has been deleted.`,
+        title: t('landmarkDeleted'),
+        description: `"${deletingLandmark.title}" ${t('hasBeenDeleted')}.`,
       });
       queryClient.invalidateQueries({ queryKey: ["landmarks-admin"] });
       queryClient.invalidateQueries({ queryKey: ["landmarks"] });
@@ -100,56 +102,56 @@ const LandmarksManager = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Landmarks</h2>
-          <p className="text-muted-foreground">
-            Manage photo points for large area views
+          <h2 className="text-2xl font-bold tracking-tight text-theme-text">{t('landmarksManagement')}</h2>
+          <p className="text-theme-text-muted">
+            {t('landmarksDescription')}
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => setShowForm(true)} className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90">
           <Plus className="mr-2 h-4 w-4" />
-          Add Landmark
+          {t('addLandmark')}
         </Button>
       </div>
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-theme-text-muted" />
           <Input
-            placeholder="Search landmarks..."
+            placeholder={t('searchLandmarks')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
           />
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-x-auto">
+      <div className="border border-theme-border rounded-lg overflow-x-auto bg-theme-card">
         <Table className="min-w-[600px]">
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">Image</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
+            <TableRow className="border-theme-border hover:bg-theme-card-alt">
+              <TableHead className="w-16 text-theme-text">{t('image')}</TableHead>
+              <TableHead className="text-theme-text">{t('title')}</TableHead>
+              <TableHead className="text-theme-text">{t('description')}</TableHead>
+              <TableHead className="text-theme-text">{t('location')}</TableHead>
+              <TableHead className="w-24 text-theme-text">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  Loading landmarks...
+                <TableCell colSpan={5} className="text-center py-8 text-theme-text-muted">
+                  {t('loadingLandmarks')}...
                 </TableCell>
               </TableRow>
             ) : filteredLandmarks?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  No landmarks found
+                <TableCell colSpan={5} className="text-center py-8 text-theme-text-muted">
+                  {t('noLandmarksFound')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredLandmarks?.map((landmark) => (
-                <TableRow key={landmark.id}>
+                <TableRow key={landmark.id} className="border-theme-border hover:bg-theme-card-alt">
                   <TableCell>
                     {landmark.image_url ? (
                       <img
@@ -159,15 +161,15 @@ const LandmarksManager = () => {
                       />
                     ) : (
                       <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                        <Image className="h-5 w-5 text-muted-foreground" />
+                        <Image className="h-5 w-5 text-theme-text-muted" />
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{landmark.title}</TableCell>
-                  <TableCell className="max-w-xs truncate">
+                  <TableCell className="font-medium text-theme-text">{landmark.title}</TableCell>
+                  <TableCell className="max-w-xs truncate text-theme-text">
                     {landmark.description || "-"}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-theme-text-muted">
                     {Number(landmark.latitude).toFixed(4)}, {Number(landmark.longitude).toFixed(4)}
                   </TableCell>
                   <TableCell>
@@ -179,6 +181,7 @@ const LandmarksManager = () => {
                           setEditingLandmark(landmark);
                           setShowForm(true);
                         }}
+                        className="hover:bg-theme-card-alt"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -186,6 +189,7 @@ const LandmarksManager = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeleteClick(landmark)}
+                        className="hover:bg-theme-card-alt"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -206,22 +210,21 @@ const LandmarksManager = () => {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingLandmark} onOpenChange={() => setDeletingLandmark(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Landmark</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{deletingLandmark?.title}"? This action cannot be undone.
+            <AlertDialogTitle className="text-theme-text">{t('deleteLandmark')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {t('deleteLandmarkConfirm')} "{deletingLandmark?.title}"? {t('actionCannotBeUndone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-theme-card border-theme-border text-theme-text hover:bg-theme-card-alt">{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-500 text-white"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

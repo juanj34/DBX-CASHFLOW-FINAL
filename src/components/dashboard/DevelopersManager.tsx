@@ -23,8 +23,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DevelopersManager = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [developers, setDevelopers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ const DevelopersManager = () => {
 
     if (error) {
       toast({
-        title: "Error loading developers",
+        title: t('errorLoadingDevelopers'),
         description: error.message,
         variant: "destructive",
       });
@@ -63,12 +65,12 @@ const DevelopersManager = () => {
 
     if (error) {
       toast({
-        title: "Error deleting developer",
+        title: t('errorDeletingDeveloper'),
         description: error.message,
         variant: "destructive",
       });
     } else {
-      toast({ title: "Developer deleted" });
+      toast({ title: t('developerDeleted') });
       fetchDevelopers();
     }
     setDeleteId(null);
@@ -81,52 +83,52 @@ const DevelopersManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Developers</h2>
-        <Button onClick={() => setShowForm(true)}>
+        <h2 className="text-2xl font-semibold text-theme-text">{t('developersManagement')}</h2>
+        <Button onClick={() => setShowForm(true)} className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90">
           <Plus className="mr-2 h-4 w-4" />
-          Add Developer
+          {t('addDeveloper')}
         </Button>
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-theme-text-muted" />
         <Input
-          placeholder="Search developers..."
+          placeholder={t('searchDevelopers')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
         />
       </div>
 
-      <div className="border rounded-lg overflow-x-auto">
+      <div className="border border-theme-border rounded-lg overflow-x-auto bg-theme-card">
         <Table className="min-w-[700px]">
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">Logo</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Founded</TableHead>
-              <TableHead>Projects</TableHead>
-              <TableHead>Units Sold</TableHead>
-              <TableHead>On-Time %</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
+            <TableRow className="border-theme-border hover:bg-theme-card-alt">
+              <TableHead className="w-16 text-theme-text">{t('logo')}</TableHead>
+              <TableHead className="text-theme-text">{t('name')}</TableHead>
+              <TableHead className="text-theme-text">{t('founded')}</TableHead>
+              <TableHead className="text-theme-text">{t('projects')}</TableHead>
+              <TableHead className="text-theme-text">{t('unitsSold')}</TableHead>
+              <TableHead className="text-theme-text">{t('onTimePercent')}</TableHead>
+              <TableHead className="w-24 text-theme-text">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  Loading...
+                <TableCell colSpan={7} className="text-center py-8 text-theme-text-muted">
+                  {t('loading')}...
                 </TableCell>
               </TableRow>
             ) : filteredDevelopers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  No developers found
+                <TableCell colSpan={7} className="text-center py-8 text-theme-text-muted">
+                  {t('noDevelopersFound')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredDevelopers.map((dev) => (
-                <TableRow key={dev.id}>
+                <TableRow key={dev.id} className="border-theme-border hover:bg-theme-card-alt">
                   <TableCell>
                     {dev.logo_url ? (
                       <img
@@ -135,16 +137,16 @@ const DevelopersManager = () => {
                         className="w-10 h-10 object-contain rounded"
                       />
                     ) : (
-                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs text-theme-text-muted">
                         N/A
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{dev.name}</TableCell>
-                  <TableCell>{dev.founded_year || "-"}</TableCell>
-                  <TableCell>{dev.projects_launched || "-"}</TableCell>
-                  <TableCell>{dev.units_sold?.toLocaleString() || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium text-theme-text">{dev.name}</TableCell>
+                  <TableCell className="text-theme-text">{dev.founded_year || "-"}</TableCell>
+                  <TableCell className="text-theme-text">{dev.projects_launched || "-"}</TableCell>
+                  <TableCell className="text-theme-text">{dev.units_sold?.toLocaleString() || "-"}</TableCell>
+                  <TableCell className="text-theme-text">
                     {dev.on_time_delivery_rate ? `${dev.on_time_delivery_rate}%` : "-"}
                   </TableCell>
                   <TableCell>
@@ -156,6 +158,7 @@ const DevelopersManager = () => {
                           setEditingDeveloper(dev);
                           setShowForm(true);
                         }}
+                        className="hover:bg-theme-card-alt"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -163,8 +166,9 @@ const DevelopersManager = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeleteId(dev.id)}
+                        className="hover:bg-theme-card-alt text-destructive"
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -191,17 +195,17 @@ const DevelopersManager = () => {
       )}
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Developer</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this developer? This action cannot be undone.
+            <AlertDialogTitle className="text-theme-text">{t('deleteDeveloper')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {t('deleteDeveloperConfirm')} {t('actionCannotBeUndone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
+            <AlertDialogCancel className="bg-theme-card border-theme-border text-theme-text hover:bg-theme-card-alt">{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

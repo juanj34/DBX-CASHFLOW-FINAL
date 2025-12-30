@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAppreciationPresets, PresetValues, AppreciationPreset } from "@/hooks/useAppreciationPresets";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const defaultFormData = {
   name: "",
@@ -16,6 +17,7 @@ const defaultFormData = {
 };
 
 const PresetsManager = () => {
+  const { t } = useLanguage();
   const { presets, loading, saving, savePreset, updatePreset, deletePreset } = useAppreciationPresets();
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
@@ -28,8 +30,8 @@ const PresetsManager = () => {
   const handleCreate = async () => {
     if (!formData.name.trim()) {
       toast({
-        title: "Name required",
-        description: "Please enter a preset name",
+        title: t('nameRequired'),
+        description: t('pleaseEnterPresetName'),
         variant: "destructive",
       });
       return;
@@ -66,8 +68,8 @@ const PresetsManager = () => {
   const handleUpdate = async () => {
     if (!editingPreset || !formData.name.trim()) {
       toast({
-        title: "Name required",
-        description: "Please enter a preset name",
+        title: t('nameRequired'),
+        description: t('pleaseEnterPresetName'),
         variant: "destructive",
       });
       return;
@@ -97,102 +99,103 @@ const PresetsManager = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#CCFF00]/20 rounded-lg">
-            <TrendingUp className="w-6 h-6 text-[#CCFF00]" />
+          <div className="p-2 bg-theme-accent/20 rounded-lg">
+            <TrendingUp className="w-6 h-6 text-theme-accent" />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-white">Appreciation Presets</h2>
-            <p className="text-gray-400">Custom capital appreciation profiles for cashflow calculations</p>
+            <h2 className="text-2xl font-semibold text-theme-text">{t('appreciationPresets')}</h2>
+            <p className="text-theme-text-muted">{t('appreciationPresetsDesc')}</p>
           </div>
         </div>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2">
+            <Button className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90 gap-2">
               <Plus className="w-4 h-4" />
-              Create Preset
+              {t('createPreset')}
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white">
+          <DialogContent className="bg-theme-card border-theme-border text-theme-text">
             <DialogHeader>
-              <DialogTitle className="text-white">Create Appreciation Preset</DialogTitle>
+              <DialogTitle className="text-theme-text">{t('createAppreciationPreset')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400">Preset Name</label>
+                <label className="text-xs text-theme-text-muted">{t('presetName')}</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g. Conservative Growth"
-                  className="bg-[#0d1117] border-[#2a3142] text-white"
+                  placeholder={t('presetNamePlaceholder')}
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400">Construction Appreciation (%)</label>
+                  <label className="text-xs text-theme-text-muted">{t('constructionAppreciation')} (%)</label>
                   <Input
                     type="number"
                     value={formData.constructionAppreciation}
                     onChange={(e) => setFormData(prev => ({ ...prev, constructionAppreciation: parseFloat(e.target.value) || 0 }))}
-                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                    className="bg-theme-bg border-theme-border text-theme-text"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400">Growth Appreciation (%)</label>
+                  <label className="text-xs text-theme-text-muted">{t('growthAppreciation')} (%)</label>
                   <Input
                     type="number"
                     value={formData.growthAppreciation}
                     onChange={(e) => setFormData(prev => ({ ...prev, growthAppreciation: parseFloat(e.target.value) || 0 }))}
-                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                    className="bg-theme-bg border-theme-border text-theme-text"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400">Mature Appreciation (%)</label>
+                  <label className="text-xs text-theme-text-muted">{t('matureAppreciation')} (%)</label>
                   <Input
                     type="number"
                     value={formData.matureAppreciation}
                     onChange={(e) => setFormData(prev => ({ ...prev, matureAppreciation: parseFloat(e.target.value) || 0 }))}
-                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                    className="bg-theme-bg border-theme-border text-theme-text"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400">Growth Period (Years)</label>
+                  <label className="text-xs text-theme-text-muted">{t('growthPeriod')} ({t('years')})</label>
                   <Input
                     type="number"
                     value={formData.growthPeriodYears}
                     onChange={(e) => setFormData(prev => ({ ...prev, growthPeriodYears: parseInt(e.target.value) || 5 }))}
-                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                    className="bg-theme-bg border-theme-border text-theme-text"
                   />
                 </div>
 
                 <div className="space-y-1.5 col-span-2">
-                  <label className="text-xs text-gray-400">Rent Growth Rate (%)</label>
+                  <label className="text-xs text-theme-text-muted">{t('rentGrowthRate')} (%)</label>
                   <Input
                     type="number"
                     value={formData.rentGrowthRate}
                     onChange={(e) => setFormData(prev => ({ ...prev, rentGrowthRate: parseFloat(e.target.value) || 0 }))}
-                    className="bg-[#0d1117] border-[#2a3142] text-white"
+                    className="bg-theme-bg border-theme-border text-theme-text"
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button
-                  variant="outlineDark"
+                  variant="outline"
                   onClick={() => setCreateOpen(false)}
+                  className="border-theme-border text-theme-text hover:bg-theme-card-alt"
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button
                   onClick={handleCreate}
                   disabled={saving}
-                  className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                  className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Preset"}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('savePreset')}
                 </Button>
               </div>
             </div>
@@ -202,62 +205,62 @@ const PresetsManager = () => {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-[#CCFF00]" />
+          <Loader2 className="w-8 h-8 animate-spin text-theme-accent" />
         </div>
       ) : presets.length === 0 ? (
-        <div className="text-center py-12 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-          <TrendingUp className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-          <h3 className="text-lg font-medium text-white mb-2">No Presets Yet</h3>
-          <p className="text-gray-400 mb-4">Create your first appreciation preset to use in the Cashflow Generator</p>
+        <div className="text-center py-12 bg-theme-card rounded-xl border border-theme-border">
+          <TrendingUp className="w-12 h-12 mx-auto mb-4 text-theme-text-muted" />
+          <h3 className="text-lg font-medium text-theme-text mb-2">{t('noPresetsYet')}</h3>
+          <p className="text-theme-text-muted mb-4">{t('createFirstPreset')}</p>
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 gap-2"
+            className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90 gap-2"
           >
             <Plus className="w-4 h-4" />
-            Create Your First Preset
+            {t('createYourFirstPreset')}
           </Button>
         </div>
       ) : (
-        <div className="bg-[#1a1f2e] rounded-xl border border-[#2a3142] overflow-x-auto">
+        <div className="bg-theme-card rounded-xl border border-theme-border overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-[#2a3142]">
-                <th className="text-left text-xs font-medium text-gray-400 p-4">Name</th>
-                <th className="text-center text-xs font-medium text-gray-400 p-4">Construction %</th>
-                <th className="text-center text-xs font-medium text-gray-400 p-4">Growth %</th>
-                <th className="text-center text-xs font-medium text-gray-400 p-4">Mature %</th>
-                <th className="text-center text-xs font-medium text-gray-400 p-4">Growth Period</th>
-                <th className="text-center text-xs font-medium text-gray-400 p-4">Rent Growth</th>
-                <th className="text-right text-xs font-medium text-gray-400 p-4">Actions</th>
+              <tr className="border-b border-theme-border">
+                <th className="text-left text-xs font-medium text-theme-text-muted p-4">{t('name')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('constructionPercent')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('growthPercent')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('maturePercent')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('growthPeriod')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('rentGrowth')}</th>
+                <th className="text-right text-xs font-medium text-theme-text-muted p-4">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
               {presets.map((preset) => (
-                <tr key={preset.id} className="border-b border-[#2a3142] last:border-0 hover:bg-[#2a3142]/30">
+                <tr key={preset.id} className="border-b border-theme-border last:border-0 hover:bg-theme-card-alt">
                   <td className="p-4">
-                    <span className="font-medium text-white">{preset.name}</span>
+                    <span className="font-medium text-theme-text">{preset.name}</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-[#CCFF00] font-medium">{preset.construction_appreciation}%</span>
+                    <span className="text-theme-accent font-medium">{preset.construction_appreciation}%</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-cyan-400 font-medium">{preset.growth_appreciation}%</span>
+                    <span className="text-theme-accent-secondary font-medium">{preset.growth_appreciation}%</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-gray-300">{preset.mature_appreciation}%</span>
+                    <span className="text-theme-text">{preset.mature_appreciation}%</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-gray-300">{preset.growth_period_years} yrs</span>
+                    <span className="text-theme-text">{preset.growth_period_years} {t('yrs')}</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-gray-300">{preset.rent_growth_rate ?? 0}%</span>
+                    <span className="text-theme-text">{preset.rent_growth_rate ?? 0}%</span>
                   </td>
                   <td className="p-4 text-right space-x-1">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEdit(preset)}
-                      className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 h-8 w-8"
+                      className="text-theme-text-muted hover:text-theme-accent-secondary hover:bg-theme-accent-secondary/10 h-8 w-8"
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -265,7 +268,7 @@ const PresetsManager = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(preset.id)}
-                      className="text-gray-400 hover:text-red-400 hover:bg-red-400/10 h-8 w-8"
+                      className="text-theme-text-muted hover:text-destructive hover:bg-destructive/10 h-8 w-8"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -285,86 +288,87 @@ const PresetsManager = () => {
           resetFormData();
         }
       }}>
-        <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white">
+        <DialogContent className="bg-theme-card border-theme-border text-theme-text">
           <DialogHeader>
-            <DialogTitle className="text-white">Edit Appreciation Preset</DialogTitle>
+            <DialogTitle className="text-theme-text">{t('editAppreciationPreset')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">Preset Name</label>
+              <label className="text-xs text-theme-text-muted">{t('presetName')}</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g. Conservative Growth"
-                className="bg-[#0d1117] border-[#2a3142] text-white"
+                placeholder={t('presetNamePlaceholder')}
+                className="bg-theme-bg border-theme-border text-theme-text"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400">Construction Appreciation (%)</label>
+                <label className="text-xs text-theme-text-muted">{t('constructionAppreciation')} (%)</label>
                 <Input
                   type="number"
                   value={formData.constructionAppreciation}
                   onChange={(e) => setFormData(prev => ({ ...prev, constructionAppreciation: parseFloat(e.target.value) || 0 }))}
-                  className="bg-[#0d1117] border-[#2a3142] text-white"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400">Growth Appreciation (%)</label>
+                <label className="text-xs text-theme-text-muted">{t('growthAppreciation')} (%)</label>
                 <Input
                   type="number"
                   value={formData.growthAppreciation}
                   onChange={(e) => setFormData(prev => ({ ...prev, growthAppreciation: parseFloat(e.target.value) || 0 }))}
-                  className="bg-[#0d1117] border-[#2a3142] text-white"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400">Mature Appreciation (%)</label>
+                <label className="text-xs text-theme-text-muted">{t('matureAppreciation')} (%)</label>
                 <Input
                   type="number"
                   value={formData.matureAppreciation}
                   onChange={(e) => setFormData(prev => ({ ...prev, matureAppreciation: parseFloat(e.target.value) || 0 }))}
-                  className="bg-[#0d1117] border-[#2a3142] text-white"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400">Growth Period (Years)</label>
+                <label className="text-xs text-theme-text-muted">{t('growthPeriod')} ({t('years')})</label>
                 <Input
                   type="number"
                   value={formData.growthPeriodYears}
                   onChange={(e) => setFormData(prev => ({ ...prev, growthPeriodYears: parseInt(e.target.value) || 5 }))}
-                  className="bg-[#0d1117] border-[#2a3142] text-white"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
 
               <div className="space-y-1.5 col-span-2">
-                <label className="text-xs text-gray-400">Rent Growth Rate (%)</label>
+                <label className="text-xs text-theme-text-muted">{t('rentGrowthRate')} (%)</label>
                 <Input
                   type="number"
                   value={formData.rentGrowthRate}
                   onChange={(e) => setFormData(prev => ({ ...prev, rentGrowthRate: parseFloat(e.target.value) || 0 }))}
-                  className="bg-[#0d1117] border-[#2a3142] text-white"
+                  className="bg-theme-bg border-theme-border text-theme-text"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button
-                variant="outlineDark"
+                variant="outline"
                 onClick={() => setEditOpen(false)}
+                className="border-theme-border text-theme-text hover:bg-theme-card-alt"
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 onClick={handleUpdate}
                 disabled={saving}
-                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Preset"}
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('updatePreset')}
               </Button>
             </div>
           </div>
