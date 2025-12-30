@@ -15,6 +15,7 @@ import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTabl
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
 import { PaymentSplitBreakdown } from "@/components/roi/PaymentSplitBreakdown";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
+import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
 import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
@@ -525,7 +526,20 @@ const OICalculatorContent = () => {
             {/* Floating Navigation */}
             <FloatingNav sections={floatingNavSections} />
 
-            {/* Investment Snapshot at top */}
+            {/* Investment Overview Grid - Executive Summary */}
+            <div id="overview-section" className="mb-4 sm:mb-6 scroll-mt-20">
+              <InvestmentOverviewGrid
+                inputs={inputs}
+                calculations={calculations}
+                mortgageAnalysis={mortgageAnalysis}
+                mortgageEnabled={mortgageInputs.enabled}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+              />
+            </div>
+
+            {/* Investment Snapshot */}
             <div id="property-section" className="mb-4 sm:mb-6 scroll-mt-20">
               <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
             </div>

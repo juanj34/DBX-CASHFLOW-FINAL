@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -95,6 +95,7 @@ export const useFloatingNavSections = (enabledSections?: { exitStrategy?: boolea
   const { t } = useLanguage();
   
   const sections: Section[] = [
+    { id: 'overview-section', label: t('investmentOverview') || 'Overview', icon: LayoutGrid },
     { id: 'property-section', label: t('tabProperty'), icon: Building2 },
     { id: 'payments-section', label: t('tabPayments'), icon: CreditCard },
   ];
