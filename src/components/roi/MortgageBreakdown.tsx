@@ -386,77 +386,76 @@ export const MortgageBreakdown = ({
                 </p>
               </div>
 
-              {/* Airbnb Column (if enabled) */}
+              {/* Short-Term Rental Card - Clickable with Hero Number */}
               {showAirbnbComparison && monthlyAirbnbNet !== undefined && monthlyAirbnbNet > 0 && (
-                <div className="p-3 bg-theme-bg-alt rounded-xl border border-orange-500/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Building className="w-4 h-4 text-orange-400" />
-                    <span className="text-sm font-medium text-orange-400">Airbnb</span>
+                <div 
+                  onClick={() => setShowAirbnbBreakdown(true)}
+                  className="p-4 rounded-xl bg-theme-card border border-orange-700/30 hover:border-orange-500/50 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-orange-400" />
+                      <span className="text-sm font-medium text-orange-400">{t('shortTerm')}</span>
+                    </div>
+                    <span className={cn(
+                      "text-xs font-semibold px-2 py-0.5 rounded-full",
+                      isAirbnbCovered 
+                        ? "bg-emerald-500/20 text-emerald-400" 
+                        : "bg-red-500/20 text-red-400"
+                    )}>
+                      {isAirbnbCovered ? 'Positive' : 'Negative'}
+                    </span>
                   </div>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1">
-                        <span className="text-theme-text-muted">{t('netMonthlyRent')}</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-3 h-3 text-theme-text-muted cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-theme-card border-theme-border text-theme-text max-w-xs">
-                              <p>{t('airbnbNetRentTooltip')}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <span className="text-orange-400 font-mono">{formatCurrency(displayAirbnbNet, currency, rate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-theme-text-muted">− {t('mortgage')}</span>
-                      <span className="text-purple-400 font-mono">−{formatCurrency(displayMortgageTotal, currency, rate)}</span>
-                    </div>
-                    {/* Cashflow result */}
-                    <div className={`flex justify-between items-center pt-2 mt-2 border-t border-theme-border ${isAirbnbCovered ? 'text-orange-400' : 'text-red-400'}`}>
-                      <div className="flex items-center gap-1">
-                        {isAirbnbCovered ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                        <span className="font-medium">{t('cashflow')}</span>
-                      </div>
-                      <span className="font-mono font-bold">
-                        {displayAirbnbCashflow >= 0 ? '+' : ''}{formatCurrency(displayAirbnbCashflow, currency, rate)}
+
+                  {/* HERO NUMBER - Cashflow */}
+                  <div className="text-center py-3">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <span className={cn(
+                        "text-3xl font-bold font-mono",
+                        isAirbnbCovered ? "text-orange-400" : "text-red-400"
+                      )}>
+                        {displayAirbnbCashflow >= 0 ? '+' : ''}{formatCurrency(Math.abs(displayAirbnbCashflow), currency, rate)}
                       </span>
-                    </div>
-                    {/* Coverage percentage indicator with progress bar - Clickable */}
-                    <div 
-                      className="mt-3 pt-2 border-t border-theme-border cursor-pointer hover:bg-theme-card/50 rounded-lg p-1 -m-1 transition-colors"
-                      onClick={() => setShowAirbnbBreakdown(true)}
-                    >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-theme-text-muted">{t('covers')}</span>
-                        <span className={`text-xs font-bold ${airbnbCoveragePercent >= 100 ? 'text-orange-400' : airbnbCoveragePercent >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
-                          {airbnbCoveragePercent}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-theme-card-alt rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            airbnbCoveragePercent >= 100 ? 'bg-orange-500' : 
-                            airbnbCoveragePercent >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min(airbnbCoveragePercent, 100)}%` }}
-                        />
-                      </div>
                       {airbnbCoveragePercent > 100 && (
-                        <div className="text-center mt-1">
-                          <span className="text-[10px] text-orange-400">+{airbnbCoveragePercent - 100}% surplus</span>
-                        </div>
+                        <span className="text-sm font-semibold text-orange-400 bg-orange-500/20 px-2 py-1 rounded-full">
+                          +{airbnbCoveragePercent - 100}% surplus
+                        </span>
                       )}
-                      <p className="text-[10px] text-theme-text-muted text-center mt-1">{t('clickForDetails')}</p>
+                    </div>
+                    <p className="text-xs text-theme-text-muted mt-2">
+                      Net {formatCurrency(displayAirbnbNet, currency, rate)} − {t('mortgage')} {formatCurrency(displayMortgageTotal, currency, rate)}
+                    </p>
+                  </div>
+
+                  {/* Coverage Bar */}
+                  <div className="mt-3">
+                    <div className="flex justify-between text-[10px] text-theme-text-muted mb-1">
+                      <span>{t('covers')}</span>
+                      <span className="font-mono">{airbnbCoveragePercent}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-theme-bg overflow-hidden">
+                      <div 
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          airbnbCoveragePercent >= 100 
+                            ? "bg-gradient-to-r from-orange-500 to-orange-400" 
+                            : airbnbCoveragePercent >= 80 
+                              ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                              : "bg-gradient-to-r from-red-500 to-red-400"
+                        )}
+                        style={{ width: `${Math.min(airbnbCoveragePercent, 100)}%` }}
+                      />
                     </div>
                   </div>
+                  
+                  <p className="text-[10px] text-theme-text-muted text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Click for breakdown
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Year 1 vs Year 5 Growth Comparison */}
+            {/* Year 1 vs Year 5 Growth Comparison - Enhanced Visual */}
             {year5LongTermRent !== undefined && year5LongTermRent > 0 && (
               <div className="mt-4 p-3 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border border-blue-500/20">
                 <div className="flex items-center gap-2 mb-3">
@@ -464,43 +463,45 @@ export const MortgageBreakdown = ({
                   <span className="text-xs font-medium text-theme-text-muted">{t('rentGrowthImpact')}</span>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex items-center justify-between gap-2">
                   {/* Year 1 */}
-                  <div className="text-center p-2 bg-theme-bg-alt rounded-lg">
+                  <div className="flex-1 text-center p-3 bg-theme-bg-alt rounded-lg border border-theme-border">
                     <div className="text-[10px] text-theme-text-muted mb-1">{t('year1')}</div>
-                    <div className="text-sm font-mono text-emerald-400">{formatCurrency(displayNetRent, currency, rate)}</div>
-                    <div className={`text-[10px] mt-1 whitespace-nowrap ${longTermCoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                    <div className="text-lg font-mono font-bold text-blue-400">{formatCurrency(displayNetRent, currency, rate)}</div>
+                    <div className={cn(
+                      "text-[10px] mt-1",
+                      longTermCoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'
+                    )}>
                       {longTermCoveragePercent}% {t('coverage')}
                     </div>
                   </div>
                   
-                  {/* Arrow */}
-                  <div className="flex items-center justify-center">
-                    <div className="flex flex-col items-center">
-                      <TrendingUp className="w-5 h-5 text-blue-400" />
-                      <span className="text-[10px] text-blue-400 mt-1">+{rentGrowthPercent}%</span>
+                  {/* Visual Connection - Dashed Line with Growth Rate */}
+                  <div className="flex flex-col items-center justify-center px-2">
+                    <div className="relative flex items-center">
+                      <div className="w-8 sm:w-12 border-t-2 border-dashed border-blue-400/50" />
+                      <ArrowRight className="w-4 h-4 text-blue-400 -ml-1" />
                     </div>
+                    <span className="text-[10px] text-blue-400 font-medium mt-1 whitespace-nowrap">
+                      {rentGrowthRate}%/yr
+                    </span>
                   </div>
                   
                   {/* Year 5 */}
-                  <div className="text-center p-2 bg-theme-bg-alt rounded-lg">
+                  <div className="flex-1 text-center p-3 bg-theme-bg-alt rounded-lg border border-blue-500/30">
                     <div className="text-[10px] text-theme-text-muted mb-1">{t('year5')}</div>
-                    <div className="text-sm font-mono text-emerald-400">{formatCurrency(displayYear5NetRent, currency, rate)}</div>
-                    <div className={`text-[10px] mt-1 whitespace-nowrap ${year5CoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                    <div className="text-lg font-mono font-bold text-emerald-400">{formatCurrency(displayYear5NetRent, currency, rate)}</div>
+                    <div className={cn(
+                      "text-[10px] mt-1",
+                      year5CoveragePercent >= 100 ? 'text-emerald-400' : 'text-yellow-400'
+                    )}>
                       {year5CoveragePercent}% {t('coverage')}
                     </div>
                   </div>
                 </div>
-                
-                {/* Growth summary */}
-                <div className="mt-2 pt-2 border-t border-blue-500/20 text-center">
-                  <span className="text-[10px] text-theme-text-muted">
-                    {t('rentIncrease')}: <span className="text-emerald-400 font-medium">+{rentGrowthPercent}%</span> {t('over5Years')}
-                  </span>
-                </div>
               </div>
             )}
-          </CollapsibleSection>
+          </div>
         )}
 
         {/* Long-Term Coverage Breakdown Dialog */}
@@ -562,13 +563,13 @@ export const MortgageBreakdown = ({
           </DialogContent>
         </Dialog>
 
-        {/* Airbnb Coverage Breakdown Dialog */}
+        {/* Short-Term Coverage Breakdown Dialog */}
         <Dialog open={showAirbnbBreakdown} onOpenChange={setShowAirbnbBreakdown}>
           <DialogContent className="bg-theme-card border-theme-border text-theme-text max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Building className="w-5 h-5 text-orange-400" />
-                {t('coverageBreakdown')} - Airbnb
+                {t('coverageBreakdown')} - {t('shortTerm')}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
@@ -666,14 +667,43 @@ export const MortgageBreakdown = ({
               </div>
             </div>
             
-            {/* Total Interest */}
-            <div className="p-3 bg-theme-bg-alt rounded-lg">
+            {/* Total Interest - NEUTRAL color (not scary red) + Appreciation offset */}
+            <div className="p-3 bg-theme-bg-alt rounded-lg space-y-2">
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-theme-text-muted text-sm">{t('totalInterestPaid') || 'Total Interest Paid'}</span>
                   <p className="text-[10px] text-theme-text-muted">({mortgageInputs.loanTermYears} {t('years')})</p>
                 </div>
-                <span className="text-red-400 font-mono font-bold">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
+                <span className="text-theme-text-muted font-mono">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
+              </div>
+              
+              {/* Projected Appreciation - GREEN */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-1">
+                  <span className="text-theme-text-muted text-sm">Projected Appreciation</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-theme-text-muted cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-theme-card border-theme-border text-theme-text">
+                        <p className="text-xs">Based on ~5% annual appreciation</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-emerald-400 font-mono">+{formatCurrency(projectedAppreciation, currency, rate)}</span>
+              </div>
+              
+              {/* Net Wealth Position */}
+              <div className="flex justify-between items-center pt-2 border-t border-theme-border">
+                <span className="text-theme-text font-medium text-sm">Net Wealth Position</span>
+                <span className={cn(
+                  "font-mono font-bold",
+                  netWealthPosition >= 0 ? "text-emerald-400" : "text-red-400"
+                )}>
+                  {netWealthPosition >= 0 ? '+' : ''}{formatCurrency(netWealthPosition, currency, rate)}
+                </span>
               </div>
             </div>
           </div>
