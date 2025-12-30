@@ -260,14 +260,16 @@ const translations: Translations = {
   
   // Payment Breakdown Section
   paymentBreakdownTitle: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
-  paymentStructure: { en: 'payment structure', es: 'estructura de pago' },
+  entry: { en: 'Entry', es: 'Entrada' },
+  journey: { en: 'Journey', es: 'Camino' },
+  completion: { en: 'Completion', es: 'Entrega' },
   atBooking: { en: 'At Booking', es: 'En Reserva' },
   restOfDownpayment: { en: 'Rest of Downpayment', es: 'Resto de Enganche' },
   dldFeePercent: { en: 'DLD Fee (4%)', es: 'Tarifa DLD (4%)' },
   totalToday: { en: 'Total Today', es: 'Total Hoy' },
   duringConstruction: { en: 'During Construction', es: 'Durante Construcción' },
   constructionPercent: { en: 'const.', es: 'const.' },
-  monthLabel: { en: 'Month', es: 'Mes' },
+  month: { en: 'Month', es: 'Mes' },
   subtotalInstallments: { en: 'Subtotal Installments', es: 'Subtotal Cuotas' },
   plusInstallments: { en: '+ Installments', es: '+ Cuotas' },
   totalPreHandover: { en: 'Total Pre-Handover', es: 'Total Pre-Entrega' },
