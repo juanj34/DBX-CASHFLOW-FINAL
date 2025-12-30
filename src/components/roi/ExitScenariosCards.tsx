@@ -1,6 +1,6 @@
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, Info, Shield, Zap, Rocket } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, Info, Shield, Zap, Rocket, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
@@ -13,6 +13,7 @@ import {
   monthToConstruction 
 } from "./constructionProgress";
 import { ROEBreakdownTooltip } from "./ROEBreakdownTooltip";
+import { cn } from "@/lib/utils";
 
 interface ExitScenariosCardsProps {
   inputs: OIInputs;
@@ -25,6 +26,8 @@ interface ExitScenariosCardsProps {
   rate: number;
   readOnly?: boolean;
   unitSizeSqf?: number;
+  highlightedIndex?: number | null;
+  onCardHover?: (index: number | null) => void;
 }
 
 // Re-export for backwards compatibility
@@ -101,13 +104,25 @@ export const ExitScenariosCards = ({
   rate,
   readOnly = false,
   unitSizeSqf,
+  highlightedIndex,
+  onCardHover,
 }: ExitScenariosCardsProps) => {
   const { t, language } = useLanguage();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   
   const scenarios = exitScenarios.map(months => 
     calculateExitScenario(months, basePrice, totalMonths, inputs, totalEntryCosts)
   );
+
+  const toggleCardExpansion = (index: number) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const handleAddExit = () => {
     if (exitScenarios.length >= 5 || !setExitScenarios || readOnly) return;
@@ -184,11 +199,20 @@ export const ExitScenariosCards = ({
           const progressPercent = Math.round(constructionProgress);
           const roeBadge = getROEBadgeStyle(displayROE);
           const scenarioTag = getScenarioTag(index, exitScenarios.length, progressPercent);
+          const isHighlighted = highlightedIndex === index;
+          const isExpanded = expandedCards.has(index);
           
           return (
             <div 
               key={index}
-              className="rounded-xl border transition-all bg-[#0d1117] border-[#2a3142] hover:border-[#CCFF00]/30 overflow-hidden"
+              className={cn(
+                "rounded-xl border transition-all bg-[#0d1117] overflow-hidden",
+                isHighlighted 
+                  ? "border-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.3)] scale-[1.02]" 
+                  : "border-[#2a3142] hover:border-[#CCFF00]/30"
+              )}
+              onMouseEnter={() => onCardHover?.(index)}
+              onMouseLeave={() => onCardHover?.(null)}
             >
               {/* Card Header */}
               <div className="p-3 bg-[#1a1f2e] border-b border-[#2a3142]">
@@ -235,7 +259,7 @@ export const ExitScenariosCards = ({
                     </span>
                   </div>
                   <span className="text-[10px] text-gray-500 bg-[#0d1117] px-1.5 py-0.5 rounded">
-                    Milestone: {progressPercent}%
+                    Const. Progress: {progressPercent}%
                   </span>
                 </div>
               </div>
@@ -262,83 +286,123 @@ export const ExitScenariosCards = ({
                 </div>
               )}
 
-              {/* KEY METRICS - Hero Section */}
+              {/* SIMPLIFIED HERO SECTION */}
               <div className="p-4">
-                {/* ROE with Badge */}
+                {/* ROE with Badge - Compact */}
                 <ROEBreakdownTooltip scenario={scenario} currency={currency} rate={rate}>
-                  <div className="text-center mb-4 cursor-help">
+                  <div className="text-center mb-3 cursor-help">
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${roeBadge.bg} ${roeBadge.text}`}>
                         {roeBadge.label}
                       </span>
-                      <Info className="w-3 h-3 text-gray-500" />
+                      <span className="text-[10px] text-gray-500">(click for details)</span>
                     </div>
                     <p className={`text-3xl font-bold font-mono ${roeBadge.text}`}>
                       {displayROE.toFixed(1)}%
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      ROE <span className="text-gray-500">•</span> <span className="text-[#CCFF00]">{displayAnnualizedROE.toFixed(1)}% IRR</span>
+                      <span className="opacity-70">ROE = total profit %</span>
+                      <span className="text-gray-500 mx-1">•</span>
+                      <span className="text-[#CCFF00]">{displayAnnualizedROE.toFixed(1)}% IRR</span>
+                      <span className="text-gray-500 ml-1 opacity-70">(annual speed)</span>
                     </p>
                   </div>
                 </ROEBreakdownTooltip>
 
-                {/* Profit Display */}
-                <div className={`text-center p-3 rounded-lg border ${displayProfit >= 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                {/* Profit Display - Hero Number */}
+                <div className={`text-center p-4 rounded-lg border ${displayProfit >= 0 ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
                   <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">
                     {scenario.exitCosts > 0 ? 'Net Profit' : 'Gross Profit'}
                   </p>
-                  <p className={`text-xl font-bold font-mono ${displayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className={`text-2xl font-bold font-mono ${displayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                   </p>
                 </div>
+
+                {/* Visual Formula: Invested → Exit Value */}
+                <div className="flex items-center justify-center gap-3 mt-4 p-2 bg-[#1a1f2e]/50 rounded-lg">
+                  <div className="text-center">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">Invested</p>
+                    <p className="text-sm font-mono text-white font-medium">
+                      {formatCurrency(scenario.totalCapital, currency, rate)}
+                    </p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-500" />
+                  <div className="text-center">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">Exit Value</p>
+                    <p className="text-sm font-mono text-[#CCFF00] font-medium">
+                      {formatCurrency(scenario.exitPrice, currency, rate)}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Compact Details */}
-              <div className="px-4 pb-4 space-y-1">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">Cash Deployed</span>
-                  <span className="text-gray-300 font-mono">{formatCurrency(scenario.equityDeployed, currency, rate)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">Total Capital</span>
-                  <span className="text-white font-mono font-medium">{formatCurrency(scenario.totalCapital, currency, rate)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-xs border-t border-[#2a3142] pt-1">
-                  <span className="text-gray-500">Exit Price</span>
-                  <div className="text-right">
-                    <span className="text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
-                    {unitSizeSqf && unitSizeSqf > 0 && (
-                      <span className="text-gray-500 font-mono text-[10px] ml-1">
-                        ({formatCurrency(scenario.exitPrice / unitSizeSqf, currency, rate)}/sqft)
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Exit Costs if applicable */}
-                {scenario.exitCosts > 0 && (
-                  <div className="pt-1 border-t border-[#2a3142] space-y-0.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-500">Gross Profit</span>
-                      <span className="text-green-400/70 font-mono">+{formatCurrency(scenario.trueProfit, currency, rate)}</span>
-                    </div>
-                    {scenario.agentCommission > 0 && (
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-red-400/60">Agent (2%)</span>
-                        <span className="text-red-400/60 font-mono">-{formatCurrency(scenario.agentCommission, currency, rate)}</span>
-                      </div>
-                    )}
-                    {scenario.nocFee > 0 && (
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-red-400/60">NOC Fee</span>
-                        <span className="text-red-400/60 font-mono">-{formatCurrency(scenario.nocFee, currency, rate)}</span>
-                      </div>
-                    )}
-                  </div>
+              {/* View Breakdown Toggle */}
+              <button
+                onClick={() => toggleCardExpansion(index)}
+                className="w-full px-4 py-2 flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors border-t border-[#2a3142] bg-[#0d1117]"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="w-3 h-3" />
+                    Hide Breakdown
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3" />
+                    View Breakdown
+                  </>
                 )}
-              </div>
+              </button>
+
+              {/* Collapsible Details */}
+              {isExpanded && (
+                <div className="px-4 pb-4 pt-2 space-y-1 border-t border-[#2a3142] bg-[#0d1117]/50 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">Cash Deployed</span>
+                    <span className="text-gray-300 font-mono">{formatCurrency(scenario.equityDeployed, currency, rate)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">Total Invested</span>
+                    <span className="text-white font-mono font-medium">{formatCurrency(scenario.totalCapital, currency, rate)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-xs border-t border-[#2a3142] pt-1">
+                    <span className="text-gray-500">Exit Price</span>
+                    <div className="text-right">
+                      <span className="text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
+                      {unitSizeSqf && unitSizeSqf > 0 && (
+                        <span className="text-gray-500 font-mono text-[10px] ml-1">
+                          ({formatCurrency(scenario.exitPrice / unitSizeSqf, currency, rate)}/sqft)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Exit Costs if applicable */}
+                  {scenario.exitCosts > 0 && (
+                    <div className="pt-1 border-t border-[#2a3142] space-y-0.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500">Gross Profit</span>
+                        <span className="text-green-400/70 font-mono">+{formatCurrency(scenario.trueProfit, currency, rate)}</span>
+                      </div>
+                      {scenario.agentCommission > 0 && (
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-red-400/60">Agent (2%)</span>
+                          <span className="text-red-400/60 font-mono">-{formatCurrency(scenario.agentCommission, currency, rate)}</span>
+                        </div>
+                      )}
+                      {scenario.nocFee > 0 && (
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-red-400/60">NOC Fee</span>
+                          <span className="text-red-400/60 font-mono">-{formatCurrency(scenario.nocFee, currency, rate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

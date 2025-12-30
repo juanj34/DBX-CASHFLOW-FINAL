@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
@@ -25,6 +26,9 @@ export const ExitTabContent = ({
   variant = 'default',
 }: ExitTabContentProps) => {
   const isDashboard = variant === 'dashboard';
+  
+  // State for bidirectional highlight sync between cards and chart
+  const [highlightedExit, setHighlightedExit] = useState<number | null>(null);
 
   return (
     <div className={isDashboard ? "space-y-4" : "space-y-6"}>
@@ -37,7 +41,9 @@ export const ExitTabContent = ({
         exitScenarios={exitScenarios} 
         setExitScenarios={setExitScenarios} 
         rate={rate} 
-        unitSizeSqf={unitSizeSqf} 
+        unitSizeSqf={unitSizeSqf}
+        highlightedIndex={highlightedExit}
+        onCardHover={setHighlightedExit}
       />
       
       {/* Growth curve with reduced height in dashboard */}
@@ -47,7 +53,9 @@ export const ExitTabContent = ({
           inputs={inputs} 
           currency={currency} 
           exitScenarios={exitScenarios} 
-          rate={rate} 
+          rate={rate}
+          highlightedExit={highlightedExit}
+          onExitHover={setHighlightedExit}
         />
       </div>
     </div>
