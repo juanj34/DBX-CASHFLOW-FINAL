@@ -1,19 +1,25 @@
+import { useState } from "react";
 import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp } from "lucide-react";
+import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "./InfoTooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 
 interface RentSnapshotProps {
   inputs: OIInputs;
   currency: Currency;
   rate: number;
   holdAnalysis?: OIHoldAnalysis;
+  onOccupancyChange?: (occupancy: number) => void;
 }
 
-export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnapshotProps) => {
+export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancyChange }: RentSnapshotProps) => {
   const { t } = useLanguage();
+  const [localOccupancy, setLocalOccupancy] = useState<number | null>(null);
   
   const { 
     rentalYieldPercent, 
@@ -30,9 +36,10 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
   const netYieldPercent = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
 
-  // Airbnb calculations (if enabled)
+  // Short-term calculations (if enabled)
   const adrValue = shortTermRental?.averageDailyRate || 800;
-  const occupancyPercent = shortTermRental?.occupancyPercent || 70;
+  const baseOccupancy = shortTermRental?.occupancyPercent || 70;
+  const occupancyPercent = localOccupancy ?? baseOccupancy;
   const operatingExpensePercent = shortTermRental?.operatingExpensePercent || 25;
   const managementFeePercent = shortTermRental?.managementFeePercent || 15;
 
@@ -40,6 +47,18 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
   const totalExpensePercent = operatingExpensePercent + managementFeePercent;
   const airbnbOperatingExpenses = grossAirbnbAnnual * (totalExpensePercent / 100);
   const netAirbnbAnnual = grossAirbnbAnnual - airbnbOperatingExpenses - annualServiceCharges;
+
+  const isScenarioMode = localOccupancy !== null && localOccupancy !== baseOccupancy;
+
+  const handleOccupancyChange = (value: number) => {
+    setLocalOccupancy(value);
+    onOccupancyChange?.(value);
+  };
+
+  const resetOccupancy = () => {
+    setLocalOccupancy(null);
+    onOccupancyChange?.(baseOccupancy);
+  };
 
   // Comparison
   const airbnbDifferencePercent = netAnnualRent > 0 
@@ -137,20 +156,84 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis }: RentSnaps
 
         {/* Short-Term Section (conditional) */}
         {showAirbnbComparison && (
-          <div className="p-4 space-y-3 border-t md:border-t-0 md:border-l border-[#2a3142] bg-orange-500/5">
-            {/* Short-Term Header with Occupancy Badge */}
+          <div className={`p-4 space-y-3 border-t md:border-t-0 md:border-l border-[#2a3142] ${isScenarioMode ? 'bg-orange-500/10' : 'bg-orange-500/5'}`}>
+            {/* Short-Term Header with Interactive Occupancy Badge */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-orange-400" />
                 <h4 className="text-sm font-medium text-white">{t('shortTermComparison')}</h4>
+                {isScenarioMode && (
+                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] px-1.5 py-0 animate-fade-in">
+                    {t('scenarioModeActive')}
+                  </Badge>
+                )}
               </div>
-              <Badge 
-                variant="outline" 
-                className="bg-orange-500/10 text-orange-300 border-orange-500/30 text-[10px] px-2 py-0.5 flex items-center gap-1"
-              >
-                {occupancyPercent}% {t('occupancy')}
-                <InfoTooltip translationKey="tooltipOccupancyRate" />
-              </Badge>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className={`cursor-pointer transition-all hover:scale-105 ${
+                      isScenarioMode 
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' 
+                        : 'bg-orange-500/10 text-orange-300 border-orange-500/30'
+                    } text-[10px] px-2 py-0.5 flex items-center gap-1`}
+                  >
+                    <SlidersHorizontal className="w-3 h-3" />
+                    {occupancyPercent}% {t('occupancy')}
+                  </Badge>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 bg-[#1a1f2e] border-[#2a3142] p-4" side="bottom" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-white">{t('occupancy')}</span>
+                      <span className="text-lg font-bold text-orange-400 font-mono">{occupancyPercent}%</span>
+                    </div>
+                    
+                    <Slider
+                      value={[occupancyPercent]}
+                      onValueChange={([value]) => handleOccupancyChange(value)}
+                      min={30}
+                      max={95}
+                      step={5}
+                      className="roi-slider-lime"
+                    />
+                    
+                    {/* Quick Select Buttons */}
+                    <div className="flex gap-2 justify-between">
+                      {[50, 60, 70, 80].map((val) => (
+                        <Button
+                          key={val}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOccupancyChange(val)}
+                          className={`flex-1 text-xs h-7 ${
+                            occupancyPercent === val 
+                              ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' 
+                              : 'bg-[#0d1117] border-[#2a3142] text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          {val}%
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    {isScenarioMode && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetOccupancy}
+                        className="w-full text-xs text-gray-400 hover:text-white"
+                      >
+                        {t('resetToDefault')} ({baseOccupancy}%)
+                      </Button>
+                    )}
+                    
+                    <p className="text-[10px] text-gray-500 text-center">
+                      {t('tooltipOccupancyRate')}
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* ADR */}

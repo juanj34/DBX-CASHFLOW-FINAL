@@ -186,7 +186,7 @@ const translations: Translations = {
   basedOnOccupancy: { en: 'Based on', es: 'Basado en' },
   occupancyEst: { en: 'Occupancy Est.', es: 'Ocupación Est.' },
   scenarioPlayground: { en: 'Scenario Playground', es: 'Simulador de Escenarios' },
-  scenarioModeActive: { en: 'Scenario mode - drag sliders to explore', es: 'Modo escenario - desliza para explorar' },
+  scenarioModeActive: { en: 'Scenario', es: 'Escenario' },
   resetToDefault: { en: 'Reset to default', es: 'Restablecer valores' },
   longTermOnly: { en: 'Long-Term Only', es: 'Solo Largo Plazo' },
   ltPlusShortTerm: { en: 'LT + Short-Term', es: 'LP + Corto Plazo' },
@@ -812,12 +812,12 @@ const translations: Translations = {
   gap: { en: 'Gap', es: 'Diferencia' },
   
   // Dashboard Tabs
-  tabProperty: { en: 'Property', es: 'Propiedad' },
-  tabPayments: { en: 'Payments', es: 'Pagos' },
-  tabHold: { en: 'Hold', es: 'Retención' },
-  tabExit: { en: 'Exit', es: 'Salida' },
-  tabMortgage: { en: 'Mortgage', es: 'Hipoteca' },
-  tabSummary: { en: 'Summary', es: 'Resumen' },
+  tabProperty: { en: 'The Asset', es: 'El Activo' },
+  tabPayments: { en: 'Cashflow', es: 'Flujo de Caja' },
+  tabHold: { en: 'Yield & Income', es: 'Rendimiento e Ingresos' },
+  tabExit: { en: 'Exit Strategy', es: 'Estrategia de Salida' },
+  tabMortgage: { en: 'Leverage', es: 'Apalancamiento' },
+  tabSummary: { en: 'Report', es: 'Reporte' },
   switchToClassic: { en: 'Classic View', es: 'Vista Clásica' },
   switchToDashboard: { en: 'Dashboard View', es: 'Vista Dashboard' },
   
