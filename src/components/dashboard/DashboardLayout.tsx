@@ -31,8 +31,8 @@ const DashboardLayout = () => {
       variant={activeTab === tab ? "secondary" : "ghost"}
       className={`w-full justify-start ${
         activeTab === tab 
-          ? "bg-[#CCFF00]/20 text-[#CCFF00] hover:bg-[#CCFF00]/30" 
-          : "text-gray-300 hover:text-white hover:bg-[#2a3142]"
+          ? "bg-theme-accent/20 text-theme-accent hover:bg-theme-accent/30" 
+          : "text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
       }`}
       onClick={() => {
         setActiveTab(tab);
@@ -47,11 +47,11 @@ const DashboardLayout = () => {
   const SidebarContent = () => (
     <>
       {/* Navigation to Home/Map */}
-      <div className="p-4 border-b border-[#2a3142] space-y-2">
+      <div className="p-4 border-b border-theme-border space-y-2">
         <Link to="/home" onClick={() => setMobileMenuOpen(false)}>
           <Button
             variant="ghost"
-            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#2a3142]"
+            className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
           >
             <Home className="mr-2 h-4 w-4" />
             Back to Home
@@ -60,7 +60,7 @@ const DashboardLayout = () => {
         <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
           <Button
             variant="ghost"
-            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#2a3142]"
+            className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Map
@@ -77,10 +77,10 @@ const DashboardLayout = () => {
         <NavButton tab="landmarks" icon={Landmark} label="Landmarks" />
       </nav>
 
-      <div className="p-4 border-t border-[#2a3142]">
+      <div className="p-4 border-t border-theme-border">
         <Button 
           variant="ghost" 
-          className="w-full justify-start text-gray-400 hover:text-red-400 hover:bg-red-400/10" 
+          className="w-full justify-start text-theme-text-muted hover:text-destructive hover:bg-destructive/10" 
           onClick={signOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
@@ -91,32 +91,32 @@ const DashboardLayout = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#0f172a]">
+    <div className="flex min-h-screen bg-theme-bg">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-[#2a3142] bg-[#1a1f2e]">
-        <div className="p-6 border-b border-[#2a3142]">
-          <h1 className="text-xl font-semibold text-white">Configuration Center</h1>
-          <p className="text-sm text-gray-400">Manage data & presets</p>
+      <aside className="hidden md:flex w-64 flex-col border-r border-theme-border bg-theme-card">
+        <div className="p-6 border-b border-theme-border">
+          <h1 className="text-xl font-semibold text-theme-text">Configuration Center</h1>
+          <p className="text-sm text-theme-text-muted">Manage data & presets</p>
         </div>
         <SidebarContent />
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#1a1f2e] border-b border-[#2a3142]">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-theme-card border-b border-theme-border">
         <div className="flex items-center justify-between p-4">
           <div>
-            <h1 className="text-lg font-semibold text-white">Configuration</h1>
-            <p className="text-xs text-gray-400">Manage data & presets</p>
+            <h1 className="text-lg font-semibold text-theme-text">Configuration</h1>
+            <p className="text-xs text-theme-text-muted">Manage data & presets</p>
           </div>
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#2a3142]">
+              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[280px] bg-[#1a1f2e] border-[#2a3142] p-0">
-              <SheetHeader className="p-6 border-b border-[#2a3142]">
-                <SheetTitle className="text-white text-left">Configuration Center</SheetTitle>
+            <SheetContent side="left" className="w-[280px] bg-theme-card border-theme-border p-0">
+              <SheetHeader className="p-6 border-b border-theme-border">
+                <SheetTitle className="text-theme-text text-left">Configuration Center</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col h-[calc(100%-80px)]">
                 <SidebarContent />
@@ -127,7 +127,7 @@ const DashboardLayout = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-8 relative bg-[#0f172a] md:ml-0 mt-[72px] md:mt-0">
+      <main className="flex-1 p-4 sm:p-8 relative bg-theme-bg md:ml-0 mt-[72px] md:mt-0">
         {activeTab === "zones" && <ZonesManager />}
         {activeTab === "presets" && <PresetsManager />}
         {activeTab === "hotspots" && <HotspotsManager />}
@@ -138,7 +138,7 @@ const DashboardLayout = () => {
         {/* Floating AI Button */}
         <Button
           onClick={() => setShowAIChat(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
           size="icon"
         >
           <Sparkles className="h-6 w-6" />

@@ -93,7 +93,7 @@ const QuotesCompare = () => {
   const recommendations = useRecommendationEngine(quotesWithCalcs);
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
+    <div className="min-h-screen bg-theme-bg">
       {/* Hidden calculators */}
       {quotes.map(quote => (
         <QuoteCalculator 
@@ -103,39 +103,39 @@ const QuotesCompare = () => {
         />
       ))}
 
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/my-quotes">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <LayoutGrid className="w-5 h-5 text-[#CCFF00]" />
+              <h1 className="text-xl font-bold text-theme-text flex items-center gap-2">
+                <LayoutGrid className="w-5 h-5 text-theme-accent" />
                 Compare Quotes
               </h1>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-theme-text-muted">
                 {selectedIds.length} quotes selected
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             {/* Recommendation Toggle */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1f2e] border border-[#2a3142]">
-              <Sparkles className={`w-4 h-4 ${showRecommendations ? 'text-[#CCFF00]' : 'text-gray-500'}`} />
-              <span className="text-sm text-gray-400 hidden sm:inline">AI Insights</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-card border border-theme-border">
+              <Sparkles className={`w-4 h-4 ${showRecommendations ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
+              <span className="text-sm text-theme-text-muted hidden sm:inline">AI Insights</span>
               <Switch
                 checked={showRecommendations}
                 onCheckedChange={setShowRecommendations}
-                className="data-[state=checked]:bg-[#CCFF00]"
+                className="data-[state=checked]:bg-theme-accent"
               />
             </div>
             <Button 
               onClick={() => setShowSelector(true)}
               variant="outline"
-              className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142] hover:text-white gap-2"
+              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Quote
@@ -147,28 +147,28 @@ const QuotesCompare = () => {
       <main className="container mx-auto px-6 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-accent" />
           </div>
         ) : error ? (
           <div className="text-center py-16">
-            <p className="text-red-400">{error}</p>
+            <p className="text-destructive">{error}</p>
             <Button 
               onClick={() => setShowSelector(true)}
-              className="mt-4 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+              className="mt-4 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
             >
               Select Quotes
             </Button>
           </div>
         ) : selectedIds.length < 2 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#1a1f2e] flex items-center justify-center">
-              <LayoutGrid className="w-8 h-8 text-gray-500" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-theme-card flex items-center justify-center">
+              <LayoutGrid className="w-8 h-8 text-theme-text-muted" />
             </div>
-            <h2 className="text-xl text-white mb-2">Select quotes to compare</h2>
-            <p className="text-gray-400 mb-6">Choose 2-4 quotes to see them side by side</p>
+            <h2 className="text-xl text-theme-text mb-2">Select quotes to compare</h2>
+            <p className="text-theme-text-muted mb-6">Choose 2-4 quotes to see them side by side</p>
             <Button 
               onClick={() => setShowSelector(true)}
-              className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
             >
               Select Quotes
             </Button>
@@ -176,8 +176,8 @@ const QuotesCompare = () => {
         ) : !allCalculated ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00] mx-auto mb-4" />
-              <p className="text-gray-400">Calculating projections...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-accent mx-auto mb-4" />
+              <p className="text-theme-text-muted">Calculating projections...</p>
             </div>
           </div>
         ) : (
