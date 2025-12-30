@@ -9,7 +9,8 @@ import { InfoTooltip } from "./InfoTooltip";
 import { 
   calculateExitScenario, 
   calculateExitPrice, 
-  ExitScenarioResult 
+  ExitScenarioResult,
+  monthToConstruction 
 } from "./constructionProgress";
 import { ROEBreakdownTooltip } from "./ROEBreakdownTooltip";
 
@@ -178,7 +179,9 @@ export const ExitScenariosCards = ({
           const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
           const displayAnnualizedROE = scenario.exitCosts > 0 ? scenario.netAnnualizedROE : scenario.annualizedROE;
           const displayProfit = scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit;
-          const progressPercent = Math.round((exitScenarios[index] / totalMonths) * 100);
+          // Use S-curve to calculate actual construction progress (not linear timeline)
+          const constructionProgress = monthToConstruction(exitScenarios[index], totalMonths);
+          const progressPercent = Math.round(constructionProgress);
           const roeBadge = getROEBadgeStyle(displayROE);
           const scenarioTag = getScenarioTag(index, exitScenarios.length, progressPercent);
           

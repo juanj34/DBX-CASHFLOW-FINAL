@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ConfiguratorSectionProps } from "./types";
 import { formatCurrency } from "../currencyUtils";
-import { calculateExitScenario, ExitScenarioResult } from "../constructionProgress";
+import { calculateExitScenario, ExitScenarioResult, constructionToMonth, monthToConstruction } from "../constructionProgress";
 import { ROEBreakdownTooltip } from "../ROEBreakdownTooltip";
 
 interface ExitScenario {
@@ -220,7 +220,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const earlyMonth = Math.min(12, totalMonths - 1);
+                  // Target 30% construction milestone using S-curve
+                  const earlyMonth = constructionToMonth(30, totalMonths);
                   if (earlyMonth > 0 && !exits.some(e => e.monthsFromBooking === earlyMonth)) {
                     const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: earlyMonth };
                     const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
@@ -230,13 +231,14 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                 }}
                 className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
               >
-                Early (12m)
+                30% Build
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const midMonth = Math.round(totalMonths / 2);
+                  // Target 50% construction milestone using S-curve (~Month 21 for 36mo project)
+                  const midMonth = constructionToMonth(50, totalMonths);
                   if (midMonth > 0 && !exits.some(e => e.monthsFromBooking === midMonth)) {
                     const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: midMonth };
                     const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
@@ -246,13 +248,14 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                 }}
                 className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
               >
-                Mid-Build
+                50% Build
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const nearHandover = Math.max(6, totalMonths - 3);
+                  // Target 80% construction milestone using S-curve
+                  const nearHandover = constructionToMonth(80, totalMonths);
                   if (!exits.some(e => e.monthsFromBooking === nearHandover)) {
                     const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: nearHandover };
                     const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
@@ -262,7 +265,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                 }}
                 className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
               >
-                Near Handover
+                80% Build
               </Button>
               <Button
                 variant="outline"

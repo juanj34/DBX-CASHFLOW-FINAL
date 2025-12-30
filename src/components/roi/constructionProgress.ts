@@ -23,33 +23,46 @@ export interface ExitPriceInputs {
   entryCosts?: number;
 }
 
-// S-curve parameters based on typical Dubai construction patterns
-// Key milestones:
-// - 20% construction at ~15% of timeline (fast start for escrow)
-// - 50% construction at ~45% of timeline
-// - 70% construction at ~65% of timeline  
-// - 90% construction at ~85% of timeline
-// - 100% at handover
+/**
+ * CALIBRACIÓN DUBAI - Torres 30-40 pisos (36 meses estándar)
+ * 
+ * Fase Lenta (0-9 meses): Cimientos y Podio
+ *   - Excavación, pilotaje, shoring, impermeabilización
+ *   - Mes 9 → 15-18% construcción
+ * 
+ * Fase Rápida (10-24 meses): Superestructura  
+ *   - Un piso cada 1-2 semanas
+ *   - Mes 15 → ~35% (inicio superestructura)
+ *   - Mes 18 → 35-40% (terminando podio) ← CRÍTICO
+ *   - Mes 21 → 50% (HITO CLAVE - media altura)
+ *   - Mes 24 → 65-70% (topping out cercano)
+ * 
+ * Fase Final (25-36 meses): Acabados y MEP
+ *   - Fachada, instalaciones eléctricas/agua, interiores
+ *   - Mes 32 → ~90%
+ *   - Mes 36 → 100% (handover)
+ */
 
 /**
  * Convert timeline percentage to construction progress percentage
- * Uses a modified sigmoid/logistic function tuned to Dubai patterns
+ * Calibrated to real Dubai construction S-curve patterns
  */
 export const timelineToConstruction = (timelinePercent: number): number => {
   if (timelinePercent <= 0) return 0;
   if (timelinePercent >= 100) return 100;
   
-  // Use piecewise linear approximation for predictability
-  // This matches observed Dubai construction patterns
+  // Piecewise linear approximation calibrated to Dubai reality
+  // timeline% -> construction%
   const segments: [number, number][] = [
-    [0, 0],      // Start
-    [15, 20],    // 15% timeline = 20% construction (fast start for escrow)
-    [35, 40],    // 35% timeline = 40% construction
-    [50, 55],    // 50% timeline = 55% construction
-    [65, 70],    // 65% timeline = 70% construction
-    [80, 85],    // 80% timeline = 85% construction
-    [90, 93],    // 90% timeline = 93% construction
-    [100, 100],  // End
+    [0, 0],       // Start
+    [25, 18],     // Mes 9 = 18% (fin cimientos) - Fase Lenta
+    [42, 35],     // Mes 15 = 35% (inicio superestructura)
+    [50, 40],     // Mes 18 = 40% (terminando podio) ← CRÍTICO
+    [58, 50],     // Mes 21 = 50% (media altura) ← HITO 50%
+    [67, 65],     // Mes 24 = 65% (topping out cercano)
+    [75, 75],     // Mes 27 = 75% (inicio acabados)
+    [89, 90],     // Mes 32 = 90% (MEP/interiores)
+    [100, 100],   // Handover
   ];
   
   // Find the segment we're in and interpolate
@@ -68,22 +81,24 @@ export const timelineToConstruction = (timelinePercent: number): number => {
 
 /**
  * Convert construction progress percentage to timeline percentage
- * Inverse of timelineToConstruction
+ * Inverse of timelineToConstruction - calibrated to Dubai S-curve
  */
 export const constructionToTimeline = (constructionPercent: number): number => {
   if (constructionPercent <= 0) return 0;
   if (constructionPercent >= 100) return 100;
   
-  // Same segments, but interpolate the other direction
+  // Inverse of timelineToConstruction segments
+  // construction% -> timeline%
   const segments: [number, number][] = [
-    [0, 0],      // construction -> timeline
-    [20, 15],    // 20% construction = 15% timeline
-    [40, 35],    // 40% construction = 35% timeline
-    [55, 50],    // 55% construction = 50% timeline
-    [70, 65],    // 70% construction = 65% timeline
-    [85, 80],    // 85% construction = 80% timeline
-    [93, 90],    // 93% construction = 90% timeline
-    [100, 100],  // End
+    [0, 0],       // Start
+    [18, 25],     // 18% construction = 25% timeline (Mes 9)
+    [35, 42],     // 35% construction = 42% timeline (Mes 15)
+    [40, 50],     // 40% construction = 50% timeline (Mes 18)
+    [50, 58],     // 50% construction = 58% timeline (Mes 21) ← HITO
+    [65, 67],     // 65% construction = 67% timeline (Mes 24)
+    [75, 75],     // 75% construction = 75% timeline (Mes 27)
+    [90, 89],     // 90% construction = 89% timeline (Mes 32)
+    [100, 100],   // End
   ];
   
   for (let i = 1; i < segments.length; i++) {
