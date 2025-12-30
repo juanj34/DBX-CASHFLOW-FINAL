@@ -1274,6 +1274,31 @@ const translations: Translations = {
   quotesSelected: { en: 'quotes selected', es: 'cotizaciones seleccionadas' },
   min2Max4: { en: 'min 2, max 4', es: 'mín 2, máx 4' },
   compareSelected: { en: 'Compare Selected', es: 'Comparar Seleccionados' },
+  
+  // Investment Story Dashboard (unique keys only)
+  yourEntry: { en: 'Your Entry', es: 'Tu Entrada' },
+  whatYouNeedToStart: { en: 'What you need to start', es: 'Lo que necesitas para empezar' },
+  cashToKeys: { en: 'Cash to Keys', es: 'Efectivo para Llaves' },
+  noMortgageRequired: { en: 'No mortgage required', es: 'Sin hipoteca requerida' },
+  yourHolding: { en: 'Your Holding', es: 'Tu Tenencia' },
+  monthlyPerformanceAndPayback: { en: 'Monthly performance & payback', es: 'Rendimiento mensual y recuperación' },
+  annualRentalIncome: { en: 'Annual Rental Income', es: 'Ingreso Anual por Renta' },
+  monthlyGapNeeded: { en: 'Monthly Gap Needed', es: 'Brecha Mensual Necesaria' },
+  mortgageCoverageLabel: { en: 'Mortgage Coverage', es: 'Cobertura de Hipoteca' },
+  timeToPayback: { en: 'Time to Payback', es: 'Tiempo de Recuperación' },
+  yourWealth: { en: 'Your Wealth', es: 'Tu Riqueza' },
+  wealthCreation10Years: { en: '10-year wealth creation', es: 'Creación de riqueza a 10 años' },
+  netWealthCreated: { en: 'Net Wealth Created (10Y)', es: 'Riqueza Neta Creada (10A)' },
+  returnOnInvestment: { en: 'return on investment', es: 'retorno sobre inversión' },
+  propertyValueLabel: { en: 'Property Value', es: 'Valor de Propiedad' },
+  cumulativeRent: { en: 'Cumulative Rent', es: 'Renta Acumulada' },
+  withShortTerm: { en: 'With Short-Term Strategy', es: 'Con Estrategia de Corto Plazo' },
+  exitWindows: { en: 'Exit Windows', es: 'Ventanas de Salida' },
+  keyMetrics: { en: 'Key Metrics', es: 'Métricas Clave' },
+  investmentKPIs: { en: 'Investment performance indicators', es: 'Indicadores de rendimiento de inversión' },
+  paybackLabel: { en: 'Payback', es: 'Recuperación' },
+  appreciationCAGR: { en: 'CAGR', es: 'TCAC' },
+  coverageLabel: { en: 'Coverage', es: 'Cobertura' },
 };
 
 interface LanguageContextType {
