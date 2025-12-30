@@ -87,16 +87,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
   return (
     <div className="space-y-6">
-      {/* Header with Payment Plan Badge - SINGLE BADGE ONLY */}
-      <div className="flex items-center justify-end">
-        <PaymentPlanBadge
-          preHandoverPercent={preHandoverPercent}
-          handoverPercent={handoverPercent}
-          constructionMonths={constructionMonths}
-        />
-      </div>
-
-      {/* Interactive Horizontal Timeline - Full Width */}
+      {/* Interactive Horizontal Timeline - Full Width at TOP */}
       <div className="bg-theme-card border border-theme-border rounded-2xl p-4">
         <PaymentHorizontalTimeline
           inputs={inputs}
@@ -113,11 +104,13 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
 
           {/* Detailed Breakdown Card */}
           <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
-            {/* Payment Breakdown Title */}
-            <div className="px-4 pt-4 pb-2">
-              <h4 className="text-sm font-semibold text-theme-text uppercase tracking-wide">
-                {t('paymentBreakdown')}
-              </h4>
+            {/* Investment Schedule Badge as Card Header */}
+            <div className="px-4 pt-4 pb-3 border-b border-theme-border">
+              <PaymentPlanBadge
+                preHandoverPercent={preHandoverPercent}
+                handoverPercent={handoverPercent}
+                constructionMonths={constructionMonths}
+              />
             </div>
             
             <div className="p-4 pt-2 space-y-5">
