@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, LayoutGrid, Check } from 'lucide-react';
+import { 
+  ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
+  LayoutGrid, Check, Search, Filter, MessageCircle, ArrowUpDown, ArrowUp, ArrowDown, X,
+  FileText, TrendingUp, CheckCircle2
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast as sonnerToast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,16 +25,147 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { PipelineAnalyticsChart } from '@/components/dashboard/PipelineAnalyticsChart';
+
+type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
+type SortField = 'date' | 'value' | 'developer' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 const QuotesDashboard = () => {
-  useDocumentTitle("My Cashflow Generators");
+  useDocumentTitle("All Opportunities");
   const { quotes, loading, deleteQuote } = useQuotesList();
+  const { profile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [deletingQuote, setDeletingQuote] = useState<CashflowQuote | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
+  const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('all');
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const commissionRate = profile?.commission_rate ?? 2;
+
+  const statusConfig: Record<QuoteStatus, { label: string; className: string }> = {
+    draft: { label: t("statusDraft"), className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+    presented: { label: t("statusPresented"), className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+    negotiating: { label: t("statusNegotiating"), className: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+    sold: { label: t("statusSold"), className: "bg-green-500/20 text-green-400 border-green-500/30" },
+  };
+
+  // Filter quotes
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter(quote => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const clientMatch = quote.client_name?.toLowerCase().includes(query);
+        const projectMatch = quote.project_name?.toLowerCase().includes(query);
+        const developerMatch = quote.developer?.toLowerCase().includes(query);
+        if (!clientMatch && !projectMatch && !developerMatch) return false;
+      }
+      
+      // Status filter
+      if (statusFilter !== 'all' && quote.status !== statusFilter) return false;
+      
+      // Date filter
+      const created = new Date(quote.created_at || quote.updated_at);
+      const now = new Date();
+      
+      if (dateFilter === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (created < weekAgo) return false;
+      } else if (dateFilter === 'month') {
+        if (created.getMonth() !== now.getMonth() || created.getFullYear() !== now.getFullYear()) return false;
+      } else if (dateFilter === '30days') {
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (created < thirtyDaysAgo) return false;
+      }
+      
+      return true;
+    });
+  }, [quotes, statusFilter, dateFilter, searchQuery]);
+
+  // Sort quotes
+  const sortedQuotes = useMemo(() => {
+    return [...filteredQuotes].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case 'date':
+          comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+          break;
+        case 'value':
+          comparison = (a.inputs?.basePrice || 0) - (b.inputs?.basePrice || 0);
+          break;
+        case 'developer':
+          comparison = (a.developer || '').localeCompare(b.developer || '');
+          break;
+        case 'status':
+          comparison = (a.status || 'draft').localeCompare(b.status || 'draft');
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredQuotes, sortField, sortDirection]);
+
+  // Pipeline stats
+  const pipelineStats = useMemo(() => {
+    const soldQuotes = quotes.filter(q => q.status === 'sold');
+    const nonSoldQuotes = quotes.filter(q => q.status !== 'sold');
+    
+    const pipelineVolume = quotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
+    const potentialVolume = nonSoldQuotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
+    const earnedVolume = soldQuotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
+    
+    return {
+      totalQuotes: quotes.length,
+      pipelineVolume,
+      potentialCommission: potentialVolume * (commissionRate / 100),
+      earnedCommission: earnedVolume * (commissionRate / 100)
+    };
+  }, [quotes, commissionRate]);
+
+  const formatCurrencyShort = (amount: number) => {
+    if (amount >= 1000000) return `AED ${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `AED ${(amount / 1000).toFixed(0)}k`;
+    return `AED ${amount.toFixed(0)}`;
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-50" />;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-3 h-3" /> 
+      : <ArrowDown className="w-3 h-3" />;
+  };
 
   const handleDeleteClick = (quote: CashflowQuote) => {
     setDeletingQuote(quote);
@@ -49,6 +188,64 @@ const QuotesDashboard = () => {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Share link copied!' });
     }
+  };
+
+  const handleWhatsAppShare = (quote: CashflowQuote) => {
+    const message = `${t("checkOutProperty")}: ${quote.project_name || t("property")}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  };
+
+  const updateQuoteStatus = async (quoteId: string, status: QuoteStatus) => {
+    const now = new Date().toISOString();
+    const quote = quotes.find(q => q.id === quoteId);
+    
+    const updateData: any = {
+      status,
+      status_changed_at: now,
+    };
+
+    if (status === 'sold') updateData.sold_at = now;
+    if (status === 'presented') updateData.presented_at = now;
+    if (status === 'negotiating') updateData.negotiation_started_at = now;
+
+    const { error } = await supabase
+      .from("cashflow_quotes")
+      .update(updateData)
+      .eq("id", quoteId);
+
+    if (error) {
+      sonnerToast.error(t("errorUpdatingStatus"));
+      return;
+    }
+    
+    if (status === 'sold') {
+      sonnerToast.success("🎉 " + t("dealClosed"));
+      
+      if (profile?.email && quote) {
+        try {
+          await supabase.functions.invoke('send-status-notification', {
+            body: {
+              brokerEmail: profile.email,
+              brokerName: profile.full_name,
+              clientName: quote.client_name,
+              projectName: quote.project_name,
+              dealValue: quote.inputs?.basePrice || 0,
+              commission: (quote.inputs?.basePrice || 0) * (commissionRate / 100),
+              newStatus: status,
+              clientEmail: quote.client_email
+            }
+          });
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+        }
+      }
+    } else {
+      sonnerToast.success(t("statusUpdated"));
+    }
+    
+    // Reload page to refresh data
+    window.location.reload();
   };
 
   const formatDate = (dateStr: string) => {
@@ -84,7 +281,7 @@ const QuotesDashboard = () => {
   return (
     <div className="min-h-screen bg-theme-bg">
       <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/home">
               <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
@@ -92,7 +289,7 @@ const QuotesDashboard = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-theme-text">{t('quotesTitle')}</h1>
+              <h1 className="text-xl font-bold text-theme-text">{t('allOpportunities')}</h1>
               <p className="text-sm text-theme-text-muted">{quotes.length} {t('quotesSaved')}</p>
             </div>
           </div>
@@ -110,7 +307,7 @@ const QuotesDashboard = () => {
                 }
               >
                 <LayoutGrid className="w-4 h-4" />
-                {compareMode ? 'Cancel' : 'Compare'}
+                {compareMode ? t('quotesCancel') : t('compare')}
               </Button>
             )}
             <Link to="/cashflow-generator">
@@ -124,143 +321,319 @@ const QuotesDashboard = () => {
         
         {/* Compare bar */}
         {compareMode && selectedForCompare.length > 0 && (
-          <div className="container mx-auto px-6 pb-4">
+          <div className="container mx-auto px-4 sm:px-6 pb-4">
             <div className="flex items-center justify-between bg-theme-card border border-theme-accent/30 rounded-lg px-4 py-3">
               <span className="text-theme-text-muted text-sm">
-                {selectedForCompare.length} quotes selected (min 2, max 4)
+                {selectedForCompare.length} {t('quotesSelected')} ({t('min2Max4')})
               </span>
               <Button
                 onClick={handleCompare}
                 disabled={selectedForCompare.length < 2}
                 className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
               >
-                Compare Selected
+                {t('compareSelected')}
               </Button>
             </div>
           </div>
         )}
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 sm:px-6 py-6">
+        {/* Pipeline Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-xl p-4 relative overflow-hidden group hover:border-theme-accent/30 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-theme-accent" />
+              <span className="text-xs text-theme-text-muted uppercase">{t("totalQuotes")}</span>
+            </div>
+            <p className="text-2xl font-bold text-theme-text">{pipelineStats.totalQuotes}</p>
+          </div>
+
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-xl p-4 relative overflow-hidden group hover:border-orange-500/30 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-orange-400" />
+              <span className="text-xs text-theme-text-muted uppercase">{t("pipelineVolume")}</span>
+            </div>
+            <p className="text-2xl font-bold text-theme-text">{formatCurrencyShort(pipelineStats.pipelineVolume)}</p>
+          </div>
+
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-xl p-4 relative overflow-hidden group hover:border-cyan-500/30 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs text-theme-text-muted uppercase">{t("potentialCommission")}</span>
+            </div>
+            <p className="text-2xl font-bold text-cyan-400">{formatCurrencyShort(pipelineStats.potentialCommission)}</p>
+          </div>
+
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-xl p-4 relative overflow-hidden group hover:border-green-500/30 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="w-4 h-4 text-green-400" />
+              <span className="text-xs text-theme-text-muted uppercase">{t("earnedCommission")}</span>
+            </div>
+            <p className="text-2xl font-bold text-green-400">{formatCurrencyShort(pipelineStats.earnedCommission)}</p>
+          </div>
+        </div>
+
+        {/* Pipeline Analytics Chart */}
+        <PipelineAnalyticsChart 
+          quotes={quotes.map(q => ({
+            id: q.id,
+            created_at: q.created_at || q.updated_at,
+            status: q.status,
+            sold_at: q.sold_at,
+            inputs: q.inputs
+          }))} 
+          commissionRate={commissionRate} 
+        />
+
         {quotes.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#1a1f2e] flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-theme-card flex items-center justify-center">
               <DollarSign className="w-8 h-8 text-theme-text-muted" />
             </div>
-            <h2 className="text-xl text-white mb-2">{t('quotesNoQuotes')}</h2>
-            <p className="text-gray-400 mb-6">{t('quotesNoQuotesDesc')}</p>
+            <h2 className="text-xl text-theme-text mb-2">{t('quotesNoQuotes')}</h2>
+            <p className="text-theme-text-muted mb-6">{t('quotesNoQuotesDesc')}</p>
             <Link to="/cashflow-generator">
-              <Button className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90">
+              <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90">
                 {t('quotesCreateQuote')}
               </Button>
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {quotes.map((quote) => {
-              const isSelected = selectedForCompare.includes(quote.id);
-              
-              return (
-              <div
-                key={quote.id}
-                onClick={() => compareMode && toggleCompareSelection(quote.id)}
-                className={`bg-[#1a1f2e] border rounded-xl p-5 transition-colors ${
-                  compareMode 
-                    ? isSelected 
-                      ? 'border-[#CCFF00] ring-1 ring-[#CCFF00]/30 cursor-pointer' 
-                      : 'border-[#2a3142] hover:border-[#CCFF00]/50 cursor-pointer'
-                    : 'border-[#2a3142] hover:border-[#CCFF00]/30'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  {compareMode && (
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                      isSelected ? 'bg-[#CCFF00] border-[#CCFF00]' : 'border-gray-500'
-                    }`}>
-                      {isSelected && <Check className="w-4 h-4 text-black" />}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-white truncate">
-                      {quote.title || t('quotesUntitled')}
-                    </h3>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
-                      {quote.client_name && (
-                        <span>{t('quotesClient')}: {quote.client_name}</span>
-                      )}
-                      {quote.project_name && (
-                        <span>{t('quotesProject')}: {quote.project_name}</span>
-                      )}
-                      {quote.developer && (
-                        <span>{t('quotesDeveloper')}: {quote.developer}</span>
-                      )}
-                      {(quote.inputs as any)?._clientInfo?.zoneName && (
-                        <span className="flex items-center gap-1 text-cyan-400">
-                          <MapPin className="w-3 h-3" />
-                          {(quote.inputs as any)._clientInfo.zoneName}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-3 text-xs text-theme-text-muted">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(quote.updated_at)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" />
-                        {formatCurrency(quote.inputs.basePrice, 'AED', 1)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {!compareMode && (
-                  <div className="flex items-center gap-2">
-                    {quote.share_token && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleShare(quote)}
-                        className="text-gray-400 hover:text-black hover:bg-[#CCFF00]"
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                    )}
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl overflow-hidden">
+            {/* Search and Filters */}
+            <div className="flex flex-col gap-4 p-5 border-b border-theme-border">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
+                  <Input
+                    placeholder={t("searchPlaceholder")}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-9 h-9 bg-theme-bg-alt border-theme-border text-theme-text placeholder:text-theme-text-muted"
+                  />
+                  {searchQuery && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => navigate(`/cashflow/${quote.id}`)}
-                      className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-theme-text-muted hover:text-theme-text"
+                      onClick={() => setSearchQuery('')}
                     >
-                      <Edit className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteClick(quote)}
-                      className="text-gray-400 hover:text-white hover:bg-red-600"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
                   )}
                 </div>
+                
+                {/* Filters */}
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-theme-text-muted hidden sm:block" />
+                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as QuoteStatus | 'all')}>
+                    <SelectTrigger className="w-[130px] h-9 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
+                      <SelectValue placeholder={t("allStatuses")} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-theme-card border-theme-border">
+                      <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allStatuses")}</SelectItem>
+                      {Object.entries(statusConfig).map(([key, config]) => (
+                        <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt">
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as 'week' | 'month' | '30days' | 'all')}>
+                    <SelectTrigger className="w-[130px] h-9 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-theme-card border-theme-border">
+                      <SelectItem value="week" className="text-theme-text hover:bg-theme-card-alt">{t("thisWeek")}</SelectItem>
+                      <SelectItem value="month" className="text-theme-text hover:bg-theme-card-alt">{t("thisMonth")}</SelectItem>
+                      <SelectItem value="30days" className="text-theme-text hover:bg-theme-card-alt">{t("last30Days")}</SelectItem>
+                      <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allTime")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            )})}
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-theme-border hover:bg-transparent">
+                    {compareMode && <TableHead className="w-12"></TableHead>}
+                    <TableHead 
+                      className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('date')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("clientProject")}
+                        {getSortIcon('date')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('value')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("dealValue")}
+                        {getSortIcon('value')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-theme-text-muted font-medium hidden md:table-cell cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('developer')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("developer")}
+                        {getSortIcon('developer')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-theme-text-muted font-medium hidden lg:table-cell">{t("zone")}</TableHead>
+                    <TableHead 
+                      className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("status")}
+                        {getSortIcon('status')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-theme-text-muted font-medium text-right">{t("actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedQuotes.map((quote) => {
+                    const isSelected = selectedForCompare.includes(quote.id);
+                    const currentStatus = (quote.status as QuoteStatus) || "draft";
+                    
+                    return (
+                      <TableRow 
+                        key={quote.id} 
+                        className={`border-theme-border ${compareMode ? 'cursor-pointer' : ''} ${isSelected ? 'bg-theme-accent/10' : 'hover:bg-theme-card-alt/50'}`}
+                        onClick={() => compareMode && toggleCompareSelection(quote.id)}
+                      >
+                        {compareMode && (
+                          <TableCell>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              isSelected ? 'bg-theme-accent border-theme-accent' : 'border-theme-text-muted'
+                            }`}>
+                              {isSelected && <Check className="w-3 h-3 text-theme-bg" />}
+                            </div>
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-theme-text">
+                              {quote.client_name || t('homeUnnamedClient')}
+                            </p>
+                            <p className="text-xs text-theme-text-muted">
+                              {quote.project_name || t('homeNoProject')}
+                            </p>
+                            <p className="text-xs text-theme-text-muted flex items-center gap-1 mt-1">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(quote.updated_at)}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-theme-text font-medium">
+                          {quote.inputs?.basePrice ? formatCurrency(quote.inputs.basePrice, 'AED', 1) : "—"}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="text-theme-text text-sm">
+                            {quote.developer || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {(quote.inputs as any)?._clientInfo?.zoneName && (
+                            <span className="text-cyan-400 text-sm flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {(quote.inputs as any)._clientInfo.zoneName}
+                            </span>
+                          )}
+                          {!(quote.inputs as any)?._clientInfo?.zoneName && (
+                            <span className="text-theme-text-muted text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={currentStatus}
+                            onValueChange={(value) => updateQuoteStatus(quote.id, value as QuoteStatus)}
+                          >
+                            <SelectTrigger className={`w-[130px] h-8 text-xs border ${statusConfig[currentStatus].className} bg-transparent`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-theme-card border-theme-border">
+                              {Object.entries(statusConfig).map(([key, config]) => (
+                                <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt">
+                                  {config.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          {!compareMode && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-theme-text-muted hover:text-green-400 hover:bg-green-500/10"
+                                onClick={() => handleWhatsAppShare(quote)}
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </Button>
+                              {quote.share_token && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleShare(quote)}
+                                  className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => navigate(`/cashflow/${quote.id}`)}
+                                className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(quote)}
+                                className="h-8 w-8 text-theme-text-muted hover:text-red-400 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </main>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingQuote} onOpenChange={() => setDeletingQuote(null)}>
-        <AlertDialogContent className="bg-[#1a1f2e] border-[#2a3142]">
+        <AlertDialogContent className="bg-theme-card border-theme-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('quotesDeleteTitle')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-theme-text">{t('quotesDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
               {t('quotesDeleteDesc').replace('{title}', deletingQuote?.title || t('quotesUntitled'))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#2a3142] text-gray-300 border-[#2a3142] hover:bg-[#3a4152] hover:text-white">
+            <AlertDialogCancel className="bg-theme-bg-alt text-theme-text border-theme-border hover:bg-theme-card-alt hover:text-theme-text">
               {t('quotesCancel')}
             </AlertDialogCancel>
             <AlertDialogAction 

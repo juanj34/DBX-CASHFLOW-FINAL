@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
   SlidersHorizontal, Menu, Scale, DollarSign, MessageCircle, 
-  Edit, Sun, Moon, Cloud, Filter
+  Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -36,16 +37,21 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { MarketPulseModal } from "@/components/dashboard/MarketPulseModal";
+import { PipelineAnalyticsChart } from "@/components/dashboard/PipelineAnalyticsChart";
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
+type SortField = 'date' | 'value' | 'developer' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 interface QuoteWithDetails {
   id: string;
   client_name: string | null;
+  client_email: string | null;
   project_name: string | null;
   developer: string | null;
   created_at: string;
   status: QuoteStatus | null;
+  sold_at?: string | null;
   inputs: {
     basePrice?: number;
     rentalYieldPercent?: number;
@@ -66,6 +72,9 @@ const Home = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('month');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Get commission rate from profile
   const commissionRate = profile?.commission_rate ?? 2;
@@ -92,9 +101,18 @@ const Home = () => {
     return <Moon className="w-5 h-5 text-blue-300" />;
   };
 
-  // Filter quotes based on status and date
+  // Filter quotes based on status, date, and search
   const filteredQuotes = useMemo(() => {
     return quotes.filter(quote => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const clientMatch = quote.client_name?.toLowerCase().includes(query);
+        const projectMatch = quote.project_name?.toLowerCase().includes(query);
+        const developerMatch = quote.developer?.toLowerCase().includes(query);
+        if (!clientMatch && !projectMatch && !developerMatch) return false;
+      }
+      
       // Status filter
       if (statusFilter !== 'all' && quote.status !== statusFilter) return false;
       
@@ -114,9 +132,33 @@ const Home = () => {
       
       return true;
     });
-  }, [quotes, statusFilter, dateFilter]);
+  }, [quotes, statusFilter, dateFilter, searchQuery]);
 
-  // Calculate pipeline stats from filtered quotes
+  // Sort quotes
+  const sortedQuotes = useMemo(() => {
+    return [...filteredQuotes].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case 'date':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case 'value':
+          comparison = (a.inputs?.basePrice || 0) - (b.inputs?.basePrice || 0);
+          break;
+        case 'developer':
+          comparison = (a.developer || '').localeCompare(b.developer || '');
+          break;
+        case 'status':
+          comparison = (a.status || 'draft').localeCompare(b.status || 'draft');
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredQuotes, sortField, sortDirection]);
+
+  // Calculate pipeline stats from quotes - split by sold
   const pipelineStats = useMemo(() => {
     const thisMonth = quotes.filter(q => {
       const created = new Date(q.created_at);
@@ -124,13 +166,18 @@ const Home = () => {
       return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
     });
     
+    const soldQuotes = quotes.filter(q => q.status === 'sold');
+    const nonSoldQuotes = quotes.filter(q => q.status !== 'sold');
+    
     const pipelineVolume = quotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
-    const potentialCommission = pipelineVolume * (commissionRate / 100);
+    const potentialVolume = nonSoldQuotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
+    const earnedVolume = soldQuotes.reduce((sum, q) => sum + (q.inputs?.basePrice || 0), 0);
     
     return {
       activeProposals: thisMonth.length,
       pipelineVolume,
-      potentialCommission
+      potentialCommission: potentialVolume * (commissionRate / 100),
+      earnedCommission: earnedVolume * (commissionRate / 100)
     };
   }, [quotes, commissionRate]);
 
@@ -145,24 +192,22 @@ const Home = () => {
     return `AED ${amount.toFixed(0)}`;
   };
 
-  // Get key metric from quote inputs
-  const getKeyMetric = (inputs: QuoteWithDetails["inputs"]) => {
-    if (!inputs) return null;
-    
-    // Calculate ROE if we have the data
-    const basePrice = inputs.basePrice || 0;
-    const rentalYield = inputs.rentalYieldPercent || 0;
-    
-    if (rentalYield > 0) {
-      return { label: `${rentalYield.toFixed(1)}% Yield`, type: "yield" };
+  // Handle sort
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
     }
-    
-    // If we have appreciation data, show that
-    if (inputs.totalAppreciation) {
-      return { label: `${inputs.totalAppreciation.toFixed(0)}% ROE`, type: "roe" };
-    }
-    
-    return null;
+  };
+
+  // Get sort icon
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-50" />;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-3 h-3" /> 
+      : <ArrowDown className="w-3 h-3" />;
   };
 
   // Action cards configuration
@@ -224,10 +269,10 @@ const Home = () => {
 
     const { data, error } = await supabase
       .from("cashflow_quotes")
-      .select("id, client_name, project_name, developer, created_at, status, inputs")
+      .select("id, client_name, client_email, project_name, developer, created_at, status, sold_at, inputs")
       .eq("broker_id", session.user.id)
       .order("updated_at", { ascending: false })
-      .limit(10);
+      .limit(50);
 
     if (data) {
       setQuotes(data as QuoteWithDetails[]);
@@ -235,9 +280,23 @@ const Home = () => {
   };
 
   const updateQuoteStatus = async (quoteId: string, status: QuoteStatus) => {
+    const now = new Date().toISOString();
+    const quote = quotes.find(q => q.id === quoteId);
+    
+    // Build update object with relevant timestamp
+    const updateData: any = {
+      status,
+      status_changed_at: now,
+    };
+
+    // Set specific timestamps based on status
+    if (status === 'sold') updateData.sold_at = now;
+    if (status === 'presented') updateData.presented_at = now;
+    if (status === 'negotiating') updateData.negotiation_started_at = now;
+
     const { error } = await supabase
       .from("cashflow_quotes")
-      .update({ status })
+      .update(updateData)
       .eq("id", quoteId);
 
     if (error) {
@@ -245,10 +304,30 @@ const Home = () => {
       return;
     }
 
-    setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status } : q));
+    setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status, sold_at: status === 'sold' ? now : q.sold_at } : q));
     
     if (status === 'sold') {
       toast.success("🎉 " + t("dealClosed"));
+      
+      // Send email notification
+      if (profile?.email && quote) {
+        try {
+          await supabase.functions.invoke('send-status-notification', {
+            body: {
+              brokerEmail: profile.email,
+              brokerName: profile.full_name,
+              clientName: quote.client_name,
+              projectName: quote.project_name,
+              dealValue: quote.inputs?.basePrice || 0,
+              commission: (quote.inputs?.basePrice || 0) * (commissionRate / 100),
+              newStatus: status,
+              clientEmail: quote.client_email
+            }
+          });
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+        }
+      }
     } else {
       toast.success(t("statusUpdated"));
     }
@@ -372,47 +451,63 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Pipeline Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 sm:mb-8">
+        {/* Pipeline Stats - 4 cards now */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 sm:mb-8">
           {/* Active Proposals */}
-          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-5 relative overflow-hidden group hover:border-theme-accent/30 transition-all">
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-4 sm:p-5 relative overflow-hidden group hover:border-theme-accent/30 transition-all">
             <div className="absolute inset-0 bg-gradient-to-br from-theme-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-5 h-5 text-theme-accent" />
-                <span className="text-sm text-theme-text-muted uppercase tracking-wide">{t("activeProposals")}</span>
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-theme-accent" />
+                <span className="text-xs text-theme-text-muted uppercase tracking-wide">{t("activeProposals")}</span>
               </div>
-              <p className="text-3xl sm:text-4xl font-bold text-theme-text">{pipelineStats.activeProposals}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-theme-text">{pipelineStats.activeProposals}</p>
               <p className="text-xs text-theme-text-muted mt-1">{t("thisMonth")}</p>
             </div>
           </div>
 
           {/* Pipeline Volume */}
-          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-5 relative overflow-hidden group hover:border-orange-500/30 transition-all">
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-4 sm:p-5 relative overflow-hidden group hover:border-orange-500/30 transition-all">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-orange-400" />
-                <span className="text-sm text-theme-text-muted uppercase tracking-wide">{t("pipelineVolume")}</span>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
+                <span className="text-xs text-theme-text-muted uppercase tracking-wide">{t("pipelineVolume")}</span>
               </div>
-              <p className="text-3xl sm:text-4xl font-bold text-theme-text">{formatCurrency(pipelineStats.pipelineVolume)}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-theme-text">{formatCurrency(pipelineStats.pipelineVolume)}</p>
               <p className="text-xs text-theme-text-muted mt-1">{t("totalDeals")}</p>
             </div>
           </div>
 
           {/* Potential Commission */}
-          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-5 relative overflow-hidden group hover:border-green-500/30 transition-all">
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-4 sm:p-5 relative overflow-hidden group hover:border-cyan-500/30 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+                <span className="text-xs text-theme-text-muted uppercase tracking-wide">{t("potentialCommission")}</span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold text-cyan-400">{formatCurrency(pipelineStats.potentialCommission)}</p>
+              <p className="text-xs text-theme-text-muted mt-1">{t("pending")}</p>
+            </div>
+          </div>
+
+          {/* Earned Commission */}
+          <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-4 sm:p-5 relative overflow-hidden group hover:border-green-500/30 transition-all">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-green-400" />
-                <span className="text-sm text-theme-text-muted uppercase tracking-wide">{t("potentialCommission")}</span>
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                <span className="text-xs text-theme-text-muted uppercase tracking-wide">{t("earnedCommission")}</span>
               </div>
-              <p className="text-3xl sm:text-4xl font-bold text-green-400">{formatCurrency(pipelineStats.potentialCommission)}</p>
-              <p className="text-xs text-theme-text-muted mt-1">{commissionRate}% {t("ofVolume")}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-green-400">{formatCurrency(pipelineStats.earnedCommission)}</p>
+              <p className="text-xs text-theme-text-muted mt-1">{t("closedDeals")}</p>
             </div>
           </div>
         </div>
+
+        {/* Pipeline Analytics Chart */}
+        <PipelineAnalyticsChart quotes={quotes} commissionRate={commissionRate} />
 
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -448,15 +543,44 @@ const Home = () => {
 
         {/* Active Opportunities Table */}
         <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-theme-border gap-4">
-            <h3 className="font-semibold text-theme-text">{t("activeOpportunities")}</h3>
+          <div className="flex flex-col gap-4 p-5 border-b border-theme-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h3 className="font-semibold text-theme-text">{t("activeOpportunities")}</h3>
+              <Link to="/my-quotes">
+                <Button variant="link" className="text-theme-accent hover:text-theme-accent/80 p-0 text-sm">
+                  {t('homeViewAll')} →
+                </Button>
+              </Link>
+            </div>
             
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
+                <Input
+                  placeholder={t("searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9 h-9 bg-theme-bg-alt border-theme-border text-theme-text placeholder:text-theme-text-muted"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-theme-text-muted hover:text-theme-text"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Filters */}
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-theme-text-muted" />
+                <Filter className="w-4 h-4 text-theme-text-muted hidden sm:block" />
                 <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as QuoteStatus | 'all')}>
-                  <SelectTrigger className="w-[130px] h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
                     <SelectValue placeholder={t("allStatuses")} />
                   </SelectTrigger>
                   <SelectContent className="bg-theme-card border-theme-border">
@@ -468,44 +592,61 @@ const Home = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                
+                <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as 'week' | 'month' | '30days' | 'all')}>
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-theme-card border-theme-border">
+                    <SelectItem value="week" className="text-theme-text hover:bg-theme-card-alt">{t("thisWeek")}</SelectItem>
+                    <SelectItem value="month" className="text-theme-text hover:bg-theme-card-alt">{t("thisMonth")}</SelectItem>
+                    <SelectItem value="30days" className="text-theme-text hover:bg-theme-card-alt">{t("last30Days")}</SelectItem>
+                    <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allTime")}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as 'week' | 'month' | '30days' | 'all')}>
-                <SelectTrigger className="w-[130px] h-8 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-theme-card border-theme-border">
-                  <SelectItem value="week" className="text-theme-text hover:bg-theme-card-alt">{t("thisWeek")}</SelectItem>
-                  <SelectItem value="month" className="text-theme-text hover:bg-theme-card-alt">{t("thisMonth")}</SelectItem>
-                  <SelectItem value="30days" className="text-theme-text hover:bg-theme-card-alt">{t("last30Days")}</SelectItem>
-                  <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allTime")}</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Link to="/my-quotes">
-                <Button variant="link" className="text-theme-accent hover:text-theme-accent/80 p-0 text-sm">
-                  {t('homeViewAll')} →
-                </Button>
-              </Link>
             </div>
           </div>
           
-          {filteredQuotes.length > 0 ? (
+          {sortedQuotes.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-theme-border hover:bg-transparent">
                     <TableHead className="text-theme-text-muted font-medium">{t("clientProject")}</TableHead>
-                    <TableHead className="text-theme-text-muted font-medium">{t("dealValue")}</TableHead>
-                    <TableHead className="text-theme-text-muted font-medium hidden md:table-cell">{t("developer")}</TableHead>
+                    <TableHead 
+                      className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('value')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("dealValue")}
+                        {getSortIcon('value')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-theme-text-muted font-medium hidden md:table-cell cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('developer')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("developer")}
+                        {getSortIcon('developer')}
+                      </div>
+                    </TableHead>
                     <TableHead className="text-theme-text-muted font-medium hidden lg:table-cell">{t("zone")}</TableHead>
-                    <TableHead className="text-theme-text-muted font-medium">{t("status")}</TableHead>
+                    <TableHead 
+                      className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {t("status")}
+                        {getSortIcon('status')}
+                      </div>
+                    </TableHead>
                     <TableHead className="text-theme-text-muted font-medium text-right">{t("actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredQuotes.map((quote) => {
-                    const keyMetric = getKeyMetric(quote.inputs);
+                  {sortedQuotes.map((quote) => {
                     const currentStatus = quote.status || "draft";
                     
                     return (
