@@ -56,7 +56,10 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="border-[#2a3142] text-white max-w-lg max-h-[90vh] overflow-y-auto [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:hover:bg-[#2a3142]"
+        style={{ backgroundColor: '#1a1f2e' }}
+      >
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-[#CCFF00] border-t-transparent rounded-full animate-spin" />
