@@ -103,7 +103,7 @@ const PresetsManager = () => {
             <TrendingUp className="w-6 h-6 text-theme-accent" />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-theme-text">{t('appreciationPresets')}</h2>
+            <h2 className="text-2xl font-semibold text-theme-text">{t('appreciationPresetsManager')}</h2>
             <p className="text-theme-text-muted">{t('appreciationPresetsDesc')}</p>
           </div>
         </div>
@@ -121,7 +121,7 @@ const PresetsManager = () => {
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div className="space-y-1.5">
-                <label className="text-xs text-theme-text-muted">{t('presetName')}</label>
+                <label className="text-xs text-theme-text-muted">{t('presetNameLabel')}</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -161,12 +161,12 @@ const PresetsManager = () => {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs text-theme-text-muted">{t('growthPeriod')} ({t('years')})</label>
-                  <Input
-                    type="number"
-                    value={formData.growthPeriodYears}
-                    onChange={(e) => setFormData(prev => ({ ...prev, growthPeriodYears: parseInt(e.target.value) || 5 }))}
+              <div className="space-y-1.5">
+                <label className="text-xs text-theme-text-muted">{t('growthPeriod')} ({t('yearsLabel')})</label>
+                <Input
+                  type="number"
+                  value={formData.growthPeriodYears}
+                  onChange={(e) => setFormData(prev => ({ ...prev, growthPeriodYears: parseInt(e.target.value) || 5 }))}
                     className="bg-theme-bg border-theme-border text-theme-text"
                   />
                 </div>
@@ -195,7 +195,7 @@ const PresetsManager = () => {
                   disabled={saving}
                   className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('savePreset')}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('savePresetBtn')}
                 </Button>
               </div>
             </div>
@@ -226,11 +226,11 @@ const PresetsManager = () => {
             <thead>
               <tr className="border-b border-theme-border">
                 <th className="text-left text-xs font-medium text-theme-text-muted p-4">{t('name')}</th>
-                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('constructionPercent')}</th>
-                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('growthPercent')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('constructionPercentLabel')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('growthPercentLabel')}</th>
                 <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('maturePercent')}</th>
                 <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('growthPeriod')}</th>
-                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('rentGrowth')}</th>
+                <th className="text-center text-xs font-medium text-theme-text-muted p-4">{t('rentGrowthLabel')}</th>
                 <th className="text-right text-xs font-medium text-theme-text-muted p-4">{t('actions')}</th>
               </tr>
             </thead>
@@ -294,7 +294,7 @@ const PresetsManager = () => {
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-1.5">
-              <label className="text-xs text-theme-text-muted">{t('presetName')}</label>
+              <label className="text-xs text-theme-text-muted">{t('presetNameLabel')}</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -335,7 +335,7 @@ const PresetsManager = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-theme-text-muted">{t('growthPeriod')} ({t('years')})</label>
+                <label className="text-xs text-theme-text-muted">{t('growthPeriod')} ({t('yearsLabel')})</label>
                 <Input
                   type="number"
                   value={formData.growthPeriodYears}
