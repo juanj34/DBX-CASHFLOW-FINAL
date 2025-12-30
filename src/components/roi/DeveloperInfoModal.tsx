@@ -107,16 +107,7 @@ export const DeveloperInfoModal = ({ developerId, open, onOpenChange }: Develope
                     </DialogTitle>
                     
                     <div className="flex items-center gap-3 mt-2">
-                      <TierBadge score={trustScore} variant="default" />
-                      <div className="flex items-baseline gap-1">
-                        <span 
-                          className="text-3xl font-black tracking-tight"
-                          style={{ color: tier.color }}
-                        >
-                          {trustScore.toFixed(1)}
-                        </span>
-                        <span className="text-sm text-gray-500">/10</span>
-                      </div>
+                      <TierBadge score={trustScore} variant="default" showTooltip={false} />
                     </div>
                     
                     {developer.founded_year && (

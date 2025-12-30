@@ -27,15 +27,17 @@ export const TierBadge: React.FC<TierBadgeProps> = ({
 
   const badge = (
     <span
-      className={`inline-flex items-center font-semibold rounded-full whitespace-nowrap ${sizeClasses[variant]} ${className}`}
+      className={`inline-flex items-center font-bold rounded-full whitespace-nowrap ${sizeClasses[variant]} ${className}`}
       style={{
         backgroundColor: tier.bgColor,
         color: tier.color,
         border: `1px solid ${tier.color}40`,
+        textShadow: `0 0 10px ${tier.color}30`,
       }}
     >
       <span>{tier.emoji}</span>
       <span>{tier.label}</span>
+      <span className="ml-1 opacity-90">{score.toFixed(1)}</span>
     </span>
   );
 
@@ -49,9 +51,13 @@ export const TierBadge: React.FC<TierBadgeProps> = ({
         <TooltipTrigger asChild>
           {badge}
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <p className="font-medium">{tier.emoji} {tier.label}</p>
-          <p className="text-xs text-muted-foreground">
+        <TooltipContent 
+          side="top" 
+          className="max-w-xs border-gray-700"
+          style={{ backgroundColor: '#1a1f2e', color: '#fff' }}
+        >
+          <p className="font-medium">{tier.emoji} {tier.label} {score.toFixed(1)}</p>
+          <p className="text-xs text-gray-400">
             {language === 'es' ? tier.descriptionEs : tier.description}
           </p>
         </TooltipContent>

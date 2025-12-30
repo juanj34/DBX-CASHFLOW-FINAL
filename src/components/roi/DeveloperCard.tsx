@@ -55,43 +55,84 @@ export const DeveloperCard = ({
 
   if (!developerId && !developerName) return null;
 
-  // Compact variant - simpler display
+  // Compact variant - Trust Seal design
   if (variant === 'compact') {
     return (
       <div 
         onClick={onClick}
         className={cn(
-          "bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-4 transition-all",
-          onClick && "cursor-pointer hover:border-[#CCFF00]/30 hover:bg-[#1a1f2e]/80",
+          "relative rounded-xl p-4 transition-all duration-300 group overflow-hidden",
+          onClick && "cursor-pointer",
           className
         )}
+        style={{
+          backgroundColor: '#141820',
+          border: tier ? `1px solid ${tier.color}30` : '1px solid #2a3142',
+        }}
       >
-        <div className="flex items-center gap-3">
-          {developer?.logo_url ? (
-            <img 
-              src={developer.logo_url} 
-              alt={developer.name}
-              className="w-10 h-10 rounded-lg object-cover border border-[#2a3142]"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-[#2a3142] flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-gray-500" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">
-              {developer?.name || developerName || 'Unknown Developer'}
-            </p>
-            {tier && (
-              <div className="flex items-center gap-2 mt-1">
-                <TierBadge score={trustScore} variant="compact" />
-                <span className="text-sm font-bold" style={{ color: tier.color }}>
-                  {trustScore.toFixed(1)}
-                </span>
+        {/* Subtle glow effect on hover */}
+        {tier && (
+          <div 
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at center, ${tier.color}10 0%, transparent 70%)`,
+            }}
+          />
+        )}
+        
+        <div className="relative flex items-center gap-3">
+          {/* Developer Logo with tier-colored border */}
+          <div className="relative flex-shrink-0">
+            {developer?.logo_url ? (
+              <img 
+                src={developer.logo_url} 
+                alt={developer.name}
+                className="w-11 h-11 rounded-xl object-cover transition-transform group-hover:scale-105"
+                style={{ 
+                  border: tier ? `2px solid ${tier.color}50` : '2px solid #2a3142',
+                }}
+              />
+            ) : (
+              <div 
+                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                style={{ 
+                  background: tier ? `linear-gradient(135deg, ${tier.color}30 0%, ${tier.color}10 100%)` : '#2a3142',
+                  border: tier ? `2px solid ${tier.color}40` : '2px solid #2a3142',
+                }}
+              >
+                <Building2 className="w-5 h-5" style={{ color: tier?.color || '#6b7280' }} />
               </div>
             )}
+            {/* Glow behind logo */}
+            {tier && (
+              <div 
+                className="absolute inset-0 rounded-xl blur-lg opacity-40 -z-10"
+                style={{ backgroundColor: tier.color }}
+              />
+            )}
           </div>
-          {onClick && <ChevronRight className="w-4 h-4 text-gray-400" />}
+
+          {/* Name + Badge inline */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className="text-sm font-semibold text-white truncate">
+              {developer?.name || developerName || 'Unknown Developer'}
+            </span>
+            {tier && (
+              <TierBadge score={trustScore} variant="compact" showTooltip={false} />
+            )}
+          </div>
+
+          {/* On-time micro-data */}
+          {developer?.on_time_delivery_rate && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 whitespace-nowrap">
+              <Clock className="w-3 h-3" />
+              <span>{developer.on_time_delivery_rate}% On-time</span>
+            </div>
+          )}
+
+          {onClick && (
+            <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors flex-shrink-0" />
+          )}
         </div>
       </div>
     );
