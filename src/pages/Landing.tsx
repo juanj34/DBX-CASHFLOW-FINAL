@@ -359,9 +359,10 @@ const Landing = () => {
             <span>{t('landingRightsReserved')}</span>
           </div>
           <div className="flex items-center gap-4 sm:gap-6 text-gray-500 text-xs sm:text-sm">
-            <a href="#" className="hover:text-white transition-colors">{t('landingPrivacy')}</a>
-            <a href="#" className="hover:text-white transition-colors">{t('landingTerms')}</a>
-            <a href="#" className="hover:text-white transition-colors">{t('landingContact')}</a>
+            <Link to="/privacy" className="hover:text-white transition-colors">{t('landingPrivacy')}</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">{t('landingTerms')}</Link>
+            <Link to="/contact" className="hover:text-white transition-colors">{t('landingContact')}</Link>
+            <Link to="/help" className="hover:text-white transition-colors">{t('landingHelp')}</Link>
           </div>
         </div>
       </footer>
