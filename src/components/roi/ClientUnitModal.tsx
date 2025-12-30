@@ -14,6 +14,7 @@ export interface Client {
   id: string;
   name: string;
   country: string;
+  email?: string;
 }
 
 interface ClientUnitModalProps {
@@ -333,11 +334,18 @@ export const ClientUnitModal = ({ data, onChange, open, onOpenChange, showTrigge
                 const clientShare = clientShares.find(s => s.clientId === client.id)?.sharePercent || 0;
                 return (
                   <div key={client.id} className="flex items-center gap-2 p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
-                    <div className={`flex-1 grid gap-2 ${data.splitEnabled ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <div className={`flex-1 grid gap-2 ${data.splitEnabled ? 'grid-cols-4' : 'grid-cols-3'}`}>
                       <Input
                         value={client.name}
                         onChange={(e) => handleClientChange(client.id, 'name', e.target.value)}
                         placeholder={t('clientName')}
+                        className="bg-[#1a1f2e] border-[#2a3142] text-white h-9"
+                      />
+                      <Input
+                        type="email"
+                        value={client.email || ''}
+                        onChange={(e) => handleClientChange(client.id, 'email', e.target.value)}
+                        placeholder={language === 'es' ? 'Email (opcional)' : 'Email (optional)'}
                         className="bg-[#1a1f2e] border-[#2a3142] text-white h-9"
                       />
                       <CountrySelect

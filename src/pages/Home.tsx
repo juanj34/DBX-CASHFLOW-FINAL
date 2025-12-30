@@ -235,6 +235,22 @@ const Home = () => {
           </div>
         )}
       </main>
+
+      {/* Footer - matching Landing page */}
+      <footer className="relative z-10 px-4 sm:px-6 py-6 sm:py-8 border-t border-[#2a3142]">
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-gray-500 text-xs sm:text-sm text-center sm:text-left">
+            <span>© 2024 Dubai Invest Pro.</span>
+            <span>{t('landingRightsReserved')}</span>
+          </div>
+          <div className="flex items-center gap-4 sm:gap-6 text-gray-500 text-xs sm:text-sm">
+            <Link to="/privacy" className="hover:text-white transition-colors">{t('landingPrivacy')}</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">{t('landingTerms')}</Link>
+            <Link to="/contact" className="hover:text-white transition-colors">{t('landingContact')}</Link>
+            <Link to="/help" className="hover:text-white transition-colors">{t('landingHelp')}</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
