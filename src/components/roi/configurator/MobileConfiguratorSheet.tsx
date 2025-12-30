@@ -358,17 +358,23 @@ export const MobileConfiguratorSheet = ({
           <ClientSection
             clientInfo={effectiveClientInfo}
             onClientInfoChange={effectiveSetClientInfo}
+            quoteId={quoteId}
+          />
+        );
+      case 'property':
+        return (
+          <PropertySection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
             onFloorPlanChange={handleFloorPlanUpload}
             onBuildingRenderChange={handleBuildingRenderUpload}
             showLogoOverlay={showLogoOverlay}
             onShowLogoOverlayChange={setShowLogoOverlay}
-            quoteId={quoteId}
           />
         );
-      case 'property':
-        return <PropertySection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'payment':
         return <PaymentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'value':

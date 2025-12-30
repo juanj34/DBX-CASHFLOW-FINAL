@@ -115,38 +115,6 @@ export const PropertyTabContent = ({
           onEditClick={onEditClient} 
         />
         
-        {/* Images Row - Floor Plan + Building Render */}
-        {hasImages && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Floor Plan - Clickable for lightbox */}
-            {floorPlanUrl && (
-              <div 
-                className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 cursor-pointer hover:border-[#CCFF00]/50 transition-colors"
-                onClick={() => setLightboxOpen(true)}
-              >
-                <p className="text-xs text-gray-500 mb-2">Floor Plan</p>
-                <div className="aspect-[4/3] rounded-xl overflow-hidden bg-[#0d1117]">
-                  <img 
-                    src={floorPlanUrl} 
-                    alt="Floor Plan" 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">Click to enlarge</p>
-              </div>
-            )}
-            
-            {/* Building Render with Logo Overlay */}
-            {buildingRenderUrl && (
-              <BuildingRenderCard
-                imageUrl={buildingRenderUrl}
-                developerId={developerId}
-                showLogoOverlay={showLogoOverlay}
-              />
-            )}
-          </div>
-        )}
-        
         {/* Investment Snapshot */}
         <CompactInvestmentSnapshot 
           inputs={inputs} 
@@ -184,6 +152,41 @@ export const PropertyTabContent = ({
           customDifferentiators={customDifferentiators}
           onEditClick={onEditConfig}
         />
+
+        {/* Images Row - Floor Plan + Building Render - MOVED TO BOTTOM */}
+        {hasImages && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Floor Plan - Clickable for lightbox */}
+            {floorPlanUrl && (
+              <div 
+                className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 cursor-pointer hover:border-[#CCFF00]/50 transition-colors"
+                onClick={() => setLightboxOpen(true)}
+              >
+                <p className="text-xs text-gray-500 mb-2">Floor Plan</p>
+                <div className="aspect-[4/3] rounded-xl overflow-hidden bg-[#0d1117]">
+                  <img 
+                    src={floorPlanUrl} 
+                    alt="Floor Plan" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">Click to enlarge</p>
+              </div>
+            )}
+            
+            {/* Building Render with Logo Overlay + Lightbox */}
+            {buildingRenderUrl && (
+              <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4">
+                <p className="text-xs text-gray-500 mb-2">Building Render</p>
+                <BuildingRenderCard
+                  imageUrl={buildingRenderUrl}
+                  developerId={developerId}
+                  showLogoOverlay={showLogoOverlay}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Lightbox */}
         {floorPlanUrl && (
