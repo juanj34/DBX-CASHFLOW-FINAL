@@ -1,7 +1,13 @@
-import { Building, Key, Wallet, TrendingUp, Trophy, Zap } from "lucide-react";
+import { Building, Key, Wallet, TrendingUp, Trophy, Zap, Info } from "lucide-react";
 import { OIYearlyProjection } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface InvestmentJourneyCardsProps {
   projections: OIYearlyProjection[];
@@ -25,30 +31,46 @@ export const InvestmentJourneyCards = ({
   // Find key milestones
   const handoverProjection = projections.find(p => p.isHandover);
   const lastProjection = projections[projections.length - 1];
-  const firstRentYear = projections.find(p => !p.isConstruction && p.netIncome > 0);
+  
+  // First COMPLETE year of rent (the year AFTER handover, not the handover year which may be partial)
+  const cashflowYears = projections.filter(p => !p.isConstruction);
+  const firstCompleteRentYear = cashflowYears.length > 1 
+    ? cashflowYears[1] // Second cashflow year is first complete year
+    : cashflowYears[0]; // Fallback to first if only one
   
   // Calculate phase data
   const constructionYears = projections.filter(p => p.isConstruction);
-  const cashflowYears = projections.filter(p => !p.isConstruction);
   
   // Construction phase appreciation
   const constructionAppreciation = handoverProjection 
     ? ((handoverProjection.propertyValue - basePrice) / basePrice) * 100 
     : 0;
   
-  // Cashflow phase income
+  // Appreciation breakdown for tooltip
+  const appreciationPerYear = constructionYears.length > 0 
+    ? constructionAppreciation / constructionYears.length 
+    : 0;
+  
+  // Cashflow phase income - separate LT and ST totals
   const totalLTIncome = lastProjection?.cumulativeNetIncome || 0;
   const totalSTIncome = lastProjection?.airbnbCumulativeNetIncome || 0;
-  const avgAnnualLT = cashflowYears.length > 0 
-    ? cashflowYears.reduce((sum, p) => sum + (p.netIncome || 0), 0) / cashflowYears.filter(p => p.netIncome > 0).length
+  
+  // Only count complete years for averages (exclude handover year which may be partial)
+  const completeRentYears = cashflowYears.slice(1); // Skip handover year
+  const avgAnnualLT = completeRentYears.length > 0 
+    ? completeRentYears.reduce((sum, p) => sum + (p.netIncome || 0), 0) / completeRentYears.length
     : 0;
-  const avgAnnualST = cashflowYears.length > 0 && showAirbnbComparison
-    ? cashflowYears.reduce((sum, p) => sum + (p.airbnbNetIncome || 0), 0) / cashflowYears.filter(p => p.airbnbNetIncome > 0).length
+  const avgAnnualST = completeRentYears.length > 0 && showAirbnbComparison
+    ? completeRentYears.reduce((sum, p) => sum + (p.airbnbNetIncome || 0), 0) / completeRentYears.length
     : 0;
 
   // Final wealth
   const finalPropertyValue = lastProjection?.propertyValue || 0;
   const totalAppreciation = ((finalPropertyValue - basePrice) / basePrice) * 100;
+  
+  // Calculate actual total years (construction + rental period)
+  const totalYears = projections.length;
+  const rentalYears = cashflowYears.length;
 
   return (
     <div className="space-y-4">
@@ -105,11 +127,25 @@ export const InvestmentJourneyCards = ({
         </div>
       )}
 
-      {/* 10-Year Journey Timeline */}
+      {/* Investment Journey Timeline */}
       <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="w-5 h-5 text-[#CCFF00]" />
-          <h3 className="font-semibold text-white">The 10-Year Journey</h3>
+          <h3 className="font-semibold text-white">
+            The {totalYears}-Year Journey
+          </h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-3.5 h-3.5 text-gray-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                <p className="text-xs">
+                  {constructionYears.length} years construction + {rentalYears} years of rental income = {totalYears} total years
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Visual Timeline */}
@@ -140,7 +176,7 @@ export const InvestmentJourneyCards = ({
         {/* 3 Milestone Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: The Build (Construction Phase) */}
-          <div className="bg-[#0d1117] border border-amber-500/30 rounded-xl p-4">
+          <div className="bg-[#0d1117] border border-amber-500/30 rounded-xl p-4 hover:border-amber-500/60 transition-colors cursor-default group">
             <div className="flex items-center gap-2 mb-3">
               <div className="p-1.5 bg-amber-500/20 rounded-lg">
                 <Building className="w-4 h-4 text-amber-400" />
@@ -159,7 +195,32 @@ export const InvestmentJourneyCards = ({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Capital Growth</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
+                        Capital Growth
+                        <Info className="w-3 h-3 text-gray-500" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium">Construction Phase Appreciation</p>
+                        <p className="text-[10px] text-gray-400">
+                          Off-plan properties typically appreciate during construction as the project progresses and risk decreases.
+                        </p>
+                        <div className="mt-2 pt-2 border-t border-[#2a3142]">
+                          <p className="text-[10px] text-gray-400">
+                            ~{appreciationPerYear.toFixed(1)}% per year × {constructionYears.length} years = <span className="text-green-400 font-medium">+{constructionAppreciation.toFixed(0)}%</span>
+                          </p>
+                          <p className="text-[10px] text-gray-500 mt-1">
+                            Value at handover: {formatCurrency(handoverProjection?.propertyValue || basePrice, currency, rate)}
+                          </p>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <span className="text-sm font-mono text-green-400">
                   +{constructionAppreciation.toFixed(0)}%
                 </span>
@@ -174,7 +235,7 @@ export const InvestmentJourneyCards = ({
           </div>
 
           {/* Card 2: The Handover */}
-          <div className="bg-[#0d1117] border border-[#CCFF00]/30 rounded-xl p-4">
+          <div className="bg-[#0d1117] border border-[#CCFF00]/30 rounded-xl p-4 hover:border-[#CCFF00]/60 transition-colors cursor-default">
             <div className="flex items-center gap-2 mb-3">
               <div className="p-1.5 bg-[#CCFF00]/20 rounded-lg">
                 <Key className="w-4 h-4 text-[#CCFF00]" />
@@ -193,9 +254,23 @@ export const InvestmentJourneyCards = ({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">First Year Rent</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
+                        First Full Year Rent
+                        <Info className="w-3 h-3 text-gray-500" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                      <p className="text-xs">
+                        Annual rental income for {firstCompleteRentYear?.calendarYear || 'first full year'} (first complete 12-month period after handover).
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <span className="text-sm font-mono text-cyan-400">
-                  {formatCurrency(firstRentYear?.netIncome || 0, currency, rate)}
+                  {formatCurrency(firstCompleteRentYear?.netIncome || 0, currency, rate)}
                 </span>
               </div>
             </div>
@@ -208,42 +283,74 @@ export const InvestmentJourneyCards = ({
           </div>
 
           {/* Card 3: The Cashflow Engine */}
-          <div className="bg-[#0d1117] border border-green-500/30 rounded-xl p-4">
+          <div className="bg-[#0d1117] border border-green-500/30 rounded-xl p-4 hover:border-green-500/60 transition-colors cursor-default">
             <div className="flex items-center gap-2 mb-3">
               <div className="p-1.5 bg-green-500/20 rounded-lg">
                 <Wallet className="w-4 h-4 text-green-400" />
               </div>
               <div>
                 <h4 className="text-sm font-medium text-white">The Cashflow Engine</h4>
-                <p className="text-[10px] text-gray-500">Years {(constructionYears.length || 3) + 1}-10</p>
+                <p className="text-[10px] text-gray-500">{rentalYears} years of rental</p>
               </div>
             </div>
             
             <div className="space-y-2">
+              {/* Show separate LT/ST total profits instead of averages */}
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Avg. Annual (LT)</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
+                        Total Profit (LT)
+                        <Info className="w-3 h-3 text-gray-500" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                      <p className="text-xs">
+                        Cumulative net rental income over {rentalYears} years with Long-Term strategy. Avg: {formatCurrency(avgAnnualLT, currency, rate)}/year
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <span className="text-sm font-mono text-cyan-400">
-                  {formatCurrency(avgAnnualLT, currency, rate)}
+                  +{formatCurrency(totalLTIncome, currency, rate)}
                 </span>
               </div>
               {showAirbnbComparison && (
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Avg. Annual (ST)</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
+                          Total Profit (ST)
+                          <Info className="w-3 h-3 text-gray-500" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                        <p className="text-xs">
+                          Cumulative net rental income over {rentalYears} years with Short-Term strategy. Avg: {formatCurrency(avgAnnualST, currency, rate)}/year
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <span className="text-sm font-mono text-orange-400">
-                    {formatCurrency(avgAnnualST, currency, rate)}
+                    +{formatCurrency(totalSTIncome, currency, rate)}
                   </span>
                 </div>
               )}
             </div>
             
-            <div className="mt-3 pt-2 border-t border-[#2a3142]">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Total Profit</span>
-                <span className="text-sm font-bold font-mono text-green-400">
-                  +{formatCurrency(showAirbnbComparison ? Math.max(totalLTIncome, totalSTIncome) : totalLTIncome, currency, rate)}
-                </span>
+            {/* Winner indicator when comparison enabled */}
+            {showAirbnbComparison && (
+              <div className="mt-3 pt-2 border-t border-[#2a3142]">
+                <p className="text-[10px] text-gray-500">
+                  {totalSTIncome > totalLTIncome 
+                    ? `🏆 ST wins by +${formatCurrency(totalSTIncome - totalLTIncome, currency, rate)}`
+                    : `🏆 LT wins by +${formatCurrency(totalLTIncome - totalSTIncome, currency, rate)}`
+                  }
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -251,8 +358,27 @@ export const InvestmentJourneyCards = ({
         <div className="mt-4 p-4 bg-gradient-to-r from-[#CCFF00]/10 to-green-500/10 rounded-xl border border-[#CCFF00]/30">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">Total Net Wealth Created</p>
-              <p className="text-sm text-gray-500">(Property Value + Reinvested Rental Income)</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-400 uppercase tracking-wider">Total Net Wealth Created</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3.5 h-3.5 text-gray-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Wealth created over {totalYears} years:</p>
+                        <div className="text-[10px] space-y-1 text-gray-400">
+                          <p>Final Property Value: {formatCurrency(finalPropertyValue, currency, rate)}</p>
+                          <p>+ Total Rental Income: {formatCurrency(showAirbnbComparison ? Math.max(totalLTIncome, totalSTIncome) : totalLTIncome, currency, rate)}</p>
+                          <p>- Capital Invested: {formatCurrency(totalCapitalInvested, currency, rate)}</p>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-sm text-gray-500">Over {totalYears} years ({constructionYears.length}yr build + {rentalYears}yr rental)</p>
             </div>
             <div className="text-center sm:text-right">
               <p className="text-3xl sm:text-4xl font-bold text-[#CCFF00] font-mono">
@@ -263,7 +389,7 @@ export const InvestmentJourneyCards = ({
                 )}
               </p>
               <p className="text-xs text-green-400">
-                +{totalAppreciation.toFixed(0)}% property appreciation
+                +{totalAppreciation.toFixed(0)}% property appreciation over {totalYears} years
               </p>
             </div>
           </div>
