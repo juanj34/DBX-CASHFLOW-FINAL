@@ -86,7 +86,25 @@ interface Zone {
   maturity_label: string | null;
 }
 
-export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, showTrigger = false, mortgageInputs, setMortgageInputs, clientInfo, setClientInfo, quoteId }: OIInputModalProps) => {
+export const OIInputModal = ({ 
+  inputs, 
+  setInputs, 
+  open, 
+  onOpenChange, 
+  currency, 
+  showTrigger = false, 
+  mortgageInputs, 
+  setMortgageInputs, 
+  clientInfo, 
+  setClientInfo, 
+  quoteId,
+  floorPlanUrl,
+  buildingRenderUrl,
+  showLogoOverlay,
+  onFloorPlanChange,
+  onBuildingRenderChange,
+  onShowLogoOverlayChange,
+}: OIInputModalProps) => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   
@@ -342,6 +360,12 @@ export const OIInputModal = ({ inputs, setInputs, open, onOpenChange, currency, 
             clientInfo={clientInfo}
             setClientInfo={setClientInfo}
             quoteId={quoteId}
+            floorPlanUrl={floorPlanUrl}
+            buildingRenderUrl={buildingRenderUrl}
+            showLogoOverlay={showLogoOverlay}
+            onFloorPlanChange={onFloorPlanChange}
+            onBuildingRenderChange={onBuildingRenderChange}
+            onShowLogoOverlayChange={onShowLogoOverlayChange}
           />
         </DialogContent>
       </Dialog>

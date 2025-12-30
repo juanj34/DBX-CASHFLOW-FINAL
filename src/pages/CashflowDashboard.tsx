@@ -68,7 +68,7 @@ const CashflowDashboardContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
@@ -435,7 +435,24 @@ const CashflowDashboardContent = () => {
                   onOpenChange={setMortgageModalOpen}
                 />
                 <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-                <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} clientInfo={clientInfo} setClientInfo={setClientInfo} quoteId={quoteId} />
+                <OIInputModal 
+                  inputs={inputs} 
+                  setInputs={setInputs} 
+                  open={modalOpen} 
+                  onOpenChange={setModalOpen} 
+                  currency={currency} 
+                  mortgageInputs={mortgageInputs} 
+                  setMortgageInputs={setMortgageInputs} 
+                  clientInfo={clientInfo} 
+                  setClientInfo={setClientInfo} 
+                  quoteId={quoteId}
+                  floorPlanUrl={quoteImages.floorPlanUrl}
+                  buildingRenderUrl={quoteImages.buildingRenderUrl}
+                  showLogoOverlay={quoteImages.showLogoOverlay}
+                  onFloorPlanChange={(url) => setQuoteImages(prev => ({ ...prev, floorPlanUrl: url }))}
+                  onBuildingRenderChange={(url) => setQuoteImages(prev => ({ ...prev, buildingRenderUrl: url }))}
+                  onShowLogoOverlayChange={(show) => setQuoteImages(prev => ({ ...prev, showLogoOverlay: show }))}
+                />
                 <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
                 <VersionHistoryModal 
                   open={versionHistoryOpen} 
