@@ -28,7 +28,6 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
   // Calculate total amounts
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
-  const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
   const todayTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
   const grandTotal = basePrice + dldFeeAmount + oqoodFee;
 
@@ -57,7 +56,7 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-theme-text flex items-center gap-2">
-          👥 {t('clientSplitLabel') || 'Client Split'}
+          👥 {t('ownershipStructure')}
         </span>
         <span className="text-xs text-theme-text-muted">
           {clients.length} {t('clients').toLowerCase()}
@@ -86,7 +85,7 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
                       {clientDisplay.name}
                     </div>
                     <div className="text-xs text-cyan-400 font-medium">
-                      {sharePercent.toFixed(1)}% {t('shareLabel') || 'share'}
+                      {sharePercent.toFixed(1)}% {t('shareLabel')}
                     </div>
                   </div>
                 </div>
@@ -94,11 +93,11 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-theme-text-muted">{t('entryLabel') || 'Entry'}</span>
+                  <span className="text-theme-text-muted">{t('booking')}</span>
                   <span className="text-theme-text font-mono">{formatCurrency(clientEntryTotal, currency, rate)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm pt-1 border-t border-theme-border/30">
-                  <span className="text-theme-accent font-medium">{t('totalLabel') || 'Total'}</span>
+                  <span className="text-theme-accent font-medium">{t('total')}</span>
                   <span className="text-theme-accent font-bold font-mono">{formatCurrency(clientGrandTotal, currency, rate)}</span>
                 </div>
               </div>
@@ -111,7 +110,7 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate, onViewDet
                   className="w-full mt-3 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
                 >
                   <Eye className="w-3 h-3 mr-1" />
-                  {t('viewDetailsLabel') || 'View Details'}
+                  {t('viewBreakdown')}
                 </Button>
               )}
             </div>

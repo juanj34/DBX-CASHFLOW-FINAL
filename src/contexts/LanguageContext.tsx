@@ -277,6 +277,35 @@ const translations: Translations = {
   entryCostsDldOqood: { en: 'Entry Costs (DLD + Oqood)', es: 'Costos de Entrada (DLD + Oqood)' },
   totalToDisburse: { en: 'Total to Disburse', es: 'Total a Desembolsar' },
   
+  // Payment Breakdown - Section Headers (PROPER NAMES)
+  theEntry: { en: 'The Entry', es: 'La Entrada' },
+  theJourney: { en: 'The Journey', es: 'El Camino' },
+  completionHandover: { en: 'Completion & Handover', es: 'Entrega Final' },
+  
+  // Payment Summary Cards
+  initialCashRequired: { en: 'Initial Cash Required', es: 'Efectivo Inicial Requerido' },
+  monthlyBurnRate: { en: 'Monthly Burn Rate', es: 'Gasto Mensual' },
+  completionBalance: { en: 'Completion Balance', es: 'Saldo de Entrega' },
+  dueBy: { en: 'Due by', es: 'Vence' },
+  
+  // Timeline Legend
+  booking: { en: 'Booking', es: 'Reserva' },
+  milestone: { en: 'Milestone', es: 'Hito' },
+  govtFee: { en: 'Govt Fee', es: 'Tarifa Gob.' },
+  
+  // Government Fees
+  dldRegistrationFee: { en: 'DLD Registration Fee (4%)', es: 'Tarifa Registro DLD (4%)' },
+  totalCashNow: { en: 'Total Cash Required Now', es: 'Efectivo Total Requerido Ahora' },
+  
+  // Client Split
+  ownershipStructure: { en: 'Ownership Structure', es: 'Estructura de Propiedad' },
+  viewBreakdown: { en: 'View Breakdown', es: 'Ver Desglose' },
+  
+  // Investment Schedule Header
+  investmentSchedule: { en: 'Investment Schedule', es: 'Cronograma de Inversión' },
+  paymentTimeline: { en: 'Payment Timeline', es: 'Cronograma de Pagos' },
+  avgMonthly: { en: 'Avg. Monthly', es: 'Promedio Mensual' },
+  
   // OI Yearly Projection Table
   tenYearHoldSimulation: { en: '10-Year Hold Simulation', es: 'Simulación de Retención a 10 Años' },
   propertyValueRentalYield: { en: 'Property value, rental income & yield compression', es: 'Valor de propiedad, ingresos por renta y compresión de rendimiento' },

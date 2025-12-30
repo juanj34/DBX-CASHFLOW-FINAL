@@ -35,10 +35,10 @@ export const PaymentPlanBadge = ({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-theme-text uppercase tracking-wide">
-              {t('paymentPlanLabel')}
+              {t('investmentSchedule')}
             </h3>
             <p className="text-xs text-theme-text-muted">
-              {constructionMonths} {t('monthsLabel')} {t('constructionPeriod').toLowerCase()}
+              {constructionMonths} {t('months')} {t('construction')}
             </p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export const PaymentPlanBadge = ({
               {Math.round(preHandoverPercent)}
             </div>
             <div className="text-[10px] text-theme-text-muted uppercase tracking-wider">
-              {t('preHandoverLabel')}
+              {t('duringConstruction')}
             </div>
           </div>
           
@@ -64,7 +64,7 @@ export const PaymentPlanBadge = ({
               {Math.round(handoverPercent)}
             </div>
             <div className="text-[10px] text-theme-text-muted uppercase tracking-wider">
-              {t('atHandoverTimelineLabel')}
+              {t('atHandover')}
             </div>
           </div>
         </div>
