@@ -1299,6 +1299,14 @@ const translations: Translations = {
   paybackLabel: { en: 'Payback', es: 'Recuperación' },
   appreciationCAGR: { en: 'CAGR', es: 'TCAC' },
   coverageLabel: { en: 'Coverage', es: 'Cobertura' },
+  
+  // Property Payment Cards (unique new keys only)
+  theProperty: { en: 'The Property', es: 'La Propiedad' },
+  paymentPlanSplit: { en: 'Payment Split', es: 'División de Pago' },
+  dayOneCosts: { en: 'Day-1 Costs', es: 'Costos Iniciales' },
+  paymentJourney: { en: 'Payment Journey', es: 'Trayecto de Pagos' },
+  totalDayOneCosts: { en: 'Total Day-1 Costs', es: 'Total Costos Iniciales' },
+  duringMonthsConstruction: { en: 'During {months} months of construction', es: 'Durante {months} meses de construcción' },
 };
 
 interface LanguageContextType {
