@@ -27,6 +27,7 @@ const AccountSettings = () => {
   const [businessEmail, setBusinessEmail] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [whatsappCountryCode, setWhatsappCountryCode] = useState('+971');
+  const [commissionRate, setCommissionRate] = useState('2');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -37,6 +38,7 @@ const AccountSettings = () => {
       setBusinessEmail(profile.business_email || '');
       setWhatsappNumber(profile.whatsapp_number || '');
       setWhatsappCountryCode(profile.whatsapp_country_code || '+971');
+      setCommissionRate(String(profile.commission_rate ?? 2));
     }
   }, [profile]);
 
@@ -74,6 +76,7 @@ const AccountSettings = () => {
       business_email: businessEmail || null,
       whatsapp_number: whatsappNumber || null,
       whatsapp_country_code: whatsappCountryCode,
+      commission_rate: parseFloat(commissionRate) || 2,
     });
     if (error) {
       toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
@@ -209,6 +212,25 @@ const AccountSettings = () => {
                 />
               </div>
               <p className="text-xs text-theme-text-muted mt-1">{t('accountWhatsAppDesc')}</p>
+            </div>
+
+            {/* Business Settings - Commission Rate */}
+            <div className="pt-6 border-t border-theme-border">
+              <h3 className="text-lg font-semibold text-theme-text mb-4">{t('businessSettings')}</h3>
+              <div>
+                <label className="block text-sm text-theme-text-muted mb-2">{t('commissionRate')} (%)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  value={commissionRate}
+                  onChange={(e) => setCommissionRate(e.target.value)}
+                  placeholder="2"
+                  className="bg-theme-bg-alt border-theme-border text-theme-text w-32"
+                />
+                <p className="text-xs text-theme-text-muted mt-1">{t('commissionRateDesc')}</p>
+              </div>
             </div>
 
             {/* Theme Selection */}

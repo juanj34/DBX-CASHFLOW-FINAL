@@ -1214,6 +1214,24 @@ const translations: Translations = {
   property: { en: 'Property', es: 'Propiedad' },
   errorUpdatingStatus: { en: 'Error updating status', es: 'Error actualizando estado' },
   statusUpdated: { en: 'Status updated', es: 'Estado actualizado' },
+  
+  // Business Settings & Market Pulse Modal
+  businessSettings: { en: 'Business Settings', es: 'Configuración de Negocio' },
+  commissionRate: { en: 'Commission Rate', es: 'Tasa de Comisión' },
+  commissionRateDesc: { en: 'Your commission percentage for potential earnings calculation', es: 'Tu porcentaje de comisión para cálculo de ganancias potenciales' },
+  marketPulseSettings: { en: 'Market Pulse Settings', es: 'Configuración de Market Pulse' },
+  editMarketData: { en: 'Edit Market Data', es: 'Editar Datos de Mercado' },
+  
+  // Deal Table Filters
+  filterByStatus: { en: 'Filter by Status', es: 'Filtrar por Estado' },
+  allStatuses: { en: 'All Statuses', es: 'Todos los Estados' },
+  dateRange: { en: 'Date Range', es: 'Rango de Fechas' },
+  thisWeek: { en: 'This Week', es: 'Esta Semana' },
+  last30Days: { en: 'Last 30 Days', es: 'Últimos 30 Días' },
+  allTime: { en: 'All Time', es: 'Todo el Tiempo' },
+  saveFailed: { en: 'Save failed', es: 'Error al guardar' },
+  saved: { en: 'Saved', es: 'Guardado' },
+  saving: { en: 'Saving...', es: 'Guardando...' },
 };
 
 interface LanguageContextType {
