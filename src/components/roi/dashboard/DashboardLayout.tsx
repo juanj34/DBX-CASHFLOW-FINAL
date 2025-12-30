@@ -26,7 +26,7 @@ export const DashboardLayout = ({
 
   // Get visible sections for keyboard navigation
   const getVisibleSections = useCallback((): SectionId[] => {
-    const sections: SectionId[] = ['property', 'payments'];
+    const sections: SectionId[] = ['overview', 'property', 'payments'];
     if (inputs.enabledSections?.longTermHold !== false) sections.push('hold');
     if (inputs.enabledSections?.exitStrategy !== false) sections.push('exit');
     if (mortgageInputs.enabled) sections.push('mortgage');

@@ -36,7 +36,7 @@ import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
-import { PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
+import { OverviewTabContent, PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -63,7 +63,7 @@ const CashflowDashboardContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<SectionId>('property');
+  const [activeSection, setActiveSection] = useState<SectionId>('overview');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -534,6 +534,18 @@ const CashflowDashboardContent = () => {
             inputs={inputs}
             mortgageInputs={mortgageInputs}
           >
+            {activeSection === 'overview' && (
+              <OverviewTabContent
+                inputs={inputs}
+                calculations={calculations}
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+
             {activeSection === 'property' && (
               <PropertyTabContent
                 inputs={inputs}

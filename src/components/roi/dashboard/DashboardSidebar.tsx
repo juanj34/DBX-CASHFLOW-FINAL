@@ -1,11 +1,11 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
 import { MortgageInputs } from "@/components/roi/useMortgageCalculations";
 import { Button } from "@/components/ui/button";
 
-export type SectionId = 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
+export type SectionId = 'overview' | 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
 
 interface DashboardSidebarProps {
   activeSection: SectionId;
@@ -27,6 +27,7 @@ export const DashboardSidebar = ({
   const { t } = useLanguage();
 
   const sections = [
+    { id: 'overview' as SectionId, label: t('investmentOverview') || 'Overview', icon: LayoutGrid, show: true },
     { id: 'property' as SectionId, label: t('tabProperty'), icon: Building2, show: true },
     { id: 'payments' as SectionId, label: t('tabPayments'), icon: CreditCard, show: true },
     { id: 'hold' as SectionId, label: t('tabHold'), icon: Home, show: inputs.enabledSections?.longTermHold !== false },
