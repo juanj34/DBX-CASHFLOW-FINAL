@@ -114,6 +114,8 @@ export const useQuoteCalculations = (inputs: OIInputs | null): OICalculations | 
     eoiFee: 0,
     oqoodFee: 0,
     minimumExitThreshold: 30,
+    exitAgentCommissionEnabled: false,
+    exitNocFee: 5000,
     zoneMaturityLevel: 50,
     useZoneDefaults: true,
     constructionAppreciation: 12,

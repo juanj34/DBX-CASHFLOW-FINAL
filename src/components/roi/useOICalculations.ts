@@ -34,6 +34,10 @@ export interface OIInputs {
   // Exit Threshold
   minimumExitThreshold: number; // % mínimo requerido por developer para permitir reventa (default 30)
 
+  // Exit Costs
+  exitAgentCommissionEnabled: boolean; // Whether to include 2% agent commission
+  exitNocFee: number; // Developer NOC fee in AED (default 5000)
+
   // Persisted exit points (months from booking)
   _exitScenarios?: number[];
 

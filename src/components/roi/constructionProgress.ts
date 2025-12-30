@@ -382,12 +382,18 @@ export interface ExitScenarioResult {
   equityPercent: number;
   planEquityPercent: number;
   entryCosts: number;
+  exitCosts: number; // NEW: Agent commission + NOC fee
+  agentCommission: number; // NEW
+  nocFee: number; // NEW
   totalCapital: number;
   profit: number;
   trueProfit: number;
+  netProfit: number; // NEW: After exit costs
   roe: number;
   trueROE: number;
+  netROE: number; // NEW: After exit costs
   annualizedROE: number;
+  netAnnualizedROE: number; // NEW
   advanceRequired: number;
   advancedPayments: EquityAtExitResult['advancedPayments'];
   isThresholdMet: boolean;
@@ -414,15 +420,23 @@ export const calculateExitScenario = (
   const equityDeployed = equityResult.finalEquity;
   const equityPercent = (equityDeployed / basePrice) * 100;
   
+  // Calculate exit costs
+  const agentCommission = inputs.exitAgentCommissionEnabled ? exitPrice * 0.02 : 0; // 2% of exit price
+  const nocFee = inputs.exitNocFee || 0;
+  const exitCosts = agentCommission + nocFee;
+  
   // Calculate profits
   const totalCapital = equityDeployed + entryCosts;
   const profit = appreciation;
   const trueProfit = profit - entryCosts;
+  const netProfit = trueProfit - exitCosts; // After exit costs
   
   // Calculate ROE
   const roe = equityDeployed > 0 ? (profit / equityDeployed) * 100 : 0;
   const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+  const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
   const annualizedROE = monthsFromBooking > 0 ? (trueROE / (monthsFromBooking / 12)) : 0;
+  const netAnnualizedROE = monthsFromBooking > 0 ? (netROE / (monthsFromBooking / 12)) : 0;
   
   return {
     exitPrice,
@@ -433,12 +447,18 @@ export const calculateExitScenario = (
     equityPercent,
     planEquityPercent: equityResult.planEquityPercent,
     entryCosts,
+    exitCosts,
+    agentCommission,
+    nocFee,
     totalCapital,
     profit,
     trueProfit,
+    netProfit,
     roe,
     trueROE,
+    netROE,
     annualizedROE,
+    netAnnualizedROE,
     advanceRequired: equityResult.advanceRequired,
     advancedPayments: equityResult.advancedPayments,
     isThresholdMet: equityResult.isThresholdMet,

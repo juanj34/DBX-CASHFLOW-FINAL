@@ -106,6 +106,10 @@ const translations: Translations = {
   totalEntryCosts: { en: 'Total Entry Costs', es: 'Costos Totales de Entrada' },
   bestROE: { en: 'Best ROE', es: 'Mejor ROE' },
   profit: { en: 'Profit', es: 'Ganancia' },
+  grossProfit: { en: 'Gross Profit', es: 'Ganancia Bruta' },
+  netProfit: { en: 'Net Profit', es: 'Ganancia Neta' },
+  agentCommission: { en: 'Agent (2%)', es: 'Agente (2%)' },
+  nocFee: { en: 'NOC Fee', es: 'Tasa NOC' },
   capital: { en: 'Capital', es: 'Capital' },
   atHandover: { en: 'At Handover', es: 'En Entrega' },
   
