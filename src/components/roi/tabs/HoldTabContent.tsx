@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
+import { InvestmentJourneyCards } from "@/components/roi/InvestmentJourneyCards";
 import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
 import { Currency } from "@/components/roi/currencyUtils";
+import { ChevronDown, ChevronUp, Table } from "lucide-react";
 
 interface HoldTabContentProps {
   inputs: OIInputs;
@@ -26,6 +29,7 @@ export const HoldTabContent = ({
 }: HoldTabContentProps) => {
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const isDashboard = variant === 'dashboard';
+  const [showDetailedTable, setShowDetailedTable] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -37,8 +41,29 @@ export const HoldTabContent = ({
         holdAnalysis={calculations.holdAnalysis} 
       />
       
-      {/* Row 2: WealthSummary + CumulativeChart (2 columns, equal height) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Row 2: Investment Journey Cards - Hero Strategy Winner + 3 Milestones */}
+      <InvestmentJourneyCards
+        projections={calculations.yearlyProjections}
+        currency={currency}
+        rate={rate}
+        showAirbnbComparison={calculations.showAirbnbComparison}
+        totalCapitalInvested={totalCapitalInvested}
+        basePrice={inputs.basePrice}
+      />
+      
+      {/* Row 3: Cumulative Chart (Prominent) + Wealth Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Chart takes 2/3 width for prominence */}
+        <div className="lg:col-span-2">
+          <CumulativeIncomeChart 
+            projections={calculations.yearlyProjections} 
+            currency={currency} 
+            rate={rate} 
+            totalCapitalInvested={totalCapitalInvested} 
+            showAirbnbComparison={calculations.showAirbnbComparison} 
+          />
+        </div>
+        
         <WealthSummaryCard 
           propertyValueYear10={lastProjection.propertyValue} 
           cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
@@ -48,24 +73,39 @@ export const HoldTabContent = ({
           rate={rate} 
           showAirbnbComparison={calculations.showAirbnbComparison} 
         />
-        
-        <CumulativeIncomeChart 
-          projections={calculations.yearlyProjections} 
-          currency={currency} 
-          rate={rate} 
-          totalCapitalInvested={totalCapitalInvested} 
-          showAirbnbComparison={calculations.showAirbnbComparison} 
-        />
       </div>
       
-      {/* Row 3: Yearly Projection Table (full width) */}
-      <OIYearlyProjectionTable 
-        projections={calculations.yearlyProjections} 
-        currency={currency} 
-        rate={rate} 
-        showAirbnbComparison={calculations.showAirbnbComparison} 
-        unitSizeSqf={unitSizeSqf}
-      />
+      {/* Row 4: Collapsible Detailed Table */}
+      <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setShowDetailedTable(!showDetailedTable)}
+          className="w-full p-4 flex items-center justify-between hover:bg-[#2a3142]/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Table className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-300">Show Detailed Cashflow Table</span>
+            <span className="text-xs text-gray-500">(Year-by-year breakdown for analysts)</span>
+          </div>
+          {showDetailedTable ? (
+            <ChevronUp className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          )}
+        </button>
+        
+        {showDetailedTable && (
+          <div className="border-t border-[#2a3142] animate-in slide-in-from-top-2 duration-300">
+            <OIYearlyProjectionTable 
+              projections={calculations.yearlyProjections} 
+              currency={currency} 
+              rate={rate} 
+              showAirbnbComparison={calculations.showAirbnbComparison} 
+              unitSizeSqf={unitSizeSqf}
+              embedded={true}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

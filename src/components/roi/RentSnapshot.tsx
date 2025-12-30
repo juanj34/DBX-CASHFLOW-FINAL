@@ -2,7 +2,7 @@ import { useState } from "react";
 import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp, SlidersHorizontal } from "lucide-react";
+import { Home, Building, Percent, DollarSign, Calendar, Target, Minus, Equal, TrendingUp, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "./InfoTooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,6 +20,7 @@ interface RentSnapshotProps {
 export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancyChange }: RentSnapshotProps) => {
   const { t } = useLanguage();
   const [localOccupancy, setLocalOccupancy] = useState<number | null>(null);
+  const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   
   const { 
     rentalYieldPercent, 
@@ -247,36 +248,45 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
               <span className="text-sm font-bold text-white font-mono">{formatCurrency(grossAirbnbAnnual, currency, rate)}</span>
             </div>
 
-            {/* Utilities & Upkeep */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Minus className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-sm text-gray-400">{t('utilitiesAndUpkeep')} ({operatingExpensePercent}%)</span>
-                <InfoTooltip translationKey="tooltipOperatingExpenses" />
-              </div>
-              <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (operatingExpensePercent / 100), currency, rate)}</span>
-            </div>
-
-            {/* Management Fee */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Minus className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-sm text-gray-400">{t('managementFee')} ({managementFeePercent}%)</span>
-                <InfoTooltip translationKey="tooltipManagementFee" />
-              </div>
-              <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(grossAirbnbAnnual * (managementFeePercent / 100), currency, rate)}</span>
-            </div>
-
-            {/* Service Charges */}
-            {unitSizeSqf > 0 && (
-              <div className="flex items-center justify-between">
+            {/* Grouped Operating Expenses - Collapsible */}
+            <div className="space-y-1">
+              <button 
+                onClick={() => setShowExpenseBreakdown(!showExpenseBreakdown)}
+                className="w-full flex items-center justify-between group hover:bg-[#2a3142]/30 rounded-lg py-1 -mx-1 px-1 transition-colors"
+              >
                 <div className="flex items-center gap-2">
                   <Minus className="w-3.5 h-3.5 text-red-400" />
-                  <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
+                  <span className="text-sm text-gray-400">Operating Expenses ({totalExpensePercent}%)</span>
+                  {showExpenseBreakdown 
+                    ? <ChevronUp className="w-3 h-3 text-gray-500" />
+                    : <ChevronDown className="w-3 h-3 text-gray-500" />
+                  }
                 </div>
-                <span className="text-sm font-bold text-red-400 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
-              </div>
-            )}
+                <span className="text-sm font-bold text-red-400 font-mono">
+                  -{formatCurrency(airbnbOperatingExpenses + annualServiceCharges, currency, rate)}
+                </span>
+              </button>
+              
+              {/* Expanded breakdown */}
+              {showExpenseBreakdown && (
+                <div className="ml-6 space-y-1 pt-1 border-l-2 border-[#2a3142] pl-3 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">{t('utilitiesAndUpkeep')} ({operatingExpensePercent}%)</span>
+                    <span className="text-red-400/70 font-mono">-{formatCurrency(grossAirbnbAnnual * (operatingExpensePercent / 100), currency, rate)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">{t('managementFee')} ({managementFeePercent}%)</span>
+                    <span className="text-red-400/70 font-mono">-{formatCurrency(grossAirbnbAnnual * (managementFeePercent / 100), currency, rate)}</span>
+                  </div>
+                  {unitSizeSqf > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">{t('serviceCharges')}</span>
+                      <span className="text-red-400/70 font-mono">-{formatCurrency(annualServiceCharges, currency, rate)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Net Annual Short-Term - HERO NUMBER */}
             <div className="flex items-center justify-between pt-2 border-t border-orange-500/20">
