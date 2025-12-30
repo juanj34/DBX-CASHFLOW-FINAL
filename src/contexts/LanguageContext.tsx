@@ -10,6 +10,24 @@ interface Translations {
 }
 
 const translations: Translations = {
+  // New keys for Investment Story Dashboard
+  yourIncome: { en: 'Your Income', es: 'Tus Ingresos' },
+  rentalPerformance: { en: 'Rental performance & sustainability', es: 'Rendimiento de alquiler y sostenibilidad' },
+  yourPaymentSchedule: { en: 'Your Payment Schedule', es: 'Tu Calendario de Pagos' },
+  whenYouPay: { en: 'When you pay during construction', es: 'Cuándo pagas durante la construcción' },
+  grossYieldLabel: { en: 'Gross', es: 'Bruto' },
+  netYieldLabel: { en: 'Net', es: 'Neto' },
+  noMonthlyPayments: { en: 'No monthly payments', es: 'Sin pagos mensuales' },
+  fullOwnership: { en: 'Full ownership', es: 'Propiedad total' },
+  noInterestCosts: { en: 'No interest costs', es: 'Sin costos de interés' },
+  postHandoverYear: { en: 'Post-Handover Y', es: 'Post-Entrega A' },
+  at: { en: 'at', es: 'en' },
+  lt: { en: 'LT', es: 'LP' },
+  st: { en: 'ST', es: 'CP' },
+  stNotEnabled: { en: 'ST not enabled', es: 'CP no habilitado' },
+  fees: { en: 'Fees', es: 'Tarifas' },
+  equity: { en: 'Equity', es: 'Capital' },
+  
   // Header
   opportunityInvestorAnalysis: { en: 'Opportunity Investor Analysis', es: 'Análisis de Inversionista de Oportunidad' },
   exitScenariosPaymentBreakdown: { en: 'Exit scenarios & payment breakdown', es: 'Escenarios de salida y desglose de pagos' },
