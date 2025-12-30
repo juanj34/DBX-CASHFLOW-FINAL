@@ -98,6 +98,7 @@ export type Database = {
           is_draft: boolean | null
           project_name: string | null
           share_token: string | null
+          status: string | null
           title: string | null
           unit: string | null
           unit_size_m2: number | null
@@ -117,6 +118,7 @@ export type Database = {
           is_draft?: boolean | null
           project_name?: string | null
           share_token?: string | null
+          status?: string | null
           title?: string | null
           unit?: string | null
           unit_size_m2?: number | null
@@ -136,6 +138,7 @@ export type Database = {
           is_draft?: boolean | null
           project_name?: string | null
           share_token?: string | null
+          status?: string | null
           title?: string | null
           unit?: string | null
           unit_size_m2?: number | null
