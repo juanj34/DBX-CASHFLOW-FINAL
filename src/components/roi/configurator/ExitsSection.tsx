@@ -248,6 +248,74 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             </p>
           </div>
 
+          {/* Quick Preset Buttons */}
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const earlyMonth = Math.min(12, totalMonths - 1);
+                if (earlyMonth > 0 && !exits.some(e => e.monthsFromBooking === earlyMonth)) {
+                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: earlyMonth };
+                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                  setExits(newExits);
+                  syncExitsToInputs(newExits);
+                }
+              }}
+              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+            >
+              Early (12m)
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const midMonth = Math.round(totalMonths / 2);
+                if (midMonth > 0 && !exits.some(e => e.monthsFromBooking === midMonth)) {
+                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: midMonth };
+                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                  setExits(newExits);
+                  syncExitsToInputs(newExits);
+                }
+              }}
+              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+            >
+              Mid-Build
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const nearHandover = Math.max(6, totalMonths - 3);
+                if (!exits.some(e => e.monthsFromBooking === nearHandover)) {
+                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: nearHandover };
+                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                  setExits(newExits);
+                  syncExitsToInputs(newExits);
+                }
+              }}
+              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+            >
+              Near Handover
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const atHandover = totalMonths - 1;
+                if (atHandover > 0 && !exits.some(e => e.monthsFromBooking === atHandover)) {
+                  const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: atHandover };
+                  const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+                  setExits(newExits);
+                  syncExitsToInputs(newExits);
+                }
+              }}
+              className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+            >
+              At Handover
+            </Button>
+          </div>
+
           {/* Action Buttons Row */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Auto Generate Button */}
