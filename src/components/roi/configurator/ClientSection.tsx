@@ -6,25 +6,19 @@ import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { ZoneSelect } from "@/components/ui/zone-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, Image, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "../ClientUnitInfo";
 import { Client, UNIT_TYPES } from "../ClientUnitModal";
 import { DeveloperSelect } from "./DeveloperSelect";
 import { ProjectSelect } from "./ProjectSelect";
-import { ImageUploadCard } from "./ImageUploadCard";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface ClientSectionProps {
   clientInfo: ClientUnitData;
   onClientInfoChange: (data: ClientUnitData) => void;
-  floorPlanUrl: string | null;
-  buildingRenderUrl: string | null;
-  onFloorPlanChange: (file: File | null) => void;
-  onBuildingRenderChange: (file: File | null) => void;
-  showLogoOverlay: boolean;
-  onShowLogoOverlayChange: (show: boolean) => void;
   quoteId?: string;
 }
 
@@ -33,12 +27,6 @@ const SQF_TO_M2 = 0.092903;
 export const ClientSection = ({
   clientInfo,
   onClientInfoChange,
-  floorPlanUrl,
-  buildingRenderUrl,
-  onFloorPlanChange,
-  onBuildingRenderChange,
-  showLogoOverlay,
-  onShowLogoOverlayChange,
   quoteId,
 }: ClientSectionProps) => {
   const { language, t } = useLanguage();
@@ -568,52 +556,6 @@ export const ClientSection = ({
         )}
       </div>
 
-      {/* Images Section */}
-      <div>
-        <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <Image className="w-4 h-4 text-purple-400" />
-          Property Images
-        </h3>
-        
-        <div className="space-y-4">
-          {/* Floor Plan */}
-          <ImageUploadCard
-            label="Floor Plan"
-            sublabel="Upload unit floor plan"
-            imageUrl={floorPlanUrl}
-            onImageChange={onFloorPlanChange}
-            onRemove={() => onFloorPlanChange(null)}
-            aspectRatio="4/3"
-            placeholder="Drag, paste (Ctrl+V), or click"
-          />
-
-          {/* Building Render */}
-          <ImageUploadCard
-            label="Building Render"
-            sublabel="Upload project render"
-            imageUrl={buildingRenderUrl}
-            onImageChange={onBuildingRenderChange}
-            onRemove={() => onBuildingRenderChange(null)}
-            aspectRatio="16/9"
-            placeholder="Drag, paste (Ctrl+V), or click"
-          />
-
-          {/* Logo Overlay Toggle */}
-          {buildingRenderUrl && (
-            <div className="flex items-center justify-between p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
-              <div>
-                <p className="text-sm font-medium text-white">Show Developer Logo</p>
-                <p className="text-xs text-gray-500">Overlay developer logo on render</p>
-              </div>
-              <Switch
-                checked={showLogoOverlay}
-                onCheckedChange={onShowLogoOverlayChange}
-                className="data-[state=checked]:bg-[#CCFF00]"
-              />
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

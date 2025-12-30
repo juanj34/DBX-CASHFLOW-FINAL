@@ -1,13 +1,34 @@
 import { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Image } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfiguratorSectionProps, months, quarters, years } from "./types";
 import { formatCurrency, DEFAULT_RATE } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
+import { ImageUploadCard } from "./ImageUploadCard";
 
-export const PropertySection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
+interface PropertySectionProps extends ConfiguratorSectionProps {
+  floorPlanUrl?: string | null;
+  buildingRenderUrl?: string | null;
+  onFloorPlanChange?: (file: File | null) => void;
+  onBuildingRenderChange?: (file: File | null) => void;
+  showLogoOverlay?: boolean;
+  onShowLogoOverlayChange?: (show: boolean) => void;
+}
+
+export const PropertySection = ({ 
+  inputs, 
+  setInputs, 
+  currency,
+  floorPlanUrl,
+  buildingRenderUrl,
+  onFloorPlanChange,
+  onBuildingRenderChange,
+  showLogoOverlay = true,
+  onShowLogoOverlayChange,
+}: PropertySectionProps) => {
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
       ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
@@ -255,6 +276,55 @@ export const PropertySection = ({ inputs, setInputs, currency }: ConfiguratorSec
           </span>
         </div>
       </div>
+
+      {/* Property Images Section */}
+      {onFloorPlanChange && onBuildingRenderChange && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Image className="w-4 h-4 text-purple-400" />
+            Property Images
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {/* Floor Plan */}
+            <ImageUploadCard
+              label="Floor Plan"
+              sublabel="Upload unit floor plan"
+              imageUrl={floorPlanUrl || null}
+              onImageChange={onFloorPlanChange}
+              onRemove={() => onFloorPlanChange(null)}
+              aspectRatio="4/3"
+              placeholder="Drag, paste (Ctrl+V), or click"
+            />
+
+            {/* Building Render */}
+            <ImageUploadCard
+              label="Building Render"
+              sublabel="Upload project render"
+              imageUrl={buildingRenderUrl || null}
+              onImageChange={onBuildingRenderChange}
+              onRemove={() => onBuildingRenderChange(null)}
+              aspectRatio="16/9"
+              placeholder="Drag, paste (Ctrl+V), or click"
+            />
+          </div>
+
+          {/* Logo Overlay Toggle */}
+          {buildingRenderUrl && onShowLogoOverlayChange && (
+            <div className="flex items-center justify-between p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+              <div>
+                <p className="text-sm font-medium text-white">Show Developer Logo</p>
+                <p className="text-xs text-gray-500">Overlay developer logo on render</p>
+              </div>
+              <Switch
+                checked={showLogoOverlay}
+                onCheckedChange={onShowLogoOverlayChange}
+                className="data-[state=checked]:bg-[#CCFF00]"
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
