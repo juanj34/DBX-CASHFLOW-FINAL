@@ -67,12 +67,12 @@ export const WealthSummaryCard = ({
           </span>
         </div>
 
-        {/* Cumulative Rent - Airbnb (if enabled) */}
+        {/* Cumulative Rent - Short-Term (if enabled) */}
         {showAirbnbComparison && airbnbCumulativeIncome !== undefined && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Wallet className="w-4 h-4 text-orange-400" />
-              <span className="text-sm text-gray-400">{t('cumulativeRentAirbnb')}</span>
+              <span className="text-sm text-gray-400">{t('cumulativeRentShortTerm')}</span>
             </div>
             <span className="text-sm font-bold text-orange-400 font-mono">
               +{formatCurrency(airbnbCumulativeIncome, currency, rate)}
@@ -110,12 +110,12 @@ export const WealthSummaryCard = ({
           </div>
         </div>
 
-        {/* Net Wealth - Airbnb (if enabled) */}
+        {/* Net Wealth - Short-Term (if enabled) */}
         {showAirbnbComparison && airbnbCumulativeIncome !== undefined && (
           <div className="flex items-center justify-between bg-orange-500/10 -mx-4 px-4 py-3">
             <div className="flex items-center gap-2">
               <Equal className="w-4 h-4 text-orange-400" />
-              <span className="text-sm text-white font-medium">{t('netWealthAirbnb')}</span>
+              <span className="text-sm text-white font-medium">{t('netWealthShortTerm')}</span>
             </div>
             <div className="text-right">
               <span className="text-lg font-bold text-orange-400 font-mono">

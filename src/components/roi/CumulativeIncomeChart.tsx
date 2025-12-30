@@ -56,7 +56,7 @@ export const CumulativeIncomeChart = ({
               </p>
               {showAirbnbComparison && data.airbnb !== null && (
                 <p className="text-orange-400 text-sm">
-                  Airbnb: {formatCurrency(data.airbnb, currency, rate)}
+                  {t('shortTerm')}: {formatCurrency(data.airbnb, currency, rate)}
                 </p>
               )}
             </>
@@ -121,7 +121,7 @@ export const CumulativeIncomeChart = ({
                 stroke="#fb923c"
                 strokeWidth={2}
                 fill="url(#colorAirbnb)"
-                name="Airbnb"
+                name={t('shortTerm')}
               />
             )}
             <Legend 
