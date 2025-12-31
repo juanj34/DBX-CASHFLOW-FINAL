@@ -1,9 +1,9 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { 
-  Wallet, TrendingUp, Trophy, Clock, ArrowRight, Banknote, Building2, 
+  Wallet, TrendingUp, Trophy, Clock, Banknote, Building2, 
   Key, Target, Home, Zap, DollarSign,
-  Calendar, Percent, CreditCard, Shield, Check, Info, ChevronDown, ChevronUp,
-  Hammer, ChevronRight, Coins, PiggyBank, Building, Landmark
+  Calendar, Percent, CreditCard, Info, ChevronDown, ChevronUp,
+  Hammer, Coins
 } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
 import { CumulativeIncomeChart } from "./CumulativeIncomeChart";
@@ -141,36 +141,6 @@ const PeriodToggle = ({
   );
 };
 
-// Next Section Navigator Component
-const SectionNavigator = ({ 
-  nextSection, 
-  onNavigate 
-}: { 
-  nextSection: StorySectionConfig; 
-  onNavigate: () => void;
-}) => {
-  const Icon = nextSection.icon;
-  return (
-    <button
-      onClick={onNavigate}
-      className="mt-4 w-full flex items-center justify-between p-3 bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/30 rounded-xl transition-all group"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center">
-          <Icon className="w-4 h-4 text-slate-400" />
-        </div>
-        <div className="text-left">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wide">Up Next</p>
-          <p className="text-sm font-medium text-slate-300">{nextSection.fallbackLabel}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 text-slate-400 group-hover:text-white transition-colors">
-        <span className="text-xs">Continue</span>
-        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-      </div>
-    </button>
-  );
-};
 
 export const InvestmentStoryDashboard = ({
   inputs,
@@ -205,15 +175,6 @@ export const InvestmentStoryDashboard = ({
     { id: 'leverage', labelKey: 'leverage', fallbackLabel: 'Leverage', icon: CreditCard, show: mortgageEnabled },
   ], [mortgageEnabled]);
 
-  // Get next section for navigator
-  const getNextSection = useCallback(() => {
-    const visibleSections = storySections.filter(s => s.show !== false);
-    const currentIndex = visibleSections.findIndex(s => s.id === activeSection);
-    if (currentIndex < visibleSections.length - 1) {
-      return visibleSections[currentIndex + 1];
-    }
-    return null;
-  }, [activeSection, storySections]);
 
   // Handle section change with direction tracking
   const handleSectionChange = useCallback((newSection: StorySection) => {
@@ -422,7 +383,7 @@ export const InvestmentStoryDashboard = ({
     ? "animate-fade-in" 
     : "animate-fade-in";
 
-  const nextSection = getNextSection();
+  
 
   // Mortgage calculations for leverage section
   const mortgageBreakdown = useMemo(() => {
@@ -627,12 +588,6 @@ export const InvestmentStoryDashboard = ({
                 </div>
               </div>
 
-              {/* Next Section Navigator */}
-              {nextSection && (
-                <div className="px-4 pb-4">
-                  <SectionNavigator nextSection={nextSection} onNavigate={() => handleSectionChange(nextSection.id)} />
-                </div>
-              )}
             </section>
           )}
 
@@ -743,12 +698,6 @@ export const InvestmentStoryDashboard = ({
                 </div>
               </div>
 
-              {/* Next Section Navigator */}
-              {nextSection && (
-                <div className="px-4 pb-4">
-                  <SectionNavigator nextSection={nextSection} onNavigate={() => handleSectionChange(nextSection.id)} />
-                </div>
-              )}
             </section>
           )}
 
@@ -824,12 +773,6 @@ export const InvestmentStoryDashboard = ({
                 />
               </div>
 
-              {/* Next Section Navigator */}
-              {nextSection && (
-                <div className="px-4 pb-4">
-                  <SectionNavigator nextSection={nextSection} onNavigate={() => handleSectionChange(nextSection.id)} />
-                </div>
-              )}
             </section>
           )}
 
