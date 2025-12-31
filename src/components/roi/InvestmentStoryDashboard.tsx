@@ -341,7 +341,12 @@ export const InvestmentStoryDashboard = ({
     const cumulativeRentLT = lastYear?.cumulativeNetIncome || 0;
     const cumulativeRentST = lastYear?.airbnbCumulativeNetIncome || 0;
     const initialInvestment = calculations.holdAnalysis.totalCapitalInvested;
+    const basePrice = calculations.basePrice;
     
+    // Correct wealth equation:
+    // Property Value (Y10) - Base Price + Rent Collected = Net Gain
+    // Or simply: Property Value + Rent - Initial Investment = Net Wealth
+    const appreciation10Y = propertyValue10Y - basePrice;
     const netWealthLT = propertyValue10Y + cumulativeRentLT - initialInvestment;
     const netWealthST = propertyValue10Y + cumulativeRentST - initialInvestment;
     const percentGainLT = initialInvestment > 0 ? (netWealthLT / initialInvestment) * 100 : 0;
@@ -349,6 +354,8 @@ export const InvestmentStoryDashboard = ({
 
     return {
       propertyValue10Y,
+      appreciation10Y,
+      basePrice,
       cumulativeRentLT,
       cumulativeRentST,
       initialInvestment,
@@ -472,15 +479,15 @@ export const InvestmentStoryDashboard = ({
                       <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
                     </div>
                     <div className="flex h-3 rounded-full overflow-hidden bg-slate-700 shadow-inner">
-                      <Tooltip>
+                    <Tooltip>
                         <TooltipTrigger asChild>
                           <div 
                             className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
                             style={{ width: `${entryData.preHandoverPercent}%` }}
                           />
                         </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700">
-                          <p className="text-sm font-medium">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
+                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                          <p className="text-sm font-medium text-white">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
@@ -490,8 +497,8 @@ export const InvestmentStoryDashboard = ({
                             style={{ width: `${entryData.handoverPercent}%` }}
                           />
                         </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700">
-                          <p className="text-sm font-medium">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
+                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                          <p className="text-sm font-medium text-white">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -514,24 +521,24 @@ export const InvestmentStoryDashboard = ({
                         <TooltipTrigger asChild>
                           <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
                         </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700">
-                          <p className="text-xs">EOI: {formatCurrency(entryData.eoiFee, currency, rate)}</p>
+                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                          <p className="text-xs text-white">EOI: {formatCurrency(entryData.eoiFee, currency, rate)}</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
                         </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700">
-                          <p className="text-xs">Downpayment: {formatCurrency(entryData.restOfDownpayment, currency, rate)}</p>
+                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                          <p className="text-xs text-white">Downpayment: {formatCurrency(entryData.restOfDownpayment, currency, rate)}</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
                         </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700">
-                          <p className="text-xs">DLD (4%): {formatCurrency(entryData.dldFee, currency, rate)}</p>
+                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                          <p className="text-xs text-white">DLD (4%): {formatCurrency(entryData.dldFee, currency, rate)}</p>
                         </TooltipContent>
                       </Tooltip>
                       {entryData.oqoodFee > 0 && (
@@ -539,8 +546,8 @@ export const InvestmentStoryDashboard = ({
                           <TooltipTrigger asChild>
                             <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-slate-800 border-slate-700">
-                            <p className="text-xs">Oqood: {formatCurrency(entryData.oqoodFee, currency, rate)}</p>
+                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                            <p className="text-xs text-white">Oqood: {formatCurrency(entryData.oqoodFee, currency, rate)}</p>
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -622,11 +629,11 @@ export const InvestmentStoryDashboard = ({
                           <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
                         <div className="space-y-1 text-xs">
-                          <p className="font-medium">Return on Investment</p>
-                          <p>Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
-                          <p>Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
+                          <p className="font-medium text-white">Return on Investment</p>
+                          <p className="text-slate-300">Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
+                          <p className="text-slate-300">Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -644,12 +651,12 @@ export const InvestmentStoryDashboard = ({
                           </div>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
                         <div className="space-y-1 text-xs">
-                          <p className="font-medium">Average Daily Rate</p>
-                          <p>Occupancy: {incomeData.stOccupancy}%</p>
-                          <p>Operating Expenses: {incomeData.stExpenses}%</p>
-                          {incomeData.stAdminFee > 0 && <p>Management Fee: {incomeData.stAdminFee}%</p>}
+                          <p className="font-medium text-white">Average Daily Rate</p>
+                          <p className="text-slate-300">Occupancy: {incomeData.stOccupancy}%</p>
+                          <p className="text-slate-300">Operating Expenses: {incomeData.stExpenses}%</p>
+                          {incomeData.stAdminFee > 0 && <p className="text-slate-300">Management Fee: {incomeData.stAdminFee}%</p>}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -686,12 +693,12 @@ export const InvestmentStoryDashboard = ({
                         <p className="text-[10px] text-slate-500">years</p>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
                       <div className="space-y-1 text-xs">
-                        <p className="font-medium">Payback Calculation</p>
-                        <p>Investment: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
-                        <p>Annual Income: {formatCurrency(incomeStrategy === 'LT' ? incomeData.annualRentLT : incomeData.annualRentST, currency, rate)}</p>
-                        <p className="text-slate-500">Market avg: {incomeData.marketAvgPayoff} years</p>
+                        <p className="font-medium text-white">Payback Calculation</p>
+                        <p className="text-slate-300">Investment: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
+                        <p className="text-slate-300">Annual Income: {formatCurrency(incomeStrategy === 'LT' ? incomeData.annualRentLT : incomeData.annualRentST, currency, rate)}</p>
+                        <p className="text-slate-400">Market avg: {incomeData.marketAvgPayoff} years</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -703,6 +710,67 @@ export const InvestmentStoryDashboard = ({
                       {formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
                     </p>
                     <p className="text-[10px] text-emerald-400">+{(incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}%</p>
+                  </div>
+                </div>
+
+                {/* Monthly/Yearly Income Breakdown */}
+                <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-slate-400 uppercase">
+                      {incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Breakdown
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-slate-700/30 rounded-lg p-2">
+                      <p className="text-[10px] text-slate-500">Gross Rent</p>
+                      <p className="text-sm font-bold font-mono text-emerald-400">
+                        +{formatCurrency(
+                          incomeStrategy === 'LT'
+                            ? (incomePeriod === 'month' ? incomeData.annualRentLT / 12 * 1.1 : incomeData.annualRentLT * 1.1)
+                            : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 1.1 : incomeData.annualRentST * 1.1),
+                          currency, rate
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-slate-700/30 rounded-lg p-2">
+                      <p className="text-[10px] text-slate-500">Expenses</p>
+                      <p className="text-sm font-bold font-mono text-red-400">
+                        -{formatCurrency(
+                          incomeStrategy === 'LT'
+                            ? (incomePeriod === 'month' ? incomeData.serviceCharges / 12 : incomeData.serviceCharges)
+                            : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.1 : incomeData.annualRentST * 0.1),
+                          currency, rate
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-emerald-500/20 to-slate-700/30 rounded-lg p-2 border border-emerald-500/30">
+                      <p className="text-[10px] text-slate-400">Net Income</p>
+                      <p className="text-sm font-bold font-mono text-white">
+                        {formatCurrency(
+                          incomeStrategy === 'LT'
+                            ? (incomePeriod === 'month' ? incomeData.monthlyRentLT : incomeData.annualRentLT)
+                            : (incomePeriod === 'month' ? incomeData.monthlyRentST : incomeData.annualRentST),
+                          currency, rate
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 10-Year Summary Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 text-center">
+                    <p className="text-[10px] text-slate-500 mb-1">Property Value (Y10)</p>
+                    <p className="text-lg font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+                    <p className="text-[10px] text-emerald-400">+{formatCurrency(wealthData.appreciation10Y, currency, rate)} appreciation</p>
+                  </div>
+                  <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 text-center">
+                    <p className="text-[10px] text-slate-500 mb-1">Total Rent Collected (10Y)</p>
+                    <p className="text-lg font-bold font-mono text-cyan-400">
+                      {formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
+                    </p>
+                    <p className="text-[10px] text-slate-500">Net after costs</p>
                   </div>
                 </div>
 
@@ -737,7 +805,7 @@ export const InvestmentStoryDashboard = ({
                       <div 
                         key={index}
                         className={cn(
-                          "rounded-xl p-3 border transition-all cursor-pointer",
+                          "rounded-xl p-4 border transition-all cursor-pointer",
                           isHighlighted
                             ? "bg-gradient-to-br from-green-500/20 to-slate-800/50 border-green-500/40 ring-1 ring-green-500/30"
                             : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600/50"
@@ -745,35 +813,42 @@ export const InvestmentStoryDashboard = ({
                         onMouseEnter={() => setHighlightedExit(index)}
                         onMouseLeave={() => setHighlightedExit(null)}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-400">
+                        {/* De-emphasized header with exit name and time */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
                             {getExitName(months)}
                           </span>
-                          <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {months}mo
+                          <span className="px-2 py-0.5 bg-slate-700/50 rounded-full text-[10px] text-slate-400">
+                            {months}mo
                           </span>
                         </div>
                         
-                        {/* Property Worth */}
-                        <p className="text-lg font-bold text-white font-mono mb-1">
+                        {/* PRIMARY: Property Worth - Most prominent */}
+                        <p className="text-2xl font-bold text-white font-mono mb-3">
                           {formatCurrency(scenario.exitPrice, currency, rate)}
                         </p>
                         
-                        <div className="flex items-center justify-between">
+                        {/* SECONDARY: Profit - Green and prominent */}
+                        <div className="flex items-end justify-between">
                           <div>
                             <p className={cn(
-                              "text-sm font-bold font-mono",
-                              displayProfit >= 0 ? "text-green-400" : "text-red-400"
+                              "text-lg font-bold font-mono",
+                              displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
                             )}>
                               {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                             </p>
                             <p className="text-[10px] text-slate-500">Profit</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xl font-bold font-mono text-green-400">
+                          
+                          {/* TERTIARY: ROE - Largest, with subtle background */}
+                          <div className="text-right bg-gradient-to-br from-emerald-500/20 to-transparent rounded-lg px-3 py-1">
+                            <p className={cn(
+                              "text-2xl font-bold font-mono",
+                              displayROE >= 0 ? "text-emerald-400" : "text-red-400"
+                            )}>
                               {displayROE.toFixed(0)}%
                             </p>
-                            <p className="text-[10px] text-slate-500">ROE</p>
+                            <p className="text-[10px] text-emerald-400/70">ROE</p>
                           </div>
                         </div>
                       </div>
@@ -821,24 +896,24 @@ export const InvestmentStoryDashboard = ({
                         </p>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
                       <div className="space-y-2 text-xs">
-                        <p className="font-medium">Payment Breakdown (Month 1)</p>
+                        <p className="font-medium text-white">Payment Breakdown (Month 1)</p>
                         <div className="space-y-1">
                           <div className="flex justify-between">
                             <span className="text-slate-400">Principal:</span>
-                            <span>{formatCurrency(mortgageBreakdown.principalPortion, currency, rate)}</span>
+                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.principalPortion, currency, rate)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Interest:</span>
-                            <span>{formatCurrency(mortgageBreakdown.interestPortion, currency, rate)}</span>
+                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.interestPortion, currency, rate)}</span>
                           </div>
                           <div className="flex justify-between border-t border-slate-700 pt-1">
-                            <span className="font-medium">Total:</span>
-                            <span className="font-medium">{formatCurrency(mortgageBreakdown.monthlyPayment, currency, rate)}</span>
+                            <span className="font-medium text-white">Total:</span>
+                            <span className="font-medium text-white">{formatCurrency(mortgageBreakdown.monthlyPayment, currency, rate)}</span>
                           </div>
                         </div>
-                        <p className="text-slate-500 text-[10px]">Interest rate: {entryData.interestRate}% p.a.</p>
+                        <p className="text-slate-400 text-[10px]">Interest rate: {entryData.interestRate}% p.a.</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -853,93 +928,68 @@ export const InvestmentStoryDashboard = ({
                   </div>
                 </div>
 
-                {/* Cash after Mortgage with Tooltip */}
+                {/* Monthly Cashflow Breakdown - Itemized */}
                 <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Banknote className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-medium text-slate-400 uppercase">{leveragePeriod === 'month' ? 'Monthly' : 'Yearly'} Cashflow After Mortgage</span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Banknote className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-slate-400 uppercase">
+                      {leveragePeriod === 'month' ? 'Monthly' : 'Yearly'} Cashflow Breakdown
+                    </span>
+                  </div>
+                  
+                  {/* Long-Term Breakdown */}
+                  <div className="mb-4">
+                    <p className="text-xs text-cyan-400 mb-2">Long-Term Rental</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-400">Gross Rent</span>
+                        <span className="text-emerald-400 font-mono">+{formatCurrency(incomeData.monthlyRentLT * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-400">Mortgage Payment</span>
+                        <span className="text-red-400 font-mono">-{formatCurrency(mortgageAnalysis.monthlyPayment * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
+                      </div>
+                      <div className="h-px bg-slate-700" />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white font-medium">Net Cashflow</span>
+                        <span className={cn(
+                          "font-mono font-bold",
+                          incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                        )}>
+                          {(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
+                          {formatCurrency((incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="text-center cursor-help">
-                          <p className="text-xs text-cyan-400 mb-1">Long-Term</p>
-                          <p className={cn(
-                            "text-2xl font-bold font-mono",
-                            incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+
+                  {/* Short-Term Breakdown */}
+                  {incomeData.showAirbnb && (
+                    <div className="pt-3 border-t border-slate-700">
+                      <p className="text-xs text-orange-400 mb-2">Short-Term Rental</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Gross Rent</span>
+                          <span className="text-emerald-400 font-mono">+{formatCurrency(incomeData.monthlyRentST * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Mortgage Payment</span>
+                          <span className="text-red-400 font-mono">-{formatCurrency(mortgageAnalysis.monthlyPayment * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
+                        </div>
+                        <div className="h-px bg-slate-700" />
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white font-medium">Net Cashflow</span>
+                          <span className={cn(
+                            "font-mono font-bold",
+                            incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
                           )}>
-                            {(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
-                            {formatCurrency(
-                              (incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), 
-                              currency, 
-                              rate
-                            )}
-                          </p>
+                            {(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
+                            {formatCurrency((incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
+                          </span>
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
-                        <div className="space-y-1 text-xs">
-                          <p className="font-medium">Cashflow Breakdown</p>
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Gross Rent:</span>
-                            <span>{formatCurrency(incomeData.monthlyRentLT, currency, rate)}/mo</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Mortgage:</span>
-                            <span className="text-red-400">-{formatCurrency(mortgageAnalysis.monthlyPayment, currency, rate)}/mo</span>
-                          </div>
-                          <div className="flex justify-between border-t border-slate-700 pt-1">
-                            <span className="font-medium">Net Cashflow:</span>
-                            <span className={incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"}>
-                              {formatCurrency(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment, currency, rate)}/mo
-                            </span>
-                          </div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                    
-                    {incomeData.showAirbnb && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-center cursor-help">
-                            <p className="text-xs text-orange-400 mb-1">Short-Term</p>
-                            <p className={cn(
-                              "text-2xl font-bold font-mono",
-                              incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
-                            )}>
-                              {(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
-                              {formatCurrency(
-                                (incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), 
-                                currency, 
-                                rate
-                              )}
-                            </p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
-                          <div className="space-y-1 text-xs">
-                            <p className="font-medium">Cashflow Breakdown</p>
-                            <div className="flex justify-between">
-                              <span className="text-slate-400">Gross Rent:</span>
-                              <span>{formatCurrency(incomeData.monthlyRentST, currency, rate)}/mo</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-slate-400">Mortgage:</span>
-                              <span className="text-red-400">-{formatCurrency(mortgageAnalysis.monthlyPayment, currency, rate)}/mo</span>
-                            </div>
-                            <div className="flex justify-between border-t border-slate-700 pt-1">
-                              <span className="font-medium">Net Cashflow:</span>
-                              <span className={incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"}>
-                                {formatCurrency(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment, currency, rate)}/mo
-                              </span>
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Gap Warning with Tooltip */}
@@ -954,33 +1004,70 @@ export const InvestmentStoryDashboard = ({
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-sm">
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-sm text-slate-100">
                       <div className="space-y-2 text-xs">
-                        <p className="font-medium">Why is there a gap payment?</p>
-                        <p className="text-slate-400">
+                        <p className="font-medium text-white">Why is there a gap payment?</p>
+                        <p className="text-slate-300">
                           The handover payment exceeds what the bank can finance at your LTV.
                         </p>
                         <div className="space-y-1 pt-2 border-t border-slate-700">
                           <div className="flex justify-between">
                             <span className="text-slate-400">Handover Amount:</span>
-                            <span>{formatCurrency(mortgageBreakdown.handoverAmount, currency, rate)}</span>
+                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.handoverAmount, currency, rate)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Max Bank Financing:</span>
-                            <span>{formatCurrency(mortgageBreakdown.loanAmount, currency, rate)}</span>
+                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.loanAmount, currency, rate)}</span>
                           </div>
                           <div className="flex justify-between border-t border-slate-700 pt-1">
                             <span className="font-medium text-amber-400">Gap (You Pay):</span>
                             <span className="font-medium text-amber-400">{formatCurrency(mortgageBreakdown.gapAmount, currency, rate)}</span>
                           </div>
                         </div>
-                        <p className="text-slate-500 text-[10px]">Due at handover before bank disburses the loan.</p>
+                        <p className="text-slate-400 text-[10px]">Due at handover before bank disburses the loan.</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
                 )}
 
-                {/* Wealth Equation */}
+                {/* Cost of Debt vs Wealth Created */}
+                <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-slate-400 uppercase">Cost of Debt vs Wealth Created</span>
+                  </div>
+                  
+                  {/* Comparison bars */}
+                  <div className="space-y-3 mb-4">
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-slate-400">Total Interest Cost ({entryData.loanTerm}Y)</span>
+                        <span className="text-red-400 font-mono">{formatCurrency(mortgageAnalysis.monthlyPayment * 12 * entryData.loanTerm - mortgageBreakdown.loanAmount, currency, rate)}</span>
+                      </div>
+                      <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full" style={{ width: '40%' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-slate-400">Property Appreciation (10Y)</span>
+                        <span className="text-emerald-400 font-mono">+{formatCurrency(wealthData.appreciation10Y, currency, rate)}</span>
+                      </div>
+                      <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full" style={{ width: '100%' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Net Wealth Hero */}
+                  <div className="text-center pt-3 border-t border-slate-700/50">
+                    <p className="text-xs text-slate-400 mb-1">🚀 Net Wealth Created</p>
+                    <p className="text-2xl font-bold font-mono text-emerald-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
+                    <p className="text-[10px] text-emerald-400/70">Property growth crushes debt cost</p>
+                  </div>
+                </div>
+
+                {/* Wealth Equation - Corrected */}
                 <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
                   <div className="flex items-center gap-2 mb-4">
                     <Trophy className="w-4 h-4 text-yellow-400" />
@@ -988,16 +1075,36 @@ export const InvestmentStoryDashboard = ({
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-1">
-                        <Wallet className="w-5 h-5 text-emerald-400" />
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
+                        <Building2 className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Property (Y10)</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">+</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
+                        <Coins className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Rent (10Y)</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.cumulativeRentLT, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">−</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
+                        <Wallet className="w-5 h-5 text-red-400" />
                       </div>
                       <p className="text-xs text-slate-500">Cash In</p>
                       <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
                     </div>
-                    <span className="text-xl text-slate-500">+</span>
+                    <span className="text-xl text-slate-500">=</span>
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
-                        <TrendingUp className="w-5 h-5 text-blue-400" />
+                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Net Wealth</p>
+                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
+                    </div>
                       </div>
                       <p className="text-xs text-slate-500">Growth</p>
                       <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y - calculations.basePrice, currency, rate)}</p>

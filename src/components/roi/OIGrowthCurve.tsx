@@ -176,6 +176,18 @@ export const OIGrowthCurve = ({
         </div>
 
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="mt-4">
+          {/* Gradient definitions */}
+          <defs>
+            <linearGradient id="curveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#84cc16" />
+              <stop offset="100%" stopColor="#22d3d1" />
+            </linearGradient>
+            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#84cc16" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#84cc16" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
           {/* Grid lines */}
           {timeLabels.map(months => (
             <line
@@ -184,9 +196,10 @@ export const OIGrowthCurve = ({
               y1={padding.top}
               x2={xScale(months)}
               y2={height - padding.bottom}
-              stroke="#2a3142"
+              stroke="hsl(var(--theme-border))"
               strokeWidth="1"
               strokeDasharray="4,4"
+              opacity="0.5"
             />
           ))}
 
@@ -196,7 +209,7 @@ export const OIGrowthCurve = ({
               key={`label-${months}`}
               x={xScale(months)}
               y={height - padding.bottom + 20}
-              fill="#6b7280"
+              fill="hsl(var(--theme-text-muted))"
               fontSize="12"
               textAnchor="middle"
             >
@@ -208,7 +221,7 @@ export const OIGrowthCurve = ({
           <text
             x={width / 2}
             y={height - 10}
-            fill="#9ca3af"
+            fill="hsl(var(--theme-text-muted))"
             fontSize="12"
             textAnchor="middle"
           >
@@ -221,14 +234,15 @@ export const OIGrowthCurve = ({
             y1={yScale(basePrice)}
             x2={width - padding.right}
             y2={yScale(basePrice)}
-            stroke="#6b7280"
+            stroke="hsl(var(--theme-text-muted))"
             strokeWidth="1"
             strokeDasharray="4,4"
+            opacity="0.5"
           />
           <text
             x={padding.left - 10}
             y={yScale(basePrice)}
-            fill="#6b7280"
+            fill="hsl(var(--theme-text-muted))"
             fontSize="10"
             textAnchor="end"
             dominantBaseline="middle"
@@ -236,11 +250,17 @@ export const OIGrowthCurve = ({
             Base: {formatCurrencyShort(basePrice, currency, rate)}
           </text>
 
-          {/* Growth curve */}
+          {/* Area fill under curve */}
+          <path
+            d={`${generateCurvePath()} L ${xScale(totalMonths)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
+            fill="url(#areaGradient)"
+          />
+
+          {/* Growth curve with gradient */}
           <path
             d={generateCurvePath()}
             fill="none"
-            stroke="#CCFF00"
+            stroke="url(#curveGradient)"
             strokeWidth="3"
             strokeLinecap="round"
           />
@@ -249,8 +269,8 @@ export const OIGrowthCurve = ({
           <path
             d={generateCurvePath()}
             fill="none"
-            stroke="#CCFF00"
-            strokeWidth="8"
+            stroke="url(#curveGradient)"
+            strokeWidth="10"
             strokeLinecap="round"
             opacity="0.2"
           />
