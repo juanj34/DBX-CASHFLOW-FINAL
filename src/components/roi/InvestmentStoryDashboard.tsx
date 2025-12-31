@@ -610,30 +610,50 @@ export const InvestmentStoryDashboard = ({
 
               <div className="p-3 space-y-3 flex-1">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* ROI Card */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className={cn(
-                        "bg-gradient-to-br rounded-xl p-3 border cursor-help text-center",
-                        incomeStrategy === 'LT' 
-                          ? "from-cyan-500/15 to-slate-800/50 border-cyan-500/30" 
-                          : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
-                      )}>
-                        <span className="text-[10px] text-slate-400 uppercase">ROI</span>
-                        <p className={cn("text-3xl font-bold font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
-                          {incomeData.grossYield.toFixed(1)}%
-                        </p>
-                        <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
-                      <div className="space-y-1 text-xs">
-                        <p className="font-medium">Return on Investment</p>
-                        <p>Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
-                        <p>Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
+                  {/* ROI Card (LT) / ADR Card (ST) */}
+                  {incomeStrategy === 'LT' ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="bg-gradient-to-br from-cyan-500/15 to-slate-800/50 rounded-xl p-3 border border-cyan-500/30 cursor-help text-center">
+                          <span className="text-[10px] text-slate-400 uppercase">ROI</span>
+                          <p className="text-3xl font-bold font-mono text-cyan-400">
+                            {incomeData.grossYield.toFixed(1)}%
+                          </p>
+                          <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                        <div className="space-y-1 text-xs">
+                          <p className="font-medium">Return on Investment</p>
+                          <p>Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
+                          <p>Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="bg-gradient-to-br from-orange-500/15 to-slate-800/50 rounded-xl p-3 border border-orange-500/30 cursor-help text-center">
+                          <span className="text-[10px] text-slate-400 uppercase">ADR</span>
+                          <p className="text-2xl font-bold font-mono text-orange-400">
+                            {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}
+                          </p>
+                          <div className="flex justify-center gap-3 mt-1 text-[10px]">
+                            <span className="text-slate-500">Occ: <span className="text-orange-300 font-mono">{incomeData.stOccupancy}%</span></span>
+                            <span className="text-slate-500">Exp: <span className="text-orange-300 font-mono">{incomeData.stExpenses}%</span></span>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                        <div className="space-y-1 text-xs">
+                          <p className="font-medium">Average Daily Rate</p>
+                          <p>Occupancy: {incomeData.stOccupancy}%</p>
+                          <p>Operating Expenses: {incomeData.stExpenses}%</p>
+                          {incomeData.stAdminFee > 0 && <p>Management Fee: {incomeData.stAdminFee}%</p>}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
 
                   {/* Rental Income */}
                   <div className={cn(
