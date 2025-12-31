@@ -37,7 +37,7 @@ export const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = ({
   return (
     <div className={cn("space-y-1.5", className)}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-slate-400 uppercase tracking-wide">vs Market Average</span>
+        <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">vs Market Average</span>
       </div>
       
       {phases.map(phase => {
@@ -50,7 +50,7 @@ export const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = ({
         return (
           <div key={phase.key} className="space-y-0.5">
             <div className="flex items-center justify-between text-[9px]">
-              <span className="text-slate-400">{phase.label}</span>
+              <span className="text-theme-text-muted">{phase.label}</span>
               <div className="flex items-center gap-1">
                 <span className="text-white font-medium">{zoneRate}%</span>
                 {delta !== 0 && (
@@ -67,7 +67,7 @@ export const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = ({
                   </span>
                 )}
                 {delta === 0 && (
-                  <span className="flex items-center gap-0.5 text-slate-500">
+                  <span className="flex items-center gap-0.5 text-theme-text-muted">
                     <Minus className="w-2.5 h-2.5" />
                   </span>
                 )}
@@ -91,8 +91,8 @@ export const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = ({
 
       <div className="flex items-center gap-2 pt-0.5">
         <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-slate-400/50" />
-          <span className="text-[8px] text-slate-500">Market Avg</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-theme-text-muted/50" />
+          <span className="text-[8px] text-theme-text-muted">Market Avg</span>
         </div>
       </div>
     </div>

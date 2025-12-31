@@ -94,7 +94,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                   </div>
                 )}
                 <div 
-                  className="flex items-center justify-center text-xs font-medium bg-[#0f172a] text-gray-400"
+                  className="flex items-center justify-center text-xs font-medium bg-[#0f172a] text-theme-text-muted"
                   style={{ width: `${postHandover}%` }}
                 >
                   {postHandover > 10 ? `${postHandover}%` : ''}
@@ -106,7 +106,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-                    <span className="text-gray-400">Downpayment</span>
+                    <span className="text-theme-text-muted">Downpayment</span>
                   </span>
                   <span className="text-white font-medium">
                     {formatCurrency(downpaymentAmount, 'AED', 1)}
@@ -116,7 +116,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded" style={{ backgroundColor: `${color}80` }} />
-                      <span className="text-gray-400">Installments</span>
+                      <span className="text-theme-text-muted">Installments</span>
                     </span>
                     <span className="text-white font-medium">
                       {formatCurrency(installmentsAmount, 'AED', 1)}
@@ -126,7 +126,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded bg-[#0f172a] border border-[#2a3142]" />
-                    <span className="text-gray-400">On Handover</span>
+                    <span className="text-theme-text-muted">On Handover</span>
                   </span>
                   <span className="text-white font-medium">
                     {formatCurrency(postHandoverAmount, 'AED', 1)}
@@ -138,8 +138,8 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
               {avgMonthlyPayment > 0 && (
                 <div className="pt-2 border-t border-[#2a3142]">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Monthly avg (construction)</span>
-                    <span className="text-gray-300 font-medium">
+                    <span className="text-theme-text-muted">Monthly avg (construction)</span>
+                    <span className="text-theme-text-muted font-medium">
                       ~{formatCurrency(avgMonthlyPayment, 'AED', 1)}/mo
                     </span>
                   </div>
@@ -149,13 +149,13 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
               {/* Entry costs */}
               <div className="pt-3 border-t border-[#2a3142]">
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Entry Costs (DLD, etc.)</span>
-                  <span className="text-gray-300">
+                  <span className="text-theme-text-muted">Entry Costs (DLD, etc.)</span>
+                  <span className="text-theme-text-muted">
                     {formatCurrency(calculations.totalEntryCosts, 'AED', 1)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-500">Total Capital Required</span>
+                  <span className="text-theme-text-muted">Total Capital Required</span>
                   <span className="text-white font-medium">
                     {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, 'AED', 1)}
                   </span>
