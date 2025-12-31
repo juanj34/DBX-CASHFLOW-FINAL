@@ -3,7 +3,7 @@ import {
   Wallet, TrendingUp, Trophy, Clock, Banknote, Building2, 
   Key, Target, Home, Zap, DollarSign,
   Calendar, Percent, CreditCard, Info, ChevronDown, ChevronUp,
-  Hammer, Coins
+  Hammer, Coins, FileText, CalendarDays
 } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
 import { CumulativeIncomeChart } from "./CumulativeIncomeChart";
@@ -548,76 +548,86 @@ export const InvestmentStoryDashboard = ({
                   </AnimatedCard>
                 </div>
 
-                {/* Day 1 Cash Required */}
-                <AnimatedCard delay={150}>
-                  <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 relative overflow-hidden">
-                    <div className="text-center mb-3 relative">
-                      <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{t('totalCashRequiredNow') || 'Total Cash Required Now'}</p>
-                      <p className="text-3xl font-bold text-emerald-400 font-mono">
+                {/* Two Cards: Booking + Installments */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Booking Card (Day 1) */}
+                  <AnimatedCard delay={150}>
+                    <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 h-full">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                          <FileText className="w-3 h-3 text-emerald-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-white uppercase tracking-wide">Booking</span>
+                      </div>
+                      <p className="text-2xl font-bold text-emerald-400 font-mono mb-2">
                         {formatCurrency(entryData.totalDayOneEntry, currency, rate)}
                       </p>
-                      <div className="flex h-2 rounded-full overflow-hidden bg-slate-700/50 mt-3 max-w-md mx-auto">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                            <p className="text-xs text-white">EOI: {formatCurrency(entryData.eoiFee, currency, rate)}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                            <p className="text-xs text-white">Downpayment: {formatCurrency(entryData.restOfDownpayment, currency, rate)}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                            <p className="text-xs text-white">DLD (4%): {formatCurrency(entryData.dldFee, currency, rate)}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                      <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-700/50 mb-2">
+                        <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
+                        <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
+                        <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
+                        {entryData.oqoodFee > 0 && <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />}
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />EOI</span>
+                          <span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Downpayment</span>
+                          <span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />DLD (4%)</span>
+                          <span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span>
+                        </div>
                         {entryData.oqoodFee > 0 && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                              <p className="text-xs text-white">Oqood: {formatCurrency(entryData.oqoodFee, currency, rate)}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-500" />Oqood</span>
+                            <span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span>
+                          </div>
                         )}
                       </div>
-                      <div className="flex flex-wrap justify-center gap-3 mt-2 text-[10px]">
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> EOI</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Downpayment</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> DLD</span>
-                        {entryData.oqoodFee > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Oqood</span>}
-                      </div>
                     </div>
+                  </AnimatedCard>
 
-                    <button
-                      onClick={() => setShowEntryDetails(!showEntryDetails)}
-                      className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 border-t border-slate-700/50"
-                    >
-                      <span>{showEntryDetails ? 'Hide Details' : 'View Breakdown'}</span>
-                      {showEntryDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
-
-                    {showEntryDetails && (
-                      <div className="mt-3 space-y-1 pt-3 border-t border-slate-700/50 text-sm">
-                        <div className="flex justify-between"><span className="text-slate-400">EOI</span><span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-400">Rest of Downpayment</span><span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-400">DLD (4%)</span><span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-400">Oqood</span><span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span></div>
-                      </div>
-                    )}
-                  </div>
-                </AnimatedCard>
+                  {/* Installments Card */}
+                  <AnimatedCard delay={200}>
+                    {(() => {
+                      const basePrice = calculations.basePrice;
+                      const installmentsTotal = (inputs.additionalPayments || []).reduce((sum, p) => sum + (basePrice * (p.paymentPercent || 0) / 100), 0);
+                      const installmentsCount = (inputs.additionalPayments || []).length;
+                      return (
+                        <div className="bg-gradient-to-br from-cyan-500/10 to-slate-800/50 rounded-xl p-4 border border-cyan-500/30 h-full">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                              <CalendarDays className="w-3 h-3 text-cyan-400" />
+                            </div>
+                            <span className="text-xs font-semibold text-white uppercase tracking-wide">Installments</span>
+                          </div>
+                          <p className="text-2xl font-bold text-cyan-400 font-mono mb-2">
+                            {formatCurrency(installmentsTotal, currency, rate)}
+                          </p>
+                          <p className="text-xs text-slate-400 mb-3">
+                            During construction (pre-handover)
+                          </p>
+                          {installmentsCount > 0 ? (
+                            <div className="flex items-center gap-2 text-xs text-slate-300">
+                              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium">
+                                {installmentsCount} payment{installmentsCount !== 1 ? 's' : ''}
+                              </span>
+                              <span className="text-slate-500">scheduled</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-500 italic">
+                              No additional installments
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </AnimatedCard>
+                </div>
 
                 {/* Payment Schedule */}
                 <AnimatedCard delay={200}>
