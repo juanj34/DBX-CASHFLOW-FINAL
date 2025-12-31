@@ -16,6 +16,7 @@ import { AnimatedNumber, AnimatedCurrency } from "./AnimatedNumber";
 import { StoryNavigation, StorySection, StorySectionConfig } from "./StoryNavigation";
 import { OIGrowthCurve } from "./OIGrowthCurve";
 import { calculateExitScenario } from "./constructionProgress";
+import { RentalCashflowWaterfall } from "./CashflowWaterfall";
 import {
   Tooltip,
   TooltipContent,
@@ -755,50 +756,29 @@ export const InvestmentStoryDashboard = ({
                   </div>
                 </div>
 
-                {/* Monthly/Yearly Income Breakdown */}
-                <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase">
-                      {incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Breakdown
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-slate-700/30 rounded-lg p-2">
-                      <p className="text-[10px] text-slate-500">Gross Rent</p>
-                      <p className="text-sm font-bold font-mono text-emerald-400">
-                        +{formatCurrency(
-                          incomeStrategy === 'LT'
-                            ? (incomePeriod === 'month' ? incomeData.annualRentLT / 12 * 1.1 : incomeData.annualRentLT * 1.1)
-                            : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 1.1 : incomeData.annualRentST * 1.1),
-                          currency, rate
-                        )}
-                      </p>
-                    </div>
-                    <div className="bg-slate-700/30 rounded-lg p-2">
-                      <p className="text-[10px] text-slate-500">Expenses</p>
-                      <p className="text-sm font-bold font-mono text-red-400">
-                        -{formatCurrency(
-                          incomeStrategy === 'LT'
-                            ? (incomePeriod === 'month' ? incomeData.serviceCharges / 12 : incomeData.serviceCharges)
-                            : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.1 : incomeData.annualRentST * 0.1),
-                          currency, rate
-                        )}
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-emerald-500/20 to-slate-700/30 rounded-lg p-2 border border-emerald-500/30">
-                      <p className="text-[10px] text-slate-400">Net Income</p>
-                      <p className="text-sm font-bold font-mono text-white">
-                        {formatCurrency(
-                          incomeStrategy === 'LT'
-                            ? (incomePeriod === 'month' ? incomeData.monthlyRentLT : incomeData.annualRentLT)
-                            : (incomePeriod === 'month' ? incomeData.monthlyRentST : incomeData.annualRentST),
-                          currency, rate
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                {/* Cashflow Waterfall Visualization */}
+                <RentalCashflowWaterfall
+                  grossRent={
+                    incomeStrategy === 'LT'
+                      ? (incomePeriod === 'month' ? incomeData.annualRentLT / 12 * 1.1 : incomeData.annualRentLT * 1.1)
+                      : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 1.1 : incomeData.annualRentST * 1.1)
+                  }
+                  serviceCharges={
+                    incomeStrategy === 'LT'
+                      ? (incomePeriod === 'month' ? incomeData.serviceCharges / 12 : incomeData.serviceCharges)
+                      : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.05 : incomeData.annualRentST * 0.05)
+                  }
+                  managementFee={
+                    incomeStrategy === 'ST'
+                      ? (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.05 : incomeData.annualRentST * 0.05)
+                      : 0
+                  }
+                  mortgagePayment={0}
+                  currency={currency}
+                  rate={rate}
+                  period={incomePeriod}
+                  strategy={incomeStrategy}
+                />
 
                 {/* 10-Year Summary Row */}
                 <div className="grid grid-cols-2 gap-3">

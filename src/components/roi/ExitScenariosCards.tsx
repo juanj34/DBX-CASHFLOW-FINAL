@@ -63,34 +63,46 @@ export const calculateAutoExitScenarios = (totalMonths: number): number[] => {
   ];
 };
 
-// Convert months to readable date
-const monthsToDate = (months: number, bookingMonth: number, bookingYear: number, language: string): string => {
+// Convert months to readable date - Returns date as primary with months secondary
+const monthsToDate = (months: number, bookingMonth: number, bookingYear: number, language: string): { date: string; monthsLabel: string } => {
   const totalMonthsFromJan = bookingMonth + months;
   const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
   const month = ((totalMonthsFromJan - 1) % 12) + 1;
   const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthNamesEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const monthNames = language === 'es' ? monthNamesEs : monthNamesEn;
-  return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
+  return {
+    date: `${monthNames[month - 1]} ${bookingYear + yearOffset}`,
+    monthsLabel: `${months}mo`
+  };
 };
 
-// ROE Badge color helper
-const getROEBadgeStyle = (roe: number): { bg: string; text: string; label: string } => {
-  if (roe >= 40) return { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Excellent' };
-  if (roe >= 25) return { bg: 'bg-[#CCFF00]/20', text: 'text-[#CCFF00]', label: 'Good' };
-  if (roe >= 15) return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Fair' };
+// Return Badge color helper - renamed from ROE for client-friendly terminology
+const getReturnBadgeStyle = (returnPercent: number): { bg: string; text: string; label: string } => {
+  if (returnPercent >= 40) return { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Excellent' };
+  if (returnPercent >= 25) return { bg: 'bg-[#CCFF00]/20', text: 'text-[#CCFF00]', label: 'Good' };
+  if (returnPercent >= 15) return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Fair' };
   return { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Low' };
 };
 
-// Scenario confidence tag
-const getScenarioTag = (index: number, total: number, progressPercent: number): { icon: React.ReactNode; label: string; color: string } => {
+// Get construction milestone label based on progress percentage
+const getConstructionMilestone = (progressPercent: number): { icon: React.ReactNode; label: string; color: string } => {
+  if (progressPercent <= 35) {
+    return { icon: <Shield className="w-3 h-3" />, label: 'Early Structure', color: 'text-blue-400 bg-blue-400/10' };
+  }
   if (progressPercent <= 50) {
-    return { icon: <Shield className="w-3 h-3" />, label: 'Conservative', color: 'text-blue-400 bg-blue-400/10' };
+    return { icon: <Shield className="w-3 h-3" />, label: '50% Complete', color: 'text-blue-400 bg-blue-400/10' };
   }
-  if (progressPercent <= 75) {
-    return { icon: <Zap className="w-3 h-3" />, label: 'Base Case', color: 'text-[#CCFF00] bg-[#CCFF00]/10' };
+  if (progressPercent <= 65) {
+    return { icon: <Zap className="w-3 h-3" />, label: 'Structure Complete', color: 'text-[#CCFF00] bg-[#CCFF00]/10' };
   }
-  return { icon: <Rocket className="w-3 h-3" />, label: 'Aggressive', color: 'text-orange-400 bg-orange-400/10' };
+  if (progressPercent <= 85) {
+    return { icon: <Zap className="w-3 h-3" />, label: 'Topping Out', color: 'text-[#CCFF00] bg-[#CCFF00]/10' };
+  }
+  if (progressPercent < 100) {
+    return { icon: <Rocket className="w-3 h-3" />, label: 'Pre-Handover', color: 'text-orange-400 bg-orange-400/10' };
+  }
+  return { icon: <Rocket className="w-3 h-3" />, label: 'Handover Ready', color: 'text-green-400 bg-green-400/10' };
 };
 
 export const ExitScenariosCards = ({ 
@@ -191,14 +203,15 @@ export const ExitScenariosCards = ({
       {/* Exit Scenario Cards */}
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {scenarios.map((scenario, index) => {
-          const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
-          const displayAnnualizedROE = scenario.exitCosts > 0 ? scenario.netAnnualizedROE : scenario.annualizedROE;
+          const displayReturn = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
+          const displayAnnualizedReturn = scenario.exitCosts > 0 ? scenario.netAnnualizedROE : scenario.annualizedROE;
           const displayProfit = scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit;
           // Use S-curve to calculate actual construction progress (not linear timeline)
           const constructionProgress = monthToConstruction(exitScenarios[index], totalMonths);
           const progressPercent = Math.round(constructionProgress);
-          const roeBadge = getROEBadgeStyle(displayROE);
-          const scenarioTag = getScenarioTag(index, exitScenarios.length, progressPercent);
+          const returnBadge = getReturnBadgeStyle(displayReturn);
+          const milestone = getConstructionMilestone(progressPercent);
+          const dateInfo = monthsToDate(exitScenarios[index], inputs.bookingMonth, inputs.bookingYear, language);
           const isHighlighted = highlightedIndex === index;
           const isExpanded = expandedCards.has(index);
           
@@ -214,15 +227,15 @@ export const ExitScenariosCards = ({
               onMouseEnter={() => onCardHover?.(index)}
               onMouseLeave={() => onCardHover?.(null)}
             >
-              {/* Card Header */}
+              {/* Card Header - Redesigned with milestone and date primary */}
               <div className="p-3 bg-[#1a1f2e] border-b border-[#2a3142]">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-[#CCFF00]">{t('exitNumber')}{index + 1}</span>
-                    {/* Scenario Confidence Tag */}
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${scenarioTag.color}`}>
-                      {scenarioTag.icon}
-                      {scenarioTag.label}
+                    {/* Construction Milestone Tag */}
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${milestone.color}`}>
+                      {milestone.icon}
+                      {milestone.label}
                     </span>
                   </div>
                   {!readOnly && (
@@ -249,17 +262,15 @@ export const ExitScenariosCards = ({
                   )}
                 </div>
                 
-                {/* Timeline Info */}
+                {/* Timeline Info - Date primary, months secondary */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-sm font-mono text-white">{exitScenarios[index]} months</span>
-                    <span className="text-xs text-gray-500">
-                      ({monthsToDate(exitScenarios[index], inputs.bookingMonth, inputs.bookingYear, language)})
-                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-[#CCFF00]" />
+                    <span className="text-sm font-semibold text-white">{dateInfo.date}</span>
+                    <span className="text-xs text-gray-500 font-mono">· {dateInfo.monthsLabel}</span>
                   </div>
                   <span className="text-[10px] text-gray-500 bg-[#0d1117] px-1.5 py-0.5 rounded">
-                    Const. Progress: {progressPercent}%
+                    {progressPercent}% built
                   </span>
                 </div>
               </div>
@@ -286,53 +297,59 @@ export const ExitScenariosCards = ({
                 </div>
               )}
 
-              {/* SIMPLIFIED HERO SECTION */}
+              {/* REDESIGNED HERO SECTION - Clear hierarchy */}
               <div className="p-4">
-                {/* ROE with Badge - Compact */}
+                {/* PRIMARY: Return % - Largest, most prominent */}
                 <ROEBreakdownTooltip scenario={scenario} currency={currency} rate={rate}>
-                  <div className="text-center mb-3 cursor-help">
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${roeBadge.bg} ${roeBadge.text}`}>
-                        {roeBadge.label}
+                  <div className="text-center mb-4 cursor-help">
+                    <p className={`text-4xl font-bold font-mono ${returnBadge.text}`}>
+                      {displayReturn.toFixed(0)}%
+                    </p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Return on Cash Invested
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${returnBadge.bg} ${returnBadge.text}`}>
+                        {returnBadge.label}
                       </span>
-                      <span className="text-[10px] text-gray-500">(click for details)</span>
+                      <span className="text-xs text-gray-500">·</span>
+                      <span className="text-xs text-[#CCFF00] font-mono">{displayAnnualizedReturn.toFixed(1)}%/year</span>
                     </div>
-                    <p className={`text-3xl font-bold font-mono ${roeBadge.text}`}>
-                      {displayROE.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      <span className="opacity-70">ROE = total profit %</span>
-                      <span className="text-gray-500 mx-1">•</span>
-                      <span className="text-[#CCFF00]">{displayAnnualizedROE.toFixed(1)}% IRR</span>
-                      <span className="text-gray-500 ml-1 opacity-70">(annual speed)</span>
-                    </p>
                   </div>
                 </ROEBreakdownTooltip>
 
-                {/* Profit Display - Hero Number */}
+                {/* SECONDARY: Profit Display - Hero Number */}
                 <div className={`text-center p-4 rounded-lg border ${displayProfit >= 0 ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
                   <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">
-                    {scenario.exitCosts > 0 ? 'Net Profit' : 'Gross Profit'}
+                    Profit to Pocket {scenario.exitCosts > 0 ? '(Net)' : ''}
                   </p>
                   <p className={`text-2xl font-bold font-mono ${displayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                   </p>
                 </div>
 
-                {/* Visual Formula: Invested → Exit Value */}
-                <div className="flex items-center justify-center gap-3 mt-4 p-2 bg-[#1a1f2e]/50 rounded-lg">
-                  <div className="text-center">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">Invested</p>
-                    <p className="text-sm font-mono text-white font-medium">
+                {/* TERTIARY: Cash Invested → Exit Value (The missing context) */}
+                <div className="mt-4 p-3 bg-[#1a1f2e]/50 rounded-lg space-y-2">
+                  {/* Cash Invested - THE DENOMINATOR */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-xs text-gray-400">Cash Invested</span>
+                    </div>
+                    <span className="text-sm font-mono text-white font-medium">
                       {formatCurrency(scenario.totalCapital, currency, rate)}
-                    </p>
+                    </span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500" />
-                  <div className="text-center">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">Exit Value</p>
-                    <p className="text-sm font-mono text-[#CCFF00] font-medium">
+                  
+                  {/* Exit Value */}
+                  <div className="flex items-center justify-between pt-2 border-t border-[#2a3142]">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-3.5 h-3.5 text-[#CCFF00]" />
+                      <span className="text-xs text-gray-400">Exit Value</span>
+                    </div>
+                    <span className="text-sm font-mono text-[#CCFF00] font-medium">
                       {formatCurrency(scenario.exitPrice, currency, rate)}
-                    </p>
+                    </span>
                   </div>
                 </div>
               </div>
