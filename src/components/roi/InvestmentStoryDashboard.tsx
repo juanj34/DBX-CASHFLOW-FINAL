@@ -164,11 +164,10 @@ export const InvestmentStoryDashboard = ({
 
   // Define story sections
   const storySections: StorySectionConfig[] = useMemo(() => [
-    { id: 'entry', labelKey: 'storyEntry', fallbackLabel: 'Entry', icon: Wallet },
-    { id: 'income', labelKey: 'storyIncome', fallbackLabel: 'Income', icon: Home },
-    { id: 'wealth', labelKey: 'storyWealth', fallbackLabel: 'Wealth', icon: Trophy },
-    { id: 'exit', labelKey: 'storyExit', fallbackLabel: 'Exit', icon: Target },
-    { id: 'leverage', labelKey: 'storyLeverage', fallbackLabel: 'Leverage', icon: CreditCard, show: mortgageEnabled },
+    { id: 'entry', labelKey: 'theEntry', fallbackLabel: 'Entry', icon: Wallet },
+    { id: 'income', labelKey: 'yourIncome', fallbackLabel: 'Income', icon: Home },
+    { id: 'exit', labelKey: 'exitScenarios', fallbackLabel: 'Exits', icon: Target },
+    { id: 'leverage', labelKey: 'leverage', fallbackLabel: 'Leverage', icon: CreditCard, show: mortgageEnabled },
   ], [mortgageEnabled]);
 
   // Handle section change with direction tracking
@@ -841,80 +840,56 @@ export const InvestmentStoryDashboard = ({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-              </div>
-            </section>
-          )}
 
-          {/* ===== SECTION 4: WEALTH ===== */}
-          {activeSection === 'wealth' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">{t('wealthCreated10Years') || 'Wealth Created (10 Years)'}</h2>
-                    <p className="text-xs text-slate-400">{t('propertyValueAndIncome') || 'Property value + rental income'}</p>
-                  </div>
-                </div>
-                {wealthData.showAirbnb && (
-                  <StrategyToggle 
-                    value={incomeStrategy} 
-                    onChange={setIncomeStrategy}
-                    ltLabel={t('longTerm') || 'Long-Term'}
-                    stLabel={t('shortTerm') || 'Short-Term'}
-                  />
-                )}
-              </div>
-
-              <div className="p-4 space-y-4">
-                {/* Net Wealth Hero */}
+                {/* Wealth Section - Net Wealth Created */}
                 <div className={cn(
-                  "rounded-xl p-6 border text-center transition-all duration-300",
+                  "rounded-xl p-5 border text-center transition-all duration-300",
                   incomeStrategy === 'LT' 
-                    ? "bg-gradient-to-br from-emerald-500/20 to-slate-800/50 border-emerald-500/30" 
-                    : "bg-gradient-to-br from-amber-500/20 to-slate-800/50 border-amber-500/30"
+                    ? "bg-gradient-to-br from-emerald-500/15 to-slate-800/50 border-emerald-500/30" 
+                    : "bg-gradient-to-br from-amber-500/15 to-slate-800/50 border-amber-500/30"
                 )}>
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">{t('netWealthCreated') || 'Net Wealth Created'}</p>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">{t('netWealthCreated') || 'Net Wealth Created (10Y)'}</p>
+                  </div>
                   <AnimatedCurrency
                     value={incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST}
                     currency={currency}
                     rate={rate}
                     className={cn(
-                      "text-5xl md:text-6xl font-bold font-mono",
+                      "text-4xl md:text-5xl font-bold font-mono",
                       incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
                     )}
                   />
-                  <div className="flex items-center justify-center gap-2 mt-3">
-                    <TrendingUp className={cn("w-5 h-5", incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400")} />
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <TrendingUp className={cn("w-4 h-4", incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400")} />
                     <AnimatedNumber
                       value={incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST}
                       formatFn={(v) => `+${v.toFixed(0)}%`}
                       className={cn(
-                        "text-2xl font-bold font-mono",
+                        "text-xl font-bold font-mono",
                         incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
                       )}
                     />
-                    <span className="text-sm text-slate-400">{t('totalReturn') || 'total return'}</span>
+                    <span className="text-xs text-slate-400">{t('totalReturn') || 'total return'}</span>
                   </div>
                 </div>
 
                 {/* Breakdown Grid */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 text-center">
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center">
                     <p className="text-[10px] text-slate-500 mb-1">{t('propertyValueYear10') || 'Property Value (Y10)'}</p>
-                    <p className="text-lg font-bold text-white font-mono">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+                    <p className="text-sm font-bold text-white font-mono">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 text-center">
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center">
                     <p className="text-[10px] text-slate-500 mb-1">{t('cumulativeRent') || 'Cumulative Rent'}</p>
-                    <p className={cn("text-lg font-bold font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
+                    <p className={cn("text-sm font-bold font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
                       {formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
                     </p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 text-center">
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center">
                     <p className="text-[10px] text-slate-500 mb-1">{t('initialInvestment') || 'Initial Investment'}</p>
-                    <p className="text-lg font-bold text-slate-400 font-mono">-{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+                    <p className="text-sm font-bold text-slate-400 font-mono">-{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
                   </div>
                 </div>
 
