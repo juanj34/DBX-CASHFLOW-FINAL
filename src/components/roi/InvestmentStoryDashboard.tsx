@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { 
   Wallet, TrendingUp, Trophy, Clock, Banknote, Building2, 
   Key, Target, Home, Zap, DollarSign,
@@ -22,6 +22,38 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+// Staggered animation wrapper component
+const AnimatedCard = ({ 
+  children, 
+  delay = 0, 
+  className = "" 
+}: { 
+  children: React.ReactNode; 
+  delay?: number; 
+  className?: string;
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  return (
+    <div 
+      className={cn(
+        "transition-all duration-500 ease-out",
+        isVisible 
+          ? "opacity-100 translate-y-0" 
+          : "opacity-0 translate-y-4",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
 
 interface InvestmentStoryDashboardProps {
   inputs: OIInputs;
@@ -439,160 +471,170 @@ export const InvestmentStoryDashboard = ({
                 {/* Row 1: Property Info Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* Property Price */}
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full" />
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                        <Building2 className="w-3 h-3 text-emerald-400" />
+                  <AnimatedCard delay={0}>
+                    <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full" />
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                          <Building2 className="w-3 h-3 text-emerald-400" />
+                        </div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
+                      <p className="text-xl font-bold text-white font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
+                      {entryData.pricePerSqft > 0 && (
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          {formatCurrency(entryData.pricePerSqft, currency, rate)}/sqft • {entryData.unitSize.toLocaleString()} sqft
+                        </p>
+                      )}
                     </div>
-                    <p className="text-xl font-bold text-white font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
-                    {entryData.pricePerSqft > 0 && (
-                      <p className="text-[10px] text-slate-500 mt-1">
-                        {formatCurrency(entryData.pricePerSqft, currency, rate)}/sqft • {entryData.unitSize.toLocaleString()} sqft
-                      </p>
-                    )}
-                  </div>
+                  </AnimatedCard>
 
                   {/* Construction Timeline */}
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full" />
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                        <Hammer className="w-3 h-3 text-purple-400" />
+                  <AnimatedCard delay={50}>
+                    <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full" />
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                          <Hammer className="w-3 h-3 text-purple-400" />
+                        </div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
+                      <p className="text-xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-purple-400/70">mo</span></p>
+                      <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                        <Key className="w-3 h-3" /> {formatHandoverDate()}
+                      </p>
                     </div>
-                    <p className="text-xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-purple-400/70">mo</span></p>
-                    <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                      <Key className="w-3 h-3" /> {formatHandoverDate()}
-                    </p>
-                  </div>
+                  </AnimatedCard>
 
                   {/* Payment Split */}
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 lg:col-span-2 relative overflow-hidden">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                        <CreditCard className="w-3 h-3 text-cyan-400" />
+                  <AnimatedCard delay={100} className="lg:col-span-2">
+                    <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                          <CreditCard className="w-3 h-3 text-cyan-400" />
+                        </div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
-                    </div>
-                    <div className="flex h-3 rounded-full overflow-hidden bg-slate-700 shadow-inner">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div 
-                            className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
-                            style={{ width: `${entryData.preHandoverPercent}%` }}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                          <p className="text-sm font-medium text-white">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex h-3 rounded-full overflow-hidden bg-slate-700 shadow-inner">
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div 
-                            className="bg-gradient-to-r from-cyan-500 to-cyan-400 flex items-center justify-center cursor-pointer hover:brightness-110"
-                            style={{ width: `${entryData.handoverPercent}%` }}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                          <p className="text-sm font-medium text-white">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                          <TooltipTrigger asChild>
+                            <div 
+                              className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                              style={{ width: `${entryData.preHandoverPercent}%` }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                            <p className="text-sm font-medium text-white">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div 
+                              className="bg-gradient-to-r from-cyan-500 to-cyan-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                              style={{ width: `${entryData.handoverPercent}%` }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                            <p className="text-sm font-medium text-white">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="flex justify-between mt-1 text-[10px]">
+                        <span className="text-emerald-400 font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
+                        <span className="text-cyan-400 font-bold">{entryData.handoverPercent}% At Handover</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between mt-1 text-[10px]">
-                      <span className="text-emerald-400 font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
-                      <span className="text-cyan-400 font-bold">{entryData.handoverPercent}% At Handover</span>
-                    </div>
-                  </div>
+                  </AnimatedCard>
                 </div>
 
                 {/* Day 1 Cash Required */}
-                <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 relative overflow-hidden">
-                  <div className="text-center mb-3 relative">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{t('totalCashRequiredNow') || 'Total Cash Required Now'}</p>
-                    <p className="text-3xl font-bold text-emerald-400 font-mono">
-                      {formatCurrency(entryData.totalDayOneEntry, currency, rate)}
-                    </p>
-                    <div className="flex h-2 rounded-full overflow-hidden bg-slate-700/50 mt-3 max-w-md mx-auto">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                          <p className="text-xs text-white">EOI: {formatCurrency(entryData.eoiFee, currency, rate)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                          <p className="text-xs text-white">Downpayment: {formatCurrency(entryData.restOfDownpayment, currency, rate)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                          <p className="text-xs text-white">DLD (4%): {formatCurrency(entryData.dldFee, currency, rate)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      {entryData.oqoodFee > 0 && (
+                <AnimatedCard delay={150}>
+                  <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 relative overflow-hidden">
+                    <div className="text-center mb-3 relative">
+                      <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{t('totalCashRequiredNow') || 'Total Cash Required Now'}</p>
+                      <p className="text-3xl font-bold text-emerald-400 font-mono">
+                        {formatCurrency(entryData.totalDayOneEntry, currency, rate)}
+                      </p>
+                      <div className="flex h-2 rounded-full overflow-hidden bg-slate-700/50 mt-3 max-w-md mx-auto">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />
+                            <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
                           </TooltipTrigger>
                           <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                            <p className="text-xs text-white">Oqood: {formatCurrency(entryData.oqoodFee, currency, rate)}</p>
+                            <p className="text-xs text-white">EOI: {formatCurrency(entryData.eoiFee, currency, rate)}</p>
                           </TooltipContent>
                         </Tooltip>
-                      )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                            <p className="text-xs text-white">Downpayment: {formatCurrency(entryData.restOfDownpayment, currency, rate)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                            <p className="text-xs text-white">DLD (4%): {formatCurrency(entryData.dldFee, currency, rate)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        {entryData.oqoodFee > 0 && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
+                              <p className="text-xs text-white">Oqood: {formatCurrency(entryData.oqoodFee, currency, rate)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-3 mt-2 text-[10px]">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> EOI</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Downpayment</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> DLD</span>
+                        {entryData.oqoodFee > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Oqood</span>}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap justify-center gap-3 mt-2 text-[10px]">
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> EOI</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Downpayment</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> DLD</span>
-                      {entryData.oqoodFee > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Oqood</span>}
-                    </div>
+
+                    <button
+                      onClick={() => setShowEntryDetails(!showEntryDetails)}
+                      className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 border-t border-slate-700/50"
+                    >
+                      <span>{showEntryDetails ? 'Hide Details' : 'View Breakdown'}</span>
+                      {showEntryDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+
+                    {showEntryDetails && (
+                      <div className="mt-3 space-y-1 pt-3 border-t border-slate-700/50 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-400">EOI</span><span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">Rest of Downpayment</span><span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">DLD (4%)</span><span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">Oqood</span><span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span></div>
+                      </div>
+                    )}
                   </div>
-
-                  <button
-                    onClick={() => setShowEntryDetails(!showEntryDetails)}
-                    className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 border-t border-slate-700/50"
-                  >
-                    <span>{showEntryDetails ? 'Hide Details' : 'View Breakdown'}</span>
-                    {showEntryDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </button>
-
-                  {showEntryDetails && (
-                    <div className="mt-3 space-y-1 pt-3 border-t border-slate-700/50 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-400">EOI</span><span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-400">Rest of Downpayment</span><span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-400">DLD (4%)</span><span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-400">Oqood</span><span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span></div>
-                    </div>
-                  )}
-                </div>
+                </AnimatedCard>
 
                 {/* Payment Schedule */}
-                <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                      <Calendar className="w-3 h-3 text-purple-400" />
+                <AnimatedCard delay={200}>
+                  <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <Calendar className="w-3 h-3 text-purple-400" />
+                      </div>
+                      <span className="text-xs font-semibold text-white">{t('yourPaymentSchedule') || 'Payment Schedule'}</span>
                     </div>
-                    <span className="text-xs font-semibold text-white">{t('yourPaymentSchedule') || 'Payment Schedule'}</span>
+                    <PaymentHorizontalTimeline
+                      inputs={inputs}
+                      currency={currency}
+                      rate={rate}
+                      totalMonths={calculations.totalMonths}
+                    />
                   </div>
-                  <PaymentHorizontalTimeline
-                    inputs={inputs}
-                    currency={currency}
-                    rate={rate}
-                    totalMonths={calculations.totalMonths}
-                  />
-                </div>
+                </AnimatedCard>
               </div>
 
             </section>
@@ -802,70 +844,73 @@ export const InvestmentStoryDashboard = ({
                     const isHighlighted = highlightedExit === index;
                     
                     return (
-                      <div 
-                        key={index}
-                        className={cn(
-                          "rounded-xl p-4 border transition-all cursor-pointer",
-                          isHighlighted
-                            ? "bg-gradient-to-br from-green-500/20 to-slate-800/50 border-green-500/40 ring-1 ring-green-500/30"
-                            : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600/50"
-                        )}
-                        onMouseEnter={() => setHighlightedExit(index)}
-                        onMouseLeave={() => setHighlightedExit(null)}
-                      >
-                        {/* De-emphasized header with exit name and time */}
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
-                            {getExitName(months)}
-                          </span>
-                          <span className="px-2 py-0.5 bg-slate-700/50 rounded-full text-[10px] text-slate-400">
-                            {months}mo
-                          </span>
-                        </div>
-                        
-                        {/* PRIMARY: Property Worth - Most prominent */}
-                        <p className="text-2xl font-bold text-white font-mono mb-3">
-                          {formatCurrency(scenario.exitPrice, currency, rate)}
-                        </p>
-                        
-                        {/* SECONDARY: Profit - Green and prominent */}
-                        <div className="flex items-end justify-between">
-                          <div>
-                            <p className={cn(
-                              "text-lg font-bold font-mono",
-                              displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
-                            )}>
-                              {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
-                            </p>
-                            <p className="text-[10px] text-slate-500">Profit</p>
+                      <AnimatedCard key={index} delay={index * 75}>
+                        <div 
+                          className={cn(
+                            "rounded-xl p-4 border transition-all cursor-pointer h-full",
+                            isHighlighted
+                              ? "bg-gradient-to-br from-green-500/20 to-slate-800/50 border-green-500/40 ring-1 ring-green-500/30"
+                              : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600/50"
+                          )}
+                          onMouseEnter={() => setHighlightedExit(index)}
+                          onMouseLeave={() => setHighlightedExit(null)}
+                        >
+                          {/* De-emphasized header with exit name and time */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+                              {getExitName(months)}
+                            </span>
+                            <span className="px-2 py-0.5 bg-slate-700/50 rounded-full text-[10px] text-slate-400">
+                              {months}mo
+                            </span>
                           </div>
                           
-                          {/* TERTIARY: ROE - Largest, with subtle background */}
-                          <div className="text-right bg-gradient-to-br from-emerald-500/20 to-transparent rounded-lg px-3 py-1">
-                            <p className={cn(
-                              "text-2xl font-bold font-mono",
-                              displayROE >= 0 ? "text-emerald-400" : "text-red-400"
-                            )}>
-                              {displayROE.toFixed(0)}%
-                            </p>
-                            <p className="text-[10px] text-emerald-400/70">ROE</p>
+                          {/* PRIMARY: Property Worth - Most prominent */}
+                          <p className="text-2xl font-bold text-white font-mono mb-3">
+                            {formatCurrency(scenario.exitPrice, currency, rate)}
+                          </p>
+                          
+                          {/* SECONDARY: Profit - Green and prominent */}
+                          <div className="flex items-end justify-between">
+                            <div>
+                              <p className={cn(
+                                "text-lg font-bold font-mono",
+                                displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
+                              )}>
+                                {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
+                              </p>
+                              <p className="text-[10px] text-slate-500">Profit</p>
+                            </div>
+                            
+                            {/* TERTIARY: ROE - Largest, with subtle background */}
+                            <div className="text-right bg-gradient-to-br from-emerald-500/20 to-transparent rounded-lg px-3 py-1">
+                              <p className={cn(
+                                "text-2xl font-bold font-mono",
+                                displayROE >= 0 ? "text-emerald-400" : "text-red-400"
+                              )}>
+                                {displayROE.toFixed(0)}%
+                              </p>
+                              <p className="text-[10px] text-emerald-400/70">ROE</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </AnimatedCard>
                     );
                   })}
                 </div>
 
                 {/* Growth Curve Chart */}
-                <OIGrowthCurve
-                  calculations={calculations}
-                  inputs={inputs}
-                  currency={currency}
-                  exitScenarios={exitScenarios}
-                  rate={rate}
-                  highlightedExit={highlightedExit}
-                  onExitHover={setHighlightedExit}
-                />
+                <AnimatedCard delay={300}>
+                  <OIGrowthCurve
+                    calculations={calculations}
+                    inputs={inputs}
+                    currency={currency}
+                    exitScenarios={exitScenarios}
+                    rate={rate}
+                    highlightedExit={highlightedExit}
+                    onExitHover={setHighlightedExit}
+                  />
+                </AnimatedCard>
               </div>
 
             </section>
