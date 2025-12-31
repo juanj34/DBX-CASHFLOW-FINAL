@@ -27,22 +27,18 @@ const translations: Translations = {
   stNotEnabled: { en: 'ST not enabled', es: 'CP no habilitado' },
   fees: { en: 'Fees', es: 'Tarifas' },
   equity: { en: 'Equity', es: 'Capital' },
-  // Entry Card
-  theEntry: { en: 'THE ENTRY', es: 'LA ENTRADA' },
+  // Entry Card - unique keys only
   totalCashRequiredNow: { en: 'Total Cash Required Now', es: 'Efectivo Total Requerido Ahora' },
-  viewBreakdown: { en: 'View Breakdown', es: 'Ver Desglose' },
   hideDetails: { en: 'Hide Details', es: 'Ocultar Detalles' },
-  eoiBookingFee: { en: 'EOI / Booking Fee', es: 'EOI / Tarifa de Reserva' },
-  restOfDownpayment: { en: 'Rest of Downpayment', es: 'Resto del Enganche' },
-  dldRegistrationFee: { en: 'DLD Registration Fee (4%)', es: 'Tarifa de Registro DLD (4%)' },
-  govt: { en: 'Govt', es: 'Gob' },
-  admin: { en: 'Admin', es: 'Admin' },
+  eoiTooltip: { en: 'Expression of Interest fee', es: 'Tarifa de Expresión de Interés' },
+  restOfDownpaymentTooltip: { en: 'Remaining portion of the downpayment after EOI', es: 'Porción restante del enganche después del EOI' },
+  dldTooltip: { en: 'Dubai Land Department registration fee', es: 'Tarifa de registro del Departamento de Tierras de Dubai' },
+  oqoodTooltip: { en: 'Initial registration fee for off-plan properties', es: 'Tarifa de registro inicial para propiedades sobre plano' },
   // ROI & Income
   grossRoi: { en: 'Gross ROI', es: 'ROI Bruto' },
   netRoi: { en: 'Net ROI', es: 'ROI Neto' },
   annualYield: { en: 'Annual Yield', es: 'Rendimiento Anual' },
   rentalIncome: { en: 'Rental Income', es: 'Ingreso por Alquiler' },
-  serviceCharges: { en: 'Service Charges', es: 'Cargos de Servicio' },
   incomeGrowth: { en: 'Income Growth Over Time', es: 'Crecimiento de Ingresos' },
   earns: { en: 'earns', es: 'genera' },
   more: { en: 'more', es: 'más' },
@@ -55,14 +51,12 @@ const translations: Translations = {
   maintenance: { en: 'Maintenance', es: 'Mantenimiento' },
   vacancyAllowance: { en: 'Vacancy', es: 'Vacancia' },
   weeksYear: { en: 'weeks/year', es: 'semanas/año' },
-  occupancy: { en: 'Occupancy', es: 'Ocupación' },
-  expenses: { en: 'Expenses', es: 'Gastos' },
-  adminFee: { en: 'Admin Fee', es: 'Tarifa Admin' },
+  expensesLabel: { en: 'Expenses', es: 'Gastos' },
   // Leverage Section
   leverage: { en: 'Leverage', es: 'Apalancamiento' },
   financingDetails: { en: 'Your financing details', es: 'Detalles de tu financiamiento' },
   monthlyCashflowAfterMortgage: { en: 'Monthly Cashflow After Mortgage', es: 'Flujo Mensual Después de Hipoteca' },
-  
+
   // Header
   opportunityInvestorAnalysis: { en: 'Opportunity Investor Analysis', es: 'Análisis de Inversionista de Oportunidad' },
   exitScenariosPaymentBreakdown: { en: 'Exit scenarios & payment breakdown', es: 'Escenarios de salida y desglose de pagos' },
