@@ -68,9 +68,9 @@ export const CumulativeIncomeChart = ({
   };
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6 h-full flex flex-col">
+    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6">
       <h3 className="text-white font-semibold mb-4">{t('cumulativeNetIncome')}</h3>
-      <div className="flex-1 min-h-[250px]">
+      <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
@@ -113,6 +113,8 @@ export const CumulativeIncomeChart = ({
               strokeWidth={2}
               fill="url(#colorLongTerm)"
               name={t('longTerm')}
+              isAnimationActive={true}
+              animationDuration={500}
             />
             {showAirbnbComparison && (
               <Area
@@ -122,6 +124,8 @@ export const CumulativeIncomeChart = ({
                 strokeWidth={2}
                 fill="url(#colorAirbnb)"
                 name={t('shortTerm')}
+                isAnimationActive={true}
+                animationDuration={500}
               />
             )}
             <Legend 
