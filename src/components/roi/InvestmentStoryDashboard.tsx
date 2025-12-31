@@ -598,152 +598,76 @@ export const InvestmentStoryDashboard = ({
                 </div>
               </div>
 
-              {/* Time to Payback - Both Options with Hover */}
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-violet-400" />
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('timeToPayback') || 'Time to Payback'}</span>
-                </div>
+              {/* Time to Payback - Shows only selected strategy */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(
+                    "bg-slate-800/50 rounded-xl p-4 border cursor-help",
+                    incomeStrategy === 'LT' ? "border-violet-500/30" : "border-orange-500/30"
+                  )}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-4 h-4 text-violet-400" />
+                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('timeToPayback') || 'Time to Payback'}</span>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {/* LT Payback */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className={cn(
-                        "p-3 rounded-lg border text-center cursor-help",
-                        !incomeData.showAirbnb || incomeData.yearsToPayOffLT <= incomeData.yearsToPayOffST
-                          ? "bg-violet-500/10 border-violet-500/30"
-                          : "bg-slate-800/50 border-slate-700/30"
-                      )}>
-                        <div className="relative w-12 h-12 mx-auto mb-2">
-                          <DonutProgress 
-                            value={incomeData.yearsToPayOffLT} 
-                            max={incomeData.marketAvgPayoff} 
-                            color={incomeData.yearsToPayOffLT < incomeData.marketAvgPayoff ? '#a78bfa' : '#fbbf24'}
-                            size={48}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xs font-bold text-white font-mono">
-                              {incomeData.yearsToPayOffLT.toFixed(1)}
-                            </span>
-                          </div>
+                    <div className="flex items-center gap-4">
+                      {/* Donut */}
+                      <div className="relative w-16 h-16">
+                        <DonutProgress 
+                          value={incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST} 
+                          max={incomeData.marketAvgPayoff} 
+                          color={incomeStrategy === 'LT' 
+                            ? (incomeData.yearsToPayOffLT < incomeData.marketAvgPayoff ? '#a78bfa' : '#fbbf24')
+                            : (incomeData.yearsToPayOffST < incomeData.marketAvgPayoff ? '#fb923c' : '#fbbf24')
+                          }
+                          size={64}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-sm font-bold text-white font-mono">
+                            {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)}
+                          </span>
                         </div>
-                        <p className="text-xs font-medium text-cyan-400">{t('lt') || 'LT'}</p>
-                        <p className="text-[10px] text-slate-500">{incomeData.yearsToPayOffLT.toFixed(1)} {t('years') || 'yrs'}</p>
                       </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 p-3 max-w-xs">
-                      <div className="space-y-1 text-xs">
-                        <p className="font-semibold text-white">{t('paybackCalculation') || 'Payback Calculation'}</p>
-                        <p className="text-slate-400">{t('totalInvested') || 'Total Invested'}: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
-                        <p className="text-slate-400">{t('annualIncome') || 'Annual Income'}: {formatCurrency(incomeData.paybackCalcLT.annualIncome, currency, rate)}</p>
-                        <p className="text-cyan-400 font-mono">{incomeData.paybackCalcLT.totalInvested.toLocaleString()} ÷ {incomeData.paybackCalcLT.annualIncome.toLocaleString()} = {incomeData.yearsToPayOffLT.toFixed(1)} {t('years') || 'yrs'}</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
 
-                  {/* ST Payback */}
-                  {incomeData.showAirbnb && incomeData.yearsToPayOffST < 999 ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className={cn(
-                          "p-3 rounded-lg border text-center cursor-help",
-                          incomeData.yearsToPayOffST < incomeData.yearsToPayOffLT
-                            ? "bg-orange-500/10 border-orange-500/30"
-                            : "bg-slate-800/50 border-slate-700/30"
+                      {/* Info */}
+                      <div>
+                        <p className={cn(
+                          "text-2xl font-bold font-mono",
+                          incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
                         )}>
-                          <div className="relative w-12 h-12 mx-auto mb-2">
-                            <DonutProgress 
-                              value={incomeData.yearsToPayOffST} 
-                              max={incomeData.marketAvgPayoff} 
-                              color={incomeData.yearsToPayOffST < incomeData.marketAvgPayoff ? '#fb923c' : '#fbbf24'}
-                              size={48}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-bold text-white font-mono">
-                                {incomeData.yearsToPayOffST.toFixed(1)}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs font-medium text-orange-400">{t('st') || 'ST'}</p>
-                          <p className="text-[10px] text-slate-500">{incomeData.yearsToPayOffST.toFixed(1)} {t('years') || 'yrs'}</p>
-                          {incomeData.yearsToPayOffST < incomeData.yearsToPayOffLT && (
-                            <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-500/20 text-[9px] text-orange-400">
-                              <Trophy className="w-2.5 h-2.5" /> Faster
-                            </div>
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 p-3 max-w-xs">
-                        <div className="space-y-1 text-xs">
-                          <p className="font-semibold text-white">{t('paybackCalculation') || 'Payback Calculation'}</p>
-                          <p className="text-slate-400">{t('totalInvested') || 'Total Invested'}: {formatCurrency(incomeData.paybackCalcST.totalInvested, currency, rate)}</p>
-                          <p className="text-slate-400">{t('annualIncome') || 'Annual Income'}: {formatCurrency(incomeData.paybackCalcST.annualIncome, currency, rate)}</p>
-                          <p className="text-orange-400 font-mono">{incomeData.paybackCalcST.totalInvested.toLocaleString()} ÷ {incomeData.paybackCalcST.annualIncome.toLocaleString()} = {incomeData.yearsToPayOffST.toFixed(1)} {t('years') || 'yrs'}</p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <div className="p-3 rounded-lg border bg-slate-800/50 border-slate-700/30 text-center flex items-center justify-center">
-                      <p className="text-xs text-slate-500">{t('stNotEnabled') || 'ST not enabled'}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-2 text-center">
-                  <p className="text-[10px] text-slate-500">
-                    {t('marketAvg') || 'Market Avg'}: {incomeData.marketAvgPayoff}y
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 2: Income Growth Chart */}
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('incomeGrowth') || 'Income Growth Over Time'}</span>
-              </div>
-              
-              {/* Simple comparison bars */}
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-cyan-400">{t('longTerm') || 'Long-Term'}</span>
-                    <span className="text-cyan-400 font-bold font-mono">{formatCurrency(incomeData.annualRentLT, currency, rate)}/yr</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-slate-700">
-                    <div 
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-500"
-                      style={{ width: incomeData.showAirbnb ? `${Math.min(100, (incomeData.annualRentLT / Math.max(incomeData.annualRentLT, incomeData.annualRentST)) * 100)}%` : '100%' }}
-                    />
-                  </div>
-                </div>
-                
-                {incomeData.showAirbnb && (
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-orange-400">{t('shortTerm') || 'Short-Term'}</span>
-                      <span className="text-orange-400 font-bold font-mono">{formatCurrency(incomeData.annualRentST, currency, rate)}/yr</span>
-                    </div>
-                    <div className="h-3 rounded-full bg-slate-700">
-                      <div 
-                        className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-500"
-                        style={{ width: `${Math.min(100, (incomeData.annualRentST / Math.max(incomeData.annualRentLT, incomeData.annualRentST)) * 100)}%` }}
-                      />
+                          {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)} {t('years') || 'yrs'}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {incomeStrategy === 'LT' ? (t('longTerm') || 'Long-Term') : (t('shortTerm') || 'Short-Term')}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          {t('marketAvg') || 'Market Avg'}: {incomeData.marketAvgPayoff}y
+                        </p>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {incomeData.showAirbnb && incomeData.annualRentST > incomeData.annualRentLT && (
-                <div className="mt-3 text-center">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/20 text-xs text-orange-400">
-                    <Zap className="w-3 h-3" />
-                    ST {t('earns') || 'earns'} +{formatCurrency(incomeData.annualRentST - incomeData.annualRentLT, currency, rate)}/{t('year') || 'yr'} {t('more') || 'more'}
-                  </span>
-                </div>
-              )}
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-800 border-slate-700 p-3 max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-semibold text-white">{t('paybackCalculation') || 'Payback Calculation'}</p>
+                    <p className="text-slate-400">
+                      {t('totalInvested') || 'Total Invested'}: {formatCurrency(
+                        incomeStrategy === 'LT' ? incomeData.paybackCalcLT.totalInvested : incomeData.paybackCalcST.totalInvested, 
+                        currency, rate
+                      )}
+                    </p>
+                    <p className="text-slate-400">
+                      {t('annualIncome') || 'Annual Income'}: {formatCurrency(
+                        incomeStrategy === 'LT' ? incomeData.paybackCalcLT.annualIncome : incomeData.paybackCalcST.annualIncome, 
+                        currency, rate
+                      )}
+                    </p>
+                    <p className={cn("font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
+                      {(incomeStrategy === 'LT' ? incomeData.paybackCalcLT.totalInvested : incomeData.paybackCalcST.totalInvested).toLocaleString()} ÷ {(incomeStrategy === 'LT' ? incomeData.paybackCalcLT.annualIncome : incomeData.paybackCalcST.annualIncome).toLocaleString()} = {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)} {t('years') || 'yrs'}
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </section>
