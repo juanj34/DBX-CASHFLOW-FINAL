@@ -56,6 +56,16 @@ const translations: Translations = {
   leverage: { en: 'Leverage', es: 'Apalancamiento' },
   financingDetails: { en: 'Your financing details', es: 'Detalles de tu financiamiento' },
   monthlyCashflowAfterMortgage: { en: 'Monthly Cashflow After Mortgage', es: 'Flujo Mensual Después de Hipoteca' },
+  // Entry Section
+  propertyPrice: { en: 'Property Price', es: 'Precio de Propiedad' },
+  constructionTime: { en: 'Construction', es: 'Construcción' },
+  paymentSplit: { en: 'Payment Split', es: 'División de Pagos' },
+  sqft: { en: 'sqft', es: 'sqft' },
+  // Payment Timeline
+  milestones: { en: 'Milestones', es: 'Hitos' },
+  estimate: { en: 'estimate', es: 'estimado' },
+  ofPropertyPrice: { en: 'of property price', es: 'del precio de propiedad' },
+  includesDldOqood: { en: 'Includes DLD (4%) + Oqood fees', es: 'Incluye DLD (4%) + tarifas Oqood' },
 
   // Header
   opportunityInvestorAnalysis: { en: 'Opportunity Investor Analysis', es: 'Análisis de Inversionista de Oportunidad' },

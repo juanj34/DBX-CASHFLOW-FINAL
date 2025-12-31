@@ -1,9 +1,10 @@
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { constructionToMonth } from "./constructionProgress";
+import { Check, Clock, ArrowRight } from "lucide-react";
 
 interface PaymentHorizontalTimelineProps {
   inputs: OIInputs;
@@ -72,135 +73,158 @@ export const PaymentHorizontalTimeline = ({
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const entryTotal = downpaymentAmount + dldFeeAmount + oqoodFee;
-  const entryPercent = downpaymentPercent + DLD_FEE_PERCENT; // Show combined 24%
+  const entryPercent = downpaymentPercent + DLD_FEE_PERCENT;
   
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
 
   // Build payments array with TRUE proportional positioning
-  const payments: TimelinePayment[] = [];
+  const payments: TimelinePayment[] = useMemo(() => {
+    const result: TimelinePayment[] = [];
 
-  // Entry (position 0%)
-  payments.push({
-    id: 'entry',
-    label: t('entry') || 'Entry',
-    percent: entryPercent,
-    amount: entryTotal,
-    monthsFromBooking: 0,
-    positionPercent: 0,
-    type: 'entry',
-    date: monthToDateString(bookingMonth, bookingYear),
-    isEstimate: false,
-  });
-
-  // Additional payments (milestones) - use S-curve for construction-linked
-  additionalPayments.forEach((payment) => {
-    const amount = basePrice * payment.paymentPercent / 100;
-    const isTimeBased = payment.type === 'time';
-    
-    // Calculate months from booking using S-curve for construction milestones
-    let monthsFromBooking: number;
-    let label: string;
-    let isEstimate: boolean;
-    
-    if (isTimeBased) {
-      monthsFromBooking = payment.triggerValue;
-      label = `${payment.paymentPercent}%`;
-      isEstimate = false;
-    } else {
-      // Construction-based: use S-curve to estimate month
-      monthsFromBooking = constructionToMonth(payment.triggerValue, totalMonths);
-      label = `${payment.triggerValue}% const`;
-      isEstimate = true;
-    }
-    
-    // TRUE proportional positioning: (months / totalMonths) * 100 - NO CLAMPING
-    const positionPercent = (monthsFromBooking / totalMonths) * 100;
-    
-    payments.push({
-      id: payment.id,
-      label,
-      percent: payment.paymentPercent,
-      amount,
-      monthsFromBooking,
-      positionPercent,
-      type: 'milestone',
-      date: estimateDateFromMonths(monthsFromBooking),
-      isEstimate,
+    // Entry (position 0%)
+    result.push({
+      id: 'entry',
+      label: t('booking') || 'Booking',
+      percent: entryPercent,
+      amount: entryTotal,
+      monthsFromBooking: 0,
+      positionPercent: 0,
+      type: 'entry',
+      date: monthToDateString(bookingMonth, bookingYear),
+      isEstimate: false,
     });
-  });
 
-  // Handover payment (position 100%)
-  payments.push({
-    id: 'handover',
-    label: t('completion') || 'Handover',
-    percent: handoverPercent,
-    amount: handoverAmount,
-    monthsFromBooking: totalMonths,
-    positionPercent: 100,
-    type: 'handover',
-    date: `Q${handoverQuarter} ${handoverYear}`,
-    isEstimate: false,
-  });
+    // Additional payments (milestones) - use S-curve for construction-linked
+    additionalPayments.forEach((payment) => {
+      const amount = basePrice * payment.paymentPercent / 100;
+      const isTimeBased = payment.type === 'time';
+      
+      let monthsFromBooking: number;
+      let label: string;
+      let isEstimate: boolean;
+      
+      if (isTimeBased) {
+        monthsFromBooking = payment.triggerValue;
+        label = `M${payment.triggerValue}`;
+        isEstimate = false;
+      } else {
+        monthsFromBooking = constructionToMonth(payment.triggerValue, totalMonths);
+        label = `${payment.triggerValue}%`;
+        isEstimate = true;
+      }
+      
+      const positionPercent = (monthsFromBooking / totalMonths) * 100;
+      
+      result.push({
+        id: payment.id,
+        label,
+        percent: payment.paymentPercent,
+        amount,
+        monthsFromBooking,
+        positionPercent,
+        type: 'milestone',
+        date: estimateDateFromMonths(monthsFromBooking),
+        isEstimate,
+      });
+    });
 
-  // Sort by position
-  const sortedPayments = [...payments].sort((a, b) => a.positionPercent - b.positionPercent);
+    // Handover payment (position 100%)
+    result.push({
+      id: 'handover',
+      label: t('handover') || 'Handover',
+      percent: handoverPercent,
+      amount: handoverAmount,
+      monthsFromBooking: totalMonths,
+      positionPercent: 100,
+      type: 'handover',
+      date: `Q${handoverQuarter} ${handoverYear}`,
+      isEstimate: false,
+    });
 
-  const getMarkerStyle = (payment: TimelinePayment, isHovered: boolean) => {
-    const baseSize = payment.type === 'handover' ? 'w-5 h-5' : payment.type === 'entry' ? 'w-4 h-4' : 'w-3.5 h-3.5';
-    const hoverSize = payment.type === 'handover' ? 'w-6 h-6' : payment.type === 'entry' ? 'w-5 h-5' : 'w-4 h-4';
-    
-    if (payment.type === 'handover') {
-      return {
-        bg: 'bg-cyan-400',
-        border: 'border-cyan-300',
-        size: isHovered ? hoverSize : baseSize,
-        ring: 'ring-cyan-400/40',
-      };
-    }
-    if (payment.type === 'entry') {
-      return {
-        bg: '',
-        border: 'border-2 border-white/30',
-        size: isHovered ? hoverSize : baseSize,
-        ring: 'ring-theme-accent/40',
-        custom: { backgroundColor: accentColor },
-      };
-    }
-    return {
-      bg: 'bg-slate-400',
-      border: 'border-slate-300',
-      size: isHovered ? hoverSize : baseSize,
-      ring: 'ring-slate-400/30',
-    };
-  };
+    return result.sort((a, b) => a.positionPercent - b.positionPercent);
+  }, [inputs, totalMonths, t, language]);
+
+  // Calculate cumulative progress for the track fill
+  const preHandoverProgress = preHandoverPercent;
 
   const startDate = monthToDateString(bookingMonth, bookingYear);
   const endDate = `Q${handoverQuarter} ${handoverYear}`;
 
+  // Summary totals
+  const totalPreHandover = payments.filter(p => p.type !== 'handover').reduce((sum, p) => sum + p.amount, 0);
+  const totalHandover = handoverAmount;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Summary Bar */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-emerald-400 uppercase tracking-wide">{t('preHandover') || 'Pre-Handover'}</p>
+              <p className="text-lg font-bold text-emerald-400 font-mono">{formatCurrency(totalPreHandover, currency, rate)}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-emerald-400">{preHandoverPercent}%</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-cyan-400 uppercase tracking-wide">{t('atHandoverLabel') || 'At Handover'}</p>
+              <p className="text-lg font-bold text-cyan-400 font-mono">{formatCurrency(totalHandover, currency, rate)}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-cyan-400">{handoverPercent}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between text-xs">
-        <span className="text-theme-text font-medium">{startDate}</span>
-        <span className="text-theme-text-muted uppercase tracking-wider text-[11px]">{t('paymentTimeline')}</span>
-        <span className="text-theme-text font-medium">{endDate}</span>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <Check className="w-3 h-3 text-emerald-400" />
+          </div>
+          <span className="text-white font-medium">{startDate}</span>
+        </div>
+        <div className="flex items-center gap-1 text-slate-400">
+          <Clock className="w-3 h-3" />
+          <span>{totalMonths} {t('months') || 'months'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-white font-medium">{endDate}</span>
+          <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center">
+            <ArrowRight className="w-3 h-3 text-cyan-400" />
+          </div>
+        </div>
       </div>
 
       {/* Timeline Container */}
-      <div className="relative h-24 px-4">
-        {/* Track - neutral gray */}
-        <div className="absolute top-1/2 left-4 right-4 h-1.5 bg-theme-border/50 rounded-full transform -translate-y-1/2" />
+      <div className="relative h-28 px-4">
+        {/* Track Background */}
+        <div className="absolute top-1/2 left-4 right-4 h-2 bg-slate-700/80 rounded-full transform -translate-y-1/2" />
+        
+        {/* Progress Fill - shows pre-handover progress */}
+        <div 
+          className="absolute top-1/2 left-4 h-2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transform -translate-y-1/2 transition-all duration-500"
+          style={{ width: `calc(${preHandoverProgress}% - 16px)` }}
+        />
 
         {/* Payment Markers */}
         <TooltipProvider delayDuration={0}>
-          {sortedPayments.map((payment) => {
+          {payments.map((payment, index) => {
             const isHovered = hoveredId === payment.id;
-            const style = getMarkerStyle(payment, isHovered);
-            
-            // Calculate left position accounting for container padding
             const leftPercent = payment.positionPercent;
             const leftCalc = `calc(${leftPercent}% + 16px - ${leftPercent * 0.32}px)`;
+            
+            const markerSize = payment.type === 'handover' ? 'w-8 h-8' : payment.type === 'entry' ? 'w-7 h-7' : 'w-6 h-6';
+            const markerColor = payment.type === 'handover' ? 'bg-cyan-500' : payment.type === 'entry' ? 'bg-emerald-500' : 'bg-slate-500';
+            const borderColor = payment.type === 'handover' ? 'border-cyan-300' : payment.type === 'entry' ? 'border-emerald-300' : 'border-slate-400';
+            const textColor = payment.type === 'handover' ? 'text-cyan-400' : payment.type === 'entry' ? 'text-emerald-400' : 'text-slate-300';
             
             return (
               <Tooltip key={payment.id}>
@@ -216,37 +240,33 @@ export const PaymentHorizontalTimeline = ({
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     {/* Percent label above marker */}
-                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
-                      <div className={`text-xs font-bold ${
-                        payment.type === 'handover' ? 'text-cyan-400' : 
-                        payment.type === 'entry' ? 'text-theme-accent' : 
-                        'text-slate-400'
-                      }`}>
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                      <div className={`text-sm font-bold ${textColor}`}>
                         {payment.percent}%
                       </div>
                     </div>
                     
-                    {/* Marker */}
+                    {/* Marker Circle with number */}
                     <div 
                       className={`
-                        ${style.size} ${style.bg} ${style.border} 
-                        rounded-full shadow-lg
+                        ${markerSize} ${markerColor} ${borderColor}
+                        rounded-full shadow-lg border-2
+                        flex items-center justify-center
                         transition-all duration-200
-                        ${isHovered ? `ring-4 ${style.ring}` : ''}
+                        ${isHovered ? 'scale-110 ring-4 ring-white/20' : ''}
                       `}
-                      style={style.custom}
-                    />
+                    >
+                      <span className="text-xs font-bold text-white">
+                        {index + 1}
+                      </span>
+                    </div>
                     
-                    {/* Labels below marker: milestone label + date (with ~ for estimates) */}
-                    <div className="absolute top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
-                      <div className={`text-[10px] font-semibold ${
-                        payment.type === 'handover' ? 'text-cyan-400' : 
-                        payment.type === 'entry' ? 'text-theme-accent' : 
-                        'text-slate-400'
-                      }`}>
+                    {/* Labels below marker */}
+                    <div className="absolute top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                      <div className={`text-[10px] font-semibold ${textColor}`}>
                         {payment.label}
                       </div>
-                      <div className="text-[9px] text-theme-text-muted mt-0.5">
+                      <div className="text-[9px] text-slate-500 mt-0.5">
                         {payment.isEstimate ? '~' : ''}{payment.date}
                       </div>
                     </div>
@@ -254,25 +274,28 @@ export const PaymentHorizontalTimeline = ({
                 </TooltipTrigger>
                 <TooltipContent 
                   side="top" 
-                  className="bg-theme-card border-theme-border p-3 max-w-[200px]"
+                  className="bg-slate-800 border-slate-700 p-3 max-w-[220px]"
                 >
-                  <div className="space-y-1.5">
-                    <div className="font-semibold text-sm text-theme-text">
-                      {payment.label}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full ${markerColor} flex items-center justify-center`}>
+                        <span className="text-[10px] font-bold text-white">{index + 1}</span>
+                      </div>
+                      <span className="font-semibold text-sm text-white">{payment.label}</span>
                     </div>
-                    <div className="text-xs text-theme-text-muted">
+                    <div className="text-xs text-slate-400">
                       {payment.isEstimate ? '~' : ''}{payment.date}
-                      {payment.isEstimate && <span className="text-amber-400 ml-1">(estimate)</span>}
+                      {payment.isEstimate && <span className="text-amber-400 ml-1">({t('estimate') || 'estimate'})</span>}
                     </div>
-                    <div className="text-sm font-bold font-mono" style={{ color: payment.type === 'handover' ? '#22d3ee' : accentColor }}>
+                    <div className="text-lg font-bold font-mono text-white">
                       {formatCurrency(payment.amount, currency, rate)}
                     </div>
-                    <div className="text-xs text-theme-text-muted">
-                      {payment.percent}% of property
+                    <div className="text-xs text-slate-400">
+                      {payment.percent}% {t('ofPropertyPrice') || 'of property price'}
                     </div>
                     {payment.type === 'entry' && (
-                      <div className="text-[10px] text-red-400 pt-1 border-t border-theme-border">
-                        Incl. DLD ({DLD_FEE_PERCENT}%) + Oqood fees
+                      <div className="text-[10px] text-amber-400 pt-1 border-t border-slate-700">
+                        {t('includesDldOqood') || 'Includes DLD (4%) + Oqood fees'}
                       </div>
                     )}
                   </div>
@@ -284,24 +307,25 @@ export const PaymentHorizontalTimeline = ({
       </div>
 
       {/* Legend */}
-      <div className="flex flex-col items-center gap-1.5 pt-1">
-        <div className="flex items-center justify-center gap-5 text-[11px] text-theme-text-muted">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
-            <span>{t('entry') || 'Entry'}</span>
+      <div className="flex items-center justify-center gap-6 text-[11px] text-slate-400">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-emerald-500 flex items-center justify-center">
+            <span className="text-[8px] font-bold text-white">1</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-            <span>{t('construction') || 'Construction'}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded-full bg-cyan-400" />
-            <span>{t('completion') || 'Completion'}</span>
-          </div>
+          <span>{t('booking') || 'Booking'}</span>
         </div>
-        <span className="text-[10px] text-theme-text-muted/60 italic">
-          {t('clickPaymentForDetails') || 'Click on a payment for more details'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-slate-500 flex items-center justify-center">
+            <span className="text-[8px] font-bold text-white">#</span>
+          </div>
+          <span>{t('milestones') || 'Milestones'}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-cyan-500 flex items-center justify-center">
+            <span className="text-[8px] font-bold text-white">✓</span>
+          </div>
+          <span>{t('handover') || 'Handover'}</span>
+        </div>
       </div>
     </div>
   );
