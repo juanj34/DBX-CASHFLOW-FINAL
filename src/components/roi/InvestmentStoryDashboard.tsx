@@ -1105,26 +1105,6 @@ export const InvestmentStoryDashboard = ({
                       <p className="text-xs text-slate-500">Net Wealth</p>
                       <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
                     </div>
-                      </div>
-                      <p className="text-xs text-slate-500">Growth</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y - calculations.basePrice, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">+</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
-                        <Coins className="w-5 h-5 text-cyan-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Rent</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.cumulativeRentLT, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">=</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
-                        <Trophy className="w-5 h-5 text-yellow-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Net Wealth</p>
-                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
-                    </div>
                   </div>
                 </div>
               </div>
