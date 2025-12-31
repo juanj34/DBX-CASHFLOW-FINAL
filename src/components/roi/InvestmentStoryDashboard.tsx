@@ -3,7 +3,7 @@ import {
   Wallet, TrendingUp, Trophy, Clock, Banknote, Building2, 
   Key, Target, Home, Zap, DollarSign,
   Calendar, Percent, CreditCard, Info, ChevronDown, ChevronUp,
-  Hammer, Coins, FileText, CalendarDays
+  Hammer, Coins, FileText, CalendarDays, Sparkles
 } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
 import { CumulativeIncomeChart } from "./CumulativeIncomeChart";
@@ -17,6 +17,7 @@ import { StoryNavigation, StorySection, StorySectionConfig } from "./StoryNaviga
 import { OIGrowthCurve } from "./OIGrowthCurve";
 import { calculateExitScenario } from "./constructionProgress";
 import { RentalCashflowWaterfall } from "./CashflowWaterfall";
+import { PropertyShowcase } from "./PropertyShowcase";
 import {
   Tooltip,
   TooltipContent,
@@ -56,6 +57,16 @@ const AnimatedCard = ({
   );
 };
 
+interface ClientInfo {
+  clientName?: string;
+  clientCountry?: string;
+  projectName?: string;
+  developer?: string;
+  unit?: string;
+  unitType?: string;
+  zoneName?: string;
+}
+
 interface InvestmentStoryDashboardProps {
   inputs: OIInputs;
   calculations: OICalculations;
@@ -64,6 +75,12 @@ interface InvestmentStoryDashboardProps {
   exitScenarios: number[];
   currency: Currency;
   rate: number;
+  // New props for showcase section
+  clientInfo?: ClientInfo;
+  buildingRenderUrl?: string | null;
+  developerId?: string;
+  projectId?: string;
+  zoneId?: string;
 }
 
 // Donut Progress Component
@@ -183,12 +200,17 @@ export const InvestmentStoryDashboard = ({
   exitScenarios,
   currency,
   rate,
+  clientInfo,
+  buildingRenderUrl,
+  developerId,
+  projectId,
+  zoneId,
 }: InvestmentStoryDashboardProps) => {
   const { t } = useLanguage();
   const mortgageEnabled = mortgageInputs.enabled;
   
-  // Active section state for story navigation
-  const [activeSection, setActiveSection] = useState<StorySection>('entry');
+  // Active section state for story navigation - start with showcase
+  const [activeSection, setActiveSection] = useState<StorySection>('showcase');
   
   // Strategy toggles state
   const [incomeStrategy, setIncomeStrategy] = useState<'LT' | 'ST'>('LT');
@@ -200,8 +222,9 @@ export const InvestmentStoryDashboard = ({
   // Direction tracking for animations
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
-  // Define story sections
+  // Define story sections - showcase first
   const storySections: StorySectionConfig[] = useMemo(() => [
+    { id: 'showcase', labelKey: 'theProperty', fallbackLabel: 'Property', icon: Sparkles },
     { id: 'entry', labelKey: 'theEntry', fallbackLabel: 'Entry', icon: Wallet },
     { id: 'income', labelKey: 'yourIncome', fallbackLabel: 'Income', icon: Home },
     { id: 'exit', labelKey: 'exitScenarios', fallbackLabel: 'Exits', icon: Target },
@@ -465,6 +488,25 @@ export const InvestmentStoryDashboard = ({
         {/* Section Content Container */}
         <div className={cn("p-4 min-h-[calc(100vh-280px)] flex flex-col", sectionAnimationClass)} key={activeSection}>
           
+          {/* ===== SECTION 0: PROPERTY SHOWCASE ===== */}
+          {activeSection === 'showcase' && (
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-slate-700/50 rounded-2xl overflow-hidden flex-1">
+              <div className="p-4">
+                <PropertyShowcase
+                  inputs={inputs}
+                  calculations={calculations}
+                  clientInfo={clientInfo || {}}
+                  currency={currency}
+                  rate={rate}
+                  buildingRenderUrl={buildingRenderUrl}
+                  developerId={developerId}
+                  projectId={projectId}
+                  zoneId={zoneId}
+                />
+              </div>
+            </section>
+          )}
+
           {/* ===== SECTION 1: ENTRY ===== */}
           {activeSection === 'entry' && (
             <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
