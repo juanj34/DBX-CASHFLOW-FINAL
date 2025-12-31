@@ -3,6 +3,7 @@ import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
 import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
 import { cn } from "@/lib/utils";
+import { useState, useEffect, useMemo } from "react";
 
 interface OIGrowthCurveProps {
   calculations: OICalculations;
@@ -25,6 +26,20 @@ export const OIGrowthCurve = ({
 }: OIGrowthCurveProps) => {
   const { basePrice, totalMonths, totalEntryCosts } = calculations;
   
+  // Animation states
+  const [isAnimated, setIsAnimated] = useState(false);
+  const [showMarkers, setShowMarkers] = useState(false);
+  
+  // Trigger animations on mount
+  useEffect(() => {
+    const curveTimer = setTimeout(() => setIsAnimated(true), 100);
+    const markerTimer = setTimeout(() => setShowMarkers(true), 800);
+    return () => {
+      clearTimeout(curveTimer);
+      clearTimeout(markerTimer);
+    };
+  }, []);
+  
   // Calculate handover price using the SAME function as exit scenario cards
   const handoverPrice = calculatePhasedExitPrice(totalMonths, inputs, totalMonths, basePrice);
   const maxValue = handoverPrice * 1.1; // Add 10% padding
@@ -39,6 +54,9 @@ export const OIGrowthCurve = ({
   // Scale functions - now based on months
   const xScale = (months: number) => padding.left + (months / totalMonths) * chartWidth;
   const yScale = (value: number) => padding.top + chartHeight - ((value - basePrice * 0.9) / (maxValue - basePrice * 0.9)) * chartHeight;
+  
+  // Calculate approximate path length for animation
+  const pathLength = useMemo(() => chartWidth * 1.5, [chartWidth]);
 
   // Generate curve path using calculatePhasedExitPrice for consistency with exit scenario cards
   const generateCurvePath = () => {
@@ -250,44 +268,64 @@ export const OIGrowthCurve = ({
             Base: {formatCurrencyShort(basePrice, currency, rate)}
           </text>
 
-          {/* Area fill under curve */}
+          {/* Area fill under curve - animated */}
           <path
             d={`${generateCurvePath()} L ${xScale(totalMonths)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
             fill="url(#areaGradient)"
+            style={{
+              opacity: isAnimated ? 1 : 0,
+              transition: 'opacity 0.8s ease-out 0.5s'
+            }}
           />
 
-          {/* Growth curve with gradient */}
+          {/* Growth curve with gradient - animated drawing */}
           <path
             d={generateCurvePath()}
             fill="none"
             stroke="url(#curveGradient)"
             strokeWidth="3"
             strokeLinecap="round"
+            style={{
+              strokeDasharray: pathLength,
+              strokeDashoffset: isAnimated ? 0 : pathLength,
+              transition: 'stroke-dashoffset 1.2s ease-out'
+            }}
           />
 
-          {/* Glow effect */}
+          {/* Glow effect - animated */}
           <path
             d={generateCurvePath()}
             fill="none"
             stroke="url(#curveGradient)"
             strokeWidth="10"
             strokeLinecap="round"
-            opacity="0.2"
+            opacity={isAnimated ? 0.2 : 0}
+            style={{
+              strokeDasharray: pathLength,
+              strokeDashoffset: isAnimated ? 0 : pathLength,
+              transition: 'stroke-dashoffset 1.2s ease-out, opacity 0.5s ease-out 0.8s'
+            }}
           />
 
-          {/* Exit markers - Interactive */}
+          {/* Exit markers - Interactive with staggered entrance */}
           {exitMarkersData.map(({ scenario, label, yOffset }, index) => {
             const isHighlighted = highlightedExit === index;
             const markerRadius = isHighlighted ? 12 : 8;
             const innerRadius = isHighlighted ? 6 : 4;
+            const markerDelay = 0.1 * index;
             
             return (
             <g 
               key={label}
-              className="cursor-pointer transition-all duration-200"
+              className="cursor-pointer"
               onMouseEnter={() => onExitHover?.(index)}
               onMouseLeave={() => onExitHover?.(null)}
-              style={{ filter: isHighlighted ? 'drop-shadow(0 0 12px rgba(204,255,0,0.6))' : undefined }}
+              style={{ 
+                filter: isHighlighted ? 'drop-shadow(0 0 12px rgba(204,255,0,0.6))' : undefined,
+                opacity: showMarkers ? 1 : 0,
+                transform: showMarkers ? 'translateY(0)' : 'translateY(10px)',
+                transition: `opacity 0.4s ease-out ${markerDelay}s, transform 0.4s ease-out ${markerDelay}s`
+              }}
             >
               {/* Connection line if offset */}
               {yOffset !== 0 && (
@@ -380,8 +418,12 @@ export const OIGrowthCurve = ({
             );
           })}
 
-          {/* Handover marker */}
-          <g>
+          {/* Handover marker - animated */}
+          <g style={{
+            opacity: showMarkers ? 1 : 0,
+            transform: showMarkers ? 'translateY(0)' : 'translateY(10px)',
+            transition: `opacity 0.4s ease-out 0.4s, transform 0.4s ease-out 0.4s`
+          }}>
             {/* Point circle - special styling */}
             <circle
               cx={xScale(handoverScenario.exitMonths)}
