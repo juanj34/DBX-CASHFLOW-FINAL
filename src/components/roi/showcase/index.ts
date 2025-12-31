@@ -3,6 +3,7 @@ export { ShowcaseProjectCard } from './ShowcaseProjectCard';
 export { ShowcaseDeveloperCard } from './ShowcaseDeveloperCard';
 export { ShowcaseUnitCard } from './ShowcaseUnitCard';
 export { ShowcaseValueCard } from './ShowcaseValueCard';
+export { ShowcaseZoneCard } from './ShowcaseZoneCard';
 export { PropertyScoreGauge } from './PropertyScoreGauge';
 export { TrustScoreRing } from './TrustScoreRing';
 export { ZoneComparisonChart } from './ZoneComparisonChart';

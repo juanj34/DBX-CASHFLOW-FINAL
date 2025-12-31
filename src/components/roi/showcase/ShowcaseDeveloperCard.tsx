@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Building, CheckCircle, Trophy, Package } from 'lucide-react';
+import { Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateTrustScore, getTierInfo, getSuperpower, Developer } from '../developerTrustScore';
+import { calculateTrustScore, getTierInfo, Developer } from '../developerTrustScore';
 import { TrustScoreRing } from './TrustScoreRing';
 
 interface ShowcaseDeveloperCardProps {
@@ -10,12 +10,6 @@ interface ShowcaseDeveloperCardProps {
   developerId?: string;
   className?: string;
 }
-
-const formatNumber = (num: number | null): string => {
-  if (num === null || num === undefined) return '-';
-  if (num >= 1000) return `${(num / 1000).toFixed(num >= 10000 ? 0 : 1)}K`;
-  return num.toString();
-};
 
 export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
   developerName,
@@ -39,15 +33,13 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
 
   const trustScore = developer ? calculateTrustScore(developer) : 5;
   const tierInfo = getTierInfo(trustScore);
-  const superpower = developer ? getSuperpower(developer) : null;
 
   return (
     <div className={cn(
       "bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-lg p-2.5 border border-slate-700/50 backdrop-blur-sm",
       className
     )}>
-      {/* Header with Trust Ring */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2">
         {developer?.logo_url ? (
           <img src={developer.logo_url} alt={developerName} className="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5" />
         ) : (
@@ -62,50 +54,21 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
             <p className="text-[10px] text-slate-500">Since {developer.founded_year}</p>
           )}
         </div>
-        {developer && <TrustScoreRing score={trustScore} size={44} />}
-      </div>
-
-      {/* Tier Badge + Superpower Row */}
-      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+        
+        {/* Trust Score Ring + Tier Badge */}
         {developer && (
-          <span className={cn(
-            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold",
-            tierInfo.color.replace('text-', 'bg-').replace('-400', '-500/20'),
-            tierInfo.color
-          )}>
-            {tierInfo.emoji} {tierInfo.label}
-          </span>
-        )}
-        {superpower && (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/15 text-amber-400 rounded text-[9px]">
-            <Trophy className="w-2.5 h-2.5" />
-            {superpower.category}
-          </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <TrustScoreRing score={trustScore} size={40} />
+            <span className={cn(
+              "px-1.5 py-0.5 rounded text-[8px] font-bold",
+              tierInfo.color.replace('text-', 'bg-').replace('-400', '-500/20'),
+              tierInfo.color
+            )}>
+              {tierInfo.emoji} {tierInfo.label}
+            </span>
+          </div>
         )}
       </div>
-
-      {/* Stats Row */}
-      {developer && (
-        <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-700/30">
-          <div className="text-center">
-            <Package className="w-3 h-3 text-slate-400 mx-auto mb-0.5" />
-            <p className="text-xs font-semibold text-white">{formatNumber(developer.projects_launched)}</p>
-            <p className="text-[8px] text-slate-500">Projects</p>
-          </div>
-          <div className="text-center">
-            <Building className="w-3 h-3 text-slate-400 mx-auto mb-0.5" />
-            <p className="text-xs font-semibold text-white">{formatNumber(developer.units_sold)}</p>
-            <p className="text-[8px] text-slate-500">Units</p>
-          </div>
-          <div className="text-center">
-            <CheckCircle className="w-3 h-3 text-slate-400 mx-auto mb-0.5" />
-            <p className="text-xs font-semibold text-white">
-              {developer.on_time_delivery_rate ? `${developer.on_time_delivery_rate}%` : '-'}
-            </p>
-            <p className="text-[8px] text-slate-500">On-Time</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

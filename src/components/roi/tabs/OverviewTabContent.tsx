@@ -55,6 +55,7 @@ export const OverviewTabContent = ({
         currency={currency}
         rate={rate}
         clientInfo={{
+          clients: clientInfo?.clients,
           clientName: clientInfo?.clients?.[0]?.name,
           clientCountry: clientInfo?.clients?.[0]?.country,
           projectName: clientInfo?.projectName,
