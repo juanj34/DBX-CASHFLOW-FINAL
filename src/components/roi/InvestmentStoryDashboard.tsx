@@ -494,8 +494,8 @@ export const InvestmentStoryDashboard = ({
           
           {/* ===== SECTION 0: PROPERTY SHOWCASE ===== */}
           {activeSection === 'showcase' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-slate-700/50 rounded-2xl overflow-hidden flex-1">
-              <div className="p-4">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+              <div className="p-4 h-full flex-1">
                 <PropertyShowcase
                   inputs={inputs}
                   calculations={calculations}
@@ -506,6 +506,7 @@ export const InvestmentStoryDashboard = ({
                   developerId={developerId}
                   projectId={projectId}
                   zoneId={zoneId}
+                  className="h-full"
                 />
               </div>
             </section>
