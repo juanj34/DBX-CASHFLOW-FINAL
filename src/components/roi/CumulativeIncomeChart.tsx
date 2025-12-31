@@ -26,10 +26,11 @@ export const CumulativeIncomeChart = ({
       year: `Y${p.year}`,
       calendarYear: p.calendarYear,
       longTerm: p.cumulativeNetIncome,
-      airbnb: showAirbnbComparison ? p.airbnbCumulativeNetIncome : null,
+      // Always include airbnb data when comparison is enabled
+      airbnb: p.airbnbCumulativeNetIncome ?? null,
       isConstruction: p.isConstruction,
     }));
-  }, [projections, showAirbnbComparison]);
+  }, [projections]);
 
   const formatValue = (value: number) => {
     if (value >= 1000000) {
