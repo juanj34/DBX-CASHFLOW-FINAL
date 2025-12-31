@@ -5,11 +5,8 @@ import { OIInputs, OICalculations } from './useOICalculations';
 import { Currency } from './currencyUtils';
 import { Building } from 'lucide-react';
 import {
-  ShowcaseClientCard,
-  ShowcaseProjectCard,
   ShowcaseDeveloperCard,
   ShowcaseUnitCard,
-  ShowcaseValueCard,
   ShowcaseZoneCard,
 } from './showcase';
 import { ValueDifferentiator } from './valueDifferentiators';
@@ -85,23 +82,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
         {/* Cards Section - Mobile */}
         <div className="p-3 space-y-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
           <motion.div custom={0} initial="hidden" animate="visible" variants={cardVariants}>
-            <ShowcaseClientCard
-              clients={clientInfo.clients}
-              clientName={clientInfo.clientName}
-              clientCountry={clientInfo.clientCountry}
-              className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
-            />
-          </motion.div>
-
-          <motion.div custom={1} initial="hidden" animate="visible" variants={cardVariants}>
-            <ShowcaseProjectCard
-              projectName={clientInfo.projectName || ''}
-              projectId={projectId}
-              className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
-            />
-          </motion.div>
-
-          <motion.div custom={2} initial="hidden" animate="visible" variants={cardVariants}>
             <ShowcaseZoneCard
               zoneName={clientInfo.zoneName}
               zoneId={zoneId || clientInfo.zoneId || inputs.zoneId}
@@ -109,7 +89,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
             />
           </motion.div>
 
-          <motion.div custom={3} initial="hidden" animate="visible" variants={cardVariants}>
+          <motion.div custom={1} initial="hidden" animate="visible" variants={cardVariants}>
             <ShowcaseDeveloperCard
               developerName={clientInfo.developer || ''}
               developerId={developerId}
@@ -117,7 +97,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
             />
           </motion.div>
 
-          <motion.div custom={4} initial="hidden" animate="visible" variants={cardVariants}>
+          <motion.div custom={2} initial="hidden" animate="visible" variants={cardVariants}>
             <ShowcaseUnitCard
               unitType={clientInfo.unitType || ''}
               unitSizeSqf={inputs.unitSizeSqf || 0}
@@ -131,16 +111,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
             />
           </motion.div>
-
-          {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-            <motion.div custom={5} initial="hidden" animate="visible" variants={cardVariants}>
-              <ShowcaseValueCard
-                selectedDifferentiators={inputs.valueDifferentiators}
-                customDifferentiators={customDifferentiators}
-                className="bg-white/5 backdrop-blur-xl rounded-lg p-3 border border-white/10 shadow-2xl"
-              />
-            </motion.div>
-          )}
         </div>
 
         {/* Hero Image - Mobile */}
@@ -184,27 +154,10 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
         </div>
         
-        {/* Cards Overlay - Left Aligned */}
+        {/* Cards Overlay - Left Aligned - 1/3 width */}
         <div className="relative z-10 h-full p-4 overflow-y-auto">
-          <div className="flex flex-col gap-3 max-w-[380px]">
+          <div className="flex flex-col gap-3 w-1/3 min-w-[320px] max-w-[450px]">
             <motion.div custom={0} initial="hidden" animate="visible" variants={cardVariants}>
-              <ShowcaseClientCard
-                clients={clientInfo.clients}
-                clientName={clientInfo.clientName}
-                clientCountry={clientInfo.clientCountry}
-                className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
-              />
-            </motion.div>
-
-            <motion.div custom={1} initial="hidden" animate="visible" variants={cardVariants}>
-              <ShowcaseProjectCard
-                projectName={clientInfo.projectName || ''}
-                projectId={projectId}
-                className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
-              />
-            </motion.div>
-
-            <motion.div custom={2} initial="hidden" animate="visible" variants={cardVariants}>
               <ShowcaseZoneCard
                 zoneName={clientInfo.zoneName}
                 zoneId={zoneId || clientInfo.zoneId || inputs.zoneId}
@@ -212,7 +165,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               />
             </motion.div>
 
-            <motion.div custom={3} initial="hidden" animate="visible" variants={cardVariants}>
+            <motion.div custom={1} initial="hidden" animate="visible" variants={cardVariants}>
               <ShowcaseDeveloperCard
                 developerName={clientInfo.developer || ''}
                 developerId={developerId}
@@ -220,7 +173,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               />
             </motion.div>
 
-            <motion.div custom={4} initial="hidden" animate="visible" variants={cardVariants}>
+            <motion.div custom={2} initial="hidden" animate="visible" variants={cardVariants}>
               <ShowcaseUnitCard
                 unitType={clientInfo.unitType || ''}
                 unitSizeSqf={inputs.unitSizeSqf || 0}
@@ -234,16 +187,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
                 className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
               />
             </motion.div>
-
-            {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-              <motion.div custom={5} initial="hidden" animate="visible" variants={cardVariants}>
-                <ShowcaseValueCard
-                  selectedDifferentiators={inputs.valueDifferentiators}
-                  customDifferentiators={customDifferentiators}
-                  className="bg-white/5 backdrop-blur-xl rounded-lg p-3 border border-white/10 shadow-2xl"
-                />
-              </motion.div>
-            )}
           </div>
         </div>
       </div>
