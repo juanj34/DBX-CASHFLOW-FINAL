@@ -233,17 +233,22 @@ export const PaymentHorizontalTimeline = ({
               <Tooltip key={payment.id}>
                 <TooltipTrigger asChild>
                   <div
-                    className="absolute transform -translate-x-1/2 cursor-pointer transition-all duration-200 z-10"
+                    className="absolute transform -translate-x-1/2 cursor-pointer z-10 animate-fade-in"
                     style={{ 
                       left: leftCalc,
                       top: '50%',
                       transform: 'translate(-50%, -50%)',
+                      animationDelay: `${index * 150}ms`,
+                      animationFillMode: 'both',
                     }}
                     onMouseEnter={() => setHoveredId(payment.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
                     {/* Percent label above marker */}
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                    <div 
+                      className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center animate-fade-in"
+                      style={{ animationDelay: `${index * 150 + 100}ms`, animationFillMode: 'both' }}
+                    >
                       <div className={`text-sm font-bold ${textColor}`}>
                         {payment.percent}%
                       </div>
@@ -255,8 +260,8 @@ export const PaymentHorizontalTimeline = ({
                         ${markerSize} ${markerColor} ${borderColor}
                         rounded-full shadow-lg border-2
                         flex items-center justify-center
-                        transition-all duration-200
-                        ${isHovered ? 'scale-110 ring-4 ring-white/20' : ''}
+                        transition-all duration-300
+                        ${isHovered ? 'scale-125 ring-4 ring-white/30 shadow-xl' : 'hover:scale-110'}
                       `}
                     >
                       <span className="text-xs font-bold text-white">
