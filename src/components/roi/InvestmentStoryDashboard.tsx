@@ -826,6 +826,47 @@ export const InvestmentStoryDashboard = ({
                     showAirbnbComparison={incomeData.showAirbnb}
                   />
                 </div>
+
+                {/* 10-Year Wealth Equation */}
+                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Trophy className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs font-medium text-slate-400 uppercase">10-Year Wealth Equation</span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
+                        <Building2 className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Property (Y10)</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">+</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
+                        <Coins className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Rent (10Y)</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">−</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
+                        <Wallet className="w-5 h-5 text-red-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Cash In</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">=</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Net Wealth</p>
+                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </section>
@@ -919,23 +960,22 @@ export const InvestmentStoryDashboard = ({
           {/* ===== SECTION 4: LEVERAGE ===== */}
           {activeSection === 'leverage' && mortgageEnabled && mortgageBreakdown && (
             <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
-              <div className="p-3 border-b border-slate-700/50 flex items-center justify-end">
-                <PeriodToggle value={leveragePeriod} onChange={setLeveragePeriod} />
-              </div>
-
               <div className="p-4 space-y-4 flex-1">
-                {/* Loan Details Grid */}
+                {/* Loan Details Grid - with toggle inline */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
                     <p className="text-[10px] text-slate-500 mb-1">Loan Amount</p>
                     <p className="text-xl font-bold text-blue-400 font-mono">{formatCurrency(entryData.loanAmount, currency, rate)}</p>
                   </div>
                   
-                  {/* Monthly Payment with Tooltip */}
+                  {/* Monthly Payment with inline toggle */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 cursor-help">
-                        <p className="text-[10px] text-slate-500 mb-1">{leveragePeriod === 'month' ? 'Monthly' : 'Yearly'} Payment</p>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] text-slate-500">Payment</p>
+                          <PeriodToggle value={leveragePeriod} onChange={setLeveragePeriod} />
+                        </div>
                         <p className="text-xl font-bold text-white font-mono">
                           {formatCurrency(leveragePeriod === 'month' ? entryData.monthlyMortgage : entryData.monthlyMortgage * 12, currency, rate)}
                         </p>
@@ -973,66 +1013,49 @@ export const InvestmentStoryDashboard = ({
                   </div>
                 </div>
 
-                {/* Monthly Cashflow Breakdown - Itemized */}
-                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Banknote className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase">
-                      {leveragePeriod === 'month' ? 'Monthly' : 'Yearly'} Cashflow Breakdown
-                    </span>
-                  </div>
-                  
-                  {/* Long-Term Breakdown */}
-                  <div className="mb-4">
-                    <p className="text-xs text-cyan-400 mb-2">Long-Term Rental</p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Gross Rent</span>
-                        <span className="text-emerald-400 font-mono">+{formatCurrency(incomeData.monthlyRentLT * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Mortgage Payment</span>
-                        <span className="text-red-400 font-mono">-{formatCurrency(mortgageAnalysis.monthlyPayment * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
-                      </div>
-                      <div className="h-px bg-slate-700" />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white font-medium">Net Cashflow</span>
-                        <span className={cn(
-                          "font-mono font-bold",
-                          incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
-                        )}>
-                          {(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
-                          {formatCurrency((incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
-                        </span>
-                      </div>
+                {/* Net Cashflow Cards - Simplified */}
+                <div className={cn("grid gap-3", incomeData.showAirbnb ? "grid-cols-2" : "grid-cols-1")}>
+                  {/* LT Net Cashflow */}
+                  <div className={cn(
+                    "rounded-xl p-4 border text-center",
+                    incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0
+                      ? "bg-gradient-to-br from-emerald-500/15 to-slate-800/50 border-emerald-500/30"
+                      : "bg-gradient-to-br from-red-500/15 to-slate-800/50 border-red-500/30"
+                  )}>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Banknote className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-medium text-slate-400">Long-Term</span>
                     </div>
+                    <p className={cn(
+                      "text-2xl font-bold font-mono",
+                      incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                    )}>
+                      {(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
+                      {formatCurrency((incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
+                    </p>
+                    <p className="text-[10px] text-slate-500">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
                   </div>
 
-                  {/* Short-Term Breakdown */}
+                  {/* ST Net Cashflow */}
                   {incomeData.showAirbnb && (
-                    <div className="pt-3 border-t border-slate-700">
-                      <p className="text-xs text-orange-400 mb-2">Short-Term Rental</p>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-400">Gross Rent</span>
-                          <span className="text-emerald-400 font-mono">+{formatCurrency(incomeData.monthlyRentST * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-400">Mortgage Payment</span>
-                          <span className="text-red-400 font-mono">-{formatCurrency(mortgageAnalysis.monthlyPayment * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}</span>
-                        </div>
-                        <div className="h-px bg-slate-700" />
-                        <div className="flex justify-between text-sm">
-                          <span className="text-white font-medium">Net Cashflow</span>
-                          <span className={cn(
-                            "font-mono font-bold",
-                            incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
-                          )}>
-                            {(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
-                            {formatCurrency((incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
-                          </span>
-                        </div>
+                    <div className={cn(
+                      "rounded-xl p-4 border text-center",
+                      incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0
+                        ? "bg-gradient-to-br from-emerald-500/15 to-slate-800/50 border-emerald-500/30"
+                        : "bg-gradient-to-br from-red-500/15 to-slate-800/50 border-red-500/30"
+                    )}>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Banknote className="w-4 h-4 text-orange-400" />
+                        <span className="text-xs font-medium text-slate-400">Short-Term</span>
                       </div>
+                      <p className={cn(
+                        "text-2xl font-bold font-mono",
+                        incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                      )}>
+                        {(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
+                        {formatCurrency((incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
+                      </p>
+                      <p className="text-[10px] text-slate-500">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
                     </div>
                   )}
                 </div>
@@ -1075,83 +1098,76 @@ export const InvestmentStoryDashboard = ({
                   </Tooltip>
                 )}
 
-                {/* Cost of Debt vs Wealth Created */}
-                <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30">
-                  <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase">Cost of Debt vs Wealth Created</span>
-                  </div>
+                {/* Debt vs Wealth (10Y Analysis) - Clear breakdown */}
+                {(() => {
+                  // Calculate 10-year interest paid (not full term)
+                  const monthlyRate = (entryData.interestRate / 100) / 12;
+                  const totalMonths = 120; // 10 years
+                  let remainingBalance = mortgageBreakdown.loanAmount;
+                  let totalInterest10Y = 0;
                   
-                  {/* Comparison bars */}
-                  <div className="space-y-3 mb-4">
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-400">Total Interest Cost ({entryData.loanTerm}Y)</span>
-                        <span className="text-red-400 font-mono">{formatCurrency(mortgageAnalysis.monthlyPayment * 12 * entryData.loanTerm - mortgageBreakdown.loanAmount, currency, rate)}</span>
-                      </div>
-                      <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full" style={{ width: '40%' }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-400">Property Appreciation (10Y)</span>
-                        <span className="text-emerald-400 font-mono">+{formatCurrency(wealthData.appreciation10Y, currency, rate)}</span>
-                      </div>
-                      <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full" style={{ width: '100%' }} />
-                      </div>
-                    </div>
-                  </div>
+                  for (let m = 0; m < totalMonths && remainingBalance > 0; m++) {
+                    const interestPayment = remainingBalance * monthlyRate;
+                    const principalPayment = mortgageAnalysis.monthlyPayment - interestPayment;
+                    totalInterest10Y += interestPayment;
+                    remainingBalance -= principalPayment;
+                  }
 
-                  {/* Net Wealth Hero */}
-                  <div className="text-center pt-3 border-t border-slate-700/50">
-                    <p className="text-xs text-slate-400 mb-1">🚀 Net Wealth Created</p>
-                    <p className="text-2xl font-bold font-mono text-emerald-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
-                    <p className="text-[10px] text-emerald-400/70">Property growth crushes debt cost</p>
-                  </div>
-                </div>
+                  const rent10Y = wealthData.cumulativeRentLT;
+                  const netWealth10Y = wealthData.appreciation10Y + rent10Y - totalInterest10Y;
+                  const maxValue = Math.max(wealthData.appreciation10Y, rent10Y, totalInterest10Y);
 
-                {/* Wealth Equation - Corrected */}
-                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Trophy className="w-4 h-4 text-yellow-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase">10-Year Wealth Equation</span>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
-                        <Building2 className="w-5 h-5 text-blue-400" />
+                  return (
+                    <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30">
+                      <div className="flex items-center gap-2 mb-4">
+                        <TrendingUp className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs font-medium text-slate-400 uppercase">Debt vs Wealth (10-Year Analysis)</span>
                       </div>
-                      <p className="text-xs text-slate-500">Property (Y10)</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">+</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
-                        <Coins className="w-5 h-5 text-cyan-400" />
+                      
+                      {/* Clear breakdown with consistent 10Y timeframe */}
+                      <div className="space-y-3 mb-4">
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-400">Property Appreciation (10Y)</span>
+                            <span className="text-emerald-400 font-mono">+{formatCurrency(wealthData.appreciation10Y, currency, rate)}</span>
+                          </div>
+                          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full" style={{ width: `${(wealthData.appreciation10Y / maxValue) * 100}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-400">Rent Collected (10Y)</span>
+                            <span className="text-cyan-400 font-mono">+{formatCurrency(rent10Y, currency, rate)}</span>
+                          </div>
+                          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-400 rounded-full" style={{ width: `${(rent10Y / maxValue) * 100}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-400">Interest Paid (10Y)</span>
+                            <span className="text-red-400 font-mono">-{formatCurrency(totalInterest10Y, currency, rate)}</span>
+                          </div>
+                          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full" style={{ width: `${(totalInterest10Y / maxValue) * 100}%` }} />
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500">Rent (10Y)</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.cumulativeRentLT, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">−</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
-                        <Wallet className="w-5 h-5 text-red-400" />
+
+                      {/* Formula display */}
+                      <div className="border-t border-slate-700/50 pt-3">
+                        <div className="flex items-center justify-center gap-1 text-xs text-slate-500 mb-2">
+                          <span>Appreciation + Rent − Interest =</span>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-slate-400 mb-1">🚀 Net Wealth Created (10Y)</p>
+                          <p className="text-2xl font-bold font-mono text-emerald-400">{formatCurrency(netWealth10Y, currency, rate)}</p>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500">Cash In</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
                     </div>
-                    <span className="text-xl text-slate-500">=</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
-                        <Trophy className="w-5 h-5 text-yellow-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Net Wealth</p>
-                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             </section>
           )}
