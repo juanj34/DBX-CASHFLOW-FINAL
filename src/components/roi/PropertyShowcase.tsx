@@ -58,64 +58,42 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
     ? calculations.basePrice / inputs.unitSizeSqf 
     : 0;
 
-  // Use hero image, fallback to building render, then placeholder
-  const backgroundImage = heroImageUrl || buildingRenderUrl;
+  // Use hero image, fallback to building render
+  const displayImage = heroImageUrl || buildingRenderUrl;
 
   return (
-    <div className={cn("relative w-full h-full overflow-hidden rounded-2xl", className)}>
-      {/* Hero Background Image */}
-      {backgroundImage ? (
-        <div className="absolute inset-0">
-          <img 
-            src={backgroundImage} 
-            alt="Property showcase" 
-            className="w-full h-full object-cover"
-          />
-          {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
-        </div>
-      ) : (
-        /* Fallback gradient when no image */
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          <div className="absolute inset-0 flex items-center justify-center opacity-10">
-            <Building className="w-48 h-48" />
-          </div>
-        </div>
-      )}
-      
-      {/* Glassmorphic Cards Overlay */}
-      <div className="relative z-10 h-full p-4 flex flex-col">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 flex-1 auto-rows-min">
-          {/* Client Card */}
+    <div className={cn(
+      "relative w-full h-full overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900",
+      className
+    )}>
+      <div className="flex flex-row h-full gap-4 p-4">
+        {/* Left Column - Info Cards */}
+        <div className="w-2/5 flex flex-col gap-3 overflow-y-auto pr-2">
           <ShowcaseClientCard
             clients={clientInfo.clients}
             clientName={clientInfo.clientName}
             clientCountry={clientInfo.clientCountry}
-            className="glass-card"
+            className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
           />
 
-          {/* Project Card */}
           <ShowcaseProjectCard
             projectName={clientInfo.projectName || ''}
             projectId={projectId}
-            className="glass-card"
+            className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
           />
 
-          {/* Zone Card */}
           <ShowcaseZoneCard
             zoneName={clientInfo.zoneName}
             zoneId={zoneId || clientInfo.zoneId || inputs.zoneId}
-            className="glass-card"
+            className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
           />
 
-          {/* Developer Card */}
           <ShowcaseDeveloperCard
             developerName={clientInfo.developer || ''}
             developerId={developerId}
-            className="glass-card"
+            className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
           />
 
-          {/* Unit Card */}
           <ShowcaseUnitCard
             unitType={clientInfo.unitType || ''}
             unitSizeSqf={inputs.unitSizeSqf || 0}
@@ -126,16 +104,30 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
             monthsToHandover={calculations.totalMonths}
             currency={currency}
             rate={rate}
-            className="glass-card"
+            className="bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl"
           />
 
-          {/* Value Differentiators Card */}
           {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
             <ShowcaseValueCard
               selectedDifferentiators={inputs.valueDifferentiators}
               customDifferentiators={customDifferentiators}
-              className="glass-card lg:col-span-1"
+              className="bg-white/5 backdrop-blur-xl rounded-lg p-3 border border-white/10 shadow-2xl"
             />
+          )}
+        </div>
+
+        {/* Right Column - Hero Image */}
+        <div className="w-3/5 relative rounded-2xl overflow-hidden shadow-2xl">
+          {displayImage ? (
+            <img 
+              src={displayImage} 
+              alt="Property showcase" 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 flex items-center justify-center">
+              <Building className="w-24 h-24 text-white/20" />
+            </div>
           )}
         </div>
       </div>
