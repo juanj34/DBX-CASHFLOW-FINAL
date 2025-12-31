@@ -168,6 +168,11 @@ export const InvestmentStoryDashboard = ({
     
     // Pre-handover for display
     const preHandoverAmount = basePrice * inputs.preHandoverPercent / 100;
+    const handoverAmount = basePrice * (100 - inputs.preHandoverPercent) / 100;
+
+    // Price per sqft
+    const unitSize = inputs.unitSizeSqf || 0;
+    const pricePerSqft = unitSize > 0 ? basePrice / unitSize : 0;
 
     return {
       basePrice,
@@ -180,6 +185,11 @@ export const InvestmentStoryDashboard = ({
       oqoodFee,
       preHandoverPercent: inputs.preHandoverPercent,
       preHandoverAmount,
+      handoverPercent: 100 - inputs.preHandoverPercent,
+      handoverAmount,
+      pricePerSqft,
+      unitSize,
+      constructionMonths: calculations.totalMonths,
       // Handover date formatted
       handoverQ: inputs.handoverQuarter,
       handoverY: inputs.handoverYear,
@@ -329,7 +339,70 @@ export const InvestmentStoryDashboard = ({
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Day 1 Entry - Hero Card */}
+            {/* Row 1: Property Info Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Property Price */}
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="w-4 h-4 text-white" />
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
+                </div>
+                <p className="text-xl font-bold text-white font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
+                {entryData.pricePerSqft > 0 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {formatCurrency(entryData.pricePerSqft, currency, rate)}/{t('sqft') || 'sqft'}
+                  </p>
+                )}
+              </div>
+
+              {/* Construction Timeline */}
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-purple-400" />
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
+                </div>
+                <p className="text-xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} {t('months') || 'mo'}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {formatHandoverDate()}
+                </p>
+              </div>
+
+              {/* Payment Split */}
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 lg:col-span-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="w-4 h-4 text-cyan-400" />
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="flex h-3 rounded-full overflow-hidden bg-slate-700">
+                      <div 
+                        className="bg-emerald-500 transition-all duration-500"
+                        style={{ width: `${entryData.preHandoverPercent}%` }}
+                      />
+                      <div 
+                        className="bg-cyan-500 transition-all duration-500"
+                        style={{ width: `${entryData.handoverPercent}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-emerald-400 font-medium">{entryData.preHandoverPercent}%</span>
+                        <span className="text-slate-500">{t('preHandover') || 'Pre-Handover'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                        <span className="text-cyan-400 font-medium">{entryData.handoverPercent}%</span>
+                        <span className="text-slate-500">{t('atHandoverLabel') || 'At Handover'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Day 1 Cash Required - Hero Card */}
             <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-5 border border-emerald-500/30">
               {/* Total Cash Required - BIG */}
               <div className="text-center mb-4">
@@ -400,7 +473,7 @@ export const InvestmentStoryDashboard = ({
               )}
             </div>
 
-            {/* Row 2: Payment Timeline with prominent header */}
+            {/* Row 3: Payment Timeline with prominent header */}
             <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
