@@ -18,9 +18,9 @@ interface ShowcaseProjectCardProps {
 
 const getStatusBadge = (status: string | null) => {
   const map: Record<string, { label: string; color: string; icon: string }> = {
-    'off_plan': { label: 'OFF-PLAN', color: 'bg-blue-500/20 text-blue-400', icon: '🏗️' },
-    'under_construction': { label: 'BUILDING', color: 'bg-yellow-500/20 text-yellow-400', icon: '🔨' },
-    'ready': { label: 'READY', color: 'bg-green-500/20 text-green-400', icon: '✅' },
+    'off_plan': { label: 'OFF-PLAN', color: 'bg-blue-500/20 text-blue-300', icon: '🏗️' },
+    'under_construction': { label: 'BUILDING', color: 'bg-yellow-500/20 text-yellow-300', icon: '🔨' },
+    'ready': { label: 'READY', color: 'bg-green-500/20 text-green-300', icon: '✅' },
   };
   return status ? map[status] || null : null;
 };
@@ -49,7 +49,7 @@ export const ShowcaseProjectCard: React.FC<ShowcaseProjectCardProps> = ({
 
   return (
     <div className={cn(
-      "bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-lg p-2.5 border border-slate-700/50 backdrop-blur-sm",
+      "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
       className
     )}>
       <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ export const ShowcaseProjectCard: React.FC<ShowcaseProjectCardProps> = ({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Project</p>
+          <p className="text-[10px] text-white/60 uppercase tracking-wide">Project</p>
           <p className="text-sm font-semibold text-white truncate">{project?.name || projectName || 'Project'}</p>
         </div>
         {statusBadge && (

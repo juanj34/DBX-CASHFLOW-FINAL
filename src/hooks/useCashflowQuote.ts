@@ -36,6 +36,7 @@ const LOCAL_STORAGE_KEY = 'cashflow_quote_draft';
 export interface QuoteImages {
   floorPlanUrl: string | null;
   buildingRenderUrl: string | null;
+  heroImageUrl: string | null;
   showLogoOverlay: boolean;
 }
 
@@ -47,6 +48,7 @@ export const useCashflowQuote = (quoteId?: string) => {
   const [quoteImages, setQuoteImages] = useState<QuoteImages>({
     floorPlanUrl: null,
     buildingRenderUrl: null,
+    heroImageUrl: null,
     showLogoOverlay: true,
   });
   const { toast } = useToast();
@@ -91,10 +93,12 @@ export const useCashflowQuote = (quoteId?: string) => {
             if (imagesData) {
               const floorPlan = imagesData.find(img => img.image_type === 'floor_plan');
               const buildingRender = imagesData.find(img => img.image_type === 'building_render');
+              const heroImage = imagesData.find(img => img.image_type === 'hero_image');
               setQuoteImages({
                 floorPlanUrl: floorPlan?.image_url || null,
                 buildingRenderUrl: buildingRender?.image_url || null,
-                showLogoOverlay: true, // Default to true
+                heroImageUrl: heroImage?.image_url || null,
+                showLogoOverlay: true,
               });
             }
           }
@@ -146,7 +150,7 @@ export const useCashflowQuote = (quoteId?: string) => {
       exitScenarios?: number[],
       mortgageInputs?: MortgageInputs,
       saveVersionFn?: (data: any) => Promise<any>,
-      images?: { floorPlanUrl?: string | null; buildingRenderUrl?: string | null }
+      images?: { floorPlanUrl?: string | null; buildingRenderUrl?: string | null; heroImageUrl?: string | null }
     ) => {
       setSaving(true);
 
@@ -269,6 +273,13 @@ export const useCashflowQuote = (quoteId?: string) => {
             image_url: images.buildingRenderUrl,
           });
         }
+        if (images.heroImageUrl) {
+          imagesToInsert.push({
+            quote_id: savedQuoteId,
+            image_type: 'hero_image',
+            image_url: images.heroImageUrl,
+          });
+        }
         
         if (imagesToInsert.length > 0) {
           await supabase.from('cashflow_images').insert(imagesToInsert);
@@ -278,6 +289,7 @@ export const useCashflowQuote = (quoteId?: string) => {
         setQuoteImages({
           floorPlanUrl: images.floorPlanUrl || null,
           buildingRenderUrl: images.buildingRenderUrl || null,
+          heroImageUrl: images.heroImageUrl || null,
           showLogoOverlay: true,
         });
       }

@@ -22,6 +22,7 @@ interface OverviewTabContentProps {
   currency: Currency;
   rate: number;
   clientInfo?: ClientInfo;
+  heroImageUrl?: string | null;
   buildingRenderUrl?: string | null;
   developerId?: string;
   projectId?: string;
@@ -38,6 +39,7 @@ export const OverviewTabContent = ({
   currency,
   rate,
   clientInfo,
+  heroImageUrl,
   buildingRenderUrl,
   developerId,
   projectId,
@@ -64,6 +66,7 @@ export const OverviewTabContent = ({
           zoneName: clientInfo?.zoneName,
           zoneId: clientInfo?.zoneId,
         }}
+        heroImageUrl={heroImageUrl}
         buildingRenderUrl={buildingRenderUrl}
         developerId={developerId}
         projectId={projectId}

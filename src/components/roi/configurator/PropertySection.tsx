@@ -12,8 +12,10 @@ import { ImageUploadCard } from "./ImageUploadCard";
 interface PropertySectionProps extends ConfiguratorSectionProps {
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
+  heroImageUrl?: string | null;
   onFloorPlanChange?: (file: File | null) => void;
   onBuildingRenderChange?: (file: File | null) => void;
+  onHeroImageChange?: (file: File | null) => void;
   showLogoOverlay?: boolean;
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
@@ -24,8 +26,10 @@ export const PropertySection = ({
   currency,
   floorPlanUrl,
   buildingRenderUrl,
+  heroImageUrl,
   onFloorPlanChange,
   onBuildingRenderChange,
+  onHeroImageChange,
   showLogoOverlay = true,
   onShowLogoOverlayChange,
 }: PropertySectionProps) => {
@@ -284,6 +288,19 @@ export const PropertySection = ({
             <Image className="w-4 h-4 text-purple-400" />
             Property Images
           </h3>
+          
+          {/* Hero Image - Full Width */}
+          {onHeroImageChange && (
+            <ImageUploadCard
+              label="Project Hero"
+              sublabel="16:9 showcase background"
+              imageUrl={heroImageUrl || null}
+              onImageChange={onHeroImageChange}
+              onRemove={() => onHeroImageChange(null)}
+              aspectRatio="16/9"
+              placeholder="Drag, paste (Ctrl+V), or click"
+            />
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             {/* Floor Plan */}

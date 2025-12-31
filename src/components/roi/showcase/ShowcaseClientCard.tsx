@@ -60,7 +60,7 @@ export const ShowcaseClientCard: React.FC<ShowcaseClientCardProps> = ({
 
   return (
     <div className={cn(
-      "bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-lg p-2.5 border border-slate-700/50 backdrop-blur-sm",
+      "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
       className
     )}>
       <div className="flex items-center gap-2 mb-1.5">
@@ -68,7 +68,7 @@ export const ShowcaseClientCard: React.FC<ShowcaseClientCardProps> = ({
           {hasMultiple ? <Users className="w-4 h-4 text-cyan-400" /> : <User className="w-4 h-4 text-cyan-400" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">
+          <p className="text-[10px] text-white/60 uppercase tracking-wide">
             {hasMultiple ? `Clients (${clientList.length})` : 'Client'}
           </p>
         </div>
@@ -82,7 +82,7 @@ export const ShowcaseClientCard: React.FC<ShowcaseClientCardProps> = ({
         {clientList.map((client) => (
           <div 
             key={client.id} 
-            className="flex items-center gap-1.5 px-2 py-1 bg-slate-700/30 rounded-md"
+            className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-md"
           >
             {client.country && (
               <span className="text-sm">{getCountryFlag(client.country)}</span>

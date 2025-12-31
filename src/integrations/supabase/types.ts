@@ -543,6 +543,7 @@ export type Database = {
           description: string | null
           developer: string | null
           developer_id: string | null
+          hero_image_url: string | null
           hotspot_id: string | null
           id: string
           image_url: string | null
@@ -572,6 +573,7 @@ export type Database = {
           description?: string | null
           developer?: string | null
           developer_id?: string | null
+          hero_image_url?: string | null
           hotspot_id?: string | null
           id?: string
           image_url?: string | null
@@ -601,6 +603,7 @@ export type Database = {
           description?: string | null
           developer?: string | null
           developer_id?: string | null
+          hero_image_url?: string | null
           hotspot_id?: string | null
           id?: string
           image_url?: string | null

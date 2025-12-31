@@ -544,6 +544,7 @@ const CashflowDashboardContent = () => {
                 currency={currency}
                 rate={rate}
                 clientInfo={clientInfo}
+                heroImageUrl={quoteImages.heroImageUrl}
                 buildingRenderUrl={quoteImages.buildingRenderUrl}
                 customDifferentiators={customDifferentiators}
               />

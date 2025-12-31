@@ -36,7 +36,7 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
 
   return (
     <div className={cn(
-      "bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-lg p-2.5 border border-slate-700/50 backdrop-blur-sm",
+      "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
       className
     )}>
       <div className="flex items-center gap-2">
@@ -48,10 +48,10 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Developer</p>
+          <p className="text-[10px] text-white/60 uppercase tracking-wide">Developer</p>
           <p className="text-sm font-semibold text-white truncate">{developer?.name || developerName || 'Developer'}</p>
           {developer?.founded_year && (
-            <p className="text-[10px] text-slate-500">Since {developer.founded_year}</p>
+            <p className="text-[10px] text-white/40">Since {developer.founded_year}</p>
           )}
         </div>
         
@@ -65,7 +65,7 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
                 ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900" 
                 : trustScore >= 8 
                   ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
-                  : "bg-slate-600/50 text-slate-300"
+                  : "bg-white/10 text-white/70"
             )}>
               {tierInfo.emoji} {tierInfo.label}
             </span>
