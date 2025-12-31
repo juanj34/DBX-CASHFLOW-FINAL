@@ -12,6 +12,7 @@ import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { PaymentHorizontalTimeline } from "./PaymentHorizontalTimeline";
+import { AnimatedNumber, AnimatedCurrency } from "./AnimatedNumber";
 import {
   Tooltip,
   TooltipContent,
@@ -722,18 +723,17 @@ export const InvestmentStoryDashboard = ({
                   <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('rentalIncome') || 'Rental Income'}</span>
                   <PeriodToggle value={incomePeriod} onChange={setIncomePeriod} />
                 </div>
-                <p className={cn(
-                  "text-5xl font-bold font-mono transition-all duration-300",
-                  incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
-                )}>
-                  {formatCurrency(
-                    incomeStrategy === 'LT' 
-                      ? (incomePeriod === 'year' ? incomeData.annualRentLT : incomeData.monthlyRentLT)
-                      : (incomePeriod === 'year' ? incomeData.annualRentST : incomeData.monthlyRentST),
-                    currency,
-                    rate
+                <AnimatedCurrency
+                  value={incomeStrategy === 'LT' 
+                    ? (incomePeriod === 'year' ? incomeData.annualRentLT : incomeData.monthlyRentLT)
+                    : (incomePeriod === 'year' ? incomeData.annualRentST : incomeData.monthlyRentST)}
+                  currency={currency}
+                  rate={rate}
+                  className={cn(
+                    "text-5xl font-bold font-mono",
+                    incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
                   )}
-                </p>
+                />
                 <p className="text-xs text-slate-500 mt-2 transition-all duration-300">
                   {incomeStrategy === 'LT' ? (t('longTerm') || 'Long-Term') : (t('shortTerm') || 'Short-Term')} /{incomePeriod === 'year' ? t('year') || 'yr' : t('month') || 'mo'}
                 </p>
@@ -760,12 +760,14 @@ export const InvestmentStoryDashboard = ({
                       <Clock className="w-4 h-4 text-slate-400" />
                       <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('timeToPayback') || 'Time to Payback'}</span>
                     </div>
-                    <p className={cn(
-                      "text-5xl font-bold font-mono transition-all duration-300",
-                      incomeStrategy === 'LT' ? "text-violet-400" : "text-pink-400"
-                    )}>
-                      {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)}
-                    </p>
+                    <AnimatedNumber
+                      value={incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST}
+                      formatFn={(v) => v.toFixed(1)}
+                      className={cn(
+                        "text-5xl font-bold font-mono",
+                        incomeStrategy === 'LT' ? "text-violet-400" : "text-pink-400"
+                      )}
+                    />
                     <p className="text-xs text-slate-500 mt-2">{t('years') || 'years'}</p>
                     <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
                       <div className="flex items-center justify-center gap-2">
@@ -810,11 +812,17 @@ export const InvestmentStoryDashboard = ({
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 {/* Hero Number */}
                 <div className="text-center md:text-left">
-                  <p className="text-4xl md:text-5xl font-bold text-amber-400 font-mono transition-all duration-300">
-                    {formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
-                  </p>
-                  <p className="text-sm text-emerald-400 mt-1 transition-all duration-300">
-                    +{(incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}% {t('returnOnInvestment') || 'return on investment'}
+                  <AnimatedCurrency
+                    value={incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST}
+                    currency={currency}
+                    rate={rate}
+                    className="text-4xl md:text-5xl font-bold text-amber-400 font-mono"
+                  />
+                  <p className="text-sm text-emerald-400 mt-1 flex items-center gap-1">
+                    +<AnimatedNumber 
+                      value={incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST}
+                      formatFn={(v) => v.toFixed(0)}
+                    />% {t('returnOnInvestment') || 'return on investment'}
                   </p>
                 </div>
 
