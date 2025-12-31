@@ -145,8 +145,9 @@ export const PaymentHorizontalTimeline = ({
     return result.sort((a, b) => a.positionPercent - b.positionPercent);
   }, [inputs, totalMonths, t, language]);
 
-  // Calculate cumulative progress for the track fill
-  const preHandoverProgress = preHandoverPercent;
+  // No payments have been made yet - progress should be 0
+  // The timeline shows the payment plan, not actual progress
+  const paidProgress = 0;
 
   const startDate = monthToDateString(bookingMonth, bookingYear);
   const endDate = `Q${handoverQuarter} ${handoverYear}`;
@@ -208,11 +209,13 @@ export const PaymentHorizontalTimeline = ({
         {/* Track Background */}
         <div className="absolute top-1/2 left-4 right-4 h-2 bg-slate-700/80 rounded-full transform -translate-y-1/2" />
         
-        {/* Progress Fill - shows pre-handover progress */}
-        <div 
-          className="absolute top-1/2 left-4 h-2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transform -translate-y-1/2 transition-all duration-500"
-          style={{ width: `calc(${preHandoverProgress}% - 16px)` }}
-        />
+        {/* Progress Fill - only shows if payments have been made */}
+        {paidProgress > 0 && (
+          <div 
+            className="absolute top-1/2 left-4 h-2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transform -translate-y-1/2 transition-all duration-500"
+            style={{ width: `calc(${paidProgress}% - 16px)` }}
+          />
+        )}
 
         {/* Payment Markers */}
         <TooltipProvider delayDuration={0}>
