@@ -40,13 +40,15 @@ export const BuildingRenderCard = ({
 
   if (!imageUrl) {
     return (
-      <div className={cn(
-        "bg-[#1a1f2e] border border-[#2a3142] rounded-xl aspect-video flex items-center justify-center",
-        className
-      )}>
+      <div
+        className={cn(
+          "bg-card border border-border rounded-xl h-full min-h-0 flex items-center justify-center",
+          className
+        )}
+      >
         <div className="text-center">
-          <Building2 className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-500">No render uploaded</p>
+          <Building2 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">No render uploaded</p>
         </div>
       </div>
     );
