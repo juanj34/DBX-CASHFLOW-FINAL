@@ -165,7 +165,6 @@ export const InvestmentStoryDashboard = ({
   // Define story sections
   const storySections: StorySectionConfig[] = useMemo(() => [
     { id: 'entry', labelKey: 'storyEntry', fallbackLabel: 'Entry', icon: Wallet },
-    { id: 'schedule', labelKey: 'storySchedule', fallbackLabel: 'Schedule', icon: Calendar },
     { id: 'income', labelKey: 'storyIncome', fallbackLabel: 'Income', icon: Home },
     { id: 'wealth', labelKey: 'storyWealth', fallbackLabel: 'Wealth', icon: Trophy },
     { id: 'exit', labelKey: 'storyExit', fallbackLabel: 'Exit', icon: Target },
@@ -633,30 +632,25 @@ export const InvestmentStoryDashboard = ({
                     </div>
                   )}
                 </div>
-              </div>
-            </section>
-          )}
 
-          {/* ===== SECTION 2: SCHEDULE ===== */}
-          {activeSection === 'schedule' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-purple-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-purple-400" />
+                {/* Payment Schedule inside Entry */}
+                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <Calendar className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">{t('yourPaymentSchedule') || 'Your Payment Schedule'}</h3>
+                      <p className="text-[10px] text-slate-400">{t('whenYouPay') || 'When you pay during construction'}</p>
+                    </div>
+                  </div>
+                  <PaymentHorizontalTimeline
+                    inputs={inputs}
+                    currency={currency}
+                    rate={rate}
+                    totalMonths={calculations.totalMonths}
+                  />
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">{t('yourPaymentSchedule') || 'Your Payment Schedule'}</h2>
-                  <p className="text-xs text-slate-400">{t('whenYouPay') || 'When you pay during construction'}</p>
-                </div>
-              </div>
-
-              <div className="p-4">
-                <PaymentHorizontalTimeline
-                  inputs={inputs}
-                  currency={currency}
-                  rate={rate}
-                  totalMonths={calculations.totalMonths}
-                />
               </div>
             </section>
           )}

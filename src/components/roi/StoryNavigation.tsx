@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, LucideIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export type StorySection = 'entry' | 'schedule' | 'income' | 'wealth' | 'exit' | 'leverage';
+export type StorySection = 'entry' | 'income' | 'wealth' | 'exit' | 'leverage';
 
 export interface StorySectionConfig {
   id: StorySection;
