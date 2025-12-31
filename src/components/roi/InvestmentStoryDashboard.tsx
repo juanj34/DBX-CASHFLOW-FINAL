@@ -58,6 +58,7 @@ const AnimatedCard = ({
 };
 
 interface ClientInfo {
+  clients?: { id: string; name: string; country?: string }[];
   clientName?: string;
   clientCountry?: string;
   projectName?: string;
@@ -82,6 +83,7 @@ interface InvestmentStoryDashboardProps {
   developerId?: string;
   projectId?: string;
   zoneId?: string;
+  customDifferentiators?: import('./valueDifferentiators').ValueDifferentiator[];
 }
 
 // Donut Progress Component
@@ -206,6 +208,7 @@ export const InvestmentStoryDashboard = ({
   developerId,
   projectId,
   zoneId,
+  customDifferentiators,
 }: InvestmentStoryDashboardProps) => {
   const { t } = useLanguage();
   const mortgageEnabled = mortgageInputs.enabled;

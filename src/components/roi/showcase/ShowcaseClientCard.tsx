@@ -1,10 +1,18 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { Users, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface Client {
+  id: string;
+  name: string;
+  country?: string;
+}
+
 interface ShowcaseClientCardProps {
-  clientName: string;
-  clientCountry: string;
+  clients?: Client[];
+  // Legacy single client support
+  clientName?: string;
+  clientCountry?: string;
   className?: string;
 }
 
@@ -36,31 +44,52 @@ const getCountryFlag = (country: string): string => {
 };
 
 export const ShowcaseClientCard: React.FC<ShowcaseClientCardProps> = ({
+  clients,
   clientName,
   clientCountry,
   className,
 }) => {
-  const flag = getCountryFlag(clientCountry);
+  // Support both array and legacy single client
+  const clientList = clients?.length 
+    ? clients 
+    : clientName 
+      ? [{ id: '1', name: clientName, country: clientCountry }] 
+      : [];
+
+  const hasMultiple = clientList.length > 1;
 
   return (
     <div className={cn(
       "bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-lg p-2.5 border border-slate-700/50 backdrop-blur-sm",
       className
     )}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-1.5">
         <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-cyan-400" />
+          {hasMultiple ? <Users className="w-4 h-4 text-cyan-400" /> : <User className="w-4 h-4 text-cyan-400" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Client</p>
-          <p className="text-sm font-semibold text-white truncate">{clientName || 'Client'}</p>
+          <p className="text-[10px] text-slate-400 uppercase tracking-wide">
+            {hasMultiple ? `Clients (${clientList.length})` : 'Client'}
+          </p>
         </div>
-        {clientCountry && (
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-700/50 rounded-md">
-            <span className="text-base">{flag}</span>
-            <span className="text-[10px] text-slate-300 hidden sm:inline max-w-[80px] truncate">{clientCountry}</span>
+      </div>
+
+      {/* Client Grid */}
+      <div className={cn(
+        "grid gap-1.5",
+        clientList.length === 1 ? "grid-cols-1" : "grid-cols-2"
+      )}>
+        {clientList.map((client) => (
+          <div 
+            key={client.id} 
+            className="flex items-center gap-1.5 px-2 py-1 bg-slate-700/30 rounded-md"
+          >
+            {client.country && (
+              <span className="text-sm">{getCountryFlag(client.country)}</span>
+            )}
+            <span className="text-xs font-medium text-white truncate flex-1">{client.name}</span>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
