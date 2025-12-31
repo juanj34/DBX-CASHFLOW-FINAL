@@ -376,7 +376,7 @@ export const InvestmentStoryDashboard = ({
                   <div className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-slate-400">{t('dldRegistrationFee') || 'DLD Registration Fee (4%)'}</span>
-                      <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t('govt') || 'Govt'}</span>
+                      <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t('govtFee') || 'Govt'}</span>
                       <Tooltip>
                         <TooltipTrigger><Info className="w-3 h-3 text-slate-500" /></TooltipTrigger>
                         <TooltipContent><p>{t('dldTooltip') || 'Dubai Land Department registration fee'}</p></TooltipContent>
@@ -388,7 +388,7 @@ export const InvestmentStoryDashboard = ({
                   <div className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-slate-400">{t('oqoodFee') || 'Oqood Fee'}</span>
-                      <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t('admin') || 'Admin'}</span>
+                      <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t('adminFee') || 'Admin'}</span>
                       <Tooltip>
                         <TooltipTrigger><Info className="w-3 h-3 text-slate-500" /></TooltipTrigger>
                         <TooltipContent><p>{t('oqoodTooltip') || 'Initial registration fee for off-plan properties'}</p></TooltipContent>
@@ -482,7 +482,7 @@ export const InvestmentStoryDashboard = ({
                     ) : (
                       <>
                         <p className="text-slate-400">{t('occupancy') || 'Occupancy'}: {incomeData.stOccupancy}%</p>
-                        <p className="text-slate-400">{t('expenses') || 'Expenses'}: {incomeData.stExpenses}%</p>
+                        <p className="text-slate-400">{t('expensesLabel') || 'Expenses'}: {incomeData.stExpenses}%</p>
                         <p className="text-slate-400">{t('adminFee') || 'Admin Fee'}: {incomeData.stAdminFee}%</p>
                       </>
                     )}
