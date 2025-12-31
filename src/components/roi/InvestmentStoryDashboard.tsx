@@ -102,7 +102,7 @@ const DonutProgress = ({ value, max, color, size = 64 }: { value: number; max: n
         fill="none"
         stroke="currentColor"
         strokeWidth="8"
-        className="text-slate-700/50"
+        className="text-theme-border"
       />
       <circle
         cx="50"
@@ -132,14 +132,14 @@ const StrategyToggle = ({
   ltLabel: string;
   stLabel: string;
 }) => (
-  <div className="inline-flex rounded-lg bg-slate-800 p-0.5">
+  <div className="inline-flex rounded-lg bg-theme-card p-0.5">
     <button
       onClick={() => onChange('LT')}
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
         value === 'LT' 
           ? "bg-cyan-500 text-white" 
-          : "text-slate-400 hover:text-white"
+          : "text-theme-text-muted hover:text-theme-text"
       )}
     >
       {ltLabel}
@@ -150,7 +150,7 @@ const StrategyToggle = ({
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
         value === 'ST' 
           ? "bg-orange-500 text-white" 
-          : "text-slate-400 hover:text-white"
+          : "text-theme-text-muted hover:text-theme-text"
       )}
     >
       {stLabel}
@@ -168,14 +168,14 @@ const PeriodToggle = ({
 }) => {
   const { t } = useLanguage();
   return (
-    <div className="inline-flex rounded-lg bg-slate-800 p-0.5">
+    <div className="inline-flex rounded-lg bg-theme-card p-0.5">
       <button
         onClick={() => onChange('month')}
         className={cn(
           "px-2 py-0.5 text-[10px] font-medium rounded-md transition-all",
           value === 'month' 
-            ? "bg-slate-600 text-white" 
-            : "text-slate-400 hover:text-white"
+            ? "bg-theme-card-alt text-theme-text" 
+            : "text-theme-text-muted hover:text-theme-text"
         )}
       >
         {t('month') || 'Month'}
@@ -185,8 +185,8 @@ const PeriodToggle = ({
         className={cn(
           "px-2 py-0.5 text-[10px] font-medium rounded-md transition-all",
           value === 'year' 
-            ? "bg-slate-600 text-white" 
-            : "text-slate-400 hover:text-white"
+            ? "bg-theme-card-alt text-theme-text" 
+            : "text-theme-text-muted hover:text-theme-text"
         )}
       >
         {t('year') || 'Year'}

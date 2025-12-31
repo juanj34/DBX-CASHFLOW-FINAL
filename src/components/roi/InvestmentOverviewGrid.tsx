@@ -175,7 +175,7 @@ export const InvestmentOverviewGrid = ({
           <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
               <Wallet className="w-4 h-4 text-emerald-400" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('overviewCashToStart') || 'Cash to Start'}
             </span>
           </div>
@@ -184,7 +184,7 @@ export const InvestmentOverviewGrid = ({
             <p className="text-2xl sm:text-3xl font-bold text-emerald-400">
               {formatCurrency(entryData.cashToStart, currency, rate)}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-theme-text-muted mt-1">
               {t('includesDownpaymentFees') || 'Includes downpayment + DLD + fees'}
             </p>
           </div>
@@ -203,7 +203,7 @@ export const InvestmentOverviewGrid = ({
                 />
               )}
             </div>
-            <div className="flex justify-between mt-1.5 text-[10px] text-slate-500">
+            <div className="flex justify-between mt-1.5 text-[10px] text-theme-text-muted">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 {t('cash') || 'Cash'} {entryData.cashPercent}%
@@ -218,7 +218,7 @@ export const InvestmentOverviewGrid = ({
           </div>
 
           {entryData.nextPayment && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800/50 rounded-lg px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 text-xs text-theme-text-muted bg-theme-card/50 rounded-lg px-2.5 py-1.5">
               <ArrowRight className="w-3 h-3" />
               <span>{t('nextMilestone') || 'Next'}: {entryData.nextPayment.label}</span>
             </div>
@@ -233,7 +233,7 @@ export const InvestmentOverviewGrid = ({
           <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
               <Banknote className="w-4 h-4 text-cyan-400" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('overviewMonthlyPerformance') || 'Monthly Performance'}
             </span>
           </div>
@@ -242,7 +242,7 @@ export const InvestmentOverviewGrid = ({
           <div className="space-y-3 mb-4">
             <div>
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400">{t('rentIncome') || 'Rent Income'}</span>
+                <span className="text-theme-text-muted">{t('rentIncome') || 'Rent Income'}</span>
                 <span className="text-emerald-400 font-medium">
                   {formatCurrency(sustainabilityData.monthlyRent, currency, rate)}
                 </span>
@@ -258,14 +258,14 @@ export const InvestmentOverviewGrid = ({
             {mortgageEnabled && (
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">{t('mortgageCost') || 'Mortgage Cost'}</span>
-                  <span className="text-slate-300 font-medium">
+                  <span className="text-theme-text-muted">{t('mortgageCost') || 'Mortgage Cost'}</span>
+                  <span className="text-theme-text font-medium">
                     {formatCurrency(sustainabilityData.monthlyMortgage, currency, rate)}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-slate-700">
+                <div className="h-2 rounded-full bg-theme-border">
                   <div 
-                    className="h-full rounded-full bg-slate-500"
+                    className="h-full rounded-full bg-theme-text-muted"
                     style={{ 
                       width: `${Math.min(100, (sustainabilityData.monthlyMortgage / sustainabilityData.monthlyRent) * 100)}%` 
                     }}
@@ -289,7 +289,7 @@ export const InvestmentOverviewGrid = ({
             }
           </div>
 
-          <p className="text-[10px] text-slate-500 mt-2">
+          <p className="text-[10px] text-theme-text-muted mt-2">
             {sustainabilityData.isSelfFunding 
               ? (t('propertyPaysItself') || 'Property pays for itself')
               : (t('monthlyContributionNeeded') || 'Monthly contribution needed')
@@ -305,7 +305,7 @@ export const InvestmentOverviewGrid = ({
           <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Trophy className="w-4 h-4 text-amber-400" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('overviewProjectedProfit') || 'Projected Net Profit'}
             </span>
           </div>
@@ -323,12 +323,12 @@ export const InvestmentOverviewGrid = ({
           {/* Breakdown */}
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-400">{t('profitFromSale') || 'Profit from Sale'}</span>
-              <span className="text-slate-300">{formatCurrency(prizeData.saleProfit, currency, rate)}</span>
+              <span className="text-theme-text-muted">{t('profitFromSale') || 'Profit from Sale'}</span>
+              <span className="text-theme-text">{formatCurrency(prizeData.saleProfit, currency, rate)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">{t('profitFromRent') || 'Profit from Rent'}</span>
-              <span className="text-slate-300">{formatCurrency(prizeData.rentProfit, currency, rate)}</span>
+              <span className="text-theme-text-muted">{t('profitFromRent') || 'Profit from Rent'}</span>
+              <span className="text-theme-text">{formatCurrency(prizeData.rentProfit, currency, rate)}</span>
             </div>
           </div>
 
@@ -346,7 +346,7 @@ export const InvestmentOverviewGrid = ({
           <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
               <Clock className="w-4 h-4 text-violet-400" />
             </div>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('overviewBreakeven') || 'Time to Breakeven'}
             </span>
           </div>
@@ -368,17 +368,17 @@ export const InvestmentOverviewGrid = ({
 
             <div>
               <p className="text-2xl font-bold text-violet-400">
-                {speedData.yearsToPayOff.toFixed(1)} <span className="text-sm font-normal text-slate-400">{t('years') || 'yrs'}</span>
+                {speedData.yearsToPayOff.toFixed(1)} <span className="text-sm font-normal text-theme-text-muted">{t('years') || 'yrs'}</span>
               </p>
-              <p className="text-[10px] text-slate-500">
+              <p className="text-[10px] text-theme-text-muted">
                 {t('marketAvg') || 'Market Avg'}: {speedData.marketAvgPayoff}y
               </p>
             </div>
           </div>
 
           {/* Net Yield KPI */}
-          <div className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
-            <span className="text-xs text-slate-400">{t('overviewNetYield') || 'Net Yield'}</span>
+          <div className="flex items-center justify-between bg-theme-card/50 rounded-lg px-3 py-2">
+            <span className="text-xs text-theme-text-muted">{t('overviewNetYield') || 'Net Yield'}</span>
             <span className="text-sm font-bold text-violet-400">{speedData.netYield.toFixed(1)}%</span>
           </div>
 
