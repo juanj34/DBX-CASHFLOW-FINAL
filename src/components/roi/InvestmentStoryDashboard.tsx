@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { 
   Wallet, TrendingUp, Trophy, Clock, ArrowRight, Banknote, Building2, 
-  Key, Gem, Target, Home, Zap, DollarSign,
+  Key, Target, Home, Zap, DollarSign,
   Calendar, Percent, CreditCard, Shield, Check, Info, ChevronDown, ChevronUp
 } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
@@ -149,7 +149,6 @@ export const InvestmentStoryDashboard = ({
   
   // Strategy toggles state
   const [incomeStrategy, setIncomeStrategy] = useState<'LT' | 'ST'>('LT');
-  const [wealthStrategy, setWealthStrategy] = useState<'LT' | 'ST'>('LT');
   const [incomePeriod, setIncomePeriod] = useState<'month' | 'year'>('year');
   const [showEntryDetails, setShowEntryDetails] = useState(false);
 
@@ -496,7 +495,7 @@ export const InvestmentStoryDashboard = ({
           </div>
         </section>
 
-        {/* ===== ACT 2: YOUR INCOME ===== */}
+        {/* ===== ACT 2: YOUR INCOME & WEALTH ===== */}
         <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
           {/* Header with LT/ST Toggle */}
           <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
@@ -520,25 +519,33 @@ export const InvestmentStoryDashboard = ({
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Row 1: Gross ROI (full card) + Net ROI + Time to Payback */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Gross ROI - Hero Card */}
+            {/* Row 1: Three Key Metrics - Equal Size, High Emphasis */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ROI Card */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="bg-gradient-to-br from-cyan-500/20 to-slate-800/50 rounded-xl p-4 border border-cyan-500/30 cursor-help">
+                  <div className={cn(
+                    "bg-gradient-to-br rounded-xl p-5 border cursor-help flex flex-col items-center justify-center text-center",
+                    incomeStrategy === 'LT' 
+                      ? "from-cyan-500/15 to-slate-800/50 border-cyan-500/30" 
+                      : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
+                  )}>
                     <div className="flex items-center gap-2 mb-2">
-                      <Percent className="w-4 h-4 text-cyan-400" />
-                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('grossRoi') || 'Gross ROI'}</span>
+                      <Percent className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ROI</span>
                     </div>
-                    <p className="text-4xl font-bold text-cyan-400 font-mono mb-1">
+                    <p className={cn(
+                      "text-5xl font-bold font-mono",
+                      incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
+                    )}>
                       {incomeData.grossYield.toFixed(1)}%
                     </p>
-                    <p className="text-xs text-slate-400">{t('annualYield') || 'Annual Yield'}</p>
-                    
-                    {/* Net ROI below */}
-                    <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center justify-between">
-                      <span className="text-xs text-slate-400">{t('netRoi') || 'Net ROI'}:</span>
-                      <span className="text-lg font-bold text-emerald-400 font-mono">{incomeData.netYield.toFixed(1)}%</span>
+                    <p className="text-xs text-slate-500 mt-2">{t('annualYield') || 'Annual Yield'}</p>
+                    <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs text-slate-500">{t('netRoi') || 'Net'}:</span>
+                        <span className="text-sm font-bold text-emerald-400 font-mono">{incomeData.netYield.toFixed(1)}%</span>
+                      </div>
                     </div>
                   </div>
                 </TooltipTrigger>
@@ -563,19 +570,21 @@ export const InvestmentStoryDashboard = ({
                 </TooltipContent>
               </Tooltip>
 
-              {/* Rental Income Card with Month/Year Toggle */}
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('rentalIncome') || 'Rental Income'}</span>
-                  </div>
+              {/* Rental Income Card */}
+              <div className={cn(
+                "bg-gradient-to-br rounded-xl p-5 border flex flex-col items-center justify-center text-center",
+                incomeStrategy === 'LT' 
+                  ? "from-emerald-500/15 to-slate-800/50 border-emerald-500/30" 
+                  : "from-amber-500/15 to-slate-800/50 border-amber-500/30"
+              )}>
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('rentalIncome') || 'Rental Income'}</span>
                   <PeriodToggle value={incomePeriod} onChange={setIncomePeriod} />
                 </div>
-                
                 <p className={cn(
-                  "text-3xl font-bold font-mono",
-                  incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
+                  "text-5xl font-bold font-mono",
+                  incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
                 )}>
                   {formatCurrency(
                     incomeStrategy === 'LT' 
@@ -585,64 +594,43 @@ export const InvestmentStoryDashboard = ({
                     rate
                   )}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-2">
                   {incomeStrategy === 'LT' ? (t('longTerm') || 'Long-Term') : (t('shortTerm') || 'Short-Term')} /{incomePeriod === 'year' ? t('year') || 'yr' : t('month') || 'mo'}
                 </p>
-
-                {/* Service Charges */}
-                <div className="mt-3 pt-3 border-t border-slate-700/50">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">{t('serviceCharges') || 'Service Charges'} /{t('year') || 'yr'}:</span>
-                    <span className="text-amber-400 font-mono">-{formatCurrency(incomeData.serviceCharges, currency, rate)}</span>
+                <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xs text-slate-500">{t('serviceCharges') || 'Service Charges'}:</span>
+                    <span className="text-sm font-mono text-amber-400">
+                      -{formatCurrency(incomePeriod === 'year' ? incomeData.serviceCharges : incomeData.serviceCharges / 12, currency, rate)}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Time to Payback - Shows only selected strategy */}
+              {/* Time to Payback Card */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className={cn(
-                    "bg-slate-800/50 rounded-xl p-4 border cursor-help",
-                    incomeStrategy === 'LT' ? "border-violet-500/30" : "border-orange-500/30"
+                    "bg-gradient-to-br rounded-xl p-5 border cursor-help flex flex-col items-center justify-center text-center",
+                    incomeStrategy === 'LT' 
+                      ? "from-violet-500/15 to-slate-800/50 border-violet-500/30" 
+                      : "from-pink-500/15 to-slate-800/50 border-pink-500/30"
                   )}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Clock className="w-4 h-4 text-violet-400" />
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-slate-400" />
                       <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('timeToPayback') || 'Time to Payback'}</span>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                      {/* Donut */}
-                      <div className="relative w-16 h-16">
-                        <DonutProgress 
-                          value={incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST} 
-                          max={incomeData.marketAvgPayoff} 
-                          color={incomeStrategy === 'LT' 
-                            ? (incomeData.yearsToPayOffLT < incomeData.marketAvgPayoff ? '#a78bfa' : '#fbbf24')
-                            : (incomeData.yearsToPayOffST < incomeData.marketAvgPayoff ? '#fb923c' : '#fbbf24')
-                          }
-                          size={64}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-sm font-bold text-white font-mono">
-                            {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <div>
-                        <p className={cn(
-                          "text-2xl font-bold font-mono",
-                          incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
-                        )}>
-                          {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)} {t('years') || 'yrs'}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {incomeStrategy === 'LT' ? (t('longTerm') || 'Long-Term') : (t('shortTerm') || 'Short-Term')}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-1">
-                          {t('marketAvg') || 'Market Avg'}: {incomeData.marketAvgPayoff}y
-                        </p>
+                    <p className={cn(
+                      "text-5xl font-bold font-mono",
+                      incomeStrategy === 'LT' ? "text-violet-400" : "text-pink-400"
+                    )}>
+                      {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-2">{t('years') || 'years'}</p>
+                    <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs text-slate-500">{t('marketAvg') || 'Market Avg'}:</span>
+                        <span className="text-sm font-mono text-slate-400">{incomeData.marketAvgPayoff}y</span>
                       </div>
                     </div>
                   </div>
@@ -662,81 +650,53 @@ export const InvestmentStoryDashboard = ({
                         currency, rate
                       )}
                     </p>
-                    <p className={cn("font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
+                    <p className={cn("font-mono", incomeStrategy === 'LT' ? "text-violet-400" : "text-pink-400")}>
                       {(incomeStrategy === 'LT' ? incomeData.paybackCalcLT.totalInvested : incomeData.paybackCalcST.totalInvested).toLocaleString()} ÷ {(incomeStrategy === 'LT' ? incomeData.paybackCalcLT.annualIncome : incomeData.paybackCalcST.annualIncome).toLocaleString()} = {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)} {t('years') || 'yrs'}
                     </p>
                   </div>
                 </TooltipContent>
               </Tooltip>
             </div>
-          </div>
-        </section>
 
-        {/* ===== ACT 3: THE WEALTH ===== */}
-        <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                <Gem className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-white">{t('yourWealth') || 'Your Wealth'}</h2>
-                <p className="text-xs text-slate-400">{t('wealthCreation10Years') || '10-year wealth creation'}</p>
-              </div>
-            </div>
-            {wealthData.showAirbnb && (
-              <StrategyToggle 
-                value={wealthStrategy} 
-                onChange={setWealthStrategy}
-                ltLabel={t('longTerm') || 'Long-Term'}
-                stLabel={t('shortTerm') || 'Short-Term'}
-              />
-            )}
-          </div>
-
-          <div className="p-4">
-            <div className="bg-gradient-to-br from-amber-500/10 to-slate-800/50 rounded-xl p-4 border border-amber-500/20">
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('netWealthCreated') || 'Net Wealth Created (10Y)'}</span>
-              </div>
-
-              {/* Hero Number */}
-              <div className="text-center mb-4">
-                <p className="text-4xl font-bold text-amber-400 font-mono">
-                  {formatCurrency(wealthStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
-                </p>
-                <p className="text-sm text-emerald-400 mt-1">
-                  +{(wealthStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}% {t('returnOnInvestment') || 'return on investment'}
-                </p>
-                {wealthData.showAirbnb && (
-                  <p className="text-xs text-slate-400 mt-2">
-                    {wealthStrategy === 'LT' 
-                      ? `${t('shortTerm') || 'ST'}: ${formatCurrency(wealthData.netWealthST, currency, rate)} (+${wealthData.percentGainST.toFixed(0)}%)`
-                      : `${t('longTerm') || 'LT'}: ${formatCurrency(wealthData.netWealthLT, currency, rate)} (+${wealthData.percentGainLT.toFixed(0)}%)`
-                    }
-                  </p>
-                )}
-              </div>
-
-              {/* Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-amber-500/20">
-                <div className="text-center">
-                  <p className="text-xs text-slate-500">{t('propertyValue') || 'Property Value'}</p>
-                  <p className="text-lg font-bold text-white font-mono">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+            {/* Row 2: Net Wealth Created (10Y) */}
+            <div className="bg-gradient-to-br from-amber-500/10 to-slate-800/50 rounded-xl p-5 border border-amber-500/20">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('netWealthCreated') || 'Net Wealth Created (10Y)'}</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-slate-500">{t('cumulativeRent') || 'Cumulative Rent'}</p>
-                  <p className={cn(
-                    "text-lg font-bold font-mono",
-                    wealthStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
-                  )}>
-                    +{formatCurrency(wealthStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                {/* Hero Number */}
+                <div className="text-center md:text-left">
+                  <p className="text-4xl md:text-5xl font-bold text-amber-400 font-mono">
+                    {formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
+                  </p>
+                  <p className="text-sm text-emerald-400 mt-1">
+                    +{(incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}% {t('returnOnInvestment') || 'return on investment'}
                   </p>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-slate-500">{t('initialInvestment') || 'Initial Investment'}</p>
-                  <p className="text-lg font-bold text-red-400 font-mono">-{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+
+                {/* Breakdown */}
+                <div className="flex flex-wrap justify-center md:justify-end gap-4">
+                  <div className="text-center px-4 py-2 bg-slate-800/50 rounded-lg">
+                    <p className="text-[10px] text-slate-500 uppercase">{t('propertyValue') || 'Property Value'}</p>
+                    <p className="text-lg font-bold text-white font-mono">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+                  </div>
+                  <div className="text-center px-4 py-2 bg-slate-800/50 rounded-lg">
+                    <p className="text-[10px] text-slate-500 uppercase">{t('cumulativeRent') || 'Cumulative Rent'}</p>
+                    <p className={cn(
+                      "text-lg font-bold font-mono",
+                      incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
+                    )}>
+                      +{formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
+                    </p>
+                  </div>
+                  <div className="text-center px-4 py-2 bg-slate-800/50 rounded-lg">
+                    <p className="text-[10px] text-slate-500 uppercase">{t('initialInvestment') || 'Initial Investment'}</p>
+                    <p className="text-lg font-bold text-red-400 font-mono">-{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+                  </div>
                 </div>
               </div>
             </div>
