@@ -492,7 +492,7 @@ export const InvestmentStoryDashboard = ({
         />
 
         {/* Section Content Container */}
-        <div className={cn("p-4 h-[calc(100vh-280px)] min-h-0 flex flex-col", sectionAnimationClass)} key={activeSection}>
+        <div className={cn("p-4 min-h-[500px] flex-1 flex flex-col", sectionAnimationClass)} key={activeSection}>
           
           {/* ===== SECTION 0: PROPERTY SHOWCASE ===== */}
           {activeSection === 'showcase' && (
