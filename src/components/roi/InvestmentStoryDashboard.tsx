@@ -760,19 +760,19 @@ export const InvestmentStoryDashboard = ({
                 <RentalCashflowWaterfall
                   grossRent={
                     incomeStrategy === 'LT'
-                      ? (incomePeriod === 'month' ? incomeData.annualRentLT / 12 * 1.1 : incomeData.annualRentLT * 1.1)
-                      : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 1.1 : incomeData.annualRentST * 1.1)
+                      ? (incomePeriod === 'month' 
+                          ? incomeData.monthlyRentLT + incomeData.serviceCharges / 12 
+                          : incomeData.annualRentLT + incomeData.serviceCharges)
+                      : (incomePeriod === 'month' 
+                          ? incomeData.monthlyRentST + incomeData.annualRentST / 12 * 0.1 
+                          : incomeData.annualRentST + incomeData.annualRentST * 0.1)
                   }
                   serviceCharges={
                     incomeStrategy === 'LT'
                       ? (incomePeriod === 'month' ? incomeData.serviceCharges / 12 : incomeData.serviceCharges)
-                      : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.05 : incomeData.annualRentST * 0.05)
+                      : (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.1 : incomeData.annualRentST * 0.1)
                   }
-                  managementFee={
-                    incomeStrategy === 'ST'
-                      ? (incomePeriod === 'month' ? incomeData.annualRentST / 12 * 0.05 : incomeData.annualRentST * 0.05)
-                      : 0
-                  }
+                  managementFee={0}
                   mortgagePayment={0}
                   currency={currency}
                   rate={rate}
