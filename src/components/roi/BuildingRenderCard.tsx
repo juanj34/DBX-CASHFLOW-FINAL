@@ -57,11 +57,11 @@ export const BuildingRenderCard = ({
       <div 
         onClick={() => setLightboxOpen(true)}
         className={cn(
-          "relative rounded-xl overflow-hidden aspect-video group cursor-pointer",
+          "relative rounded-xl overflow-hidden group cursor-pointer h-full",
           className
         )}
       >
-        {/* Background Image */}
+        {/* Background Image - fills full height */}
         <img 
           src={imageUrl} 
           alt="Building Render"

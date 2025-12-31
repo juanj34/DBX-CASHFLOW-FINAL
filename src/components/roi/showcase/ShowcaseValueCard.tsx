@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, TrendingUp, Star } from 'lucide-react';
+import { Sparkles, TrendingUp, Gem, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { VALUE_DIFFERENTIATORS, ValueDifferentiator, calculateAppreciationBonus } from '../valueDifferentiators';
@@ -9,6 +9,12 @@ interface ShowcaseValueCardProps {
   customDifferentiators?: ValueDifferentiator[];
   className?: string;
 }
+
+const getUniquenessLevel = (count: number, bonus: number) => {
+  if (bonus >= 2 || count >= 5) return { label: 'EXCEPTIONAL', color: 'from-amber-500 to-yellow-400', textColor: 'text-slate-900', icon: Crown };
+  if (bonus >= 1 || count >= 3) return { label: 'PREMIUM', color: 'from-emerald-500 to-cyan-400', textColor: 'text-slate-900', icon: Gem };
+  return { label: 'UNIQUE', color: 'from-blue-500 to-indigo-400', textColor: 'text-white', icon: Sparkles };
+};
 
 export const ShowcaseValueCard: React.FC<ShowcaseValueCardProps> = ({
   selectedDifferentiators,
@@ -22,76 +28,98 @@ export const ShowcaseValueCard: React.FC<ShowcaseValueCardProps> = ({
   const valueDrivers = selected.filter(d => d.impactsAppreciation && d.appreciationBonus > 0);
   const features = selected.filter(d => !d.impactsAppreciation || d.appreciationBonus === 0);
   const totalBonus = calculateAppreciationBonus(selectedDifferentiators, customDifferentiators);
+  const uniqueness = getUniquenessLevel(selected.length, totalBonus);
+  const UniquenessIcon = uniqueness.icon;
 
   if (selected.length === 0) return null;
 
   return (
     <div className={cn(
-      "bg-gradient-to-br from-slate-800/80 to-amber-900/20 rounded-lg p-2.5 border border-amber-500/30 backdrop-blur-sm",
+      "relative rounded-lg p-3 border overflow-hidden flex flex-col",
+      "bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-amber-950/30",
+      "border-amber-500/40",
       className
     )}>
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-amber-400" />
+      {/* Uniqueness Badge - Top Banner */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r",
+        uniqueness.color
+      )} />
+
+      {/* Header with Uniqueness Level */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br",
+            uniqueness.color
+          )}>
+            <UniquenessIcon className={cn("w-4 h-4", uniqueness.textColor)} />
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wide">Property Uniqueness</p>
+            <p className={cn(
+              "text-xs font-bold bg-gradient-to-r bg-clip-text text-transparent",
+              uniqueness.color
+            )}>
+              {uniqueness.label}
+            </p>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Value Differentiators</p>
-          <p className="text-[11px] text-slate-300">{selected.length} factor{selected.length !== 1 ? 's' : ''}</p>
-        </div>
+        
+        {/* Appreciation Bonus */}
         {totalBonus > 0 && (
-          <div className="px-2 py-1 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
-            <div className="flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-400" />
-              <span className="text-sm font-bold text-emerald-400">+{totalBonus.toFixed(1)}%</span>
+          <div className="px-2.5 py-1.5 bg-emerald-500/20 rounded-lg border border-emerald-500/40">
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-base font-bold text-emerald-400">+{totalBonus.toFixed(1)}%</span>
             </div>
+            <p className="text-[8px] text-emerald-300/70 text-center">appreciation</p>
           </div>
         )}
       </div>
 
-      {/* Value Drivers */}
+      {/* Value Drivers Grid */}
       {valueDrivers.length > 0 && (
-        <div className="mb-1.5">
-          <p className="text-[9px] text-emerald-400 font-medium mb-1 flex items-center gap-1">
-            <TrendingUp className="w-2.5 h-2.5" /> Drivers
+        <div className="flex-1 min-h-0 mb-2">
+          <p className="text-[9px] text-emerald-400 font-semibold mb-1.5 uppercase tracking-wide flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> Value Drivers
           </p>
-          <div className="flex flex-wrap gap-1">
-            {valueDrivers.slice(0, 4).map(d => {
+          <div className="grid grid-cols-2 gap-1.5">
+            {valueDrivers.map(d => {
               const Icon = d.icon;
               return (
-                <span key={d.id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 rounded text-[9px] border border-emerald-500/30">
-                  <Icon className="w-2.5 h-2.5" />
-                  <span>{language === 'es' ? d.nameEs : d.name}</span>
-                  <span className="text-emerald-400 font-medium">+{d.appreciationBonus}%</span>
-                </span>
+                <div 
+                  key={d.id} 
+                  className="flex items-center gap-1.5 px-2 py-1.5 bg-emerald-500/10 rounded-md border border-emerald-500/30"
+                >
+                  <Icon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  <span className="text-[10px] text-white font-medium truncate flex-1">
+                    {language === 'es' ? d.nameEs : d.name}
+                  </span>
+                  <span className="text-[9px] text-emerald-400 font-bold flex-shrink-0">+{d.appreciationBonus}%</span>
+                </div>
               );
             })}
-            {valueDrivers.length > 4 && (
-              <span className="text-[9px] text-slate-400">+{valueDrivers.length - 4} more</span>
-            )}
           </div>
         </div>
       )}
 
       {/* Features */}
       {features.length > 0 && (
-        <div>
-          <p className="text-[9px] text-slate-400 font-medium mb-1 flex items-center gap-1">
-            <Star className="w-2.5 h-2.5" /> Features
-          </p>
+        <div className="pt-2 border-t border-slate-700/50">
           <div className="flex flex-wrap gap-1">
-            {features.slice(0, 3).map(d => {
+            {features.map(d => {
               const Icon = d.icon;
               return (
-                <span key={d.id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-600/30 text-slate-300 rounded text-[9px]">
+                <span 
+                  key={d.id} 
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/40 text-slate-300 rounded text-[9px]"
+                >
                   <Icon className="w-2.5 h-2.5" />
-                  <span>{language === 'es' ? d.nameEs : d.name}</span>
+                  {language === 'es' ? d.nameEs : d.name}
                 </span>
               );
             })}
-            {features.length > 3 && (
-              <span className="text-[9px] text-slate-400">+{features.length - 3} more</span>
-            )}
           </div>
         </div>
       )}
