@@ -3,7 +3,7 @@ import {
   Wallet, TrendingUp, Trophy, Clock, ArrowRight, Banknote, Building2, 
   Key, Target, Home, Zap, DollarSign,
   Calendar, Percent, CreditCard, Shield, Check, Info, ChevronDown, ChevronUp,
-  Hammer
+  Hammer, ChevronRight, Coins, PiggyBank, Building, Landmark
 } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
 import { CumulativeIncomeChart } from "./CumulativeIncomeChart";
@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { PaymentHorizontalTimeline } from "./PaymentHorizontalTimeline";
 import { AnimatedNumber, AnimatedCurrency } from "./AnimatedNumber";
 import { StoryNavigation, StorySection, StorySectionConfig } from "./StoryNavigation";
+import { OIGrowthCurve } from "./OIGrowthCurve";
+import { calculateExitScenario } from "./constructionProgress";
 import {
   Tooltip,
   TooltipContent,
@@ -139,6 +141,37 @@ const PeriodToggle = ({
   );
 };
 
+// Next Section Navigator Component
+const SectionNavigator = ({ 
+  nextSection, 
+  onNavigate 
+}: { 
+  nextSection: StorySectionConfig; 
+  onNavigate: () => void;
+}) => {
+  const Icon = nextSection.icon;
+  return (
+    <button
+      onClick={onNavigate}
+      className="mt-4 w-full flex items-center justify-between p-3 bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/30 rounded-xl transition-all group"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-slate-400" />
+        </div>
+        <div className="text-left">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">Up Next</p>
+          <p className="text-sm font-medium text-slate-300">{nextSection.fallbackLabel}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-slate-400 group-hover:text-white transition-colors">
+        <span className="text-xs">Continue</span>
+        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+      </div>
+    </button>
+  );
+};
+
 export const InvestmentStoryDashboard = ({
   inputs,
   calculations,
@@ -157,7 +190,9 @@ export const InvestmentStoryDashboard = ({
   // Strategy toggles state
   const [incomeStrategy, setIncomeStrategy] = useState<'LT' | 'ST'>('LT');
   const [incomePeriod, setIncomePeriod] = useState<'month' | 'year'>('year');
+  const [leveragePeriod, setLeveragePeriod] = useState<'month' | 'year'>('month');
   const [showEntryDetails, setShowEntryDetails] = useState(false);
+  const [highlightedExit, setHighlightedExit] = useState<number | null>(null);
 
   // Direction tracking for animations
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
@@ -169,6 +204,16 @@ export const InvestmentStoryDashboard = ({
     { id: 'exit', labelKey: 'exitScenarios', fallbackLabel: 'Exits', icon: Target },
     { id: 'leverage', labelKey: 'leverage', fallbackLabel: 'Leverage', icon: CreditCard, show: mortgageEnabled },
   ], [mortgageEnabled]);
+
+  // Get next section for navigator
+  const getNextSection = useCallback(() => {
+    const visibleSections = storySections.filter(s => s.show !== false);
+    const currentIndex = visibleSections.findIndex(s => s.id === activeSection);
+    if (currentIndex < visibleSections.length - 1) {
+      return visibleSections[currentIndex + 1];
+    }
+    return null;
+  }, [activeSection, storySections]);
 
   // Handle section change with direction tracking
   const handleSectionChange = useCallback((newSection: StorySection) => {
@@ -315,7 +360,20 @@ export const InvestmentStoryDashboard = ({
     };
   }, [calculations, inputs]);
 
-  // ===== ACT 3: WEALTH DATA =====
+  // ===== CALCULATE EXIT SCENARIOS using consistent function =====
+  const exitScenariosData = useMemo(() => {
+    return exitScenarios.map((months) => {
+      return calculateExitScenario(
+        months,
+        calculations.basePrice,
+        calculations.totalMonths,
+        inputs,
+        calculations.totalEntryCosts
+      );
+    });
+  }, [exitScenarios, calculations, inputs]);
+
+  // ===== ACT 3: WEALTH DATA (for 10-year hold) =====
   const wealthData = useMemo(() => {
     const lastYear = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
     const propertyValue10Y = lastYear?.propertyValue || 0;
@@ -328,10 +386,6 @@ export const InvestmentStoryDashboard = ({
     const percentGainLT = initialInvestment > 0 ? (netWealthLT / initialInvestment) * 100 : 0;
     const percentGainST = initialInvestment > 0 ? (netWealthST / initialInvestment) * 100 : 0;
 
-    // Best exit scenario
-    const bestScenario = calculations.scenarios.reduce((best, current) => 
-      current.trueROE > best.trueROE ? current : best, calculations.scenarios[0]);
-
     return {
       propertyValue10Y,
       cumulativeRentLT,
@@ -341,14 +395,12 @@ export const InvestmentStoryDashboard = ({
       netWealthST,
       percentGainLT,
       percentGainST,
-      bestScenario,
-      scenarios: calculations.scenarios,
       showAirbnb: inputs.showAirbnbComparison,
     };
   }, [calculations, inputs.showAirbnbComparison]);
 
   // Get exit scenario names
-  const getExitName = (index: number, months: number) => {
+  const getExitName = (months: number) => {
     const totalMonths = calculations.totalMonths;
     if (months <= totalMonths) {
       return t('duringConstruction') || 'During Construction';
@@ -370,6 +422,35 @@ export const InvestmentStoryDashboard = ({
     ? "animate-fade-in" 
     : "animate-fade-in";
 
+  const nextSection = getNextSection();
+
+  // Mortgage calculations for leverage section
+  const mortgageBreakdown = useMemo(() => {
+    if (!mortgageEnabled) return null;
+    
+    const monthlyRate = mortgageInputs.interestRate / 100 / 12;
+    const totalPayments = mortgageInputs.loanTermYears * 12;
+    const monthlyPayment = mortgageAnalysis.monthlyPayment;
+    
+    // For first payment breakdown
+    const interestPortion = mortgageAnalysis.loanAmount * monthlyRate;
+    const principalPortion = monthlyPayment - interestPortion;
+    
+    // Gap calculation explanation
+    const handoverAmount = calculations.basePrice * (100 - inputs.preHandoverPercent) / 100;
+    
+    return {
+      monthlyPayment,
+      interestPortion,
+      principalPortion,
+      totalPayments,
+      handoverAmount,
+      gapAmount: mortgageAnalysis.gapAmount,
+      hasGap: mortgageAnalysis.hasGap,
+      loanAmount: mortgageAnalysis.loanAmount,
+    };
+  }, [mortgageEnabled, mortgageInputs, mortgageAnalysis, calculations, inputs]);
+
   return (
     <TooltipProvider>
       <div className="space-y-0">
@@ -381,149 +462,96 @@ export const InvestmentStoryDashboard = ({
         />
 
         {/* Section Content Container */}
-        <div className={cn("p-4 min-h-[400px]", sectionAnimationClass)} key={activeSection}>
+        <div className={cn("p-4 min-h-[calc(100vh-280px)] flex flex-col", sectionAnimationClass)} key={activeSection}>
           
           {/* ===== SECTION 1: ENTRY ===== */}
           {activeSection === 'entry' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">{t('theEntry') || 'THE ENTRY'}</h2>
-                  <p className="text-xs text-slate-400">{formatHandoverDate()}</p>
-                </div>
-              </div>
-
-              <div className="p-4 space-y-4">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+              <div className="p-4 space-y-3 flex-1">
                 {/* Row 1: Property Info Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* Property Price */}
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full" />
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                        <Building2 className="w-4 h-4 text-emerald-400" />
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full" />
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <Building2 className="w-3 h-3 text-emerald-400" />
                       </div>
                       <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
                     </div>
-                    <p className="text-2xl font-bold text-white font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
+                    <p className="text-xl font-bold text-white font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
                     {entryData.pricePerSqft > 0 && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-slate-500">
-                          {formatCurrency(entryData.pricePerSqft, currency, rate)}/{t('sqft') || 'sqft'}
-                        </span>
-                        {entryData.unitSize > 0 && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-400">
-                            {entryData.unitSize.toLocaleString()} sqft
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {formatCurrency(entryData.pricePerSqft, currency, rate)}/sqft • {entryData.unitSize.toLocaleString()} sqft
+                      </p>
                     )}
                   </div>
 
                   {/* Construction Timeline */}
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full" />
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                            <Hammer className="w-4 h-4 text-purple-400" />
-                          </div>
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
-                        </div>
-                        <p className="text-2xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-purple-400/70">{t('months') || 'mo'}</span></p>
-                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                          <Key className="w-3 h-3" /> {formatHandoverDate()}
-                        </p>
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full" />
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <Hammer className="w-3 h-3 text-purple-400" />
                       </div>
-                      <div className="relative flex items-center justify-center">
-                        <DonutProgress 
-                          value={100} 
-                          max={100} 
-                          color="#a855f7" 
-                          size={48} 
-                        />
-                        <Calendar className="w-4 h-4 text-purple-400 absolute" />
-                      </div>
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
                     </div>
+                    <p className="text-xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-purple-400/70">mo</span></p>
+                    <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                      <Key className="w-3 h-3" /> {formatHandoverDate()}
+                    </p>
                   </div>
 
                   {/* Payment Split */}
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30 lg:col-span-2 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan-500/5 to-transparent rounded-bl-full" />
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                        <CreditCard className="w-4 h-4 text-cyan-400" />
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 lg:col-span-2 relative overflow-hidden">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                        <CreditCard className="w-3 h-3 text-cyan-400" />
                       </div>
                       <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="flex h-4 rounded-full overflow-hidden bg-slate-700 shadow-inner relative">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div 
-                                className="bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500 flex items-center justify-center cursor-pointer hover:brightness-110"
-                                style={{ width: `${entryData.preHandoverPercent}%` }}
-                              >
-                                <Hammer className="w-3 h-3 text-white/80" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-800 border-slate-700">
-                              <p className="text-sm font-medium">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div 
-                                className="bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-500 flex items-center justify-center cursor-pointer hover:brightness-110"
-                                style={{ width: `${entryData.handoverPercent}%` }}
-                              >
-                                <Key className="w-3 h-3 text-white/80" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-800 border-slate-700">
-                              <p className="text-sm font-medium">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <div className="flex justify-between mt-2 text-xs">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400" />
-                            <span className="text-emerald-400 font-bold">{entryData.preHandoverPercent}%</span>
-                            <span className="text-slate-500">{t('preHandover') || 'Pre-Handover'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400" />
-                            <span className="text-cyan-400 font-bold">{entryData.handoverPercent}%</span>
-                            <span className="text-slate-500">{t('atHandoverLabel') || 'At Handover'}</span>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="flex h-3 rounded-full overflow-hidden bg-slate-700 shadow-inner">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                            style={{ width: `${entryData.preHandoverPercent}%` }}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-800 border-slate-700">
+                          <p className="text-sm font-medium">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className="bg-gradient-to-r from-cyan-500 to-cyan-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                            style={{ width: `${entryData.handoverPercent}%` }}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-800 border-slate-700">
+                          <p className="text-sm font-medium">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="flex justify-between mt-1 text-[10px]">
+                      <span className="text-emerald-400 font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
+                      <span className="text-cyan-400 font-bold">{entryData.handoverPercent}% At Handover</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Day 1 Cash Required */}
-                <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-5 border border-emerald-500/30 relative overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-2xl" />
-                  <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl" />
-                  
-                  <div className="text-center mb-4 relative">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">{t('totalCashRequiredNow') || 'Total Cash Required Now'}</p>
-                    <p className="text-4xl md:text-5xl font-bold text-emerald-400 font-mono animate-pulse">
+                <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 relative overflow-hidden">
+                  <div className="text-center mb-3 relative">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{t('totalCashRequiredNow') || 'Total Cash Required Now'}</p>
+                    <p className="text-3xl font-bold text-emerald-400 font-mono">
                       {formatCurrency(entryData.totalDayOneEntry, currency, rate)}
                     </p>
-                    <div className="flex h-2 rounded-full overflow-hidden bg-slate-700/50 mt-4 max-w-md mx-auto">
+                    <div className="flex h-2 rounded-full overflow-hidden bg-slate-700/50 mt-3 max-w-md mx-auto">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div 
-                            className="bg-yellow-500 transition-all duration-500"
-                            style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }}
-                          />
+                          <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
                         </TooltipTrigger>
                         <TooltipContent className="bg-slate-800 border-slate-700">
                           <p className="text-xs">EOI: {formatCurrency(entryData.eoiFee, currency, rate)}</p>
@@ -531,10 +559,7 @@ export const InvestmentStoryDashboard = ({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div 
-                            className="bg-emerald-500 transition-all duration-500"
-                            style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }}
-                          />
+                          <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
                         </TooltipTrigger>
                         <TooltipContent className="bg-slate-800 border-slate-700">
                           <p className="text-xs">Downpayment: {formatCurrency(entryData.restOfDownpayment, currency, rate)}</p>
@@ -542,10 +567,7 @@ export const InvestmentStoryDashboard = ({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div 
-                            className="bg-blue-500 transition-all duration-500"
-                            style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }}
-                          />
+                          <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
                         </TooltipTrigger>
                         <TooltipContent className="bg-slate-800 border-slate-700">
                           <p className="text-xs">DLD (4%): {formatCurrency(entryData.dldFee, currency, rate)}</p>
@@ -554,10 +576,7 @@ export const InvestmentStoryDashboard = ({
                       {entryData.oqoodFee > 0 && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div 
-                              className="bg-purple-500 transition-all duration-500"
-                              style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }}
-                            />
+                            <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />
                           </TooltipTrigger>
                           <TooltipContent className="bg-slate-800 border-slate-700">
                             <p className="text-xs">Oqood: {formatCurrency(entryData.oqoodFee, currency, rate)}</p>
@@ -575,73 +594,29 @@ export const InvestmentStoryDashboard = ({
 
                   <button
                     onClick={() => setShowEntryDetails(!showEntryDetails)}
-                    className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white transition-colors py-2 border-t border-slate-700/50"
+                    className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 border-t border-slate-700/50"
                   >
-                    <span>{showEntryDetails ? (t('hideDetails') || 'Hide Details') : (t('viewBreakdown') || 'View Breakdown')}</span>
-                    {showEntryDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    <span>{showEntryDetails ? 'Hide Details' : 'View Breakdown'}</span>
+                    {showEntryDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
 
                   {showEntryDetails && (
-                    <div className="mt-4 space-y-2 pt-4 border-t border-slate-700/50">
-                      <div className="flex justify-between items-center text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">{t('eoiBookingFee') || 'EOI / Booking Fee'}</span>
-                          <Tooltip>
-                            <TooltipTrigger><Info className="w-3 h-3 text-slate-500" /></TooltipTrigger>
-                            <TooltipContent><p>{t('eoiTooltip') || 'Expression of Interest fee'}</p></TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">{t('restOfDownpayment') || `Rest of Downpayment (${entryData.downpaymentPercent}% - EOI)`}</span>
-                          <Tooltip>
-                            <TooltipTrigger><Info className="w-3 h-3 text-slate-500" /></TooltipTrigger>
-                            <TooltipContent><p>{t('restOfDownpaymentTooltip') || 'Remaining portion of the downpayment after EOI'}</p></TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">{t('dldRegistrationFee') || 'DLD Registration Fee (4%)'}</span>
-                          <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t('govtFee') || 'Govt'}</span>
-                          <Tooltip>
-                            <TooltipTrigger><Info className="w-3 h-3 text-slate-500" /></TooltipTrigger>
-                            <TooltipContent><p>{t('dldTooltip') || 'Dubai Land Department registration fee'}</p></TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">{t('oqoodFee') || 'Oqood Fee'}</span>
-                          <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t('adminFee') || 'Admin'}</span>
-                          <Tooltip>
-                            <TooltipTrigger><Info className="w-3 h-3 text-slate-500" /></TooltipTrigger>
-                            <TooltipContent><p>{t('oqoodTooltip') || 'Initial registration fee for off-plan properties'}</p></TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span>
-                      </div>
+                    <div className="mt-3 space-y-1 pt-3 border-t border-slate-700/50 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">EOI</span><span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Rest of Downpayment</span><span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">DLD (4%)</span><span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Oqood</span><span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span></div>
                     </div>
                   )}
                 </div>
 
-                {/* Payment Schedule inside Entry */}
-                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-purple-400" />
+                {/* Payment Schedule */}
+                <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <Calendar className="w-3 h-3 text-purple-400" />
                     </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">{t('yourPaymentSchedule') || 'Your Payment Schedule'}</h3>
-                      <p className="text-[10px] text-slate-400">{t('whenYouPay') || 'When you pay during construction'}</p>
-                    </div>
+                    <span className="text-xs font-semibold text-white">{t('yourPaymentSchedule') || 'Payment Schedule'}</span>
                   </div>
                   <PaymentHorizontalTimeline
                     inputs={inputs}
@@ -651,251 +626,113 @@ export const InvestmentStoryDashboard = ({
                   />
                 </div>
               </div>
+
+              {/* Next Section Navigator */}
+              {nextSection && (
+                <div className="px-4 pb-4">
+                  <SectionNavigator nextSection={nextSection} onNavigate={() => handleSectionChange(nextSection.id)} />
+                </div>
+              )}
             </section>
           )}
 
-          {/* ===== SECTION 3: INCOME ===== */}
+          {/* ===== SECTION 2: INCOME ===== */}
           {activeSection === 'income' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-                    <Home className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">{t('yourIncome') || 'Your Income'}</h2>
-                    <p className="text-xs text-slate-400">{t('rentalPerformance') || 'Rental performance & sustainability'}</p>
-                  </div>
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+              <div className="p-3 border-b border-slate-700/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {incomeData.showAirbnb && (
+                    <StrategyToggle 
+                      value={incomeStrategy} 
+                      onChange={setIncomeStrategy}
+                      ltLabel={t('longTerm') || 'Long-Term'}
+                      stLabel={t('shortTerm') || 'Short-Term'}
+                    />
+                  )}
                 </div>
-                {incomeData.showAirbnb && (
-                  <StrategyToggle 
-                    value={incomeStrategy} 
-                    onChange={setIncomeStrategy}
-                    ltLabel={t('longTerm') || 'Long-Term'}
-                    stLabel={t('shortTerm') || 'Short-Term'}
-                  />
-                )}
+                <PeriodToggle value={incomePeriod} onChange={setIncomePeriod} />
               </div>
 
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* ROI Card (LT) / ADR Card (ST) */}
+              <div className="p-3 space-y-3 flex-1">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* ROI Card */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className={cn(
-                        "bg-gradient-to-br rounded-xl p-5 border cursor-help flex flex-col items-center justify-center text-center transition-all duration-300",
+                        "bg-gradient-to-br rounded-xl p-3 border cursor-help text-center",
                         incomeStrategy === 'LT' 
                           ? "from-cyan-500/15 to-slate-800/50 border-cyan-500/30" 
                           : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
                       )}>
-                        {incomeStrategy === 'LT' ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Percent className="w-4 h-4 text-slate-400" />
-                              <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ROI</span>
-                            </div>
-                            <p className="text-5xl font-bold font-mono transition-all duration-300 text-cyan-400">
-                              {incomeData.grossYield.toFixed(1)}%
-                            </p>
-                            <p className="text-xs text-slate-500 mt-2">{t('annualYield') || 'Annual Yield'}</p>
-                            <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
-                              <div className="flex items-center justify-center gap-2">
-                                <span className="text-xs text-slate-500">{t('netRoi') || 'Net'}:</span>
-                                <span className="text-sm font-bold text-emerald-400 font-mono transition-all duration-300">{incomeData.netYield.toFixed(1)}%</span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <DollarSign className="w-4 h-4 text-slate-400" />
-                              <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ADR</span>
-                            </div>
-                            <p className="text-4xl font-bold font-mono transition-all duration-300 text-orange-400">
-                              {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-2">{t('averageDailyRate') || 'Average Daily Rate'}</p>
-                            <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
-                              <div className="flex items-center justify-center gap-4 text-[10px]">
-                                <div className="flex flex-col items-center">
-                                  <span className="text-slate-500">{t('occupancy') || 'Occ.'}</span>
-                                  <span className="font-bold text-orange-300 font-mono">{incomeData.stOccupancy}%</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                  <span className="text-slate-500">{t('mgmt') || 'Mgmt'}</span>
-                                  <span className="font-bold text-orange-300 font-mono">{incomeData.stAdminFee}%</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                  <span className="text-slate-500">{t('expenses') || 'Exp.'}</span>
-                                  <span className="font-bold text-orange-300 font-mono">{incomeData.stExpenses}%</span>
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        )}
+                        <span className="text-[10px] text-slate-400 uppercase">ROI</span>
+                        <p className={cn("text-3xl font-bold font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
+                          {incomeData.grossYield.toFixed(1)}%
+                        </p>
+                        <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-800 border-slate-700 p-3">
-                      <div className="space-y-2 text-xs">
-                        <p className="font-semibold text-white">
-                          {incomeStrategy === 'LT' ? (t('ltCalculation') || 'Long-Term Calculation') : (t('stCalculation') || 'Short-Term Calculation')}
-                        </p>
-                        {incomeStrategy === 'LT' ? (
-                          <>
-                            <p className="text-slate-400">{t('maintenance') || 'Maintenance'}: {incomeData.ltMaintenancePercent}%</p>
-                            <p className="text-slate-400">{t('vacancyAllowance') || 'Vacancy'}: {incomeData.ltVacancyWeeks} {t('weeksYear') || 'weeks/year'}</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-slate-400">{t('adr') || 'ADR'}: {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}</p>
-                            <p className="text-slate-400">{t('occupancy') || 'Occupancy'}: {incomeData.stOccupancy}%</p>
-                            <p className="text-slate-400">{t('expensesLabel') || 'Expenses'}: {incomeData.stExpenses}%</p>
-                            <p className="text-slate-400">{t('adminFee') || 'Management Fee'}: {incomeData.stAdminFee}%</p>
-                          </>
-                        )}
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                      <div className="space-y-1 text-xs">
+                        <p className="font-medium">Return on Investment</p>
+                        <p>Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
+                        <p>Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
 
-                  {/* Rental Income Card */}
+                  {/* Rental Income */}
                   <div className={cn(
-                    "bg-gradient-to-br rounded-xl p-5 border flex flex-col items-center justify-center text-center transition-all duration-300",
+                    "bg-gradient-to-br rounded-xl p-3 border text-center",
                     incomeStrategy === 'LT' 
                       ? "from-emerald-500/15 to-slate-800/50 border-emerald-500/30" 
-                      : "from-amber-500/15 to-slate-800/50 border-amber-500/30"
+                      : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
                   )}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('rentalIncome') || 'Rental Income'}</span>
-                      <PeriodToggle value={incomePeriod} onChange={setIncomePeriod} />
-                    </div>
-                    <AnimatedCurrency
-                      value={incomeStrategy === 'LT' 
-                        ? (incomePeriod === 'year' ? incomeData.annualRentLT : incomeData.monthlyRentLT)
-                        : (incomePeriod === 'year' ? incomeData.annualRentST : incomeData.monthlyRentST)}
-                      currency={currency}
-                      rate={rate}
-                      className={cn(
-                        "text-5xl font-bold font-mono",
-                        incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
+                    <span className="text-[10px] text-slate-400 uppercase">{incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Rent</span>
+                    <p className="text-2xl font-bold text-emerald-400 font-mono">
+                      {formatCurrency(
+                        incomeStrategy === 'LT' 
+                          ? (incomePeriod === 'month' ? incomeData.monthlyRentLT : incomeData.annualRentLT)
+                          : (incomePeriod === 'month' ? incomeData.monthlyRentST : incomeData.annualRentST),
+                        currency, 
+                        rate
                       )}
-                    />
-                    <p className="text-xs text-slate-500 mt-2">
-                      {incomePeriod === 'year' ? t('perYear') || '/year' : t('perMonth') || '/month'}
                     </p>
-                    {incomeData.showAirbnb && incomeStrategy === 'ST' && (
-                      <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
-                        <div className="flex items-center justify-center gap-2">
-                          <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          <span className="text-xs text-emerald-400 font-medium">
-                            +{((incomeData.annualRentST / incomeData.annualRentLT - 1) * 100).toFixed(0)}% {t('vsLongTerm') || 'vs LT'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <p className="text-[10px] text-slate-500">Net after costs</p>
                   </div>
 
-                  {/* Time to Payback Card */}
+                  {/* Payback Period */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className={cn(
-                        "bg-gradient-to-br rounded-xl p-5 border cursor-help flex flex-col items-center justify-center text-center transition-all duration-300",
-                        incomeStrategy === 'LT' 
-                          ? "from-purple-500/15 to-slate-800/50 border-purple-500/30" 
-                          : "from-pink-500/15 to-slate-800/50 border-pink-500/30"
-                      )}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-4 h-4 text-slate-400" />
-                          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('timeToPayback') || 'Time to Payback'}</span>
-                        </div>
-                        <AnimatedNumber
-                          value={incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST}
-                          className={cn(
-                            "text-5xl font-bold font-mono",
-                            incomeStrategy === 'LT' ? "text-purple-400" : "text-pink-400"
-                          )}
-                        />
-                        <p className="text-xs text-slate-500 mt-2">{t('years') || 'years'}</p>
-                        {/* Market comparison */}
-                        <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
-                          <div className="flex items-center justify-center gap-2">
-                            {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST) < incomeData.marketAvgPayoff && (
-                              <>
-                                <TrendingUp className="w-3 h-3 text-emerald-400" />
-                                <span className="text-xs text-emerald-400 font-medium">
-                                  {(incomeData.marketAvgPayoff - (incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST)).toFixed(1)}y {t('fasterThanAvg') || 'faster than avg'}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center cursor-help">
+                        <span className="text-[10px] text-slate-400 uppercase">Payback</span>
+                        <p className="text-2xl font-bold text-white font-mono">
+                          {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)}
+                        </p>
+                        <p className="text-[10px] text-slate-500">years</p>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-800 border-slate-700 p-3">
-                      <div className="space-y-2 text-xs">
-                        <p className="font-semibold text-white">{t('paybackCalculation') || 'Payback Calculation'}</p>
-                        <p className="text-slate-400">{t('totalInvested') || 'Total Invested'}: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
-                        <p className="text-slate-400">{t('annualIncome') || 'Annual Income'}: {formatCurrency(incomeStrategy === 'LT' ? incomeData.paybackCalcLT.annualIncome : incomeData.paybackCalcST.annualIncome, currency, rate)}</p>
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                      <div className="space-y-1 text-xs">
+                        <p className="font-medium">Payback Calculation</p>
+                        <p>Investment: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
+                        <p>Annual Income: {formatCurrency(incomeStrategy === 'LT' ? incomeData.annualRentLT : incomeData.annualRentST, currency, rate)}</p>
+                        <p className="text-slate-500">Market avg: {incomeData.marketAvgPayoff} years</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
-                </div>
 
-                {/* Wealth Section - Net Wealth Created */}
-                <div className={cn(
-                  "rounded-xl p-5 border text-center transition-all duration-300",
-                  incomeStrategy === 'LT' 
-                    ? "bg-gradient-to-br from-emerald-500/15 to-slate-800/50 border-emerald-500/30" 
-                    : "bg-gradient-to-br from-amber-500/15 to-slate-800/50 border-amber-500/30"
-                )}>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">{t('netWealthCreated') || 'Net Wealth Created (10Y)'}</p>
-                  </div>
-                  <AnimatedCurrency
-                    value={incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST}
-                    currency={currency}
-                    rate={rate}
-                    className={cn(
-                      "text-4xl md:text-5xl font-bold font-mono",
-                      incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
-                    )}
-                  />
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <TrendingUp className={cn("w-4 h-4", incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400")} />
-                    <AnimatedNumber
-                      value={incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST}
-                      formatFn={(v) => `+${v.toFixed(0)}%`}
-                      className={cn(
-                        "text-xl font-bold font-mono",
-                        incomeStrategy === 'LT' ? "text-emerald-400" : "text-amber-400"
-                      )}
-                    />
-                    <span className="text-xs text-slate-400">{t('totalReturn') || 'total return'}</span>
-                  </div>
-                </div>
-
-                {/* Breakdown Grid */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">{t('propertyValueYear10') || 'Property Value (Y10)'}</p>
-                    <p className="text-sm font-bold text-white font-mono">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">{t('cumulativeRent') || 'Cumulative Rent'}</p>
-                    <p className={cn("text-sm font-bold font-mono", incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400")}>
-                      {formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
+                  {/* 10Y Wealth */}
+                  <div className="bg-gradient-to-br from-yellow-500/15 to-slate-800/50 rounded-xl p-3 border border-yellow-500/30 text-center">
+                    <span className="text-[10px] text-slate-400 uppercase">10Y Net Wealth</span>
+                    <p className="text-2xl font-bold text-yellow-400 font-mono">
+                      {formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
                     </p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">{t('initialInvestment') || 'Initial Investment'}</p>
-                    <p className="text-sm font-bold text-slate-400 font-mono">-{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+                    <p className="text-[10px] text-emerald-400">+{(incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}%</p>
                   </div>
                 </div>
 
-                {/* Cumulative Income Chart */}
-                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <h3 className="text-sm font-medium text-white mb-3">{t('incomeGrowth') || 'Income Growth Over Time'}</h3>
+                {/* Cumulative Income Chart - Compact */}
+                <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 flex-1 min-h-0">
                   <CumulativeIncomeChart
                     projections={calculations.yearlyProjections}
                     currency={currency}
@@ -905,87 +742,67 @@ export const InvestmentStoryDashboard = ({
                   />
                 </div>
               </div>
+
+              {/* Next Section Navigator */}
+              {nextSection && (
+                <div className="px-4 pb-4">
+                  <SectionNavigator nextSection={nextSection} onNavigate={() => handleSectionChange(nextSection.id)} />
+                </div>
+              )}
             </section>
           )}
 
-          {/* ===== SECTION 5: EXIT ===== */}
+          {/* ===== SECTION 3: EXIT ===== */}
           {activeSection === 'exit' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">{t('exitScenarios') || 'Exit Scenarios'}</h2>
-                  <p className="text-xs text-slate-400">{t('whenToSell') || 'When to sell for maximum returns'}</p>
-                </div>
-              </div>
-
-              <div className="p-4">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+              <div className="p-4 space-y-4 flex-1">
+                {/* Exit Scenario Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {wealthData.scenarios.map((scenario, index) => {
+                  {exitScenariosData.map((scenario, index) => {
                     const months = exitScenarios[index];
-                    const isBest = scenario === wealthData.bestScenario;
-                    const maxROE = Math.max(...wealthData.scenarios.map(s => s.trueROE));
-                    const roeWidth = maxROE > 0 ? (scenario.trueROE / maxROE) * 100 : 0;
+                    const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
+                    const displayProfit = scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit;
+                    const isHighlighted = highlightedExit === index;
                     
                     return (
                       <div 
                         key={index}
                         className={cn(
-                          "rounded-xl p-4 border transition-all",
-                          isBest 
-                            ? "bg-gradient-to-br from-green-500/20 to-slate-800/50 border-green-500/40 ring-1 ring-green-500/30" 
+                          "rounded-xl p-3 border transition-all cursor-pointer",
+                          isHighlighted
+                            ? "bg-gradient-to-br from-green-500/20 to-slate-800/50 border-green-500/40 ring-1 ring-green-500/30"
                             : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600/50"
                         )}
+                        onMouseEnter={() => setHighlightedExit(index)}
+                        onMouseLeave={() => setHighlightedExit(null)}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className={cn(
-                            "text-xs font-medium",
-                            isBest ? "text-green-400" : "text-slate-400"
-                          )}>
-                            {getExitName(index, months)}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-400">
+                            {getExitName(months)}
                           </span>
-                          {isBest && (
-                            <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
-                              {t('best') || 'BEST'}
-                            </span>
-                          )}
+                          <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {months}mo
+                          </span>
                         </div>
                         
-                        <div className="flex items-center gap-2 mb-2 text-slate-500 text-[10px]">
-                          <Clock className="w-3 h-3" />
-                          {t('month') || 'Month'} {months}
-                        </div>
-                        
-                        <div className="mb-2">
-                          <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
-                            <div 
-                              className={cn(
-                                "h-full rounded-full transition-all",
-                                isBest ? "bg-green-500" : "bg-slate-500"
-                              )}
-                              style={{ width: `${roeWidth}%` }}
-                            />
-                          </div>
-                        </div>
+                        {/* Property Worth */}
+                        <p className="text-lg font-bold text-white font-mono mb-1">
+                          {formatCurrency(scenario.exitPrice, currency, rate)}
+                        </p>
                         
                         <div className="flex items-center justify-between">
                           <div>
                             <p className={cn(
-                              "text-lg font-bold font-mono",
-                              scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"
+                              "text-sm font-bold font-mono",
+                              displayProfit >= 0 ? "text-green-400" : "text-red-400"
                             )}>
-                              {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, currency, rate)}
+                              {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                             </p>
-                            <p className="text-[10px] text-slate-500">{t('profit') || 'Profit'}</p>
+                            <p className="text-[10px] text-slate-500">Profit</p>
                           </div>
                           <div className="text-right">
-                            <p className={cn(
-                              "text-xl font-bold font-mono",
-                              isBest ? "text-green-400" : "text-white"
-                            )}>
-                              {scenario.trueROE.toFixed(0)}%
+                            <p className="text-xl font-bold font-mono text-green-400">
+                              {displayROE.toFixed(0)}%
                             </p>
                             <p className="text-[10px] text-slate-500">ROE</p>
                           </div>
@@ -995,95 +812,251 @@ export const InvestmentStoryDashboard = ({
                   })}
                 </div>
 
-                {/* Best ROE highlight */}
-                <div className="mt-4 text-center bg-green-500/10 rounded-lg p-3 border border-green-500/20">
-                  <p className="text-xs text-slate-400">{t('recommendedExit') || 'Recommended Exit'}</p>
-                  <p className="text-2xl font-bold text-green-400 font-mono">
-                    {wealthData.bestScenario?.trueROE.toFixed(0)}% ROE
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {t('at') || 'at'} {getExitName(wealthData.scenarios.indexOf(wealthData.bestScenario!), exitScenarios[wealthData.scenarios.indexOf(wealthData.bestScenario!)])}
-                  </p>
-                </div>
+                {/* Growth Curve Chart */}
+                <OIGrowthCurve
+                  calculations={calculations}
+                  inputs={inputs}
+                  currency={currency}
+                  exitScenarios={exitScenarios}
+                  rate={rate}
+                  highlightedExit={highlightedExit}
+                  onExitHover={setHighlightedExit}
+                />
               </div>
+
+              {/* Next Section Navigator */}
+              {nextSection && (
+                <div className="px-4 pb-4">
+                  <SectionNavigator nextSection={nextSection} onNavigate={() => handleSectionChange(nextSection.id)} />
+                </div>
+              )}
             </section>
           )}
 
-          {/* ===== SECTION 6: LEVERAGE ===== */}
-          {activeSection === 'leverage' && mortgageEnabled && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/30 border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">{t('leverage') || 'Leverage'}</h2>
-                  <p className="text-xs text-slate-400">{t('financingDetails') || 'Your financing details'}</p>
-                </div>
+          {/* ===== SECTION 4: LEVERAGE ===== */}
+          {activeSection === 'leverage' && mortgageEnabled && mortgageBreakdown && (
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+              <div className="p-3 border-b border-slate-700/50 flex items-center justify-end">
+                <PeriodToggle value={leveragePeriod} onChange={setLeveragePeriod} />
               </div>
 
-              <div className="p-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
-                    <p className="text-xs text-slate-500 mb-1">{t('loanAmount') || 'Loan Amount'}</p>
+              <div className="p-4 space-y-4 flex-1">
+                {/* Loan Details Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
+                    <p className="text-[10px] text-slate-500 mb-1">Loan Amount</p>
                     <p className="text-xl font-bold text-blue-400 font-mono">{formatCurrency(entryData.loanAmount, currency, rate)}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
-                    <p className="text-xs text-slate-500 mb-1">{t('monthlyPayment') || 'Monthly Payment'}</p>
-                    <p className="text-xl font-bold text-white font-mono">{formatCurrency(entryData.monthlyMortgage, currency, rate)}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
-                    <p className="text-xs text-slate-500 mb-1">{t('interestRate') || 'Interest Rate'}</p>
+                  
+                  {/* Monthly Payment with Tooltip */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 cursor-help">
+                        <p className="text-[10px] text-slate-500 mb-1">{leveragePeriod === 'month' ? 'Monthly' : 'Yearly'} Payment</p>
+                        <p className="text-xl font-bold text-white font-mono">
+                          {formatCurrency(leveragePeriod === 'month' ? entryData.monthlyMortgage : entryData.monthlyMortgage * 12, currency, rate)}
+                        </p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                      <div className="space-y-2 text-xs">
+                        <p className="font-medium">Payment Breakdown (Month 1)</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Principal:</span>
+                            <span>{formatCurrency(mortgageBreakdown.principalPortion, currency, rate)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Interest:</span>
+                            <span>{formatCurrency(mortgageBreakdown.interestPortion, currency, rate)}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-slate-700 pt-1">
+                            <span className="font-medium">Total:</span>
+                            <span className="font-medium">{formatCurrency(mortgageBreakdown.monthlyPayment, currency, rate)}</span>
+                          </div>
+                        </div>
+                        <p className="text-slate-500 text-[10px]">Interest rate: {entryData.interestRate}% p.a.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
+                    <p className="text-[10px] text-slate-500 mb-1">Interest Rate</p>
                     <p className="text-xl font-bold text-white font-mono">{entryData.interestRate}%</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/30">
-                    <p className="text-xs text-slate-500 mb-1">{t('loanTerm') || 'Loan Term'}</p>
-                    <p className="text-xl font-bold text-white font-mono">{entryData.loanTerm} {t('years') || 'yrs'}</p>
+                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
+                    <p className="text-[10px] text-slate-500 mb-1">Loan Term</p>
+                    <p className="text-xl font-bold text-white font-mono">{entryData.loanTerm} yrs</p>
                   </div>
                 </div>
 
-                {/* Cash after Mortgage */}
-                <div className="mt-4 bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Banknote className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t('monthlyCashflowAfterMortgage') || 'Monthly Cashflow After Mortgage'}</span>
+                {/* Cash after Mortgage with Tooltip */}
+                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Banknote className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-medium text-slate-400 uppercase">{leveragePeriod === 'month' ? 'Monthly' : 'Yearly'} Cashflow After Mortgage</span>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <p className="text-xs text-cyan-400 mb-1">{t('longTerm') || 'Long-Term'}</p>
-                      <p className={cn(
-                        "text-2xl font-bold font-mono",
-                        incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
-                      )}>
-                        {incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? '+' : ''}
-                        {formatCurrency(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment, currency, rate)}
-                      </p>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="text-center cursor-help">
+                          <p className="text-xs text-cyan-400 mb-1">Long-Term</p>
+                          <p className={cn(
+                            "text-2xl font-bold font-mono",
+                            incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                          )}>
+                            {(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
+                            {formatCurrency(
+                              (incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), 
+                              currency, 
+                              rate
+                            )}
+                          </p>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                        <div className="space-y-1 text-xs">
+                          <p className="font-medium">Cashflow Breakdown</p>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Gross Rent:</span>
+                            <span>{formatCurrency(incomeData.monthlyRentLT, currency, rate)}/mo</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Mortgage:</span>
+                            <span className="text-red-400">-{formatCurrency(mortgageAnalysis.monthlyPayment, currency, rate)}/mo</span>
+                          </div>
+                          <div className="flex justify-between border-t border-slate-700 pt-1">
+                            <span className="font-medium">Net Cashflow:</span>
+                            <span className={incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"}>
+                              {formatCurrency(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment, currency, rate)}/mo
+                            </span>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                    
                     {incomeData.showAirbnb && (
-                      <div className="text-center">
-                        <p className="text-xs text-orange-400 mb-1">{t('shortTerm') || 'Short-Term'}</p>
-                        <p className={cn(
-                          "text-2xl font-bold font-mono",
-                          incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
-                        )}>
-                          {incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? '+' : ''}
-                          {formatCurrency(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment, currency, rate)}
-                        </p>
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center cursor-help">
+                            <p className="text-xs text-orange-400 mb-1">Short-Term</p>
+                            <p className={cn(
+                              "text-2xl font-bold font-mono",
+                              incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                            )}>
+                              {(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
+                              {formatCurrency(
+                                (incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), 
+                                currency, 
+                                rate
+                              )}
+                            </p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs">
+                          <div className="space-y-1 text-xs">
+                            <p className="font-medium">Cashflow Breakdown</p>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Gross Rent:</span>
+                              <span>{formatCurrency(incomeData.monthlyRentST, currency, rate)}/mo</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Mortgage:</span>
+                              <span className="text-red-400">-{formatCurrency(mortgageAnalysis.monthlyPayment, currency, rate)}/mo</span>
+                            </div>
+                            <div className="flex justify-between border-t border-slate-700 pt-1">
+                              <span className="font-medium">Net Cashflow:</span>
+                              <span className={incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"}>
+                                {formatCurrency(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment, currency, rate)}/mo
+                              </span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </div>
 
-                {/* Gap Warning */}
+                {/* Gap Warning with Tooltip */}
                 {entryData.hasGap && (
-                  <div className="mt-4 flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
-                    <Zap className="w-5 h-5 text-amber-400" />
-                    <div>
-                      <p className="text-sm font-medium text-amber-300">{t('gapPaymentRequired') || 'Gap Payment Required at Handover'}</p>
-                      <p className="text-lg font-bold font-mono text-amber-400">{formatCurrency(entryData.gapAmount, currency, rate)}</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 cursor-help">
+                        <Zap className="w-5 h-5 text-amber-400" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-300">Gap Payment Required at Handover</p>
+                          <p className="text-lg font-bold font-mono text-amber-400">{formatCurrency(entryData.gapAmount, currency, rate)}</p>
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-sm">
+                      <div className="space-y-2 text-xs">
+                        <p className="font-medium">Why is there a gap payment?</p>
+                        <p className="text-slate-400">
+                          The handover payment exceeds what the bank can finance at your LTV.
+                        </p>
+                        <div className="space-y-1 pt-2 border-t border-slate-700">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Handover Amount:</span>
+                            <span>{formatCurrency(mortgageBreakdown.handoverAmount, currency, rate)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Max Bank Financing:</span>
+                            <span>{formatCurrency(mortgageBreakdown.loanAmount, currency, rate)}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-slate-700 pt-1">
+                            <span className="font-medium text-amber-400">Gap (You Pay):</span>
+                            <span className="font-medium text-amber-400">{formatCurrency(mortgageBreakdown.gapAmount, currency, rate)}</span>
+                          </div>
+                        </div>
+                        <p className="text-slate-500 text-[10px]">Due at handover before bank disburses the loan.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+
+                {/* Wealth Equation */}
+                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Trophy className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs font-medium text-slate-400 uppercase">10-Year Wealth Equation</span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-1">
+                        <Wallet className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Cash In</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">+</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
+                        <TrendingUp className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Growth</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y - calculations.basePrice, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">+</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
+                        <Coins className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Rent</p>
+                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.cumulativeRentLT, currency, rate)}</p>
+                    </div>
+                    <span className="text-xl text-slate-500">=</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                      </div>
+                      <p className="text-xs text-slate-500">Net Wealth</p>
+                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(wealthData.netWealthLT, currency, rate)}</p>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </section>
           )}
