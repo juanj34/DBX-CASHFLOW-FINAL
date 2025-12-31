@@ -32,7 +32,7 @@ export const ShowcaseUnitCard: React.FC<ShowcaseUnitCardProps> = ({
 
   return (
     <div className={cn(
-      "bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-lg p-2.5 border border-slate-700/50 backdrop-blur-sm",
+      "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
       className
     )}>
       {/* Header */}
@@ -41,37 +41,37 @@ export const ShowcaseUnitCard: React.FC<ShowcaseUnitCardProps> = ({
           <Home className="w-4 h-4 text-purple-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Unit</p>
+          <p className="text-[10px] text-white/60 uppercase tracking-wide">Unit</p>
           <div className="flex items-center gap-2">
             {unitType && (
               <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 text-xs font-bold rounded">
                 {unitType}
               </span>
             )}
-            <span className="text-[11px] text-slate-300">
+            <span className="text-[11px] text-white/80">
               {unitSizeSqf.toLocaleString()} sqft
-              <span className="text-slate-500 ml-1">({unitSizeM2} m²)</span>
+              <span className="text-white/50 ml-1">({unitSizeM2} m²)</span>
             </span>
           </div>
         </div>
       </div>
 
       {/* Price & Handover Grid */}
-      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/30">
+      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
         <div>
-          <p className="text-[9px] text-slate-500 uppercase mb-0.5">Price</p>
+          <p className="text-[9px] text-white/50 uppercase mb-0.5">Price</p>
           <p className="text-sm font-bold text-white">{formatCurrency(basePrice, currency, rate)}</p>
-          <p className="text-[10px] text-slate-400">{formatCurrency(pricePerSqft, currency, rate)}/sqft</p>
+          <p className="text-[10px] text-white/60">{formatCurrency(pricePerSqft, currency, rate)}/sqft</p>
         </div>
         <div>
-          <p className="text-[9px] text-slate-500 uppercase mb-0.5">Handover</p>
+          <p className="text-[9px] text-white/50 uppercase mb-0.5">Handover</p>
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3 text-cyan-400" />
             <span className="text-sm font-bold text-white">{handoverQuarter} {handoverYear}</span>
           </div>
           <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-slate-500" />
-            <span className="text-[10px] text-slate-400">{monthsToHandover} mo</span>
+            <Clock className="w-3 h-3 text-white/50" />
+            <span className="text-[10px] text-white/60">{monthsToHandover} mo</span>
           </div>
         </div>
       </div>

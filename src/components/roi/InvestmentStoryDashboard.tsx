@@ -79,6 +79,7 @@ interface InvestmentStoryDashboardProps {
   rate: number;
   // New props for showcase section
   clientInfo?: ClientInfo;
+  heroImageUrl?: string | null;
   buildingRenderUrl?: string | null;
   developerId?: string;
   projectId?: string;
@@ -204,6 +205,7 @@ export const InvestmentStoryDashboard = ({
   currency,
   rate,
   clientInfo,
+  heroImageUrl,
   buildingRenderUrl,
   developerId,
   projectId,
@@ -494,21 +496,20 @@ export const InvestmentStoryDashboard = ({
           
           {/* ===== SECTION 0: PROPERTY SHOWCASE ===== */}
           {activeSection === 'showcase' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
-              <div className="p-4 h-full flex-1">
-                <PropertyShowcase
-                  inputs={inputs}
-                  calculations={calculations}
-                  clientInfo={clientInfo || {}}
-                  currency={currency}
-                  rate={rate}
-                  buildingRenderUrl={buildingRenderUrl}
-                  developerId={developerId}
-                  projectId={projectId}
-                  zoneId={zoneId}
-                  className="h-full"
-                />
-              </div>
+            <section className="flex-1 flex flex-col overflow-hidden">
+              <PropertyShowcase
+                inputs={inputs}
+                calculations={calculations}
+                clientInfo={clientInfo || {}}
+                currency={currency}
+                rate={rate}
+                heroImageUrl={heroImageUrl}
+                buildingRenderUrl={buildingRenderUrl}
+                developerId={developerId}
+                projectId={projectId}
+                zoneId={zoneId}
+                className="h-full"
+              />
             </section>
           )}
 
