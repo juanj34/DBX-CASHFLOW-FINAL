@@ -409,8 +409,8 @@ export const useCashflowQuote = (quoteId?: string) => {
   );
 
   // Save as new quote
-  const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData, exitScenarios?: number[], mortgageInputs?: MortgageInputs) => {
-    return saveQuote(inputs, clientInfo, undefined, exitScenarios, mortgageInputs);
+  const saveAsNew = async (inputs: OIInputs, clientInfo: ClientUnitData, exitScenarios?: number[], mortgageInputs?: MortgageInputs, images?: { floorPlanUrl?: string | null; buildingRenderUrl?: string | null; heroImageUrl?: string | null }) => {
+    return saveQuote(inputs, clientInfo, undefined, exitScenarios, mortgageInputs, undefined, images);
   };
 
   // Generate share token
