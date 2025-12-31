@@ -65,6 +65,7 @@ interface ClientInfo {
   unit?: string;
   unitType?: string;
   zoneName?: string;
+  zoneId?: string;
 }
 
 interface InvestmentStoryDashboardProps {

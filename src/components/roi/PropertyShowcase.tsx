@@ -9,8 +9,9 @@ import {
   ShowcaseDeveloperCard,
   ShowcaseUnitCard,
   ShowcaseValueCard,
+  PropertyScoreGauge,
 } from './showcase';
-import { ValueDifferentiator } from './valueDifferentiators';
+import { ValueDifferentiator, calculateAppreciationBonus } from './valueDifferentiators';
 
 interface ClientInfo {
   clientName?: string;
@@ -20,6 +21,7 @@ interface ClientInfo {
   unit?: string;
   unitType?: string;
   zoneName?: string;
+  zoneId?: string;
 }
 
 interface PropertyShowcaseProps {
@@ -53,23 +55,33 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
     ? calculations.basePrice / inputs.unitSizeSqf 
     : 0;
 
+  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || [], customDifferentiators);
+  const zoneMaturity = inputs.zoneMaturityLevel ?? 50;
+
   return (
-    <div className={cn("w-full", className)}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className={cn("w-full h-full", className)}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
         {/* Left Column - Property Details Cards */}
-        <div className="space-y-3 order-2 lg:order-1">
-          {/* Client Card */}
-          <ShowcaseClientCard
-            clientName={clientInfo.clientName || ''}
-            clientCountry={clientInfo.clientCountry || ''}
-          />
+        <div className="space-y-2 order-2 lg:order-1 overflow-y-auto max-h-[calc(100vh-320px)]">
+          {/* Row 1: Client + Score */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <ShowcaseClientCard
+              clientName={clientInfo.clientName || ''}
+              clientCountry={clientInfo.clientCountry || ''}
+            />
+            <PropertyScoreGauge
+              developerScore={7.5}
+              zoneMaturity={zoneMaturity}
+              appreciationBonus={appreciationBonus}
+            />
+          </div>
 
           {/* Project + Zone Card */}
           <ShowcaseProjectCard
             projectName={clientInfo.projectName || ''}
             zoneName={clientInfo.zoneName}
             projectId={projectId}
-            zoneId={zoneId || inputs.zoneId}
+            zoneId={zoneId || clientInfo.zoneId || inputs.zoneId}
           />
 
           {/* Developer Card */}
@@ -101,12 +113,12 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
         </div>
 
         {/* Right Column - Building Render */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-4 self-start">
+        <div className="order-1 lg:order-2 lg:sticky lg:top-0 self-start">
           <BuildingRenderCard
             imageUrl={buildingRenderUrl || null}
             developerId={developerId}
             showLogoOverlay={true}
-            className="w-full aspect-[4/5] lg:aspect-[3/4]"
+            className="w-full aspect-[4/5] lg:aspect-[3/4] max-h-[calc(100vh-320px)]"
           />
         </div>
       </div>

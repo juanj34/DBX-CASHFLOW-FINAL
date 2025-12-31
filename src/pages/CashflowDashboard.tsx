@@ -543,6 +543,9 @@ const CashflowDashboardContent = () => {
                 exitScenarios={exitScenarios}
                 currency={currency}
                 rate={rate}
+                clientInfo={clientInfo}
+                buildingRenderUrl={quoteImages.buildingRenderUrl}
+                customDifferentiators={customDifferentiators}
               />
             )}
 
