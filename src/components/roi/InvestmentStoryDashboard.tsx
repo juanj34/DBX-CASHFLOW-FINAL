@@ -632,7 +632,7 @@ export const InvestmentStoryDashboard = ({
           <div className="p-4 space-y-4">
             {/* Row 1: Three Key Metrics - Equal Size, High Emphasis */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* ROI Card */}
+              {/* ROI Card (LT) / ADR Card (ST) */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className={cn(
@@ -641,23 +641,51 @@ export const InvestmentStoryDashboard = ({
                       ? "from-cyan-500/15 to-slate-800/50 border-cyan-500/30" 
                       : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
                   )}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Percent className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ROI</span>
-                    </div>
-                    <p className={cn(
-                      "text-5xl font-bold font-mono transition-all duration-300",
-                      incomeStrategy === 'LT' ? "text-cyan-400" : "text-orange-400"
-                    )}>
-                      {incomeData.grossYield.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-slate-500 mt-2">{t('annualYield') || 'Annual Yield'}</p>
-                    <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="text-xs text-slate-500">{t('netRoi') || 'Net'}:</span>
-                        <span className="text-sm font-bold text-emerald-400 font-mono transition-all duration-300">{incomeData.netYield.toFixed(1)}%</span>
-                      </div>
-                    </div>
+                    {incomeStrategy === 'LT' ? (
+                      <>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Percent className="w-4 h-4 text-slate-400" />
+                          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ROI</span>
+                        </div>
+                        <p className="text-5xl font-bold font-mono transition-all duration-300 text-cyan-400">
+                          {incomeData.grossYield.toFixed(1)}%
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">{t('annualYield') || 'Annual Yield'}</p>
+                        <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-xs text-slate-500">{t('netRoi') || 'Net'}:</span>
+                            <span className="text-sm font-bold text-emerald-400 font-mono transition-all duration-300">{incomeData.netYield.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 mb-2">
+                          <DollarSign className="w-4 h-4 text-slate-400" />
+                          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ADR</span>
+                        </div>
+                        <p className="text-4xl font-bold font-mono transition-all duration-300 text-orange-400">
+                          {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">{t('averageDailyRate') || 'Average Daily Rate'}</p>
+                        <div className="mt-3 pt-3 border-t border-slate-700/30 w-full">
+                          <div className="flex items-center justify-center gap-4 text-[10px]">
+                            <div className="flex flex-col items-center">
+                              <span className="text-slate-500">{t('occupancy') || 'Occ.'}</span>
+                              <span className="font-bold text-orange-300 font-mono">{incomeData.stOccupancy}%</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-slate-500">{t('mgmt') || 'Mgmt'}</span>
+                              <span className="font-bold text-orange-300 font-mono">{incomeData.stAdminFee}%</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-slate-500">{t('expenses') || 'Exp.'}</span>
+                              <span className="font-bold text-orange-300 font-mono">{incomeData.stExpenses}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs bg-slate-800 border-slate-700 p-3">
@@ -672,9 +700,10 @@ export const InvestmentStoryDashboard = ({
                       </>
                     ) : (
                       <>
+                        <p className="text-slate-400">{t('adr') || 'ADR'}: {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}</p>
                         <p className="text-slate-400">{t('occupancy') || 'Occupancy'}: {incomeData.stOccupancy}%</p>
                         <p className="text-slate-400">{t('expensesLabel') || 'Expenses'}: {incomeData.stExpenses}%</p>
-                        <p className="text-slate-400">{t('adminFee') || 'Admin Fee'}: {incomeData.stAdminFee}%</p>
+                        <p className="text-slate-400">{t('adminFee') || 'Management Fee'}: {incomeData.stAdminFee}%</p>
                       </>
                     )}
                   </div>
@@ -812,13 +841,13 @@ export const InvestmentStoryDashboard = ({
               </div>
             </div>
 
-            {/* Row 3: Cumulative Income Chart */}
+            {/* Row 3: Cumulative Income Chart - Always show both lines */}
             <CumulativeIncomeChart
               projections={calculations.yearlyProjections}
               currency={currency}
               rate={rate}
               totalCapitalInvested={wealthData.initialInvestment}
-              showAirbnbComparison={incomeStrategy === 'ST' && incomeData.showAirbnb}
+              showAirbnbComparison={incomeData.showAirbnb}
             />
           </div>
         </section>
