@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from "react";
-import { Upload, X, FileText } from "lucide-react";
+import { Upload, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { compressPdf, shouldCompress, formatFileSize } from "@/lib/pdfCompressor";
 
 interface FileUploadZoneProps {
   onFilesSelected: (files: FileWithPreview[]) => void;
@@ -16,17 +17,19 @@ export interface FileWithPreview {
   type: "image" | "pdf";
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, acceptPaste = true }: FileUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const processFiles = useCallback(async (fileList: FileList | File[]) => {
     const newFiles: FileWithPreview[] = [];
     
-    for (const file of Array.from(fileList)) {
+    for (let file of Array.from(fileList)) {
       // For pasted images, check if it's an image type
       const isImage = file.type.startsWith("image/");
       const isPdf = file.type === "application/pdf";
@@ -36,8 +39,28 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, accept
         continue;
       }
       
+      // Compress large PDFs
+      if (shouldCompress(file)) {
+        setIsCompressing(true);
+        try {
+          const result = await compressPdf(file, (stage, percent) => {
+            setCompressionProgress(`${stage} (${percent}%)`);
+          });
+          
+          console.log(`PDF comprimido: ${formatFileSize(result.originalSize)} → ${formatFileSize(result.compressedSize)}`);
+          
+          // Create new file from compressed blob
+          file = new File([result.compressedBlob], file.name, { type: 'application/pdf' });
+        } catch (error) {
+          console.error('Error comprimiendo PDF:', error);
+        } finally {
+          setIsCompressing(false);
+          setCompressionProgress("");
+        }
+      }
+      
       if (file.size > MAX_FILE_SIZE) {
-        console.warn(`Archivo muy grande: ${file.name}`);
+        console.warn(`Archivo muy grande después de compresión: ${file.name} (${formatFileSize(file.size)})`);
         continue;
       }
 
@@ -127,19 +150,31 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, accept
           multiple
           accept={ACCEPTED_TYPES.join(",")}
           onChange={handleFileSelect}
-          disabled={disabled}
+          disabled={disabled || isCompressing}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         />
-        <div className="flex flex-col items-center gap-2 text-center">
-          <Upload className="h-8 w-8 text-muted-foreground" />
-          <div className="text-sm">
-            <span className="font-medium text-primary">Click para subir</span>
-            <span className="text-muted-foreground"> o arrastra archivos</span>
+        {isCompressing ? (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <div className="text-sm">
+              <span className="font-medium text-primary">Comprimiendo brochure...</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {compressionProgress}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            PDF, JPG, PNG (máx 10MB) • Ctrl+V para pegar
-          </p>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Upload className="h-8 w-8 text-muted-foreground" />
+            <div className="text-sm">
+              <span className="font-medium text-primary">Click para subir</span>
+              <span className="text-muted-foreground"> o arrastra archivos</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              PDF, JPG, PNG (máx 25MB) • Ctrl+V para pegar
+            </p>
+          </div>
+        )}
       </div>
 
       {/* File previews */}
