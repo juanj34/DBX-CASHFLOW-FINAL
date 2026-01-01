@@ -6,7 +6,7 @@ import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, X, Navigation } from "lucide-react";
+import { MapPin, X, Navigation, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
@@ -30,8 +30,9 @@ export const FullscreenMapModal = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
-  const { data: token, isLoading: tokenLoading } = useMapboxToken();
+  const { data: token, isLoading: tokenLoading, error: tokenError } = useMapboxToken();
 
   // Fetch nearby landmarks/hotspots
   const { data: nearbyHotspots } = useQuery({
@@ -55,7 +56,14 @@ export const FullscreenMapModal = ({
   });
 
   useEffect(() => {
-    if (!open || !mapContainer.current || !token) return;
+    if (!open || !mapContainer.current || !token) {
+      if (open && tokenError) {
+        setMapError(tokenError instanceof Error ? tokenError.message : 'Failed to load map token');
+      }
+      return;
+    }
+    
+    setMapError(null);
 
     // Small delay to ensure container is rendered
     const timer = setTimeout(() => {
@@ -187,7 +195,21 @@ export const FullscreenMapModal = ({
         {/* Map Container */}
         <div className="w-full h-full relative">
           {tokenLoading && (
-            <Skeleton className="absolute inset-0" />
+            <div className="absolute inset-0 flex items-center justify-center bg-theme-bg">
+              <Skeleton className="absolute inset-0" />
+              <span className="relative z-10 text-theme-text-muted text-sm">Loading map...</span>
+            </div>
+          )}
+          {(mapError || tokenError) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-theme-bg">
+              <div className="text-center p-6">
+                <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                <p className="text-theme-text font-medium mb-1">Unable to load map</p>
+                <p className="text-theme-text-muted text-sm max-w-xs">
+                  {mapError || (tokenError instanceof Error ? tokenError.message : 'Map token error')}
+                </p>
+              </div>
+            </div>
           )}
           <div ref={mapContainer} className="absolute inset-0" />
         </div>
