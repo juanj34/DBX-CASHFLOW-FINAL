@@ -167,8 +167,8 @@ export const ClientPaymentSheet = ({
           {/* THE JOURNEY */}
           {sortedAdditionalPayments.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-slate-400">
-                <div className="w-5 h-5 rounded-lg bg-slate-500/20 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-theme-text-muted">
+                <div className="w-5 h-5 rounded-lg bg-theme-card-alt flex items-center justify-center">
                   <Building2 className="w-3 h-3" />
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wide">
@@ -176,7 +176,7 @@ export const ClientPaymentSheet = ({
                 </span>
               </div>
               
-              <div className="bg-slate-500/5 border border-slate-500/20 rounded-lg p-3 space-y-1.5">
+              <div className="bg-theme-card-alt/50 border border-theme-border rounded-lg p-3 space-y-1.5">
                 {sortedAdditionalPayments.map((payment) => {
                   const paymentAmount = basePrice * payment.paymentPercent / 100;
                   const clientPaymentAmount = paymentAmount * sharePercent / 100;
@@ -203,9 +203,9 @@ export const ClientPaymentSheet = ({
                   );
                 })}
                 {clientAdditionalTotal > 0 && (
-                  <div className="flex justify-between items-center text-xs pt-1.5 border-t border-slate-500/20">
-                    <span className="text-slate-400">{t('subtotalInstallments')}</span>
-                    <span className="text-slate-300 font-mono">{formatCurrency(clientAdditionalTotal, currency, rate)}</span>
+                  <div className="flex justify-between items-center text-xs pt-1.5 border-t border-theme-border">
+                    <span className="text-theme-text-muted">{t('subtotalInstallments')}</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(clientAdditionalTotal, currency, rate)}</span>
                   </div>
                 )}
               </div>

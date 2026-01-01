@@ -76,25 +76,25 @@ export const HoldTabContent = ({
       </div>
       
       {/* Row 4: Collapsible Detailed Table */}
-      <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
+      <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
         <button
           onClick={() => setShowDetailedTable(!showDetailedTable)}
-          className="w-full p-4 flex items-center justify-between hover:bg-[#2a3142]/30 transition-colors"
+          className="w-full p-4 flex items-center justify-between hover:bg-theme-card-alt/30 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Table className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-300">Show Detailed Cashflow Table</span>
-            <span className="text-xs text-gray-500">(Year-by-year breakdown for analysts)</span>
+            <Table className="w-4 h-4 text-theme-text-muted" />
+            <span className="text-sm font-medium text-white">Show Detailed Cashflow Table</span>
+            <span className="text-xs text-theme-text-muted">(Year-by-year breakdown for analysts)</span>
           </div>
           {showDetailedTable ? (
-            <ChevronUp className="w-4 h-4 text-gray-400" />
+            <ChevronUp className="w-4 h-4 text-theme-text-muted" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+            <ChevronDown className="w-4 h-4 text-theme-text-muted" />
           )}
         </button>
         
         {showDetailedTable && (
-          <div className="border-t border-[#2a3142] animate-in slide-in-from-top-2 duration-300">
+          <div className="border-t border-theme-border animate-in slide-in-from-top-2 duration-300">
             <OIYearlyProjectionTable 
               projections={calculations.yearlyProjections} 
               currency={currency} 

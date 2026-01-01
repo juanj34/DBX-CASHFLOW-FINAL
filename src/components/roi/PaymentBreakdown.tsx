@@ -238,9 +238,9 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                     })}
                     {additionalTotal > 0 && (
                       <>
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-500/30">
-                          <span className="text-sm text-slate-400">{t('subtotalInstallments')}</span>
-                          <span className="text-sm text-slate-300 font-mono tabular-nums">{formatCurrency(additionalTotal, currency, rate)}</span>
+                        <div className="flex justify-between items-center pt-2 border-t border-theme-border">
+                          <span className="text-sm text-theme-text-muted">{t('subtotalInstallments')}</span>
+                          <span className="text-sm text-theme-text font-mono tabular-nums">{formatCurrency(additionalTotal, currency, rate)}</span>
                         </div>
                         {avgMonthlyPayment > 0 && (
                           <div className="flex justify-between items-center text-xs">

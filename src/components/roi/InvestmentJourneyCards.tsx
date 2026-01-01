@@ -128,10 +128,10 @@ export const InvestmentJourneyCards = ({
       )}
 
       {/* Investment Journey Timeline */}
-      <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6">
+      <div className="bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="w-5 h-5 text-[#CCFF00]" />
-          <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">
+          <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">
             Investment Overview
           </h3>
           <TooltipProvider>
