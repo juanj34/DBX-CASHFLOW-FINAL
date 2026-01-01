@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, SlidersHorizontal, Settings2, AlertCircle, MoreVertical, FolderOpen, FilePlus, History, Save, Loader2, Check, Rows3, Sparkles, Rocket } from "lucide-react";
+import { LayoutDashboard, SlidersHorizontal, Settings2, AlertCircle, MoreVertical, FolderOpen, FilePlus, History, Save, Loader2, Check, Rows3, Sparkles, Rocket, Coins, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,7 +25,12 @@ import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from
 import { AlertTriangle, TrendingUp } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
-import { Currency } from "@/components/roi/currencyUtils";
+import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
+
+const LANGUAGE_CONFIG = {
+  en: { flag: '🇬🇧', name: 'English' },
+  es: { flag: '🇪🇸', name: 'Español' },
+} as const;
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useCashflowQuote } from "@/hooks/useCashflowQuote";
 import { useQuoteVersions } from "@/hooks/useQuoteVersions";
@@ -312,25 +317,60 @@ const CashflowDashboardContent = () => {
                   {/* Separator */}
                   <div className="w-px h-6 bg-theme-border mx-0.5" />
 
-                  {/* Quick Currency Toggle */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrency(currency === 'AED' ? 'USD' : 'AED')}
-                    className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 px-2 font-mono text-xs"
-                  >
-                    {currency}
-                  </Button>
+                  {/* Currency Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 px-2 gap-1.5"
+                      >
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>{CURRENCY_CONFIG[currency].flag}</span>
+                        <span className="font-mono text-xs">{currency}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-theme-card border-theme-border z-50">
+                      {(Object.entries(CURRENCY_CONFIG) as [Currency, typeof CURRENCY_CONFIG[Currency]][]).map(([key, config]) => (
+                        <DropdownMenuItem
+                          key={key}
+                          onClick={() => setCurrency(key)}
+                          className="gap-2 text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt"
+                        >
+                          <span>{config.flag}</span>
+                          <span>{config.name}</span>
+                          {key === currency && <Check className="w-4 h-4 ml-auto text-theme-accent" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                  {/* Quick Language Toggle */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                    className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 px-2 text-xs"
-                  >
-                    {language === 'en' ? '🇬🇧' : '🇪🇸'}
-                  </Button>
+                  {/* Language Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 px-2 gap-1.5"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>{LANGUAGE_CONFIG[language].flag}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-theme-card border-theme-border z-50">
+                      {(Object.entries(LANGUAGE_CONFIG) as ['en' | 'es', typeof LANGUAGE_CONFIG['en']][]).map(([key, config]) => (
+                        <DropdownMenuItem
+                          key={key}
+                          onClick={() => setLanguage(key)}
+                          className="gap-2 text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt"
+                        >
+                          <span>{config.flag}</span>
+                          <span>{config.name}</span>
+                          {key === language && <Check className="w-4 h-4 ml-auto text-theme-accent" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
                   {/* Settings Dropdown */}
                   <SettingsDropdown
@@ -438,19 +478,33 @@ const CashflowDashboardContent = () => {
 
                       <DropdownMenuSeparator className="bg-theme-border" />
 
-                      <DropdownMenuItem
-                        onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                        className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                      >
-                        🌐 {language === 'en' ? 'Español' : 'English'}
-                      </DropdownMenuItem>
+                      {/* Language options */}
+                      {(Object.entries(LANGUAGE_CONFIG) as ['en' | 'es', typeof LANGUAGE_CONFIG['en']][]).map(([key, config]) => (
+                        <DropdownMenuItem
+                          key={key}
+                          onClick={() => setLanguage(key)}
+                          className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
+                        >
+                          <span>{config.flag}</span>
+                          <span>{config.name}</span>
+                          {key === language && <Check className="w-4 h-4 ml-auto text-theme-accent" />}
+                        </DropdownMenuItem>
+                      ))}
 
-                      <DropdownMenuItem
-                        onClick={() => setCurrency(currency === 'AED' ? 'USD' : 'AED')}
-                        className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                      >
-                        💰 {currency === 'AED' ? 'USD' : 'AED'}
-                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-theme-border" />
+
+                      {/* Currency options */}
+                      {(Object.entries(CURRENCY_CONFIG) as [Currency, typeof CURRENCY_CONFIG[Currency]][]).map(([key, config]) => (
+                        <DropdownMenuItem
+                          key={key}
+                          onClick={() => setCurrency(key)}
+                          className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
+                        >
+                          <span>{config.flag}</span>
+                          <span>{config.name}</span>
+                          {key === currency && <Check className="w-4 h-4 ml-auto text-theme-accent" />}
+                        </DropdownMenuItem>
+                      ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
