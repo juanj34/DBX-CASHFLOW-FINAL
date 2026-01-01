@@ -40,8 +40,10 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
       className
     )}>
       <div className="flex items-center gap-2">
-        {developer?.logo_url ? (
-          <img src={developer.logo_url} alt={developerName} className="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5" />
+        {developer?.white_logo_url ? (
+          <img src={developer.white_logo_url} alt={developerName} className="w-8 h-8 rounded-lg object-contain" />
+        ) : developer?.logo_url ? (
+          <img src={developer.logo_url} alt={developerName} className="w-8 h-8 rounded-lg object-contain filter brightness-0 invert opacity-90" />
         ) : (
           <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
             <Building className="w-4 h-4 text-emerald-400" />
