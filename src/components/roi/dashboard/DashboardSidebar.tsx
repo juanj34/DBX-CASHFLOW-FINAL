@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -13,6 +13,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Currency } from "@/components/roi/currencyUtils";
 
 export type SectionId = 'overview' | 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
 
@@ -31,6 +33,11 @@ interface DashboardSidebarProps {
   onViewHistory?: () => void;
   onSwitchView?: () => void;
   quoteId?: string;
+  // Language and currency
+  language?: string;
+  setLanguage?: (lang: string) => void;
+  currency?: Currency;
+  setCurrency?: (currency: Currency) => void;
 }
 
 // App Logo Component
@@ -96,6 +103,10 @@ export const DashboardSidebar = ({
   onViewHistory,
   onSwitchView,
   quoteId,
+  language,
+  setLanguage,
+  currency,
+  setCurrency,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
 
@@ -383,6 +394,67 @@ export const DashboardSidebar = ({
             <NavButton icon={Rows3} label="Vertical View" onClick={onSwitchView} />
           )}
         </div>
+
+        <Separator className="bg-theme-border" />
+
+        {/* Language & Currency Settings */}
+        {(setLanguage || setCurrency) && (
+          <div className={cn("space-y-2", collapsed ? "p-2" : "p-3")}>
+            {/* Language Toggle */}
+            {setLanguage && (
+              collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                      className="w-full flex items-center justify-center p-2.5 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
+                    >
+                      <Globe className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{language === 'en' ? '🇬🇧 English' : '🇪🇸 Español'}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <button
+                  onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
+                >
+                  <Globe className="w-4 h-4 flex-shrink-0" />
+                  <span>{language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}</span>
+                </button>
+              )
+            )}
+
+            {/* Currency Selector */}
+            {setCurrency && currency && (
+              collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setCurrency(currency === 'AED' ? 'USD' : currency === 'USD' ? 'EUR' : 'AED')}
+                      className="w-full flex items-center justify-center p-2.5 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all text-xs font-medium"
+                    >
+                      {currency}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Currency: {currency}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <SelectTrigger className="w-full h-9 bg-transparent border-theme-border text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AED">🇦🇪 AED</SelectItem>
+                    <SelectItem value="USD">🇺🇸 USD</SelectItem>
+                    <SelectItem value="EUR">🇪🇺 EUR</SelectItem>
+                    <SelectItem value="GBP">🇬🇧 GBP</SelectItem>
+                  </SelectContent>
+                </Select>
+              )
+            )}
+          </div>
+        )}
 
         <Separator className="bg-theme-border" />
 

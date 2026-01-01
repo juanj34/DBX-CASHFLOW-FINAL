@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { Profile } from "@/hooks/useProfile";
+import { Currency } from "@/components/roi/currencyUtils";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,6 +22,11 @@ interface DashboardLayoutProps {
   onViewHistory?: () => void;
   onSwitchView?: () => void;
   quoteId?: string;
+  // Language and currency
+  language?: string;
+  setLanguage?: (lang: string) => void;
+  currency?: Currency;
+  setCurrency?: (currency: Currency) => void;
 }
 
 export const DashboardLayout = ({
@@ -36,6 +42,10 @@ export const DashboardLayout = ({
   onViewHistory,
   onSwitchView,
   quoteId,
+  language,
+  setLanguage,
+  currency,
+  setCurrency,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -87,6 +97,10 @@ export const DashboardLayout = ({
     onViewHistory,
     onSwitchView,
     quoteId,
+    language,
+    setLanguage,
+    currency,
+    setCurrency,
   };
 
   return (

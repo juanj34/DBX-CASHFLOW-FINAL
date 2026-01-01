@@ -293,11 +293,28 @@ const CashflowDashboardContent = () => {
           }}
         />
 
-        {!isFullyConfigured ? (
-          /* Unconfigured State - Simple welcome with Configure CTA */
-          <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
-            <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-16 text-center">
-              <div className="max-w-lg mx-auto">
+        {/* Always render DashboardLayout to keep sidebar visible */}
+        <DashboardLayout
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          inputs={inputs}
+          mortgageInputs={mortgageInputs}
+          profile={profile}
+          isAdmin={isAdmin}
+          onConfigure={() => setModalOpen(true)}
+          onLoadQuote={() => setLoadQuoteModalOpen(true)}
+          onViewHistory={() => setVersionHistoryOpen(true)}
+          onSwitchView={handleSwitchToVertical}
+          quoteId={quoteId}
+          language={language}
+          setLanguage={setLanguage}
+          currency={currency}
+          setCurrency={setCurrency}
+        >
+          {!isFullyConfigured ? (
+            /* Unconfigured State - Simple welcome with Configure CTA */
+            <div className="flex-1 flex items-center justify-center">
+              <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-16 text-center max-w-lg">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 flex items-center justify-center mx-auto mb-8">
                   <Rocket className="w-10 h-10 text-theme-accent" />
                 </div>
@@ -322,115 +339,103 @@ const CashflowDashboardContent = () => {
                 </div>
               </div>
             </div>
-          </main>
-        ) : (
-          /* Configured State - Dashboard with Sidebar Navigation */
-          <DashboardLayout
-            activeSection={activeSection}
-            onSectionChange={setActiveSection}
-            inputs={inputs}
-            mortgageInputs={mortgageInputs}
-            profile={profile}
-            isAdmin={isAdmin}
-            onConfigure={() => setModalOpen(true)}
-            onLoadQuote={() => setLoadQuoteModalOpen(true)}
-            onViewHistory={() => setVersionHistoryOpen(true)}
-            onSwitchView={handleSwitchToVertical}
-            quoteId={quoteId}
-          >
-            {activeSection === 'overview' && (
-              <OverviewTabContent
-                inputs={inputs}
-                calculations={calculations}
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-                clientInfo={clientInfo}
-                heroImageUrl={quoteImages.heroImageUrl}
-                buildingRenderUrl={quoteImages.buildingRenderUrl}
-                customDifferentiators={customDifferentiators}
-              />
-            )}
+          ) : (
+            /* Configured State - Tab content */
+            <>
+              {activeSection === 'overview' && (
+                <OverviewTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                  clientInfo={clientInfo}
+                  heroImageUrl={quoteImages.heroImageUrl}
+                  buildingRenderUrl={quoteImages.buildingRenderUrl}
+                  customDifferentiators={customDifferentiators}
+                />
+              )}
 
-            {activeSection === 'property' && (
-              <PropertyTabContent
-                inputs={inputs}
-                calculations={calculations}
-                currency={currency}
-                rate={rate}
-                clientInfo={clientInfo}
-                customDifferentiators={customDifferentiators}
-                onEditConfig={() => setModalOpen(true)}
-                onEditClient={() => setClientModalOpen(true)}
-                variant="dashboard"
-                floorPlanUrl={quoteImages.floorPlanUrl}
-                buildingRenderUrl={quoteImages.buildingRenderUrl}
-                showLogoOverlay={quoteImages.showLogoOverlay}
-              />
-            )}
+              {activeSection === 'property' && (
+                <PropertyTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  currency={currency}
+                  rate={rate}
+                  clientInfo={clientInfo}
+                  customDifferentiators={customDifferentiators}
+                  onEditConfig={() => setModalOpen(true)}
+                  onEditClient={() => setClientModalOpen(true)}
+                  variant="dashboard"
+                  floorPlanUrl={quoteImages.floorPlanUrl}
+                  buildingRenderUrl={quoteImages.buildingRenderUrl}
+                  showLogoOverlay={quoteImages.showLogoOverlay}
+                />
+              )}
 
-            {activeSection === 'payments' && (
-              <PaymentsTabContent
-                inputs={inputs}
-                currency={currency}
-                totalMonths={calculations.totalMonths}
-                rate={rate}
-                clientInfo={clientInfo}
-              />
-            )}
+              {activeSection === 'payments' && (
+                <PaymentsTabContent
+                  inputs={inputs}
+                  currency={currency}
+                  totalMonths={calculations.totalMonths}
+                  rate={rate}
+                  clientInfo={clientInfo}
+                />
+              )}
 
-            {activeSection === 'hold' && (
-              <HoldTabContent
-                inputs={inputs}
-                calculations={calculations}
-                currency={currency}
-                rate={rate}
-                totalCapitalInvested={calculations.basePrice + calculations.totalEntryCosts}
-                unitSizeSqf={clientInfo.unitSizeSqf}
-                variant="dashboard"
-              />
-            )}
+              {activeSection === 'hold' && (
+                <HoldTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  currency={currency}
+                  rate={rate}
+                  totalCapitalInvested={calculations.basePrice + calculations.totalEntryCosts}
+                  unitSizeSqf={clientInfo.unitSizeSqf}
+                  variant="dashboard"
+                />
+              )}
 
-            {activeSection === 'exit' && (
-              <ExitTabContent
-                inputs={inputs}
-                calculations={calculations}
-                currency={currency}
-                rate={rate}
-                exitScenarios={exitScenarios}
-                setExitScenarios={setExitScenarios}
-                unitSizeSqf={clientInfo.unitSizeSqf}
-                variant="dashboard"
-              />
-            )}
+              {activeSection === 'exit' && (
+                <ExitTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  currency={currency}
+                  rate={rate}
+                  exitScenarios={exitScenarios}
+                  setExitScenarios={setExitScenarios}
+                  unitSizeSqf={clientInfo.unitSizeSqf}
+                  variant="dashboard"
+                />
+              )}
 
-            {activeSection === 'mortgage' && (
-              <MortgageTabContent
-                inputs={inputs}
-                calculations={calculations}
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                currency={currency}
-                rate={rate}
-              />
-            )}
+              {activeSection === 'mortgage' && (
+                <MortgageTabContent
+                  inputs={inputs}
+                  calculations={calculations}
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
 
-            {activeSection === 'summary' && (
-              <SummaryTabContent
-                inputs={inputs}
-                clientInfo={clientInfo}
-                calculations={calculations}
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-              />
-            )}
-          </DashboardLayout>
-        )}
+              {activeSection === 'summary' && (
+                <SummaryTabContent
+                  inputs={inputs}
+                  clientInfo={clientInfo}
+                  calculations={calculations}
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </>
+          )}
+        </DashboardLayout>
       </div>
     </CashflowErrorBoundary>
   );
