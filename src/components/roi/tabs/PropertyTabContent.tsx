@@ -124,11 +124,14 @@ export const PropertyTabContent = ({
 
   if (variant === 'dashboard') {
     return (
-      <div className="h-full">
+      <div className="h-full overflow-hidden">
         {/* Main 2-column grid filling full height */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <div className={cn(
+          "grid gap-6 h-full",
+          buildingRenderUrl ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+        )}>
           {/* LEFT COLUMN - All info cards + Value Differentiators */}
-          <div className="flex flex-col h-full gap-3">
+          <div className="flex flex-col h-full gap-3 overflow-y-auto min-h-0">
             {/* Top section - Info cards */}
             <div className="space-y-3 flex-shrink-0">
               {/* Price Hero Card */}
@@ -298,7 +301,7 @@ export const PropertyTabContent = ({
 
             {/* Bottom section - Value Differentiators (fills remaining space) */}
             {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 mt-auto">
                 <ValueDifferentiatorsDisplay
                   selectedDifferentiators={inputs.valueDifferentiators}
                   customDifferentiators={customDifferentiators}
@@ -308,14 +311,14 @@ export const PropertyTabContent = ({
             )}
           </div>
 
-          {/* RIGHT COLUMN - Building Render (full height) */}
+          {/* RIGHT COLUMN - Building Render (constrained height) */}
           {buildingRenderUrl && (
-            <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden h-full">
+            <div className="relative h-full min-h-0 overflow-hidden rounded-2xl bg-theme-card border border-theme-border">
               <BuildingRenderCard
                 imageUrl={buildingRenderUrl}
                 developerId={developerId}
                 showLogoOverlay={showLogoOverlay}
-                className="h-full w-full object-cover"
+                className="absolute inset-0"
               />
             </div>
           )}
