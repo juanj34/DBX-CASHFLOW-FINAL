@@ -47,8 +47,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        emerald: "hsl(var(--emerald))",
-        amber: "hsl(var(--amber))",
+        // Semantic status colors (don't conflict with Tailwind defaults)
+        status: {
+          success: "hsl(var(--emerald))",
+          warning: "hsl(var(--amber))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
