@@ -51,6 +51,14 @@ interface Zone {
   investment_focus: string | null;
 }
 
+interface Project {
+  id: string;
+  name: string | null;
+  image_url: string | null;
+  hero_image_url: string | null;
+  logo_url: string | null;
+}
+
 interface PropertyShowcaseProps {
   inputs: OIInputs;
   calculations: OICalculations;
@@ -78,12 +86,14 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
   heroImageUrl,
   buildingRenderUrl,
   developerId,
+  projectId,
   zoneId,
   customDifferentiators = [],
   className,
 }) => {
   const [developer, setDeveloper] = useState<Developer | null>(null);
   const [zone, setZone] = useState<Zone | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
 
   // Fetch developer data
   useEffect(() => {
@@ -114,8 +124,22 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
     fetchZone();
   }, [zoneId, clientInfo.zoneId, inputs.zoneId, clientInfo.zoneName]);
 
-  // Use hero image, fallback to building render
-  const displayImage = heroImageUrl || buildingRenderUrl;
+  // Fetch project data
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (projectId) {
+        const { data } = await supabase.from('projects').select('id, name, image_url, hero_image_url, logo_url').eq('id', projectId).maybeSingle();
+        if (data) setProject(data);
+      } else if (clientInfo.projectName) {
+        const { data } = await supabase.from('projects').select('id, name, image_url, hero_image_url, logo_url').ilike('name', clientInfo.projectName).maybeSingle();
+        if (data) setProject(data);
+      }
+    };
+    fetchProject();
+  }, [projectId, clientInfo.projectName]);
+
+  // Use project image from DB first, then fallback to props
+  const displayImage = project?.hero_image_url || project?.image_url || heroImageUrl || buildingRenderUrl;
 
   // Calculate trust score
   const trustScore = developer ? calculateTrustScore(developer) : null;
