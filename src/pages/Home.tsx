@@ -71,7 +71,7 @@ const Home = () => {
   const [quotes, setQuotes] = useState<QuoteWithDetails[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
-  const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('month');
+  const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('30days');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
