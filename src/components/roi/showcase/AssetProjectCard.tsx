@@ -116,26 +116,36 @@ export const AssetProjectCard: React.FC<AssetProjectCardProps> = ({
       {developer && (
         <div 
           className={cn(
-            "flex items-center gap-3",
+            "flex items-center justify-between gap-4",
             (zone || zoneName) && "mb-4 pb-4 border-b border-[#2a3142]",
             onDeveloperClick && "cursor-pointer hover:opacity-80 transition-opacity"
           )}
           onClick={onDeveloperClick}
         >
-          <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
-            {developer.logo_url ? (
-              <img src={developer.logo_url} alt={developer.name} className="w-full h-full object-contain p-1" />
+          {/* Developer Logo */}
+          <div className="flex-1 min-w-0">
+            {developer.white_logo_url ? (
+              <img 
+                src={developer.white_logo_url} 
+                alt={developer.name} 
+                className="h-8 max-w-[140px] object-contain" 
+              />
+            ) : developer.logo_url ? (
+              <img 
+                src={developer.logo_url} 
+                alt={developer.name} 
+                className="h-8 max-w-[140px] object-contain brightness-0 invert" 
+              />
             ) : (
-              <Building2 className="w-5 h-5 text-gray-400" />
+              <span className="text-sm font-medium text-white">{developer.name}</span>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Developer</p>
-            <p className="text-sm font-medium text-white truncate">{developer.name}</p>
-          </div>
+          
+          {/* Trust Score + Badge */}
           {trustScore !== null && tierInfo && (
             <div className="flex items-center gap-2">
               <TrustScoreRing score={trustScore} size={36} />
+              <span className="text-white font-bold text-sm">{trustScore.toFixed(1)}</span>
               <span className={cn(
                 "px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wide",
                 tierInfo.color
