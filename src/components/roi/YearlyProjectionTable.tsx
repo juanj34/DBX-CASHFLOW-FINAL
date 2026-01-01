@@ -8,22 +8,22 @@ interface YearlyProjectionTableProps {
 
 export const YearlyProjectionTable = ({ projections, currency }: YearlyProjectionTableProps) => {
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-[#2a3142]">
+    <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
+      <div className="p-4 border-b border-theme-border">
         <h3 className="font-semibold text-white">10-Year Projection</h3>
-        <p className="text-xs text-gray-400 mt-1">Property value & rental income year by year</p>
+        <p className="text-xs text-theme-text-muted mt-1">Property value & rental income year by year</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-[#0d1117]">
+          <thead className="bg-theme-bg-alt">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 tracking-wider">Year</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 tracking-wider">Property Value</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 tracking-wider">Annual Rent</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-theme-text-muted tracking-wider">Year</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-theme-text-muted tracking-wider">Property Value</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-theme-text-muted tracking-wider">Annual Rent</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-theme-text-muted tracking-wider">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#2a3142]">
+          <tbody className="divide-y divide-theme-border">
             {projections.map((p) => (
               <tr 
                 key={p.year}
@@ -43,12 +43,12 @@ export const YearlyProjectionTable = ({ projections, currency }: YearlyProjectio
                 <td className="px-4 py-3 text-sm text-right font-mono text-white">
                   {formatCurrency(p.propertyValue, currency)}
                 </td>
-                <td className={`px-4 py-3 text-sm text-right font-mono ${p.isConstruction ? 'text-gray-500' : 'text-white'}`}>
+                <td className={`px-4 py-3 text-sm text-right font-mono ${p.isConstruction ? 'text-theme-text-muted' : 'text-white'}`}>
                   {p.annualRent !== null ? formatCurrency(p.annualRent, currency) : '—'}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {p.isConstruction && !p.isHandover && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#2a3142] text-gray-400">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-theme-card-alt text-theme-text-muted">
                       Construction
                     </span>
                   )}

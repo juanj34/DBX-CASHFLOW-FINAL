@@ -72,19 +72,19 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
   const airbnbBarWidth = maxIncome > 0 ? (netAirbnbAnnual / maxIncome) * 100 : 50;
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden flex flex-col">
+    <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-[#2a3142] flex items-center justify-between">
+      <div className="p-4 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Home className="w-5 h-5 text-[#CCFF00]" />
           <div>
-            <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">Yield & Income</h3>
-            <p className="text-[10px] text-gray-500">{t('basedOnPurchasePrice')}</p>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">Yield & Income</h3>
+            <p className="text-[10px] text-theme-text-muted">{t('basedOnPurchasePrice')}</p>
           </div>
         </div>
         <Badge 
           variant="secondary"
-          className="bg-[#2a3142] text-gray-400 border-[#2a3142] text-[10px]"
+          className="bg-theme-card-alt text-theme-text-muted border-theme-border text-[10px]"
         >
           {showAirbnbComparison ? t('ltPlusShortTerm') : t('longTermOnly')}
         </Badge>

@@ -159,15 +159,15 @@ export const ExitScenariosCards = ({
   const scenarioLabel = scenarioCount === 1 ? t('scenario') : t('scenarios');
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
+    <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
       {/* Header with Static Info */}
-      <div className="p-4 border-b border-[#2a3142]">
+      <div className="p-4 border-b border-theme-border">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Target className="w-5 h-5 text-[#CCFF00]" />
             <div>
-              <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">Exit Strategy</h3>
-              <p className="text-xs text-gray-500">{scenarioCount} {scenarioLabel} • {t('clickToEdit')}</p>
+              <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">Exit Strategy</h3>
+              <p className="text-xs text-theme-text-muted">{scenarioCount} {scenarioLabel} • {t('clickToEdit')}</p>
             </div>
           </div>
           {!readOnly && exitScenarios.length < 5 && setExitScenarios && (

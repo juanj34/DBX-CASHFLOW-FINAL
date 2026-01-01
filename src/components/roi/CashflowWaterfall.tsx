@@ -31,11 +31,11 @@ export const CashflowWaterfall = ({
   const flowItems = items.filter(item => item.type !== 'result');
 
   return (
-    <div className={cn("bg-slate-800/30 rounded-xl p-4 border border-slate-700/30", className)}>
+    <div className={cn("bg-theme-card/50 rounded-xl p-4 border border-theme-border", className)}>
       {title && (
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-medium text-slate-400 uppercase">{title}</span>
+          <span className="text-xs font-medium text-theme-text-muted uppercase">{title}</span>
         </div>
       )}
 
@@ -85,9 +85,9 @@ export const CashflowWaterfall = ({
         {resultItem && (
           <>
             <div className="flex items-center gap-2 my-2">
-              <div className="flex-1 h-px bg-slate-600" />
-              <ArrowRight className="w-4 h-4 text-slate-500" />
-              <div className="flex-1 h-px bg-slate-600" />
+              <div className="flex-1 h-px bg-theme-border" />
+              <ArrowRight className="w-4 h-4 text-theme-text-muted" />
+              <div className="flex-1 h-px bg-theme-border" />
             </div>
 
             {/* Result row */}

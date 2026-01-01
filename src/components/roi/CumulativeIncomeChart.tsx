@@ -46,10 +46,10 @@ export const CumulativeIncomeChart = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-lg p-3 shadow-xl">
+        <div className="bg-theme-card border border-theme-border rounded-lg p-3 shadow-xl">
           <p className="text-white font-medium mb-2">{label} ({data.calendarYear})</p>
           {data.isConstruction ? (
-            <p className="text-gray-400 text-sm">{t('underConstruction')}</p>
+            <p className="text-theme-text-muted text-sm">{t('underConstruction')}</p>
           ) : (
             <>
               <p className="text-cyan-400 text-sm">
@@ -69,7 +69,7 @@ export const CumulativeIncomeChart = ({
   };
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 sm:p-6">
+    <div className="bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-6">
       <h3 className="text-white font-semibold mb-4">{t('cumulativeNetIncome')}</h3>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -131,7 +131,7 @@ export const CumulativeIncomeChart = ({
             )}
             <Legend 
               wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value) => <span className="text-gray-300 text-sm">{value}</span>}
+              formatter={(value) => <span className="text-theme-text text-sm">{value}</span>}
             />
           </AreaChart>
         </ResponsiveContainer>
