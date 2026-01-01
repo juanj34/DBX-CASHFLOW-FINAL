@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, X, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface FullscreenMapModalProps {
   open: boolean;
@@ -156,7 +157,10 @@ export const FullscreenMapModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[80vh] p-0 overflow-hidden bg-theme-bg border-theme-border">
+      <DialogContent className="max-w-4xl w-[95vw] h-[80vh] p-0 overflow-hidden bg-theme-bg border-theme-border" aria-describedby={undefined}>
+        <VisuallyHidden>
+          <DialogTitle>{projectName || 'Project Location'} Map</DialogTitle>
+        </VisuallyHidden>
         {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent p-4">
           <div className="flex items-center justify-between">
