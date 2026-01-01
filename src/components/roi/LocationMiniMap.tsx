@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 interface LocationMiniMapProps {
   latitude: number;
   longitude: number;
-  locationName?: string;
   markerColor?: string;
   height?: string;
   className?: string;
@@ -18,7 +17,6 @@ interface LocationMiniMapProps {
 export const LocationMiniMap = ({
   latitude,
   longitude,
-  locationName,
   markerColor = "#CCFF00",
   height = "h-36",
   className,
@@ -98,21 +96,14 @@ export const LocationMiniMap = ({
   }
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      <div 
-        className={cn(
-          "rounded-xl overflow-hidden border border-theme-border relative",
-          height
-        )}
-      >
-        <div ref={mapContainer} className="absolute inset-0" />
-      </div>
-      {locationName && (
-        <div className="flex items-center gap-1.5 text-xs text-theme-text-muted">
-          <MapPin className="w-3 h-3" />
-          <span>{locationName}</span>
-        </div>
+    <div 
+      className={cn(
+        "rounded-xl overflow-hidden border border-theme-border relative",
+        height,
+        className
       )}
+    >
+      <div ref={mapContainer} className="absolute inset-0" />
     </div>
   );
 };

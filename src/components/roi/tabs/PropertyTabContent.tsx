@@ -408,9 +408,8 @@ export const PropertyTabContent = ({
                 <LocationMiniMap
                   latitude={project.latitude}
                   longitude={project.longitude}
-                  locationName={zone?.name || clientInfo.zoneName}
                   height="h-full"
-                  className="h-full [&>div:first-child]:h-full [&>div:first-child]:group-hover:border-theme-accent/50 [&>div:first-child]:transition-colors"
+                  className="h-full group-hover:border-theme-accent/50 transition-colors"
                 />
               </motion.div>
             )}
