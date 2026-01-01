@@ -1,9 +1,18 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, LayoutGrid, Settings2, Rows3, FolderOpen, History, Globe, Coins, Share2, LayoutDashboard, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
 import { MortgageInputs } from "@/components/roi/useMortgageCalculations";
 import { Button } from "@/components/ui/button";
+import { Profile } from "@/hooks/useProfile";
+import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
+import { Link } from "react-router-dom";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type SectionId = 'overview' | 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
 
@@ -14,7 +23,64 @@ interface DashboardSidebarProps {
   mortgageInputs: MortgageInputs;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  // New props for bottom section
+  profile?: Profile | null;
+  isAdmin?: boolean;
+  onConfigure?: () => void;
+  onLoadQuote?: () => void;
+  onViewHistory?: () => void;
+  onSwitchView?: () => void;
+  quoteId?: string;
 }
+
+// App Logo Component
+const AppLogo = ({ collapsed }: { collapsed: boolean }) => (
+  <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2")}>
+    <div className="relative flex-shrink-0">
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-purple-500 to-[#CCFF00] p-[2px]">
+        <div className="w-full h-full rounded-lg bg-theme-card flex items-center justify-center">
+          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+            <path 
+              d="M12 2L2 7L12 12L22 7L12 2Z" 
+              stroke="url(#sidebar-logo-gradient)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+            <path 
+              d="M2 17L12 22L22 17" 
+              stroke="url(#sidebar-logo-gradient)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+            <path 
+              d="M2 12L12 17L22 12" 
+              stroke="url(#sidebar-logo-gradient)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+            <defs>
+              <linearGradient id="sidebar-logo-gradient" x1="2" y1="2" x2="22" y2="22">
+                <stop stopColor="#00EAFF" />
+                <stop offset="0.5" stopColor="#A855F7" />
+                <stop offset="1" stopColor="#CCFF00" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+    {!collapsed && (
+      <span className="text-sm font-bold tracking-tight">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-[#CCFF00]">Dubai</span>
+        <span className="text-theme-text">Invest</span>
+        <span className="text-[#CCFF00]">Pro</span>
+      </span>
+    )}
+  </div>
+);
 
 export const DashboardSidebar = ({
   activeSection,
@@ -23,6 +89,13 @@ export const DashboardSidebar = ({
   mortgageInputs,
   collapsed,
   onCollapsedChange,
+  profile,
+  isAdmin,
+  onConfigure,
+  onLoadQuote,
+  onViewHistory,
+  onSwitchView,
+  quoteId,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
 
@@ -36,58 +109,108 @@ export const DashboardSidebar = ({
     { id: 'summary' as SectionId, label: t('tabSummary'), icon: FileText, show: true },
   ].filter(section => section.show);
 
+  const NavButton = ({ icon: Icon, label, onClick, isActive, to }: { 
+    icon: typeof Home; 
+    label: string; 
+    onClick?: () => void; 
+    isActive?: boolean;
+    to?: string;
+  }) => {
+    const content = (
+      <button
+        onClick={onClick}
+        className={cn(
+          "w-full flex items-center rounded-lg text-sm font-medium transition-all",
+          collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+          isActive
+            ? "bg-theme-accent/15 text-theme-accent"
+            : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+        )}
+      >
+        <Icon className="w-4 h-4 flex-shrink-0" />
+        {!collapsed && <span className="truncate">{label}</span>}
+      </button>
+    );
+
+    if (to) {
+      return (
+        <Link to={to}>
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{content}</TooltipTrigger>
+              <TooltipContent side="right">{label}</TooltipContent>
+            </Tooltip>
+          ) : content}
+        </Link>
+      );
+    }
+
+    return collapsed ? (
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    ) : content;
+  };
+
   return (
     <aside 
       className={cn(
         "bg-theme-card border-r border-theme-border flex flex-col h-full transition-all duration-300 ease-in-out",
-        collapsed ? "w-16" : "w-52"
+        collapsed ? "w-16" : "w-56"
       )}
     >
-      {/* Header */}
+      {/* Logo + Collapse Toggle */}
       <div className={cn(
-        "p-4 border-b border-theme-border flex items-center",
+        "p-3 border-b border-theme-border flex items-center",
         collapsed ? "justify-center" : "justify-between"
       )}>
+        <AppLogo collapsed={collapsed} />
         {!collapsed && (
-          <div>
-            <h2 className="text-sm font-semibold text-theme-text">Dashboard</h2>
-            <p className="text-xs text-theme-text-muted mt-0.5">Navigation</p>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onCollapsedChange(!collapsed)}
-          className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onCollapsedChange(!collapsed)}
+            className="h-7 w-7 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+          >
             <ChevronLeft className="w-4 h-4" />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
 
-      {/* Navigation */}
+      {/* Expand button when collapsed */}
+      {collapsed && (
+        <div className="p-2 flex justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onCollapsedChange(false)}
+            className="h-7 w-7 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Main Navigation */}
       <nav className={cn(
-        "flex-1 space-y-1",
+        "flex-1 space-y-1 overflow-y-auto",
         collapsed ? "p-2" : "p-3"
       )}>
         {sections.map(({ id, label, icon: Icon }) => {
           const isActive = activeSection === id;
           
-          return (
+          const content = (
             <button
               key={id}
               onClick={() => onSectionChange(id)}
               className={cn(
                 "w-full flex items-center rounded-lg text-sm font-medium transition-all",
-                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
+                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
                 isActive
                   ? "bg-theme-accent/15 text-theme-accent"
                   : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
               )}
-              title={collapsed ? label : undefined}
             >
               <Icon className={cn(
                 "flex-shrink-0",
@@ -96,17 +219,118 @@ export const DashboardSidebar = ({
               {!collapsed && <span className="truncate">{label}</span>}
             </button>
           );
+          
+          return collapsed ? (
+            <Tooltip key={id}>
+              <TooltipTrigger asChild>{content}</TooltipTrigger>
+              <TooltipContent side="right">{label}</TooltipContent>
+            </Tooltip>
+          ) : content;
         })}
       </nav>
 
-      {/* Keyboard Shortcuts Hint */}
-      {!collapsed && (
-        <div className="p-3 border-t border-theme-border">
-          <p className="text-[10px] text-theme-text-muted text-center">
-            Press 1-{sections.length} to navigate
-          </p>
+      {/* Bottom Section */}
+      <div className="border-t border-theme-border">
+        {/* Advisor Info */}
+        {profile && (
+          <div className={cn(
+            "border-b border-theme-border",
+            collapsed ? "p-2 flex justify-center" : "p-3"
+          )}>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#2a3142] ring-2 ring-[#CCFF00]/30 cursor-default">
+                    {profile.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt={profile.full_name || 'Advisor'} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-theme-text-muted text-xs font-medium">
+                        {profile.full_name?.charAt(0) || 'A'}
+                      </div>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div>
+                    <p className="font-medium">{profile.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{t('wealthAdvisor')}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <AdvisorInfo profile={profile} size="sm" showSubtitle />
+            )}
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
+          {/* Configure Button - Primary Action */}
+          {onConfigure && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onConfigure}
+                    size="icon"
+                    className="w-full h-9 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                  >
+                    <Settings2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Configure</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button
+                onClick={onConfigure}
+                className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 justify-start gap-2"
+                size="sm"
+              >
+                <Settings2 className="w-4 h-4" />
+                Configure
+              </Button>
+            )
+          )}
+
+          {/* Load Quote */}
+          {onLoadQuote && (
+            <NavButton icon={FolderOpen} label={t('loadQuote') || 'Load Quote'} onClick={onLoadQuote} />
+          )}
+
+          {/* Version History */}
+          {onViewHistory && quoteId && (
+            <NavButton icon={History} label={t('versionHistory') || 'History'} onClick={onViewHistory} />
+          )}
+
+          {/* Switch View */}
+          {onSwitchView && (
+            <NavButton icon={Rows3} label="Vertical View" onClick={onSwitchView} />
+          )}
         </div>
-      )}
+
+        <Separator className="bg-theme-border" />
+
+        {/* Navigation Links */}
+        <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
+          <NavButton icon={LayoutDashboard} label="Home" to="/home" />
+          {isAdmin && (
+            <NavButton icon={SlidersHorizontal} label="Admin" to="/dashboard" />
+          )}
+        </div>
+
+        {/* Keyboard Shortcuts Hint */}
+        {!collapsed && (
+          <div className="p-3 pt-0">
+            <p className="text-[10px] text-theme-text-muted text-center">
+              Press 1-{sections.length} to navigate
+            </p>
+          </div>
+        )}
+      </div>
     </aside>
   );
 };
