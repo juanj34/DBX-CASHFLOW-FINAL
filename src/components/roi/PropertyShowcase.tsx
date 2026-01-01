@@ -117,12 +117,12 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
 
   return (
     <div className={cn(
-      "relative w-full h-full overflow-hidden rounded-2xl",
+      "relative w-full h-full min-h-full overflow-hidden rounded-2xl flex flex-col",
       className
     )}>
       {/* Mobile Layout */}
-      <div className="flex flex-col md:hidden h-full">
-        <div className="flex-1 p-4 space-y-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-y-auto">
+      <div className="flex flex-col md:hidden h-full flex-1">
+        <div className="flex-1 p-4 space-y-4 bg-gradient-to-br from-theme-bg-alt via-theme-card to-theme-bg-alt overflow-y-auto">
           {/* Prepared For */}
           {clientInfo.clientName && (
             <p className="text-xs uppercase tracking-widest text-white/40">
@@ -223,17 +223,17 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               transition={{ duration: 20, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-theme-bg-alt via-theme-card to-theme-bg-alt flex items-center justify-center">
               <Building className="w-16 h-16 text-white/20" />
             </div>
           )}
         </div>
       </div>
 
-      {/* Desktop Layout */}
-      <div className="hidden md:block h-full">
-        {/* Full Background Hero Image */}
-        <div className="absolute inset-0 overflow-hidden">
+      {/* Desktop Layout - Full Height */}
+      <div className="hidden md:flex md:flex-col h-full flex-1">
+        {/* Full Background Hero Image - Absolute positioned */}
+        <div className="absolute inset-0 overflow-hidden flex-1">
           {displayImage ? (
             <motion.img 
               src={displayImage} 
@@ -244,7 +244,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               transition={{ duration: 20, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-theme-bg-alt via-theme-card to-theme-bg-alt flex items-center justify-center">
               <Building className="w-32 h-32 text-white/10" />
             </div>
           )}
@@ -252,8 +252,8 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
         </div>
         
-        {/* Flowing Text Content - Left Aligned */}
-        <div className="relative z-10 h-full p-6 lg:p-8 overflow-y-auto">
+        {/* Flowing Text Content - Left Aligned, Full Height */}
+        <div className="relative z-10 h-full flex-1 p-6 lg:p-8 flex flex-col justify-center">
           <div className="flex flex-col gap-6 w-[38%] min-w-[320px] max-w-[480px]">
             
             {/* Prepared For */}

@@ -46,7 +46,7 @@ export const StoryNavigation = ({
   const progressPercent = ((currentIndex + 1) / visibleSections.length) * 100;
 
   return (
-    <div className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 py-3 px-4">
+    <div className="sticky top-0 z-20 bg-theme-bg/95 backdrop-blur-sm border-b border-theme-border py-3 px-4">
       <div className="flex items-center justify-between gap-2">
         {/* Previous Button */}
         <button
@@ -55,8 +55,8 @@ export const StoryNavigation = ({
           className={cn(
             "w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
             canGoPrev 
-              ? "bg-slate-800 hover:bg-slate-700 text-white" 
-              : "bg-slate-800/30 text-slate-600 cursor-not-allowed"
+              ? "bg-theme-card hover:bg-theme-card-alt text-white" 
+              : "bg-theme-card/30 text-theme-text-muted cursor-not-allowed"
           )}
         >
           <ChevronLeft className="w-5 h-5" />
@@ -78,8 +78,8 @@ export const StoryNavigation = ({
                   isActive 
                     ? "bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-white border border-cyan-500/30" 
                     : isPast
-                      ? "bg-slate-800/50 text-emerald-400 hover:bg-slate-700/50"
-                      : "bg-slate-800/30 text-slate-400 hover:bg-slate-700/50 hover:text-white"
+                      ? "bg-theme-card/50 text-emerald-400 hover:bg-theme-card-alt/50"
+                      : "bg-theme-card/30 text-theme-text-muted hover:bg-theme-card-alt/50 hover:text-white"
                 )}
               >
                 <Icon className={cn(
@@ -106,7 +106,7 @@ export const StoryNavigation = ({
             "w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
             canGoNext 
               ? "bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white" 
-              : "bg-slate-800/30 text-slate-600 cursor-not-allowed"
+              : "bg-theme-card/30 text-theme-text-muted cursor-not-allowed"
           )}
         >
           <ChevronRight className="w-5 h-5" />
@@ -114,7 +114,7 @@ export const StoryNavigation = ({
       </div>
 
       {/* Progress Bar */}
-      <div className="mt-2 h-1 bg-slate-800 rounded-full overflow-hidden">
+      <div className="mt-2 h-1 bg-theme-card rounded-full overflow-hidden">
         <div 
           className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all duration-300"
           style={{ width: `${progressPercent}%` }}
@@ -123,7 +123,7 @@ export const StoryNavigation = ({
 
       {/* Step Counter */}
       <div className="flex justify-center mt-2">
-        <span className="text-[10px] text-slate-500">
+        <span className="text-[10px] text-theme-text-muted">
           {currentIndex + 1} / {visibleSections.length}
         </span>
       </div>

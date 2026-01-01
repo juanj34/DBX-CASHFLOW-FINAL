@@ -312,6 +312,26 @@ const CashflowDashboardContent = () => {
                   {/* Separator */}
                   <div className="w-px h-6 bg-theme-border mx-0.5" />
 
+                  {/* Quick Currency Toggle */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrency(currency === 'AED' ? 'USD' : 'AED')}
+                    className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 px-2 font-mono text-xs"
+                  >
+                    {currency}
+                  </Button>
+
+                  {/* Quick Language Toggle */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                    className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 px-2 text-xs"
+                  >
+                    {language === 'en' ? '🇬🇧' : '🇪🇸'}
+                  </Button>
+
                   {/* Settings Dropdown */}
                   <SettingsDropdown
                     language={language}

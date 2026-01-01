@@ -82,12 +82,12 @@ export const QuotesDropdown = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="bg-[#1a1f2e] border-[#2a3142] z-50 w-52"
+        className="bg-theme-card border-theme-border z-50 w-52"
       >
         {/* New Quote */}
         <DropdownMenuItem
           onClick={handleNewQuote}
-          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+          className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
         >
           <FilePlus className="w-4 h-4" />
           {t('newQuote')}
@@ -97,18 +97,18 @@ export const QuotesDropdown = ({
         <DropdownMenuItem
           onClick={handleSaveAs}
           disabled={saving}
-          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+          className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
         >
           <Copy className="w-4 h-4" />
           Save as New
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className="bg-[#2a3142]" />
+        <DropdownMenuSeparator className="bg-theme-border" />
 
         {/* Load Quote */}
         <DropdownMenuItem
           onClick={onLoadQuote}
-          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+          className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
         >
           <FolderOpen className="w-4 h-4" />
           {t('loadQuote')}
@@ -117,7 +117,7 @@ export const QuotesDropdown = ({
         {/* Compare Quotes */}
         <DropdownMenuItem
           onClick={() => navigate('/compare')}
-          className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+          className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
         >
           <LayoutGrid className="w-4 h-4" />
           Compare Quotes
@@ -127,7 +127,7 @@ export const QuotesDropdown = ({
         {hasQuoteId && onViewHistory && (
           <DropdownMenuItem
             onClick={onViewHistory}
-            className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+            className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
           >
             <History className="w-4 h-4" />
             {t('versionHistory')}
@@ -137,8 +137,8 @@ export const QuotesDropdown = ({
         {/* Save status indicator */}
         {(saving || lastSaved) && (
           <>
-            <DropdownMenuSeparator className="bg-[#2a3142]" />
-            <div className="px-2 py-1.5 text-xs text-gray-500 flex items-center gap-1.5">
+            <DropdownMenuSeparator className="bg-theme-border" />
+            <div className="px-2 py-1.5 text-xs text-theme-text-muted flex items-center gap-1.5">
               {saving ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin" />

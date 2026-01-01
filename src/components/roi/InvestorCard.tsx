@@ -42,7 +42,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
   const isHO = type === 'ho';
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} bg-[#1a1f2e] border ${borderColor} p-5`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} bg-theme-card border ${borderColor} p-5`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -55,7 +55,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
             </div>
             <h3 className="font-bold text-white text-lg">{title}</h3>
           </div>
-          <p className="text-sm text-gray-400">{subtitle}</p>
+          <p className="text-sm text-theme-text-muted">{subtitle}</p>
         </div>
         {!isHO && (
           <div 
@@ -63,7 +63,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
             style={{ color }}
           >
             {metrics.roe.toFixed(1)}%
-            <span className="text-xs text-gray-400 block text-right">ROE</span>
+            <span className="text-xs text-theme-text-muted block text-right">ROE</span>
           </div>
         )}
         {isHO && (
@@ -72,7 +72,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
             style={{ color }}
           >
             {metrics.rentalYield.toFixed(1)}%
-            <span className="text-xs text-gray-400 block text-right">Yield</span>
+            <span className="text-xs text-theme-text-muted block text-right">Yield</span>
           </div>
         )}
       </div>
@@ -80,7 +80,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
       {/* Main Metrics - Entry/Exit/Profit */}
       <div className="space-y-3 mb-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+          <div className="flex items-center gap-1.5 text-theme-text-muted text-xs">
             <TrendingDown className="w-3.5 h-3.5" />
             Entry Price
           </div>
@@ -89,7 +89,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
 
         {!isHO && (
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+            <div className="flex items-center gap-1.5 text-theme-text-muted text-xs">
               <TrendingUp className="w-3.5 h-3.5" />
               Exit Price
             </div>
@@ -99,7 +99,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
 
         {!isHO && (
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+            <div className="flex items-center gap-1.5 text-theme-text-muted text-xs">
               <BadgePercent className="w-3.5 h-3.5" />
               Profit
             </div>
@@ -110,7 +110,7 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
         )}
 
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+          <div className="flex items-center gap-1.5 text-theme-text-muted text-xs">
             <Wallet className="w-3.5 h-3.5" />
             Equity Deployed
           </div>
@@ -119,13 +119,13 @@ export const InvestorCard = ({ type, metrics, currency }: InvestorCardProps) => 
       </div>
 
       {/* Bottom stats */}
-      <div className="pt-3 border-t border-[#2a3142] space-y-2">
+      <div className="pt-3 border-t border-theme-border space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-400">Rental Yield</span>
+          <span className="text-xs text-theme-text-muted">Rental Yield</span>
           <span className="font-mono font-semibold text-sm" style={{ color }}>{metrics.rentalYield.toFixed(2)}%</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-400">Years to Pay</span>
+          <span className="text-xs text-theme-text-muted">Years to Pay</span>
           <span className="font-mono font-semibold text-sm" style={{ color }}>{metrics.yearsToPay.toFixed(1)} yrs</span>
         </div>
       </div>
