@@ -493,7 +493,6 @@ export const InvestmentStoryDashboard = ({
           unitType={clientInfo?.unitType}
           unitNumber={clientInfo?.unit}
           unitSizeSqft={inputs.unitSizeSqf}
-          zoneName={clientInfo?.zoneName}
         />
 
         {/* Section Content Container */}
