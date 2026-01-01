@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, LayoutGrid, Settings2, Rows3, FolderOpen, History, Globe, Coins, Share2, LayoutDashboard, SlidersHorizontal } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -99,8 +99,16 @@ export const DashboardSidebar = ({
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
 
-  const sections = [
-    { id: 'overview' as SectionId, label: t('investmentOverview') || 'Overview', icon: LayoutGrid, show: true },
+  // Presentation section (separate from analysis)
+  const presentationSection = {
+    id: 'overview' as SectionId,
+    label: t('investmentOverview') || 'Investment Story',
+    subtitle: 'Present to Client',
+    icon: Sparkles,
+  };
+
+  // Analysis sections
+  const analysisSections = [
     { id: 'property' as SectionId, label: t('tabProperty'), icon: Building2, show: true },
     { id: 'payments' as SectionId, label: t('tabPayments'), icon: CreditCard, show: true },
     { id: 'hold' as SectionId, label: t('tabHold'), icon: Home, show: inputs.enabledSections?.longTermHold !== false },
@@ -194,39 +202,127 @@ export const DashboardSidebar = ({
 
       {/* Main Navigation */}
       <nav className={cn(
-        "flex-1 space-y-1 overflow-y-auto",
+        "flex-1 overflow-y-auto",
         collapsed ? "p-2" : "p-3"
       )}>
-        {sections.map(({ id, label, icon: Icon }) => {
-          const isActive = activeSection === id;
-          
-          const content = (
-            <button
-              key={id}
-              onClick={() => onSectionChange(id)}
-              className={cn(
-                "w-full flex items-center rounded-lg text-sm font-medium transition-all",
-                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
-                isActive
-                  ? "bg-theme-accent/15 text-theme-accent"
-                  : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-              )}
-            >
-              <Icon className={cn(
-                "flex-shrink-0",
-                isActive ? "w-5 h-5" : "w-4 h-4"
-              )} />
-              {!collapsed && <span className="truncate">{label}</span>}
-            </button>
-          );
-          
-          return collapsed ? (
-            <Tooltip key={id}>
-              <TooltipTrigger asChild>{content}</TooltipTrigger>
-              <TooltipContent side="right">{label}</TooltipContent>
-            </Tooltip>
-          ) : content;
-        })}
+        {/* PRESENT Section */}
+        {!collapsed && (
+          <div className="mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-theme-text-muted/70 font-medium px-1">
+              Present
+            </span>
+          </div>
+        )}
+        
+        {/* Presentation Button - Prominent Style */}
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => onSectionChange('overview')}
+                className={cn(
+                  "w-full flex items-center justify-center p-2.5 rounded-xl transition-all mb-3",
+                  "bg-gradient-to-br from-theme-accent/20 to-purple-500/20",
+                  "border border-theme-accent/40 hover:border-theme-accent/60",
+                  activeSection === 'overview' && "ring-2 ring-theme-accent/50 border-theme-accent"
+                )}
+              >
+                <Sparkles className={cn(
+                  "w-5 h-5",
+                  activeSection === 'overview' ? "text-theme-accent" : "text-theme-accent/80"
+                )} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <div>
+                <p className="font-medium">{presentationSection.label}</p>
+                <p className="text-xs text-muted-foreground">{presentationSection.subtitle}</p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={() => onSectionChange('overview')}
+            className={cn(
+              "w-full flex items-center gap-3 p-3 rounded-xl transition-all mb-3",
+              "bg-gradient-to-br from-theme-accent/15 to-purple-500/15",
+              "border border-theme-accent/30 hover:border-theme-accent/50",
+              "group",
+              activeSection === 'overview' && "ring-2 ring-theme-accent/50 border-theme-accent bg-theme-accent/20"
+            )}
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              "bg-gradient-to-br from-theme-accent/30 to-purple-500/30",
+              activeSection === 'overview' && "from-theme-accent/50 to-purple-500/50"
+            )}>
+              <Sparkles className="w-4 h-4 text-theme-accent" />
+            </div>
+            <div className="flex-1 text-left">
+              <span className={cn(
+                "block text-sm font-semibold",
+                activeSection === 'overview' ? "text-theme-accent" : "text-theme-text"
+              )}>
+                {presentationSection.label}
+              </span>
+              <span className="text-[10px] text-theme-text-muted flex items-center gap-1">
+                <Play className="w-2.5 h-2.5" />
+                {presentationSection.subtitle}
+              </span>
+            </div>
+            {activeSection === 'overview' && (
+              <div className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse" />
+            )}
+          </button>
+        )}
+
+        {/* Visual Separator */}
+        <div className={cn("my-3", collapsed ? "px-1" : "px-0")}>
+          <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent" />
+        </div>
+
+        {/* ANALYZE Section */}
+        {!collapsed && (
+          <div className="mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-theme-text-muted/70 font-medium px-1">
+              Analyze
+            </span>
+          </div>
+        )}
+
+        {/* Analysis Navigation Items */}
+        <div className="space-y-1">
+          {analysisSections.map(({ id, label, icon: Icon }) => {
+            const isActive = activeSection === id;
+            
+            const content = (
+              <button
+                key={id}
+                onClick={() => onSectionChange(id)}
+                className={cn(
+                  "w-full flex items-center rounded-lg text-sm font-medium transition-all",
+                  collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+                  isActive
+                    ? "bg-theme-accent/15 text-theme-accent"
+                    : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+                )}
+              >
+                <Icon className={cn(
+                  "flex-shrink-0",
+                  isActive ? "w-5 h-5" : "w-4 h-4"
+                )} />
+                {!collapsed && <span className="truncate">{label}</span>}
+              </button>
+            );
+            
+            return collapsed ? (
+              <Tooltip key={id}>
+                <TooltipTrigger asChild>{content}</TooltipTrigger>
+                <TooltipContent side="right">{label}</TooltipContent>
+              </Tooltip>
+            ) : content;
+          })}
+        </div>
       </nav>
 
       {/* Bottom Section */}
@@ -326,7 +422,7 @@ export const DashboardSidebar = ({
         {!collapsed && (
           <div className="p-3 pt-0">
             <p className="text-[10px] text-theme-text-muted text-center">
-              Press 1-{sections.length} to navigate
+              Press <span className="text-theme-accent">P</span> to present · <span className="text-theme-text-muted">1-{analysisSections.length}</span> to analyze
             </p>
           </div>
         )}
