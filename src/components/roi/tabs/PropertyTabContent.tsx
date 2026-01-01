@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
-import { PropertyPaymentCards } from "@/components/roi/dashboard/PropertyPaymentCards";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
 import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
 import { Currency } from "@/components/roi/currencyUtils";
 import { FloorPlanLightbox } from "@/components/roi/FloorPlanLightbox";
 import { BuildingRenderCard } from "@/components/roi/BuildingRenderCard";
-import { DeveloperCard } from "@/components/roi/DeveloperCard";
 import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
-import { ProjectCard } from "@/components/roi/ProjectCard";
 import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
+import { AssetUnitCard } from "@/components/roi/showcase/AssetUnitCard";
+import { AssetProjectCard } from "@/components/roi/showcase/AssetProjectCard";
+import { AssetClientsCard } from "@/components/roi/showcase/AssetClientsCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -106,78 +106,51 @@ export const PropertyTabContent = ({
   const hasDeveloper = !!developer;
   const hasProject = !!project;
 
+  // Fetch zone data if available
+  const { data: zone } = useQuery({
+    queryKey: ['zone', clientInfo.zoneName],
+    queryFn: async () => {
+      if (clientInfo.zoneName) {
+        const { data } = await supabase
+          .from('zones')
+          .select('id, name, maturity_level, maturity_label')
+          .ilike('name', clientInfo.zoneName)
+          .maybeSingle();
+        return data;
+      }
+      return null;
+    },
+    enabled: !!clientInfo.zoneName,
+  });
+
   if (variant === 'dashboard') {
     return (
       <div className="space-y-4">
-        {/* Client Info - Full Width */}
-        <ClientUnitInfo 
-          data={clientInfo} 
-          onEditClick={onEditClient} 
-        />
-        
-        {/* Property & Payment Cards */}
-        <PropertyPaymentCards 
-          inputs={inputs}
-          calculations={calculations}
-          currency={currency}
-          rate={rate}
-          unitSizeSqf={clientInfo.unitSizeSqf}
-        />
-
-        {/* Developer + Project Cards - 2 columns */}
-        {(hasDeveloper || hasProject) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {hasDeveloper && (
-              <DeveloperCard
-                developerId={developerId || null}
-                developerName={clientInfo.developer}
-                onClick={() => developer && setDeveloperModalOpen(true)}
-                variant="compact"
-              />
-            )}
-            
-            {hasProject && (
-              <ProjectCard
-                projectId={projectId || project?.id || null}
-                projectName={clientInfo.projectName}
-                onClick={() => project && setProjectModalOpen(true)}
-              />
-            )}
-          </div>
-        )}
-        
-        {/* Value Differentiators */}
-        <ValueDifferentiatorsDisplay
-          selectedDifferentiators={inputs.valueDifferentiators || []}
-          customDifferentiators={customDifferentiators}
-          onEditClick={onEditConfig}
-        />
-
-        {/* Images Row - Floor Plan + Building Render - MOVED TO BOTTOM */}
+        {/* Row 1: Images - Floor Plan + Building Render */}
         {hasImages && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Floor Plan - Clickable for lightbox */}
             {floorPlanUrl && (
               <div 
-                className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 cursor-pointer hover:border-[#CCFF00]/50 transition-colors"
+                className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 cursor-pointer hover:border-[#CCFF00]/50 transition-colors group"
                 onClick={() => setLightboxOpen(true)}
               >
-                <p className="text-xs text-gray-500 mb-2">Floor Plan</p>
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Floor Plan</p>
                 <div className="aspect-[4/3] rounded-xl overflow-hidden bg-[#0d1117]">
                   <img 
                     src={floorPlanUrl} 
                     alt="Floor Plan" 
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">Click to enlarge</p>
               </div>
             )}
             
-            {/* Building Render with Logo Overlay + Lightbox */}
+            {/* Building Render with Logo Overlay */}
             {buildingRenderUrl && (
               <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4">
-                <p className="text-xs text-gray-500 mb-2">Building Render</p>
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">Building Render</p>
                 <BuildingRenderCard
                   imageUrl={buildingRenderUrl}
                   developerId={developerId}
@@ -186,6 +159,47 @@ export const PropertyTabContent = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* Row 2: Unit Details + Project/Developer Info */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Unit Card */}
+          <AssetUnitCard
+            unitNumber={clientInfo.unit}
+            unitType={clientInfo.unitType}
+            unitSizeSqf={clientInfo.unitSizeSqf}
+            basePrice={inputs.basePrice}
+            handoverQuarter={`Q${inputs.handoverQuarter}`}
+            handoverYear={inputs.handoverYear}
+            currency={currency}
+            rate={rate}
+          />
+
+          {/* Project + Developer + Zone Card */}
+          <AssetProjectCard
+            project={project}
+            developer={developer}
+            zone={zone}
+            zoneName={clientInfo.zoneName}
+            onDeveloperClick={() => developer && setDeveloperModalOpen(true)}
+            onProjectClick={() => project && setProjectModalOpen(true)}
+          />
+        </div>
+
+        {/* Row 3: Clients */}
+        <AssetClientsCard
+          clients={clientInfo.clients}
+          clientName={clientInfo.clientName}
+          clientCountry={clientInfo.clientCountry}
+        />
+        
+        {/* Row 4: Value Differentiators */}
+        {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
+          <ValueDifferentiatorsDisplay
+            selectedDifferentiators={inputs.valueDifferentiators}
+            customDifferentiators={customDifferentiators}
+            onEditClick={onEditConfig}
+          />
         )}
 
         {/* Lightbox */}
