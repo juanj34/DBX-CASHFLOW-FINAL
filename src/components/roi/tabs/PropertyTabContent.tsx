@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
@@ -10,7 +11,7 @@ import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
 import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight } from "lucide-react";
+import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, TrendingUp, Wallet, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PropertyTabContentProps {
@@ -42,6 +43,24 @@ const getCountryFlag = (country: string): string => {
     'Colombia': '🇨🇴', 'Mexico': '🇲🇽', 'Brazil': '🇧🇷', 'Argentina': '🇦🇷',
   };
   return flags[country] || '🌍';
+};
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
+  }
 };
 
 export const PropertyTabContent = ({
@@ -103,7 +122,7 @@ export const PropertyTabContent = ({
     queryKey: ['zone', clientInfo.zoneName],
     queryFn: async () => {
       if (clientInfo.zoneName) {
-        const { data } = await supabase.from('zones').select('id, name, maturity_level, maturity_label').ilike('name', clientInfo.zoneName).maybeSingle();
+        const { data } = await supabase.from('zones').select('id, name, maturity_level, maturity_label, price_range_min, price_range_max').ilike('name', clientInfo.zoneName).maybeSingle();
         return data;
       }
       return null;
@@ -114,6 +133,22 @@ export const PropertyTabContent = ({
   const hasImages = floorPlanUrl || buildingRenderUrl;
   const unitSizeM2 = clientInfo.unitSizeSqf ? Math.round(clientInfo.unitSizeSqf * 0.092903) : null;
   const pricePerSqft = clientInfo.unitSizeSqf ? inputs.basePrice / clientInfo.unitSizeSqf : null;
+
+  // Financial calculations for hard numbers
+  const DLD_FEE_PERCENT = 4;
+  const downpaymentAmount = inputs.basePrice * inputs.downpaymentPercent / 100;
+  const dldFeeAmount = inputs.basePrice * DLD_FEE_PERCENT / 100;
+  const cashToBook = downpaymentAmount + dldFeeAmount + inputs.oqoodFee;
+  const netYield = calculations.holdAnalysis?.rentalYieldOnInvestment || 0;
+  const serviceCharge = inputs.serviceChargePerSqft || 0;
+
+  // Market comparison
+  const zoneAvgPrice = zone?.price_range_min && zone?.price_range_max
+    ? (zone.price_range_min + zone.price_range_max) / 2
+    : null;
+  const marketDiffPercent = pricePerSqft && zoneAvgPrice
+    ? ((pricePerSqft - zoneAvgPrice) / zoneAvgPrice) * 100
+    : null;
 
   // Client list
   const clientList = clientInfo.clients?.length 
@@ -131,10 +166,15 @@ export const PropertyTabContent = ({
           buildingRenderUrl ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
         )}>
           {/* LEFT COLUMN - Narrative structure */}
-          <div className="flex flex-col h-full gap-4 overflow-y-auto min-h-0 pr-1">
+          <motion.div 
+            className="flex flex-col h-full gap-4 overflow-y-auto min-h-0 pr-1"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             
             {/* MASTER HEADER - Identity (No Box) */}
-            <div className="flex-shrink-0">
+            <motion.div className="flex-shrink-0" variants={itemVariants}>
               <h1 className="text-2xl md:text-3xl font-bold text-theme-text mb-1 leading-tight">
                 {project?.name || clientInfo.projectName || 'Investment Property'}
               </h1>
@@ -148,8 +188,12 @@ export const PropertyTabContent = ({
                     <span className="text-theme-border">•</span>
                     <span 
                       className={cn(
-                        "text-sm",
-                        developer && "cursor-pointer hover:text-theme-accent transition-colors"
+                        "text-sm transition-all duration-200",
+                        developer && [
+                          "cursor-pointer",
+                          "underline decoration-transparent decoration-1 underline-offset-2",
+                          "hover:decoration-theme-accent hover:text-theme-accent"
+                        ]
                       )}
                       onClick={() => developer && setDeveloperModalOpen(true)}
                     >
@@ -158,10 +202,13 @@ export const PropertyTabContent = ({
                   </>
                 )}
               </div>
-            </div>
+            </motion.div>
 
             {/* INVESTMENT CARD - The Asset */}
-            <div className="bg-theme-card border border-theme-border rounded-xl p-5 flex-shrink-0">
+            <motion.div 
+              className="bg-theme-card border border-theme-border rounded-xl p-5 flex-shrink-0"
+              variants={itemVariants}
+            >
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
                   <p className="text-3xl font-bold text-theme-accent">
@@ -173,11 +220,26 @@ export const PropertyTabContent = ({
                     </p>
                   )}
                 </div>
-                {clientInfo.unitType && (
-                  <span className="px-3 py-1.5 bg-theme-accent/10 text-theme-accent text-sm font-semibold rounded-lg">
-                    {clientInfo.unitType}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {clientInfo.unitType && (
+                    <span className="px-3 py-1.5 bg-theme-accent/10 text-theme-accent text-sm font-semibold rounded-lg">
+                      {clientInfo.unitType}
+                    </span>
+                  )}
+                  {marketDiffPercent !== null && Math.abs(marketDiffPercent) >= 5 && (
+                    <span className={cn(
+                      "px-2 py-1 text-xs font-medium rounded-full",
+                      marketDiffPercent < -5 
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-amber-500/10 text-amber-400"
+                    )}>
+                      {marketDiffPercent < -5 
+                        ? `${Math.abs(Math.round(marketDiffPercent))}% below market`
+                        : `${Math.round(marketDiffPercent)}% premium`
+                      }
+                    </span>
+                  )}
+                </div>
               </div>
               
               {/* Inline Unit Details */}
@@ -194,10 +256,46 @@ export const PropertyTabContent = ({
                 <span className="text-theme-border">·</span>
                 <span>Handover Q{inputs.handoverQuarter} {inputs.handoverYear}</span>
               </div>
-            </div>
+
+              {/* Financial Metrics Row */}
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-theme-border">
+                {/* Est. Net Yield */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-theme-text">{netYield.toFixed(1)}%</p>
+                    <p className="text-xs text-theme-text-muted">Est. Net Yield</p>
+                  </div>
+                </div>
+
+                {/* Cash to Book */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-theme-text">{formatCurrency(cashToBook, currency, rate)}</p>
+                    <p className="text-xs text-theme-text-muted">Cash to Book</p>
+                  </div>
+                </div>
+
+                {/* Service Charge */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-theme-muted/50 flex items-center justify-center flex-shrink-0">
+                    <Receipt className="w-4 h-4 text-theme-text-muted" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-theme-text">{serviceCharge}</p>
+                    <p className="text-xs text-theme-text-muted">AED/sqft</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
 
             {/* SECONDARY INFO ROW - Clients + Floor Plan */}
-            <div className="grid grid-cols-2 gap-3 flex-shrink-0">
+            <motion.div className="grid grid-cols-2 gap-3 flex-shrink-0" variants={itemVariants}>
               {/* Clients Card */}
               <div className="bg-theme-card border border-theme-border rounded-xl p-4">
                 <div className="flex items-center gap-3">
@@ -248,19 +346,19 @@ export const PropertyTabContent = ({
                   <p className="text-xs text-theme-text-muted">No floor plan</p>
                 </div>
               )}
-            </div>
+            </motion.div>
 
             {/* VALUE DIFFERENTIATORS - Fills remaining space */}
             {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-              <div className="flex-1 min-h-0">
+              <motion.div className="flex-1 min-h-0" variants={itemVariants}>
                 <ValueDifferentiatorsDisplay
                   selectedDifferentiators={inputs.valueDifferentiators}
                   customDifferentiators={customDifferentiators}
                   onEditClick={onEditConfig}
                 />
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
           {/* RIGHT COLUMN - Building Render */}
           {buildingRenderUrl && (
