@@ -47,7 +47,7 @@ export const OverviewTabContent = ({
   customDifferentiators,
 }: OverviewTabContentProps) => {
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col">
       <InvestmentStoryDashboard
         inputs={inputs}
         calculations={calculations}

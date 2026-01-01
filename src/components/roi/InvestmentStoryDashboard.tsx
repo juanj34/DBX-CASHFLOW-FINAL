@@ -483,7 +483,7 @@ export const InvestmentStoryDashboard = ({
 
   return (
     <TooltipProvider>
-      <div className="space-y-0">
+      <div className="h-full flex flex-col">
         {/* Story Navigation */}
         <StoryNavigation 
           sections={storySections}
@@ -492,7 +492,7 @@ export const InvestmentStoryDashboard = ({
         />
 
         {/* Section Content Container */}
-        <div className={cn("p-4 min-h-[500px] flex-1 flex flex-col", sectionAnimationClass)} key={activeSection}>
+        <div className={cn("p-4 flex-1 flex flex-col min-h-0", sectionAnimationClass)} key={activeSection}>
           
           {/* ===== SECTION 0: PROPERTY SHOWCASE ===== */}
           {activeSection === 'showcase' && (
