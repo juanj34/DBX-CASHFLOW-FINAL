@@ -489,6 +489,9 @@ export const InvestmentStoryDashboard = ({
           sections={storySections}
           activeSection={activeSection}
           onSectionChange={handleSectionChange}
+          projectName={clientInfo?.projectName}
+          unitType={clientInfo?.unitType}
+          unitNumber={clientInfo?.unit}
         />
 
         {/* Section Content Container */}

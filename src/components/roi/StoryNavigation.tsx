@@ -16,14 +16,25 @@ interface StoryNavigationProps {
   sections: StorySectionConfig[];
   activeSection: StorySection;
   onSectionChange: (section: StorySection) => void;
+  projectName?: string;
+  unitType?: string;
+  unitNumber?: string;
 }
 
 export const StoryNavigation = ({
   sections,
   activeSection,
   onSectionChange,
+  projectName,
+  unitType,
+  unitNumber,
 }: StoryNavigationProps) => {
   const { t } = useLanguage();
+  
+  // Build reference text
+  const referenceText = [projectName, unitType, unitNumber ? `Unit ${unitNumber}` : null]
+    .filter(Boolean)
+    .join(' • ');
   
   const visibleSections = sections.filter(s => s.show !== false);
   const currentIndex = visibleSections.findIndex(s => s.id === activeSection);
@@ -47,6 +58,15 @@ export const StoryNavigation = ({
 
   return (
     <div className="sticky top-0 z-20 bg-theme-bg/95 backdrop-blur-sm border-b border-theme-border py-3 px-4">
+      {/* Project Reference - Centered at top */}
+      {referenceText && (
+        <div className="flex justify-center mb-2">
+          <span className="text-xs text-theme-text-muted font-medium tracking-wide uppercase">
+            {referenceText}
+          </span>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between gap-2">
         {/* Previous Button */}
         <button
