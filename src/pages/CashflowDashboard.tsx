@@ -182,9 +182,10 @@ const CashflowDashboardContent = () => {
       clientInfo,
       canUpdateExisting ? quoteId : undefined,
       allowAutoCreate,
-      mortgageInputs
+      mortgageInputs,
+      { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl }
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl]);
 
   // Exit scenarios
   const exitScenarios = useMemo(() => {
