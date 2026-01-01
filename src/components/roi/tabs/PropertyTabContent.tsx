@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, TrendingUp, Wallet, Receipt, Info } from "lucide-react";
 import { LocationMiniMap } from "@/components/roi/LocationMiniMap";
+import { FullscreenMapModal } from "@/components/roi/FullscreenMapModal";
 import { cn } from "@/lib/utils";
 
 interface PropertyTabContentProps {
@@ -83,6 +84,7 @@ export const PropertyTabContent = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [developerModalOpen, setDeveloperModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
 
   // Fetch developer data
   const { data: developer } = useQuery({
@@ -365,19 +367,19 @@ export const PropertyTabContent = ({
                   <Users className="w-5 h-5 text-amber-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-theme-text-muted uppercase tracking-wide">
+                  <p className="text-xs text-theme-text-muted uppercase tracking-wide mb-0.5">
                     {clientList.length === 1 ? 'Client' : 'Clients'}
                   </p>
                   {clientList.length > 0 ? (
-                    <div className="flex items-center gap-1.5">
-                      {clientList[0].country && (
-                        <span className="text-sm">{getCountryFlag(clientList[0].country)}</span>
-                      )}
-                      <p className="text-sm font-semibold text-theme-text truncate">
-                        {clientList[0].name}
-                        {clientList.length > 1 && ` +${clientList.length - 1}`}
-                      </p>
-                    </div>
+                    <p className="text-sm font-semibold text-theme-text truncate">
+                      {clientList.map((c, i) => (
+                        <span key={c.id || i}>
+                          {c.country && <span className="mr-1">{getCountryFlag(c.country)}</span>}
+                          {c.name}
+                          {i < clientList.length - 1 && <span className="text-theme-text-muted">, </span>}
+                        </span>
+                      ))}
+                    </p>
                   ) : (
                     <p className="text-sm font-semibold text-theme-text">TBD</p>
                   )}
@@ -385,24 +387,30 @@ export const PropertyTabContent = ({
               </div>
             </motion.div>
 
-            {/* LOCATION MINI-MAP */}
-            {project?.latitude && project?.longitude && (
-              <motion.div className="flex-shrink-0" variants={itemVariants}>
-                <LocationMiniMap
-                  latitude={project.latitude}
-                  longitude={project.longitude}
-                  locationName={zone?.name || clientInfo.zoneName}
-                />
-              </motion.div>
-            )}
-
-            {/* VALUE DIFFERENTIATORS - Fills remaining space */}
+            {/* VALUE DIFFERENTIATORS */}
             {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-              <motion.div className="flex-1 min-h-0" variants={itemVariants}>
+              <motion.div className="flex-shrink-0" variants={itemVariants}>
                 <ValueDifferentiatorsDisplay
                   selectedDifferentiators={inputs.valueDifferentiators}
                   customDifferentiators={customDifferentiators}
                   onEditClick={onEditConfig}
+                />
+              </motion.div>
+            )}
+
+            {/* LOCATION MINI-MAP - Fills remaining space */}
+            {project?.latitude && project?.longitude && (
+              <motion.div 
+                className="flex-1 min-h-[120px] cursor-pointer group" 
+                variants={itemVariants}
+                onClick={() => setMapModalOpen(true)}
+              >
+                <LocationMiniMap
+                  latitude={project.latitude}
+                  longitude={project.longitude}
+                  locationName={zone?.name || clientInfo.zoneName}
+                  height="h-full"
+                  className="h-full [&>div:first-child]:h-full [&>div:first-child]:group-hover:border-theme-accent/50 [&>div:first-child]:transition-colors"
                 />
               </motion.div>
             )}
@@ -446,6 +454,18 @@ export const PropertyTabContent = ({
             zoneName={clientInfo.zoneName}
             open={projectModalOpen}
             onOpenChange={setProjectModalOpen}
+          />
+        )}
+
+        {/* Fullscreen Map Modal */}
+        {project?.latitude && project?.longitude && (
+          <FullscreenMapModal
+            open={mapModalOpen}
+            onOpenChange={setMapModalOpen}
+            latitude={project.latitude}
+            longitude={project.longitude}
+            projectName={project.name || clientInfo.projectName}
+            zoneName={zone?.name || clientInfo.zoneName}
           />
         )}
       </div>
