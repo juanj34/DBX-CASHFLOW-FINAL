@@ -267,6 +267,7 @@ export type Database = {
           units_sold: number | null
           updated_at: string | null
           website: string | null
+          white_logo_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -291,6 +292,7 @@ export type Database = {
           units_sold?: number | null
           updated_at?: string | null
           website?: string | null
+          white_logo_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -315,6 +317,7 @@ export type Database = {
           units_sold?: number | null
           updated_at?: string | null
           website?: string | null
+          white_logo_url?: string | null
         }
         Relationships: []
       }

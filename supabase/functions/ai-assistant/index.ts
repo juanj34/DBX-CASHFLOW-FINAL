@@ -23,16 +23,26 @@ CAPABILITIES:
 6. Update existing items with new data
 7. **SEARCH THE WEB** to research developers and projects using the web_search tool
 8. **CREATE DEVELOPERS** with full research including logo URLs, ratings, etc.
+9. **BATCH CREATE PROJECTS** - Create multiple projects for a developer at once
+10. **DOWNLOAD LOGOS** - Automatically download and process logos from URLs
 
 CRITICAL - WEB RESEARCH FOR DEVELOPERS:
 - When user asks to create a developer (e.g., "create London Gate developer"), FIRST use web_search to research them
 - Search for: official website, logo, founded year, headquarters, projects launched, description, key facts
 - Use multiple searches if needed to gather comprehensive data
+- After finding a logo URL, use download_logo to save it (creates both original and white versions)
 - After research, use create_developer with all gathered information
 
-CRITICAL - WEB RESEARCH FOR PROJECTS:
-- When creating a new project, you can use web_search to find additional details
-- Search for: project details, amenities, unit types, prices, delivery dates, developer info
+CRITICAL - BATCH PROJECT CREATION:
+- When creating a developer, also research their project portfolio
+- Use web_search to find all their projects in Dubai
+- Use create_projects_batch to create all found projects at once
+- This is more efficient than creating projects one by one
+
+CRITICAL - LOGO HANDLING:
+- When you find a logo URL during web research, use download_logo to save it
+- The tool will return both original logo_url and white_logo_url (inverted for dark backgrounds)
+- Use these URLs when creating/updating developers
 
 CRITICAL - EDITING vs CREATING:
 - When user mentions editing/updating/modifying an EXISTING item, you MUST FIRST use search_items to find it
@@ -100,13 +110,29 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "download_logo",
+      description: "Download a logo from a URL found during web research and upload it to storage. Returns both original and inverted (white) logo URLs.",
+      parameters: {
+        type: "object",
+        properties: {
+          image_url: { type: "string", description: "URL of the logo image to download" },
+          developer_name: { type: "string", description: "Developer name for file naming" },
+        },
+        required: ["image_url", "developer_name"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_developer",
       description: "Create a NEW developer. Use web_search first to research the developer thoroughly.",
       parameters: {
         type: "object",
         properties: {
           name: { type: "string", description: "Developer name" },
-          logo_url: { type: "string", description: "URL to developer's logo (found via web search)" },
+          logo_url: { type: "string", description: "URL to developer's logo (from download_logo)" },
+          white_logo_url: { type: "string", description: "URL to inverted white logo (from download_logo)" },
           website: { type: "string", description: "Developer's official website" },
           description: { type: "string", description: "Detailed description of the developer" },
           short_bio: { type: "string", description: "Short 1-2 sentence bio" },
@@ -139,6 +165,7 @@ const tools = [
           developer_id: { type: "string", description: "UUID of the developer to update (from search_items)" },
           name: { type: "string", description: "Developer name" },
           logo_url: { type: "string", description: "URL to developer's logo" },
+          white_logo_url: { type: "string", description: "URL to inverted white logo" },
           website: { type: "string", description: "Developer's official website" },
           description: { type: "string", description: "Detailed description" },
           short_bio: { type: "string", description: "Short bio" },
@@ -182,6 +209,38 @@ const tools = [
           construction_status: { type: "string", enum: ["off_plan", "under_construction", "ready"], description: "Current construction status" },
         },
         required: ["name", "location"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_projects_batch",
+      description: "Create multiple projects for a developer in batch. Use after researching a developer's portfolio.",
+      parameters: {
+        type: "object",
+        properties: {
+          developer_name: { type: "string", description: "Developer name" },
+          developer_id: { type: "string", description: "Developer UUID if known" },
+          projects: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Project name" },
+                location: { type: "string", description: "Location/area in Dubai" },
+                description: { type: "string", description: "Project description" },
+                starting_price: { type: "number", description: "Starting price in AED" },
+                unit_types: { type: "array", items: { type: "string" }, description: "Types of units" },
+                construction_status: { type: "string", enum: ["off_plan", "under_construction", "ready"], description: "Status" },
+                delivery_date: { type: "string", description: "Delivery date (YYYY-MM-DD)" },
+              },
+              required: ["name", "location"],
+            },
+            description: "Array of projects to create",
+          },
+        },
+        required: ["developer_name", "projects"],
       },
     },
   },
@@ -366,13 +425,57 @@ async function searchItems(supabase: any, query: string, itemType: string = "all
   if (itemType === "developer" || itemType === "all") {
     const { data: developers } = await supabase
       .from("developers")
-      .select("id, name, logo_url, website, short_bio, founded_year, projects_launched")
+      .select("id, name, logo_url, white_logo_url, website, short_bio, founded_year, projects_launched")
       .ilike("name", `%${query}%`)
       .limit(5);
     results.developers = developers || [];
   }
   
   return results;
+}
+
+async function downloadAndProcessLogo(imageUrl: string, developerName: string, supabase: any): Promise<{ logo_url: string; white_logo_url: string | null } | null> {
+  try {
+    console.log("Downloading logo from:", imageUrl);
+    
+    // Fetch the image
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.error("Failed to fetch logo:", response.status);
+      return null;
+    }
+    
+    const contentType = response.headers.get("content-type") || "image/png";
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Generate unique filename
+    const slug = developerName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const timestamp = Date.now();
+    const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
+    const originalPath = `${slug}-logo-${timestamp}.${ext}`;
+    
+    // Upload original logo
+    const { error: uploadError } = await supabase.storage
+      .from("developer-logos")
+      .upload(originalPath, uint8Array, { contentType });
+    
+    if (uploadError) {
+      console.error("Failed to upload logo:", uploadError);
+      return null;
+    }
+    
+    const { data: { publicUrl: logoUrl } } = supabase.storage.from("developer-logos").getPublicUrl(originalPath);
+    
+    console.log("Logo uploaded:", logoUrl);
+    
+    // Note: Inversion is done client-side when the logo is uploaded via the DeveloperForm
+    // For AI-created developers, we return only the original URL
+    return { logo_url: logoUrl, white_logo_url: null };
+  } catch (error) {
+    console.error("Error downloading logo:", error);
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -394,6 +497,7 @@ serve(async (req) => {
           name: data.name,
         };
         if (data.logo_url) developerData.logo_url = data.logo_url;
+        if (data.white_logo_url) developerData.white_logo_url = data.white_logo_url;
         if (data.website) developerData.website = data.website;
         if (data.description) developerData.description = data.description;
         if (data.short_bio) developerData.short_bio = data.short_bio;
@@ -411,11 +515,11 @@ serve(async (req) => {
         if (data.on_time_delivery_rate) developerData.on_time_delivery_rate = data.on_time_delivery_rate;
         if (data.occupancy_rate) developerData.occupancy_rate = data.occupancy_rate;
         
-        const { error } = await supabase.from("developers").insert(developerData);
+        const { data: insertedDeveloper, error } = await supabase.from("developers").insert(developerData).select().single();
         
         if (error) throw error;
         return new Response(
-          JSON.stringify({ success: true, message: `Developer "${data.name}" creado exitosamente.` }),
+          JSON.stringify({ success: true, message: `Developer "${data.name}" creado exitosamente.`, developer_id: insertedDeveloper?.id }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -457,6 +561,40 @@ serve(async (req) => {
           JSON.stringify({ success: true, message: `Hotspot "${data.title}" creado exitosamente.` }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      } else if (data.type === "projects_batch") {
+        // Handle batch project creation
+        const results: { success: string[]; failed: string[] } = { success: [], failed: [] };
+        
+        for (const project of data.projects) {
+          const { error } = await supabase.from("projects").insert({
+            name: project.name,
+            latitude: project.latitude,
+            longitude: project.longitude,
+            description: project.description,
+            developer: data.developer_name,
+            developer_id: data.developer_id,
+            starting_price: project.starting_price,
+            unit_types: project.unit_types,
+            delivery_date: project.delivery_date,
+            construction_status: project.construction_status,
+          });
+          
+          if (error) {
+            console.error("Failed to create project:", project.name, error);
+            results.failed.push(project.name);
+          } else {
+            results.success.push(project.name);
+          }
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: `Creados ${results.success.length} proyectos exitosamente.${results.failed.length > 0 ? ` Fallaron: ${results.failed.join(", ")}` : ""}`,
+            results 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
@@ -468,6 +606,7 @@ serve(async (req) => {
         const updateData: any = {};
         if (data.name !== undefined) updateData.name = data.name;
         if (data.logo_url !== undefined) updateData.logo_url = data.logo_url;
+        if (data.white_logo_url !== undefined) updateData.white_logo_url = data.white_logo_url;
         if (data.website !== undefined) updateData.website = data.website;
         if (data.description !== undefined) updateData.description = data.description;
         if (data.short_bio !== undefined) updateData.short_bio = data.short_bio;
@@ -605,8 +744,9 @@ serve(async (req) => {
 
     // Agentic loop - allow multiple tool calls
     let loopCount = 0;
-    const maxLoops = 5;
+    const maxLoops = 8;
     let webSearchResults: any[] = [];
+    let downloadedLogos: { logo_url: string; white_logo_url: string | null } | null = null;
     
     while (loopCount < maxLoops) {
       loopCount++;
@@ -677,6 +817,28 @@ serve(async (req) => {
           continue; // Continue the loop to let AI process search results
         }
 
+        // Handle download_logo
+        if (functionName === "download_logo") {
+          const logoResult = await downloadAndProcessLogo(args.image_url, args.developer_name, supabase);
+          
+          if (logoResult) {
+            downloadedLogos = logoResult;
+          }
+          
+          // Add tool result to messages and continue loop
+          aiMessages.push({
+            role: "assistant",
+            content: null,
+            tool_calls: message.tool_calls,
+          });
+          aiMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(logoResult || { error: "Failed to download logo" }),
+          });
+          continue;
+        }
+
         // Handle search_items
         if (functionName === "search_items") {
           const results = await searchItems(supabase, args.query, args.item_type || "all");
@@ -709,6 +871,12 @@ serve(async (req) => {
 
         // Handle create_developer
         if (functionName === "create_developer") {
+          // Use downloaded logos if available
+          if (downloadedLogos) {
+            args.logo_url = args.logo_url || downloadedLogos.logo_url;
+            args.white_logo_url = args.white_logo_url || downloadedLogos.white_logo_url;
+          }
+          
           return new Response(
             JSON.stringify({
               type: "preview",
@@ -718,6 +886,42 @@ serve(async (req) => {
                 ...args,
               },
               message: `He recopilado información del developer "${args.name}". Revisa los datos y confirma para guardarlo.`,
+              webSearchResults,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Handle create_projects_batch
+        if (functionName === "create_projects_batch") {
+          // Geocode each project
+          const projectsWithCoords = [];
+          const failedGeocode = [];
+          
+          for (const project of args.projects) {
+            const coords = await geocodeLocation(project.location);
+            if (coords) {
+              projectsWithCoords.push({
+                ...project,
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+            } else {
+              failedGeocode.push(project.name);
+            }
+          }
+          
+          return new Response(
+            JSON.stringify({
+              type: "preview",
+              itemType: "projects_batch",
+              data: {
+                type: "projects_batch",
+                developer_name: args.developer_name,
+                developer_id: args.developer_id,
+                projects: projectsWithCoords,
+              },
+              message: `He preparado ${projectsWithCoords.length} proyectos para "${args.developer_name}". ${failedGeocode.length > 0 ? `No pude geocodificar: ${failedGeocode.join(", ")}.` : ""} Revisa y confirma para guardarlos.`,
               webSearchResults,
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -747,6 +951,7 @@ serve(async (req) => {
             id: args.developer_id,
             name: args.name || existingDeveloper.name,
             logo_url: args.logo_url !== undefined ? args.logo_url : existingDeveloper.logo_url,
+            white_logo_url: args.white_logo_url !== undefined ? args.white_logo_url : existingDeveloper.white_logo_url,
             website: args.website !== undefined ? args.website : existingDeveloper.website,
             description: args.description !== undefined ? args.description : existingDeveloper.description,
             short_bio: args.short_bio !== undefined ? args.short_bio : existingDeveloper.short_bio,

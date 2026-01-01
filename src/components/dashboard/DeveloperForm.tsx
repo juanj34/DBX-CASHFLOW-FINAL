@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, Star, TrendingUp, DollarSign, Paintbrush, Repeat, Wrench, Award } from "lucide-react";
-import { optimizeImage, LOGO_CONFIG } from "@/lib/imageUtils";
+import { optimizeImage, createInvertedLogo, LOGO_CONFIG } from "@/lib/imageUtils";
 import { calculateTrustScore, getTierInfo } from "@/components/roi/developerTrustScore";
 import { TierBadge } from "@/components/roi/TierBadge";
 
@@ -88,12 +88,16 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
     }
   };
 
-  const uploadLogo = async (): Promise<string | null> => {
-    if (!logoFile) return developer?.logo_url || null;
+  const uploadLogo = async (): Promise<{ logo_url: string | null; white_logo_url: string | null }> => {
+    if (!logoFile) return { logo_url: developer?.logo_url || null, white_logo_url: developer?.white_logo_url || null };
 
     try {
+      const timestamp = Date.now();
+      const slug = formData.name.replace(/\s+/g, "-").toLowerCase();
+
+      // 1. Optimize and upload original logo
       const optimized = await optimizeImage(logoFile, LOGO_CONFIG);
-      const fileName = `${Date.now()}-${formData.name.replace(/\s+/g, "-").toLowerCase()}.webp`;
+      const fileName = `${timestamp}-${slug}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from("developer-logos")
@@ -105,7 +109,27 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
         .from("developer-logos")
         .getPublicUrl(fileName);
 
-      return urlData.publicUrl;
+      // 2. Create and upload inverted (white) version
+      let whiteLogoUrl: string | null = null;
+      try {
+        const invertedBlob = await createInvertedLogo(logoFile, LOGO_CONFIG);
+        const whiteFileName = `${timestamp}-${slug}-white.png`;
+
+        const { error: whiteUploadError } = await supabase.storage
+          .from("developer-logos")
+          .upload(whiteFileName, invertedBlob, { contentType: "image/png" });
+
+        if (!whiteUploadError) {
+          const { data: whiteUrlData } = supabase.storage
+            .from("developer-logos")
+            .getPublicUrl(whiteFileName);
+          whiteLogoUrl = whiteUrlData.publicUrl;
+        }
+      } catch (invertError) {
+        console.warn("Could not create inverted logo:", invertError);
+      }
+
+      return { logo_url: urlData.publicUrl, white_logo_url: whiteLogoUrl };
     } catch (error) {
       console.error("Logo upload error:", error);
       throw error;
@@ -125,13 +149,14 @@ const DeveloperForm = ({ developer, onClose, onSaved }: DeveloperFormProps) => {
     setSaving(true);
 
     try {
-      const logoUrl = await uploadLogo();
+      const { logo_url, white_logo_url } = await uploadLogo();
 
       const developerData = {
         name: formData.name,
         description: formData.description || null,
         short_bio: formData.short_bio || null,
-        logo_url: logoUrl,
+        logo_url,
+        white_logo_url,
         founded_year: formData.founded_year ? parseInt(formData.founded_year) : null,
         headquarters: formData.headquarters || null,
         website: formData.website || null,

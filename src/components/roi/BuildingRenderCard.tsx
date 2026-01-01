@@ -18,6 +18,7 @@ export const BuildingRenderCard = ({
   className,
 }: BuildingRenderCardProps) => {
   const [developerLogo, setDeveloperLogo] = useState<string | null>(null);
+  const [developerWhiteLogo, setDeveloperWhiteLogo] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
@@ -26,12 +27,13 @@ export const BuildingRenderCard = ({
       
       const { data, error } = await supabase
         .from('developers')
-        .select('logo_url')
+        .select('logo_url, white_logo_url')
         .eq('id', developerId)
         .maybeSingle();
       
-      if (!error && data?.logo_url) {
+      if (!error && data) {
         setDeveloperLogo(data.logo_url);
+        setDeveloperWhiteLogo(data.white_logo_url);
       }
     };
     
@@ -76,13 +78,21 @@ export const BuildingRenderCard = ({
             {/* Dark overlay */}
             <div className="absolute inset-0 bg-black/30" />
             
-            {/* Developer logo - white filter */}
+            {/* Developer logo - use white version if available */}
             <div className="absolute inset-0 flex items-center justify-center p-8">
-              <img 
-                src={developerLogo} 
-                alt="Developer Logo"
-                className="max-w-[40%] max-h-[40%] object-contain filter brightness-0 invert opacity-90"
-              />
+              {developerWhiteLogo ? (
+                <img 
+                  src={developerWhiteLogo} 
+                  alt="Developer Logo"
+                  className="max-w-[40%] max-h-[40%] object-contain opacity-90"
+                />
+              ) : (
+                <img 
+                  src={developerLogo} 
+                  alt="Developer Logo"
+                  className="max-w-[40%] max-h-[40%] object-contain filter brightness-0 invert opacity-90"
+                />
+              )}
             </div>
           </>
         )}
