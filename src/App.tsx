@@ -25,6 +25,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
+import ColorTest from "./pages/ColorTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ function App() {
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/help" element={<Help />} />
+                <Route path="/color-test" element={<ColorTest />} />
                 {/* Redirects for old routes */}
                 <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
