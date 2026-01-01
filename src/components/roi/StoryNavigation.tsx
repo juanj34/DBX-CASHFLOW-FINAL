@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, LucideIcon, Building2, Home, Ruler, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, LucideIcon, Building2, Home, Ruler } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export type StorySection = 'showcase' | 'entry' | 'income' | 'exit' | 'leverage';
@@ -20,7 +20,6 @@ interface StoryNavigationProps {
   unitType?: string;
   unitNumber?: string;
   unitSizeSqft?: number;
-  zoneName?: string;
 }
 
 export const StoryNavigation = ({
@@ -31,13 +30,14 @@ export const StoryNavigation = ({
   unitType,
   unitNumber,
   unitSizeSqft,
-  zoneName,
 }: StoryNavigationProps) => {
   const { t } = useLanguage();
   
   // Convert sqft to m²
   const unitSizeM2 = unitSizeSqft ? Math.round(unitSizeSqft * 0.092903) : null;
   
+  // Capitalize first letter of unit type
+  const formattedUnitType = unitType ? unitType.charAt(0).toUpperCase() + unitType.slice(1) : null;
   
   const visibleSections = sections.filter(s => s.show !== false);
   const currentIndex = visibleSections.findIndex(s => s.id === activeSection);
@@ -60,7 +60,7 @@ export const StoryNavigation = ({
   const progressPercent = ((currentIndex + 1) / visibleSections.length) * 100;
 
   // Check if we have any reference info to show
-  const hasReference = projectName || unitType || unitNumber || unitSizeSqft || zoneName;
+  const hasReference = projectName || unitType || unitNumber || unitSizeSqft;
 
   return (
     <div className="sticky top-0 z-20 bg-theme-bg/95 backdrop-blur-sm border-b border-theme-border py-3 px-4">
@@ -82,13 +82,13 @@ export const StoryNavigation = ({
             )}
             
             {/* Unit Number & Type */}
-            {(unitNumber || unitType) && (
+            {(unitNumber || formattedUnitType) && (
               <div className="flex items-center gap-1.5">
                 <Home className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="text-xs text-white/90">
                   {unitNumber && <span className="font-medium">#{unitNumber}</span>}
-                  {unitNumber && unitType && <span className="text-theme-text-muted mx-1">•</span>}
-                  {unitType && <span className="text-theme-text-muted">{unitType}</span>}
+                  {unitNumber && formattedUnitType && <span className="text-theme-text-muted mx-1">•</span>}
+                  {formattedUnitType && <span className="text-theme-text-muted">{formattedUnitType}</span>}
                 </span>
               </div>
             )}
@@ -109,16 +109,6 @@ export const StoryNavigation = ({
               </div>
             )}
             
-            {/* Zone - only on larger screens */}
-            {zoneName && (
-              <>
-                <div className="w-px h-3 bg-theme-border hidden lg:block" />
-                <div className="hidden lg:flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                  <span className="text-xs text-theme-text-muted truncate max-w-[120px]">{zoneName}</span>
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}
