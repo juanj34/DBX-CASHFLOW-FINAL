@@ -97,8 +97,8 @@ export const DashboardLayout = ({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-theme-bg">
-        <div className="p-6">
+      <main className="flex-1 overflow-auto bg-theme-bg flex flex-col">
+        <div className="p-6 flex-1 flex flex-col min-h-0">
           {children}
         </div>
       </main>
