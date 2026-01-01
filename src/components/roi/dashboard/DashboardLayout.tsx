@@ -5,6 +5,7 @@ import { MortgageInputs } from "@/components/roi/useMortgageCalculations";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { Profile } from "@/hooks/useProfile";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -12,6 +13,14 @@ interface DashboardLayoutProps {
   onSectionChange: (section: SectionId) => void;
   inputs: OIInputs;
   mortgageInputs: MortgageInputs;
+  // New props for sidebar bottom section
+  profile?: Profile | null;
+  isAdmin?: boolean;
+  onConfigure?: () => void;
+  onLoadQuote?: () => void;
+  onViewHistory?: () => void;
+  onSwitchView?: () => void;
+  quoteId?: string;
 }
 
 export const DashboardLayout = ({
@@ -20,6 +29,13 @@ export const DashboardLayout = ({
   onSectionChange,
   inputs,
   mortgageInputs,
+  profile,
+  isAdmin,
+  onConfigure,
+  onLoadQuote,
+  onViewHistory,
+  onSwitchView,
+  quoteId,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -58,17 +74,28 @@ export const DashboardLayout = ({
     setMobileMenuOpen(false);
   };
 
+  const sidebarProps = {
+    activeSection,
+    inputs,
+    mortgageInputs,
+    collapsed,
+    onCollapsedChange: setCollapsed,
+    profile,
+    isAdmin,
+    onConfigure,
+    onLoadQuote,
+    onViewHistory,
+    onSwitchView,
+    quoteId,
+  };
+
   return (
-    <div className="flex h-[calc(100vh-60px)]">
+    <div className="flex h-screen">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex h-full sticky top-0">
+      <div className="hidden lg:flex h-full">
         <DashboardSidebar
-          activeSection={activeSection}
+          {...sidebarProps}
           onSectionChange={onSectionChange}
-          inputs={inputs}
-          mortgageInputs={mortgageInputs}
-          collapsed={collapsed}
-          onCollapsedChange={setCollapsed}
         />
       </div>
 
@@ -83,12 +110,10 @@ export const DashboardLayout = ({
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[240px] bg-theme-card border-theme-border p-0">
+          <SheetContent side="left" className="w-[260px] bg-theme-card border-theme-border p-0">
             <DashboardSidebar
-              activeSection={activeSection}
+              {...sidebarProps}
               onSectionChange={handleSectionChange}
-              inputs={inputs}
-              mortgageInputs={mortgageInputs}
               collapsed={false}
               onCollapsedChange={() => {}}
             />
