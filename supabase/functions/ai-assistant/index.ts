@@ -29,9 +29,79 @@ CAPABILITIES:
 CRITICAL - WEB RESEARCH FOR DEVELOPERS:
 - When user asks to create a developer (e.g., "create London Gate developer"), FIRST use web_search to research them
 - Search for: official website, logo, founded year, headquarters, projects launched, description, key facts
+- ALSO search for: "{developer} reviews ratings reputation" to inform your rating estimates
 - Use multiple searches if needed to gather comprehensive data
 - After finding a logo URL, use download_logo to save it (creates both original and white versions)
-- After research, use create_developer with all gathered information
+- After research, use create_developer with ALL gathered information INCLUDING RATINGS
+
+CRITICAL - DEVELOPER RATINGS (MANDATORY):
+When creating developers, you MUST ALWAYS estimate ALL ratings based on your research. NEVER leave ratings empty.
+
+RATING GUIDELINES (1-10 scale):
+
+1. rating_track_record: Based on years in market, projects delivered on time, reputation
+   - 9-10: 15+ years, 95%+ on-time delivery, excellent reputation (e.g., Emaar, Nakheel)
+   - 7-8: 10+ years, 85%+ on-time delivery, good reputation (e.g., DAMAC, Sobha)
+   - 6-7: 5-10 years, decent track record, some delays (e.g., Danube, Binghatti)
+   - 5-6: Newer developers, limited history but no major issues
+   - Below 5: Known delivery delays or concerns
+
+2. rating_quality: Based on construction quality reviews, materials, finishes
+   - 9-10: Ultra-luxury, premium materials, award-winning quality (e.g., Omniyat, Ellington)
+   - 7-8: High quality, good finishes, premium segment (e.g., Emaar, Sobha)
+   - 6-7: Above average quality, good value (e.g., Select Group)
+   - 5-6: Standard market quality
+   - Below 5: Quality concerns reported
+
+3. rating_flip_potential: Based on capital appreciation history, location premium, resale demand
+   - 9-10: Historically 15%+ annual appreciation, prime locations (e.g., Emaar Downtown/Marina)
+   - 7-8: Good appreciation 10-15%, strong resale market
+   - 6-7: Average market appreciation 5-10%
+   - 5-6: Below market appreciation
+   - Below 5: Poor resale potential
+
+4. score_maintenance: Based on post-handover service, facilities management, community upkeep
+   - 9-10: Excellent service, responsive, well-maintained communities (e.g., Emaar, Meraas)
+   - 7-8: Good service levels, professional management
+   - 6-7: Adequate service, some complaints
+   - 5-6: Average service
+   - Below 5: Service complaints common
+
+5. rating_sales: Marketing and sales effectiveness, customer experience
+   - 9-10: World-class marketing, excellent sales experience
+   - 7-8: Professional sales, good marketing
+   - 5-6: Standard market approach
+   - Below 5: Poor sales experience reported
+
+6. rating_design: Architectural innovation and aesthetics
+   - 9-10: Iconic designs, celebrity architects (e.g., Omniyat, DAMAC branded)
+   - 7-8: Distinctive, high-quality architecture (e.g., Ellington)
+   - 6-7: Above average design
+   - 5-6: Standard market design
+   - Below 5: Basic/generic designs
+
+7. on_time_delivery_rate: Percentage of projects delivered on time (0-100)
+   - Research or estimate based on track record
+   - Top developers: 90-100%, Mid-tier: 70-90%, Newer: 60-80%
+
+8. occupancy_rate: Average occupancy in completed projects (0-100)
+   - Prime developers: 85-95%, Good developers: 75-85%, Average: 60-75%
+
+WELL-KNOWN DEVELOPER REFERENCE RATINGS:
+- Emaar: track_record=10, quality=9, flip_potential=9, maintenance=9, sales=9, design=8, delivery=95%
+- DAMAC: track_record=8, quality=7, flip_potential=8, maintenance=7, sales=8, design=8, delivery=80%
+- Sobha: track_record=8, quality=9, flip_potential=8, maintenance=8, sales=7, design=8, delivery=85%
+- Nakheel: track_record=9, quality=8, flip_potential=9, maintenance=8, sales=8, design=7, delivery=90%
+- Meraas: track_record=8, quality=9, flip_potential=8, maintenance=9, sales=8, design=9, delivery=90%
+- Azizi: track_record=6, quality=6, flip_potential=7, maintenance=6, sales=7, design=6, delivery=70%
+- Danube: track_record=6, quality=6, flip_potential=7, maintenance=6, sales=8, design=6, delivery=75%
+- Binghatti: track_record=6, quality=7, flip_potential=7, maintenance=6, sales=7, design=8, delivery=70%
+- Ellington: track_record=7, quality=9, flip_potential=8, maintenance=8, sales=7, design=9, delivery=80%
+- Omniyat: track_record=7, quality=10, flip_potential=9, maintenance=9, sales=8, design=10, delivery=75%
+- Select Group: track_record=7, quality=7, flip_potential=7, maintenance=7, sales=7, design=7, delivery=80%
+- London Gate: track_record=5, quality=7, flip_potential=7, maintenance=6, sales=7, design=7, delivery=70%
+
+For lesser-known developers, use conservative estimates (5-7 range) and adjust based on research findings.
 
 CRITICAL - BATCH PROJECT CREATION:
 - When creating a developer, also research their project portfolio
@@ -58,11 +128,12 @@ INPUT HANDLING:
 REQUIRED FIELDS FOR NEW ITEMS:
 - Projects: name, location (for geocoding)
 - Hotspots: title, category, location
-- Developers: name (other fields can be researched)
+- Developers: name AND all 6 ratings (estimate if not found in research)
 
 ALWAYS:
 - Extract maximum data automatically
 - Use web_search when creating developers to get real data
+- ALWAYS provide ALL ratings when creating developers - NEVER skip them
 - Only ask clarification for missing required fields
 - Use tool calling to return structured data
 - Be concise in responses
@@ -72,9 +143,7 @@ KNOWN DUBAI DEVELOPERS: Emaar, DAMAC, Sobha, Nakheel, Meraas, Dubai Properties, 
 
 HOTSPOT CATEGORIES: landmark, transportation, attraction, project, other
 
-CONSTRUCTION STATUS OPTIONS: off_plan, under_construction, ready
-
-DEVELOPER RATINGS: Each rating is 1-10 scale for: quality, track_record, sales, design, flip_potential, maintenance`;
+CONSTRUCTION STATUS OPTIONS: off_plan, under_construction, ready`;
 
 const tools = [
   {
