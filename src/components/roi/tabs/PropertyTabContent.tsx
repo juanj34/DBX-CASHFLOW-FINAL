@@ -124,7 +124,7 @@ export const PropertyTabContent = ({
 
   if (variant === 'dashboard') {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
         {/* LEFT COLUMN (1/3) - Info Cards */}
         <div className="space-y-3 min-w-0">
           {/* Price Hero Card */}
@@ -293,9 +293,9 @@ export const PropertyTabContent = ({
           )}
         </div>
 
-        {/* RIGHT COLUMN (2/3) - Building Render Hero */}
+        {/* RIGHT COLUMN (50%) - Building Render Hero */}
         {buildingRenderUrl && (
-          <div className="lg:col-span-2">
+          <div>
             <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden h-full">
               <BuildingRenderCard
                 imageUrl={buildingRenderUrl}
