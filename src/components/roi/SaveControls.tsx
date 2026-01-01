@@ -47,7 +47,7 @@ export const SaveControls = ({
     <div className="flex items-center gap-2">
       {/* Save status indicator */}
       {saving ? (
-        <span className="text-xs text-gray-400 flex items-center gap-1">
+        <span className="text-xs text-theme-text-muted flex items-center gap-1">
           <Loader2 className="w-3 h-3 animate-spin" />
           Saving...
         </span>
@@ -80,10 +80,10 @@ export const SaveControls = ({
             •••
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="bg-[#1a1f2e] border-[#2a3142]">
+        <DropdownMenuContent className="bg-theme-card border-theme-border">
           <DropdownMenuItem
             onClick={handleSaveAs}
-            className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142] gap-2"
+            className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
           >
             <Copy className="w-4 h-4" />
             Save as New

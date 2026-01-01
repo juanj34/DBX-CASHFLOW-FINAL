@@ -106,8 +106,8 @@ export const ConfiguratorSidebar = ({
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                 isActive 
-                  ? "bg-[#CCFF00]/20 text-[#CCFF00] border border-[#CCFF00]/30" 
-                  : "text-gray-400 hover:bg-[#1a1f2e] hover:text-white"
+                  ? "bg-theme-accent/20 text-theme-accent border border-theme-accent/30" 
+                  : "text-theme-text-muted hover:bg-theme-card hover:text-white"
               )}
             >
               <div className={cn(
@@ -117,8 +117,8 @@ export const ConfiguratorSidebar = ({
                   : section.hasWarning
                     ? "bg-amber-500/20 text-amber-400"
                     : isActive
-                      ? "bg-[#CCFF00]/30 text-[#CCFF00]"
-                      : "bg-[#2a3142] text-theme-text-muted"
+                      ? "bg-theme-accent/30 text-theme-accent"
+                      : "bg-theme-card-alt text-theme-text-muted"
               )}>
                 {section.isComplete && !section.hasWarning ? (
                   <Check className="w-3.5 h-3.5" />
