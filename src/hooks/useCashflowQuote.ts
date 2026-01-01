@@ -315,7 +315,8 @@ export const useCashflowQuote = (quoteId?: string) => {
       clientInfo: ClientUnitData,
       existingQuoteId?: string,
       isQuoteConfigured?: boolean,
-      mortgageInputs?: MortgageInputs
+      mortgageInputs?: MortgageInputs,
+      images?: { floorPlanUrl: string | null; buildingRenderUrl: string | null; heroImageUrl: string | null }
     ) => {
       if (autoSaveTimeout.current) {
         clearTimeout(autoSaveTimeout.current);
@@ -338,8 +339,8 @@ export const useCashflowQuote = (quoteId?: string) => {
         const exitScenarios = inputs._exitScenarios || [];
 
         if (targetExistingId) {
-          // Update existing quote after 15 seconds - pass exitScenarios from inputs
-          await saveQuote(inputs, clientInfo, targetExistingId, exitScenarios, mortgageInputs);
+          // Update existing quote after 15 seconds - pass exitScenarios from inputs AND images
+          await saveQuote(inputs, clientInfo, targetExistingId, exitScenarios, mortgageInputs, undefined, images);
           return;
         }
 
