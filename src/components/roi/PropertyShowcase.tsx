@@ -117,7 +117,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
 
   return (
     <div className={cn(
-      "relative w-full h-full min-h-full overflow-hidden rounded-2xl flex flex-col",
+      "relative w-full h-full min-h-0 flex-1 overflow-hidden rounded-2xl flex flex-col",
       className
     )}>
       {/* Mobile Layout */}
