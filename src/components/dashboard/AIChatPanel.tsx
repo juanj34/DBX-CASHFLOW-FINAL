@@ -18,12 +18,13 @@ interface Message {
 interface SearchResult {
   projects: Array<{ id: string; name: string; description?: string; developer?: string }>;
   hotspots: Array<{ id: string; title: string; category: string; description?: string }>;
+  developers: Array<{ id: string; name: string; logo_url?: string; headquarters?: string }>;
 }
 
 interface AIResponse {
-  type: "message" | "preview" | "update_preview" | "clarification" | "request_coordinates" | "search_results";
+  type: "message" | "preview" | "preview_batch" | "update_preview" | "clarification" | "request_coordinates" | "search_results";
   message: string;
-  itemType?: "project" | "hotspot";
+  itemType?: "project" | "hotspot" | "developer" | "projects_batch";
   data?: any;
   originalData?: any;
   results?: SearchResult;
@@ -94,7 +95,7 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
       const response = data as AIResponse;
 
-      if (response.type === "preview") {
+      if (response.type === "preview" || response.type === "preview_batch") {
         setPreviewData(response.data);
         setIsEditing(false);
         setNeedsCoordinates(false);
@@ -183,10 +184,11 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
     ]);
   };
 
-  const handleSelectSearchResult = (item: any, type: "project" | "hotspot") => {
-    const displayName = type === "project" ? item.name : item.title;
+  const handleSelectSearchResult = (item: any, type: "project" | "hotspot" | "developer") => {
+    const displayName = type === "project" ? item.name : type === "developer" ? item.name : item.title;
     setSearchResults(null);
-    setInput(`Editar ${type === "project" ? "proyecto" : "hotspot"} con ID ${item.id}: ${displayName}`);
+    const typeLabel = type === "project" ? "proyecto" : type === "developer" ? "developer" : "hotspot";
+    setInput(`Editar ${typeLabel} con ID ${item.id}: ${displayName}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -274,6 +276,34 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             {searchResults && (
               <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm font-medium">Resultados encontrados:</p>
+                
+                {/* Developers */}
+                {searchResults.developers && searchResults.developers.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Developers:</p>
+                    {searchResults.developers.map((d) => (
+                      <Button
+                        key={d.id}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-left h-auto py-2"
+                        onClick={() => handleSelectSearchResult(d, "developer")}
+                      >
+                        <div className="flex items-center gap-2">
+                          {d.logo_url && (
+                            <img src={d.logo_url} alt="" className="h-6 w-6 object-contain rounded" />
+                          )}
+                          <div>
+                            <p className="font-medium">{d.name}</p>
+                            {d.headquarters && <p className="text-xs text-muted-foreground">{d.headquarters}</p>}
+                          </div>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Projects */}
                 {searchResults.projects.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Proyectos:</p>
@@ -293,6 +323,8 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                     ))}
                   </div>
                 )}
+                
+                {/* Hotspots */}
                 {searchResults.hotspots.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Hotspots:</p>
@@ -312,6 +344,7 @@ const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                     ))}
                   </div>
                 )}
+                
                 <Button variant="ghost" size="sm" onClick={() => setSearchResults(null)}>
                   Cerrar
                 </Button>
