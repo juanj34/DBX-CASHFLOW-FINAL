@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Play } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -99,11 +99,10 @@ export const DashboardSidebar = ({
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
 
-  // Presentation section (separate from analysis)
+  // Presentation section - simple single word label
   const presentationSection = {
     id: 'overview' as SectionId,
-    label: t('investmentOverview') || 'Investment Story',
-    subtitle: 'Present to Client',
+    label: 'Present',
     icon: Sparkles,
   };
 
@@ -214,65 +213,42 @@ export const DashboardSidebar = ({
           </div>
         )}
         
-        {/* Presentation Button - Prominent Style */}
+        {/* Presentation Button - Same style as other nav items */}
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => onSectionChange('overview')}
                 className={cn(
-                  "w-full flex items-center justify-center p-2.5 rounded-xl transition-all mb-3",
-                  "bg-gradient-to-br from-theme-accent/20 to-purple-500/20",
-                  "border border-theme-accent/40 hover:border-theme-accent/60",
-                  activeSection === 'overview' && "ring-2 ring-theme-accent/50 border-theme-accent"
+                  "w-full flex items-center justify-center p-2.5 rounded-lg transition-all",
+                  activeSection === 'overview'
+                    ? "bg-theme-accent/15 text-theme-accent"
+                    : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
                 )}
               >
                 <Sparkles className={cn(
-                  "w-5 h-5",
-                  activeSection === 'overview' ? "text-theme-accent" : "text-theme-accent/80"
+                  "flex-shrink-0",
+                  activeSection === 'overview' ? "w-5 h-5" : "w-4 h-4"
                 )} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">
-              <div>
-                <p className="font-medium">{presentationSection.label}</p>
-                <p className="text-xs text-muted-foreground">{presentationSection.subtitle}</p>
-              </div>
-            </TooltipContent>
+            <TooltipContent side="right">{presentationSection.label}</TooltipContent>
           </Tooltip>
         ) : (
           <button
             onClick={() => onSectionChange('overview')}
             className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-xl transition-all mb-3",
-              "bg-gradient-to-br from-theme-accent/15 to-purple-500/15",
-              "border border-theme-accent/30 hover:border-theme-accent/50",
-              "group",
-              activeSection === 'overview' && "ring-2 ring-theme-accent/50 border-theme-accent bg-theme-accent/20"
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              activeSection === 'overview'
+                ? "bg-theme-accent/15 text-theme-accent"
+                : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
             )}
           >
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              "bg-gradient-to-br from-theme-accent/30 to-purple-500/30",
-              activeSection === 'overview' && "from-theme-accent/50 to-purple-500/50"
-            )}>
-              <Sparkles className="w-4 h-4 text-theme-accent" />
-            </div>
-            <div className="flex-1 text-left">
-              <span className={cn(
-                "block text-sm font-semibold",
-                activeSection === 'overview' ? "text-theme-accent" : "text-theme-text"
-              )}>
-                {presentationSection.label}
-              </span>
-              <span className="text-[10px] text-theme-text-muted flex items-center gap-1">
-                <Play className="w-2.5 h-2.5" />
-                {presentationSection.subtitle}
-              </span>
-            </div>
-            {activeSection === 'overview' && (
-              <div className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse" />
-            )}
+            <Sparkles className={cn(
+              "flex-shrink-0",
+              activeSection === 'overview' ? "w-5 h-5" : "w-4 h-4"
+            )} />
+            <span className="truncate">{presentationSection.label}</span>
           </button>
         )}
 
