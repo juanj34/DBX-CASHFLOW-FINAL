@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Edit2, MapPin, Building2, Landmark, RefreshCw } from "lucide-react";
+import { Check, X, Edit2, MapPin, Building2, Landmark, RefreshCw, Users, Globe, Star } from "lucide-react";
 
 interface ProjectData {
   type: "project";
@@ -15,6 +15,7 @@ interface ProjectData {
   longitude: number;
   description?: string;
   developer?: string;
+  developer_id?: string;
   starting_price?: number;
   price_per_sqft?: number;
   unit_types?: string[];
@@ -35,7 +36,30 @@ interface HotspotData {
   description?: string;
 }
 
-type PreviewData = ProjectData | HotspotData;
+interface DeveloperData {
+  type: "developer";
+  id?: string;
+  name: string;
+  logo_url?: string;
+  website?: string;
+  description?: string;
+  short_bio?: string;
+  headquarters?: string;
+  founded_year?: number;
+  projects_launched?: number;
+  units_sold?: number;
+  flagship_project?: string;
+  rating_quality?: number;
+  rating_track_record?: number;
+  rating_sales?: number;
+  rating_design?: number;
+  rating_flip_potential?: number;
+  score_maintenance?: number;
+  on_time_delivery_rate?: number;
+  occupancy_rate?: number;
+}
+
+type PreviewData = ProjectData | HotspotData | DeveloperData;
 
 interface PreviewCardProps {
   data: PreviewData;
@@ -66,6 +90,24 @@ const categoryLabels: Record<string, string> = {
   other: "Other",
 };
 
+const RatingStars = ({ rating, label }: { rating?: number; label: string }) => {
+  if (!rating) return null;
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-muted-foreground">{label}:</span>
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`h-3 w-3 ${i < Math.round(rating / 2) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
+          />
+        ))}
+      </div>
+      <span className="text-xs font-medium">{rating}/10</span>
+    </div>
+  );
+};
+
 const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLoading, isEditing }: PreviewCardProps) => {
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
@@ -81,24 +123,25 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
       return;
     }
     
-    onConfirm({ ...data, latitude: lat, longitude: lng });
+    onConfirm({ ...data, latitude: lat, longitude: lng } as PreviewData);
   };
 
   const isProject = data.type === "project";
+  const isHotspot = data.type === "hotspot";
+  const isDeveloper = data.type === "developer";
   const projectData = data as ProjectData;
   const hotspotData = data as HotspotData;
+  const developerData = data as DeveloperData;
 
   return (
     <Card className={`shadow-lg ${isEditing ? "border-amber-500/50" : "border-primary/50"}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            {isProject ? (
-              <Building2 className="h-5 w-5 text-primary" />
-            ) : (
-              <Landmark className="h-5 w-5 text-primary" />
-            )}
-            {isProject ? projectData.name : hotspotData.title}
+            {isProject && <Building2 className="h-5 w-5 text-primary" />}
+            {isHotspot && <Landmark className="h-5 w-5 text-primary" />}
+            {isDeveloper && <Users className="h-5 w-5 text-primary" />}
+            {isProject ? projectData.name : isHotspot ? hotspotData.title : developerData.name}
           </CardTitle>
           <div className="flex gap-1">
             {isEditing && (
@@ -107,29 +150,31 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
                 Editando
               </Badge>
             )}
-            <Badge variant={isProject ? "default" : "secondary"}>
-              {isProject ? "Proyecto" : categoryLabels[hotspotData.category] || hotspotData.category}
+            <Badge variant={isProject ? "default" : isDeveloper ? "outline" : "secondary"}>
+              {isProject ? "Proyecto" : isDeveloper ? "Developer" : categoryLabels[hotspotData.category] || hotspotData.category}
             </Badge>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Location */}
-        <div className="flex items-start gap-2 text-sm">
-          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-          <div>
-            <p className="font-medium">{data.location || "Ubicación extraída"}</p>
-            {!needsCoordinates && (
-              <p className="text-xs text-muted-foreground">
-                {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
-              </p>
-            )}
+        {/* Location for projects/hotspots */}
+        {(isProject || isHotspot) && (
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div>
+              <p className="font-medium">{isProject ? projectData.location : hotspotData.location || "Ubicación extraída"}</p>
+              {!needsCoordinates && (
+                <p className="text-xs text-muted-foreground">
+                  {isProject ? projectData.latitude?.toFixed(6) : hotspotData.latitude?.toFixed(6)}, {isProject ? projectData.longitude?.toFixed(6) : hotspotData.longitude?.toFixed(6)}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Manual coordinates input if needed */}
-        {needsCoordinates && (
+        {needsCoordinates && !isDeveloper && (
           <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">
               No se encontraron coordenadas. Ingresa manualmente:
@@ -159,6 +204,89 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
             <Button size="sm" onClick={handleManualCoordinates} className="w-full">
               Usar coordenadas
             </Button>
+          </div>
+        )}
+
+        {/* Developer-specific fields */}
+        {isDeveloper && (
+          <div className="space-y-3">
+            {/* Logo and website */}
+            <div className="flex items-center gap-3">
+              {developerData.logo_url && (
+                <img 
+                  src={developerData.logo_url} 
+                  alt={developerData.name} 
+                  className="h-12 w-12 object-contain rounded bg-white p-1"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              )}
+              <div className="flex-1">
+                {developerData.website && (
+                  <a href={developerData.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
+                    <Globe className="h-3 w-3" />
+                    {developerData.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
+                )}
+                {developerData.headquarters && (
+                  <p className="text-xs text-muted-foreground">{developerData.headquarters}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Short bio */}
+            {developerData.short_bio && (
+              <p className="text-sm italic text-muted-foreground">{developerData.short_bio}</p>
+            )}
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {developerData.founded_year && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Fundado</p>
+                  <p className="font-medium">{developerData.founded_year}</p>
+                </div>
+              )}
+              {developerData.projects_launched && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Proyectos</p>
+                  <p className="font-medium">{developerData.projects_launched}</p>
+                </div>
+              )}
+              {developerData.units_sold && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Unidades vendidas</p>
+                  <p className="font-medium">{developerData.units_sold.toLocaleString()}</p>
+                </div>
+              )}
+              {developerData.flagship_project && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Proyecto insignia</p>
+                  <p className="font-medium">{developerData.flagship_project}</p>
+                </div>
+              )}
+              {developerData.on_time_delivery_rate && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Entrega a tiempo</p>
+                  <p className="font-medium">{developerData.on_time_delivery_rate}%</p>
+                </div>
+              )}
+              {developerData.occupancy_rate && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Ocupación</p>
+                  <p className="font-medium">{developerData.occupancy_rate}%</p>
+                </div>
+              )}
+            </div>
+
+            {/* Ratings */}
+            <div className="space-y-1.5 pt-2 border-t">
+              <RatingStars rating={developerData.rating_quality} label="Calidad" />
+              <RatingStars rating={developerData.rating_track_record} label="Track Record" />
+              <RatingStars rating={developerData.rating_design} label="Diseño" />
+              <RatingStars rating={developerData.rating_sales} label="Ventas" />
+              <RatingStars rating={developerData.rating_flip_potential} label="Flip Potential" />
+              <RatingStars rating={developerData.score_maintenance} label="Mantenimiento" />
+            </div>
           </div>
         )}
 
@@ -219,16 +347,16 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
         )}
 
         {/* Description */}
-        {(projectData.description || hotspotData.description) && (
+        {(projectData.description || hotspotData.description || developerData.description) && (
           <div className="text-sm">
             <p className="text-muted-foreground text-xs mb-1">Descripción</p>
-            <p className="line-clamp-3">{projectData.description || hotspotData.description}</p>
+            <p className="line-clamp-3">{projectData.description || hotspotData.description || developerData.description}</p>
           </div>
         )}
       </CardContent>
 
       <CardFooter className="gap-2 pt-0">
-        {!needsCoordinates && (
+        {(!needsCoordinates || isDeveloper) && (
           <>
             <Button
               onClick={() => onConfirm(data)}
