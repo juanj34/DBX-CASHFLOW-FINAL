@@ -5,6 +5,7 @@ export interface Developer {
   id: string;
   name: string;
   logo_url?: string | null;
+  white_logo_url?: string | null;
   rating_track_record?: number | null;
   rating_quality?: number | null;
   rating_flip_potential?: number | null;

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Edit2, MapPin, Building2, Landmark, RefreshCw, Users, Globe, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ProjectData {
   type: "project";
@@ -41,6 +42,7 @@ interface DeveloperData {
   id?: string;
   name: string;
   logo_url?: string;
+  white_logo_url?: string;
   website?: string;
   description?: string;
   short_bio?: string;
@@ -59,7 +61,14 @@ interface DeveloperData {
   occupancy_rate?: number;
 }
 
-type PreviewData = ProjectData | HotspotData | DeveloperData;
+interface ProjectsBatchData {
+  type: "projects_batch";
+  developer_id: string;
+  developer_name: string;
+  projects: Array<Omit<ProjectData, 'type'> & { geocoded?: boolean }>;
+}
+
+type PreviewData = ProjectData | HotspotData | DeveloperData | ProjectsBatchData;
 
 interface PreviewCardProps {
   data: PreviewData;
@@ -111,6 +120,7 @@ const RatingStars = ({ rating, label }: { rating?: number; label: string }) => {
 const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLoading, isEditing }: PreviewCardProps) => {
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set([0]));
 
   const handleManualCoordinates = () => {
     const lat = parseFloat(manualLat);
@@ -126,12 +136,140 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
     onConfirm({ ...data, latitude: lat, longitude: lng } as PreviewData);
   };
 
+  const toggleProject = (index: number) => {
+    setExpandedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
   const isProject = data.type === "project";
   const isHotspot = data.type === "hotspot";
   const isDeveloper = data.type === "developer";
+  const isProjectsBatch = data.type === "projects_batch";
   const projectData = data as ProjectData;
   const hotspotData = data as HotspotData;
   const developerData = data as DeveloperData;
+  const batchData = data as ProjectsBatchData;
+
+  // Handle batch projects preview
+  if (isProjectsBatch) {
+    const geocodedCount = batchData.projects.filter(p => p.geocoded).length;
+    const needsGeocodingCount = batchData.projects.filter(p => !p.geocoded).length;
+    
+    return (
+      <Card className="shadow-lg border-primary/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Building2 className="h-5 w-5 text-primary" />
+              {batchData.developer_name} - {batchData.projects.length} Projects
+            </CardTitle>
+            <Badge variant="default">Batch Import</Badge>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <Badge variant="outline" className="text-green-600 border-green-300">
+              <Check className="h-3 w-3 mr-1" />
+              {geocodedCount} geocoded
+            </Badge>
+            {needsGeocodingCount > 0 && (
+              <Badge variant="outline" className="text-amber-600 border-amber-300">
+                <MapPin className="h-3 w-3 mr-1" />
+                {needsGeocodingCount} pending
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
+          {batchData.projects.map((project, index) => (
+            <div 
+              key={index}
+              className={cn(
+                "border rounded-lg transition-all",
+                project.geocoded ? "border-green-200 bg-green-50/50" : "border-amber-200 bg-amber-50/50"
+              )}
+            >
+              <button
+                onClick={() => toggleProject(index)}
+                className="w-full p-3 flex items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-2">
+                  {project.geocoded ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <MapPin className="h-4 w-4 text-amber-600" />
+                  )}
+                  <span className="font-medium">{project.name}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {expandedProjects.has(index) ? '▲' : '▼'}
+                </span>
+              </button>
+              
+              {expandedProjects.has(index) && (
+                <div className="px-3 pb-3 space-y-2 text-sm border-t">
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    {project.starting_price && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Precio desde</p>
+                        <p className="font-medium">{formatPrice(project.starting_price)}</p>
+                      </div>
+                    )}
+                    {project.delivery_date && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Entrega</p>
+                        <p className="font-medium">{project.delivery_date}</p>
+                      </div>
+                    )}
+                  </div>
+                  {project.unit_types && project.unit_types.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {project.unit_types.map((type, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {type}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {!project.geocoded && (
+                    <p className="text-xs text-amber-600">
+                      ⚠️ Coordenadas no encontradas - se geocodificará al crear
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </CardContent>
+
+        <CardFooter className="gap-2 pt-0">
+          <Button
+            onClick={() => onConfirm(data)}
+            disabled={isLoading}
+            className="flex-1"
+            size="sm"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            Crear {batchData.projects.length} Proyectos
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onCancel}
+            disabled={isLoading}
+            size="sm"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card className={`shadow-lg ${isEditing ? "border-amber-500/50" : "border-primary/50"}`}>
@@ -212,9 +350,9 @@ const PreviewCard = ({ data, onConfirm, onCancel, onEdit, needsCoordinates, isLo
           <div className="space-y-3">
             {/* Logo and website */}
             <div className="flex items-center gap-3">
-              {developerData.logo_url && (
+              {(developerData.logo_url || developerData.white_logo_url) && (
                 <img 
-                  src={developerData.logo_url} 
+                  src={developerData.logo_url || developerData.white_logo_url} 
                   alt={developerData.name} 
                   className="h-12 w-12 object-contain rounded bg-white p-1"
                   onError={(e) => (e.currentTarget.style.display = 'none')}
