@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, LucideIcon, Building2, Home, Ruler } from "lucide-react";
+import { ChevronLeft, ChevronRight, LucideIcon, Building2, Home, Ruler, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export type StorySection = 'showcase' | 'entry' | 'income' | 'exit' | 'leverage';
@@ -32,6 +33,7 @@ export const StoryNavigation = ({
   unitSizeSqft,
 }: StoryNavigationProps) => {
   const { t } = useLanguage();
+  const [isReferenceExpanded, setIsReferenceExpanded] = useState(false);
   
   // Convert sqft to m²
   const unitSizeM2 = unitSizeSqft ? Math.round(unitSizeSqft * 0.092903) : null;
@@ -62,26 +64,74 @@ export const StoryNavigation = ({
   // Check if we have any reference info to show
   const hasReference = projectName || unitType || unitNumber || unitSizeSqft;
 
+  // Compact summary for mobile collapsed state
+  const compactSummary = projectName || (unitNumber ? `#${unitNumber}` : formattedUnitType) || '';
+
   return (
     <div className="sticky top-0 z-20 bg-theme-bg/95 backdrop-blur-sm border-b border-theme-border py-3 px-4">
-      {/* Project Reference - Compact info bar */}
+      {/* Project Reference - Collapsible on mobile */}
       {hasReference && (
         <div className="flex justify-center mb-3">
-          <div className="inline-flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-1.5 rounded-lg bg-theme-card/60 border border-theme-border/50 flex-wrap justify-center">
-            {/* Project Name */}
+          {/* Mobile: Collapsible button */}
+          <button
+            onClick={() => setIsReferenceExpanded(!isReferenceExpanded)}
+            className="sm:hidden inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-card/60 border border-theme-border/50"
+          >
+            <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="text-xs font-medium text-white truncate max-w-[160px]">{compactSummary}</span>
+            <ChevronDown className={cn(
+              "w-3.5 h-3.5 text-theme-text-muted transition-transform duration-200",
+              isReferenceExpanded && "rotate-180"
+            )} />
+          </button>
+
+          {/* Mobile: Expanded details */}
+          <div className={cn(
+            "sm:hidden absolute left-4 right-4 top-[52px] bg-theme-card/95 backdrop-blur-sm border border-theme-border/50 rounded-lg p-3 shadow-lg transition-all duration-200 z-30",
+            isReferenceExpanded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+          )}>
+            <div className="flex flex-col gap-2">
+              {projectName && (
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="text-xs font-semibold text-white">{projectName}</span>
+                </div>
+              )}
+              {(unitNumber || formattedUnitType) && (
+                <div className="flex items-center gap-2">
+                  <Home className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-xs text-white/90">
+                    {unitNumber && <span className="font-medium">#{unitNumber}</span>}
+                    {unitNumber && formattedUnitType && <span className="text-theme-text-muted mx-1">•</span>}
+                    {formattedUnitType && <span className="text-theme-text-muted">{formattedUnitType}</span>}
+                  </span>
+                </div>
+              )}
+              {unitSizeSqft && (
+                <div className="flex items-center gap-2">
+                  <Ruler className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="text-xs text-theme-text-muted">
+                    {unitSizeSqft.toLocaleString()} sqft
+                    {unitSizeM2 && <span className="text-white/50 ml-1">({unitSizeM2} m²)</span>}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop: Full inline bar */}
+          <div className="hidden sm:inline-flex items-center gap-4 px-4 py-1.5 rounded-lg bg-theme-card/60 border border-theme-border/50">
             {projectName && (
               <div className="flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="text-xs font-semibold text-white truncate max-w-[140px] sm:max-w-none">{projectName}</span>
+                <span className="text-xs font-semibold text-white">{projectName}</span>
               </div>
             )}
             
-            {/* Separator */}
             {projectName && (unitNumber || unitType) && (
-              <div className="w-px h-3 bg-theme-border hidden sm:block" />
+              <div className="w-px h-3 bg-theme-border" />
             )}
             
-            {/* Unit Number & Type */}
             {(unitNumber || formattedUnitType) && (
               <div className="flex items-center gap-1.5">
                 <Home className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -93,12 +143,10 @@ export const StoryNavigation = ({
               </div>
             )}
             
-            {/* Separator */}
             {(unitNumber || unitType) && unitSizeSqft && (
-              <div className="w-px h-3 bg-theme-border hidden sm:block" />
+              <div className="w-px h-3 bg-theme-border" />
             )}
             
-            {/* Size */}
             {unitSizeSqft && (
               <div className="flex items-center gap-1.5">
                 <Ruler className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -108,7 +156,6 @@ export const StoryNavigation = ({
                 </span>
               </div>
             )}
-            
           </div>
         </div>
       )}
