@@ -120,7 +120,17 @@ const DonutProgress = ({ value, max, color, size = 64 }: { value: number; max: n
   );
 };
 
-// Strategy Toggle Component
+// ============================================
+// SEMANTIC COLOR SYSTEM (5 colors only)
+// ============================================
+// POSITIVE/GAIN (Emerald): Profits, ROI, ROE, gains, positive cashflow
+// NEUTRAL/INFO (Blue): Property price, timeline, construction, factual data  
+// ACCENT/HIGHLIGHT (Amber): Key totals, initial investment, important figures
+// NEGATIVE/WARNING (Red): Losses, negative cashflow, gaps, warnings
+// MUTED/LABELS (Slate): All labels, secondary text, descriptions
+// ============================================
+
+// Strategy Toggle Component - Neutral styling (no semantic color differentiation)
 const StrategyToggle = ({ 
   value, 
   onChange, 
@@ -138,7 +148,7 @@ const StrategyToggle = ({
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
         value === 'LT' 
-          ? "bg-cyan-500 text-white" 
+          ? "bg-slate-600 text-white" 
           : "text-theme-text-muted hover:text-theme-text"
       )}
     >
@@ -149,7 +159,7 @@ const StrategyToggle = ({
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
         value === 'ST' 
-          ? "bg-orange-500 text-white" 
+          ? "bg-slate-600 text-white" 
           : "text-theme-text-muted hover:text-theme-text"
       )}
     >
@@ -519,17 +529,17 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 1: ENTRY ===== */}
           {activeSection === 'entry' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
               <div className="p-4 space-y-3 flex-1">
                 {/* Row 1: Property Info Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* Property Price */}
+                  {/* Property Price - NEUTRAL/INFO (Blue) */}
                   <AnimatedCard delay={0}>
                     <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full" />
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full" />
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                          <Building2 className="w-3 h-3 text-emerald-400" />
+                        <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <Building2 className="w-3 h-3 text-blue-400" />
                         </div>
                         <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
                       </div>
@@ -542,29 +552,29 @@ export const InvestmentStoryDashboard = ({
                     </div>
                   </AnimatedCard>
 
-                  {/* Construction Timeline */}
+                  {/* Construction Timeline - NEUTRAL/INFO (Blue) */}
                   <AnimatedCard delay={50}>
                     <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full" />
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full" />
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                          <Hammer className="w-3 h-3 text-purple-400" />
+                        <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <Hammer className="w-3 h-3 text-blue-400" />
                         </div>
                         <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
                       </div>
-                      <p className="text-xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-purple-400/70">mo</span></p>
+                      <p className="text-xl font-bold text-blue-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-blue-400/70">mo</span></p>
                       <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
                         <Key className="w-3 h-3" /> {formatHandoverDate()}
                       </p>
                     </div>
                   </AnimatedCard>
 
-                  {/* Payment Split */}
+                  {/* Payment Split - NEUTRAL/INFO (Blue) */}
                   <AnimatedCard delay={100} className="lg:col-span-2">
                     <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                          <CreditCard className="w-3 h-3 text-cyan-400" />
+                        <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <CreditCard className="w-3 h-3 text-blue-400" />
                         </div>
                         <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
                       </div>
@@ -572,7 +582,7 @@ export const InvestmentStoryDashboard = ({
                       <Tooltip>
                           <TooltipTrigger asChild>
                             <div 
-                              className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                              className="bg-gradient-to-r from-blue-600 to-blue-400 flex items-center justify-center cursor-pointer hover:brightness-110"
                               style={{ width: `${entryData.preHandoverPercent}%` }}
                             />
                           </TooltipTrigger>
@@ -583,7 +593,7 @@ export const InvestmentStoryDashboard = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div 
-                              className="bg-gradient-to-r from-cyan-500 to-cyan-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                              className="bg-gradient-to-r from-blue-400 to-blue-300 flex items-center justify-center cursor-pointer hover:brightness-110"
                               style={{ width: `${entryData.handoverPercent}%` }}
                             />
                           </TooltipTrigger>
@@ -593,8 +603,8 @@ export const InvestmentStoryDashboard = ({
                         </Tooltip>
                       </div>
                       <div className="flex justify-between mt-1 text-[10px]">
-                        <span className="text-emerald-400 font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
-                        <span className="text-cyan-400 font-bold">{entryData.handoverPercent}% At Handover</span>
+                        <span className="text-blue-400 font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
+                        <span className="text-blue-300 font-bold">{entryData.handoverPercent}% At Handover</span>
                       </div>
                     </div>
                   </AnimatedCard>
@@ -602,40 +612,40 @@ export const InvestmentStoryDashboard = ({
 
                 {/* Two Cards: Booking + Installments */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Booking Card (Day 1) */}
+                  {/* Booking Card (Day 1) - ACCENT (Amber) for key total */}
                   <AnimatedCard delay={150}>
-                    <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 h-full">
+                    <div className="bg-gradient-to-br from-amber-500/10 to-slate-800/50 rounded-xl p-4 border border-amber-500/30 h-full">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                          <FileText className="w-3 h-3 text-emerald-400" />
+                        <div className="w-6 h-6 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                          <FileText className="w-3 h-3 text-amber-400" />
                         </div>
                         <span className="text-xs font-semibold text-white uppercase tracking-wide">Booking</span>
                       </div>
-                      <p className="text-2xl font-bold text-emerald-400 font-mono mb-2">
+                      <p className="text-2xl font-bold text-amber-400 font-mono mb-2">
                         {formatCurrency(entryData.totalDayOneEntry, currency, rate)}
                       </p>
                       <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-700/50 mb-2">
-                        <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
-                        <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
-                        <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
-                        {entryData.oqoodFee > 0 && <div className="bg-purple-500" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />}
+                        <div className="bg-blue-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
+                        <div className="bg-blue-400" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
+                        <div className="bg-blue-300" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
+                        {entryData.oqoodFee > 0 && <div className="bg-blue-200" style={{ width: `${(entryData.oqoodFee / entryData.totalDayOneEntry) * 100}%` }} />}
                       </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />EOI</span>
+                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />EOI</span>
                           <span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Downpayment</span>
+                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-400" />Downpayment</span>
                           <span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />DLD (4%)</span>
+                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-300" />DLD (4%)</span>
                           <span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span>
                         </div>
                         {entryData.oqoodFee > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-500" />Oqood</span>
+                            <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-200" />Oqood</span>
                             <span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span>
                           </div>
                         )}
@@ -643,21 +653,21 @@ export const InvestmentStoryDashboard = ({
                     </div>
                   </AnimatedCard>
 
-                  {/* Installments Card */}
+                  {/* Installments Card - NEUTRAL (Blue) */}
                   <AnimatedCard delay={200}>
                     {(() => {
                       const basePrice = calculations.basePrice;
                       const installmentsTotal = (inputs.additionalPayments || []).reduce((sum, p) => sum + (basePrice * (p.paymentPercent || 0) / 100), 0);
                       const installmentsCount = (inputs.additionalPayments || []).length;
                       return (
-                        <div className="bg-gradient-to-br from-cyan-500/10 to-slate-800/50 rounded-xl p-4 border border-cyan-500/30 h-full">
+                        <div className="bg-gradient-to-br from-blue-500/10 to-slate-800/50 rounded-xl p-4 border border-blue-500/30 h-full">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                              <CalendarDays className="w-3 h-3 text-cyan-400" />
+                            <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                              <CalendarDays className="w-3 h-3 text-blue-400" />
                             </div>
                             <span className="text-xs font-semibold text-white uppercase tracking-wide">Installments</span>
                           </div>
-                          <p className="text-2xl font-bold text-cyan-400 font-mono mb-2">
+                          <p className="text-2xl font-bold text-blue-400 font-mono mb-2">
                             {formatCurrency(installmentsTotal, currency, rate)}
                           </p>
                           <p className="text-xs text-slate-400 mb-3">
@@ -665,7 +675,7 @@ export const InvestmentStoryDashboard = ({
                           </p>
                           {installmentsCount > 0 ? (
                             <div className="flex items-center gap-2 text-xs text-slate-300">
-                              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium">
+                              <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">
                                 {installmentsCount} payment{installmentsCount !== 1 ? 's' : ''}
                               </span>
                               <span className="text-slate-500">scheduled</span>
@@ -681,12 +691,12 @@ export const InvestmentStoryDashboard = ({
                   </AnimatedCard>
                 </div>
 
-                {/* Payment Schedule */}
+                {/* Payment Schedule - NEUTRAL (Blue) */}
                 <AnimatedCard delay={200}>
                   <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                        <Calendar className="w-3 h-3 text-purple-400" />
+                      <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                        <Calendar className="w-3 h-3 text-blue-400" />
                       </div>
                       <span className="text-xs font-semibold text-white">{t('yourPaymentSchedule') || 'Payment Schedule'}</span>
                     </div>
@@ -705,7 +715,7 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 2: INCOME ===== */}
           {activeSection === 'income' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
               <div className="p-3 border-b border-slate-700/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {incomeData.showAirbnb && (
@@ -722,58 +732,34 @@ export const InvestmentStoryDashboard = ({
 
               <div className="p-3 space-y-3 flex-1">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* ROI Card (LT) / ADR Card (ST) */}
-                  {incomeStrategy === 'LT' ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="bg-gradient-to-br from-cyan-500/15 to-slate-800/50 rounded-xl p-3 border border-cyan-500/30 cursor-help text-center">
-                          <span className="text-[10px] text-slate-400 uppercase">ROI</span>
-                          <p className="text-3xl font-bold font-mono text-cyan-400">
-                            {incomeData.grossYield.toFixed(1)}%
-                          </p>
-                          <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
-                        <div className="space-y-1 text-xs">
-                          <p className="font-medium text-white">Return on Investment</p>
-                          <p className="text-slate-300">Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
-                          <p className="text-slate-300">Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="bg-gradient-to-br from-orange-500/15 to-slate-800/50 rounded-xl p-3 border border-orange-500/30 cursor-help text-center">
-                          <span className="text-[10px] text-slate-400 uppercase">ADR</span>
-                          <p className="text-2xl font-bold font-mono text-orange-400">
-                            {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}
-                          </p>
-                          <div className="flex justify-center gap-3 mt-1 text-[10px]">
-                            <span className="text-slate-500">Occ: <span className="text-orange-300 font-mono">{incomeData.stOccupancy}%</span></span>
-                            <span className="text-slate-500">Exp: <span className="text-orange-300 font-mono">{incomeData.stExpenses}%</span></span>
-                          </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
-                        <div className="space-y-1 text-xs">
-                          <p className="font-medium text-white">Average Daily Rate</p>
-                          <p className="text-slate-300">Occupancy: {incomeData.stOccupancy}%</p>
-                          <p className="text-slate-300">Operating Expenses: {incomeData.stExpenses}%</p>
-                          {incomeData.stAdminFee > 0 && <p className="text-slate-300">Management Fee: {incomeData.stAdminFee}%</p>}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
+                  {/* ROI Card - POSITIVE (Emerald) - same for both strategies */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="bg-gradient-to-br from-emerald-500/15 to-slate-800/50 rounded-xl p-3 border border-emerald-500/30 cursor-help text-center">
+                        <span className="text-[10px] text-slate-400 uppercase">ROI</span>
+                        <p className="text-3xl font-bold font-mono text-emerald-400">
+                          {incomeData.grossYield.toFixed(1)}%
+                        </p>
+                        <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
+                      <div className="space-y-1 text-xs">
+                        <p className="font-medium text-white">Return on Investment</p>
+                        <p className="text-slate-300">Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
+                        <p className="text-slate-300">Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
+                        {incomeStrategy === 'ST' && (
+                          <>
+                            <p className="text-slate-300 border-t border-slate-700 pt-1 mt-1">Occupancy: {incomeData.stOccupancy}%</p>
+                            <p className="text-slate-300">Operating Expenses: {incomeData.stExpenses}%</p>
+                          </>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
 
-                  {/* Rental Income */}
-                  <div className={cn(
-                    "bg-gradient-to-br rounded-xl p-3 border text-center",
-                    incomeStrategy === 'LT' 
-                      ? "from-emerald-500/15 to-slate-800/50 border-emerald-500/30" 
-                      : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
-                  )}>
+                  {/* Rental Income - POSITIVE (Emerald) */}
+                  <div className="bg-gradient-to-br from-emerald-500/15 to-slate-800/50 rounded-xl p-3 border border-emerald-500/30 text-center">
                     <span className="text-[10px] text-slate-400 uppercase">{incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Rent</span>
                     <p className="text-2xl font-bold text-emerald-400 font-mono">
                       {formatCurrency(
@@ -787,7 +773,7 @@ export const InvestmentStoryDashboard = ({
                     <p className="text-[10px] text-slate-500">Net after costs</p>
                   </div>
 
-                  {/* Payback Period */}
+                  {/* Payback Period - NEUTRAL (slate) */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center cursor-help">
@@ -808,10 +794,10 @@ export const InvestmentStoryDashboard = ({
                     </TooltipContent>
                   </Tooltip>
 
-                  {/* 10Y Wealth */}
-                  <div className="bg-gradient-to-br from-yellow-500/15 to-slate-800/50 rounded-xl p-3 border border-yellow-500/30 text-center">
+                  {/* 10Y Wealth - ACCENT (Amber) */}
+                  <div className="bg-gradient-to-br from-amber-500/15 to-slate-800/50 rounded-xl p-3 border border-amber-500/30 text-center">
                     <span className="text-[10px] text-slate-400 uppercase">10Y Net Wealth</span>
-                    <p className="text-2xl font-bold text-yellow-400 font-mono">
+                    <p className="text-2xl font-bold text-amber-400 font-mono">
                       {formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
                     </p>
                     <p className="text-[10px] text-emerald-400">+{(incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}%</p>
@@ -851,7 +837,7 @@ export const InvestmentStoryDashboard = ({
                   </div>
                   <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 text-center">
                     <p className="text-[10px] text-slate-500 mb-1">Total Rent Collected (10Y)</p>
-                    <p className="text-lg font-bold font-mono text-cyan-400">
+                    <p className="text-lg font-bold font-mono text-emerald-400">
                       {formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
                     </p>
                     <p className="text-[10px] text-slate-500">Net after costs</p>
@@ -869,10 +855,10 @@ export const InvestmentStoryDashboard = ({
                   />
                 </div>
 
-                {/* 10-Year Wealth Equation */}
+                {/* 10-Year Wealth Equation - Semantic colors */}
                 <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
                   <div className="flex items-center gap-2 mb-4">
-                    <Trophy className="w-4 h-4 text-yellow-400" />
+                    <Trophy className="w-4 h-4 text-amber-400" />
                     <span className="text-xs font-medium text-slate-400 uppercase">10-Year Wealth Equation</span>
                   </div>
                   <div className="grid grid-cols-4 md:grid-cols-9 gap-1 items-center text-center">
@@ -885,27 +871,27 @@ export const InvestmentStoryDashboard = ({
                     </div>
                     <span className="text-lg md:text-xl text-slate-500 col-span-1">+</span>
                     <div className="flex flex-col items-center col-span-1 md:col-span-2">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
-                        <Coins className="w-4 h-4 md:w-5 md:h-5 text-cyan-400" />
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-1">
+                        <Coins className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
                       </div>
                       <p className="text-[10px] md:text-xs text-slate-500">Rent</p>
                       <p className="text-xs md:text-sm font-bold font-mono text-white">{formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}</p>
                     </div>
                     <span className="text-lg md:text-xl text-slate-500 col-span-1">−</span>
                     <div className="flex flex-col items-center col-span-1 md:col-span-2">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
-                        <Wallet className="w-4 h-4 md:w-5 md:h-5 text-red-400" />
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-amber-500/20 flex items-center justify-center mb-1">
+                        <Wallet className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
                       </div>
                       <p className="text-[10px] md:text-xs text-slate-500">Cash In</p>
                       <p className="text-xs md:text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
                     </div>
                     <span className="text-lg md:text-xl text-slate-500 col-span-1">=</span>
                     <div className="flex flex-col items-center col-span-1 md:col-span-2">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
-                        <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-amber-500/20 flex items-center justify-center mb-1">
+                        <Trophy className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
                       </div>
                       <p className="text-[10px] md:text-xs text-slate-500">Wealth</p>
-                      <p className="text-xs md:text-sm font-bold font-mono text-yellow-400">{formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}</p>
+                      <p className="text-xs md:text-sm font-bold font-mono text-amber-400">{formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}</p>
                     </div>
                   </div>
                 </div>
@@ -1063,9 +1049,9 @@ export const InvestmentStoryDashboard = ({
                   </div>
                 </div>
 
-                {/* Net Cashflow Cards - Simplified */}
+                {/* Net Cashflow Cards - Simplified with semantic colors */}
                 <div className={cn("grid gap-3", incomeData.showAirbnb ? "grid-cols-2" : "grid-cols-1")}>
-                  {/* LT Net Cashflow */}
+                  {/* LT Net Cashflow - POSITIVE/NEGATIVE based on value */}
                   <div className={cn(
                     "rounded-xl p-4 border text-center",
                     incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0
@@ -1073,7 +1059,7 @@ export const InvestmentStoryDashboard = ({
                       : "bg-gradient-to-br from-red-500/15 to-slate-800/50 border-red-500/30"
                   )}>
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      <Banknote className="w-4 h-4 text-cyan-400" />
+                      <Banknote className="w-4 h-4 text-slate-400" />
                       <span className="text-xs font-medium text-slate-400">Long-Term</span>
                     </div>
                     <p className={cn(
@@ -1086,7 +1072,7 @@ export const InvestmentStoryDashboard = ({
                     <p className="text-[10px] text-slate-500">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
                   </div>
 
-                  {/* ST Net Cashflow */}
+                  {/* ST Net Cashflow - POSITIVE/NEGATIVE based on value */}
                   {incomeData.showAirbnb && (
                     <div className={cn(
                       "rounded-xl p-4 border text-center",
@@ -1095,7 +1081,7 @@ export const InvestmentStoryDashboard = ({
                         : "bg-gradient-to-br from-red-500/15 to-slate-800/50 border-red-500/30"
                     )}>
                       <div className="flex items-center justify-center gap-2 mb-2">
-                        <Banknote className="w-4 h-4 text-orange-400" />
+                        <Banknote className="w-4 h-4 text-slate-400" />
                         <span className="text-xs font-medium text-slate-400">Short-Term</span>
                       </div>
                       <p className={cn(
@@ -1182,16 +1168,16 @@ export const InvestmentStoryDashboard = ({
                             <span className="text-emerald-400 font-mono">+{formatCurrency(wealthData.appreciation10Y, currency, rate)}</span>
                           </div>
                           <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full" style={{ width: `${(wealthData.appreciation10Y / maxValue) * 100}%` }} />
+                            <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${(wealthData.appreciation10Y / maxValue) * 100}%` }} />
                           </div>
                         </div>
                         <div>
                           <div className="flex justify-between text-xs mb-1">
                             <span className="text-slate-400">Rent Collected (10Y)</span>
-                            <span className="text-cyan-400 font-mono">+{formatCurrency(rent10Y, currency, rate)}</span>
+                            <span className="text-emerald-400 font-mono">+{formatCurrency(rent10Y, currency, rate)}</span>
                           </div>
                           <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-400 rounded-full" style={{ width: `${(rent10Y / maxValue) * 100}%` }} />
+                            <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full" style={{ width: `${(rent10Y / maxValue) * 100}%` }} />
                           </div>
                         </div>
                         <div>

@@ -52,11 +52,11 @@ export const CumulativeIncomeChart = ({
             <p className="text-theme-text-muted text-sm">{t('underConstruction')}</p>
           ) : (
             <>
-              <p className="text-cyan-400 text-sm">
+              <p className="text-emerald-400 text-sm">
                 {t('longTerm')}: {formatCurrency(data.longTerm, currency, rate)}
               </p>
               {showAirbnbComparison && data.airbnb !== null && (
-                <p className="text-orange-400 text-sm">
+                <p className="text-emerald-300 text-sm">
                   {t('shortTerm')}: {formatCurrency(data.airbnb, currency, rate)}
                 </p>
               )}
@@ -76,12 +76,12 @@ export const CumulativeIncomeChart = ({
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorLongTerm" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorAirbnb" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#fb923c" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#fb923c" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#6ee7b7" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#6ee7b7" stopOpacity={0}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#2a3142" />
@@ -110,7 +110,7 @@ export const CumulativeIncomeChart = ({
             <Area
               type="monotone"
               dataKey="longTerm"
-              stroke="#22d3ee"
+              stroke="#10b981"
               strokeWidth={2}
               fill="url(#colorLongTerm)"
               name={t('longTerm')}
@@ -121,7 +121,7 @@ export const CumulativeIncomeChart = ({
               <Area
                 type="monotone"
                 dataKey="airbnb"
-                stroke="#fb923c"
+                stroke="#6ee7b7"
                 strokeWidth={2}
                 fill="url(#colorAirbnb)"
                 name={t('shortTerm')}
