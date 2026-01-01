@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, LucideIcon, Building2, Home } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export type StorySection = 'showcase' | 'entry' | 'income' | 'exit' | 'leverage';
@@ -31,10 +31,6 @@ export const StoryNavigation = ({
 }: StoryNavigationProps) => {
   const { t } = useLanguage();
   
-  // Build reference text
-  const referenceText = [projectName, unitType, unitNumber ? `Unit ${unitNumber}` : null]
-    .filter(Boolean)
-    .join(' • ');
   
   const visibleSections = sections.filter(s => s.show !== false);
   const currentIndex = visibleSections.findIndex(s => s.id === activeSection);
@@ -56,14 +52,33 @@ export const StoryNavigation = ({
   // Progress percentage
   const progressPercent = ((currentIndex + 1) / visibleSections.length) * 100;
 
+  // Check if we have any reference info to show
+  const hasReference = projectName || unitType || unitNumber;
+
   return (
     <div className="sticky top-0 z-20 bg-theme-bg/95 backdrop-blur-sm border-b border-theme-border py-3 px-4">
-      {/* Project Reference - Centered at top */}
-      {referenceText && (
-        <div className="flex justify-center mb-2">
-          <span className="text-xs text-theme-text-muted font-medium tracking-wide uppercase">
-            {referenceText}
-          </span>
+      {/* Project Reference - Styled badge at top */}
+      {hasReference && (
+        <div className="flex justify-center mb-3">
+          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-theme-card/60 border border-theme-border/50">
+            {projectName && (
+              <div className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-xs font-semibold text-white">{projectName}</span>
+              </div>
+            )}
+            {(unitType || unitNumber) && projectName && (
+              <div className="w-px h-3 bg-theme-border" />
+            )}
+            {(unitType || unitNumber) && (
+              <div className="flex items-center gap-1.5">
+                <Home className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-xs text-theme-text-muted">
+                  {[unitType, unitNumber].filter(Boolean).join(' • ')}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
