@@ -11,7 +11,8 @@ import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
 import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, TrendingUp, Wallet, Receipt } from "lucide-react";
+import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, TrendingUp, Wallet, Receipt, Info } from "lucide-react";
+import { LocationMiniMap } from "@/components/roi/LocationMiniMap";
 import { cn } from "@/lib/utils";
 
 interface PropertyTabContentProps {
@@ -294,59 +295,106 @@ export const PropertyTabContent = ({
               </div>
             </motion.div>
 
-            {/* SECONDARY INFO ROW - Clients + Floor Plan */}
-            <motion.div className="grid grid-cols-2 gap-3 flex-shrink-0" variants={itemVariants}>
-              {/* Clients Card */}
-              <div className="bg-theme-card border border-theme-border rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-amber-400" />
+            {/* QUICK ACTIONS ROW */}
+            <motion.div className="flex gap-2 flex-shrink-0" variants={itemVariants}>
+              {/* Floor Plan Button */}
+              <button
+                onClick={() => floorPlanUrl && setLightboxOpen(true)}
+                disabled={!floorPlanUrl}
+                className={cn(
+                  "flex-1 bg-theme-card border border-theme-border rounded-xl p-3 transition-all duration-200",
+                  floorPlanUrl 
+                    ? "hover:border-theme-accent/50 cursor-pointer" 
+                    : "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-sky-500/10 flex items-center justify-center">
+                    <Ruler className="w-4 h-4 text-sky-400" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-theme-text-muted uppercase tracking-wide">
-                      {clientList.length === 1 ? 'Client' : 'Clients'}
-                    </p>
-                    {clientList.length > 0 ? (
-                      <div className="flex items-center gap-1.5">
-                        {clientList[0].country && (
-                          <span className="text-sm">{getCountryFlag(clientList[0].country)}</span>
-                        )}
-                        <p className="text-sm font-semibold text-theme-text truncate">
-                          {clientList[0].name}
-                          {clientList.length > 1 && ` +${clientList.length - 1}`}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-sm font-semibold text-theme-text">TBD</p>
-                    )}
+                  <span className="text-xs font-medium text-theme-text">Floor Plan</span>
+                </div>
+              </button>
+
+              {/* Developer Button */}
+              <button
+                onClick={() => developer && setDeveloperModalOpen(true)}
+                disabled={!developer}
+                className={cn(
+                  "flex-1 bg-theme-card border border-theme-border rounded-xl p-3 transition-all duration-200",
+                  developer 
+                    ? "hover:border-theme-accent/50 cursor-pointer" 
+                    : "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-purple-400" />
                   </div>
+                  <span className="text-xs font-medium text-theme-text">Developer</span>
+                </div>
+              </button>
+
+              {/* Project Details Button */}
+              <button
+                onClick={() => project && setProjectModalOpen(true)}
+                disabled={!project}
+                className={cn(
+                  "flex-1 bg-theme-card border border-theme-border rounded-xl p-3 transition-all duration-200",
+                  project 
+                    ? "hover:border-theme-accent/50 cursor-pointer" 
+                    : "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Info className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <span className="text-xs font-medium text-theme-text">Project</span>
+                </div>
+              </button>
+            </motion.div>
+
+            {/* CLIENTS CARD - Always visible */}
+            <motion.div 
+              className="bg-theme-card border border-theme-border rounded-xl p-4 flex-shrink-0"
+              variants={itemVariants}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-theme-text-muted uppercase tracking-wide">
+                    {clientList.length === 1 ? 'Client' : 'Clients'}
+                  </p>
+                  {clientList.length > 0 ? (
+                    <div className="flex items-center gap-1.5">
+                      {clientList[0].country && (
+                        <span className="text-sm">{getCountryFlag(clientList[0].country)}</span>
+                      )}
+                      <p className="text-sm font-semibold text-theme-text truncate">
+                        {clientList[0].name}
+                        {clientList.length > 1 && ` +${clientList.length - 1}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold text-theme-text">TBD</p>
+                  )}
                 </div>
               </div>
-
-              {/* Floor Plan CTA */}
-              {floorPlanUrl ? (
-                <button
-                  onClick={() => setLightboxOpen(true)}
-                  className="bg-theme-card border border-theme-border rounded-xl p-4 hover:border-theme-accent/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center flex-shrink-0">
-                      <Ruler className="w-5 h-5 text-sky-400" />
-                    </div>
-                    <div className="text-left flex-1 min-w-0">
-                      <p className="text-xs text-theme-text-muted">View</p>
-                      <p className="text-sm font-semibold text-theme-text">Floor Plan</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-theme-text-muted group-hover:text-theme-accent transition-colors" />
-                  </div>
-                </button>
-              ) : (
-                /* Empty placeholder to maintain grid */
-                <div className="bg-theme-card/50 border border-theme-border/50 rounded-xl p-4 flex items-center justify-center">
-                  <p className="text-xs text-theme-text-muted">No floor plan</p>
-                </div>
-              )}
             </motion.div>
+
+            {/* LOCATION MINI-MAP */}
+            {project?.latitude && project?.longitude && (
+              <motion.div className="flex-shrink-0" variants={itemVariants}>
+                <LocationMiniMap
+                  latitude={project.latitude}
+                  longitude={project.longitude}
+                  locationName={zone?.name || clientInfo.zoneName}
+                />
+              </motion.div>
+            )}
 
             {/* VALUE DIFFERENTIATORS - Fills remaining space */}
             {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
