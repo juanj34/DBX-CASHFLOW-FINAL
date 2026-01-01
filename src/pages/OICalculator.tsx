@@ -170,6 +170,11 @@ const OICalculatorContent = () => {
     }
   }, [dataLoaded, navigate, quoteId]);
 
+  // Handler for when a new quote is auto-created - navigate to prevent duplicates
+  const handleNewQuoteCreated = useCallback((newId: string) => {
+    navigate(`/cashflow/${newId}`, { replace: true });
+  }, [navigate]);
+
   useEffect(() => {
     // Prevent autosave from writing into the wrong quote during route transitions
     if (!dataLoaded) return;
@@ -183,9 +188,11 @@ const OICalculatorContent = () => {
       clientInfo,
       canUpdateExisting ? quoteId : undefined,
       allowAutoCreate,
-      mortgageInputs
+      mortgageInputs,
+      undefined, // images
+      handleNewQuoteCreated
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, handleNewQuoteCreated]);
 
   // Exit scenarios - derived from inputs._exitScenarios as single source of truth
   // Only use auto-generated fallback if no custom exits exist

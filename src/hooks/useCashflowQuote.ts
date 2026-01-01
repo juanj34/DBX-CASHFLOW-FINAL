@@ -316,7 +316,8 @@ export const useCashflowQuote = (quoteId?: string) => {
       existingQuoteId?: string,
       isQuoteConfigured?: boolean,
       mortgageInputs?: MortgageInputs,
-      images?: { floorPlanUrl: string | null; buildingRenderUrl: string | null; heroImageUrl: string | null }
+      images?: { floorPlanUrl: string | null; buildingRenderUrl: string | null; heroImageUrl: string | null },
+      onNewQuoteCreated?: (newId: string) => void
     ) => {
       if (autoSaveTimeout.current) {
         clearTimeout(autoSaveTimeout.current);
@@ -401,6 +402,18 @@ export const useCashflowQuote = (quoteId?: string) => {
             // Clear localStorage after saving to DB
             localStorage.removeItem(LOCAL_STORAGE_KEY);
             setLastSaved(new Date());
+            
+            // Update internal state with newly created quote
+            setQuote({
+              ...data,
+              inputs: data.inputs as unknown as OIInputs,
+            });
+            
+            // Notify parent component to navigate to the new quote URL
+            if (onNewQuoteCreated) {
+              onNewQuoteCreated(data.id);
+            }
+            
             toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
           }
         }
