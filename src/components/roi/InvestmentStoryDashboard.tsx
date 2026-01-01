@@ -875,37 +875,37 @@ export const InvestmentStoryDashboard = ({
                     <Trophy className="w-4 h-4 text-yellow-400" />
                     <span className="text-xs font-medium text-slate-400 uppercase">10-Year Wealth Equation</span>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
-                        <Building2 className="w-5 h-5 text-blue-400" />
+                  <div className="grid grid-cols-4 md:grid-cols-9 gap-1 items-center text-center">
+                    <div className="flex flex-col items-center col-span-1 md:col-span-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
+                        <Building2 className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
                       </div>
-                      <p className="text-xs text-slate-500">Property (Y10)</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500">Property</p>
+                      <p className="text-xs md:text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
                     </div>
-                    <span className="text-xl text-slate-500">+</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
-                        <Coins className="w-5 h-5 text-cyan-400" />
+                    <span className="text-lg md:text-xl text-slate-500 col-span-1">+</span>
+                    <div className="flex flex-col items-center col-span-1 md:col-span-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
+                        <Coins className="w-4 h-4 md:w-5 md:h-5 text-cyan-400" />
                       </div>
-                      <p className="text-xs text-slate-500">Rent (10Y)</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500">Rent</p>
+                      <p className="text-xs md:text-sm font-bold font-mono text-white">{formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}</p>
                     </div>
-                    <span className="text-xl text-slate-500">−</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
-                        <Wallet className="w-5 h-5 text-red-400" />
+                    <span className="text-lg md:text-xl text-slate-500 col-span-1">−</span>
+                    <div className="flex flex-col items-center col-span-1 md:col-span-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
+                        <Wallet className="w-4 h-4 md:w-5 md:h-5 text-red-400" />
                       </div>
-                      <p className="text-xs text-slate-500">Cash In</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500">Cash In</p>
+                      <p className="text-xs md:text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
                     </div>
-                    <span className="text-xl text-slate-500">=</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
-                        <Trophy className="w-5 h-5 text-yellow-400" />
+                    <span className="text-lg md:text-xl text-slate-500 col-span-1">=</span>
+                    <div className="flex flex-col items-center col-span-1 md:col-span-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
+                        <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
                       </div>
-                      <p className="text-xs text-slate-500">Net Wealth</p>
-                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500">Wealth</p>
+                      <p className="text-xs md:text-sm font-bold font-mono text-yellow-400">{formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}</p>
                     </div>
                   </div>
                 </div>
@@ -952,6 +952,14 @@ export const InvestmentStoryDashboard = ({
                           <p className="text-2xl font-bold text-white font-mono mb-3">
                             {formatCurrency(scenario.exitPrice, currency, rate)}
                           </p>
+                          
+                          {/* Cash Invested at this point */}
+                          <div className="mb-2 pb-2 border-b border-slate-700/30">
+                            <p className="text-[10px] text-slate-500 mb-0.5">Cash Invested</p>
+                            <p className="text-sm font-semibold font-mono text-slate-300">
+                              {formatCurrency(scenario.equityDeployed, currency, rate)}
+                            </p>
+                          </div>
                           
                           {/* SECONDARY: Profit - Green and prominent */}
                           <div className="flex items-end justify-between">
