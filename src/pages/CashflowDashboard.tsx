@@ -149,6 +149,11 @@ const CashflowDashboardContent = () => {
     }
   }, [quoteId, dataLoaded, isQuoteConfigured]);
 
+  // Handler for when a new quote is auto-created - navigate to prevent duplicates
+  const handleNewQuoteCreated = useCallback((newId: string) => {
+    navigate(`/cashflow-dashboard/${newId}`, { replace: true });
+  }, [navigate]);
+
   // Autosave
   useEffect(() => {
     if (!dataLoaded) return;
@@ -163,9 +168,10 @@ const CashflowDashboardContent = () => {
       canUpdateExisting ? quoteId : undefined,
       allowAutoCreate,
       mortgageInputs,
-      { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl }
+      { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl },
+      handleNewQuoteCreated
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated]);
 
   // Exit scenarios
   const exitScenarios = useMemo(() => {
