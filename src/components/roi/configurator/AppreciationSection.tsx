@@ -12,6 +12,7 @@ import { getZoneAppreciationProfile } from "../useOICalculations";
 import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { calculateAppreciationBonus } from "../valueDifferentiators";
+import { InfoTooltip } from "../InfoTooltip";
 
 export const AppreciationSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const { t } = useLanguage();
@@ -71,6 +72,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-[#CCFF00]" />
           <span className="text-sm text-gray-300">Use Zone Defaults</span>
+          <InfoTooltip translationKey="tooltipZoneMaturity" />
         </div>
         <Switch
           checked={inputs.useZoneDefaults ?? true}
@@ -207,7 +209,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             {/* Construction */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Construction Phase</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">Construction Phase</label>
+                  <InfoTooltip translationKey="tooltipConstructionAppreciation" />
+                </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-orange-400 font-mono">{inputs.constructionAppreciation ?? 12}%</span>
                   {appreciationBonus > 0 && (
@@ -233,7 +238,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             {/* Growth */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Growth Phase ({inputs.growthPeriodYears ?? 5}y)</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">Growth Phase ({inputs.growthPeriodYears ?? 5}y)</label>
+                  <InfoTooltip translationKey="tooltipGrowthAppreciation" />
+                </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-green-400 font-mono">{inputs.growthAppreciation ?? 8}%</span>
                   {appreciationBonus > 0 && (
@@ -259,7 +267,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             {/* Growth Period */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Growth Period</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">Growth Period</label>
+                  <InfoTooltip translationKey="tooltipGrowthYears" />
+                </div>
                 <span className="text-xs text-white font-mono">{inputs.growthPeriodYears ?? 5} years</span>
               </div>
               <Slider
@@ -275,7 +286,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             {/* Mature */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Mature Phase</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">Mature Phase</label>
+                  <InfoTooltip translationKey="tooltipMatureAppreciation" />
+                </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-blue-400 font-mono">{inputs.matureAppreciation ?? 4}%</span>
                   {appreciationBonus > 0 && (
