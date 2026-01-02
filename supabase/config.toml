@@ -1,7 +1,7 @@
 project_id = "gxllyxusfyjjqpqylxrs"
 
 [functions.mapbox-token]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-assistant]
 verify_jwt = true

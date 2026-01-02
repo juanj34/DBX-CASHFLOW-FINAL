@@ -349,7 +349,7 @@ export const OIInputModal = ({
             </Button>
           </DialogTrigger>
         )}
-        <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-6xl w-[95vw] h-[90vh] p-0 overflow-hidden [&>button]:hidden">
+        <DialogContent className="bg-[#1a1f2e] border-[#2a3142] text-white max-w-6xl w-[95vw] h-[90vh] p-0 overflow-hidden">
           <ConfiguratorLayout
             inputs={inputs}
             setInputs={setInputs}

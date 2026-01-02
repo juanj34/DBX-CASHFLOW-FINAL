@@ -441,7 +441,7 @@ export const DashboardSidebar = ({
                 </Tooltip>
               ) : (
                 <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                  <SelectTrigger className="w-full h-9 bg-transparent border-theme-border text-sm text-theme-text">
+                  <SelectTrigger className="w-full h-9 bg-transparent border-theme-border text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

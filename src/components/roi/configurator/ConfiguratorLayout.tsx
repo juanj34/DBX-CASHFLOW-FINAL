@@ -447,18 +447,17 @@ export const ConfiguratorLayout = ({
 
   // Handle Apply & Close with celebration
   const handleApplyAndClose = useCallback(() => {
-    if (!hasShownCelebrationRef.current && progressPercent >= 50) {
+    if (!hasShownCelebrationRef.current) {
       hasShownCelebrationRef.current = true;
       setShowCelebration(true);
       setTimeout(() => {
         setShowCelebration(false);
         onClose();
-      }, 2000);
+      }, 2500);
     } else {
-      // Always close immediately if already shown or not enough progress
       onClose();
     }
-  }, [onClose, progressPercent]);
+  }, [onClose]);
 
   return (
     <div className="flex flex-col h-full bg-[#1a1f2e] relative overflow-hidden">

@@ -5,6 +5,13 @@ export const useMapboxToken = () => {
   return useQuery({
     queryKey: ["mapbox-token"],
     queryFn: async () => {
+      // Get the current session to include auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Authentication required");
+      }
+      
       const { data, error } = await supabase.functions.invoke("mapbox-token");
       
       if (error) throw error;
@@ -13,6 +20,5 @@ export const useMapboxToken = () => {
       return data.token as string;
     },
     staleTime: Infinity, // Token doesn't change, cache forever
-    retry: 2,
   });
 };
