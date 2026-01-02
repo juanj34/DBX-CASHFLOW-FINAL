@@ -1,8 +1,9 @@
-import { TrendingUp, Building } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
 import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
 import { useState, useEffect, useMemo } from "react";
+import { monthToConstruction } from "./constructionProgress";
 
 interface OIGrowthCurveProps {
   calculations: OICalculations;
@@ -44,13 +45,10 @@ export const OIGrowthCurve = ({
   const maxValue = handoverPrice * 1.08;
   const minValue = basePrice * 0.95;
 
-  // Calculate appreciation percentages
-  const constructionAppreciation = ((handoverPrice - basePrice) / basePrice) * 100;
-
-  // SVG dimensions - more compact
+  // SVG dimensions - more compact with more bottom space
   const width = 600;
-  const height = 180;
-  const padding = { top: 25, right: 30, bottom: 45, left: 55 };
+  const height = 200;
+  const padding = { top: 30, right: 30, bottom: 55, left: 55 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -73,14 +71,18 @@ export const OIGrowthCurve = ({
     ];
   }, [minValue, maxValue]);
 
-  // X-axis time labels - every 6 months
+  // X-axis time labels - every 6 months, avoiding overlap
   const timeLabels = useMemo(() => {
     const labels: number[] = [];
     for (let m = 0; m <= totalMonths; m += 6) {
       labels.push(m);
     }
-    if (labels[labels.length - 1] !== totalMonths) {
+    // Only add final month if it's at least 3 months from last label
+    if (labels.length > 0 && totalMonths - labels[labels.length - 1] >= 3) {
       labels.push(totalMonths);
+    } else if (labels[labels.length - 1] !== totalMonths) {
+      // Replace last label with totalMonths if close
+      labels[labels.length - 1] = totalMonths;
     }
     return labels;
   }, [totalMonths]);
@@ -155,19 +157,27 @@ export const OIGrowthCurve = ({
     trueROE: ((handoverPrice - basePrice - totalEntryCosts) / (calculateEquityAtExit(totalMonths, inputs, totalMonths, basePrice) + totalEntryCosts)) * 100
   };
 
-  // Construction progress percentage
-  const constructionProgress = Math.min(100, (exitScenarios[exitScenarios.length - 1] / totalMonths) * 100);
+  // Construction progress markers for the timeline
+  const constructionMarkers = useMemo(() => {
+    // Show construction % at key timeline points
+    const markers: { month: number; percent: number }[] = [];
+    for (let m = 0; m <= totalMonths; m += 6) {
+      markers.push({ month: m, percent: monthToConstruction(m, totalMonths) });
+    }
+    // Add final if not already there
+    if (markers.length > 0 && markers[markers.length - 1].month !== totalMonths) {
+      markers.push({ month: totalMonths, percent: 100 });
+    }
+    return markers;
+  }, [totalMonths]);
 
   return (
     <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 relative overflow-hidden h-full">
       <div className="relative h-full flex flex-col">
-        {/* Header - More prominent */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#CCFF00]" />
-            <span className="text-sm font-semibold text-white">Price Appreciation</span>
-          </div>
-          <span className="text-sm text-[#CCFF00] font-bold font-mono">+{constructionAppreciation.toFixed(0)}%</span>
+        {/* Header - Title only */}
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="w-5 h-5 text-[#CCFF00]" />
+          <span className="text-sm font-semibold text-white">Price Appreciation</span>
         </div>
 
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="flex-1" preserveAspectRatio="xMidYMid meet">
@@ -183,9 +193,9 @@ export const OIGrowthCurve = ({
               <stop offset="100%" stopColor="#CCFF00" stopOpacity="0" />
             </linearGradient>
             
-            <linearGradient id="constructionProgressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#22d3d1" stopOpacity="0.6" />
+            <linearGradient id="constructionBarGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#22d3d1" stopOpacity="0.5" />
             </linearGradient>
           </defs>
 
@@ -234,17 +244,41 @@ export const OIGrowthCurve = ({
             />
           ))}
 
-          {/* X-axis labels */}
+          {/* X-axis labels (months) */}
           {timeLabels.map(months => (
             <text
               key={`label-${months}`}
               x={xScale(months)}
-              y={height - padding.bottom + 14}
+              y={height - padding.bottom + 12}
               fill="#94a3b8"
               fontSize="9"
               textAnchor="middle"
             >
               {months}mo
+            </text>
+          ))}
+
+          {/* Construction progress bar - full width, filled */}
+          <rect
+            x={padding.left}
+            y={height - 28}
+            width={chartWidth}
+            height={6}
+            fill="url(#constructionBarGradient)"
+            rx="3"
+          />
+
+          {/* Construction % labels below bar */}
+          {constructionMarkers.map((marker, i) => (
+            <text
+              key={`const-${i}`}
+              x={xScale(marker.month)}
+              y={height - 36}
+              fill="#64748b"
+              fontSize="7"
+              textAnchor="middle"
+            >
+              {Math.round(marker.percent)}%
             </text>
           ))}
 
@@ -292,36 +326,6 @@ export const OIGrowthCurve = ({
             }}
           />
 
-          {/* Construction progress bar at bottom */}
-          <rect
-            x={padding.left}
-            y={height - 18}
-            width={chartWidth}
-            height={5}
-            fill="#1e293b"
-            rx="2.5"
-          />
-          <rect
-            x={padding.left}
-            y={height - 18}
-            width={chartWidth * (constructionProgress / 100)}
-            height={5}
-            fill="url(#constructionProgressGradient)"
-            rx="2.5"
-            style={{
-              transition: 'width 0.6s ease-out'
-            }}
-          />
-          <text
-            x={padding.left + chartWidth / 2}
-            y={height - 26}
-            fill="#64748b"
-            fontSize="8"
-            textAnchor="middle"
-          >
-            <tspan>🏗️ Construction Progress</tspan>
-          </text>
-
           {/* Start marker */}
           <g style={{
             opacity: showMarkers ? 1 : 0,
@@ -345,7 +349,7 @@ export const OIGrowthCurve = ({
             </text>
           </g>
 
-          {/* Exit markers with labels */}
+          {/* Exit markers with labels and ROE */}
           {exitMarkersData.map(({ scenario, label }, index) => {
             const isHighlighted = highlightedExit === index;
             const markerDelay = 0.1 * index;
@@ -365,7 +369,7 @@ export const OIGrowthCurve = ({
                 {/* Exit label above */}
                 <text
                   x={xScale(scenario.exitMonths)}
-                  y={yScale(scenario.exitPrice) - 26}
+                  y={yScale(scenario.exitPrice) - 30}
                   fill="#CCFF00"
                   fontSize="9"
                   fontWeight="bold"
@@ -377,7 +381,7 @@ export const OIGrowthCurve = ({
                 {/* Price label */}
                 <text
                   x={xScale(scenario.exitMonths)}
-                  y={yScale(scenario.exitPrice) - 14}
+                  y={yScale(scenario.exitPrice) - 18}
                   fill="#CCFF00"
                   fontSize="10"
                   fontWeight="bold"
@@ -385,6 +389,19 @@ export const OIGrowthCurve = ({
                   fontFamily="monospace"
                 >
                   {formatCurrencyShort(scenario.exitPrice, currency, rate)}
+                </text>
+
+                {/* ROE label */}
+                <text
+                  x={xScale(scenario.exitMonths)}
+                  y={yScale(scenario.exitPrice) - 6}
+                  fill="#22d3d1"
+                  fontSize="8"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                  fontFamily="monospace"
+                >
+                  {scenario.trueROE.toFixed(0)}% ROE
                 </text>
                 
                 {/* Marker circles */}
@@ -414,7 +431,7 @@ export const OIGrowthCurve = ({
             {/* Handover label */}
             <text
               x={xScale(handoverScenario.exitMonths)}
-              y={yScale(handoverScenario.exitPrice) - 26}
+              y={yScale(handoverScenario.exitPrice) - 30}
               fill="#ffffff"
               fontSize="9"
               fontWeight="bold"
@@ -426,7 +443,7 @@ export const OIGrowthCurve = ({
             {/* Handover price */}
             <text
               x={xScale(handoverScenario.exitMonths)}
-              y={yScale(handoverScenario.exitPrice) - 14}
+              y={yScale(handoverScenario.exitPrice) - 18}
               fill="#ffffff"
               fontSize="10"
               fontWeight="bold"
@@ -434,6 +451,19 @@ export const OIGrowthCurve = ({
               fontFamily="monospace"
             >
               {formatCurrencyShort(handoverScenario.exitPrice, currency, rate)}
+            </text>
+
+            {/* Handover ROE */}
+            <text
+              x={xScale(handoverScenario.exitMonths)}
+              y={yScale(handoverScenario.exitPrice) - 6}
+              fill="#22d3d1"
+              fontSize="8"
+              fontWeight="bold"
+              textAnchor="middle"
+              fontFamily="monospace"
+            >
+              {handoverScenario.trueROE.toFixed(0)}% ROE
             </text>
             
             {/* Marker circles */}
