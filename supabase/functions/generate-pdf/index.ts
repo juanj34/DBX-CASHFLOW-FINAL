@@ -247,6 +247,20 @@ serve(async (req) => {
   ${vis.longTermHold ? `
   <div class="section">
     <div class="section-title">Long-Term Hold Analysis</div>
+    
+    <!-- Disclaimer -->
+    <div style="padding: 12px; background-color: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; margin-bottom: 15px;">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <span style="color: #fbbf24; font-size: 16px;">⚠️</span>
+        <div>
+          <p style="color: #fcd34d; font-size: 11px; font-weight: 500; margin-bottom: 4px;">Hypothetical Projection</p>
+          <p style="color: rgba(253, 230, 138, 0.7); font-size: 10px; line-height: 1.4;">
+            These projections are illustrative simulations based on assumed appreciation rates. Dubai's real estate market is highly dynamic—actual results may differ materially.
+          </p>
+        </div>
+      </div>
+    </div>
+    
     <table>
       <thead><tr><th>Year</th><th>Property Value</th><th>Annual Rent</th><th>Cumulative Income</th><th>Status</th></tr></thead>
       <tbody>

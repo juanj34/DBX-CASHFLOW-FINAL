@@ -808,14 +808,6 @@ export const InvestmentStoryDashboard = ({
                     </TooltipContent>
                   </Tooltip>
 
-                  {/* 10Y Wealth */}
-                  <div className="bg-gradient-to-br from-yellow-500/15 to-slate-800/50 rounded-xl p-3 border border-yellow-500/30 text-center">
-                    <span className="text-[10px] text-slate-400 uppercase">10Y Net Wealth</span>
-                    <p className="text-2xl font-bold text-yellow-400 font-mono">
-                      {formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}
-                    </p>
-                    <p className="text-[10px] text-emerald-400">+{(incomeStrategy === 'LT' ? wealthData.percentGainLT : wealthData.percentGainST).toFixed(0)}%</p>
-                  </div>
                 </div>
 
                 {/* Cashflow Waterfall Visualization */}
@@ -842,22 +834,6 @@ export const InvestmentStoryDashboard = ({
                   strategy={incomeStrategy}
                 />
 
-                {/* 10-Year Summary Row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">Property Value (Y10)</p>
-                    <p className="text-lg font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
-                    <p className="text-[10px] text-emerald-400">+{formatCurrency(wealthData.appreciation10Y, currency, rate)} appreciation</p>
-                  </div>
-                  <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">Total Rent Collected (10Y)</p>
-                    <p className="text-lg font-bold font-mono text-cyan-400">
-                      {formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}
-                    </p>
-                    <p className="text-[10px] text-slate-500">Net after costs</p>
-                  </div>
-                </div>
-
                 {/* Cumulative Income Chart - Compact */}
                 <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 flex-1 min-h-0">
                   <CumulativeIncomeChart
@@ -869,46 +845,6 @@ export const InvestmentStoryDashboard = ({
                   />
                 </div>
 
-                {/* 10-Year Wealth Equation */}
-                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Trophy className="w-4 h-4 text-yellow-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase">10-Year Wealth Equation</span>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-1">
-                        <Building2 className="w-5 h-5 text-blue-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Property (Y10)</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.propertyValue10Y, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">+</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-1">
-                        <Coins className="w-5 h-5 text-cyan-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Rent (10Y)</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(incomeStrategy === 'LT' ? wealthData.cumulativeRentLT : wealthData.cumulativeRentST, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">−</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-1">
-                        <Wallet className="w-5 h-5 text-red-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Cash In</p>
-                      <p className="text-sm font-bold font-mono text-white">{formatCurrency(wealthData.initialInvestment, currency, rate)}</p>
-                    </div>
-                    <span className="text-xl text-slate-500">=</span>
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mb-1">
-                        <Trophy className="w-5 h-5 text-yellow-400" />
-                      </div>
-                      <p className="text-xs text-slate-500">Net Wealth</p>
-                      <p className="text-sm font-bold font-mono text-yellow-400">{formatCurrency(incomeStrategy === 'LT' ? wealthData.netWealthLT : wealthData.netWealthST, currency, rate)}</p>
-                    </div>
-                  </div>
-                </div>
               </div>
 
             </section>

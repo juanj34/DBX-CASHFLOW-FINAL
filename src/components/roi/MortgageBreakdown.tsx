@@ -757,63 +757,6 @@ export const MortgageBreakdown = ({
               )}
             </div>
             
-            {/* Card 3: The Wealth Equation - Visual Comparison Bar */}
-            <div className="p-4 bg-gradient-to-r from-theme-bg-alt to-emerald-900/20 rounded-xl border border-emerald-500/30">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm font-medium text-theme-text">Cost of Debt vs Wealth Created</span>
-              </div>
-              
-              {/* Visual Comparison Bars */}
-              <div className="space-y-3 mb-4">
-                {/* Cost of Debt - Small, gray/red */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Cost of Debt ({mortgageInputs.loanTermYears}Y)</span>
-                    <span className="font-mono text-gray-400">{formatCurrency(totalInterestAndFees, currency, rate)}</span>
-                  </div>
-                  <div className="h-4 rounded-full bg-theme-bg overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full transition-all"
-                      style={{ width: `${Math.min((totalInterestAndFees / projectedAppreciation) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-                
-                {/* Wealth Created - Large, green */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-emerald-400">Projected Appreciation</span>
-                    <span className="font-mono text-emerald-400">+{formatCurrency(projectedAppreciation, currency, rate)}</span>
-                  </div>
-                  <div className="h-4 rounded-full bg-theme-bg overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-emerald-500 to-[#CCFF00] rounded-full transition-all"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* NET WEALTH - Hero Number (3x larger) */}
-              <div className="p-4 bg-[#CCFF00]/10 rounded-xl border border-[#CCFF00]/30 text-center">
-                <p className="text-xs text-theme-text-muted uppercase tracking-wider mb-2">Net Wealth Created</p>
-                <div className="flex items-center justify-center gap-3">
-                  <span className={cn(
-                    "text-4xl sm:text-5xl font-bold font-mono",
-                    netWealthPosition >= 0 ? "text-[#CCFF00]" : "text-red-400"
-                  )}>
-                    {netWealthPosition >= 0 ? '+' : ''}{formatCurrency(Math.abs(netWealthPosition), currency, rate)}
-                  </span>
-                  {netWealthPosition >= 0 && (
-                    <span className="text-2xl">🚀</span>
-                  )}
-                </div>
-                <p className="text-xs text-theme-text-muted mt-2">
-                  Property growth crushes debt cost by {((projectedAppreciation / totalInterestAndFees) * 100).toFixed(0)}%
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

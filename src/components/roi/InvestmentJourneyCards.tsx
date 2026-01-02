@@ -354,46 +354,6 @@ export const InvestmentJourneyCards = ({
           </div>
         </div>
 
-        {/* Final Wealth Summary */}
-        <div className="mt-4 p-4 bg-gradient-to-r from-[#CCFF00]/10 to-green-500/10 rounded-xl border border-[#CCFF00]/30">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Total Net Wealth Created</p>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-3.5 h-3.5 text-gray-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium">Wealth created over 10 years:</p>
-                        <div className="text-[10px] space-y-1 text-gray-400">
-                          <p>Final Property Value: {formatCurrency(finalPropertyValue, currency, rate)}</p>
-                          <p>+ Total Rental Income: {formatCurrency(showAirbnbComparison ? Math.max(totalLTIncome, totalSTIncome) : totalLTIncome, currency, rate)}</p>
-                          <p>- Capital Invested: {formatCurrency(totalCapitalInvested, currency, rate)}</p>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-sm text-gray-500">Over 10 years ({constructionYears.length}yr build + {rentalYears}yr rental)</p>
-            </div>
-            <div className="text-center sm:text-right">
-              <p className="text-3xl sm:text-4xl font-bold text-[#CCFF00] font-mono">
-                {formatCurrency(
-                  finalPropertyValue + (showAirbnbComparison ? Math.max(totalLTIncome, totalSTIncome) : totalLTIncome) - totalCapitalInvested,
-                  currency,
-                  rate
-                )}
-              </p>
-              <p className="text-xs text-green-400">
-                +{totalAppreciation.toFixed(0)}% property appreciation over 10 years
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

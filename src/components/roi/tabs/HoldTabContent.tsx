@@ -6,7 +6,9 @@ import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { InvestmentJourneyCards } from "@/components/roi/InvestmentJourneyCards";
 import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
 import { Currency } from "@/components/roi/currencyUtils";
-import { ChevronDown, ChevronUp, Table } from "lucide-react";
+import { ChevronDown, ChevronUp, Table, AlertTriangle } from "lucide-react";
+import { ProjectionDisclaimer } from "@/components/roi/ProjectionDisclaimer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HoldTabContentProps {
   inputs: OIInputs;
@@ -27,9 +29,11 @@ export const HoldTabContent = ({
   unitSizeSqf,
   variant = 'default',
 }: HoldTabContentProps) => {
+  const { t } = useLanguage();
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const isDashboard = variant === 'dashboard';
   const [showDetailedTable, setShowDetailedTable] = useState(false);
+  const [show10YearProjections, setShow10YearProjections] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -51,50 +55,53 @@ export const HoldTabContent = ({
         basePrice={inputs.basePrice}
       />
       
-      {/* Row 3: Cumulative Chart (Prominent) + Wealth Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart takes 2/3 width for prominence */}
-        <div className="lg:col-span-2">
-          <CumulativeIncomeChart 
-            projections={calculations.yearlyProjections} 
-            currency={currency} 
-            rate={rate} 
-            totalCapitalInvested={totalCapitalInvested} 
-            showAirbnbComparison={calculations.showAirbnbComparison} 
-          />
-        </div>
-        
-        <WealthSummaryCard 
-          propertyValueYear10={lastProjection.propertyValue} 
-          cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
-          airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} 
-          initialInvestment={totalCapitalInvested} 
-          currency={currency} 
-          rate={rate} 
-          showAirbnbComparison={calculations.showAirbnbComparison} 
-        />
-      </div>
-      
-      {/* Row 4: Collapsible Detailed Table */}
+      {/* Row 3: Collapsible 10-Year Projections (Hidden by default) */}
       <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
         <button
-          onClick={() => setShowDetailedTable(!showDetailedTable)}
+          onClick={() => setShow10YearProjections(!show10YearProjections)}
           className="w-full p-4 flex items-center justify-between hover:bg-theme-card-alt/30 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Table className="w-4 h-4 text-theme-text-muted" />
-            <span className="text-sm font-medium text-white">Show Detailed Cashflow Table</span>
-            <span className="text-xs text-theme-text-muted">(Year-by-year breakdown for analysts)</span>
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-white">{t('advancedProjections')}</span>
+            <span className="text-xs text-amber-400/70">({t('advancedProjectionsDesc')})</span>
           </div>
-          {showDetailedTable ? (
+          {show10YearProjections ? (
             <ChevronUp className="w-4 h-4 text-theme-text-muted" />
           ) : (
             <ChevronDown className="w-4 h-4 text-theme-text-muted" />
           )}
         </button>
         
-        {showDetailedTable && (
-          <div className="border-t border-theme-border animate-in slide-in-from-top-2 duration-300">
+        {show10YearProjections && (
+          <div className="border-t border-theme-border animate-in slide-in-from-top-2 duration-300 p-4 space-y-4">
+            {/* Disclaimer */}
+            <ProjectionDisclaimer variant="full" />
+            
+            {/* 10-Year Components */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <CumulativeIncomeChart 
+                  projections={calculations.yearlyProjections} 
+                  currency={currency} 
+                  rate={rate} 
+                  totalCapitalInvested={totalCapitalInvested} 
+                  showAirbnbComparison={calculations.showAirbnbComparison} 
+                />
+              </div>
+              
+              <WealthSummaryCard 
+                propertyValueYear10={lastProjection.propertyValue} 
+                cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
+                airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} 
+                initialInvestment={totalCapitalInvested} 
+                currency={currency} 
+                rate={rate} 
+                showAirbnbComparison={calculations.showAirbnbComparison} 
+              />
+            </div>
+            
+            {/* Detailed Table */}
             <OIYearlyProjectionTable 
               projections={calculations.yearlyProjections} 
               currency={currency} 

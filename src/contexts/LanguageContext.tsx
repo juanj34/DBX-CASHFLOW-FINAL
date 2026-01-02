@@ -1364,6 +1364,13 @@ const translations: Translations = {
   paymentJourney: { en: 'Payment Journey', es: 'Trayecto de Pagos' },
   totalDayOneCosts: { en: 'Total Day-1 Costs', es: 'Total Costos Iniciales' },
   duringMonthsConstruction: { en: 'During {months} months of construction', es: 'Durante {months} meses de construcción' },
+  
+  // Projection Disclaimer
+  projectionDisclaimerTitle: { en: 'Hypothetical Projection', es: 'Proyección Hipotética' },
+  projectionDisclaimerCompact: { en: 'These projections are illustrative simulations based on assumed appreciation rates. Dubai\'s real estate market is highly dynamic—actual results may differ materially.', es: 'Estas proyecciones son simulaciones ilustrativas basadas en tasas de apreciación asumidas. El mercado inmobiliario de Dubái es muy dinámico—los resultados reales pueden diferir significativamente.' },
+  projectionDisclaimerFull: { en: 'This is a hypothetical simulation based on assumed appreciation rates and historical trends. Dubai\'s real estate market is highly dynamic and subject to rapid changes. Actual results may differ materially from these projections. Past performance is not indicative of future results.', es: 'Esta es una simulación hipotética basada en tasas de apreciación asumidas y tendencias históricas. El mercado inmobiliario de Dubái es muy dinámico y sujeto a cambios rápidos. Los resultados reales pueden diferir significativamente de estas proyecciones. El rendimiento pasado no es indicativo de resultados futuros.' },
+  advancedProjections: { en: 'Advanced Projections', es: 'Proyecciones Avanzadas' },
+  advancedProjectionsDesc: { en: '10-year simulation for analysis purposes', es: 'Simulación a 10 años para propósitos de análisis' },
 };
 
 interface LanguageContextType {
