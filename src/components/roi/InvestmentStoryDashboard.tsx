@@ -903,9 +903,9 @@ export const InvestmentStoryDashboard = ({
           {/* ===== SECTION 3: EXIT ===== */}
           {activeSection === 'exit' && (
             <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col h-full">
-              <div className="p-4 flex-1 flex flex-col gap-4 min-h-0">
-                {/* Exit Scenario Cards - Bigger and more prominent */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+              <div className="p-4 flex-1 flex flex-col gap-3 min-h-0">
+                {/* Exit Scenario Cards - Compact row */}
+                <div className="grid grid-cols-3 gap-3 shrink-0">
                   {exitScenariosData.map((scenario, index) => {
                     const months = exitScenarios[index];
                     const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
@@ -923,7 +923,7 @@ export const InvestmentStoryDashboard = ({
                       <AnimatedCard key={index} delay={index * 75}>
                         <div 
                           className={cn(
-                            "rounded-xl p-5 border transition-all cursor-pointer h-full flex flex-col",
+                            "rounded-xl p-4 border transition-all cursor-pointer",
                             isHighlighted
                               ? "bg-gradient-to-br from-[#CCFF00]/10 to-slate-800/80 border-[#CCFF00]/50 ring-1 ring-[#CCFF00]/30"
                               : "bg-slate-800/60 border-slate-700/40 hover:border-[#CCFF00]/30"
@@ -931,56 +931,51 @@ export const InvestmentStoryDashboard = ({
                           onMouseEnter={() => setHighlightedExit(index)}
                           onMouseLeave={() => setHighlightedExit(null)}
                         >
-                          {/* Header: Exit number and date */}
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-lg font-bold text-[#CCFF00]">Exit {index + 1}</span>
-                            <span className="text-sm text-white font-medium">{exitDate}</span>
+                          {/* Header: Exit number, months, and date */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base font-bold text-[#CCFF00]">Exit {index + 1}</span>
+                              <span className="px-2 py-0.5 bg-slate-700/60 rounded text-xs text-white font-mono">{months}mo</span>
+                            </div>
+                            <span className="text-xs text-slate-400">{exitDate}</span>
                           </div>
                           
-                          {/* Timeline badge */}
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg mb-4 self-start">
-                            <span className="text-white font-mono font-semibold">{months}</span>
-                            <span className="text-slate-400 text-sm">months</span>
-                          </div>
-                          
-                          {/* Property Value - Hero */}
-                          <div className="mb-4">
-                            <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Property Value</p>
-                            <p className="text-2xl font-bold text-white font-mono">
+                          {/* Property Value */}
+                          <div className="mb-2">
+                            <p className="text-[10px] uppercase tracking-wider text-slate-500">Property Value</p>
+                            <p className="text-lg font-bold text-white font-mono">
                               {formatCurrency(scenario.exitPrice, currency, rate)}
                             </p>
                           </div>
                           
                           {/* Cash Invested */}
-                          <div className="mb-4">
-                            <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Cash Invested</p>
-                            <p className="text-lg font-semibold text-slate-300 font-mono">
+                          <div className="mb-3">
+                            <p className="text-[10px] uppercase tracking-wider text-slate-500">Cash In</p>
+                            <p className="text-sm font-medium text-slate-300 font-mono">
                               {formatCurrency(scenario.equityDeployed + (scenario.totalCapital - scenario.equityDeployed), currency, rate)}
                             </p>
                           </div>
                           
-                          {/* Profit and ROE - Bottom section */}
-                          <div className="mt-auto pt-4 border-t border-slate-700/50">
-                            <div className="flex items-end justify-between">
-                              <div>
-                                <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Profit</p>
-                                <p className={cn(
-                                  "text-xl font-bold font-mono",
-                                  displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
-                                )}>
-                                  {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
-                                </p>
-                              </div>
-                              
-                              <div className="text-right">
-                                <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">ROE</p>
-                                <p className={cn(
-                                  "text-3xl font-bold font-mono",
-                                  displayROE >= 0 ? "text-[#CCFF00]" : "text-red-400"
-                                )}>
-                                  {displayROE.toFixed(0)}%
-                                </p>
-                              </div>
+                          {/* Profit and ROE - Compact bottom */}
+                          <div className="flex items-end justify-between pt-2 border-t border-slate-700/50">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-slate-500">Profit</p>
+                              <p className={cn(
+                                "text-base font-bold font-mono",
+                                displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
+                              )}>
+                                {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
+                              </p>
+                            </div>
+                            
+                            <div className="text-right">
+                              <p className="text-[10px] uppercase tracking-wider text-slate-500">ROE</p>
+                              <p className={cn(
+                                "text-2xl font-bold font-mono",
+                                displayROE >= 0 ? "text-[#CCFF00]" : "text-red-400"
+                              )}>
+                                {displayROE.toFixed(0)}%
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -989,8 +984,8 @@ export const InvestmentStoryDashboard = ({
                   })}
                 </div>
 
-                {/* Growth Curve Chart - Compact */}
-                <div className="shrink-0 h-[180px]">
+                {/* Growth Curve Chart - Takes remaining space */}
+                <div className="flex-1 min-h-[280px]">
                   <AnimatedCard delay={300} className="h-full">
                     <OIGrowthCurve
                       calculations={calculations}
