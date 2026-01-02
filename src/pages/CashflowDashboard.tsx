@@ -368,7 +368,7 @@ const CashflowDashboardContent = () => {
                   customDifferentiators={customDifferentiators}
                   onEditConfig={() => setModalOpen(true)}
                   onEditClient={() => setClientModalOpen(true)}
-                  variant="dashboard"
+                  variant="glass"
                   floorPlanUrl={quoteImages.floorPlanUrl}
                   buildingRenderUrl={quoteImages.buildingRenderUrl}
                   showLogoOverlay={quoteImages.showLogoOverlay}
