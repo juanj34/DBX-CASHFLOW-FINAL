@@ -7,11 +7,71 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-forwarded-for, x-real-ip",
 };
 
 interface TrackViewRequest {
   shareToken: string;
+}
+
+interface GeoLocation {
+  city?: string;
+  region?: string;
+  country?: string;
+  countryCode?: string;
+  timezone?: string;
+}
+
+// Get client IP from request headers
+function getClientIP(req: Request): string | null {
+  // Check common headers for client IP (in order of preference)
+  const xForwardedFor = req.headers.get("x-forwarded-for");
+  if (xForwardedFor) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    return xForwardedFor.split(",")[0].trim();
+  }
+  
+  const xRealIp = req.headers.get("x-real-ip");
+  if (xRealIp) {
+    return xRealIp;
+  }
+  
+  const cfConnectingIp = req.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+  
+  return null;
+}
+
+// Get geolocation data from IP using free ip-api.com service
+async function getGeoLocation(ip: string): Promise<GeoLocation | null> {
+  try {
+    // Skip geolocation for localhost/private IPs
+    if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
+      console.log("Skipping geolocation for private IP:", ip);
+      return null;
+    }
+    
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,region,regionName,city,timezone`);
+    const data = await response.json();
+    
+    if (data.status === "success") {
+      return {
+        city: data.city,
+        region: data.regionName,
+        country: data.country,
+        countryCode: data.countryCode,
+        timezone: data.timezone,
+      };
+    }
+    
+    console.log("Geolocation lookup failed:", data);
+    return null;
+  } catch (error) {
+    console.error("Error fetching geolocation:", error);
+    return null;
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -34,6 +94,16 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Tracking view for shareToken: ${shareToken}`);
+
+    // Get client IP and geolocation
+    const clientIP = getClientIP(req);
+    console.log("Client IP:", clientIP);
+    
+    let geoLocation: GeoLocation | null = null;
+    if (clientIP) {
+      geoLocation = await getGeoLocation(clientIP);
+      console.log("Geolocation:", geoLocation);
+    }
 
     // Create Supabase client with service role to bypass RLS
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -112,7 +182,29 @@ const handler = async (req: Request): Promise<Response> => {
       if (brokerEmail) {
         console.log(`Sending first view notification to broker: ${brokerEmail}`);
         try {
-          const dashboardUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/cashflow/${quote.id}`;
+          // Build location string
+          let locationString = "Unknown location";
+          let locationFlag = "🌍";
+          
+          if (geoLocation) {
+            const parts = [];
+            if (geoLocation.city) parts.push(geoLocation.city);
+            if (geoLocation.region && geoLocation.region !== geoLocation.city) parts.push(geoLocation.region);
+            if (geoLocation.country) parts.push(geoLocation.country);
+            
+            if (parts.length > 0) {
+              locationString = parts.join(", ");
+            }
+            
+            // Add country flag emoji
+            if (geoLocation.countryCode) {
+              const codePoints = geoLocation.countryCode
+                .toUpperCase()
+                .split("")
+                .map(char => 127397 + char.charCodeAt(0));
+              locationFlag = String.fromCodePoint(...codePoints);
+            }
+          }
           
           await resend.emails.send({
             from: "InvestDubai <onboarding@resend.dev>",
@@ -153,6 +245,14 @@ const handler = async (req: Request): Promise<Response> => {
                             <p style="color: #1a1f2e; font-size: 14px; margin: 0 0 8px 0;">
                               <strong>📅 Viewed at:</strong> ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
                             </p>
+                            <p style="color: #1a1f2e; font-size: 14px; margin: 0 0 8px 0;">
+                              <strong>${locationFlag} Location:</strong> ${locationString}
+                            </p>
+                            ${geoLocation?.timezone ? `
+                            <p style="color: #1a1f2e; font-size: 14px; margin: 0 0 8px 0;">
+                              <strong>🕐 Client timezone:</strong> ${geoLocation.timezone}
+                            </p>
+                            ` : ''}
                             <p style="color: #1a1f2e; font-size: 14px; margin: 0;">
                               <strong>📊 Project:</strong> ${quote.project_name || "Not specified"}
                             </p>
@@ -162,6 +262,10 @@ const handler = async (req: Request): Promise<Response> => {
                       
                       <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
                         This is a great time to follow up! Consider reaching out via WhatsApp or email to answer any questions they might have.
+                      </p>
+                      
+                      <p style="color: #888888; font-size: 13px; line-height: 1.5; margin: 0;">
+                        💡 <em>Tip: Knowing your client's location can help you time your follow-up calls for when they're most available.</em>
                       </p>
                       
                     </td>
