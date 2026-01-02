@@ -15,7 +15,7 @@ import { PaymentHorizontalTimeline } from "./PaymentHorizontalTimeline";
 import { AnimatedNumber, AnimatedCurrency } from "./AnimatedNumber";
 import { StoryNavigation, StorySection, StorySectionConfig } from "./StoryNavigation";
 import { OIGrowthCurve } from "./OIGrowthCurve";
-import { calculateExitScenario } from "./constructionProgress";
+import { calculateExitScenario, monthToConstruction } from "./constructionProgress";
 import { RentalCashflowWaterfall } from "./CashflowWaterfall";
 import { PropertyShowcase } from "./PropertyShowcase";
 import { ProjectionDisclaimer } from "./ProjectionDisclaimer";
@@ -904,8 +904,14 @@ export const InvestmentStoryDashboard = ({
           {activeSection === 'exit' && (
             <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col h-full">
               <div className="p-4 flex-1 flex flex-col gap-3 min-h-0">
-                {/* Exit Scenario Cards - Compact row */}
-                <div className="grid grid-cols-3 gap-3 shrink-0">
+                {/* Exit Scenario Cards - Dynamic grid based on exit count */}
+                <div className={cn(
+                  "grid gap-3 shrink-0",
+                  exitScenarios.length === 1 && "grid-cols-1",
+                  exitScenarios.length === 2 && "grid-cols-2",
+                  exitScenarios.length === 3 && "grid-cols-3",
+                  exitScenarios.length >= 4 && "grid-cols-4"
+                )}>
                   {exitScenariosData.map((scenario, index) => {
                     const months = exitScenarios[index];
                     const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
@@ -918,6 +924,9 @@ export const InvestmentStoryDashboard = ({
                     const exitMonth = ((exitTotalMonths - 1) % 12) + 1;
                     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                     const exitDate = `${monthNames[exitMonth - 1]} ${exitYear}`;
+                    
+                    // Calculate construction progress at this exit point
+                    const constructionPercent = monthToConstruction(months, calculations.totalMonths);
                     
                     return (
                       <AnimatedCard key={index} delay={index * 75}>
@@ -932,12 +941,17 @@ export const InvestmentStoryDashboard = ({
                           onMouseLeave={() => setHighlightedExit(null)}
                         >
                           {/* Header: Exit number, months, and date */}
-                          <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-base font-bold text-[#CCFF00]">Exit {index + 1}</span>
                               <span className="px-2 py-0.5 bg-slate-700/60 rounded text-xs text-white font-mono">{months}mo</span>
                             </div>
                             <span className="text-xs text-slate-400">{exitDate}</span>
+                          </div>
+                          
+                          {/* Construction progress estimate */}
+                          <div className="flex items-center gap-1.5 mb-3">
+                            <span className="text-[10px] text-slate-500">~{Math.round(constructionPercent)}% Built</span>
                           </div>
                           
                           {/* Property Value */}
