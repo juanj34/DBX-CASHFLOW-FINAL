@@ -145,6 +145,28 @@ export const PaymentHorizontalTimeline = ({
     return result.sort((a, b) => a.positionPercent - b.positionPercent);
   }, [inputs, totalMonths, t, language]);
 
+  // Detect overlapping labels and assign alternating vertical offsets
+  const paymentsWithOffsets = useMemo(() => {
+    const MIN_SPACING = 12; // Minimum spacing in percentage points to avoid overlap
+    const result: Array<TimelinePayment & { labelOffset: 'top' | 'bottom' }> = [];
+    
+    payments.forEach((payment, index) => {
+      // Check if this payment is too close to the previous one
+      const prevPayment = result[result.length - 1];
+      const isTooClose = prevPayment && 
+        Math.abs(payment.positionPercent - prevPayment.positionPercent) < MIN_SPACING;
+      
+      // If too close and previous is on top, put this one on bottom (and vice versa)
+      const labelOffset: 'top' | 'bottom' = isTooClose && prevPayment?.labelOffset === 'top' 
+        ? 'bottom' 
+        : 'top';
+      
+      result.push({ ...payment, labelOffset });
+    });
+    
+    return result;
+  }, [payments]);
+
   // No payments have been made yet - progress should be 0
   // The timeline shows the payment plan, not actual progress
   const paidProgress = 0;
@@ -205,7 +227,7 @@ export const PaymentHorizontalTimeline = ({
       </div>
 
       {/* Timeline Container */}
-      <div className="relative h-28 px-4">
+      <div className="relative h-32 px-4">
         {/* Track Background */}
         <div className="absolute top-1/2 left-4 right-4 h-2 bg-slate-700/80 rounded-full transform -translate-y-1/2" />
         
@@ -219,7 +241,7 @@ export const PaymentHorizontalTimeline = ({
 
         {/* Payment Markers */}
         <TooltipProvider delayDuration={0}>
-          {payments.map((payment, index) => {
+          {paymentsWithOffsets.map((payment, index) => {
             const isHovered = hoveredId === payment.id;
             const leftPercent = payment.positionPercent;
             const leftCalc = `calc(${leftPercent}% + 16px - ${leftPercent * 0.32}px)`;
@@ -228,6 +250,8 @@ export const PaymentHorizontalTimeline = ({
             const markerColor = payment.type === 'handover' ? 'bg-cyan-500' : payment.type === 'entry' ? 'bg-emerald-500' : 'bg-slate-500';
             const borderColor = payment.type === 'handover' ? 'border-cyan-300' : payment.type === 'entry' ? 'border-emerald-300' : 'border-slate-400';
             const textColor = payment.type === 'handover' ? 'text-cyan-400' : payment.type === 'entry' ? 'text-emerald-400' : 'text-slate-300';
+            
+            const isLabelOnTop = payment.labelOffset === 'top';
             
             return (
               <Tooltip key={payment.id}>
@@ -244,15 +268,26 @@ export const PaymentHorizontalTimeline = ({
                     onMouseEnter={() => setHoveredId(payment.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
-                    {/* Percent label above marker */}
-                    <div 
-                      className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center animate-fade-in"
-                      style={{ animationDelay: `${index * 150 + 100}ms`, animationFillMode: 'both' }}
-                    >
-                      <div className={`text-sm font-bold ${textColor}`}>
-                        {payment.percent}%
+                    {/* Percent label - positioned based on offset */}
+                    {isLabelOnTop ? (
+                      <div 
+                        className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center animate-fade-in"
+                        style={{ animationDelay: `${index * 150 + 100}ms`, animationFillMode: 'both' }}
+                      >
+                        <div className={`text-sm font-bold ${textColor}`}>
+                          {payment.percent}%
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div 
+                        className="absolute top-10 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center animate-fade-in"
+                        style={{ animationDelay: `${index * 150 + 100}ms`, animationFillMode: 'both' }}
+                      >
+                        <div className={`text-sm font-bold ${textColor}`}>
+                          {payment.percent}%
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Marker Circle with number */}
                     <div 
@@ -269,19 +304,30 @@ export const PaymentHorizontalTimeline = ({
                       </span>
                     </div>
                     
-                    {/* Labels below marker */}
-                    <div className="absolute top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
-                      <div className={`text-[10px] font-semibold ${textColor}`}>
-                        {payment.label}
+                    {/* Labels - positioned based on offset */}
+                    {isLabelOnTop ? (
+                      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                        <div className={`text-[10px] font-semibold ${textColor}`}>
+                          {payment.label}
+                        </div>
+                        <div className="text-[9px] text-slate-500 mt-0.5">
+                          {payment.isEstimate ? '~' : ''}{payment.date}
+                        </div>
                       </div>
-                      <div className="text-[9px] text-slate-500 mt-0.5">
-                        {payment.isEstimate ? '~' : ''}{payment.date}
+                    ) : (
+                      <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
+                        <div className="text-[9px] text-slate-500 mb-0.5">
+                          {payment.isEstimate ? '~' : ''}{payment.date}
+                        </div>
+                        <div className={`text-[10px] font-semibold ${textColor}`}>
+                          {payment.label}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent 
-                  side="top" 
+                  side={isLabelOnTop ? "top" : "bottom"}
                   className="bg-slate-800 border-slate-700 p-3 max-w-[220px]"
                 >
                   <div className="space-y-2">
