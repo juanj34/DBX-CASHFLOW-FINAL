@@ -15,6 +15,13 @@ import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, Trending
 import { LocationMiniMap } from "@/components/roi/LocationMiniMap";
 import { FullscreenMapModal } from "@/components/roi/FullscreenMapModal";
 import { cn } from "@/lib/utils";
+import { 
+  GlassHeroCard, 
+  GlassMetricGauge, 
+  GlassPaymentTimeline, 
+  GlassQuickAction,
+  GlassClientCard 
+} from "@/components/roi/glass";
 
 interface PropertyTabContentProps {
   inputs: OIInputs;
@@ -25,7 +32,7 @@ interface PropertyTabContentProps {
   customDifferentiators?: any[];
   onEditConfig: () => void;
   onEditClient: () => void;
-  variant?: 'default' | 'dashboard';
+  variant?: 'default' | 'dashboard' | 'glass';
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
   showLogoOverlay?: boolean;
@@ -159,7 +166,216 @@ export const PropertyTabContent = ({
     : clientInfo.clientName 
       ? [{ id: '1', name: clientInfo.clientName, country: clientInfo.clientCountry }] 
       : [];
+  // Payment timeline nodes - calculate construction percentage as remainder
+  const constructionPercent = 100 - (inputs.downpaymentPercent || 20) - (inputs.preHandoverPercent || 40);
+  const paymentNodes = [
+    { label: 'Booking', percentage: inputs.downpaymentPercent || 20, completed: true },
+    { label: 'Construction', percentage: constructionPercent, completed: false, current: true },
+    { label: 'Handover', percentage: inputs.preHandoverPercent || 40, completed: false },
+  ];
 
+  // ============ GLASS VARIANT ============
+  if (variant === 'glass') {
+    return (
+      <div className="h-full overflow-hidden bg-gradient-to-br from-theme-bg via-theme-bg-alt to-theme-bg">
+        {/* Ambient glow effects */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-theme-accent/10 blur-[150px] rounded-full" />
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-theme-accent-secondary/10 blur-[120px] rounded-full" />
+        </div>
+
+        <motion.div 
+          className="relative z-10 h-full overflow-y-auto p-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Bento Grid Layout */}
+          <div className="grid grid-cols-12 gap-4 auto-rows-min">
+            
+            {/* Hero Card - Spans 8 columns */}
+            <motion.div className="col-span-12 lg:col-span-8" variants={itemVariants}>
+              <GlassHeroCard
+                price={inputs.basePrice}
+                currency={currency}
+                rate={rate}
+                pricePerSqft={pricePerSqft}
+                projectName={project?.name || clientInfo.projectName}
+                zoneName={zone?.name || clientInfo.zoneName}
+                developerName={developer?.name || clientInfo.developer}
+                unitType={clientInfo.unitType}
+                handoverQuarter={inputs.handoverQuarter}
+                handoverYear={inputs.handoverYear}
+                marketDiffPercent={marketDiffPercent}
+                onDeveloperClick={developer ? () => setDeveloperModalOpen(true) : undefined}
+              />
+            </motion.div>
+
+            {/* Metrics Grid - 4 columns, 2 rows */}
+            <motion.div 
+              className="col-span-12 lg:col-span-4 grid grid-cols-2 gap-4"
+              variants={itemVariants}
+            >
+              {/* Net Yield Gauge */}
+              <div className="glass-card rounded-3xl p-4 flex items-center justify-center">
+                <GlassMetricGauge
+                  value={netYield}
+                  maxValue={15}
+                  label="Net Yield"
+                  suffix="%"
+                  color="emerald"
+                  size="sm"
+                />
+              </div>
+
+              {/* Cash to Book */}
+              <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center text-center">
+                <Wallet className="w-6 h-6 text-amber-400 mb-2" />
+                <p className="text-lg font-bold text-white">
+                  {formatCurrency(cashToBook, currency, rate)}
+                </p>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider">Cash to Book</p>
+              </div>
+
+              {/* Service Charge */}
+              <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center text-center">
+                <Receipt className="w-6 h-6 text-sky-400 mb-2" />
+                <p className="text-lg font-bold text-white">{serviceCharge}</p>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider">AED/sqft</p>
+              </div>
+
+              {/* Unit Size */}
+              <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center text-center">
+                <Ruler className="w-6 h-6 text-purple-400 mb-2" />
+                <p className="text-lg font-bold text-white">
+                  {clientInfo.unitSizeSqf?.toLocaleString() || '—'}
+                </p>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider">sqft</p>
+              </div>
+            </motion.div>
+
+            {/* Payment Timeline - Full width */}
+            <motion.div className="col-span-12 lg:col-span-8" variants={itemVariants}>
+              <GlassPaymentTimeline nodes={paymentNodes} />
+            </motion.div>
+
+            {/* Quick Actions */}
+            <motion.div 
+              className="col-span-12 lg:col-span-4 grid grid-cols-3 gap-3"
+              variants={itemVariants}
+            >
+              <GlassQuickAction
+                icon={Ruler}
+                label="Floor Plan"
+                onClick={() => floorPlanUrl && setLightboxOpen(true)}
+                disabled={!floorPlanUrl}
+                color="sky"
+              />
+              <GlassQuickAction
+                icon={Building2}
+                label="Developer"
+                onClick={() => developer && setDeveloperModalOpen(true)}
+                disabled={!developer}
+                color="purple"
+              />
+              <GlassQuickAction
+                icon={Info}
+                label="Project"
+                onClick={() => project && setProjectModalOpen(true)}
+                disabled={!project}
+                color="amber"
+              />
+            </motion.div>
+
+            {/* Client Card */}
+            <motion.div className="col-span-12 lg:col-span-6" variants={itemVariants}>
+              <GlassClientCard clients={clientList} />
+            </motion.div>
+
+            {/* Location Mini Map */}
+            {project?.latitude && project?.longitude && (
+              <motion.div 
+                className="col-span-12 lg:col-span-6 glass-card rounded-3xl overflow-hidden cursor-pointer group min-h-[160px]"
+                variants={itemVariants}
+                onClick={() => setMapModalOpen(true)}
+              >
+                <LocationMiniMap
+                  latitude={project.latitude}
+                  longitude={project.longitude}
+                  height="h-full"
+                  className="h-full group-hover:opacity-90 transition-opacity"
+                />
+              </motion.div>
+            )}
+
+            {/* Value Differentiators */}
+            {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
+              <motion.div className="col-span-12" variants={itemVariants}>
+                <div className="glass-card rounded-3xl p-5">
+                  <ValueDifferentiatorsDisplay
+                    selectedDifferentiators={inputs.valueDifferentiators}
+                    customDifferentiators={customDifferentiators}
+                    onEditClick={onEditConfig}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Building Render - Right side on larger screens */}
+            {buildingRenderUrl && (
+              <motion.div 
+                className="col-span-12 lg:col-span-6 glass-card rounded-3xl overflow-hidden min-h-[300px]"
+                variants={itemVariants}
+              >
+                <BuildingRenderCard
+                  imageUrl={buildingRenderUrl}
+                  developerId={developerId}
+                  showLogoOverlay={showLogoOverlay}
+                  className="h-full"
+                />
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Modals */}
+        {floorPlanUrl && (
+          <FloorPlanLightbox
+            imageUrl={floorPlanUrl}
+            open={lightboxOpen}
+            onOpenChange={setLightboxOpen}
+          />
+        )}
+        {developer && (
+          <DeveloperInfoModal
+            developerId={developer.id}
+            open={developerModalOpen}
+            onOpenChange={setDeveloperModalOpen}
+          />
+        )}
+        {project && (
+          <ProjectInfoModal
+            project={project}
+            zoneName={clientInfo.zoneName}
+            open={projectModalOpen}
+            onOpenChange={setProjectModalOpen}
+          />
+        )}
+        {project?.latitude && project?.longitude && (
+          <FullscreenMapModal
+            open={mapModalOpen}
+            onOpenChange={setMapModalOpen}
+            latitude={project.latitude}
+            longitude={project.longitude}
+            projectName={project.name || clientInfo.projectName}
+            zoneName={zone?.name || clientInfo.zoneName}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ============ DASHBOARD VARIANT ============
   if (variant === 'dashboard') {
     return (
       <div className="h-full overflow-hidden">

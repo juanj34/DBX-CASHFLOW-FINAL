@@ -193,6 +193,38 @@ All colors MUST be HSL.
   }
 
   /* =====================================================
+   * GLASSMORPHISM CARD VARIANTS
+   * ===================================================== */
+  .glass-card {
+    background: hsla(0, 0%, 100%, 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsla(0, 0%, 100%, 0.1);
+    box-shadow: 0 8px 32px hsla(0, 0%, 0%, 0.12);
+  }
+
+  .glass-card-elevated {
+    background: hsla(0, 0%, 100%, 0.08);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid hsla(0, 0%, 100%, 0.15);
+    box-shadow: 0 12px 40px hsla(0, 0%, 0%, 0.2);
+  }
+
+  .glass-card-inset {
+    background: hsla(0, 0%, 0%, 0.2);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsla(0, 0%, 100%, 0.05);
+  }
+
+  .glass-glow {
+    box-shadow: 
+      0 0 60px hsla(var(--theme-accent), 0.15),
+      0 0 100px hsla(var(--theme-accent), 0.1);
+  }
+
+  /* =====================================================
    * SEMANTIC TEXT CLASSES
    * =====================================================
    * ALWAYS use these instead of raw text-gray-* classes.
