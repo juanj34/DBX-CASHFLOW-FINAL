@@ -1,4 +1,4 @@
-import { Rocket, Home } from "lucide-react";
+import { Rocket, Home, TrendingUp } from "lucide-react";
 import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
 import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
@@ -42,18 +42,21 @@ export const OIGrowthCurve = ({
   
   // Calculate handover price using the SAME function as exit scenario cards
   const handoverPrice = calculatePhasedExitPrice(totalMonths, inputs, totalMonths, basePrice);
-  const maxValue = handoverPrice * 1.1; // Add 10% padding
+  const maxValue = handoverPrice * 1.15; // Add 15% padding for labels
+
+  // Calculate appreciation percentages
+  const constructionAppreciation = ((handoverPrice - basePrice) / basePrice) * 100;
 
   // SVG dimensions
   const width = 700;
-  const height = 300;
-  const padding = { top: 40, right: 40, bottom: 60, left: 60 };
+  const height = 320;
+  const padding = { top: 50, right: 40, bottom: 60, left: 70 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
   // Scale functions - now based on months
   const xScale = (months: number) => padding.left + (months / totalMonths) * chartWidth;
-  const yScale = (value: number) => padding.top + chartHeight - ((value - basePrice * 0.9) / (maxValue - basePrice * 0.9)) * chartHeight;
+  const yScale = (value: number) => padding.top + chartHeight - ((value - basePrice * 0.85) / (maxValue - basePrice * 0.85)) * chartHeight;
   
   // Calculate approximate path length for animation
   const pathLength = useMemo(() => chartWidth * 1.5, [chartWidth]);
@@ -116,6 +119,9 @@ export const OIGrowthCurve = ({
     const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
     const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
     const displayROE = exitCosts > 0 ? netROE : trueROE;
+
+    // Calculate appreciation at this point
+    const appreciation = ((exitPrice - basePrice) / basePrice) * 100;
     
     return {
       exitMonths: exitMonth,
@@ -123,7 +129,8 @@ export const OIGrowthCurve = ({
       equityDeployed,
       profit,
       trueROE: displayROE,
-      totalCapitalDeployed: totalCapital
+      totalCapitalDeployed: totalCapital,
+      appreciation
     };
   };
 
@@ -173,7 +180,7 @@ export const OIGrowthCurve = ({
   };
 
   return (
-    <div className="bg-theme-card border border-theme-border rounded-2xl p-6 relative overflow-hidden">
+    <div className="bg-theme-card border border-theme-border rounded-2xl p-6 relative overflow-hidden h-full">
       {/* Background grid */}
       <div className="absolute inset-0 opacity-5">
         <div className="w-full h-full" style={{ 
@@ -182,29 +189,61 @@ export const OIGrowthCurve = ({
         }} />
       </div>
 
-      <div className="relative">
+      <div className="relative h-full flex flex-col">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-theme-accent/20 rounded-xl">
-            <Rocket className="w-5 h-5 text-theme-accent" />
+            <TrendingUp className="w-5 h-5 text-theme-accent" />
           </div>
           <div>
             <h3 className="font-semibold text-theme-text">Price Appreciation Over Time</h3>
-            <p className="text-xs text-theme-text-muted">Exit value at different time points</p>
+            <p className="text-xs text-theme-text-muted">From booking to handover · +{constructionAppreciation.toFixed(1)}% total appreciation</p>
           </div>
         </div>
 
-        <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="mt-4">
+        <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="flex-1" preserveAspectRatio="xMidYMid meet">
           {/* Gradient definitions */}
           <defs>
+            {/* Construction phase background gradient */}
+            <linearGradient id="constructionPhaseGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#CCFF00" stopOpacity="0.1" />
+            </linearGradient>
+            
+            {/* Enhanced curve gradient */}
             <linearGradient id="curveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#84cc16" />
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="50%" stopColor="#CCFF00" />
               <stop offset="100%" stopColor="#22d3d1" />
             </linearGradient>
+            
+            {/* Area fill gradient */}
             <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#84cc16" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#84cc16" stopOpacity="0" />
+              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#CCFF00" stopOpacity="0" />
             </linearGradient>
           </defs>
+
+          {/* Construction Phase Background */}
+          <rect
+            x={padding.left}
+            y={padding.top}
+            width={chartWidth}
+            height={chartHeight}
+            fill="url(#constructionPhaseGradient)"
+            rx="4"
+          />
+
+          {/* Phase label at top */}
+          <text
+            x={(padding.left + width - padding.right) / 2}
+            y={padding.top - 15}
+            fill="hsl(var(--theme-text-muted))"
+            fontSize="11"
+            textAnchor="middle"
+            fontWeight="500"
+          >
+            Construction Phase
+          </text>
 
           {/* Grid lines */}
           {timeLabels.map(months => (
@@ -228,7 +267,7 @@ export const OIGrowthCurve = ({
               x={xScale(months)}
               y={height - padding.bottom + 20}
               fill="hsl(var(--theme-text-muted))"
-              fontSize="12"
+              fontSize="11"
               textAnchor="middle"
             >
               {months}mo
@@ -240,7 +279,7 @@ export const OIGrowthCurve = ({
             x={width / 2}
             y={height - 10}
             fill="hsl(var(--theme-text-muted))"
-            fontSize="12"
+            fontSize="11"
             textAnchor="middle"
           >
             Months from Booking
@@ -257,16 +296,6 @@ export const OIGrowthCurve = ({
             strokeDasharray="4,4"
             opacity="0.5"
           />
-          <text
-            x={padding.left - 10}
-            y={yScale(basePrice)}
-            fill="hsl(var(--theme-text-muted))"
-            fontSize="10"
-            textAnchor="end"
-            dominantBaseline="middle"
-          >
-            Base: {formatCurrencyShort(basePrice, currency, rate)}
-          </text>
 
           {/* Area fill under curve - animated */}
           <path
@@ -306,6 +335,59 @@ export const OIGrowthCurve = ({
               transition: 'stroke-dashoffset 1.2s ease-out, opacity 0.5s ease-out 0.8s'
             }}
           />
+
+          {/* Start marker with price label */}
+          <g style={{
+            opacity: showMarkers ? 1 : 0,
+            transition: 'opacity 0.4s ease-out'
+          }}>
+            <circle
+              cx={xScale(0)}
+              cy={yScale(basePrice)}
+              r="8"
+              fill="#3b82f6"
+              stroke="#0f172a"
+              strokeWidth="2"
+            />
+            <circle
+              cx={xScale(0)}
+              cy={yScale(basePrice)}
+              r="4"
+              fill="#ffffff"
+            />
+            {/* Start label */}
+            <g transform={`translate(${xScale(0)}, ${yScale(basePrice) - 20})`}>
+              <rect
+                x="-35"
+                y="-10"
+                width="70"
+                height="20"
+                rx="10"
+                fill="#3b82f6"
+              />
+              <text
+                x="0"
+                y="4"
+                fill="#ffffff"
+                fontSize="9"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                Start
+              </text>
+            </g>
+            <text
+              x={xScale(0)}
+              y={yScale(basePrice) + 22}
+              fill="#3b82f6"
+              fontSize="10"
+              fontWeight="bold"
+              textAnchor="middle"
+              fontFamily="monospace"
+            >
+              {formatCurrencyShort(basePrice, currency, rate)}
+            </text>
+          </g>
 
           {/* Exit markers - Interactive with staggered entrance */}
           {exitMarkersData.map(({ scenario, label, yOffset }, index) => {
@@ -396,7 +478,7 @@ export const OIGrowthCurve = ({
                 x={xScale(scenario.exitMonths)}
                 y={yScale(scenario.exitPrice) + (yOffset >= 0 ? 28 : 45) + Math.abs(yOffset)}
                 fill="#CCFF00"
-                fontSize="11"
+                fontSize="10"
                 fontWeight="bold"
                 textAnchor="middle"
                 fontFamily="monospace"
@@ -404,7 +486,7 @@ export const OIGrowthCurve = ({
                 {formatCurrencyShort(scenario.exitPrice, currency, rate)}
               </text>
 
-              {/* ROE label */}
+              {/* Appreciation % */}
               <text
                 x={xScale(scenario.exitMonths)}
                 y={yScale(scenario.exitPrice) + (yOffset >= 0 ? 41 : 58) + Math.abs(yOffset)}
@@ -412,7 +494,7 @@ export const OIGrowthCurve = ({
                 fontSize="9"
                 textAnchor="middle"
               >
-                ROE: {scenario.trueROE.toFixed(0)}%
+                +{scenario.appreciation.toFixed(0)}% · {scenario.trueROE.toFixed(0)}% ROE
               </text>
             </g>
             );
@@ -424,6 +506,18 @@ export const OIGrowthCurve = ({
             transform: showMarkers ? 'translateY(0)' : 'translateY(10px)',
             transition: `opacity 0.4s ease-out 0.4s, transform 0.4s ease-out 0.4s`
           }}>
+            {/* Handover vertical line */}
+            <line
+              x1={xScale(handoverScenario.exitMonths)}
+              y1={padding.top}
+              x2={xScale(handoverScenario.exitMonths)}
+              y2={yScale(handoverScenario.exitPrice)}
+              stroke="#ffffff"
+              strokeWidth="1"
+              strokeDasharray="4,4"
+              opacity="0.3"
+            />
+            
             {/* Point circle - special styling */}
             <circle
               cx={xScale(handoverScenario.exitMonths)}
@@ -467,7 +561,7 @@ export const OIGrowthCurve = ({
               x={xScale(handoverScenario.exitMonths)}
               y={yScale(handoverScenario.exitPrice) + 28}
               fill="#ffffff"
-              fontSize="11"
+              fontSize="10"
               fontWeight="bold"
               textAnchor="middle"
               fontFamily="monospace"
@@ -475,16 +569,17 @@ export const OIGrowthCurve = ({
               {formatCurrencyShort(handoverScenario.exitPrice, currency, rate)}
             </text>
 
+            {/* Appreciation at handover */}
+            <text
+              x={xScale(handoverScenario.exitMonths)}
+              y={yScale(handoverScenario.exitPrice) + 41}
+              fill="#9ca3af"
+              fontSize="9"
+              textAnchor="middle"
+            >
+              +{constructionAppreciation.toFixed(0)}%
+            </text>
           </g>
-
-          {/* Starting point */}
-          <circle
-            cx={xScale(0)}
-            cy={yScale(basePrice)}
-            r="6"
-            fill="#CCFF00"
-            opacity="0.5"
-          />
         </svg>
       </div>
     </div>

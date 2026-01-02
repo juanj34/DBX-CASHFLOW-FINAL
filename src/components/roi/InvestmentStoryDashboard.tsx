@@ -902,21 +902,45 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 3: EXIT ===== */}
           {activeSection === 'exit' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
-              <div className="p-4 space-y-4 flex-1">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col h-full">
+              <div className="p-4 flex-1 flex flex-col gap-4 min-h-0">
+                {/* Summary Header */}
+                <div className="grid grid-cols-3 gap-3 p-3 bg-slate-800/50 rounded-xl border border-slate-700/30 shrink-0">
+                  <div className="text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Contract Price</p>
+                    <p className="text-sm font-mono text-white font-semibold">{formatCurrency(calculations.basePrice, currency, rate)}</p>
+                  </div>
+                  <div className="text-center border-x border-slate-700/30">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Entry Costs</p>
+                    <p className="text-sm font-mono text-red-400">{formatCurrency(calculations.totalEntryCosts, currency, rate)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Timeline</p>
+                    <p className="text-sm font-mono text-white">{calculations.totalMonths} months</p>
+                  </div>
+                </div>
+
                 {/* Exit Scenario Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 shrink-0">
                   {exitScenariosData.map((scenario, index) => {
                     const months = exitScenarios[index];
                     const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
                     const displayProfit = scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit;
                     const isHighlighted = highlightedExit === index;
+                    const progressPercent = Math.round((months / calculations.totalMonths) * 100);
+                    
+                    // Get exit date
+                    const exitTotalMonths = inputs.bookingMonth + months;
+                    const exitYear = inputs.bookingYear + Math.floor((exitTotalMonths - 1) / 12);
+                    const exitMonth = ((exitTotalMonths - 1) % 12) + 1;
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const exitDate = `${monthNames[exitMonth - 1]} ${exitYear}`;
                     
                     return (
                       <AnimatedCard key={index} delay={index * 75}>
                         <div 
                           className={cn(
-                            "rounded-xl p-4 border transition-all cursor-pointer h-full",
+                            "rounded-xl p-4 border transition-all cursor-pointer h-full min-h-[160px] flex flex-col",
                             isHighlighted
                               ? "bg-gradient-to-br from-green-500/20 to-slate-800/50 border-green-500/40 ring-1 ring-green-500/30"
                               : "bg-slate-800/50 border-slate-700/30 hover:border-slate-600/50"
@@ -924,26 +948,34 @@ export const InvestmentStoryDashboard = ({
                           onMouseEnter={() => setHighlightedExit(index)}
                           onMouseLeave={() => setHighlightedExit(null)}
                         >
-                          {/* De-emphasized header with exit name and time */}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
-                              {getExitName(months)}
-                            </span>
-                            <span className="px-2 py-0.5 bg-slate-700/50 rounded-full text-[10px] text-slate-400">
-                              {months}mo
-                            </span>
+                          {/* Header with exit date and construction milestone */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-[#CCFF00]">Exit {index + 1}</span>
+                              <span className={cn(
+                                "px-1.5 py-0.5 rounded text-[9px] font-medium",
+                                progressPercent < 50 ? "bg-blue-500/20 text-blue-400" :
+                                progressPercent < 85 ? "bg-[#CCFF00]/20 text-[#CCFF00]" :
+                                "bg-emerald-500/20 text-emerald-400"
+                              )}>
+                                {progressPercent < 50 ? 'Early' : progressPercent < 85 ? 'Mid' : 'Late'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500">{exitDate}</span>
                           </div>
                           
-                          {/* PRIMARY: Property Worth - Most prominent */}
-                          <p className="text-2xl font-bold text-white font-mono mb-3">
+                          <div className="text-[10px] text-slate-500 mb-3">{months}mo · {progressPercent}% built</div>
+                          
+                          {/* PRIMARY: Property Worth */}
+                          <p className="text-xl font-bold text-white font-mono mb-auto">
                             {formatCurrency(scenario.exitPrice, currency, rate)}
                           </p>
                           
-                          {/* SECONDARY: Profit - Green and prominent */}
-                          <div className="flex items-end justify-between">
+                          {/* SECONDARY: Profit and ROE */}
+                          <div className="flex items-end justify-between mt-3 pt-3 border-t border-slate-700/30">
                             <div>
                               <p className={cn(
-                                "text-lg font-bold font-mono",
+                                "text-base font-bold font-mono",
                                 displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
                               )}>
                                 {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
@@ -951,15 +983,14 @@ export const InvestmentStoryDashboard = ({
                               <p className="text-[10px] text-slate-500">Profit</p>
                             </div>
                             
-                            {/* TERTIARY: ROE - Largest, with subtle background */}
-                            <div className="text-right bg-gradient-to-br from-emerald-500/20 to-transparent rounded-lg px-3 py-1">
+                            <div className="text-right bg-gradient-to-br from-emerald-500/20 to-transparent rounded-lg px-2 py-1">
                               <p className={cn(
-                                "text-2xl font-bold font-mono",
+                                "text-xl font-bold font-mono",
                                 displayROE >= 0 ? "text-emerald-400" : "text-red-400"
                               )}>
                                 {displayROE.toFixed(0)}%
                               </p>
-                              <p className="text-[10px] text-emerald-400/70">ROE</p>
+                              <p className="text-[9px] text-emerald-400/70">ROE</p>
                             </div>
                           </div>
                         </div>
@@ -968,18 +999,20 @@ export const InvestmentStoryDashboard = ({
                   })}
                 </div>
 
-                {/* Growth Curve Chart */}
-                <AnimatedCard delay={300}>
-                  <OIGrowthCurve
-                    calculations={calculations}
-                    inputs={inputs}
-                    currency={currency}
-                    exitScenarios={exitScenarios}
-                    rate={rate}
-                    highlightedExit={highlightedExit}
-                    onExitHover={setHighlightedExit}
-                  />
-                </AnimatedCard>
+                {/* Growth Curve Chart - fills remaining space */}
+                <div className="flex-1 min-h-[200px]">
+                  <AnimatedCard delay={300} className="h-full">
+                    <OIGrowthCurve
+                      calculations={calculations}
+                      inputs={inputs}
+                      currency={currency}
+                      exitScenarios={exitScenarios}
+                      rate={rate}
+                      highlightedExit={highlightedExit}
+                      onExitHover={setHighlightedExit}
+                    />
+                  </AnimatedCard>
+                </div>
               </div>
 
             </section>
