@@ -216,6 +216,45 @@ export const DashboardSidebar = ({
         </div>
       )}
 
+      {/* Advisor Info - Clickable to go to profile */}
+      {profile && (
+        <Link to="/account-settings" className="block">
+          <div className={cn(
+            "border-b border-theme-border hover:bg-theme-bg/50 transition-colors cursor-pointer",
+            collapsed ? "p-2 flex justify-center" : "p-3"
+          )}>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#2a3142] ring-2 ring-[#CCFF00]/30">
+                    {profile.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt={profile.full_name || 'Advisor'} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-theme-text-muted text-xs font-medium">
+                        {profile.full_name?.charAt(0) || 'A'}
+                      </div>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div>
+                    <p className="font-medium">{profile.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{t('wealthAdvisor')}</p>
+                    <p className="text-xs text-theme-accent mt-1">Click to edit profile</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <AdvisorInfo profile={profile} size="sm" showSubtitle />
+            )}
+          </div>
+        </Link>
+      )}
+
       {/* Main Navigation */}
       <nav className={cn(
         "flex-1 overflow-y-auto",
@@ -320,41 +359,6 @@ export const DashboardSidebar = ({
 
       {/* Bottom Section */}
       <div className="border-t border-theme-border">
-        {/* Advisor Info */}
-        {profile && (
-          <div className={cn(
-            "border-b border-theme-border",
-            collapsed ? "p-2 flex justify-center" : "p-3"
-          )}>
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#2a3142] ring-2 ring-[#CCFF00]/30 cursor-default">
-                    {profile.avatar_url ? (
-                      <img 
-                        src={profile.avatar_url} 
-                        alt={profile.full_name || 'Advisor'} 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-theme-text-muted text-xs font-medium">
-                        {profile.full_name?.charAt(0) || 'A'}
-                      </div>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <div>
-                    <p className="font-medium">{profile.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{t('wealthAdvisor')}</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <AdvisorInfo profile={profile} size="sm" showSubtitle />
-            )}
-          </div>
-        )}
 
         {/* Quick Actions */}
         <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
