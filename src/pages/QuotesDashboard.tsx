@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
   LayoutGrid, Check, Search, Filter, MessageCircle, ArrowUpDown, ArrowUp, ArrowDown, X,
-  FileText, TrendingUp, CheckCircle2
+  FileText, TrendingUp, CheckCircle2, Eye, EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -559,18 +559,28 @@ const QuotesDashboard = () => {
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {quote.view_count != null && quote.view_count > 0 ? (
-                            <div className="flex flex-col">
-                              <span className="text-theme-text text-sm font-medium">
-                                {quote.view_count} {quote.view_count === 1 ? t('view') || 'view' : t('views') || 'views'}
-                              </span>
-                              {quote.first_viewed_at && (
-                                <span className="text-xs text-theme-text-muted">
-                                  {formatDate(quote.first_viewed_at)}
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-cyan-500/20 rounded-full">
+                                <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-theme-text font-medium">
+                                  {quote.view_count} {quote.view_count === 1 ? 'view' : 'views'}
                                 </span>
-                              )}
+                                {quote.first_viewed_at && (
+                                  <span className="text-xs text-theme-text-muted">
+                                    {formatDate(quote.first_viewed_at)}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           ) : (
-                            <span className="text-theme-text-muted text-sm">—</span>
+                            <div className="flex items-center gap-2 opacity-50">
+                              <div className="p-1.5 bg-theme-card-alt rounded-full">
+                                <EyeOff className="w-3.5 h-3.5 text-theme-text-muted" />
+                              </div>
+                              <span className="text-theme-text-muted text-sm">Not viewed</span>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>

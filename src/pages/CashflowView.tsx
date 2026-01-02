@@ -325,130 +325,148 @@ const CashflowViewContent = () => {
           </div>
         </div>
 
-        <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
+        {viewMode === 'story' ? (
+          /* Story View - Scrollable sections */
+          <>
+            <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
-        {/* Investment Snapshot first on mobile, then grid on desktop */}
-        {visibility.investmentSnapshot && (
-          <div className="mb-4 sm:mb-6">
-            <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
-          </div>
+            {/* Investment Snapshot first on mobile, then grid on desktop */}
+            {visibility.investmentSnapshot && (
+              <div className="mb-4 sm:mb-6">
+                <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
+              </div>
+            )}
+
+            {/* Payment Breakdown - Collapsible */}
+            {visibility.paymentBreakdown && (
+              <CollapsibleSection
+                title={t('paymentBreakdownTitle')}
+                subtitle={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent} ${t('paymentStructure')}`}
+                icon={<CreditCard className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
+              </CollapsibleSection>
+            )}
+
+            {/* Value Differentiators Display */}
+            <ValueDifferentiatorsDisplay
+              selectedDifferentiators={inputs.valueDifferentiators || []}
+              readOnly={true}
+              showAppreciationBonus={visibility.showAppreciationBonus}
+            />
+
+            {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
+            {visibility.longTermHold && (inputs.enabledSections?.longTermHold !== false) && (
+              <CollapsibleSection
+                title={t('holdStrategyAnalysis')}
+                subtitle={t('holdStrategySubtitle')}
+                icon={<Home className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                <div className="space-y-4 sm:space-y-6">
+                  {visibility.rentSnapshot && (
+                    <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
+                  )}
+                  <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
+                  <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                  <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Exit Strategy - Collapsible */}
+            {visibility.exitStrategy && (inputs.enabledSections?.exitStrategy !== false) && (
+              <CollapsibleSection
+                title={t('exitStrategyAnalysis')}
+                subtitle={t('whenToSell')}
+                icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                <div className="space-y-4 sm:space-y-6">
+                  <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} unitSizeSqf={clientInfo.unitSizeSqf} />
+                  <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Mortgage Analysis - Collapsible */}
+            {mortgageInputs.enabled && calculations && (
+              <CollapsibleSection
+                title={t('mortgageAnalysis') || "Mortgage Analysis"}
+                subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
+                icon={<Building2 className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                {(() => {
+                  const firstFullRentalYear = calculations.yearlyProjections.find(p => 
+                    !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
+                  );
+                  const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
+                  const monthlyLongTermRent = fullAnnualRent / 12;
+                  const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
+                  const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
+                  const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
+                  
+                  // Year 5 = first full rental year + 4 years of rent growth
+                  // With 4% growth: 1.04^4 = 1.1699 = +17% growth over 4 years
+                  const year5RentalYear = (firstFullRentalYear?.year || 0) + 4;
+                  const year5Projection = calculations.yearlyProjections.find(p => p.year === year5RentalYear);
+                  const year5LongTermRent = year5Projection?.annualRent ? (year5Projection.annualRent / 12) : undefined;
+                  const year5AirbnbNet = year5Projection?.airbnbNetIncome ? (year5Projection.airbnbNetIncome / 12) : undefined;
+                  
+                  return (
+                    <MortgageBreakdown
+                      mortgageInputs={mortgageInputs}
+                      mortgageAnalysis={mortgageAnalysis}
+                      basePrice={calculations.basePrice}
+                      currency={currency}
+                      rate={rate}
+                      preHandoverPercent={inputs.preHandoverPercent}
+                      monthlyLongTermRent={monthlyLongTermRent}
+                      monthlyServiceCharges={monthlyServiceCharges}
+                      monthlyAirbnbNet={monthlyAirbnbNet}
+                      showAirbnbComparison={calculations.showAirbnbComparison}
+                      rentGrowthRate={inputs.rentGrowthRate}
+                      year5LongTermRent={year5LongTermRent}
+                      year5AirbnbNet={year5AirbnbNet}
+                    />
+                  );
+                })()}
+              </CollapsibleSection>
+            )}
+
+            {/* Investment Summary - Read-only for client view */}
+            <CashflowSummaryCard
+              inputs={inputs}
+              clientInfo={clientInfo}
+              calculations={calculations}
+              mortgageAnalysis={mortgageAnalysis}
+              mortgageInputs={mortgageInputs}
+              exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+              showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? true}
+              showRentalPotential={(inputs as any)?._summaryToggles?.showRental ?? true}
+              showMortgageAnalysis={mortgageInputs?.enabled ?? false}
+              readOnly={true}
+              defaultOpen={false}
+            />
+          </>
+        ) : (
+          /* Dashboard View - Tabbed interface */
+          <DashboardTabs
+            inputs={inputs}
+            calculations={calculations}
+            clientInfo={clientInfo}
+            mortgageInputs={mortgageInputs}
+            mortgageAnalysis={mortgageAnalysis}
+            exitScenarios={exitScenarios}
+            currency={currency}
+            rate={rate}
+            readOnly={true}
+          />
         )}
-
-        {/* Payment Breakdown - Collapsible */}
-        {visibility.paymentBreakdown && (
-          <CollapsibleSection
-            title={t('paymentBreakdownTitle')}
-            subtitle={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent} ${t('paymentStructure')}`}
-            icon={<CreditCard className="w-5 h-5 text-theme-accent" />}
-            defaultOpen={false}
-          >
-            <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
-          </CollapsibleSection>
-        )}
-
-        {/* Value Differentiators Display */}
-        <ValueDifferentiatorsDisplay
-          selectedDifferentiators={inputs.valueDifferentiators || []}
-          readOnly={true}
-          showAppreciationBonus={visibility.showAppreciationBonus}
-        />
-
-        {/* Hold Strategy Analysis - Collapsible - default CLOSED for client view */}
-        {visibility.longTermHold && (inputs.enabledSections?.longTermHold !== false) && (
-          <CollapsibleSection
-            title={t('holdStrategyAnalysis')}
-            subtitle={t('holdStrategySubtitle')}
-            icon={<Home className="w-5 h-5 text-theme-accent" />}
-            defaultOpen={false}
-          >
-            <div className="space-y-4 sm:space-y-6">
-              {visibility.rentSnapshot && (
-                <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-              )}
-              <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-              <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-              <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* Exit Strategy - Collapsible */}
-        {visibility.exitStrategy && (inputs.enabledSections?.exitStrategy !== false) && (
-          <CollapsibleSection
-            title={t('exitStrategyAnalysis')}
-            subtitle={t('whenToSell')}
-            icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
-            defaultOpen={false}
-          >
-            <div className="space-y-4 sm:space-y-6">
-              <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} rate={rate} readOnly={true} unitSizeSqf={clientInfo.unitSizeSqf} />
-              <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* Mortgage Analysis - Collapsible */}
-        {mortgageInputs.enabled && calculations && (
-          <CollapsibleSection
-            title={t('mortgageAnalysis') || "Mortgage Analysis"}
-            subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
-            icon={<Building2 className="w-5 h-5 text-theme-accent" />}
-            defaultOpen={false}
-          >
-            {(() => {
-              const firstFullRentalYear = calculations.yearlyProjections.find(p => 
-                !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
-              );
-              const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
-              const monthlyLongTermRent = fullAnnualRent / 12;
-              const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
-              const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
-              const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
-              
-              // Year 5 = first full rental year + 4 years of rent growth
-              // With 4% growth: 1.04^4 = 1.1699 = +17% growth over 4 years
-              const year5RentalYear = (firstFullRentalYear?.year || 0) + 4;
-              const year5Projection = calculations.yearlyProjections.find(p => p.year === year5RentalYear);
-              const year5LongTermRent = year5Projection?.annualRent ? (year5Projection.annualRent / 12) : undefined;
-              const year5AirbnbNet = year5Projection?.airbnbNetIncome ? (year5Projection.airbnbNetIncome / 12) : undefined;
-              
-              return (
-                <MortgageBreakdown
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  basePrice={calculations.basePrice}
-                  currency={currency}
-                  rate={rate}
-                  preHandoverPercent={inputs.preHandoverPercent}
-                  monthlyLongTermRent={monthlyLongTermRent}
-                  monthlyServiceCharges={monthlyServiceCharges}
-                  monthlyAirbnbNet={monthlyAirbnbNet}
-                  showAirbnbComparison={calculations.showAirbnbComparison}
-                  rentGrowthRate={inputs.rentGrowthRate}
-                  year5LongTermRent={year5LongTermRent}
-                  year5AirbnbNet={year5AirbnbNet}
-                />
-              );
-            })()}
-          </CollapsibleSection>
-        )}
-
-        {/* Investment Summary - Read-only for client view */}
-        <CashflowSummaryCard
-          inputs={inputs}
-          clientInfo={clientInfo}
-          calculations={calculations}
-          mortgageAnalysis={mortgageAnalysis}
-          mortgageInputs={mortgageInputs}
-          exitScenarios={exitScenarios}
-          currency={currency}
-          rate={rate}
-          showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? true}
-          showRentalPotential={(inputs as any)?._summaryToggles?.showRental ?? true}
-          showMortgageAnalysis={mortgageInputs?.enabled ?? false}
-          readOnly={true}
-          defaultOpen={false}
-        />
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-theme-border text-center">
           <p className="text-xs text-theme-text-muted">{t('disclaimerText')}</p>

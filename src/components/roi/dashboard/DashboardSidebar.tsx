@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Globe } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Globe, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -32,6 +32,9 @@ interface DashboardSidebarProps {
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
   onSwitchView?: () => void;
+  onShare?: () => void;
+  viewCount?: number;
+  firstViewedAt?: string | null;
   quoteId?: string;
   // Language and currency
   language?: string;
@@ -102,6 +105,9 @@ export const DashboardSidebar = ({
   onLoadQuote,
   onViewHistory,
   onSwitchView,
+  onShare,
+  viewCount,
+  firstViewedAt,
   quoteId,
   language,
   setLanguage,
@@ -392,6 +398,43 @@ export const DashboardSidebar = ({
           {/* Switch View */}
           {onSwitchView && (
             <NavButton icon={Rows3} label="Vertical View" onClick={onSwitchView} />
+          )}
+
+          {/* Share */}
+          {onShare && quoteId && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onShare}
+                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    {viewCount != null && viewCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-[10px] text-white rounded-full flex items-center justify-center">
+                        {viewCount}
+                      </span>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Share {viewCount ? `(${viewCount} views)` : ''}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={onShare}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
+              >
+                <Share2 className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 truncate">Share</span>
+                {viewCount != null && viewCount > 0 && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full">
+                    {viewCount}
+                  </span>
+                )}
+              </button>
+            )
           )}
         </div>
 
