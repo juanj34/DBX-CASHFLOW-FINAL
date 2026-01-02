@@ -88,6 +88,8 @@ const OICalculatorContent = () => {
     mortgageInputs,
     basePrice: calculations.basePrice,
     preHandoverPercent: inputs.preHandoverPercent,
+    monthlyRent: calculations.holdAnalysis.annualRent / 12,
+    monthlyServiceCharges: calculations.holdAnalysis.annualServiceCharges / 12,
   });
   const { rate, isLive } = useExchangeRate(currency);
   const floatingNavSections = useFloatingNavSections(inputs.enabledSections, mortgageInputs.enabled);

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { SafetyBufferPanel, TenantEquityPanel, StressTestPanel } from "./financing";
 interface MortgageBreakdownProps {
   mortgageInputs: MortgageInputs;
   mortgageAnalysis: MortgageAnalysis;
@@ -66,6 +67,11 @@ export const MortgageBreakdown = ({
     totalAnnualInsurance,
     totalInsuranceOverTerm,
     totalInterestAndFees,
+    // NEW fields for financing panels
+    amortizationSchedule,
+    principalPaidYear5,
+    principalPaidYear10,
+    stressScenarios,
   } = mortgageAnalysis;
 
   const preHandoverAmount = basePrice * preHandoverPercent / 100;
@@ -120,12 +126,6 @@ export const MortgageBreakdown = ({
   // Grand total calculation: gap + total loan payments + fees + insurance
   const grandTotal = gapAmount + totalLoanPayments + totalUpfrontFees + totalInsuranceOverTerm;
 
-  // Estimated appreciation for wealth position (5% CAGR estimate)
-  const appreciationCAGR = 0.05;
-  const projectedValue = basePrice * Math.pow(1 + appreciationCAGR, mortgageInputs.loanTermYears);
-  const projectedAppreciation = projectedValue - basePrice;
-  const netWealthPosition = projectedAppreciation - totalInterestAndFees;
-
   return (
     <div className="bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-6">
       {/* Header with Mo/Yr Toggle */}
@@ -135,7 +135,7 @@ export const MortgageBreakdown = ({
             <Building2 className="w-5 h-5 text-theme-accent" />
           </div>
           <div>
-            <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">Leverage & Financing</h3>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">Financing Analysis</h3>
             <p className="text-xs text-theme-text-muted">{mortgageInputs.financingPercent}% {t('financing')} · {mortgageInputs.loanTermYears} {t('years')} · {mortgageInputs.interestRate}%</p>
           </div>
         </div>
@@ -505,6 +505,34 @@ export const MortgageBreakdown = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ===== NEW: THREE-PILLAR FINANCING ANALYSIS ===== */}
+        {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <SafetyBufferPanel
+              netMonthlyRent={netMonthlyRent}
+              monthlyMortgageTotal={monthlyMortgageTotal}
+              currency={currency}
+              rate={rate}
+              viewMode={viewMode}
+            />
+            <TenantEquityPanel
+              loanAmount={loanAmount}
+              amortizationSchedule={amortizationSchedule}
+              principalPaidYear5={principalPaidYear5}
+              principalPaidYear10={principalPaidYear10}
+              loanTermYears={mortgageInputs.loanTermYears}
+              currency={currency}
+              rate={rate}
+            />
+            <StressTestPanel
+              stressScenarios={stressScenarios}
+              currency={currency}
+              rate={rate}
+              viewMode={viewMode}
+            />
           </div>
         )}
 
