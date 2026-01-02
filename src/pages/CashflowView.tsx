@@ -151,6 +151,8 @@ const CashflowViewContent = () => {
     mortgageInputs,
     basePrice: calculations?.basePrice || 0,
     preHandoverPercent: inputs?.preHandoverPercent || 20,
+    monthlyRent: calculations?.holdAnalysis?.annualRent ? calculations.holdAnalysis.annualRent / 12 : 0,
+    monthlyServiceCharges: calculations?.holdAnalysis?.annualServiceCharges ? calculations.holdAnalysis.annualServiceCharges / 12 : 0,
   });
   // Load exit scenarios from saved inputs or auto-calculate, clamp to bounds
   const exitScenarios: number[] = useMemo(() => {

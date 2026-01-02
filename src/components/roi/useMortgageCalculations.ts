@@ -26,6 +26,20 @@ export const DEFAULT_MORTGAGE_INPUTS: MortgageInputs = {
   propertyInsurance: 1500,
 };
 
+export interface AmortizationPoint {
+  year: number;
+  balance: number;
+  principalPaid: number;
+  interestPaid: number;
+}
+
+export interface StressScenario {
+  rate: number;
+  monthlyPayment: number;
+  netCashflow: number;
+  status: 'positive' | 'tight' | 'negative';
+}
+
 export interface MortgageAnalysis {
   // Gap calculation
   equityRequiredPercent: number;  // 100 - financingPercent
@@ -55,18 +69,47 @@ export interface MortgageAnalysis {
   // Grand totals
   totalCostWithMortgage: number;  // All payments + fees + insurance over term
   totalInterestAndFees: number;   // Total extra cost vs cash purchase
+  
+  // NEW: DSCR (requires monthly rent to be passed in)
+  // Calculated externally when rent data is available
+  
+  // NEW: Amortization schedule for tenant equity visualization
+  amortizationSchedule: AmortizationPoint[];
+  principalPaidYear5: number;
+  principalPaidYear10: number;
+  
+  // NEW: Stress test scenarios
+  stressScenarios: StressScenario[];
 }
 
 interface UseMortgageCalculationsProps {
   mortgageInputs: MortgageInputs;
   basePrice: number;
   preHandoverPercent: number;
+  monthlyRent?: number; // For stress test calculations
+  monthlyServiceCharges?: number; // For stress test calculations
 }
+
+// Helper to calculate monthly payment for any interest rate
+const calculateMonthlyPayment = (principal: number, annualRate: number, termYears: number): number => {
+  const monthlyRate = annualRate / 100 / 12;
+  const numPayments = termYears * 12;
+  
+  if (monthlyRate > 0 && numPayments > 0) {
+    const factor = Math.pow(1 + monthlyRate, numPayments);
+    return principal * (monthlyRate * factor) / (factor - 1);
+  } else if (numPayments > 0) {
+    return principal / numPayments;
+  }
+  return 0;
+};
 
 export const useMortgageCalculations = ({
   mortgageInputs,
   basePrice,
   preHandoverPercent,
+  monthlyRent = 0,
+  monthlyServiceCharges = 0,
 }: UseMortgageCalculationsProps): MortgageAnalysis => {
   return useMemo(() => {
     const {
@@ -81,8 +124,6 @@ export const useMortgageCalculations = ({
     } = mortgageInputs;
 
     // Gap calculation
-    // If plan is 30/70 and mortgage is 60%, equity required = 40%
-    // Gap = 40% - 30% (pre-handover) = 10%
     const equityRequiredPercent = 100 - financingPercent;
     const gapPercent = Math.max(0, equityRequiredPercent - preHandoverPercent);
     const gapAmount = basePrice * gapPercent / 100;
@@ -91,19 +132,9 @@ export const useMortgageCalculations = ({
     // Loan amount
     const loanAmount = basePrice * financingPercent / 100;
 
-    // Monthly payment calculation using French amortization formula
-    // M = P * [r(1+r)^n] / [(1+r)^n - 1]
-    const monthlyInterestRate = interestRate / 100 / 12;
+    // Monthly payment calculation
+    const monthlyPayment = calculateMonthlyPayment(loanAmount, interestRate, loanTermYears);
     const numberOfPayments = loanTermYears * 12;
-    
-    let monthlyPayment = 0;
-    if (monthlyInterestRate > 0 && numberOfPayments > 0) {
-      const factor = Math.pow(1 + monthlyInterestRate, numberOfPayments);
-      monthlyPayment = loanAmount * (monthlyInterestRate * factor) / (factor - 1);
-    } else if (numberOfPayments > 0) {
-      monthlyPayment = loanAmount / numberOfPayments;
-    }
-
     const totalLoanPayments = monthlyPayment * numberOfPayments;
     const totalInterest = totalLoanPayments - loanAmount;
 
@@ -119,10 +150,60 @@ export const useMortgageCalculations = ({
     const totalInsuranceOverTerm = totalAnnualInsurance * loanTermYears;
 
     // Grand totals
-    // Total paid = equity (100% - financing%) + loan payments + fees + insurance
     const equityPaid = basePrice * equityRequiredPercent / 100;
     const totalCostWithMortgage = equityPaid + totalLoanPayments + totalUpfrontFees + totalInsuranceOverTerm;
     const totalInterestAndFees = totalInterest + totalUpfrontFees + totalInsuranceOverTerm;
+
+    // ===== NEW: Amortization Schedule =====
+    const amortizationSchedule: AmortizationPoint[] = [];
+    let balance = loanAmount;
+    let totalPrincipalPaid = 0;
+    let totalInterestPaidSoFar = 0;
+    const monthlyRate = interestRate / 100 / 12;
+    
+    for (let year = 1; year <= loanTermYears; year++) {
+      // Calculate 12 months of payments for this year
+      for (let month = 1; month <= 12; month++) {
+        if (balance <= 0) break;
+        const interestPayment = balance * monthlyRate;
+        const principalPayment = Math.min(monthlyPayment - interestPayment, balance);
+        balance -= principalPayment;
+        totalPrincipalPaid += principalPayment;
+        totalInterestPaidSoFar += interestPayment;
+      }
+      
+      amortizationSchedule.push({
+        year,
+        balance: Math.max(0, balance),
+        principalPaid: totalPrincipalPaid,
+        interestPaid: totalInterestPaidSoFar,
+      });
+    }
+
+    const principalPaidYear5 = amortizationSchedule[4]?.principalPaid || 0;
+    const principalPaidYear10 = amortizationSchedule[9]?.principalPaid || 0;
+
+    // ===== NEW: Stress Test Scenarios =====
+    const netMonthlyRent = monthlyRent - monthlyServiceCharges;
+    const monthlyInsurance = totalAnnualInsurance / 12;
+    
+    const stressRates = [interestRate, interestRate + 1, interestRate + 2];
+    const stressScenarios: StressScenario[] = stressRates.map(rate => {
+      const payment = calculateMonthlyPayment(loanAmount, rate, loanTermYears);
+      const totalMonthlyDebt = payment + monthlyInsurance;
+      const cashflow = netMonthlyRent - totalMonthlyDebt;
+      
+      let status: 'positive' | 'tight' | 'negative';
+      if (cashflow >= 0) {
+        status = 'positive';
+      } else if (cashflow >= -totalMonthlyDebt * 0.1) { // Within 10% of breakeven
+        status = 'tight';
+      } else {
+        status = 'negative';
+      }
+      
+      return { rate, monthlyPayment: payment, netCashflow: cashflow, status };
+    });
 
     return {
       equityRequiredPercent,
@@ -135,7 +216,7 @@ export const useMortgageCalculations = ({
       totalInterest,
       totalLoanPayments,
       processingFee,
-      valuationFee: valuationFee,
+      valuationFee,
       mortgageRegistration,
       totalUpfrontFees,
       annualLifeInsurance,
@@ -144,6 +225,10 @@ export const useMortgageCalculations = ({
       totalInsuranceOverTerm,
       totalCostWithMortgage,
       totalInterestAndFees,
+      amortizationSchedule,
+      principalPaidYear5,
+      principalPaidYear10,
+      stressScenarios,
     };
-  }, [mortgageInputs, basePrice, preHandoverPercent]);
+  }, [mortgageInputs, basePrice, preHandoverPercent, monthlyRent, monthlyServiceCharges]);
 };
