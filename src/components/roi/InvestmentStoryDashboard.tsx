@@ -985,7 +985,7 @@ export const InvestmentStoryDashboard = ({
                 </div>
 
                 {/* Growth Curve Chart - Takes remaining space */}
-                <div className="flex-1 min-h-[280px]">
+                <div className="flex-1 min-h-[200px]">
                   <AnimatedCard delay={300} className="h-full">
                     <OIGrowthCurve
                       calculations={calculations}
