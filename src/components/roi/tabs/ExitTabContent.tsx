@@ -13,6 +13,7 @@ interface ExitTabContentProps {
   setExitScenarios: (scenarios: number[]) => void;
   unitSizeSqf?: number;
   variant?: 'default' | 'dashboard';
+  readOnly?: boolean;
 }
 
 export const ExitTabContent = ({
@@ -24,6 +25,7 @@ export const ExitTabContent = ({
   setExitScenarios,
   unitSizeSqf,
   variant = 'default',
+  readOnly = false,
 }: ExitTabContentProps) => {
   const isDashboard = variant === 'dashboard';
   

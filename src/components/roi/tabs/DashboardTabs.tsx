@@ -21,12 +21,13 @@ interface DashboardTabsProps {
   mortgageInputs: MortgageInputs;
   mortgageAnalysis: MortgageAnalysis;
   exitScenarios: number[];
-  setExitScenarios: (scenarios: number[]) => void;
+  setExitScenarios?: (scenarios: number[]) => void;
   currency: Currency;
   rate: number;
-  onEditConfig: () => void;
+  onEditConfig?: () => void;
   customDifferentiators?: any[];
   defaultTab?: TabId;
+  readOnly?: boolean;
 }
 
 export const DashboardTabs = ({
@@ -42,6 +43,7 @@ export const DashboardTabs = ({
   onEditConfig,
   customDifferentiators = [],
   defaultTab = 'property',
+  readOnly = false,
 }: DashboardTabsProps) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
@@ -84,8 +86,9 @@ export const DashboardTabs = ({
           rate={rate}
           clientInfo={clientInfo}
           customDifferentiators={customDifferentiators}
-          onEditConfig={onEditConfig}
-          onEditClient={onEditConfig}
+          onEditConfig={onEditConfig || (() => {})}
+          onEditClient={onEditConfig || (() => {})}
+          readOnly={readOnly}
         />
       </TabsContent>
 
@@ -110,8 +113,9 @@ export const DashboardTabs = ({
             currency={currency}
             rate={rate}
             exitScenarios={exitScenarios}
-            setExitScenarios={setExitScenarios}
+            setExitScenarios={setExitScenarios || (() => {})}
             unitSizeSqf={clientInfo.unitSizeSqf}
+            readOnly={readOnly}
           />
         </TabsContent>
       )}

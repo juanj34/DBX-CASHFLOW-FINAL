@@ -23,6 +23,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
 import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
@@ -307,6 +308,16 @@ const CashflowDashboardContent = () => {
           onLoadQuote={() => setLoadQuoteModalOpen(true)}
           onViewHistory={() => setVersionHistoryOpen(true)}
           onSwitchView={handleSwitchToVertical}
+          onShare={async () => {
+            const url = await handleShare();
+            if (url) {
+              await navigator.clipboard.writeText(url);
+              setShareUrl(url);
+              toast.success("Share link copied to clipboard!");
+            }
+          }}
+          viewCount={quote?.view_count ?? undefined}
+          firstViewedAt={quote?.first_viewed_at ?? undefined}
           quoteId={quoteId}
           language={language}
           setLanguage={setLanguage}

@@ -31,6 +31,7 @@ interface PropertyTabContentProps {
   showLogoOverlay?: boolean;
   developerId?: string | null;
   projectId?: string | null;
+  readOnly?: boolean;
 }
 
 // Country code to flag emoji mapping
@@ -80,6 +81,7 @@ export const PropertyTabContent = ({
   showLogoOverlay = false,
   developerId,
   projectId,
+  readOnly = false,
 }: PropertyTabContentProps) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [developerModalOpen, setDeveloperModalOpen] = useState(false);

@@ -21,6 +21,9 @@ interface DashboardLayoutProps {
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
   onSwitchView?: () => void;
+  onShare?: () => void;
+  viewCount?: number;
+  firstViewedAt?: string | null;
   quoteId?: string;
   // Language and currency
   language?: string;
@@ -41,6 +44,9 @@ export const DashboardLayout = ({
   onLoadQuote,
   onViewHistory,
   onSwitchView,
+  onShare,
+  viewCount,
+  firstViewedAt,
   quoteId,
   language,
   setLanguage,
@@ -96,6 +102,9 @@ export const DashboardLayout = ({
     onLoadQuote,
     onViewHistory,
     onSwitchView,
+    onShare,
+    viewCount,
+    firstViewedAt,
     quoteId,
     language,
     setLanguage,
