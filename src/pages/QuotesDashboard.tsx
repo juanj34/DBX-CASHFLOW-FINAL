@@ -491,6 +491,7 @@ const QuotesDashboard = () => {
                       </div>
                     </TableHead>
                     <TableHead className="text-theme-text-muted font-medium hidden lg:table-cell">{t("zone")}</TableHead>
+                    <TableHead className="text-theme-text-muted font-medium hidden md:table-cell">{t("views") || "Views"}</TableHead>
                     <TableHead 
                       className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
                       onClick={() => handleSort('status')}
@@ -553,6 +554,22 @@ const QuotesDashboard = () => {
                             </span>
                           )}
                           {!(quote.inputs as any)?._clientInfo?.zoneName && (
+                            <span className="text-theme-text-muted text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {quote.view_count != null && quote.view_count > 0 ? (
+                            <div className="flex flex-col">
+                              <span className="text-theme-text text-sm font-medium">
+                                {quote.view_count} {quote.view_count === 1 ? t('view') || 'view' : t('views') || 'views'}
+                              </span>
+                              {quote.first_viewed_at && (
+                                <span className="text-xs text-theme-text-muted">
+                                  {formatDate(quote.first_viewed_at)}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
                             <span className="text-theme-text-muted text-sm">—</span>
                           )}
                         </TableCell>

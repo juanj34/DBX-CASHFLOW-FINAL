@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard, Building2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,6 +27,8 @@ import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { ClientViewToggle, useClientViewPreference, ClientViewMode } from '@/components/roi/ClientViewToggle';
+import { DashboardTabs } from '@/components/roi/tabs/DashboardTabs';
 
 interface AdvisorProfile {
   full_name: string | null;
@@ -49,7 +51,8 @@ const CashflowViewContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
   const { showOnboarding, setShowOnboarding } = useClientOnboarding();
-
+  const [viewMode, setViewMode] = useClientViewPreference();
+  const viewTrackedRef = useRef(false);
   const { rate } = useExchangeRate(currency);
   
   // Parse visibility from URL
@@ -146,6 +149,31 @@ const CashflowViewContent = () => {
     fetchQuote();
   }, [shareToken]);
 
+  // Track view - only once per session
+  useEffect(() => {
+    if (!shareToken || viewTrackedRef.current) return;
+    
+    const sessionKey = `quote_viewed_${shareToken}`;
+    if (sessionStorage.getItem(sessionKey)) {
+      viewTrackedRef.current = true;
+      return;
+    }
+    
+    const trackView = async () => {
+      try {
+        await supabase.functions.invoke('track-quote-view', {
+          body: { shareToken },
+        });
+        sessionStorage.setItem(sessionKey, 'true');
+        viewTrackedRef.current = true;
+      } catch (error) {
+        console.error('Error tracking view:', error);
+      }
+    };
+    
+    trackView();
+  }, [shareToken]);
+
   const calculations = inputs ? useOICalculations(inputs) : null;
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs,
@@ -223,6 +251,9 @@ const CashflowViewContent = () => {
               <h1 className="text-sm sm:text-xl font-bold text-theme-text">{t('cashflowStatement')}</h1>
             </div>
             <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              <ClientViewToggle value={viewMode} onChange={setViewMode} />
+              
               <Button variant="outlineDark" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
                 <Globe className="w-3.5 h-3.5 sm:mr-1" />
                 {language === 'en' ? '🇬🇧' : '🇪🇸'}
