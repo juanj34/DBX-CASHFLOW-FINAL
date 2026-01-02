@@ -18,6 +18,7 @@ import { OIGrowthCurve } from "./OIGrowthCurve";
 import { calculateExitScenario } from "./constructionProgress";
 import { RentalCashflowWaterfall } from "./CashflowWaterfall";
 import { PropertyShowcase } from "./PropertyShowcase";
+import { ProjectionDisclaimer } from "./ProjectionDisclaimer";
 import {
   Tooltip,
   TooltipContent,
@@ -721,7 +722,7 @@ export const InvestmentStoryDashboard = ({
               </div>
 
               <div className="p-3 space-y-3 flex-1">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {/* ROI Card (LT) / ADR Card (ST) */}
                   {incomeStrategy === 'LT' ? (
                     <Tooltip>
@@ -844,6 +845,46 @@ export const InvestmentStoryDashboard = ({
                     showAirbnbComparison={incomeData.showAirbnb}
                   />
                 </div>
+
+                {/* Net Rent Projection Table (10 Years) */}
+                {(() => {
+                  const rentYears = calculations.yearlyProjections
+                    .filter(p => !p.isConstruction && p.netIncome !== null)
+                    .slice(0, 10);
+                  
+                  if (rentYears.length === 0) return null;
+                  
+                  return (
+                    <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-medium text-slate-400">{t('netRentProjection') || 'Net Rent Projection (10 Years)'}</h4>
+                        <ProjectionDisclaimer variant="compact" />
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr>
+                              {rentYears.map((_, idx) => (
+                                <th key={idx} className="px-2 py-1 text-slate-500 font-normal text-center whitespace-nowrap">
+                                  Y{idx + 1}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              {rentYears.map((p, idx) => (
+                                <td key={idx} className="px-2 py-1 text-center font-mono text-emerald-400 whitespace-nowrap">
+                                  {formatCurrency(p.netIncome || 0, currency, rate)}
+                                </td>
+                              ))}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
 
               </div>
 
