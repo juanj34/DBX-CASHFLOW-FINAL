@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { LogOut, Plus, Trash2, Calendar, Sparkles, AlertTriangle, ArrowUpRight, Info } from "lucide-react";
+import { LogOut, Plus, Trash2, Calendar, Sparkles, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { ConfiguratorSectionProps } from "./types";
 import { formatCurrency } from "../currencyUtils";
 import { calculateExitScenario, ExitScenarioResult, constructionToMonth, monthToConstruction } from "../constructionProgress";
 import { ROEBreakdownTooltip } from "../ROEBreakdownTooltip";
+import { InfoTooltip } from "../InfoTooltip";
 
 interface ExitScenario {
   id: string;
@@ -84,10 +85,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   };
 
   const handleAddExit = () => {
-    // Add a new exit at ~50% of timeline, or between existing exits
     let newMonth = Math.round(totalMonths * 0.5);
     
-    // Find a unique month
     while (exits.some(e => e.monthsFromBooking === newMonth) && newMonth < totalMonths - 1) {
       newMonth++;
     }
@@ -103,6 +102,18 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     }
   };
 
+  const handleAddExitAtMonth = (month: number) => {
+    if (month > 0 && month < totalMonths && !exits.some(e => e.monthsFromBooking === month)) {
+      const newExit: ExitScenario = {
+        id: `exit-${Date.now()}`,
+        monthsFromBooking: month,
+      };
+      const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
+      setExits(newExits);
+      syncExitsToInputs(newExits);
+    }
+  };
+
   const handleRemoveExit = (exitId: string) => {
     const newExits = exits.filter((e) => e.id !== exitId);
     setExits(newExits);
@@ -111,7 +122,6 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
 
   const handleUpdateExitMonth = (exitId: string, newMonth: number) => {
     if (newMonth > 0 && newMonth < totalMonths) {
-      // Check if another exit already exists at this month
       const exists = exits.some((e) => e.id !== exitId && e.monthsFromBooking === newMonth);
       if (!exists) {
         const newExits = exits.map((e) =>
@@ -133,7 +143,6 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     setInputs(prev => ({ ...prev, minimumExitThreshold: value[0] }));
   };
 
-  // Get the ROE to display (net if exit costs, otherwise true)
   const getDisplayROE = (details: ExitScenarioResult) => {
     return details.exitCosts > 0 ? details.netROE : details.trueROE;
   };
@@ -143,6 +152,19 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
       <div>
         <h3 className="text-lg font-semibold text-theme-text mb-0.5">Exit Scenarios</h3>
         <p className="text-xs text-theme-text-muted">Configure when you might exit this investment</p>
+      </div>
+
+      {/* Instructions */}
+      <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+          <div className="text-xs text-blue-300">
+            <p className="font-medium mb-1">Understanding Exit Points:</p>
+            <p className="text-blue-200/80">
+              Exit points let you simulate selling during construction. Add points at different stages to compare returns based on appreciation and equity deployed.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Enable Toggle */}
@@ -159,7 +181,10 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
           {/* Minimum Exit Threshold */}
           <div className="p-3 bg-theme-card rounded-xl border border-theme-border space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm text-theme-text-muted">Minimum Exit Threshold</label>
+              <div className="flex items-center gap-1">
+                <label className="text-sm text-theme-text-muted">Minimum Exit Threshold</label>
+                <InfoTooltip translationKey="tooltipMinExitThreshold" />
+              </div>
               <span className="text-sm text-theme-accent font-mono font-semibold">{inputs.minimumExitThreshold}%</span>
             </div>
             <Slider
@@ -179,7 +204,10 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
 
           {/* Exit Costs Section */}
           <div className="p-3 bg-theme-card rounded-xl border border-theme-border space-y-3">
-            <h4 className="text-sm font-medium text-theme-text">Exit Costs</h4>
+            <div className="flex items-center gap-1">
+              <h4 className="text-sm font-medium text-theme-text">Exit Costs</h4>
+              <InfoTooltip translationKey="tooltipExitCosts" />
+            </div>
             
             <div className="flex items-center justify-between">
               <span className="text-sm text-theme-text-muted">Agent Commission (2%)</span>
@@ -195,12 +223,14 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               <div className="flex items-center gap-2">
                 <span className="text-xs text-theme-text-muted">AED</span>
                 <Input
-                  type="number"
-                  value={inputs.exitNocFee ?? 5000}
-                  onChange={(e) => setInputs(prev => ({ ...prev, exitNocFee: parseFloat(e.target.value) || 0 }))}
+                  type="text"
+                  inputMode="numeric"
+                  value={inputs.exitNocFee || ''}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                    setInputs(prev => ({ ...prev, exitNocFee: val }));
+                  }}
                   className="w-24 h-8 text-sm bg-theme-bg-alt border-theme-border text-theme-text font-mono text-right"
-                  min={0}
-                  step={1000}
                 />
               </div>
             </div>
@@ -214,75 +244,87 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-theme-text">Add Exit Points</h4>
             
-            {/* Quick Preset Buttons */}
-            <div className="flex flex-wrap gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Target 30% construction milestone using S-curve
-                  const earlyMonth = constructionToMonth(30, totalMonths);
-                  if (earlyMonth > 0 && !exits.some(e => e.monthsFromBooking === earlyMonth)) {
-                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: earlyMonth };
-                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                    setExits(newExits);
-                    syncExitsToInputs(newExits);
-                  }
-                }}
-                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-              >
-                30% Build
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Target 50% construction milestone using S-curve (~Month 21 for 36mo project)
-                  const midMonth = constructionToMonth(50, totalMonths);
-                  if (midMonth > 0 && !exits.some(e => e.monthsFromBooking === midMonth)) {
-                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: midMonth };
-                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                    setExits(newExits);
-                    syncExitsToInputs(newExits);
-                  }
-                }}
-                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-              >
-                50% Build
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Target 80% construction milestone using S-curve
-                  const nearHandover = constructionToMonth(80, totalMonths);
-                  if (!exits.some(e => e.monthsFromBooking === nearHandover)) {
-                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: nearHandover };
-                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                    setExits(newExits);
-                    syncExitsToInputs(newExits);
-                  }
-                }}
-                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-              >
-                80% Build
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const atHandover = totalMonths - 1;
-                  if (atHandover > 0 && !exits.some(e => e.monthsFromBooking === atHandover)) {
-                    const newExit = { id: `exit-${Date.now()}`, monthsFromBooking: atHandover };
-                    const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
-                    setExits(newExits);
-                    syncExitsToInputs(newExits);
-                  }
-                }}
-                className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
-              >
-                At Handover
-              </Button>
+            {/* Quick Preset Buttons - Month Shortcuts */}
+            <div className="space-y-2">
+              <p className="text-xs text-theme-text-muted">Month shortcuts:</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddExitAtMonth(18)}
+                  disabled={exits.some(e => e.monthsFromBooking === 18) || 18 >= totalMonths}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
+                >
+                  18 months
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddExitAtMonth(24)}
+                  disabled={exits.some(e => e.monthsFromBooking === 24) || 24 >= totalMonths}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
+                >
+                  24 months
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddExitAtMonth(30)}
+                  disabled={exits.some(e => e.monthsFromBooking === 30) || 30 >= totalMonths}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
+                >
+                  30 months
+                </Button>
+              </div>
+            </div>
+
+            {/* Construction % Shortcuts */}
+            <div className="space-y-2">
+              <p className="text-xs text-theme-text-muted">Construction stage:</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const earlyMonth = constructionToMonth(30, totalMonths);
+                    handleAddExitAtMonth(earlyMonth);
+                  }}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+                >
+                  30% Build
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const midMonth = constructionToMonth(50, totalMonths);
+                    handleAddExitAtMonth(midMonth);
+                  }}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+                >
+                  50% Build
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const nearHandover = constructionToMonth(80, totalMonths);
+                    handleAddExitAtMonth(nearHandover);
+                  }}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50"
+                >
+                  80% Build
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddExitAtMonth(totalMonths - 1)}
+                  disabled={exits.some(e => e.monthsFromBooking === totalMonths - 1)}
+                  className="h-7 text-[10px] border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
+                >
+                  At Handover
+                </Button>
+              </div>
             </div>
 
             {/* Add Exit Button */}
@@ -292,7 +334,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               className="h-8 text-xs bg-theme-accent hover:bg-theme-accent/90 text-black font-medium"
             >
               <Plus className="w-3 h-3 mr-1.5" />
-              Add Exit
+              Add Custom Exit
             </Button>
           </div>
 
@@ -383,58 +425,19 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                         Equity: {formatCurrency(details.equityDeployed, currency)} ({details.equityPercent.toFixed(0)}%)
                       </span>
                       {details.isThresholdMet ? (
-                        <span className="flex items-center gap-1 text-green-400 text-[10px]">
-                          ✓ Threshold met
-                        </span>
+                        <span className="text-green-400 text-[10px]">✓ Above threshold</span>
                       ) : (
-                        <span className="flex items-center gap-1 text-amber-400">
+                        <span className="text-amber-400 text-[10px] flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
-                          Advance required
+                          Below {inputs.minimumExitThreshold}% threshold
                         </span>
                       )}
                     </div>
-                    
-                    {/* Advance payment details */}
-                    {!details.isThresholdMet && details.advanceRequired > 0 && (
-                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-amber-400 font-medium flex items-center gap-1">
-                            <ArrowUpRight className="w-3 h-3" />
-                            Advance to reach {inputs.minimumExitThreshold}%:
-                          </span>
-                          <span className="text-xs text-amber-300 font-mono font-semibold">
-                            {formatCurrency(details.advanceRequired, currency)}
-                          </span>
-                        </div>
-                        {details.advancedPayments.length > 0 && (
-                          <div className="text-[10px] text-theme-text-muted space-y-0.5">
-                            {details.advancedPayments.map((p, idx) => (
-                              <div key={idx} className="flex justify-between">
-                                <span>{p.milestone.label || `${p.milestone.type === 'time' ? `Month ${p.milestone.triggerValue}` : `${p.milestone.triggerValue}% construction`}`}</span>
-                                <span className="font-mono">{formatCurrency(p.amountAdvanced, currency)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="text-[9px] text-amber-400/70 italic">
-                          Plan paid: {details.planEquityPercent.toFixed(0)}% → Need: {inputs.minimumExitThreshold}%
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
             })}
           </div>
-
-          {/* Empty State */}
-          {exits.length === 0 && (
-            <div className="text-center py-8 text-theme-text-muted">
-              <LogOut className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No exit scenarios configured</p>
-              <p className="text-xs mt-1">Click "Auto Generate" or "Add Exit" to get started</p>
-            </div>
-          )}
         </>
       )}
     </div>

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, Clock, Building2, Zap, Home, CheckCircle2, AlertCircle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Trash2, Clock, Building2, Zap, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -8,10 +8,12 @@ import { ConfiguratorSectionProps, presetSplits } from "./types";
 import { formatCurrency } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
 import { PaymentMilestone } from "../useOICalculations";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const [numPayments, setNumPayments] = useState(4);
   const [paymentInterval, setPaymentInterval] = useState(6);
+  const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
 
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -22,6 +24,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const isValidPreHandover = Math.abs(preHandoverTotal - inputs.preHandoverPercent) < 0.01;
   const totalPayment = preHandoverTotal + handoverPercent;
   const isValidTotal = Math.abs(totalPayment - 100) < 0.01;
+  
+  // Check if payments have been added
+  const hasPayments = inputs.additionalPayments.length > 0;
+  const hasSplitSelected = inputs.preHandoverPercent > 0;
 
   const applyPaymentSplit = (split: string) => {
     const [preHandover] = split.split('/').map(Number);
@@ -51,6 +57,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     }
     
     setInputs(prev => ({ ...prev, additionalPayments: newPayments }));
+    setShowInstallments(true);
   };
 
   const addAdditionalPayment = () => {
@@ -83,6 +90,23 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     }));
   };
 
+  // Handle number input that allows empty/deletion
+  const handleNumberInputChange = (
+    value: string, 
+    setter: (val: number) => void, 
+    min: number = 0, 
+    max: number = 100
+  ) => {
+    if (value === '') {
+      setter(0);
+      return;
+    }
+    const num = parseFloat(value);
+    if (!isNaN(num)) {
+      setter(Math.min(Math.max(num, min), max));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -90,13 +114,30 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         <p className="text-sm text-gray-500">Configure your payment schedule and milestones</p>
       </div>
 
-      {/* Preset Split Buttons */}
+      {/* Instructions */}
+      <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+          <div className="text-xs text-blue-300">
+            <p className="font-medium mb-1">How to create your payment plan:</p>
+            <ol className="list-decimal list-inside space-y-0.5 text-blue-200/80">
+              <li>Select your payment split (pre-handover/handover ratio)</li>
+              <li>Adjust your downpayment percentage</li>
+              <li>Generate installments automatically or add them manually</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 1: Preset Split Buttons */}
       <div className="space-y-3 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-        <div className="flex items-center gap-1">
-          <label className="text-sm text-gray-300 font-medium">Pre-Handover / Handover Split</label>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">1</div>
+          <label className="text-sm text-gray-300 font-medium">Payment Split</label>
           <InfoTooltip translationKey="tooltipPreHandover" />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-xs text-gray-500 ml-8">Choose how much you pay before vs. at handover</p>
+        <div className="flex flex-wrap gap-2 ml-8">
           {presetSplits.map((split) => (
             <Button
               key={split}
@@ -116,18 +157,18 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Downpayment */}
-        <div className="space-y-3 p-4 bg-[#1a1f2e] rounded-xl border border-[#CCFF00]/30">
-          <div className="flex items-center gap-2 text-[#CCFF00]">
-            <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold">1</div>
-            <span className="text-sm font-medium">DOWNPAYMENT</span>
+      {/* Step 2: Downpayment - Only show after split is selected */}
+      {hasSplitSelected && (
+        <div className="space-y-3 p-4 bg-[#1a1f2e] rounded-xl border border-[#CCFF00]/30 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">2</div>
+            <span className="text-sm font-medium text-[#CCFF00]">Downpayment</span>
             <InfoTooltip translationKey="tooltipDownpayment" />
           </div>
-          <div className="text-xs text-gray-500">
-            EOI ({formatCurrency(inputs.eoiFee, currency)}) is part of this
+          <div className="text-xs text-gray-500 ml-8">
+            EOI ({formatCurrency(inputs.eoiFee, currency)}) is included in this amount
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-8">
             <Slider
               value={[inputs.downpaymentPercent]}
               onValueChange={([value]) => setInputs(prev => ({ ...prev, downpaymentPercent: value }))}
@@ -140,168 +181,189 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               <Input
                 type="text"
                 inputMode="decimal"
-                value={inputs.downpaymentPercent}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  if (!isNaN(value)) {
-                    setInputs(prev => ({ 
-                      ...prev, 
-                      downpaymentPercent: Math.min(Math.max(value, 5), prev.preHandoverPercent) 
-                    }));
-                  }
-                }}
+                value={inputs.downpaymentPercent || ''}
+                onChange={(e) => handleNumberInputChange(
+                  e.target.value, 
+                  (val) => setInputs(prev => ({ ...prev, downpaymentPercent: val })),
+                  5,
+                  inputs.preHandoverPercent
+                )}
                 className="w-16 h-8 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono"
               />
               <span className="text-sm text-gray-400">%</span>
             </div>
           </div>
-          <div className="text-xs text-gray-500 font-mono">
+          <div className="text-xs text-gray-500 font-mono ml-8">
             {formatCurrency(inputs.basePrice * inputs.downpaymentPercent / 100, currency)}
           </div>
         </div>
+      )}
 
-        {/* Auto-Generate */}
-        <div className="space-y-3 p-4 bg-gradient-to-br from-[#CCFF00]/10 to-transparent rounded-xl border border-[#CCFF00]/30">
-          <div className="flex items-center gap-2 text-[#CCFF00]">
-            <Zap className="w-4 h-4" />
-            <span className="text-sm font-medium">Auto-Generate</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs text-gray-500"># Payments</label>
-              <Input
-                type="number"
-                value={numPayments}
-                onChange={(e) => setNumPayments(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))}
-                className="h-8 bg-[#0d1117] border-[#2a3142] text-white font-mono"
-                min={1}
-                max={12}
-              />
+      {/* Step 3: Installments Section - Only show after downpayment is set */}
+      {hasSplitSelected && inputs.downpaymentPercent > 0 && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Auto-Generate Card */}
+          <div className="space-y-3 p-4 bg-gradient-to-br from-[#CCFF00]/10 to-transparent rounded-xl border border-[#CCFF00]/30">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">3</div>
+              <Zap className="w-4 h-4 text-[#CCFF00]" />
+              <span className="text-sm font-medium text-[#CCFF00]">Generate Installments</span>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-500">Interval (mo)</label>
-              <Input
-                type="number"
-                value={paymentInterval}
-                onChange={(e) => setPaymentInterval(Math.max(1, Math.min(24, parseInt(e.target.value) || 1)))}
-                className="h-8 bg-[#0d1117] border-[#2a3142] text-white font-mono"
-                min={1}
-                max={24}
-              />
-            </div>
-          </div>
-          
-          <Button
-            type="button"
-            onClick={handleGeneratePayments}
-            className="w-full h-8 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-sm"
-          >
-            <Zap className="w-3.5 h-3.5 mr-1" />
-            Generate
-          </Button>
-        </div>
-      </div>
-
-      {/* Additional Payments */}
-      <div className="space-y-3 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-        <div className="flex justify-between items-center">
-          <label className="text-sm text-gray-300 font-medium">Additional Payments</label>
-          <div className={`text-xs px-2 py-1 rounded ${
-            remainingToDistribute > 0 ? 'bg-amber-500/20 text-amber-400' : 
-            remainingToDistribute < 0 ? 'bg-red-500/20 text-red-400' : 
-            'bg-green-500/20 text-green-400'
-          }`}>
-            {remainingToDistribute > 0 ? `${remainingToDistribute.toFixed(1)}% remaining` : 
-             remainingToDistribute < 0 ? `${Math.abs(remainingToDistribute).toFixed(1)}% exceeded` : 
-             '✓ Distributed'}
-          </div>
-        </div>
-
-        <div className="space-y-2 max-h-40 overflow-y-auto">
-          {inputs.additionalPayments.map((payment, index) => (
-            <div key={payment.id} className="flex items-center gap-2 p-2 bg-[#0d1117] rounded-lg">
-              <div className="w-5 h-5 rounded-full bg-[#2a3142] flex items-center justify-center text-xs text-gray-400">
-                {index + 2}
-              </div>
-              
-              <Select
-                value={payment.type}
-                onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
-              >
-                <SelectTrigger className="w-[90px] h-7 text-xs bg-[#1a1f2e] border-[#2a3142]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                  <SelectItem value="time" className="text-white hover:bg-[#2a3142]">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Time</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="construction" className="text-white hover:bg-[#2a3142]">
-                    <div className="flex items-center gap-1">
-                      <Building2 className="w-3 h-3" />
-                      <span>Const.</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-500 w-6">
-                  {payment.type === 'time' ? 'Mo:' : 'At:'}
-                </span>
-                <Input
-                  type="number"
-                  value={payment.triggerValue}
-                  onChange={(e) => updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-14 h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
-                />
-                {payment.type === 'construction' && <span className="text-xs text-gray-500">%</span>}
-              </div>
-
-              <div className="flex items-center gap-1 ml-auto">
+            <p className="text-xs text-gray-500 ml-8">Auto-create evenly distributed payments</p>
+            
+            <div className="grid grid-cols-2 gap-3 ml-8">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500"># Payments</label>
                 <Input
                   type="text"
-                  inputMode="decimal"
-                  defaultValue={payment.paymentPercent}
-                  key={`${payment.id}-${payment.paymentPercent}`}
-                  onBlur={(e) => {
-                    const value = parseFloat(e.target.value);
-                    if (!isNaN(value)) {
-                      updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, value)));
-                    }
-                  }}
-                  className="w-14 h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
+                  inputMode="numeric"
+                  value={numPayments || ''}
+                  onChange={(e) => handleNumberInputChange(e.target.value, setNumPayments, 1, 12)}
+                  className="h-8 bg-[#0d1117] border-[#2a3142] text-white font-mono"
                 />
-                <span className="text-xs text-gray-400">%</span>
               </div>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removeAdditionalPayment(payment.id)}
-                className="h-7 w-7 text-gray-500 hover:text-red-400 hover:bg-red-400/10"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Interval (months)</label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={paymentInterval || ''}
+                  onChange={(e) => handleNumberInputChange(e.target.value, setPaymentInterval, 1, 24)}
+                  className="h-8 bg-[#0d1117] border-[#2a3142] text-white font-mono"
+                />
+              </div>
             </div>
-          ))}
-        </div>
+            
+            <Button
+              type="button"
+              onClick={handleGeneratePayments}
+              className="w-full h-8 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-sm ml-8 max-w-[calc(100%-2rem)]"
+            >
+              <Zap className="w-3.5 h-3.5 mr-1" />
+              Generate {numPayments} Installments
+            </Button>
+          </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addAdditionalPayment}
-          className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white"
-        >
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          Add Payment
-        </Button>
-      </div>
+          {/* Installments List */}
+          <Collapsible open={showInstallments} onOpenChange={setShowInstallments}>
+            <div className="space-y-3 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+              <CollapsibleTrigger asChild>
+                <div className="flex justify-between items-center cursor-pointer hover:opacity-80">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-300 font-medium">Installments</label>
+                    <span className="text-xs text-gray-500">({inputs.additionalPayments.length} added)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {hasPayments ? (
+                      <div className={`text-xs px-2 py-1 rounded ${
+                        remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' : 
+                        remainingToDistribute < -0.5 ? 'bg-red-500/20 text-red-400' : 
+                        'bg-green-500/20 text-green-400'
+                      }`}>
+                        {remainingToDistribute > 0.5 ? `${remainingToDistribute.toFixed(1)}% remaining` : 
+                        remainingToDistribute < -0.5 ? `${Math.abs(remainingToDistribute).toFixed(1)}% exceeded` : 
+                        '✓ Distributed'}
+                      </div>
+                    ) : (
+                      <div className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-400">
+                        Add installments to continue
+                      </div>
+                    )}
+                    {showInstallments ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </div>
+                </div>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="space-y-2 max-h-48 overflow-y-auto pt-3 border-t border-[#2a3142]">
+                  {inputs.additionalPayments.map((payment, index) => (
+                    <div key={payment.id} className="flex items-center gap-2 p-2 bg-[#0d1117] rounded-lg">
+                      <div className="w-5 h-5 rounded-full bg-[#2a3142] flex items-center justify-center text-xs text-gray-400">
+                        {index + 2}
+                      </div>
+                      
+                      <Select
+                        value={payment.type}
+                        onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
+                      >
+                        <SelectTrigger className="w-[90px] h-7 text-xs bg-[#1a1f2e] border-[#2a3142]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
+                          <SelectItem value="time" className="text-white hover:bg-[#2a3142]">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>Time</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="construction" className="text-white hover:bg-[#2a3142]">
+                            <div className="flex items-center gap-1">
+                              <Building2 className="w-3 h-3" />
+                              <span>Const.</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-500 w-6">
+                          {payment.type === 'time' ? 'Mo:' : 'At:'}
+                        </span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={payment.triggerValue || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                            updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
+                          }}
+                          className="w-14 h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                        />
+                        {payment.type === 'construction' && <span className="text-xs text-gray-500">%</span>}
+                      </div>
+
+                      <div className="flex items-center gap-1 ml-auto">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={payment.paymentPercent || ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                            updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, val)));
+                          }}
+                          className="w-14 h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
+                        />
+                        <span className="text-xs text-gray-400">%</span>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAdditionalPayment(payment.id)}
+                        className="h-7 w-7 text-gray-500 hover:text-red-400 hover:bg-red-400/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addAdditionalPayment}
+                  className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white mt-2"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add Installment
+                </Button>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        </div>
+      )}
 
       {/* Handover & Summary */}
       <div className="grid grid-cols-2 gap-4">

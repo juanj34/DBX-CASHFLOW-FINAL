@@ -56,7 +56,7 @@ export const DEFAULT_SHORT_TERM_RENTAL = {
 // Demo defaults (used for template/sample scenarios)
 export const DEFAULT_OI_INPUTS: OIInputs = {
   basePrice: 800000,
-  rentalYieldPercent: 8.5,
+  rentalYieldPercent: 8,
   appreciationRate: 10,
   bookingMonth: 1,
   bookingYear: 2025,
@@ -82,7 +82,7 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
   valueDifferentiators: ['waterfront', 'master-community', 'premium-finishes'],
-  _exitScenarios: [18, 24, 36, 48],
+  _exitScenarios: [18, 24, 30],
   unitSizeSqf: 1250,
 };
 
@@ -124,18 +124,18 @@ export const SAMPLE_MORTGAGE_INPUTS: MortgageInputs = {
 
 // Empty defaults for NEW quotes (no progress indicators until user enters data)
 export const NEW_QUOTE_OI_INPUTS: OIInputs = {
-  basePrice: 0,
-  rentalYieldPercent: 0,
+  basePrice: 800000,
+  rentalYieldPercent: 8,
   appreciationRate: 0,
   bookingMonth: new Date().getMonth() + 1,
   bookingYear: new Date().getFullYear(),
   handoverQuarter: 4,
   handoverYear: new Date().getFullYear() + 2,
-  downpaymentPercent: 0,
-  preHandoverPercent: 0,
+  downpaymentPercent: 20,
+  preHandoverPercent: 20,
   additionalPayments: [],
-  eoiFee: 0,
-  oqoodFee: 0,
+  eoiFee: 50000,
+  oqoodFee: 5000,
   minimumExitThreshold: 30,
   exitAgentCommissionEnabled: false,
   exitNocFee: 5000,
@@ -147,7 +147,7 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   growthAppreciation: 0,
   matureAppreciation: 0,
   growthPeriodYears: 5,
-  rentGrowthRate: 0,
+  rentGrowthRate: 4,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
   valueDifferentiators: [],
