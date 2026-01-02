@@ -1,6 +1,6 @@
 import { OIInputs } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, Info, Shield, Zap, Rocket, ChevronDown, ChevronUp, ArrowRight, Key } from "lucide-react";
+import { TrendingUp, Calendar, Wallet, Target, Tag, Plus, Trash2, Pencil, Info, Shield, Zap, Rocket, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
@@ -230,30 +230,14 @@ export const ExitScenariosCards = ({
               {/* Card Header - Redesigned with milestone and date primary */}
               <div className="p-3 bg-[#1a1f2e] border-b border-[#2a3142]">
                 <div className="flex items-center justify-between mb-2">
-                  {(() => {
-                    // Calculate if NOC threshold is met (can resell)
-                    const thresholdPercent = inputs.minimumExitThreshold || 40;
-                    const thresholdAmount = basePrice * (thresholdPercent / 100);
-                    const canResell = scenario.equityDeployed >= thresholdAmount;
-                    
-                    return (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-[#CCFF00]">{t('exitNumber')}{index + 1}</span>
-                        {/* Construction Milestone Tag */}
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${milestone.color}`}>
-                          {milestone.icon}
-                          {milestone.label}
-                        </span>
-                        {/* NOC Ready Badge */}
-                        {canResell && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            <Key className="w-2.5 h-2.5" />
-                            NOC Ready
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-[#CCFF00]">{t('exitNumber')}{index + 1}</span>
+                    {/* Construction Milestone Tag */}
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${milestone.color}`}>
+                      {milestone.icon}
+                      {milestone.label}
+                    </span>
+                  </div>
                   {!readOnly && (
                     <div className="flex items-center gap-1">
                       <Button
