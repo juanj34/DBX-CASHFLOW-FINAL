@@ -93,6 +93,7 @@ export type Database = {
           client_name: string | null
           created_at: string | null
           developer: string | null
+          first_viewed_at: string | null
           id: string
           inputs: Json
           is_draft: boolean | null
@@ -109,6 +110,7 @@ export type Database = {
           unit_size_sqf: number | null
           unit_type: string | null
           updated_at: string | null
+          view_count: number | null
         }
         Insert: {
           broker_id: string
@@ -117,6 +119,7 @@ export type Database = {
           client_name?: string | null
           created_at?: string | null
           developer?: string | null
+          first_viewed_at?: string | null
           id?: string
           inputs?: Json
           is_draft?: boolean | null
@@ -133,6 +136,7 @@ export type Database = {
           unit_size_sqf?: number | null
           unit_type?: string | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Update: {
           broker_id?: string
@@ -141,6 +145,7 @@ export type Database = {
           client_name?: string | null
           created_at?: string | null
           developer?: string | null
+          first_viewed_at?: string | null
           id?: string
           inputs?: Json
           is_draft?: boolean | null
@@ -157,6 +162,7 @@ export type Database = {
           unit_size_sqf?: number | null
           unit_type?: string | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Relationships: [
           {

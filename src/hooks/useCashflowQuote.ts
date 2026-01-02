@@ -29,6 +29,8 @@ export interface CashflowQuote {
   presented_at: string | null;
   negotiation_started_at: string | null;
   sold_at: string | null;
+  view_count: number | null;
+  first_viewed_at: string | null;
 }
 
 const LOCAL_STORAGE_KEY = 'cashflow_quote_draft';
