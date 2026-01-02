@@ -848,18 +848,27 @@ export const InvestmentStoryDashboard = ({
 
                 {/* Net Rent Projection Table (10 Years) */}
                 {(() => {
-                  const rentYears = calculations.yearlyProjections
-                    .filter(p => !p.isConstruction && p.netIncome !== null)
+                  // Filter to get only full rental years (skip construction and partial first year)
+                  const fullRentYears = calculations.yearlyProjections
+                    .filter((p, idx, arr) => {
+                      if (p.isConstruction || p.netIncome === null) return false;
+                      // Skip first rental year if it's partial (handover year)
+                      const rentalYears = arr.filter(y => !y.isConstruction && y.netIncome !== null);
+                      const firstFullYearIndex = rentalYears.findIndex((_, i) => i > 0) > 0 ? 1 : 0;
+                      const currentRentalIndex = rentalYears.indexOf(p);
+                      return currentRentalIndex >= firstFullYearIndex;
+                    })
                     .slice(0, 10);
+                  
+                  // Simpler approach: skip the first rental year (handover year with partial income)
+                  const allRentalYears = calculations.yearlyProjections.filter(p => !p.isConstruction && p.netIncome !== null);
+                  const rentYears = allRentalYears.slice(1, 11); // Skip first (partial) year, take next 10
                   
                   if (rentYears.length === 0) return null;
                   
                   return (
                     <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xs font-medium text-slate-400">{t('netRentProjection') || 'Net Rent Projection (10 Years)'}</h4>
-                        <ProjectionDisclaimer variant="compact" />
-                      </div>
+                      <h4 className="text-sm font-medium text-slate-300 mb-3">Projected Net Rental Income (Years 1–10)</h4>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead>
