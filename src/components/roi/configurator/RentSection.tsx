@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Home, Plane, TrendingUp, DollarSign } from "lucide-react";
+import { Home, Plane, TrendingUp, DollarSign, ArrowUp, ArrowDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -18,6 +17,11 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
   const airbnbExpenses = grossAirbnbIncome * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
   const netAirbnbIncome = grossAirbnbIncome - airbnbExpenses;
 
+  // Calculate comparison percentage
+  const comparisonPercent = annualLongTermRent > 0 
+    ? ((netAirbnbIncome - annualLongTermRent) / annualLongTermRent) * 100 
+    : 0;
+
   const handleLongTermToggle = (enabled: boolean) => {
     setInputs(prev => ({
       ...prev,
@@ -34,6 +38,18 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
       ...prev,
       showAirbnbComparison: enabled,
     }));
+  };
+
+  // Handle number input that allows empty/deletion
+  const handleNumberInputChange = (value: string, setter: (val: number) => void) => {
+    if (value === '') {
+      setter(0);
+      return;
+    }
+    const num = parseFloat(value);
+    if (!isNaN(num)) {
+      setter(num);
+    }
   };
 
   return (
@@ -85,7 +101,10 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             {/* Rent Growth Rate */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Annual Rent Growth</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">Annual Rent Growth</label>
+                  <InfoTooltip translationKey="tooltipRentGrowth" />
+                </div>
                 <span className="text-sm text-green-400 font-mono">{inputs.rentGrowthRate ?? 4}%</span>
               </div>
               <Slider
@@ -133,18 +152,22 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             {/* ADR */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Average Daily Rate</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">Average Daily Rate (ADR)</label>
+                  <InfoTooltip translationKey="tooltipADR" />
+                </div>
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
                     {currency === 'USD' ? '$' : 'AED'}
                   </span>
                   <Input
-                    type="number"
-                    value={shortTermRental.averageDailyRate}
-                    onChange={(e) => setInputs(prev => ({
+                    type="text"
+                    inputMode="numeric"
+                    value={shortTermRental.averageDailyRate || ''}
+                    onChange={(e) => handleNumberInputChange(e.target.value, (val) => setInputs(prev => ({
                       ...prev,
-                      shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), averageDailyRate: parseInt(e.target.value) || 0 }
-                    }))}
+                      shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), averageDailyRate: val }
+                    })))}
                     className="w-28 h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm pl-10"
                   />
                 </div>
@@ -165,7 +188,10 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             {/* ADR Growth Rate */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">ADR Growth Rate</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-gray-400">ADR Growth Rate</label>
+                  <InfoTooltip translationKey="tooltipADRGrowth" />
+                </div>
                 <span className="text-sm text-orange-400 font-mono">{inputs.adrGrowthRate ?? 3}%</span>
               </div>
               <Slider
@@ -183,7 +209,10 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               {/* Occupancy */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs text-gray-400">Occupancy Rate</label>
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-400">Occupancy Rate</label>
+                    <InfoTooltip translationKey="tooltipOccupancy" />
+                  </div>
                   <span className="text-sm text-white font-mono">{shortTermRental.occupancyPercent}%</span>
                 </div>
                 <Slider
@@ -202,7 +231,10 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               {/* Operating Expenses */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs text-gray-400">Operating Expenses</label>
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-400">Operating Expenses</label>
+                    <InfoTooltip translationKey="tooltipOperatingExpenses" />
+                  </div>
                   <span className="text-sm text-red-400 font-mono">{shortTermRental.operatingExpensePercent}%</span>
                 </div>
                 <Slider
@@ -221,7 +253,10 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               {/* Management Fee */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs text-gray-400">Management Fee</label>
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-400">Management Fee</label>
+                    <InfoTooltip translationKey="tooltipManagementFee" />
+                  </div>
                   <span className="text-sm text-amber-400 font-mono">{shortTermRental.managementFeePercent}%</span>
                 </div>
                 <Slider
@@ -252,18 +287,28 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                 <span className="text-orange-400 font-medium">Net Income</span>
                 <span className="text-[#CCFF00] font-mono font-bold">{formatCurrency(netAirbnbIncome, currency)}</span>
               </div>
-              {/* Comparison */}
-              {longTermEnabled && (
-                <div className="text-xs text-gray-500 pt-2">
-                  {netAirbnbIncome > annualLongTermRent ? (
-                    <span className="text-green-400">
-                      +{formatCurrency(netAirbnbIncome - annualLongTermRent, currency)} vs Long-Term
+              
+              {/* Comparison with Long-Term */}
+              {longTermEnabled && annualLongTermRent > 0 && (
+                <div className="pt-2 mt-2 border-t border-[#2a3142]">
+                  <div className={`flex items-center justify-between text-sm ${comparisonPercent >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                    <span className="flex items-center gap-1">
+                      {comparisonPercent >= 0 ? (
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      )}
+                      vs Long-Term
                     </span>
-                  ) : (
-                    <span className="text-amber-400">
-                      {formatCurrency(netAirbnbIncome - annualLongTermRent, currency)} vs Long-Term
+                    <span className="font-mono font-bold">
+                      {comparisonPercent >= 0 ? '+' : ''}{comparisonPercent.toFixed(0)}%
                     </span>
-                  )}
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {comparisonPercent >= 0 
+                      ? 'Short-term rental yields higher returns but requires more management'
+                      : 'Long-term rental is more profitable with less hassle'}
+                  </p>
                 </div>
               )}
             </div>
@@ -276,19 +321,19 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-[#CCFF00]" />
           <label className="text-sm text-gray-300 font-medium">Service Charges</label>
+          <InfoTooltip translationKey="tooltipServiceCharges" />
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <label className="text-xs text-gray-400">Per sqft/year (AED)</label>
             <Input
-              type="number"
-              value={inputs.serviceChargePerSqft ?? 18}
+              type="text"
+              inputMode="numeric"
+              value={inputs.serviceChargePerSqft || ''}
               onChange={(e) => {
-                const num = parseFloat(e.target.value);
-                if (!isNaN(num)) {
-                  setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(num, 0), 100) }));
-                }
+                const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
               }}
               className="w-20 h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
             />

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Check, ChevronsUpDown, Search, Loader2, AlertCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,66 +22,12 @@ interface ZoneSelectProps {
   disabled?: boolean;
 }
 
-// Maturity group definitions
-const MATURITY_GROUPS = {
-  emerging: { 
-    min: 0, max: 25, 
-    icon: "🟠", 
-    labelEn: "★ Emerging", 
-    labelEs: "★ Emergente",
-    descEn: "High potential, higher risk",
-    descEs: "Alto potencial, mayor riesgo"
-  },
-  developing: { 
-    min: 26, max: 50, 
-    icon: "🟡", 
-    labelEn: "📈 Developing", 
-    labelEs: "📈 En Desarrollo",
-    descEn: "Good growth potential",
-    descEs: "Buen potencial de crecimiento"
-  },
-  growing: { 
-    min: 51, max: 75, 
-    icon: "🟢", 
-    labelEn: "🌱 Growing", 
-    labelEs: "🌱 Crecimiento",
-    descEn: "Balanced growth/stability",
-    descEs: "Equilibrio crecimiento/estabilidad"
-  },
-  mature: { 
-    min: 76, max: 90, 
-    icon: "🔵", 
-    labelEn: "🏢 Mature", 
-    labelEs: "🏢 Maduro",
-    descEn: "Stable, moderate growth",
-    descEs: "Estable, crecimiento moderado"
-  },
-  established: { 
-    min: 91, max: 100, 
-    icon: "⚪", 
-    labelEn: "🏛️ Established", 
-    labelEs: "🏛️ Establecido",
-    descEn: "Lowest risk, lower returns",
-    descEs: "Menor riesgo, menores retornos"
-  },
-};
-
-const getMaturityGroup = (level: number | null) => {
-  if (level === null) return null;
-  if (level <= 25) return "emerging";
-  if (level <= 50) return "developing";
-  if (level <= 75) return "growing";
-  if (level <= 90) return "mature";
-  return "established";
-};
-
-const getMaturityColor = (level: number | null) => {
-  if (level === null) return "text-gray-400";
-  if (level <= 25) return "text-orange-400";
-  if (level <= 50) return "text-yellow-400";
-  if (level <= 75) return "text-green-400";
-  if (level <= 90) return "text-blue-400";
-  return "text-gray-300";
+// Format zone name properly (not all caps)
+const formatZoneName = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 export const ZoneSelect = ({ value, onValueChange, placeholder, className, disabled }: ZoneSelectProps) => {
@@ -101,7 +47,6 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
         const { data, error: fetchError } = await supabase
           .from('zones')
           .select('id, name, maturity_level, maturity_label')
-          .not('maturity_level', 'is', null)
           .order('name');
         
         if (fetchError) throw fetchError;
@@ -124,29 +69,9 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
   
   const selectedZone = useMemo(() => zones.find(z => z.id === value), [zones, value]);
   
-  // Group zones by maturity level
-  const groupedZones = useMemo(() => {
-    const groups: Record<string, Zone[]> = {
-      emerging: [],
-      developing: [],
-      growing: [],
-      mature: [],
-      established: [],
-    };
-    
-    zones.forEach(zone => {
-      const group = getMaturityGroup(zone.maturity_level);
-      if (group && groups[group]) {
-        groups[group].push(zone);
-      }
-    });
-    
-    // Sort each group by name
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => a.name.localeCompare(b.name));
-    });
-    
-    return groups;
+  // Sort zones alphabetically
+  const sortedZones = useMemo(() => {
+    return [...zones].sort((a, b) => a.name.localeCompare(b.name));
   }, [zones]);
 
   const handleSelect = (zoneId: string) => {
@@ -158,7 +83,6 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
   const handleRetry = () => {
     setIsLoading(true);
     setError(null);
-    // Re-fetch will happen via useEffect
     setZones([]);
   };
 
@@ -184,13 +108,8 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
             </span>
           ) : selectedZone ? (
             <span className="flex items-center gap-2 truncate">
-              <MapPin className={cn("h-4 w-4", getMaturityColor(selectedZone.maturity_level))} />
-              <span className="truncate">{selectedZone.name}</span>
-              {selectedZone.maturity_level !== null && (
-                <span className={cn("text-xs", getMaturityColor(selectedZone.maturity_level))}>
-                  {selectedZone.maturity_level}%
-                </span>
-              )}
+              <MapPin className="h-4 w-4 text-theme-accent" />
+              <span className="truncate">{formatZoneName(selectedZone.name)}</span>
             </span>
           ) : (
             <span className="text-muted-foreground">
@@ -200,7 +119,7 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0 bg-theme-card border-theme-border" align="start">
+      <PopoverContent className="w-[280px] p-0 bg-theme-card border-theme-border z-50" align="start">
         {error ? (
           <div className="p-4 text-center">
             <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
@@ -228,49 +147,23 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
                 {language === 'es' ? 'No se encontró zona.' : 'No zone found.'}
               </CommandEmpty>
               
-              {Object.entries(groupedZones).map(([groupKey, zonesInGroup]) => {
-                if (zonesInGroup.length === 0) return null;
-                
-                const group = MATURITY_GROUPS[groupKey as keyof typeof MATURITY_GROUPS];
-                
-                return (
-                  <CommandGroup 
-                    key={groupKey} 
-                    heading={
-                      <div className="flex items-center justify-between">
-                        <span>{language === 'es' ? group.labelEs : group.labelEn}</span>
-                        <span className="text-xs text-theme-text-muted">
-                          {language === 'es' ? group.descEs : group.descEn}
-                        </span>
-                      </div>
-                    }
-                    className="text-theme-text-muted [&_[cmdk-group-heading]]:text-theme-text-muted [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
-                  >
-                    {zonesInGroup.map((zone) => (
-                      <CommandItem
-                        key={zone.id}
-                        value={`${zone.name} ${zone.maturity_label || ''}`}
-                        onSelect={() => handleSelect(zone.id)}
-                        className="flex items-center gap-2 px-2 py-1.5 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border"
-                      >
-                        <Check
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            value === zone.id ? "opacity-100 text-[#CCFF00]" : "opacity-0"
-                          )}
-                        />
-                        <span className="text-base">{group.icon}</span>
-                        <span className="flex-1 truncate">{zone.name}</span>
-                        {zone.maturity_level !== null && (
-                          <span className={cn("text-xs font-mono", getMaturityColor(zone.maturity_level))}>
-                            {zone.maturity_level}%
-                          </span>
-                        )}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                );
-              })}
+              {sortedZones.map((zone) => (
+                <CommandItem
+                  key={zone.id}
+                  value={zone.name}
+                  onSelect={() => handleSelect(zone.id)}
+                  className="flex items-center gap-2 px-3 py-2 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border"
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      value === zone.id ? "opacity-100 text-[#CCFF00]" : "opacity-0"
+                    )}
+                  />
+                  <MapPin className="h-3.5 w-3.5 text-theme-text-muted" />
+                  <span className="flex-1 truncate">{formatZoneName(zone.name)}</span>
+                </CommandItem>
+              ))}
             </CommandList>
           </Command>
         )}
