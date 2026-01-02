@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { SafetyBufferPanel, TenantEquityPanel, StressTestPanel } from "./financing";
+import { SafetyBufferPanel, TenantEquityPanel, StressTestPanel, AmortizationTable } from "./financing";
 interface MortgageBreakdownProps {
   mortgageInputs: MortgageInputs;
   mortgageAnalysis: MortgageAnalysis;
@@ -510,30 +510,41 @@ export const MortgageBreakdown = ({
 
         {/* ===== NEW: THREE-PILLAR FINANCING ANALYSIS ===== */}
         {monthlyLongTermRent !== undefined && monthlyLongTermRent > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <SafetyBufferPanel
-              netMonthlyRent={netMonthlyRent}
-              monthlyMortgageTotal={monthlyMortgageTotal}
-              currency={currency}
-              rate={rate}
-              viewMode={viewMode}
-            />
-            <TenantEquityPanel
-              loanAmount={loanAmount}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <SafetyBufferPanel
+                netMonthlyRent={netMonthlyRent}
+                monthlyMortgageTotal={monthlyMortgageTotal}
+                currency={currency}
+                rate={rate}
+                viewMode={viewMode}
+              />
+              <TenantEquityPanel
+                loanAmount={loanAmount}
+                amortizationSchedule={amortizationSchedule}
+                principalPaidYear5={principalPaidYear5}
+                principalPaidYear10={principalPaidYear10}
+                loanTermYears={mortgageInputs.loanTermYears}
+                currency={currency}
+                rate={rate}
+              />
+              <StressTestPanel
+                stressScenarios={stressScenarios}
+                currency={currency}
+                rate={rate}
+                viewMode={viewMode}
+              />
+            </div>
+            
+            {/* Amortization Schedule Table - Collapsible */}
+            <AmortizationTable
               amortizationSchedule={amortizationSchedule}
-              principalPaidYear5={principalPaidYear5}
-              principalPaidYear10={principalPaidYear10}
+              loanAmount={loanAmount}
               loanTermYears={mortgageInputs.loanTermYears}
               currency={currency}
               rate={rate}
             />
-            <StressTestPanel
-              stressScenarios={stressScenarios}
-              currency={currency}
-              rate={rate}
-              viewMode={viewMode}
-            />
-          </div>
+          </>
         )}
 
         {/* Long-Term Coverage Breakdown Dialog */}

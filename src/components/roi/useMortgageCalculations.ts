@@ -31,6 +31,8 @@ export interface AmortizationPoint {
   balance: number;
   principalPaid: number;
   interestPaid: number;
+  yearlyPrincipal: number;
+  yearlyInterest: number;
 }
 
 export interface StressScenario {
@@ -159,6 +161,8 @@ export const useMortgageCalculations = ({
     let balance = loanAmount;
     let totalPrincipalPaid = 0;
     let totalInterestPaidSoFar = 0;
+    let previousPrincipalPaid = 0;
+    let previousInterestPaid = 0;
     const monthlyRate = interestRate / 100 / 12;
     
     for (let year = 1; year <= loanTermYears; year++) {
@@ -172,12 +176,20 @@ export const useMortgageCalculations = ({
         totalInterestPaidSoFar += interestPayment;
       }
       
+      const yearlyPrincipal = totalPrincipalPaid - previousPrincipalPaid;
+      const yearlyInterest = totalInterestPaidSoFar - previousInterestPaid;
+      
       amortizationSchedule.push({
         year,
         balance: Math.max(0, balance),
         principalPaid: totalPrincipalPaid,
         interestPaid: totalInterestPaidSoFar,
+        yearlyPrincipal,
+        yearlyInterest,
       });
+      
+      previousPrincipalPaid = totalPrincipalPaid;
+      previousInterestPaid = totalInterestPaidSoFar;
     }
 
     const principalPaidYear5 = amortizationSchedule[4]?.principalPaid || 0;
