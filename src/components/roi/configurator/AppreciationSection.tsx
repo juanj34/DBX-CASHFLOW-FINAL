@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TrendingUp, Zap, Shield, Rocket, ChevronDown, Settings } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { ConfiguratorSectionProps } from "./types";
@@ -7,6 +7,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { calculateAppreciationBonus } from "../valueDifferentiators";
 import { InfoTooltip } from "../InfoTooltip";
 import { cn } from "@/lib/utils";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { Button } from "@/components/ui/button";
 
 // Predefined appreciation profiles
 const APPRECIATION_PROFILES = {
@@ -62,8 +64,58 @@ type ProfileKey = keyof typeof APPRECIATION_PROFILES;
 export const AppreciationSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const { t, language } = useLanguage();
   const [customOpen, setCustomOpen] = useState(false);
+  const [showPSF, setShowPSF] = useState(false);
   
   const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
+
+  // Current appreciation values
+  const constructionRate = (inputs.constructionAppreciation ?? 12) + appreciationBonus;
+  const growthRate = (inputs.growthAppreciation ?? 8) + appreciationBonus;
+  const matureRate = (inputs.matureAppreciation ?? 4) + appreciationBonus;
+  const growthPeriodYears = inputs.growthPeriodYears ?? 5;
+
+  // Calculate projected values
+  const projectedData = useMemo(() => {
+    const basePrice = inputs.basePrice || 1000000;
+    const sqft = inputs.unitSizeSqf || 1250;
+    
+    // Calculate years to handover
+    const bookingDate = new Date(inputs.bookingYear || 2025, (inputs.bookingMonth || 1) - 1);
+    const handoverQuarterMonth = ((inputs.handoverQuarter || 4) - 1) * 3;
+    const handoverDate = new Date(inputs.handoverYear || 2028, handoverQuarterMonth);
+    const yearsToHandover = Math.max(0, (handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 365));
+    
+    const data = [];
+    let currentValue = basePrice;
+    
+    for (let year = 0; year <= 10; year++) {
+      let phase: 'construction' | 'growth' | 'mature';
+      let rate: number;
+      
+      if (year < yearsToHandover) {
+        phase = 'construction';
+        rate = constructionRate;
+      } else if (year < yearsToHandover + growthPeriodYears) {
+        phase = 'growth';
+        rate = growthRate;
+      } else {
+        phase = 'mature';
+        rate = matureRate;
+      }
+      
+      data.push({
+        year,
+        totalValue: currentValue,
+        psfValue: currentValue / sqft,
+        phase,
+        isHandover: Math.abs(year - yearsToHandover) < 0.5,
+      });
+      
+      currentValue = currentValue * (1 + rate / 100);
+    }
+    
+    return { data, yearsToHandover };
+  }, [inputs.basePrice, inputs.unitSizeSqf, inputs.bookingYear, inputs.bookingMonth, inputs.handoverYear, inputs.handoverQuarter, constructionRate, growthRate, matureRate, growthPeriodYears]);
 
   // Determine which profile is currently selected (or custom)
   const getSelectedProfile = (): ProfileKey | 'custom' => {
@@ -95,7 +147,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
       growthAppreciation: profile.growthAppreciation,
       matureAppreciation: profile.matureAppreciation,
       growthPeriodYears: profile.growthPeriodYears,
-      useZoneDefaults: false, // No longer using zones
+      useZoneDefaults: false,
     }));
     setCustomOpen(false);
   };
@@ -141,16 +193,32 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
     }
   };
 
+  const formatValue = (value: number) => {
+    if (showPSF) {
+      return `${currency} ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}/sqft`;
+    }
+    if (value >= 1000000) {
+      return `${currency} ${(value / 1000000).toFixed(2)}M`;
+    }
+    return `${currency} ${(value / 1000).toFixed(0)}K`;
+  };
+
+  const value5Y = projectedData.data[5]?.totalValue || 0;
+  const value10Y = projectedData.data[10]?.totalValue || 0;
+  const basePrice = inputs.basePrice || 1000000;
+  const totalGrowth = ((value10Y / basePrice) - 1) * 100;
+  const psf10Y = projectedData.data[10]?.psfValue || 0;
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">
-          {language === 'es' ? 'Perfil de Apreciación' : 'Appreciation Profile'}
+          {language === 'es' ? 'Proyección de Crecimiento' : 'Growth Projection'}
         </h3>
         <p className="text-sm text-gray-500">
           {language === 'es' 
-            ? 'Selecciona cómo esperas que crezca el valor de la propiedad'
-            : 'Select how you expect the property value to grow'}
+            ? 'Proyecta cómo crecerá el valor de la propiedad en el tiempo'
+            : 'Project how the property value will grow over time'}
         </p>
       </div>
 
@@ -168,7 +236,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
       )}
 
       {/* Profile Cards */}
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-2">
         {(Object.entries(APPRECIATION_PROFILES) as [ProfileKey, typeof APPRECIATION_PROFILES[ProfileKey]][]).map(([key, profile]) => {
           const isSelected = selectedProfile === key;
           const colors = getColorClasses(profile.color, isSelected);
@@ -180,7 +248,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               type="button"
               onClick={() => handleSelectProfile(key)}
               className={cn(
-                "w-full p-4 rounded-xl border transition-all text-left",
+                "w-full p-3 rounded-xl border transition-all text-left",
                 colors.bg,
                 colors.border,
                 isSelected ? "ring-1 ring-offset-1 ring-offset-[#0d1117]" : "hover:border-gray-600",
@@ -189,46 +257,24 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 isSelected && profile.color === 'blue' && "ring-blue-500/50"
               )}
             >
-              <div className="flex items-start gap-3">
-                <div className={cn("p-2 rounded-lg", colors.bg)}>
-                  <Icon className={cn("w-5 h-5", colors.icon)} />
+              <div className="flex items-center gap-3">
+                <div className={cn("p-1.5 rounded-lg", colors.bg)}>
+                  <Icon className={cn("w-4 h-4", colors.icon)} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className={cn("font-semibold", isSelected ? colors.text : "text-white")}>
+                    <h4 className={cn("font-medium text-sm", isSelected ? colors.text : "text-white")}>
                       {language === 'es' ? profile.nameEs : profile.name}
                     </h4>
-                    {isSelected && (
-                      <div className={cn("w-2 h-2 rounded-full", 
-                        profile.color === 'orange' && "bg-orange-400",
-                        profile.color === 'lime' && "bg-[#CCFF00]",
-                        profile.color === 'blue' && "bg-blue-400"
-                      )} />
-                    )}
+                    <div className="flex items-center gap-2 text-[10px] font-mono">
+                      <span className="text-orange-400">{profile.constructionAppreciation}%</span>
+                      <span className="text-gray-600">→</span>
+                      <span className="text-green-400">{profile.growthAppreciation}%</span>
+                      <span className="text-gray-600">→</span>
+                      <span className="text-blue-400">{profile.matureAppreciation}%</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {language === 'es' ? profile.descriptionEs : profile.description}
-                  </p>
-                  
-                  {/* Rate Preview */}
-                  <div className="flex items-center gap-3 mt-2 text-xs">
-                    <span className="text-orange-400 font-mono">
-                      {profile.constructionAppreciation}%
-                      {appreciationBonus > 0 && <span className="text-[#CCFF00]">+{appreciationBonus.toFixed(0)}</span>}
-                    </span>
-                    <span className="text-gray-600">→</span>
-                    <span className="text-green-400 font-mono">
-                      {profile.growthAppreciation}%
-                      {appreciationBonus > 0 && <span className="text-[#CCFF00]">+{appreciationBonus.toFixed(0)}</span>}
-                    </span>
-                    <span className="text-gray-600">→</span>
-                    <span className="text-blue-400 font-mono">
-                      {profile.matureAppreciation}%
-                      {appreciationBonus > 0 && <span className="text-[#CCFF00]">+{appreciationBonus.toFixed(0)}</span>}
-                    </span>
-                  </div>
-                  
-                  <p className="text-[10px] text-gray-600 mt-1">
+                  <p className="text-[10px] text-gray-500">
                     {language === 'es' ? profile.riskLevelEs : profile.riskLevel}
                   </p>
                 </div>
@@ -240,22 +286,165 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
 
       {/* Custom Profile Indicator */}
       {selectedProfile === 'custom' && (
-        <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-purple-400 font-medium">
-              {language === 'es' ? 'Perfil Personalizado' : 'Custom Profile'}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 mt-1 text-xs">
-            <span className="text-orange-400 font-mono">{inputs.constructionAppreciation ?? 12}%</span>
-            <span className="text-gray-600">→</span>
-            <span className="text-green-400 font-mono">{inputs.growthAppreciation ?? 8}%</span>
-            <span className="text-gray-600">→</span>
-            <span className="text-blue-400 font-mono">{inputs.matureAppreciation ?? 4}%</span>
+        <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings className="w-3 h-3 text-purple-400" />
+              <span className="text-xs text-purple-400 font-medium">
+                {language === 'es' ? 'Perfil Personalizado' : 'Custom Profile'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-mono">
+              <span className="text-orange-400">{inputs.constructionAppreciation ?? 12}%</span>
+              <span className="text-gray-600">→</span>
+              <span className="text-green-400">{inputs.growthAppreciation ?? 8}%</span>
+              <span className="text-gray-600">→</span>
+              <span className="text-blue-400">{inputs.matureAppreciation ?? 4}%</span>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Growth Projection Chart */}
+      <div className="p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-white">
+            {language === 'es' ? 'Proyección 10 Años' : '10-Year Projection'}
+          </h4>
+          <div className="flex items-center gap-1 p-0.5 bg-[#0d1117] rounded-lg">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPSF(false)}
+              className={cn(
+                "h-6 px-2 text-xs",
+                !showPSF ? "bg-[#CCFF00]/20 text-[#CCFF00]" : "text-gray-400 hover:text-white"
+              )}
+            >
+              Total
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPSF(true)}
+              className={cn(
+                "h-6 px-2 text-xs",
+                showPSF ? "bg-[#CCFF00]/20 text-[#CCFF00]" : "text-gray-400 hover:text-white"
+              )}
+            >
+              PSF
+            </Button>
+          </div>
+        </div>
+        
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={projectedData.data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#CCFF00" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#CCFF00" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="year" 
+                tick={{ fill: '#6b7280', fontSize: 10 }}
+                axisLine={{ stroke: '#2a3142' }}
+                tickLine={false}
+                tickFormatter={(v) => `Y${v}`}
+              />
+              <YAxis 
+                hide
+                domain={['dataMin', 'dataMax']}
+              />
+              {projectedData.yearsToHandover > 0 && projectedData.yearsToHandover < 10 && (
+                <ReferenceLine 
+                  x={Math.round(projectedData.yearsToHandover)} 
+                  stroke="#CCFF00" 
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                />
+              )}
+              <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-[#0d1117] border border-[#2a3142] rounded-lg p-2 text-xs">
+                        <p className="text-gray-400">Year {data.year}</p>
+                        <p className="text-[#CCFF00] font-mono font-bold">
+                          {formatValue(showPSF ? data.psfValue : data.totalValue)}
+                        </p>
+                        <p className="text-gray-500 capitalize">{data.phase} phase</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey={showPSF ? "psfValue" : "totalValue"} 
+                stroke="#CCFF00" 
+                strokeWidth={2}
+                fill="url(#colorValue)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Phase Legend */}
+        <div className="flex items-center justify-center gap-4 mt-2 text-[10px]">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-orange-400" />
+            <span className="text-gray-500">{language === 'es' ? 'Construcción' : 'Construction'}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-green-400" />
+            <span className="text-gray-500">{language === 'es' ? 'Crecimiento' : 'Growth'}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-blue-400" />
+            <span className="text-gray-500">{language === 'es' ? 'Madurez' : 'Mature'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+          <p className="text-[10px] text-gray-500">
+            {language === 'es' ? 'Valor en 5 años' : 'Value in 5 Years'}
+          </p>
+          <p className="text-sm font-bold text-white">
+            {currency} {(value5Y / 1000000).toFixed(2)}M
+          </p>
+        </div>
+        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+          <p className="text-[10px] text-gray-500">
+            {language === 'es' ? 'Valor en 10 años' : 'Value in 10 Years'}
+          </p>
+          <p className="text-sm font-bold text-[#CCFF00]">
+            {currency} {(value10Y / 1000000).toFixed(2)}M
+          </p>
+        </div>
+        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+          <p className="text-[10px] text-gray-500">
+            {language === 'es' ? 'Crecimiento Total' : 'Total Growth'}
+          </p>
+          <p className="text-sm font-bold text-green-400">
+            +{totalGrowth.toFixed(0)}%
+          </p>
+        </div>
+        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+          <p className="text-[10px] text-gray-500">
+            {language === 'es' ? 'PSF en 10 años' : 'PSF in 10 Years'}
+          </p>
+          <p className="text-sm font-bold text-white">
+            {currency} {psf10Y.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+      </div>
 
       {/* Customize Collapsible */}
       <Collapsible open={customOpen} onOpenChange={setCustomOpen}>

@@ -74,7 +74,7 @@ export const ConfiguratorSidebar = ({
     },
     {
       id: 'appreciation',
-      label: 'Appreciation',
+      label: 'Growth',
       icon: TrendingUp,
       isComplete: visitedSections.has('appreciation') && hasAppreciationData,
     },
