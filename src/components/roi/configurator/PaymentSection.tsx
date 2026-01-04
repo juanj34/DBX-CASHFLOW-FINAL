@@ -253,7 +253,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
         <div className="space-y-3 animate-fade-in">
           {/* Auto-Generate Card - Compact */}
-          <div className="space-y-2 p-3 bg-gradient-to-br from-[#CCFF00]/10 to-transparent rounded-xl border border-[#CCFF00]/30">
+          <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-xl border border-[#CCFF00]/30">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-[10px] font-bold text-[#CCFF00]">3</div>
               <Zap className="w-3.5 h-3.5 text-[#CCFF00]" />
