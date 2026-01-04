@@ -158,7 +158,12 @@ export const CountrySelect = ({ value, onValueChange, placeholder, className, di
                         key={country.code}
                         value={`${country.name} ${country.nameEs} ${country.code}`}
                         onSelect={() => handleSelect(country.code)}
-                        className="flex items-center gap-2 px-2 py-1.5 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border"
+                        className={cn(
+                          "flex items-center gap-2 px-2 py-1.5 cursor-pointer",
+                          value === country.code 
+                            ? "bg-[#CCFF00]/15 text-[#CCFF00]" 
+                            : "text-theme-text hover:bg-theme-border/50"
+                        )}
                       >
                         <Check
                           className={cn(
