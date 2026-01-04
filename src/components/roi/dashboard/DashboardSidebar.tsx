@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Globe, Share2 } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -41,6 +41,11 @@ interface DashboardSidebarProps {
   setLanguage?: (lang: string) => void;
   currency?: Currency;
   setCurrency?: (currency: Currency) => void;
+  // Save status
+  hasUnsavedChanges?: boolean;
+  saving?: boolean;
+  lastSaved?: Date | null;
+  onSave?: () => void;
 }
 
 // App Logo Component
@@ -113,6 +118,10 @@ export const DashboardSidebar = ({
   setLanguage,
   currency,
   setCurrency,
+  hasUnsavedChanges,
+  saving,
+  lastSaved,
+  onSave,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
 
@@ -359,6 +368,69 @@ export const DashboardSidebar = ({
 
       {/* Bottom Section */}
       <div className="border-t border-theme-border">
+        {/* Save Status Indicator */}
+        {(hasUnsavedChanges || saving || lastSaved) && (
+          <div className={cn(
+            "border-b border-theme-border",
+            collapsed ? "p-2" : "p-3"
+          )}>
+            {hasUnsavedChanges && onSave ? (
+              collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onSave}
+                      disabled={saving}
+                      size="icon"
+                      className="w-full h-9 bg-amber-600 hover:bg-amber-500 text-white"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-amber-900 text-amber-100 border-amber-700">
+                    Unsaved draft – Click to save
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  onClick={onSave}
+                  disabled={saving}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white justify-start gap-2"
+                  size="sm"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {saving ? 'Saving...' : 'Save Draft'}
+                </Button>
+              )
+            ) : lastSaved ? (
+              collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full flex items-center justify-center p-2.5">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              )
+            ) : null}
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
