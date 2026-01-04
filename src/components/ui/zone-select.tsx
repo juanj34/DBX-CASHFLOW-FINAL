@@ -119,7 +119,11 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0 bg-theme-card border-theme-border z-[100] pointer-events-auto" align="start">
+      <PopoverContent 
+        className="w-[280px] p-0 bg-theme-card border-theme-border z-[100]" 
+        align="start"
+        onWheel={(e) => e.stopPropagation()}
+      >
         {error ? (
           <div className="p-4 text-center">
             <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
@@ -142,28 +146,42 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
                 className="h-10 bg-transparent text-theme-text placeholder:text-theme-text-muted border-0 focus:ring-0"
               />
             </div>
-            <CommandList className="max-h-[300px] overflow-y-auto">
+            <CommandList 
+              className="max-h-[300px] overflow-y-auto overscroll-contain"
+              onWheel={(e) => e.stopPropagation()}
+            >
               <CommandEmpty className="py-4 text-center text-sm text-theme-text-muted">
                 {language === 'es' ? 'No se encontró zona.' : 'No zone found.'}
               </CommandEmpty>
               
-              {sortedZones.map((zone) => (
-                <CommandItem
-                  key={zone.id}
-                  value={zone.name}
-                  onSelect={() => handleSelect(zone.id)}
-                  className="flex items-center gap-2 px-3 py-2 text-theme-text cursor-pointer hover:bg-[#CCFF00]/10 hover:text-[#CCFF00] data-[selected]:bg-[#CCFF00]/20 data-[selected]:text-[#CCFF00] aria-selected:bg-[#CCFF00]/20 aria-selected:text-[#CCFF00] pointer-events-auto"
-                >
-                  <Check
+              {sortedZones.map((zone) => {
+                const isSelected = value === zone.id;
+                return (
+                  <CommandItem
+                    key={zone.id}
+                    value={zone.name}
+                    onSelect={() => handleSelect(zone.id)}
                     className={cn(
-                      "h-4 w-4 shrink-0",
-                      value === zone.id ? "opacity-100 text-[#CCFF00]" : "opacity-0"
+                      "flex items-center gap-2 px-3 py-2 cursor-pointer",
+                      isSelected 
+                        ? "bg-[#CCFF00]/15 text-[#CCFF00]" 
+                        : "text-theme-text hover:bg-theme-border/50"
                     )}
-                  />
-                  <MapPin className="h-3.5 w-3.5 text-theme-text-muted" />
-                  <span className="flex-1 truncate">{formatZoneName(zone.name)}</span>
-                </CommandItem>
-              ))}
+                  >
+                    <Check
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-[#CCFF00]",
+                        isSelected ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <MapPin className={cn(
+                      "h-3.5 w-3.5",
+                      isSelected ? "text-[#CCFF00]" : "text-theme-text-muted"
+                    )} />
+                    <span className="flex-1 truncate">{formatZoneName(zone.name)}</span>
+                  </CommandItem>
+                );
+              })}
             </CommandList>
           </Command>
         )}

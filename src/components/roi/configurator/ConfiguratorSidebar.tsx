@@ -110,7 +110,18 @@ export const ConfiguratorSidebar = ({
           return (
             <button
               key={section.id}
-              onClick={() => onSectionChange(section.id)}
+              onClick={() => {
+                // Allow navigation to previous sections or current section
+                const currentIndex = sections.findIndex(s => s.id === activeSection);
+                const targetIndex = index;
+                // Allow going back or staying, warn if skipping forward without completing
+                if (targetIndex <= currentIndex || section.isComplete || visitedSections.has(section.id)) {
+                  onSectionChange(section.id);
+                } else {
+                  // Still allow but will be blocked by Next button validation
+                  onSectionChange(section.id);
+                }
+              }}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                 isActive 

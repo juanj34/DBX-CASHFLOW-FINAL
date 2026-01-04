@@ -267,6 +267,9 @@ export const ConfiguratorLayout = ({
     const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
     
     switch (activeSection) {
+      case 'client':
+        // Client section requires zone selection
+        return Boolean(inputs.zoneId);
       case 'property':
         return inputs.basePrice > 0;
       case 'payment':
@@ -278,7 +281,6 @@ export const ConfiguratorLayout = ({
       case 'exits':
         return inputs._exitScenarios && inputs._exitScenarios.length > 0;
       // Optional sections
-      case 'client':
       case 'value':
       case 'mortgage':
       case 'images':
