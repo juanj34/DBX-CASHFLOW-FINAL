@@ -73,8 +73,8 @@ export const PropertySection = ({
             </span>
             <Input
               type="text"
-              value={basePriceInput}
-              onChange={(e) => setBasePriceInput(e.target.value)}
+              value={Number(basePriceInput.replace(/,/g, '')).toLocaleString() || basePriceInput}
+              onChange={(e) => setBasePriceInput(e.target.value.replace(/,/g, ''))}
               onBlur={handleBasePriceBlur}
               className="w-44 h-10 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-lg pl-14"
             />
