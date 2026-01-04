@@ -125,7 +125,7 @@ export const MobileConfiguratorSheet = ({
 }: MobileConfiguratorSheetProps) => {
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('client');
-  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set(['client']));
+  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set());
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [showSampleFlash, setShowSampleFlash] = useState(false);
   
@@ -324,7 +324,7 @@ export const MobileConfiguratorSheet = ({
 
   const handleReset = () => {
     setInputs(NEW_QUOTE_OI_INPUTS);
-    setVisitedSections(new Set(['client']));
+    setVisitedSections(new Set());
   };
 
   const handleLoadSample = () => {

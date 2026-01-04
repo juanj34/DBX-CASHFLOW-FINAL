@@ -41,8 +41,8 @@ export const ConfiguratorSidebar = ({
       id: 'client',
       label: 'Client',
       icon: Users,
-      // Must be visited AND have data
-      isComplete: visitedSections.has('client') && (Boolean(inputs.zoneId) || inputs.basePrice > 0),
+      // Must be visited AND have zone selected
+      isComplete: visitedSections.has('client') && Boolean(inputs.zoneId),
     },
     {
       id: 'property',

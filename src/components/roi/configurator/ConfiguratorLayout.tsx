@@ -143,7 +143,7 @@ export const ConfiguratorLayout = ({
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
-    new Set(savedState?.visitedSections || ['client'])
+    new Set(savedState?.visitedSections || [])
   );
   
   // Clear localStorage when starting a new quote (no quoteId)
@@ -371,7 +371,7 @@ export const ConfiguratorLayout = ({
 
   const handleReset = () => {
     setInputs(NEW_QUOTE_OI_INPUTS);
-    setVisitedSections(new Set(['client']));
+    setVisitedSections(new Set());
   };
 
   const handleLoadSample = () => {
