@@ -1,216 +1,292 @@
 import { useState } from "react";
-import { MapPin, TrendingUp, Save, FolderOpen, DollarSign } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { TrendingUp, Zap, Shield, Rocket, ChevronDown, Settings } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfiguratorSectionProps } from "./types";
-import { ZoneSelect } from "@/components/ui/zone-select";
-import { ZoneAppreciationIndicator } from "../ZoneAppreciationIndicator";
-import { getZoneAppreciationProfile } from "../useOICalculations";
-import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { calculateAppreciationBonus } from "../valueDifferentiators";
 import { InfoTooltip } from "../InfoTooltip";
+import { cn } from "@/lib/utils";
+
+// Predefined appreciation profiles
+const APPRECIATION_PROFILES = {
+  aggressive: {
+    id: 'aggressive',
+    name: 'High Growth',
+    nameEs: 'Alto Crecimiento',
+    description: 'Emerging areas with high potential',
+    descriptionEs: 'Zonas emergentes con alto potencial',
+    icon: Rocket,
+    color: 'orange',
+    constructionAppreciation: 15,
+    growthAppreciation: 12,
+    matureAppreciation: 6,
+    growthPeriodYears: 7,
+    riskLevel: 'Higher risk, higher reward',
+    riskLevelEs: 'Mayor riesgo, mayor retorno',
+  },
+  balanced: {
+    id: 'balanced',
+    name: 'Balanced',
+    nameEs: 'Equilibrado',
+    description: 'Developing areas with steady growth',
+    descriptionEs: 'Zonas en desarrollo con crecimiento estable',
+    icon: TrendingUp,
+    color: 'lime',
+    constructionAppreciation: 12,
+    growthAppreciation: 8,
+    matureAppreciation: 4,
+    growthPeriodYears: 5,
+    riskLevel: 'Moderate risk, solid returns',
+    riskLevelEs: 'Riesgo moderado, retornos sólidos',
+  },
+  conservative: {
+    id: 'conservative',
+    name: 'Capital Preservation',
+    nameEs: 'Preservación de Capital',
+    description: 'Established areas with stable values',
+    descriptionEs: 'Zonas establecidas con valores estables',
+    icon: Shield,
+    color: 'blue',
+    constructionAppreciation: 8,
+    growthAppreciation: 5,
+    matureAppreciation: 3,
+    growthPeriodYears: 3,
+    riskLevel: 'Lower risk, stable growth',
+    riskLevelEs: 'Menor riesgo, crecimiento estable',
+  },
+} as const;
+
+type ProfileKey = keyof typeof APPRECIATION_PROFILES;
 
 export const AppreciationSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
-  const { t } = useLanguage();
-  const { presets, loading: loadingPresets, saving: savingPreset, savePreset, applyPreset } = useAppreciationPresets();
-  const [presetName, setPresetName] = useState('');
-  const [showSavePreset, setShowSavePreset] = useState(false);
-
+  const { t, language } = useLanguage();
+  const [customOpen, setCustomOpen] = useState(false);
+  
   const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
 
-  const handleApplyAppreciationPreset = (presetId: string) => {
-    const preset = presets.find(p => p.id === presetId);
-    if (preset) {
-      const values = applyPreset(preset);
-      setInputs(prev => ({
-        ...prev,
-        useZoneDefaults: false,
-        constructionAppreciation: values.constructionAppreciation,
-        growthAppreciation: values.growthAppreciation,
-        matureAppreciation: values.matureAppreciation,
-        growthPeriodYears: values.growthPeriodYears,
-        ...(values.rentGrowthRate !== undefined ? { rentGrowthRate: values.rentGrowthRate } : {}),
-      }));
+  // Determine which profile is currently selected (or custom)
+  const getSelectedProfile = (): ProfileKey | 'custom' => {
+    const construction = inputs.constructionAppreciation ?? 12;
+    const growth = inputs.growthAppreciation ?? 8;
+    const mature = inputs.matureAppreciation ?? 4;
+    const period = inputs.growthPeriodYears ?? 5;
+
+    for (const [key, profile] of Object.entries(APPRECIATION_PROFILES)) {
+      if (
+        profile.constructionAppreciation === construction &&
+        profile.growthAppreciation === growth &&
+        profile.matureAppreciation === mature &&
+        profile.growthPeriodYears === period
+      ) {
+        return key as ProfileKey;
+      }
     }
+    return 'custom';
   };
 
-  const handleSavePreset = async () => {
-    if (!presetName.trim()) return;
-    const success = await savePreset(presetName.trim(), {
-      constructionAppreciation: inputs.constructionAppreciation ?? 12,
-      growthAppreciation: inputs.growthAppreciation ?? 8,
-      matureAppreciation: inputs.matureAppreciation ?? 4,
-      growthPeriodYears: inputs.growthPeriodYears ?? 5,
-      rentGrowthRate: inputs.rentGrowthRate,
-    });
-    if (success) {
-      setPresetName('');
-      setShowSavePreset(false);
-    }
+  const selectedProfile = getSelectedProfile();
+
+  const handleSelectProfile = (profileKey: ProfileKey) => {
+    const profile = APPRECIATION_PROFILES[profileKey];
+    setInputs(prev => ({
+      ...prev,
+      constructionAppreciation: profile.constructionAppreciation,
+      growthAppreciation: profile.growthAppreciation,
+      matureAppreciation: profile.matureAppreciation,
+      growthPeriodYears: profile.growthPeriodYears,
+      useZoneDefaults: false, // No longer using zones
+    }));
+    setCustomOpen(false);
   };
 
-  const handleNumberChange = (field: keyof typeof inputs, value: string, min: number, max: number) => {
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      setInputs(prev => ({ ...prev, [field]: Math.min(Math.max(num, min), max) }));
+  const getColorClasses = (color: string, isSelected: boolean) => {
+    if (!isSelected) {
+      return {
+        bg: 'bg-[#1a1f2e]',
+        border: 'border-[#2a3142]',
+        text: 'text-gray-400',
+        icon: 'text-gray-500',
+      };
+    }
+    switch (color) {
+      case 'orange':
+        return {
+          bg: 'bg-orange-500/10',
+          border: 'border-orange-500/50',
+          text: 'text-orange-400',
+          icon: 'text-orange-400',
+        };
+      case 'lime':
+        return {
+          bg: 'bg-[#CCFF00]/10',
+          border: 'border-[#CCFF00]/50',
+          text: 'text-[#CCFF00]',
+          icon: 'text-[#CCFF00]',
+        };
+      case 'blue':
+        return {
+          bg: 'bg-blue-500/10',
+          border: 'border-blue-500/50',
+          text: 'text-blue-400',
+          icon: 'text-blue-400',
+        };
+      default:
+        return {
+          bg: 'bg-[#1a1f2e]',
+          border: 'border-[#2a3142]',
+          text: 'text-gray-400',
+          icon: 'text-gray-500',
+        };
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">Appreciation & Expenses</h3>
-        <p className="text-sm text-gray-500">Configure zone-based or custom appreciation rates</p>
+        <h3 className="text-lg font-semibold text-white mb-1">
+          {language === 'es' ? 'Perfil de Apreciación' : 'Appreciation Profile'}
+        </h3>
+        <p className="text-sm text-gray-500">
+          {language === 'es' 
+            ? 'Selecciona cómo esperas que crezca el valor de la propiedad'
+            : 'Select how you expect the property value to grow'}
+        </p>
       </div>
 
-      {/* Zone Defaults Toggle */}
-      <div className="flex items-center justify-between p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-[#CCFF00]" />
-          <span className="text-sm text-gray-300">Use Zone Defaults</span>
-          <InfoTooltip translationKey="tooltipZoneMaturity" />
-        </div>
-        <Switch
-          checked={inputs.useZoneDefaults ?? true}
-          onCheckedChange={(checked) => {
-            if (checked) {
-              const profile = getZoneAppreciationProfile(inputs.zoneMaturityLevel ?? 60);
-              setInputs(prev => ({
-                ...prev,
-                useZoneDefaults: true,
-                constructionAppreciation: profile.constructionAppreciation,
-                growthAppreciation: profile.growthAppreciation,
-                matureAppreciation: profile.matureAppreciation,
-                growthPeriodYears: profile.growthPeriodYears,
-              }));
-            } else {
-              setInputs(prev => ({ ...prev, useZoneDefaults: false }));
-            }
-          }}
-          className="data-[state=checked]:bg-[#CCFF00]"
-        />
-      </div>
-
-      {/* Zone Selection (when using defaults) */}
-      {(inputs.useZoneDefaults ?? true) && (
-        <div className="space-y-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-          <label className="text-sm text-gray-300 font-medium">Select Zone</label>
-          <ZoneSelect
-            value={inputs.zoneId || ''}
-            onValueChange={(zoneId, zone) => {
-              if (zone && zone.maturity_level !== null) {
-                const profile = getZoneAppreciationProfile(zone.maturity_level);
-                setInputs(prev => ({
-                  ...prev,
-                  zoneId,
-                  zoneMaturityLevel: zone.maturity_level!,
-                  ...(prev.useZoneDefaults ? {
-                    constructionAppreciation: profile.constructionAppreciation,
-                    growthAppreciation: profile.growthAppreciation,
-                    matureAppreciation: profile.matureAppreciation,
-                    growthPeriodYears: profile.growthPeriodYears,
-                  } : {})
-                }));
-              }
-            }}
-            className="w-full"
-          />
-
-          {/* Manual Maturity Slider (when no zone selected) */}
-          {!inputs.zoneId && (
-            <div className="space-y-2 pt-3 border-t border-[#2a3142]">
-              <div className="flex justify-between items-center">
-                <label className="text-xs text-gray-400">Or set maturity manually</label>
-                <span className="text-sm font-bold text-[#CCFF00] font-mono">{inputs.zoneMaturityLevel ?? 60}%</span>
-              </div>
-              <Slider
-                value={[inputs.zoneMaturityLevel ?? 60]}
-                onValueChange={([value]) => {
-                  const profile = getZoneAppreciationProfile(value);
-                  if (inputs.useZoneDefaults ?? true) {
-                    setInputs(prev => ({
-                      ...prev,
-                      zoneMaturityLevel: value,
-                      constructionAppreciation: profile.constructionAppreciation,
-                      growthAppreciation: profile.growthAppreciation,
-                      matureAppreciation: profile.matureAppreciation,
-                      growthPeriodYears: profile.growthPeriodYears,
-                    }));
-                  } else {
-                    setInputs(prev => ({ ...prev, zoneMaturityLevel: value }));
-                  }
-                }}
-                min={0}
-                max={100}
-                step={5}
-                className="roi-slider-lime"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Emerging (0%)</span>
-                <span>Established (100%)</span>
-              </div>
-            </div>
-          )}
-
-          <ZoneAppreciationIndicator maturityLevel={inputs.zoneMaturityLevel ?? 60} compact={false} />
+      {/* Appreciation Bonus Banner */}
+      {appreciationBonus > 0 && (
+        <div className="p-2 bg-[#CCFF00]/10 rounded-lg border border-[#CCFF00]/30">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#CCFF00] flex items-center gap-1">
+              <Zap className="w-3 h-3" />
+              {language === 'es' ? 'Bonus por Diferenciadores' : 'Value Differentiators Bonus'}
+            </span>
+            <span className="text-xs text-[#CCFF00] font-mono font-bold">+{appreciationBonus.toFixed(1)}%</span>
+          </div>
         </div>
       )}
 
-      {/* Custom Appreciation (when not using zone defaults) */}
-      {!(inputs.useZoneDefaults ?? true) && (
-        <div className="space-y-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-          {/* Preset Selector */}
-          <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#2a3142]">
-            <div className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-gray-400" />
-              <span className="text-xs text-gray-400">Load Preset</span>
-            </div>
-            <Select onValueChange={handleApplyAppreciationPreset}>
-              <SelectTrigger className="w-40 h-8 text-xs bg-[#0d1117] border-[#2a3142] text-white">
-                <SelectValue placeholder={loadingPresets ? "Loading..." : "Select preset"} />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
-                {presets.length === 0 ? (
-                  <div className="px-2 py-1.5 text-xs text-gray-500">No presets saved</div>
-                ) : (
-                  presets.map(preset => (
-                    <SelectItem key={preset.id} value={preset.id} className="text-white hover:bg-[#2a3142] text-xs">
-                      <div className="flex items-center justify-between w-full gap-2">
-                        <span>{preset.name}</span>
-                        <span className="text-[10px] text-gray-500">{preset.construction_appreciation}/{preset.growth_appreciation}/{preset.mature_appreciation}%</span>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Profile Cards */}
+      <div className="grid grid-cols-1 gap-3">
+        {(Object.entries(APPRECIATION_PROFILES) as [ProfileKey, typeof APPRECIATION_PROFILES[ProfileKey]][]).map(([key, profile]) => {
+          const isSelected = selectedProfile === key;
+          const colors = getColorClasses(profile.color, isSelected);
+          const Icon = profile.icon;
 
-          {/* Appreciation Bonus Banner */}
-          {appreciationBonus > 0 && (
-            <div className="p-2 bg-[#CCFF00]/10 rounded-lg border border-[#CCFF00]/30">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#CCFF00] flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  Value Differentiators Bonus
-                </span>
-                <span className="text-xs text-[#CCFF00] font-mono font-bold">+{appreciationBonus.toFixed(1)}%</span>
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleSelectProfile(key)}
+              className={cn(
+                "w-full p-4 rounded-xl border transition-all text-left",
+                colors.bg,
+                colors.border,
+                isSelected ? "ring-1 ring-offset-1 ring-offset-[#0d1117]" : "hover:border-gray-600",
+                isSelected && profile.color === 'orange' && "ring-orange-500/50",
+                isSelected && profile.color === 'lime' && "ring-[#CCFF00]/50",
+                isSelected && profile.color === 'blue' && "ring-blue-500/50"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn("p-2 rounded-lg", colors.bg)}>
+                  <Icon className={cn("w-5 h-5", colors.icon)} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className={cn("font-semibold", isSelected ? colors.text : "text-white")}>
+                      {language === 'es' ? profile.nameEs : profile.name}
+                    </h4>
+                    {isSelected && (
+                      <div className={cn("w-2 h-2 rounded-full", 
+                        profile.color === 'orange' && "bg-orange-400",
+                        profile.color === 'lime' && "bg-[#CCFF00]",
+                        profile.color === 'blue' && "bg-blue-400"
+                      )} />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {language === 'es' ? profile.descriptionEs : profile.description}
+                  </p>
+                  
+                  {/* Rate Preview */}
+                  <div className="flex items-center gap-3 mt-2 text-xs">
+                    <span className="text-orange-400 font-mono">
+                      {profile.constructionAppreciation}%
+                      {appreciationBonus > 0 && <span className="text-[#CCFF00]">+{appreciationBonus.toFixed(0)}</span>}
+                    </span>
+                    <span className="text-gray-600">→</span>
+                    <span className="text-green-400 font-mono">
+                      {profile.growthAppreciation}%
+                      {appreciationBonus > 0 && <span className="text-[#CCFF00]">+{appreciationBonus.toFixed(0)}</span>}
+                    </span>
+                    <span className="text-gray-600">→</span>
+                    <span className="text-blue-400 font-mono">
+                      {profile.matureAppreciation}%
+                      {appreciationBonus > 0 && <span className="text-[#CCFF00]">+{appreciationBonus.toFixed(0)}</span>}
+                    </span>
+                  </div>
+                  
+                  <p className="text-[10px] text-gray-600 mt-1">
+                    {language === 'es' ? profile.riskLevelEs : profile.riskLevel}
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] text-gray-500 mt-0.5">Added to all appreciation phases</p>
-            </div>
-          )}
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Appreciation Rates */}
-          <div className="space-y-4">
+      {/* Custom Profile Indicator */}
+      {selectedProfile === 'custom' && (
+        <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+          <div className="flex items-center gap-2">
+            <Settings className="w-4 h-4 text-purple-400" />
+            <span className="text-sm text-purple-400 font-medium">
+              {language === 'es' ? 'Perfil Personalizado' : 'Custom Profile'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-xs">
+            <span className="text-orange-400 font-mono">{inputs.constructionAppreciation ?? 12}%</span>
+            <span className="text-gray-600">→</span>
+            <span className="text-green-400 font-mono">{inputs.growthAppreciation ?? 8}%</span>
+            <span className="text-gray-600">→</span>
+            <span className="text-blue-400 font-mono">{inputs.matureAppreciation ?? 4}%</span>
+          </div>
+        </div>
+      )}
+
+      {/* Customize Collapsible */}
+      <Collapsible open={customOpen} onOpenChange={setCustomOpen}>
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142] hover:border-gray-600 transition-colors">
+          <div className="flex items-center gap-2">
+            <Settings className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-300">
+              {language === 'es' ? 'Personalizar apreciación' : 'Customize appreciation'}
+            </span>
+          </div>
+          <ChevronDown className={cn("w-4 h-4 text-gray-400 transition-transform", customOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent className="pt-3">
+          <div className="space-y-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+            {/* Explanation */}
+            <div className="p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+              <p className="text-xs text-gray-400">
+                {language === 'es' 
+                  ? 'La apreciación se divide en 3 fases: Construcción (antes de entrega), Crecimiento (primeros años post-entrega) y Madurez (largo plazo). Ajusta cada fase según tu análisis del mercado.'
+                  : 'Appreciation is divided into 3 phases: Construction (before handover), Growth (first years post-handover), and Mature (long term). Adjust each phase based on your market analysis.'}
+              </p>
+            </div>
+
             {/* Construction */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">Construction Phase</label>
+                  <label className="text-xs text-gray-400">
+                    {language === 'es' ? 'Fase Construcción' : 'Construction Phase'}
+                  </label>
                   <InfoTooltip translationKey="tooltipConstructionAppreciation" />
                 </div>
                 <div className="flex items-center gap-1">
@@ -239,7 +315,9 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">Growth Phase ({inputs.growthPeriodYears ?? 5}y)</label>
+                  <label className="text-xs text-gray-400">
+                    {language === 'es' ? `Fase Crecimiento (${inputs.growthPeriodYears ?? 5}a)` : `Growth Phase (${inputs.growthPeriodYears ?? 5}y)`}
+                  </label>
                   <InfoTooltip translationKey="tooltipGrowthAppreciation" />
                 </div>
                 <div className="flex items-center gap-1">
@@ -268,10 +346,14 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">Growth Period</label>
+                  <label className="text-xs text-gray-400">
+                    {language === 'es' ? 'Duración Crecimiento' : 'Growth Duration'}
+                  </label>
                   <InfoTooltip translationKey="tooltipGrowthYears" />
                 </div>
-                <span className="text-xs text-white font-mono">{inputs.growthPeriodYears ?? 5} years</span>
+                <span className="text-xs text-white font-mono">
+                  {inputs.growthPeriodYears ?? 5} {language === 'es' ? 'años' : 'years'}
+                </span>
               </div>
               <Slider
                 value={[inputs.growthPeriodYears ?? 5]}
@@ -287,7 +369,9 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">Mature Phase</label>
+                  <label className="text-xs text-gray-400">
+                    {language === 'es' ? 'Fase Madurez' : 'Mature Phase'}
+                  </label>
                   <InfoTooltip translationKey="tooltipMatureAppreciation" />
                 </div>
                 <div className="flex items-center gap-1">
@@ -312,44 +396,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               />
             </div>
           </div>
-
-          {/* Save Preset */}
-          <div className="pt-3 border-t border-[#2a3142]">
-            {!showSavePreset ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSavePreset(true)}
-                className="w-full h-8 text-xs bg-[#0d1117] border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/20"
-              >
-                <Save className="w-3 h-3 mr-1" />
-                Save as Preset
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Preset name..."
-                  value={presetName}
-                  onChange={(e) => setPresetName(e.target.value)}
-                  className="flex-1 h-8 text-xs bg-[#0d1117] border-[#2a3142] text-white"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleSavePreset}
-                  disabled={!presetName.trim() || savingPreset}
-                  className="h-8 text-xs bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
-                >
-                  {savingPreset ? '...' : 'Save'}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
