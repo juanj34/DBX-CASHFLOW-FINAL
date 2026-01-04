@@ -152,7 +152,7 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
                   key={zone.id}
                   value={zone.name}
                   onSelect={() => handleSelect(zone.id)}
-                  className="flex items-center gap-2 px-3 py-2 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border pointer-events-auto"
+                  className="flex items-center gap-2 px-3 py-2 text-theme-text cursor-pointer hover:bg-[#CCFF00]/10 hover:text-[#CCFF00] data-[selected]:bg-[#CCFF00]/20 data-[selected]:text-[#CCFF00] aria-selected:bg-[#CCFF00]/20 aria-selected:text-[#CCFF00] pointer-events-auto"
                 >
                   <Check
                     className={cn(
