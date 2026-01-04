@@ -28,7 +28,7 @@ export const ImagesSection = ({
       <div>
         <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
           <Image className="w-5 h-5 text-purple-400" />
-          Property Images
+          Property Media
         </h3>
         <p className="text-sm text-theme-text-muted">Add visuals to enhance your investment presentation (optional)</p>
       </div>

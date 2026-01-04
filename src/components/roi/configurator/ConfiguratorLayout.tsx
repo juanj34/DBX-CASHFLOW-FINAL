@@ -55,7 +55,7 @@ interface ConfiguratorLayoutProps {
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage', 'images'];
+const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'images', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
 
 // Confetti particle component
 const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) => (
@@ -177,8 +177,8 @@ export const ConfiguratorLayout = ({
 
   // Check if a specific section is complete (based on actual data AND visited)
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
-    // Sections must be visited to be complete (except first section)
-    if (section !== 'client' && !visitedSections.has(section)) return false;
+    // ALL sections must be visited first to be complete
+    if (!visitedSections.has(section)) return false;
     
     // Calculate payment validation
     const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -192,12 +192,15 @@ export const ConfiguratorLayout = ({
         return Boolean(inputs.zoneId) || inputs.basePrice > 0;
       case 'property':
         return inputs.basePrice > 0;
+      case 'images':
+        // Media is optional - always complete when visited
+        return true;
       case 'payment':
         // Must have valid payment plan adding up to 100%
         return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
       case 'value':
-        // Value is optional - complete if visited and moved past
-        return visitedSections.has('value') && visitedSections.has('appreciation');
+        // Value is optional - complete when visited
+        return true;
       case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
       case 'exits':
@@ -205,11 +208,8 @@ export const ConfiguratorLayout = ({
       case 'rent':
         return inputs.rentalYieldPercent > 0;
       case 'mortgage':
-        // Mortgage is truly optional - complete when visited
-        return visitedSections.has('mortgage');
-      case 'images':
-        // Images is optional - always complete when visited
-        return visitedSections.has('images');
+        // Mortgage is optional - complete when visited
+        return true;
       default:
         return false;
     }
