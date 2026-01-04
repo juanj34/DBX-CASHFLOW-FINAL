@@ -30,6 +30,11 @@ interface DashboardLayoutProps {
   setLanguage?: (lang: string) => void;
   currency?: Currency;
   setCurrency?: (currency: Currency) => void;
+  // Save status
+  hasUnsavedChanges?: boolean;
+  saving?: boolean;
+  lastSaved?: Date | null;
+  onSave?: () => void;
 }
 
 export const DashboardLayout = ({
@@ -52,6 +57,10 @@ export const DashboardLayout = ({
   setLanguage,
   currency,
   setCurrency,
+  hasUnsavedChanges,
+  saving,
+  lastSaved,
+  onSave,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -110,6 +119,10 @@ export const DashboardLayout = ({
     setLanguage,
     currency,
     setCurrency,
+    hasUnsavedChanges,
+    saving,
+    lastSaved,
+    onSave,
   };
 
   return (
