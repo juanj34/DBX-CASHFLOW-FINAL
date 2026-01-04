@@ -6,7 +6,6 @@ import { Currency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
 import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS, SAMPLE_CLIENT_INFO, SAMPLE_MORTGAGE_INPUTS } from "./types";
 import { toast } from "sonner";
-import { ConfiguratorSidebar } from "./ConfiguratorSidebar";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
 import { ClientSection } from "./ClientSection";
 import { PropertySection } from "./PropertySection";
@@ -188,8 +187,8 @@ export const ConfiguratorLayout = ({
     
     switch (section) {
       case 'client':
-        // Client is complete when there's a zone selected or developer/project
-        return Boolean(inputs.zoneId) || inputs.basePrice > 0;
+        // Client is complete when there's a zone selected (stored in clientInfo)
+        return Boolean(clientInfo.zoneId);
       case 'property':
         return inputs.basePrice > 0;
       case 'images':
@@ -213,7 +212,7 @@ export const ConfiguratorLayout = ({
       default:
         return false;
     }
-  }, [visitedSections, inputs]);
+  }, [visitedSections, inputs, clientInfo.zoneId]);
 
   // Calculate completed sections count
   const completedSectionsCount = useMemo(() => {
@@ -592,18 +591,8 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Middle Section - Flex row with scroll */}
+      {/* Middle Section - Content only, no sidebar */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar - Fixed width, own scroll */}
-        <div className="shrink-0 overflow-y-auto">
-          <ConfiguratorSidebar
-            activeSection={activeSection}
-            onSectionChange={navigateToSection}
-            inputs={inputs}
-            visitedSections={visitedSections}
-          />
-        </div>
-
         {/* Content Area - Scrollable */}
         <div 
           ref={contentScrollRef} 
@@ -613,7 +602,7 @@ export const ConfiguratorLayout = ({
         >
           <div 
             key={animationKey}
-            className={`max-w-3xl ${getAnimationClass()} ${showSampleFlash ? 'animate-pulse' : ''}`}
+            className={`max-w-3xl mx-auto ${getAnimationClass()} ${showSampleFlash ? 'animate-pulse' : ''}`}
           >
             {renderSection()}
           </div>
@@ -634,100 +623,109 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Footer Navigation - Fixed at bottom, OUTSIDE scroll */}
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-[#2a3142] bg-[#0d1117]">
-        <Button
-          variant="outline"
-          onClick={goToPreviousSection}
-          disabled={!canGoBack}
-          className="border-[#2a3142] !bg-transparent text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Previous
-        </Button>
-
-        {/* Progress bar with milestone markers */}
-        <div className="flex flex-col items-center gap-2">
-          {/* Animated progress bar */}
-          <div className="relative w-48 h-1.5 bg-[#2a3142] rounded-full overflow-hidden">
+      {/* Footer Navigation with Step Progress */}
+      <div className="shrink-0 border-t border-[#2a3142] bg-[#0d1117]">
+        {/* Progress Steps */}
+        <div className="px-6 py-3 border-b border-[#2a3142]/50">
+          <div className="flex items-start justify-between relative">
+            {/* Progress line behind steps */}
+            <div className="absolute top-3 left-0 right-0 h-0.5 bg-[#2a3142]" />
             <div 
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#CCFF00] to-green-400 rounded-full transition-all duration-500 ease-out"
+              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-[#CCFF00] to-green-400 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
-            {/* Milestone markers */}
+            
+            {/* Step indicators */}
             {SECTIONS.map((section, index) => {
-              const position = ((index + 1) / SECTIONS.length) * 100;
-              const isComplete = isSectionComplete(section);
-              return (
-                <div
-                  key={section}
-                  className={`absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 transition-all duration-300 ${
-                    isComplete 
-                      ? 'bg-[#CCFF00] border-[#CCFF00] scale-110' 
-                      : 'bg-[#1a1f2e] border-[#3a4152]'
-                  }`}
-                  style={{ left: `calc(${position}% - 5px)` }}
-                />
-              );
-            })}
-          </div>
-          
-          {/* Section dots with completion checkmarks */}
-          <div className="flex items-center gap-2">
-            {SECTIONS.map((section) => {
               const isComplete = isSectionComplete(section);
               const isActive = section === activeSection;
+              const stepLabels: Record<ConfiguratorSection, string> = {
+                client: 'Client',
+                property: 'Property',
+                images: 'Media',
+                payment: 'Payment',
+                value: 'Value',
+                appreciation: 'Growth',
+                exits: 'Exits',
+                rent: 'Rent',
+                mortgage: 'Mortgage',
+              };
+              
               return (
                 <button
                   key={section}
                   onClick={() => navigateToSection(section)}
-                  className={`relative flex items-center justify-center transition-all duration-200 ${
-                    isActive 
-                      ? 'w-6 h-6 rounded-full bg-[#CCFF00]/20 border-2 border-[#CCFF00]' 
-                      : 'w-5 h-5 rounded-full hover:scale-110'
-                  } ${
-                    !isActive && isComplete 
-                      ? 'bg-green-500/20 border-2 border-green-500' 
-                      : !isActive ? 'bg-[#2a3142] border-2 border-transparent' : ''
-                  }`}
+                  className="flex flex-col items-center gap-1.5 relative z-10 group"
                 >
-                  {isComplete && !isActive && (
-                    <Check className="w-3 h-3 text-green-400" />
-                  )}
-                  {isActive && (
-                    <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
-                  )}
+                  <div className={`
+                    w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
+                    ${isActive 
+                      ? 'bg-[#CCFF00] text-black ring-4 ring-[#CCFF00]/20 scale-110' 
+                      : isComplete 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-[#1a1f2e] border-2 border-[#3a4152] text-gray-500 group-hover:border-gray-400'
+                    }
+                  `}>
+                    {isComplete && !isActive ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <span className="text-xs font-bold">{index + 1}</span>
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-medium transition-colors ${
+                    isActive 
+                      ? 'text-[#CCFF00]' 
+                      : isComplete 
+                        ? 'text-green-400' 
+                        : 'text-gray-500 group-hover:text-gray-400'
+                  }`}>
+                    {stepLabels[section]}
+                  </span>
                 </button>
               );
             })}
-            <span className="text-xs font-medium text-gray-400 ml-1">
-              {progressPercent}%
-            </span>
           </div>
         </div>
-
-        {isLastSection ? (
+        
+        {/* Navigation buttons */}
+        <div className="flex items-center justify-between px-6 py-3">
           <Button
-            onClick={handleApplyAndClose}
-            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+            variant="outline"
+            onClick={goToPreviousSection}
+            disabled={!canGoBack}
+            className="border-[#2a3142] !bg-transparent text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
           >
-            Apply & Close
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Previous
           </Button>
-        ) : (
-          <div className="flex flex-col items-end gap-1">
-            {!canProceedFromCurrentSection && activeSection === 'payment' && (
-              <span className="text-xs text-amber-400">Payment plan must equal 100%</span>
-            )}
+
+          <span className="text-xs font-medium text-gray-400">
+            {progressPercent}% complete
+          </span>
+
+          {isLastSection ? (
             <Button
-              onClick={goToNextSection}
-              disabled={!canGoForward}
-              className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+              onClick={handleApplyAndClose}
+              className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
             >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
+              Apply & Close
             </Button>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col items-end gap-1">
+              {!canProceedFromCurrentSection && activeSection === 'payment' && (
+                <span className="text-xs text-amber-400">Payment plan must equal 100%</span>
+              )}
+              <Button
+                onClick={goToNextSection}
+                disabled={!canGoForward}
+                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
