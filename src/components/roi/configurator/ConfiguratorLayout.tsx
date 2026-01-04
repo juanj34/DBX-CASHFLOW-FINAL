@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { X, ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles, FileText, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
@@ -535,8 +535,14 @@ export const ConfiguratorLayout = ({
 
       {/* Header - Fixed */}
       <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#2a3142] bg-[#0d1117]">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-white">Investment Configurator</h2>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-[#CCFF00]/20 rounded-lg">
+            <SlidersHorizontal className="w-5 h-5 text-[#CCFF00]" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">Investment Builder</h2>
+            <p className="text-xs text-gray-500">Configure your property investment</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -582,14 +588,6 @@ export const ConfiguratorLayout = ({
           >
             <RotateCcw className="w-4 h-4 mr-1" />
             Clear
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
-          >
-            <X className="w-5 h-5" />
           </Button>
         </div>
       </div>
