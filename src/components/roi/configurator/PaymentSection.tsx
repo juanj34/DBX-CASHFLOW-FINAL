@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Plus, Trash2, Clock, Building2, Zap, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const [numPayments, setNumPayments] = useState(4);
   const [paymentInterval, setPaymentInterval] = useState(6);
   const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
+  const [showCustomSplit, setShowCustomSplit] = useState(false);
+  const [customPreHandover, setCustomPreHandover] = useState('');
 
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -107,26 +109,24 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     }
   };
 
+  const applyCustomSplit = () => {
+    const val = parseInt(customPreHandover);
+    if (!isNaN(val) && val >= 10 && val <= 90) {
+      setInputs(prev => ({
+        ...prev,
+        preHandoverPercent: val,
+        additionalPayments: []
+      }));
+      setShowCustomSplit(false);
+      setCustomPreHandover('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">Payment Plan</h3>
         <p className="text-sm text-gray-500">Configure your payment schedule and milestones</p>
-      </div>
-
-      {/* Instructions */}
-      <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-        <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-          <div className="text-xs text-blue-300">
-            <p className="font-medium mb-1">How to create your payment plan:</p>
-            <ol className="list-decimal list-inside space-y-0.5 text-blue-200/80">
-              <li>Select your payment split (pre-handover/handover ratio)</li>
-              <li>Adjust your downpayment percentage</li>
-              <li>Generate installments automatically or add them manually</li>
-            </ol>
-          </div>
-        </div>
       </div>
 
       {/* Step 1: Preset Split Buttons */}
@@ -148,12 +148,47 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               className={`h-8 text-sm px-4 border-[#2a3142] ${
                 inputs.preHandoverPercent === parseInt(split.split('/')[0])
                   ? 'bg-[#CCFF00]/20 border-[#CCFF00]/50 text-[#CCFF00]'
-                  : 'text-gray-300 hover:bg-[#2a3142] hover:text-white'
+                  : 'text-gray-600 hover:bg-[#2a3142] hover:text-white'
               }`}
             >
               {split}
             </Button>
           ))}
+          {/* Custom split button */}
+          {!showCustomSplit ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCustomSplit(true)}
+              className="h-8 text-sm px-3 border-dashed border-[#2a3142] text-gray-500 hover:bg-[#2a3142] hover:text-white"
+            >
+              Custom
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={customPreHandover}
+                onChange={(e) => setCustomPreHandover(e.target.value)}
+                placeholder="e.g. 35"
+                className="w-16 h-8 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
+                autoFocus
+              />
+              <span className="text-xs text-gray-500">/</span>
+              <span className="text-xs text-gray-400 w-8">{100 - (parseInt(customPreHandover) || 0)}</span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={applyCustomSplit}
+                disabled={!customPreHandover || parseInt(customPreHandover) < 10 || parseInt(customPreHandover) > 90}
+                className="h-7 px-2 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-xs"
+              >
+                Apply
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -242,6 +277,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               <Zap className="w-3.5 h-3.5 mr-1" />
               Generate {numPayments} Installments
             </Button>
+            
+            <p className="text-[10px] text-gray-500 ml-8 flex items-start gap-1">
+              <Info className="w-3 h-3 mt-0.5 shrink-0" />
+              <span>You can modify individual installment amounts afterwards if they vary in value</span>
+            </p>
           </div>
 
           {/* Installments List */}

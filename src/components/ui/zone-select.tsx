@@ -119,7 +119,7 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0 bg-theme-card border-theme-border z-50" align="start">
+      <PopoverContent className="w-[280px] p-0 bg-theme-card border-theme-border z-[100] pointer-events-auto" align="start">
         {error ? (
           <div className="p-4 text-center">
             <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
@@ -152,7 +152,7 @@ export const ZoneSelect = ({ value, onValueChange, placeholder, className, disab
                   key={zone.id}
                   value={zone.name}
                   onSelect={() => handleSelect(zone.id)}
-                  className="flex items-center gap-2 px-3 py-2 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border"
+                  className="flex items-center gap-2 px-3 py-2 text-theme-text cursor-pointer hover:bg-theme-border data-[selected]:bg-theme-border aria-selected:bg-theme-border pointer-events-auto"
                 >
                   <Check
                     className={cn(

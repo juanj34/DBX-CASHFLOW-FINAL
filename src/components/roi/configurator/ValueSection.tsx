@@ -12,7 +12,7 @@ export const ValueSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">Value Differentiators</h3>
-        <p className="text-sm text-theme-text-muted">Select factors that add value and impact appreciation rates</p>
+        <p className="text-sm text-theme-text-muted">Identify unique property features that can boost appreciation</p>
       </div>
 
       {/* Appreciation Bonus Summary */}
@@ -46,9 +46,11 @@ export const ValueSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
 
       {/* Differentiators Grid */}
       <div className="p-4 bg-theme-card rounded-xl border border-theme-border">
+        <p className="text-sm text-theme-text-muted mb-4">Select factors that add value and impact appreciation rates</p>
         <ValueDifferentiatorsSection
           selectedDifferentiators={selectedIds}
           onSelectionChange={(ids) => setInputs(prev => ({ ...prev, valueDifferentiators: ids }))}
+          hideHeader
         />
       </div>
 

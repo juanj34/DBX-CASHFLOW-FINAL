@@ -16,6 +16,7 @@ import { AppreciationSection } from "./AppreciationSection";
 import { ExitsSection } from "./ExitsSection";
 import { RentSection } from "./RentSection";
 import { MortgageSection } from "./MortgageSection";
+import { ImagesSection } from "./ImagesSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -54,7 +55,7 @@ interface ConfiguratorLayoutProps {
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
+const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage', 'images'];
 
 // Confetti particle component
 const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) => (
@@ -174,16 +175,26 @@ export const ConfiguratorLayout = ({
     });
   }, [activeSection, visitedSections]);
 
-  // Check if a specific section is complete (based on actual data, not just visited)
+  // Check if a specific section is complete (based on actual data AND visited)
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
+    // Sections must be visited to be complete (except first section)
+    if (section !== 'client' && !visitedSections.has(section)) return false;
+    
+    // Calculate payment validation
+    const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
+    const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+    const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+    const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+    
     switch (section) {
       case 'client':
-        // Client is complete when there's a zone selected or property has data
+        // Client is complete when there's a zone selected or developer/project
         return Boolean(inputs.zoneId) || inputs.basePrice > 0;
       case 'property':
         return inputs.basePrice > 0;
       case 'payment':
-        return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
+        // Must have valid payment plan adding up to 100%
+        return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
       case 'value':
         // Value is optional - complete if visited and moved past
         return visitedSections.has('value') && visitedSections.has('appreciation');
@@ -196,6 +207,9 @@ export const ConfiguratorLayout = ({
       case 'mortgage':
         // Mortgage is truly optional - complete when visited
         return visitedSections.has('mortgage');
+      case 'images':
+        // Images is optional - always complete when visited
+        return visitedSections.has('images');
       default:
         return false;
     }
@@ -242,8 +256,39 @@ export const ConfiguratorLayout = ({
 
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
-  const canGoForward = currentIndex < SECTIONS.length - 1;
   const isLastSection = currentIndex === SECTIONS.length - 1;
+
+  // Validation for current section
+  const canProceedFromCurrentSection = useMemo(() => {
+    // Calculate payment validation
+    const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
+    const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+    const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+    const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+    
+    switch (activeSection) {
+      case 'property':
+        return inputs.basePrice > 0;
+      case 'payment':
+        return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
+      case 'appreciation':
+        return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
+      case 'rent':
+        return inputs.rentalYieldPercent > 0;
+      case 'exits':
+        return inputs._exitScenarios && inputs._exitScenarios.length > 0;
+      // Optional sections
+      case 'client':
+      case 'value':
+      case 'mortgage':
+      case 'images':
+        return true;
+      default:
+        return true;
+    }
+  }, [activeSection, inputs]);
+
+  const canGoForward = currentIndex < SECTIONS.length - 1 && canProceedFromCurrentSection;
 
   const navigateToSection = useCallback((newSection: ConfiguratorSection) => {
     const newIndex = SECTIONS.indexOf(newSection);
@@ -296,8 +341,8 @@ export const ConfiguratorLayout = ({
         return;
       }
       
-      // Number keys 1-5 for section navigation
-      if (e.key >= '1' && e.key <= '5') {
+      // Number keys 1-9 for section navigation
+      if (e.key >= '1' && e.key <= '9') {
         const index = parseInt(e.key) - 1;
         if (index < SECTIONS.length) {
           navigateToSection(SECTIONS[index]);
@@ -420,12 +465,6 @@ export const ConfiguratorLayout = ({
             inputs={inputs} 
             setInputs={setInputs} 
             currency={currency}
-            floorPlanUrl={floorPlanUrl}
-            buildingRenderUrl={buildingRenderUrl}
-            onFloorPlanChange={handleFloorPlanUpload}
-            onBuildingRenderChange={handleBuildingRenderUpload}
-            showLogoOverlay={showLogoOverlay}
-            onShowLogoOverlayChange={setShowLogoOverlay}
           />
         );
       case 'payment':
@@ -440,6 +479,17 @@ export const ConfiguratorLayout = ({
         return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'mortgage':
         return <MortgageSection inputs={inputs} setInputs={setInputs} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />;
+      case 'images':
+        return (
+          <ImagesSection
+            floorPlanUrl={floorPlanUrl}
+            buildingRenderUrl={buildingRenderUrl}
+            onFloorPlanChange={handleFloorPlanUpload}
+            onBuildingRenderChange={handleBuildingRenderUpload}
+            showLogoOverlay={showLogoOverlay}
+            onShowLogoOverlayChange={setShowLogoOverlay}
+          />
+        );
       default:
         return null;
     }
@@ -485,22 +535,6 @@ export const ConfiguratorLayout = ({
       <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#2a3142] bg-[#0d1117]">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold text-white">Investment Configurator</h2>
-          
-          {/* Auto-save indicator */}
-          <div className="flex items-center gap-1.5 text-xs">
-            {saveStatus === 'saving' && (
-              <>
-                <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />
-                <span className="text-gray-400">Saving...</span>
-              </>
-            )}
-            {saveStatus === 'saved' && (
-              <>
-                <Check className="w-3 h-3 text-green-400" />
-                <span className="text-green-400">Saved</span>
-              </>
-            )}
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -680,14 +714,19 @@ export const ConfiguratorLayout = ({
             Apply & Close
           </Button>
         ) : (
-          <Button
-            onClick={goToNextSection}
-            disabled={!canGoForward}
-            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30"
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            {!canProceedFromCurrentSection && activeSection === 'payment' && (
+              <span className="text-xs text-amber-400">Payment plan must equal 100%</span>
+            )}
+            <Button
+              onClick={goToNextSection}
+              disabled={!canGoForward}
+              className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         )}
       </div>
     </div>
