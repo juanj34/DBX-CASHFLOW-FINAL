@@ -268,8 +268,8 @@ export const ConfiguratorLayout = ({
     
     switch (activeSection) {
       case 'client':
-        // Client section requires zone selection
-        return Boolean(inputs.zoneId);
+        // Client section requires zone selection (stored in clientInfo, not inputs)
+        return Boolean(clientInfo.zoneId);
       case 'property':
         return inputs.basePrice > 0;
       case 'payment':
@@ -288,7 +288,7 @@ export const ConfiguratorLayout = ({
       default:
         return true;
     }
-  }, [activeSection, inputs]);
+  }, [activeSection, inputs, clientInfo.zoneId]);
 
   const canGoForward = currentIndex < SECTIONS.length - 1 && canProceedFromCurrentSection;
 
