@@ -1,38 +1,16 @@
 import { useState, useEffect } from "react";
-import { AlertCircle, Image } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfiguratorSectionProps, months, quarters, years } from "./types";
 import { formatCurrency, DEFAULT_RATE } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
-import { ImageUploadCard } from "./ImageUploadCard";
-
-interface PropertySectionProps extends ConfiguratorSectionProps {
-  floorPlanUrl?: string | null;
-  buildingRenderUrl?: string | null;
-  heroImageUrl?: string | null;
-  onFloorPlanChange?: (file: File | null) => void;
-  onBuildingRenderChange?: (file: File | null) => void;
-  onHeroImageChange?: (file: File | null) => void;
-  showLogoOverlay?: boolean;
-  onShowLogoOverlayChange?: (show: boolean) => void;
-}
 
 export const PropertySection = ({ 
   inputs, 
   setInputs, 
   currency,
-  floorPlanUrl,
-  buildingRenderUrl,
-  heroImageUrl,
-  onFloorPlanChange,
-  onBuildingRenderChange,
-  onHeroImageChange,
-  showLogoOverlay = true,
-  onShowLogoOverlayChange,
-}: PropertySectionProps) => {
+}: ConfiguratorSectionProps) => {
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
       ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
@@ -98,33 +76,15 @@ export const PropertySection = ({
               value={basePriceInput}
               onChange={(e) => setBasePriceInput(e.target.value)}
               onBlur={handleBasePriceBlur}
-              className="w-40 h-9 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-base pl-12"
+              className="w-44 h-10 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-lg pl-14"
             />
           </div>
         </div>
-        <Slider
-          value={[inputs.basePrice]}
-          onValueChange={([value]) => {
-            setInputs(prev => ({ ...prev, basePrice: value }));
-            setBasePriceInput(
-              currency === 'USD' 
-                ? Math.round(value / DEFAULT_RATE).toString()
-                : value.toString()
-            );
-          }}
-          min={500000}
-          max={50000000}
-          step={50000}
-          className="roi-slider-lime"
-        />
-        <div className="text-xs text-theme-text-muted text-right">
-          {formatCurrency(inputs.basePrice, currency)}
-          {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
-            <span className="ml-2 text-[10px] text-theme-text-muted">
-              ({formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}/sqft)
-            </span>
-          )}
-        </div>
+        {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
+          <div className="text-xs text-theme-text-muted text-right">
+            {formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}/sqft
+          </div>
+        )}
       </div>
 
       {/* Dates Grid */}
@@ -281,67 +241,6 @@ export const PropertySection = ({
         </div>
       </div>
 
-      {/* Property Images Section */}
-      {onFloorPlanChange && onBuildingRenderChange && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Image className="w-4 h-4 text-purple-400" />
-            Property Images
-          </h3>
-          
-          {/* Hero Image - Full Width */}
-          {onHeroImageChange && (
-            <ImageUploadCard
-              label="Project Hero"
-              sublabel="16:9 showcase background"
-              imageUrl={heroImageUrl || null}
-              onImageChange={onHeroImageChange}
-              onRemove={() => onHeroImageChange(null)}
-              aspectRatio="16/9"
-              placeholder="Drag, paste (Ctrl+V), or click"
-            />
-          )}
-          
-          <div className="grid grid-cols-2 gap-4">
-            {/* Floor Plan */}
-            <ImageUploadCard
-              label="Floor Plan"
-              sublabel="Upload unit floor plan"
-              imageUrl={floorPlanUrl || null}
-              onImageChange={onFloorPlanChange}
-              onRemove={() => onFloorPlanChange(null)}
-              aspectRatio="4/3"
-              placeholder="Drag, paste (Ctrl+V), or click"
-            />
-
-            {/* Building Render */}
-            <ImageUploadCard
-              label="Building Render"
-              sublabel="Upload project render"
-              imageUrl={buildingRenderUrl || null}
-              onImageChange={onBuildingRenderChange}
-              onRemove={() => onBuildingRenderChange(null)}
-              aspectRatio="16/9"
-              placeholder="Drag, paste (Ctrl+V), or click"
-            />
-          </div>
-
-          {/* Logo Overlay Toggle */}
-          {buildingRenderUrl && onShowLogoOverlayChange && (
-            <div className="flex items-center justify-between p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
-              <div>
-                <p className="text-sm font-medium text-white">Show Developer Logo</p>
-                <p className="text-xs text-gray-500">Overlay developer logo on render</p>
-              </div>
-              <Switch
-                checked={showLogoOverlay}
-                onCheckedChange={onShowLogoOverlayChange}
-                className="data-[state=checked]:bg-[#CCFF00]"
-              />
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

@@ -22,6 +22,7 @@ import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 interface ValueDifferentiatorsSectionProps {
   selectedDifferentiators: string[];
   onSelectionChange: (selected: string[]) => void;
+  hideHeader?: boolean;
 }
 
 const CATEGORIES: DifferentiatorCategory[] = ['location', 'unit', 'developer', 'transport', 'financial', 'amenities', 'custom'];
@@ -29,6 +30,7 @@ const CATEGORIES: DifferentiatorCategory[] = ['location', 'unit', 'developer', '
 export const ValueDifferentiatorsSection = ({
   selectedDifferentiators,
   onSelectionChange,
+  hideHeader = false,
 }: ValueDifferentiatorsSectionProps) => {
   const { language } = useLanguage();
   const { customDifferentiators, loading, saving, createDifferentiator, deleteDifferentiator } = useCustomDifferentiators();
@@ -144,34 +146,38 @@ export const ValueDifferentiatorsSection = ({
 
   return (
     <div className="space-y-4">
-      {/* Header with progress */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-theme-accent" />
-          <span className="text-sm font-medium text-white">
-            {language === 'es' ? 'Diferenciadores de Valor' : 'Value Differentiators'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">
-            {language === 'es' ? 'Bonus' : 'Bonus'}:
-          </span>
-          <Badge variant="outline" className={`text-xs font-mono ${totalBonus > 0 ? 'bg-theme-accent/20 text-theme-accent border-theme-accent/30' : 'text-gray-400'}`}>
-            +{totalBonus.toFixed(1)}%
-          </Badge>
-          <span className="text-xs text-gray-500">/ {APPRECIATION_BONUS_CAP}%</span>
-        </div>
-      </div>
+      {/* Header with progress - conditionally hidden */}
+      {!hideHeader && (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-theme-accent" />
+              <span className="text-sm font-medium text-white">
+                {language === 'es' ? 'Diferenciadores de Valor' : 'Value Differentiators'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">
+                {language === 'es' ? 'Bonus' : 'Bonus'}:
+              </span>
+              <Badge variant="outline" className={`text-xs font-mono ${totalBonus > 0 ? 'bg-theme-accent/20 text-theme-accent border-theme-accent/30' : 'text-gray-400'}`}>
+                +{totalBonus.toFixed(1)}%
+              </Badge>
+              <span className="text-xs text-gray-500">/ {APPRECIATION_BONUS_CAP}%</span>
+            </div>
+          </div>
 
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <Progress value={bonusProgress} className="h-1.5 bg-[#2a3142]" />
-        <p className="text-[10px] text-gray-500 text-right">
-          {language === 'es' 
-            ? `Aplicado a todas las fases de apreciación (construcción, crecimiento, madurez)`
-            : `Applied to all appreciation phases (construction, growth, mature)`}
-        </p>
-      </div>
+          {/* Progress bar */}
+          <div className="space-y-1">
+            <Progress value={bonusProgress} className="h-1.5 bg-[#2a3142]" />
+            <p className="text-[10px] text-gray-500 text-right">
+              {language === 'es' 
+                ? `Aplicado a todas las fases de apreciación (construcción, crecimiento, madurez)`
+                : `Applied to all appreciation phases (construction, growth, mature)`}
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Categories */}
       <div className="space-y-4">

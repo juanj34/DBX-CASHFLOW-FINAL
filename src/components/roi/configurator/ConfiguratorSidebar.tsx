@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle, LogOut, Users } from "lucide-react";
+import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle, LogOut, Users, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfiguratorSection, SectionStatus } from "./types";
 import { OIInputs } from "../useOICalculations";
@@ -20,7 +20,8 @@ export const ConfiguratorSidebar = ({
   // Calculate section completion status
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
   const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-  const isPaymentValid = Math.abs(preHandoverTotal - inputs.preHandoverPercent) < 0.01;
+  const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+  const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
   
   const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
   const handoverQuarterMonth = (inputs.handoverQuarter - 1) * 3 + 1;
@@ -54,8 +55,8 @@ export const ConfiguratorSidebar = ({
       id: 'payment',
       label: 'Payment',
       icon: CreditCard,
-      isComplete: inputs.downpaymentPercent > 0 && isPaymentValid,
-      hasWarning: visitedSections.has('payment') && inputs.downpaymentPercent > 0 && !isPaymentValid,
+      isComplete: inputs.downpaymentPercent > 0 && inputs.preHandoverPercent > 0 && isPaymentValid,
+      hasWarning: visitedSections.has('payment') && inputs.preHandoverPercent > 0 && !isPaymentValid,
     },
     {
       id: 'value',
@@ -88,6 +89,13 @@ export const ConfiguratorSidebar = ({
       icon: Building2,
       // Mortgage is truly optional - mark complete when visited AND user has moved past it
       isComplete: visitedSections.has('mortgage'),
+    },
+    {
+      id: 'images',
+      label: 'Images',
+      icon: Image,
+      // Images is optional - mark complete when visited
+      isComplete: visitedSections.has('images'),
     },
   ];
 
@@ -144,7 +152,7 @@ export const ConfiguratorSidebar = ({
         <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
-            <span className="font-mono">1-7</span>
+            <span className="font-mono">1-9</span>
           </div>
           <div className="flex justify-between">
             <span>Next/Prev</span>

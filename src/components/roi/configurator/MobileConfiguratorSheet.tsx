@@ -26,6 +26,7 @@ import { ExitsSection } from "./ExitsSection";
 import { RentSection } from "./RentSection";
 import { MortgageSection } from "./MortgageSection";
 import { ClientSection } from "./ClientSection";
+import { ImagesSection } from "./ImagesSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +45,7 @@ interface MobileConfiguratorSheetProps {
   quoteId?: string;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
+const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage', 'images'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   client: 'Client',
@@ -55,6 +56,7 @@ const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   exits: 'Exits',
   rent: 'Rent',
   mortgage: 'Mortgage',
+  images: 'Images',
 };
 
 // Mini preview strip component with mortgage toggle
@@ -367,12 +369,6 @@ export const MobileConfiguratorSheet = ({
             inputs={inputs} 
             setInputs={setInputs} 
             currency={currency}
-            floorPlanUrl={floorPlanUrl}
-            buildingRenderUrl={buildingRenderUrl}
-            onFloorPlanChange={handleFloorPlanUpload}
-            onBuildingRenderChange={handleBuildingRenderUpload}
-            showLogoOverlay={showLogoOverlay}
-            onShowLogoOverlayChange={setShowLogoOverlay}
           />
         );
       case 'payment':
@@ -387,6 +383,17 @@ export const MobileConfiguratorSheet = ({
         return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
       case 'mortgage':
         return <MortgageSection inputs={inputs} setInputs={setInputs} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />;
+      case 'images':
+        return (
+          <ImagesSection
+            floorPlanUrl={floorPlanUrl}
+            buildingRenderUrl={buildingRenderUrl}
+            onFloorPlanChange={handleFloorPlanUpload}
+            onBuildingRenderChange={handleBuildingRenderUpload}
+            showLogoOverlay={showLogoOverlay}
+            onShowLogoOverlayChange={setShowLogoOverlay}
+          />
+        );
       default:
         return null;
     }
