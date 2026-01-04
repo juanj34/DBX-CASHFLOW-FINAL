@@ -13,17 +13,49 @@ export const PropertySection = ({
 }: ConfiguratorSectionProps) => {
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
-      ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
-      : inputs.basePrice.toString()
+      ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
+      : inputs.basePrice.toLocaleString()
+  );
+
+  const [eoiInput, setEoiInput] = useState(
+    (currency === 'USD' 
+      ? Math.round(inputs.eoiFee / DEFAULT_RATE) 
+      : inputs.eoiFee
+    ).toLocaleString()
+  );
+
+  const [oqoodInput, setOqoodInput] = useState(
+    (currency === 'USD' 
+      ? Math.round(inputs.oqoodFee / DEFAULT_RATE) 
+      : inputs.oqoodFee
+    ).toLocaleString()
   );
 
   useEffect(() => {
     setBasePriceInput(
       currency === 'USD' 
-        ? Math.round(inputs.basePrice / DEFAULT_RATE).toString()
-        : inputs.basePrice.toString()
+        ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
+        : inputs.basePrice.toLocaleString()
     );
   }, [inputs.basePrice, currency]);
+
+  useEffect(() => {
+    setEoiInput(
+      (currency === 'USD' 
+        ? Math.round(inputs.eoiFee / DEFAULT_RATE) 
+        : inputs.eoiFee
+      ).toLocaleString()
+    );
+  }, [inputs.eoiFee, currency]);
+
+  useEffect(() => {
+    setOqoodInput(
+      (currency === 'USD' 
+        ? Math.round(inputs.oqoodFee / DEFAULT_RATE) 
+        : inputs.oqoodFee
+      ).toLocaleString()
+    );
+  }, [inputs.oqoodFee, currency]);
 
   const handleBasePriceBlur = () => {
     const num = parseFloat(basePriceInput.replace(/[^0-9.-]/g, ''));
@@ -33,8 +65,8 @@ export const PropertySection = ({
       setInputs(prev => ({ ...prev, basePrice: clamped }));
       setBasePriceInput(
         currency === 'USD' 
-          ? Math.round(clamped / DEFAULT_RATE).toString()
-          : clamped.toString()
+          ? Math.round(clamped / DEFAULT_RATE).toLocaleString()
+          : clamped.toLocaleString()
       );
     }
   };
@@ -44,6 +76,9 @@ export const PropertySection = ({
     if (!isNaN(num) && num >= 0) {
       const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
       setInputs(prev => ({ ...prev, [field]: aedValue }));
+      const formatted = (currency === 'USD' ? Math.round(num) : num).toLocaleString();
+      if (field === 'eoiFee') setEoiInput(formatted);
+      if (field === 'oqoodFee') setOqoodInput(formatted);
     }
   };
 
@@ -195,8 +230,9 @@ export const PropertySection = ({
               </span>
               <Input
                 type="text"
-                value={currency === 'USD' ? Math.round(inputs.eoiFee / DEFAULT_RATE) : inputs.eoiFee}
-                onChange={(e) => handleFixedFeeChange('eoiFee', e.target.value)}
+                value={eoiInput}
+                onChange={(e) => setEoiInput(e.target.value.replace(/,/g, ''))}
+                onBlur={() => handleFixedFeeChange('eoiFee', eoiInput)}
                 className="w-full h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm pl-10"
               />
             </div>
@@ -225,8 +261,9 @@ export const PropertySection = ({
               </span>
               <Input
                 type="text"
-                value={currency === 'USD' ? Math.round(inputs.oqoodFee / DEFAULT_RATE) : inputs.oqoodFee}
-                onChange={(e) => handleFixedFeeChange('oqoodFee', e.target.value)}
+                value={oqoodInput}
+                onChange={(e) => setOqoodInput(e.target.value.replace(/,/g, ''))}
+                onBlur={() => handleFixedFeeChange('oqoodFee', oqoodInput)}
                 className="w-full h-8 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm pl-10"
               />
             </div>
