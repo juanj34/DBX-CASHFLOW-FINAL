@@ -41,61 +41,61 @@ export const ConfiguratorSidebar = ({
       id: 'client',
       label: 'Client',
       icon: Users,
-      // Client is complete when there's a zone selected or property has data
-      isComplete: Boolean(inputs.zoneId) || inputs.basePrice > 0,
+      // Must be visited AND have data
+      isComplete: visitedSections.has('client') && (Boolean(inputs.zoneId) || inputs.basePrice > 0),
     },
     {
       id: 'property',
       label: 'Property',
       icon: Building2,
-      isComplete: inputs.basePrice > 0 && isDateValid,
+      isComplete: visitedSections.has('property') && inputs.basePrice > 0 && isDateValid,
       hasWarning: visitedSections.has('property') && inputs.basePrice > 0 && !isDateValid,
+    },
+    {
+      id: 'images',
+      label: 'Media',
+      icon: Image,
+      // Media is optional - mark complete when visited
+      isComplete: visitedSections.has('images'),
     },
     {
       id: 'payment',
       label: 'Payment',
       icon: CreditCard,
-      isComplete: inputs.downpaymentPercent > 0 && inputs.preHandoverPercent > 0 && isPaymentValid,
+      isComplete: visitedSections.has('payment') && inputs.downpaymentPercent > 0 && inputs.preHandoverPercent > 0 && isPaymentValid,
       hasWarning: visitedSections.has('payment') && inputs.preHandoverPercent > 0 && !isPaymentValid,
     },
     {
       id: 'value',
       label: 'Value',
       icon: Sparkles,
-      // Value is optional - show complete if visited (user consciously skipped or added differentiators)
-      isComplete: visitedSections.has('value') && (hasValueData || visitedSections.has('appreciation')),
+      // Value is optional - show complete if visited
+      isComplete: visitedSections.has('value'),
     },
     {
       id: 'appreciation',
       label: 'Appreciation',
       icon: TrendingUp,
-      isComplete: hasAppreciationData,
+      isComplete: visitedSections.has('appreciation') && hasAppreciationData,
     },
     {
       id: 'exits',
       label: 'Exits',
       icon: LogOut,
-      isComplete: hasExitData,
+      isComplete: visitedSections.has('exits') && hasExitData,
     },
     {
       id: 'rent',
       label: 'Rent',
       icon: Home,
-      isComplete: hasRentData,
+      isComplete: visitedSections.has('rent') && hasRentData,
     },
     {
       id: 'mortgage',
       label: 'Mortgage',
       icon: Building2,
-      // Mortgage is truly optional - mark complete when visited AND user has moved past it
+      // Mortgage is truly optional - mark complete when visited
       isComplete: visitedSections.has('mortgage'),
-    },
-    {
-      id: 'images',
-      label: 'Images',
-      icon: Image,
-      // Images is optional - mark complete when visited
-      isComplete: visitedSections.has('images'),
     },
   ];
 

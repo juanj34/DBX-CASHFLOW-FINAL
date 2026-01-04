@@ -45,18 +45,18 @@ interface MobileConfiguratorSheetProps {
   quoteId?: string;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage', 'images'];
+const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'images', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   client: 'Client',
   property: 'Property',
+  images: 'Media',
   payment: 'Payment',
   value: 'Value',
   appreciation: 'Growth',
   exits: 'Exits',
   rent: 'Rent',
   mortgage: 'Mortgage',
-  images: 'Images',
 };
 
 // Mini preview strip component with mortgage toggle
@@ -222,18 +222,22 @@ export const MobileConfiguratorSheet = ({
   };
 
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
-    // Only complete if section has ACTUAL DATA (not just visited)
+    // Must be visited first AND have actual data
+    if (!visitedSections.has(section)) return false;
+    
     switch (section) {
       case 'client':
-        // Client is complete when there's a zone selected or property has data
         return Boolean(inputs.zoneId) || inputs.basePrice > 0;
       case 'property':
         return inputs.basePrice > 0;
+      case 'images':
+        // Media is optional - complete when visited
+        return true;
       case 'payment':
         return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
       case 'value':
-        // Value is optional - complete if visited and has data or moved past
-        return visitedSections.has('value') && visitedSections.has('appreciation');
+        // Value is optional - complete when visited
+        return true;
       case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
       case 'exits':
@@ -241,8 +245,8 @@ export const MobileConfiguratorSheet = ({
       case 'rent':
         return inputs.rentalYieldPercent > 0;
       case 'mortgage':
-        // Mortgage is truly optional - complete when visited
-        return visitedSections.has('mortgage');
+        // Mortgage is optional - complete when visited
+        return true;
       default:
         return false;
     }
