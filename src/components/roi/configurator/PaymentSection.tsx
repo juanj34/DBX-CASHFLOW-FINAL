@@ -417,21 +417,42 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
       {/* Fixed Footer - Total Summary */}
       <div className="sticky bottom-0 bg-[#0d1117] pt-3 -mx-4 px-4 pb-1 border-t border-[#2a3142]">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-2 bg-[#1a1f2e] rounded-lg text-center">
-            <div className="text-[10px] text-gray-500 uppercase">Pre-Handover</div>
-            <div className="text-sm font-mono text-white font-semibold">{preHandoverTotal.toFixed(0)}%</div>
+        <div className="flex items-center gap-3">
+          {/* Pre-Handover */}
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
+            <span className="text-[10px] text-gray-500 uppercase">Pre-Handover</span>
+            <span className="text-sm font-mono text-white font-semibold ml-auto">
+              {preHandoverTotal.toFixed(0)}%
+            </span>
           </div>
-          <div className="p-2 bg-[#1a1f2e] rounded-lg text-center">
-            <div className="text-[10px] text-gray-500 uppercase">Handover</div>
-            <div className="text-sm font-mono text-white font-semibold">{handoverPercent}%</div>
+          
+          {/* Divider */}
+          <div className="h-6 w-px bg-[#2a3142]" />
+          
+          {/* Handover */}
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400" />
+            <span className="text-[10px] text-gray-500 uppercase">Handover</span>
+            <span className="text-sm font-mono text-white font-semibold ml-auto">
+              {handoverPercent}%
+            </span>
           </div>
-          <div className={`p-2 rounded-lg text-center ${isValidTotal ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-            <div className="text-[10px] text-gray-500 uppercase">Total</div>
-            <div className={`text-sm font-mono font-bold flex items-center justify-center gap-1 ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
-              {isValidTotal ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+          
+          {/* Divider */}
+          <div className="h-6 w-px bg-[#2a3142]" />
+          
+          {/* Total - Verification style */}
+          <div className="flex-1 flex items-center gap-2">
+            {isValidTotal ? (
+              <CheckCircle2 className="w-4 h-4 text-green-400" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-400" />
+            )}
+            <span className="text-[10px] text-gray-500 uppercase">Total</span>
+            <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
               {totalPayment.toFixed(0)}%
-            </div>
+            </span>
           </div>
         </div>
       </div>
