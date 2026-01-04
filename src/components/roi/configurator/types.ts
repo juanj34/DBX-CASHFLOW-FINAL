@@ -132,7 +132,7 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   handoverQuarter: 4,
   handoverYear: new Date().getFullYear() + 2,
   downpaymentPercent: 20,
-  preHandoverPercent: 20,
+  preHandoverPercent: 30,
   additionalPayments: [],
   eoiFee: 50000,
   oqoodFee: 5000,
