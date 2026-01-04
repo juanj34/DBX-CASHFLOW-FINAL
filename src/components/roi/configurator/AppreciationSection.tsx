@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Zap, Shield, Rocket, ChevronDown, Settings } from "lucide-react";
+import { TrendingUp, Zap, Shield, Rocket, ChevronDown, Settings, Save, Trash2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { ConfiguratorSectionProps } from "./types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -7,8 +7,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { calculateAppreciationBonus } from "../valueDifferentiators";
 import { InfoTooltip } from "../InfoTooltip";
 import { cn } from "@/lib/utils";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from "recharts";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
 
 // Predefined appreciation profiles
 const APPRECIATION_PROFILES = {
@@ -44,8 +46,8 @@ const APPRECIATION_PROFILES = {
   },
   conservative: {
     id: 'conservative',
-    name: 'Capital Preservation',
-    nameEs: 'Preservación de Capital',
+    name: 'Conservative',
+    nameEs: 'Conservador',
     description: 'Established areas with stable values',
     descriptionEs: 'Zonas establecidas con valores estables',
     icon: Shield,
@@ -65,6 +67,9 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
   const { t, language } = useLanguage();
   const [customOpen, setCustomOpen] = useState(false);
   const [showPSF, setShowPSF] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  
+  const { presets, savePreset, deletePreset, applyPreset, saving } = useAppreciationPresets();
   
   const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
 
@@ -74,7 +79,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
   const matureRate = (inputs.matureAppreciation ?? 4) + appreciationBonus;
   const growthPeriodYears = inputs.growthPeriodYears ?? 5;
 
-  // Calculate projected values
+  // Calculate projected values - 7 years
   const projectedData = useMemo(() => {
     const basePrice = inputs.basePrice || 1000000;
     const sqft = inputs.unitSizeSqf || 1250;
@@ -88,7 +93,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
     const data = [];
     let currentValue = basePrice;
     
-    for (let year = 0; year <= 10; year++) {
+    for (let year = 0; year <= 7; year++) {
       let phase: 'construction' | 'growth' | 'mature';
       let rate: number;
       
@@ -203,11 +208,15 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
     return `${currency} ${(value / 1000).toFixed(0)}K`;
   };
 
-  const value5Y = projectedData.data[5]?.totalValue || 0;
-  const value10Y = projectedData.data[10]?.totalValue || 0;
+  const value3Y = projectedData.data[3]?.totalValue || 0;
+  const value7Y = projectedData.data[7]?.totalValue || 0;
   const basePrice = inputs.basePrice || 1000000;
-  const totalGrowth = ((value10Y / basePrice) - 1) * 100;
-  const psf10Y = projectedData.data[10]?.psfValue || 0;
+  const totalGrowth = ((value7Y / basePrice) - 1) * 100;
+  const psf7Y = projectedData.data[7]?.psfValue || 0;
+  
+  // Get handover data point for the badge
+  const handoverYear = Math.round(projectedData.yearsToHandover);
+  const handoverDataPoint = projectedData.data[handoverYear];
 
   return (
     <div className="space-y-4">
@@ -235,8 +244,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         </div>
       )}
 
-      {/* Profile Cards */}
-      <div className="grid grid-cols-1 gap-2">
+      {/* Profile Cards - Single Row */}
+      <div className="flex gap-2">
         {(Object.entries(APPRECIATION_PROFILES) as [ProfileKey, typeof APPRECIATION_PROFILES[ProfileKey]][]).map(([key, profile]) => {
           const isSelected = selectedProfile === key;
           const colors = getColorClasses(profile.color, isSelected);
@@ -248,7 +257,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               type="button"
               onClick={() => handleSelectProfile(key)}
               className={cn(
-                "w-full p-3 rounded-xl border transition-all text-left",
+                "flex-1 p-2.5 rounded-xl border transition-all text-center",
                 colors.bg,
                 colors.border,
                 isSelected ? "ring-1 ring-offset-1 ring-offset-[#0d1117]" : "hover:border-gray-600",
@@ -257,26 +266,17 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 isSelected && profile.color === 'blue' && "ring-blue-500/50"
               )}
             >
-              <div className="flex items-center gap-3">
-                <div className={cn("p-1.5 rounded-lg", colors.bg)}>
-                  <Icon className={cn("w-4 h-4", colors.icon)} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className={cn("font-medium text-sm", isSelected ? colors.text : "text-white")}>
-                      {language === 'es' ? profile.nameEs : profile.name}
-                    </h4>
-                    <div className="flex items-center gap-2 text-[10px] font-mono">
-                      <span className="text-orange-400">{profile.constructionAppreciation}%</span>
-                      <span className="text-gray-600">→</span>
-                      <span className="text-green-400">{profile.growthAppreciation}%</span>
-                      <span className="text-gray-600">→</span>
-                      <span className="text-blue-400">{profile.matureAppreciation}%</span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-gray-500">
-                    {language === 'es' ? profile.riskLevelEs : profile.riskLevel}
-                  </p>
+              <div className="flex flex-col items-center gap-1.5">
+                <Icon className={cn("w-4 h-4", colors.icon)} />
+                <h4 className={cn("font-medium text-xs", isSelected ? colors.text : "text-white")}>
+                  {language === 'es' ? profile.nameEs : profile.name}
+                </h4>
+                <div className="flex items-center gap-0.5 text-[8px] font-mono">
+                  <span className="text-orange-400">{profile.constructionAppreciation}%</span>
+                  <span className="text-gray-600">→</span>
+                  <span className="text-green-400">{profile.growthAppreciation}%</span>
+                  <span className="text-gray-600">→</span>
+                  <span className="text-blue-400">{profile.matureAppreciation}%</span>
                 </div>
               </div>
             </button>
@@ -309,7 +309,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
       <div className="p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium text-white">
-            {language === 'es' ? 'Proyección 10 Años' : '10-Year Projection'}
+            {language === 'es' ? 'Proyección 7 Años' : '7-Year Projection'}
           </h4>
           <div className="flex items-center gap-1 p-0.5 bg-[#0d1117] rounded-lg">
             <Button
@@ -339,7 +339,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={projectedData.data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <AreaChart data={projectedData.data} margin={{ top: 20, right: 5, left: 0, bottom: 5 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#CCFF00" stopOpacity={0.3}/>
@@ -357,13 +357,32 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 hide
                 domain={['dataMin', 'dataMax']}
               />
-              {projectedData.yearsToHandover > 0 && projectedData.yearsToHandover < 10 && (
-                <ReferenceLine 
-                  x={Math.round(projectedData.yearsToHandover)} 
-                  stroke="#CCFF00" 
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.5}
-                />
+              {projectedData.yearsToHandover > 0 && projectedData.yearsToHandover < 7 && (
+                <>
+                  <ReferenceLine 
+                    x={handoverYear} 
+                    stroke="#CCFF00" 
+                    strokeDasharray="3 3"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: language === 'es' ? '🔑 Entrega' : '🔑 Handover',
+                      position: 'top',
+                      fill: '#CCFF00',
+                      fontSize: 9,
+                      fontWeight: 'bold',
+                    }}
+                  />
+                  {handoverDataPoint && (
+                    <ReferenceDot
+                      x={handoverYear}
+                      y={showPSF ? handoverDataPoint.psfValue : handoverDataPoint.totalValue}
+                      r={5}
+                      fill="#CCFF00"
+                      stroke="#0d1117"
+                      strokeWidth={2}
+                    />
+                  )}
+                </>
               )}
               <Tooltip 
                 content={({ active, payload }) => {
@@ -376,6 +395,9 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                           {formatValue(showPSF ? data.psfValue : data.totalValue)}
                         </p>
                         <p className="text-gray-500 capitalize">{data.phase} phase</p>
+                        {data.isHandover && (
+                          <p className="text-[#CCFF00] text-[10px] mt-1">🔑 Handover Year</p>
+                        )}
                       </div>
                     );
                   }
@@ -383,7 +405,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 }}
               />
               <Area 
-                type="monotone" 
+                type="natural" 
                 dataKey={showPSF ? "psfValue" : "totalValue"} 
                 stroke="#CCFF00" 
                 strokeWidth={2}
@@ -410,38 +432,45 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
-          <p className="text-[10px] text-gray-500">
-            {language === 'es' ? 'Valor en 5 años' : 'Value in 5 Years'}
+      {/* Key Metrics - Compact Single Row */}
+      <div className="flex items-center justify-between p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+        <div className="text-center flex-1">
+          <p className="text-[9px] text-gray-500 uppercase">
+            {language === 'es' ? '3 Años' : '3Y Value'}
           </p>
-          <p className="text-sm font-bold text-white">
-            {currency} {(value5Y / 1000000).toFixed(2)}M
-          </p>
-        </div>
-        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
-          <p className="text-[10px] text-gray-500">
-            {language === 'es' ? 'Valor en 10 años' : 'Value in 10 Years'}
-          </p>
-          <p className="text-sm font-bold text-[#CCFF00]">
-            {currency} {(value10Y / 1000000).toFixed(2)}M
+          <p className="text-xs font-bold text-white">
+            {currency} {(value3Y / 1000000).toFixed(2)}M
           </p>
         </div>
-        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
-          <p className="text-[10px] text-gray-500">
-            {language === 'es' ? 'Crecimiento Total' : 'Total Growth'}
+        
+        <div className="h-8 w-px bg-[#2a3142]" />
+        
+        <div className="text-center flex-1">
+          <p className="text-[9px] text-gray-500 uppercase">
+            {language === 'es' ? '7 Años' : '7Y Value'}
           </p>
-          <p className="text-sm font-bold text-green-400">
-            +{totalGrowth.toFixed(0)}%
+          <p className="text-xs font-bold text-[#CCFF00]">
+            {currency} {(value7Y / 1000000).toFixed(2)}M
           </p>
         </div>
-        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
-          <p className="text-[10px] text-gray-500">
-            {language === 'es' ? 'PSF en 10 años' : 'PSF in 10 Years'}
+        
+        <div className="h-8 w-px bg-[#2a3142]" />
+        
+        <div className="text-center flex-1">
+          <p className="text-[9px] text-gray-500 uppercase">
+            {language === 'es' ? 'Crecimiento' : 'Growth'}
           </p>
-          <p className="text-sm font-bold text-white">
-            {currency} {psf10Y.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          <p className="text-xs font-bold text-green-400">+{totalGrowth.toFixed(0)}%</p>
+        </div>
+        
+        <div className="h-8 w-px bg-[#2a3142]" />
+        
+        <div className="text-center flex-1">
+          <p className="text-[9px] text-gray-500 uppercase">
+            {language === 'es' ? 'PSF 7Y' : '7Y PSF'}
+          </p>
+          <p className="text-xs font-bold text-white">
+            {currency} {psf7Y.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
       </div>
@@ -583,6 +612,83 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 step={1}
                 className="roi-slider-lime"
               />
+            </div>
+
+            {/* Saved Presets */}
+            {presets.length > 0 && (
+              <div className="pt-3 border-t border-[#2a3142]">
+                <label className="text-xs text-gray-400 mb-2 block">
+                  {language === 'es' ? 'Presets Guardados' : 'Saved Presets'}
+                </label>
+                <div className="space-y-1">
+                  {presets.map(preset => (
+                    <div key={preset.id} className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const values = applyPreset(preset);
+                          setInputs(prev => ({
+                            ...prev,
+                            constructionAppreciation: values.constructionAppreciation,
+                            growthAppreciation: values.growthAppreciation,
+                            matureAppreciation: values.matureAppreciation,
+                            growthPeriodYears: values.growthPeriodYears,
+                          }));
+                        }}
+                        className="flex-1 justify-start text-xs text-gray-300 hover:text-white h-7"
+                      >
+                        {preset.name}
+                        <span className="ml-auto text-[10px] text-gray-500 font-mono">
+                          {preset.construction_appreciation}%→{preset.growth_appreciation}%→{preset.mature_appreciation}%
+                        </span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deletePreset(preset.id)}
+                        className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Save New Preset */}
+            <div className="pt-3 border-t border-[#2a3142]">
+              <label className="text-xs text-gray-400 mb-2 block">
+                {language === 'es' ? 'Guardar como Preset' : 'Save as Preset'}
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder={language === 'es' ? 'Nombre del preset...' : 'Preset name...'}
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  className="flex-1 h-8 text-xs bg-[#0d1117] border-[#2a3142]"
+                />
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    if (presetName.trim()) {
+                      const success = await savePreset(presetName, {
+                        constructionAppreciation: inputs.constructionAppreciation ?? 12,
+                        growthAppreciation: inputs.growthAppreciation ?? 8,
+                        matureAppreciation: inputs.matureAppreciation ?? 4,
+                        growthPeriodYears: inputs.growthPeriodYears ?? 5,
+                      });
+                      if (success) setPresetName('');
+                    }
+                  }}
+                  disabled={!presetName.trim() || saving}
+                  className="h-8 px-3 bg-[#CCFF00] text-black hover:bg-[#b8e600] text-xs"
+                >
+                  <Save className="w-3 h-3 mr-1" />
+                  {language === 'es' ? 'Guardar' : 'Save'}
+                </Button>
+              </div>
             </div>
           </div>
         </CollapsibleContent>
