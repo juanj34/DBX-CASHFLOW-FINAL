@@ -319,7 +319,8 @@ export const useCashflowQuote = (quoteId?: string) => {
       isQuoteConfigured?: boolean,
       mortgageInputs?: MortgageInputs,
       images?: { floorPlanUrl: string | null; buildingRenderUrl: string | null; heroImageUrl: string | null },
-      onNewQuoteCreated?: (newId: string) => void
+      onNewQuoteCreated?: (newId: string) => void,
+      suppressToast?: boolean
     ) => {
       if (autoSaveTimeout.current) {
         clearTimeout(autoSaveTimeout.current);
@@ -416,7 +417,9 @@ export const useCashflowQuote = (quoteId?: string) => {
               onNewQuoteCreated(data.id);
             }
             
-            toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
+            if (!suppressToast) {
+              toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
+            }
           }
         }
       }, targetExistingId ? 15000 : 60000); // 15s for existing, 60s for new
