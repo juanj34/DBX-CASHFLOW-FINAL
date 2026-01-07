@@ -172,10 +172,25 @@ const OICalculatorContent = () => {
     }
   }, [dataLoaded, navigate, quoteId]);
 
-  // Handler for when a new quote is auto-created - navigate to prevent duplicates
+  // Handler for when a new quote is auto-created - preserve configurator state across navigation
   const handleNewQuoteCreated = useCallback((newId: string) => {
+    // Store configurator state before navigation
+    if (modalOpen) {
+      localStorage.setItem('cashflow_configurator_open', 'true');
+    }
     navigate(`/cashflow/${newId}`, { replace: true });
-  }, [navigate]);
+  }, [navigate, modalOpen]);
+
+  // Restore configurator state after navigation (for autosave-triggered navigations)
+  useEffect(() => {
+    if (dataLoaded) {
+      const shouldReopen = localStorage.getItem('cashflow_configurator_open') === 'true';
+      if (shouldReopen) {
+        setModalOpen(true);
+        localStorage.removeItem('cashflow_configurator_open');
+      }
+    }
+  }, [dataLoaded]);
 
   useEffect(() => {
     // Prevent autosave from writing into the wrong quote during route transitions
@@ -192,9 +207,10 @@ const OICalculatorContent = () => {
       allowAutoCreate,
       mortgageInputs,
       undefined, // images
-      handleNewQuoteCreated
+      handleNewQuoteCreated,
+      modalOpen // suppress toast when configurator is open
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, handleNewQuoteCreated]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, handleNewQuoteCreated, modalOpen]);
 
   // Exit scenarios - derived from inputs._exitScenarios as single source of truth
   // Only use auto-generated fallback if no custom exits exist

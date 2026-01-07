@@ -152,10 +152,25 @@ const CashflowDashboardContent = () => {
     }
   }, [quoteId, dataLoaded, isQuoteConfigured]);
 
-  // Handler for when a new quote is auto-created - navigate to prevent duplicates
+  // Handler for when a new quote is auto-created - preserve configurator state across navigation
   const handleNewQuoteCreated = useCallback((newId: string) => {
+    // Store configurator state before navigation
+    if (modalOpen) {
+      localStorage.setItem('cashflow_configurator_open', 'true');
+    }
     navigate(`/cashflow-dashboard/${newId}`, { replace: true });
-  }, [navigate]);
+  }, [navigate, modalOpen]);
+
+  // Restore configurator state after navigation (for autosave-triggered navigations)
+  useEffect(() => {
+    if (dataLoaded) {
+      const shouldReopen = localStorage.getItem('cashflow_configurator_open') === 'true';
+      if (shouldReopen) {
+        setModalOpen(true);
+        localStorage.removeItem('cashflow_configurator_open');
+      }
+    }
+  }, [dataLoaded]);
 
   // Autosave
   useEffect(() => {
@@ -172,9 +187,10 @@ const CashflowDashboardContent = () => {
       allowAutoCreate,
       mortgageInputs,
       { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl },
-      handleNewQuoteCreated
+      handleNewQuoteCreated,
+      modalOpen // suppress toast when configurator is open
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
 
   // Exit scenarios
   const exitScenarios = useMemo(() => {
