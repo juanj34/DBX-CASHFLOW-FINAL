@@ -52,7 +52,10 @@ export const DashboardTabs = ({
   
   // Determine which tabs to show based on enabled sections
   const showHoldTab = inputs.enabledSections?.longTermHold !== false;
-  const showExitTab = inputs.enabledSections?.exitStrategy !== false;
+  // Exit tab requires explicit enabling OR having configured exit scenarios
+  const hasExitScenarios = Array.isArray((inputs as any)?._exitScenarios) && (inputs as any)._exitScenarios.length > 0;
+  const showExitTab = inputs.enabledSections?.exitStrategy === true || 
+    (inputs.enabledSections?.exitStrategy !== false && hasExitScenarios);
   const showMortgageTab = mortgageInputs.enabled;
 
   const tabs = [

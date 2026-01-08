@@ -264,7 +264,7 @@ serve(async (req) => {
     <table>
       <thead><tr><th>Year</th><th>Property Value</th><th>Annual Rent</th><th>Cumulative Income</th><th>Status</th></tr></thead>
       <tbody>
-        ${yearlyProjections.slice(0, 10).map((proj: any) => `
+        ${yearlyProjections.slice(0, 7).map((proj: any) => `
         <tr class="${proj.isHandover ? 'highlight-row' : ''}">
           <td>${proj.year}</td>
           <td>${formatCurrency(proj.propertyValue, currency, rate)}</td>
@@ -277,13 +277,13 @@ serve(async (req) => {
     </table>
 
     <div class="wealth-card">
-      <div class="wealth-title">💎 Wealth Created (10 Years)</div>
-      <div class="wealth-row"><span class="rent-label">Property Value (Y10)</span><span class="rent-value">${formatCurrency(lastProjection.propertyValue || 0, currency, rate)}</span></div>
-      <div class="wealth-row"><span class="rent-label">Cumulative Rent Income</span><span class="rent-value" style="color:#22d3ee">+${formatCurrency(lastProjection.cumulativeNetIncome || 0, currency, rate)}</span></div>
+      <div class="wealth-title">💎 Wealth Created (7 Years)</div>
+      <div class="wealth-row"><span class="rent-label">Property Value (Y7)</span><span class="rent-value">${formatCurrency(yearlyProjections[6]?.propertyValue || lastProjection.propertyValue || 0, currency, rate)}</span></div>
+      <div class="wealth-row"><span class="rent-label">Cumulative Rent Income</span><span class="rent-value" style="color:#22d3ee">+${formatCurrency(yearlyProjections[6]?.cumulativeNetIncome || lastProjection.cumulativeNetIncome || 0, currency, rate)}</span></div>
       <div class="wealth-row"><span class="rent-label">Initial Investment</span><span class="rent-value" style="color:#f87171">-${formatCurrency(basePrice + totalEntryCosts, currency, rate)}</span></div>
       <div class="wealth-row" style="border-top: 2px solid #CCFF00; margin-top: 10px; padding-top: 10px;">
         <span class="rent-label">Net Wealth Created</span>
-        <span class="wealth-total">${formatCurrency((lastProjection.propertyValue || 0) + (lastProjection.cumulativeNetIncome || 0) - basePrice - totalEntryCosts, currency, rate)}</span>
+        <span class="wealth-total">${formatCurrency((yearlyProjections[6]?.propertyValue || lastProjection.propertyValue || 0) + (yearlyProjections[6]?.cumulativeNetIncome || lastProjection.cumulativeNetIncome || 0) - basePrice - totalEntryCosts, currency, rate)}</span>
       </div>
     </div>
   </div>
