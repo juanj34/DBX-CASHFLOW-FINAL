@@ -48,9 +48,11 @@ interface ConfiguratorLayoutProps {
   // Image props
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
+  heroImageUrl?: string | null;
   showLogoOverlay?: boolean;
   onFloorPlanChange?: (url: string | null) => void;
   onBuildingRenderChange?: (url: string | null) => void;
+  onHeroImageChange?: (url: string | null) => void;
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
@@ -108,9 +110,11 @@ export const ConfiguratorLayout = ({
   quoteId,
   floorPlanUrl: externalFloorPlanUrl,
   buildingRenderUrl: externalBuildingRenderUrl,
+  heroImageUrl: externalHeroImageUrl,
   showLogoOverlay: externalShowLogoOverlay,
   onFloorPlanChange,
   onBuildingRenderChange,
+  onHeroImageChange,
   onShowLogoOverlayChange,
 }: ConfiguratorLayoutProps) => {
   // Only load saved state if we have a quoteId (editing existing quote)
@@ -125,14 +129,17 @@ export const ConfiguratorLayout = ({
   // Image state - use external if provided, otherwise internal
   const [internalFloorPlanUrl, setInternalFloorPlanUrl] = useState<string | null>(null);
   const [internalBuildingRenderUrl, setInternalBuildingRenderUrl] = useState<string | null>(null);
+  const [internalHeroImageUrl, setInternalHeroImageUrl] = useState<string | null>(null);
   const [internalShowLogoOverlay, setInternalShowLogoOverlay] = useState(true);
   
   const floorPlanUrl = externalFloorPlanUrl !== undefined ? externalFloorPlanUrl : internalFloorPlanUrl;
   const buildingRenderUrl = externalBuildingRenderUrl !== undefined ? externalBuildingRenderUrl : internalBuildingRenderUrl;
+  const heroImageUrl = externalHeroImageUrl !== undefined ? externalHeroImageUrl : internalHeroImageUrl;
   const showLogoOverlay = externalShowLogoOverlay !== undefined ? externalShowLogoOverlay : internalShowLogoOverlay;
   
   const setFloorPlanUrl = onFloorPlanChange || setInternalFloorPlanUrl;
   const setBuildingRenderUrl = onBuildingRenderChange || setInternalBuildingRenderUrl;
+  const setHeroImageUrl = onHeroImageChange || setInternalHeroImageUrl;
   const setShowLogoOverlay = onShowLogoOverlayChange || setInternalShowLogoOverlay;
   
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
@@ -450,6 +457,30 @@ export const ConfiguratorLayout = ({
     }
   };
 
+  const handleHeroImageUpload = async (file: File | null) => {
+    if (!file) {
+      setHeroImageUrl(null);
+      return;
+    }
+    
+    try {
+      const fileName = `hero-image-${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('quote-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('quote-images')
+        .getPublicUrl(data.path);
+      
+      setHeroImageUrl(urlData.publicUrl);
+    } catch (error) {
+      console.error('Error uploading hero image:', error);
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case 'client':
@@ -485,8 +516,10 @@ export const ConfiguratorLayout = ({
           <ImagesSection
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
+            heroImageUrl={heroImageUrl}
             onFloorPlanChange={handleFloorPlanUpload}
             onBuildingRenderChange={handleBuildingRenderUpload}
+            onHeroImageChange={handleHeroImageUpload}
             showLogoOverlay={showLogoOverlay}
             onShowLogoOverlayChange={setShowLogoOverlay}
           />

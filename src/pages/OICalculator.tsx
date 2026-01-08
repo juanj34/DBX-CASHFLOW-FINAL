@@ -81,7 +81,7 @@ const OICalculatorContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
@@ -206,11 +206,11 @@ const OICalculatorContent = () => {
       canUpdateExisting ? quoteId : undefined,
       allowAutoCreate,
       mortgageInputs,
-      undefined, // images
+      { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl },
       handleNewQuoteCreated,
       modalOpen // suppress toast when configurator is open
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, handleNewQuoteCreated, modalOpen]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
 
   // Exit scenarios - derived from inputs._exitScenarios as single source of truth
   // Only use auto-generated fallback if no custom exits exist
@@ -231,11 +231,12 @@ const OICalculatorContent = () => {
     setInputs(prev => ({ ...prev, _exitScenarios: newScenarios.sort((a, b) => a - b) }));
   }, []);
 
-  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion]);
-  const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate]);
+  const quoteImagesPayload = { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl };
+  const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion, quoteImagesPayload), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion, quoteImages]);
+  const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs, quoteImagesPayload); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate, quoteImages]);
   const handleShare = useCallback(async () => {
     // Always save first to ensure the client sees the latest data (including exit scenarios and mortgage)
-    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs);
+    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
     if (!savedQuote) return null;
     
     const token = await generateShareToken(savedQuote.id);
@@ -243,7 +244,7 @@ const OICalculatorContent = () => {
       return `${window.location.origin}/view/${token}`;
     }
     return null;
-  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken]);
+  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
@@ -478,7 +479,26 @@ const OICalculatorContent = () => {
                 onOpenChange={setMortgageModalOpen}
               />
               <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-              <OIInputModal inputs={inputs} setInputs={setInputs} open={modalOpen} onOpenChange={setModalOpen} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} clientInfo={clientInfo} setClientInfo={setClientInfo} quoteId={quoteId} />
+              <OIInputModal 
+                inputs={inputs} 
+                setInputs={setInputs} 
+                open={modalOpen} 
+                onOpenChange={setModalOpen} 
+                currency={currency} 
+                mortgageInputs={mortgageInputs} 
+                setMortgageInputs={setMortgageInputs} 
+                clientInfo={clientInfo} 
+                setClientInfo={setClientInfo} 
+                quoteId={quoteId}
+                floorPlanUrl={quoteImages.floorPlanUrl}
+                buildingRenderUrl={quoteImages.buildingRenderUrl}
+                heroImageUrl={quoteImages.heroImageUrl}
+                showLogoOverlay={quoteImages.showLogoOverlay}
+                onFloorPlanChange={(url) => setQuoteImages(prev => ({ ...prev, floorPlanUrl: url }))}
+                onBuildingRenderChange={(url) => setQuoteImages(prev => ({ ...prev, buildingRenderUrl: url }))}
+                onHeroImageChange={(url) => setQuoteImages(prev => ({ ...prev, heroImageUrl: url }))}
+                onShowLogoOverlayChange={(show) => setQuoteImages(prev => ({ ...prev, showLogoOverlay: show }))}
+              />
               <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
               <VersionHistoryModal 
                 open={versionHistoryOpen} 
