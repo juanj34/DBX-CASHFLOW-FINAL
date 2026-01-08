@@ -158,8 +158,8 @@ export const InvestmentOverviewGrid = ({
           : (compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-3")
       )}>
         {/* Card 1: Cash to Start */}
-        <div className={cn(cardClass, "h-[200px] flex flex-col")}>
-          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-16 translate-x-16" />}
+        <div className={cn(cardClass, "h-[220px] flex flex-col")}>
+          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-16 translate-x-16 z-0" />}
           
           <div className="flex items-center gap-2 mb-3">
             <div className={cn(
@@ -196,10 +196,10 @@ export const InvestmentOverviewGrid = ({
         </div>
 
         {/* Card 2: Rental Income - Toggle inside, shows LT/ST/Both */}
-        <div className={cn(cardClass, "h-[200px] flex flex-col")}>
-          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-16 translate-x-16" />}
+        <div className={cn(cardClass, "h-[220px] flex flex-col")}>
+          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-16 translate-x-16 z-0" />}
           
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-3 relative z-10">
             <div className="flex items-center gap-2">
               <div className={cn(
                 "rounded-lg flex items-center justify-center",
@@ -277,10 +277,10 @@ export const InvestmentOverviewGrid = ({
         </div>
 
         {/* Card 3: Years to Break Even - Toggle inside, shows LT/ST/Both */}
-        <div className={cn(cardClass, "h-[200px] flex flex-col")}>
-          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full -translate-y-16 translate-x-16" />}
+        <div className={cn(cardClass, "h-[220px] flex flex-col")}>
+          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full -translate-y-16 translate-x-16 z-0" />}
           
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-3 relative z-10">
             <div className="flex items-center gap-2">
               <div className={cn(
                 "rounded-lg flex items-center justify-center",
@@ -369,7 +369,7 @@ export const InvestmentOverviewGrid = ({
 
         {/* Card 4: Project Render Image (if available) */}
         {renderImageUrl && (
-          <div className={cn(cardClass, "p-0 overflow-hidden flex items-center justify-center max-h-[160px]")}>
+          <div className={cn(cardClass, "p-0 overflow-hidden h-[220px]")}>
             <img 
               src={renderImageUrl} 
               alt="Project Render"
