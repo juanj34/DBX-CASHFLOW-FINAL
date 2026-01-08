@@ -301,37 +301,26 @@ export const InvestmentOverviewGrid = ({
           {/* Content based on viewMode */}
           {viewMode === 'both' ? (
             // Show BOTH LT and ST stacked
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div>
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[10px] text-emerald-400 uppercase font-medium">Long Term</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-emerald-400">{breakEvenData.yearsToPayOffLT.toFixed(1)}</span>
-                  <span className="text-xs text-theme-text-muted">{t('years') || 'years'}</span>
-                </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-theme-text-muted">{t('overviewNetYield') || 'Net Yield'}</span>
-                  <span className="text-xs font-semibold text-emerald-400">{rentalData.roiLT.toFixed(1)}%</span>
+                  <span className="text-[10px] text-emerald-400 uppercase font-medium">Long Term</span>
+                  <span className="text-[10px] text-theme-text-muted">{rentalData.roiLT.toFixed(1)}% yield</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-lg font-bold text-emerald-400">{breakEvenData.yearsToPayOffLT.toFixed(1)}</span>
+                  <span className="text-[10px] text-theme-text-muted">{t('years') || 'years'}</span>
                 </div>
               </div>
-              <div className="border-t border-theme-border pt-2">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[10px] text-orange-400 uppercase font-medium">Short Term</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-orange-400">{breakEvenData.yearsToPayOffST.toFixed(1)}</span>
-                  <span className="text-xs text-theme-text-muted">{t('years') || 'years'}</span>
-                </div>
+              <div className="border-t border-theme-border pt-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-theme-text-muted">{t('overviewNetYield') || 'Net Yield'}</span>
-                  <span className="text-xs font-semibold text-orange-400">{rentalData.roiST.toFixed(1)}%</span>
+                  <span className="text-[10px] text-orange-400 uppercase font-medium">Short Term</span>
+                  <span className="text-[10px] text-theme-text-muted">{rentalData.roiST.toFixed(1)}% yield</span>
                 </div>
-                {breakEvenData.yearsToPayOffST < breakEvenData.yearsToPayOffLT && (
-                  <p className="text-[10px] text-emerald-400 mt-1">
-                    ✓ {(breakEvenData.yearsToPayOffLT - breakEvenData.yearsToPayOffST).toFixed(1)} {t('yearsFaster') || 'years faster'}
-                  </p>
-                )}
+                <div className="flex items-center gap-1">
+                  <span className="text-lg font-bold text-orange-400">{breakEvenData.yearsToPayOffST.toFixed(1)}</span>
+                  <span className="text-[10px] text-theme-text-muted">{t('years') || 'years'}</span>
+                </div>
               </div>
             </div>
           ) : (
