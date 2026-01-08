@@ -38,9 +38,11 @@ interface OIInputModalProps {
   // Image props
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
+  heroImageUrl?: string | null;
   showLogoOverlay?: boolean;
   onFloorPlanChange?: (url: string | null) => void;
   onBuildingRenderChange?: (url: string | null) => void;
+  onHeroImageChange?: (url: string | null) => void;
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
@@ -100,9 +102,11 @@ export const OIInputModal = ({
   quoteId,
   floorPlanUrl,
   buildingRenderUrl,
+  heroImageUrl,
   showLogoOverlay,
   onFloorPlanChange,
   onBuildingRenderChange,
+  onHeroImageChange,
   onShowLogoOverlayChange,
 }: OIInputModalProps) => {
   const { t } = useLanguage();
@@ -362,9 +366,11 @@ export const OIInputModal = ({
             quoteId={quoteId}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
+            heroImageUrl={heroImageUrl}
             showLogoOverlay={showLogoOverlay}
             onFloorPlanChange={onFloorPlanChange}
             onBuildingRenderChange={onBuildingRenderChange}
+            onHeroImageChange={onHeroImageChange}
             onShowLogoOverlayChange={onShowLogoOverlayChange}
           />
         </DialogContent>

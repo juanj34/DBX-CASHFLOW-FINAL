@@ -277,9 +277,11 @@ const CashflowDashboardContent = () => {
           quoteId={quoteId}
           floorPlanUrl={quoteImages.floorPlanUrl}
           buildingRenderUrl={quoteImages.buildingRenderUrl}
+          heroImageUrl={quoteImages.heroImageUrl}
           showLogoOverlay={quoteImages.showLogoOverlay}
           onFloorPlanChange={(url) => setQuoteImages(prev => ({ ...prev, floorPlanUrl: url }))}
           onBuildingRenderChange={(url) => setQuoteImages(prev => ({ ...prev, buildingRenderUrl: url }))}
+          onHeroImageChange={(url) => setQuoteImages(prev => ({ ...prev, heroImageUrl: url }))}
           onShowLogoOverlayChange={(show) => setQuoteImages(prev => ({ ...prev, showLogoOverlay: show }))}
         />
         <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
