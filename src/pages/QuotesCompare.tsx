@@ -270,7 +270,9 @@ const QuotesCompare = () => {
             <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
 
             {/* Exit Scenarios */}
-            <ExitComparison quotesWithCalcs={quotesWithCalcs} />
+                {quotesWithCalcs.some(q => (q.quote.inputs as any)?.enabledSections?.exitStrategy !== false) && (
+                  <ExitComparison quotesWithCalcs={quotesWithCalcs} />
+                )}
           </div>
         )}
       </main>
