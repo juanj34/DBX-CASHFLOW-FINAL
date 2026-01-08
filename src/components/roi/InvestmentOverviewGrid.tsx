@@ -94,7 +94,7 @@ export const InvestmentOverviewGrid = ({
   // Compact card style for client view
   const cardClass = compact 
     ? "bg-theme-card border border-theme-border rounded-xl p-4"
-    : "bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden";
+    : "bg-theme-card border border-theme-border rounded-xl p-5 relative overflow-hidden";
 
   // Toggle component for inside cards
   const RentalToggle = () => {

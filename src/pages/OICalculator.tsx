@@ -635,7 +635,8 @@ const OICalculatorContent = () => {
             )}
 
             {/* Exit Scenarios - Collapsible - Only show if enabled */}
-            {(inputs.enabledSections?.exitStrategy !== false) && (
+                {(inputs.enabledSections?.exitStrategy === true || 
+                  (inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0)) && (
               <div id="exit-section" className="scroll-mt-20">
                 <CollapsibleSection
                   title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
