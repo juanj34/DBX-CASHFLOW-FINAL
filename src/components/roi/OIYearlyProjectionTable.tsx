@@ -169,7 +169,7 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
         <div className="p-4 border-t border-[#2a3142] bg-[#0d1117]">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4">
-              <span className="text-gray-400">{t('totalNetIncome10Y')}</span>
+            <span className="text-gray-400">{t('totalNetIncome7Y')}</span>
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span className="flex items-center gap-1"><span className="text-orange-400">🏗️</span> {t('build')}</span>
                 <span className="flex items-center gap-1"><span className="text-green-400">📈</span> {t('growth')}</span>
@@ -198,7 +198,7 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
         <div>
           <h3 className="font-semibold text-white flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-[#CCFF00]" />
-            {t('tenYearHoldSimulation')}
+            {t('sevenYearHoldSimulation')}
           </h3>
           <p className="text-xs text-gray-400 mt-1">{t('propertyValueRentalYield')}</p>
         </div>
@@ -343,7 +343,7 @@ export const OIYearlyProjectionTable = ({ projections, currency, rate, showAirbn
       <div className="p-4 border-t border-[#2a3142] bg-[#0d1117]">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-4">
-            <span className="text-gray-400">{t('totalNetIncome10Y')}</span>
+            <span className="text-gray-400">{t('totalNetIncome7Y')}</span>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <span className="flex items-center gap-1"><span className="text-orange-400">🏗️</span> {t('build')}</span>
               <span className="flex items-center gap-1"><span className="text-green-400">📈</span> {t('growth')}</span>

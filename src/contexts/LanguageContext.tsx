@@ -286,9 +286,13 @@ const translations: Translations = {
   operatingExpenses: { en: 'Operating Expenses', es: 'Gastos Operativos' },
   
   // Wealth Summary
+  wealthCreated7Years: { en: 'Wealth Created Over 7 Years', es: 'Riqueza Generada en 7 Años' },
   wealthCreated10Years: { en: 'Wealth Created (10 Years)', es: 'Riqueza Generada (10 Años)' },
+  propertyValueYear7: { en: 'Property Value (Y7)', es: 'Valor de Propiedad (A7)' },
   propertyValueYear10: { en: 'Property Value (Y10)', es: 'Valor de Propiedad (A10)' },
-  estMarketValue: { en: 'Est. Market Value (Y10)', es: 'Valor de Mercado Est. (A10)' },
+  estMarketValue: { en: 'Est. Market Value (Y7)', es: 'Valor de Mercado Est. (A7)' },
+  sevenYearHoldSimulation: { en: '7-Year Hold Simulation', es: 'Simulación de Retención a 7 Años' },
+  totalNetIncome7Y: { en: 'Total Net Income (7Y)', es: 'Ingreso Neto Total (7A)' },
   cumulativeRentLT: { en: 'Cumulative Rent (LT)', es: 'Renta Acumulada (LP)' },
   cumulativeRentShortTerm: { en: 'Cumulative Rent (ST)', es: 'Renta Acumulada (CP)' },
   initialInvestment: { en: 'Initial Investment', es: 'Inversión Inicial' },
