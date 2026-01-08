@@ -8,6 +8,7 @@ import { OIGrowthCurve } from '@/components/roi/OIGrowthCurve';
 import { OIYearlyProjectionTable } from '@/components/roi/OIYearlyProjectionTable';
 import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
 import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
+import { InvestmentOverviewGrid } from '@/components/roi/InvestmentOverviewGrid';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo';
@@ -329,6 +330,19 @@ const CashflowViewContent = () => {
           /* Story View - Scrollable sections */
           <>
             <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
+
+            {/* Investment Overview Cards - Compact version for client view */}
+            <div className="mb-4 sm:mb-6">
+              <InvestmentOverviewGrid
+                inputs={inputs}
+                calculations={calculations}
+                mortgageAnalysis={mortgageAnalysis}
+                mortgageEnabled={mortgageInputs.enabled}
+                currency={currency}
+                rate={rate}
+                compact={true}
+              />
+            </div>
 
             {/* Investment Snapshot first on mobile, then grid on desktop */}
             {visibility.investmentSnapshot && (
