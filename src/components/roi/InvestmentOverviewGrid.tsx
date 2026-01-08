@@ -158,7 +158,7 @@ export const InvestmentOverviewGrid = ({
           : (compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-3")
       )}>
         {/* Card 1: Cash to Start */}
-        <div className={cardClass}>
+        <div className={cn(cardClass, "min-h-[140px]")}>
           {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-16 translate-x-16" />}
           
           <div className="flex items-center gap-2 mb-3">
@@ -196,7 +196,7 @@ export const InvestmentOverviewGrid = ({
         </div>
 
         {/* Card 2: Rental Income - Toggle inside, shows LT/ST/Both */}
-        <div className={cardClass}>
+        <div className={cn(cardClass, "min-h-[140px]")}>
           {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-16 translate-x-16" />}
           
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -277,7 +277,7 @@ export const InvestmentOverviewGrid = ({
         </div>
 
         {/* Card 3: Years to Break Even - Toggle inside, shows LT/ST/Both */}
-        <div className={cardClass}>
+        <div className={cn(cardClass, "min-h-[140px]")}>
           {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full -translate-y-16 translate-x-16" />}
           
           <div className="flex items-center justify-between gap-2 mb-3">
