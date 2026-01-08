@@ -66,7 +66,13 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     setInputs(prev => ({
       ...prev,
       enabledSections: { ...prev.enabledSections, exitStrategy: enabled, longTermHold: prev.enabledSections?.longTermHold ?? true },
+      // Clear exit scenarios when disabling to prevent stale data from showing
+      ...(enabled ? {} : { _exitScenarios: [] }),
     }));
+    // Also clear local exits state when disabling
+    if (!enabled) {
+      setExits([]);
+    }
   };
 
   const handleAddExit = () => {

@@ -446,7 +446,7 @@ const CashflowViewContent = () => {
               exitScenarios={exitScenarios}
               currency={currency}
               rate={rate}
-              showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? true}
+              showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? (inputs.enabledSections?.exitStrategy !== false)}
               showRentalPotential={(inputs as any)?._summaryToggles?.showRental ?? true}
               showMortgageAnalysis={mortgageInputs?.enabled ?? false}
               readOnly={true}

@@ -120,8 +120,10 @@ export const CashflowSummaryCard = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Check if exit strategy is actually enabled in the inputs
+  const exitSectionEnabled = (inputs as any)?.enabledSections?.exitStrategy !== false;
   const [localToggles, setLocalToggles] = useState({
-    showExit: showExitScenarios,
+    showExit: showExitScenarios && exitSectionEnabled,
     showRental: showRentalPotential,
     showMortgage: showMortgageAnalysis,
   });
