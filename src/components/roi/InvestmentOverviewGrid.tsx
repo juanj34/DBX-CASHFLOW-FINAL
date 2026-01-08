@@ -152,7 +152,7 @@ export const InvestmentOverviewGrid = ({
 
       {/* Cards Grid - 3 or 4 cards based on render image */}
       <div className={cn(
-        "grid gap-4",
+        "grid gap-4 items-start",
         renderImageUrl 
           ? (compact ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 md:grid-cols-4")
           : (compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-3")
@@ -369,12 +369,11 @@ export const InvestmentOverviewGrid = ({
 
         {/* Card 4: Project Render Image (if available) */}
         {renderImageUrl && (
-          <div className={cn(cardClass, "p-0 overflow-hidden flex items-center justify-center min-h-[120px]")}>
+          <div className={cn(cardClass, "p-0 overflow-hidden flex items-center justify-center max-h-[160px]")}>
             <img 
               src={renderImageUrl} 
               alt="Project Render"
               className="w-full h-full object-cover"
-              style={{ aspectRatio: '4/3' }}
             />
           </div>
         )}
