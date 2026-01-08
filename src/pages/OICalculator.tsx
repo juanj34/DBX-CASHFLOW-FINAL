@@ -581,6 +581,7 @@ const OICalculatorContent = () => {
                 exitScenarios={exitScenarios}
                 currency={currency}
                 rate={rate}
+                renderImageUrl={quoteImages.heroImageUrl || quoteImages.buildingRenderUrl}
               />
             </div>
 
