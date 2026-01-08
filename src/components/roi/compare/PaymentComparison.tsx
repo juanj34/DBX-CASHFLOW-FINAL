@@ -9,9 +9,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
   const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-5">
-      <h3 className="text-lg font-semibold text-white mb-4">Payment Structure</h3>
-      
+    <div className="space-y-4">
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${quotesWithCalcs.length}, minmax(200px, 1fr))` }}>
         {quotesWithCalcs.map((item, idx) => {
           const { quote, calculations } = item;
@@ -168,3 +166,5 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
     </div>
   );
 };
+
+export default PaymentComparison;

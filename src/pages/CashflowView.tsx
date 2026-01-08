@@ -28,7 +28,6 @@ import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { ClientViewToggle, useClientViewPreference, ClientViewMode } from '@/components/roi/ClientViewToggle';
 import { DashboardTabs } from '@/components/roi/tabs/DashboardTabs';
 
 interface AdvisorProfile {
@@ -52,7 +51,7 @@ const CashflowViewContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
   const { showOnboarding, setShowOnboarding } = useClientOnboarding();
-  const [viewMode, setViewMode] = useClientViewPreference();
+  // Force story view only - no dashboard toggle for client view
   const viewTrackedRef = useRef(false);
   const { rate } = useExchangeRate(currency);
   
@@ -215,7 +214,8 @@ const CashflowViewContent = () => {
     );
   }
 
-  const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
+  // Use year 7 projection for WealthSummaryCard
+  const year7Projection = calculations.yearlyProjections[6] || calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
 
   const handleEmailAdvisor = () => {
@@ -252,9 +252,6 @@ const CashflowViewContent = () => {
               <h1 className="text-sm sm:text-xl font-bold text-theme-text">{t('cashflowStatement')}</h1>
             </div>
             <div className="flex items-center gap-2">
-              {/* View Toggle */}
-              <ClientViewToggle value={viewMode} onChange={setViewMode} />
-              
               <Button variant="outlineDark" size="sm" onClick={() => setLanguage(language === 'en' ? 'es' : 'en')} className="h-7 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" title={t('language')}>
                 <Globe className="w-3.5 h-3.5 sm:mr-1" />
                 {language === 'en' ? '🇬🇧' : '🇪🇸'}
@@ -326,9 +323,8 @@ const CashflowViewContent = () => {
           </div>
         </div>
 
-        {viewMode === 'story' ? (
-          /* Story View - Scrollable sections */
-          <>
+        {/* Story View - Client share view */}
+        <>
             <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
             {/* Investment Overview Cards - Compact version for client view */}
@@ -382,15 +378,15 @@ const CashflowViewContent = () => {
                   {visibility.rentSnapshot && (
                     <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
                   )}
-                  <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-                  <OIYearlyProjectionTable projections={calculations.yearlyProjections} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-                  <WealthSummaryCard propertyValueYear10={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                  <CumulativeIncomeChart projections={calculations.yearlyProjections.slice(0, 7)} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
+                  <OIYearlyProjectionTable projections={calculations.yearlyProjections.slice(0, 7)} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
+                  <WealthSummaryCard propertyValueFinal={year7Projection.propertyValue} cumulativeRentIncome={year7Projection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? year7Projection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
                 </div>
               </CollapsibleSection>
             )}
 
-            {/* Exit Strategy - Collapsible */}
-            {visibility.exitStrategy && (inputs.enabledSections?.exitStrategy !== false) && (
+            {/* Exit Strategy - Collapsible - requires explicit enabling OR existing scenarios */}
+            {visibility.exitStrategy && (inputs.enabledSections?.exitStrategy === true || (inputs.enabledSections?.exitStrategy !== false && Array.isArray((inputs as any)?._exitScenarios) && (inputs as any)._exitScenarios.length > 0)) && (
               <CollapsibleSection
                 title={t('exitStrategyAnalysis')}
                 subtitle={t('whenToSell')}
@@ -460,27 +456,13 @@ const CashflowViewContent = () => {
               exitScenarios={exitScenarios}
               currency={currency}
               rate={rate}
-              showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? (inputs.enabledSections?.exitStrategy !== false)}
+              showExitScenarios={(inputs as any)?._summaryToggles?.showExit ?? (inputs.enabledSections?.exitStrategy === true || (inputs.enabledSections?.exitStrategy !== false && Array.isArray((inputs as any)?._exitScenarios) && (inputs as any)._exitScenarios.length > 0))}
               showRentalPotential={(inputs as any)?._summaryToggles?.showRental ?? true}
               showMortgageAnalysis={mortgageInputs?.enabled ?? false}
               readOnly={true}
               defaultOpen={false}
             />
           </>
-        ) : (
-          /* Dashboard View - Tabbed interface */
-          <DashboardTabs
-            inputs={inputs}
-            calculations={calculations}
-            clientInfo={clientInfo}
-            mortgageInputs={mortgageInputs}
-            mortgageAnalysis={mortgageAnalysis}
-            exitScenarios={exitScenarios}
-            currency={currency}
-            rate={rate}
-            readOnly={true}
-          />
-        )}
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-theme-border text-center">
           <p className="text-xs text-theme-text-muted">{t('disclaimerText')}</p>

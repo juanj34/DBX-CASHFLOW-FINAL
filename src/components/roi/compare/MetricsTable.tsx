@@ -50,9 +50,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
   };
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-5">
-      <h3 className="text-lg font-semibold text-white mb-4">Key Metrics Comparison</h3>
-      
+    <div className="space-y-0">
       {/* Header row with quote names */}
       <div className="grid border-b border-[#2a3142] pb-3 mb-2" 
         style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, minmax(120px, 1fr))` }}>
@@ -122,3 +120,5 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
     </div>
   );
 };
+
+export default MetricsTable;

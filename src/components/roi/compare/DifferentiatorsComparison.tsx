@@ -35,9 +35,7 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
   const categories = Object.keys(categorizedDifferentiators) as DifferentiatorCategory[];
 
   return (
-    <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-5">
-      <h3 className="text-lg font-semibold text-white mb-4">Value Differentiators</h3>
-      
+    <div className="space-y-4">
       {/* Header with quote names */}
       <div 
         className="grid gap-4 mb-4 pb-3 border-b border-[#2a3142]"
@@ -142,3 +140,5 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
     </div>
   );
 };
+
+export default DifferentiatorsComparison;

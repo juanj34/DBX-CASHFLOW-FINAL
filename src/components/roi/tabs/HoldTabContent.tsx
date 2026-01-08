@@ -30,10 +30,11 @@ export const HoldTabContent = ({
   variant = 'default',
 }: HoldTabContentProps) => {
   const { t } = useLanguage();
-  const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
+  // Use year 7 projection (index 6) for 7-year projections
+  const year7Projection = calculations.yearlyProjections[6] || calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const isDashboard = variant === 'dashboard';
   const [showDetailedTable, setShowDetailedTable] = useState(false);
-  const [show10YearProjections, setShow10YearProjections] = useState(false);
+  const [show7YearProjections, setShow7YearProjections] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -55,34 +56,34 @@ export const HoldTabContent = ({
         basePrice={inputs.basePrice}
       />
       
-      {/* Row 3: Collapsible 10-Year Projections (Hidden by default) */}
+      {/* Row 3: Collapsible 7-Year Projections (Hidden by default) */}
       <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
         <button
-          onClick={() => setShow10YearProjections(!show10YearProjections)}
+          onClick={() => setShow7YearProjections(!show7YearProjections)}
           className="w-full p-4 flex items-center justify-between hover:bg-theme-card-alt/30 transition-colors"
         >
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-medium text-white">{t('advancedProjections')}</span>
-            <span className="text-xs text-amber-400/70">({t('advancedProjectionsDesc')})</span>
+            <span className="text-sm font-medium text-white">{t('advancedProjections') || '7-Year Projections'}</span>
+            <span className="text-xs text-amber-400/70">({t('advancedProjectionsDesc') || 'hypothetical'})</span>
           </div>
-          {show10YearProjections ? (
+          {show7YearProjections ? (
             <ChevronUp className="w-4 h-4 text-theme-text-muted" />
           ) : (
             <ChevronDown className="w-4 h-4 text-theme-text-muted" />
           )}
         </button>
         
-        {show10YearProjections && (
+        {show7YearProjections && (
           <div className="border-t border-theme-border animate-in slide-in-from-top-2 duration-300 p-4 space-y-4">
             {/* Disclaimer */}
             <ProjectionDisclaimer variant="full" />
             
-            {/* 10-Year Components */}
+            {/* 7-Year Components */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <CumulativeIncomeChart 
-                  projections={calculations.yearlyProjections} 
+                  projections={calculations.yearlyProjections.slice(0, 7)} 
                   currency={currency} 
                   rate={rate} 
                   totalCapitalInvested={totalCapitalInvested} 
@@ -91,9 +92,9 @@ export const HoldTabContent = ({
               </div>
               
               <WealthSummaryCard 
-                propertyValueYear10={lastProjection.propertyValue} 
-                cumulativeRentIncome={lastProjection.cumulativeNetIncome} 
-                airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} 
+                propertyValueFinal={year7Projection.propertyValue} 
+                cumulativeRentIncome={year7Projection.cumulativeNetIncome} 
+                airbnbCumulativeIncome={calculations.showAirbnbComparison ? year7Projection.airbnbCumulativeNetIncome : undefined} 
                 initialInvestment={totalCapitalInvested} 
                 currency={currency} 
                 rate={rate} 
@@ -101,9 +102,9 @@ export const HoldTabContent = ({
               />
             </div>
             
-            {/* Detailed Table */}
+            {/* Detailed Table - 7 years */}
             <OIYearlyProjectionTable 
-              projections={calculations.yearlyProjections} 
+              projections={calculations.yearlyProjections.slice(0, 7)} 
               currency={currency} 
               rate={rate} 
               showAirbnbComparison={calculations.showAirbnbComparison} 

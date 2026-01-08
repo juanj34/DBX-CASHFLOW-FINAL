@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -18,6 +18,7 @@ import { DifferentiatorsComparison } from '@/components/roi/compare/Differentiat
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
 import { RecommendationSummary } from '@/components/roi/compare/RecommendationSummary';
+import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
 
 // Wrapper component to calculate for a single quote
 const QuoteCalculator = ({ 
@@ -254,25 +255,46 @@ const QuotesCompare = () => {
 
             {/* Key Metrics Table */}
             {metrics && (
-              <MetricsTable 
-                quotesWithCalcs={quotesWithCalcs} 
-                metrics={metrics} 
-              />
+              <CollapsibleSection
+                title="Key Metrics Comparison"
+                icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
+                defaultOpen={true}
+              >
+                <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} />
+              </CollapsibleSection>
             )}
 
             {/* Two column layout for Payment and Growth */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
-              <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
-            </div>
+            <CollapsibleSection
+              title="Payment & Growth"
+              icon={<TrendingUp className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={true}
+            >
+              <div className="grid lg:grid-cols-2 gap-6">
+                <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
+                <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
+              </div>
+            </CollapsibleSection>
 
             {/* Value Differentiators Comparison */}
-            <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
+            <CollapsibleSection
+              title="Value Differentiators"
+              icon={<Gem className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={true}
+            >
+              <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
+            </CollapsibleSection>
 
             {/* Exit Scenarios */}
-                {quotesWithCalcs.some(q => (q.quote.inputs as any)?.enabledSections?.exitStrategy !== false) && (
-                  <ExitComparison quotesWithCalcs={quotesWithCalcs} />
-                )}
+            {quotesWithCalcs.some(q => (q.quote.inputs as any)?.enabledSections?.exitStrategy !== false) && (
+              <CollapsibleSection
+                title="Exit Scenarios"
+                icon={<DoorOpen className="w-4 h-4 text-theme-accent" />}
+                defaultOpen={true}
+              >
+                <ExitComparison quotesWithCalcs={quotesWithCalcs} />
+              </CollapsibleSection>
+            )}
           </div>
         )}
       </main>

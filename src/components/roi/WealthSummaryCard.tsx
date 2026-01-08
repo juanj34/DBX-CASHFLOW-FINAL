@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { InfoTooltip } from './InfoTooltip';
 
 interface WealthSummaryCardProps {
-  propertyValueYear10: number;
+  propertyValueFinal: number;
   cumulativeRentIncome: number;
   airbnbCumulativeIncome?: number;
   initialInvestment: number;
@@ -14,7 +14,7 @@ interface WealthSummaryCardProps {
 }
 
 export const WealthSummaryCard = ({
-  propertyValueYear10,
+  propertyValueFinal,
   cumulativeRentIncome,
   airbnbCumulativeIncome,
   initialInvestment,
@@ -24,9 +24,9 @@ export const WealthSummaryCard = ({
 }: WealthSummaryCardProps) => {
   const { t } = useLanguage();
 
-  const netWealthLongTerm = propertyValueYear10 + cumulativeRentIncome - initialInvestment;
+  const netWealthLongTerm = propertyValueFinal + cumulativeRentIncome - initialInvestment;
   const netWealthAirbnb = airbnbCumulativeIncome 
-    ? propertyValueYear10 + airbnbCumulativeIncome - initialInvestment 
+    ? propertyValueFinal + airbnbCumulativeIncome - initialInvestment 
     : 0;
   
   const percentGainLongTerm = ((netWealthLongTerm / initialInvestment) * 100);
@@ -39,7 +39,7 @@ export const WealthSummaryCard = ({
       {/* Header */}
       <div className="p-4 border-b border-theme-border flex items-center gap-2">
         <Gem className="w-5 h-5 text-theme-accent" />
-        <h3 className="font-semibold text-theme-text">{t('wealthCreated10Years')}</h3>
+        <h3 className="font-semibold text-theme-text">{t('wealthCreated7Years') || 'Wealth Created Over 7 Years'}</h3>
       </div>
 
       <div className="p-4 space-y-3 flex-1">
@@ -51,7 +51,7 @@ export const WealthSummaryCard = ({
             <InfoTooltip translationKey="tooltipEstMarketValue" />
           </div>
           <span className="text-sm font-bold text-theme-text font-mono">
-            {formatCurrency(propertyValueYear10, currency, rate)}
+            {formatCurrency(propertyValueFinal, currency, rate)}
           </span>
         </div>
 
