@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Wallet, TrendingUp, Trophy, Clock, ArrowRight, Banknote, Building2 } from "lucide-react";
+import { Wallet, TrendingUp, Clock, Banknote, Home } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
 import { MortgageAnalysis } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
@@ -9,383 +9,277 @@ import { cn } from "@/lib/utils";
 interface InvestmentOverviewGridProps {
   inputs: OIInputs;
   calculations: OICalculations;
-  mortgageAnalysis: MortgageAnalysis;
-  mortgageEnabled: boolean;
-  exitScenarios: number[];
+  mortgageAnalysis?: MortgageAnalysis;
+  mortgageEnabled?: boolean;
+  exitScenarios?: number[];
   currency: Currency;
   rate: number;
+  compact?: boolean; // For client view - more compact layout
 }
 
 export const InvestmentOverviewGrid = ({
   inputs,
   calculations,
   mortgageAnalysis,
-  mortgageEnabled,
-  exitScenarios,
+  mortgageEnabled = false,
   currency,
   rate,
+  compact = false,
 }: InvestmentOverviewGridProps) => {
   const { t } = useLanguage();
 
-  // Card 1: The Entry - Cash to Start
+  const showAirbnb = inputs.showAirbnbComparison;
+
+  // Card 1: Cash to Start
   const entryData = useMemo(() => {
     const basePrice = calculations.basePrice;
     const downpayment = basePrice * inputs.downpaymentPercent / 100;
     const dldFee = basePrice * 0.04;
     const oqoodFee = inputs.oqoodFee || 0;
     
-    // Base cash needed without mortgage
     let cashToStart = downpayment + dldFee + oqoodFee;
     
-    // If mortgage is enabled, add the gap and upfront fees
-    if (mortgageEnabled) {
+    if (mortgageEnabled && mortgageAnalysis) {
       cashToStart += mortgageAnalysis.gapAmount + mortgageAnalysis.totalUpfrontFees;
     }
 
-    const cashPercent = inputs.preHandoverPercent;
-    const financedPercent = mortgageEnabled ? 100 - inputs.preHandoverPercent : 0;
-
-    // Find next payment milestone
-    const additionalPayments = inputs.additionalPayments || [];
-    const nextPayment = additionalPayments.length > 0 ? additionalPayments[0] : null;
-
     return {
       cashToStart,
-      cashPercent,
-      financedPercent,
-      nextPayment,
-      totalMonths: calculations.totalMonths,
+      preHandoverPercent: inputs.preHandoverPercent,
+      handoverPercent: 100 - inputs.preHandoverPercent,
     };
   }, [inputs, calculations, mortgageAnalysis, mortgageEnabled]);
 
-  // Card 2: The Sustainability - Monthly Cashflow
-  const sustainabilityData = useMemo(() => {
-    const monthlyRent = calculations.holdAnalysis.netAnnualRent / 12;
-    const monthlyMortgage = mortgageEnabled ? mortgageAnalysis.monthlyPayment : 0;
-    const monthlyCashflow = monthlyRent - monthlyMortgage;
-    const isSelfFunding = monthlyCashflow >= 0;
+  // Card 2: Rental Income & ROI
+  const rentalData = useMemo(() => {
+    const monthlyRentLT = calculations.holdAnalysis.netAnnualRent / 12;
+    const annualRentLT = calculations.holdAnalysis.netAnnualRent;
+    const roiLT = calculations.holdAnalysis.rentalYieldOnInvestment || 0;
 
-    return {
-      monthlyRent,
-      monthlyMortgage,
-      monthlyCashflow,
-      isSelfFunding,
-      mortgageEnabled,
-    };
-  }, [calculations.holdAnalysis.netAnnualRent, mortgageAnalysis.monthlyPayment, mortgageEnabled]);
-
-  // Card 3: The Prize - Wealth Projection
-  const prizeData = useMemo(() => {
-    // Use the recommended exit (middle scenario or 5 years post-handover)
-    const recommendedExitMonths = exitScenarios.length > 0 
-      ? exitScenarios[Math.floor(exitScenarios.length / 2)] 
-      : calculations.totalMonths + 60; // 5 years post-handover
+    // Short-term data if enabled
+    const firstFullYear = calculations.yearlyProjections.find(p => !p.isConstruction && !p.isHandover);
+    const annualRentST = firstFullYear?.airbnbNetIncome || 0;
+    const monthlyRentST = annualRentST / 12;
     
-    // Find the best exit scenario
-    const bestScenario = calculations.scenarios.reduce((best, current) => 
-      current.trueROE > best.trueROE ? current : best, calculations.scenarios[0]);
-    
-    // Calculate years post-handover for recommended exit
-    const yearsPostHandover = Math.max(1, Math.round((recommendedExitMonths - calculations.totalMonths) / 12));
-
-    // Calculate cumulative rent profit up to exit
-    const handoverYearIndex = calculations.yearlyProjections.findIndex(p => p.isHandover);
-    const rentProfit = calculations.yearlyProjections
-      .slice(handoverYearIndex, handoverYearIndex + yearsPostHandover)
-      .reduce((sum, p) => sum + (p.netIncome || 0), 0);
-
-    // Use best scenario for display
-    const saleProfit = bestScenario?.trueProfit || 0;
-    const totalWealth = saleProfit + rentProfit;
-    const roe = bestScenario?.trueROE || 0;
+    // Calculate short-term ROI
+    const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
+    const roiST = totalCapitalInvested > 0 ? (annualRentST / totalCapitalInvested) * 100 : 0;
 
     return {
-      totalWealth,
-      saleProfit,
-      rentProfit,
-      roe,
-      recommendedExitYears: yearsPostHandover,
+      monthlyRentLT,
+      annualRentLT,
+      roiLT,
+      monthlyRentST,
+      annualRentST,
+      roiST,
     };
-  }, [calculations, exitScenarios]);
+  }, [calculations]);
 
-  // Card 4: The Speed - Efficiency Metrics
-  const speedData = useMemo(() => {
-    const yearsToPayOff = calculations.holdAnalysis.yearsToPayOff || 0;
-    const netYield = calculations.holdAnalysis.rentalYieldOnInvestment || 0;
-    const marketAvgPayoff = 14.5; // Typical market average
+  // Card 3: Years to Break Even
+  const breakEvenData = useMemo(() => {
+    const yearsToPayOffLT = calculations.holdAnalysis.yearsToPayOff || 0;
+    const yearsToPayOffST = calculations.holdAnalysis.airbnbYearsToPayOff || 0;
+    const netYieldLT = calculations.holdAnalysis.rentalYieldOnInvestment || 0;
 
     return {
-      yearsToPayOff,
-      netYield,
-      marketAvgPayoff,
-      isFasterThanMarket: yearsToPayOff < marketAvgPayoff,
+      yearsToPayOffLT,
+      yearsToPayOffST,
+      netYieldLT,
     };
   }, [calculations.holdAnalysis]);
 
-  // Progress bar for donut visualization
-  const DonutProgress = ({ value, max, color }: { value: number; max: number; color: string }) => {
-    const percentage = Math.min(100, (value / max) * 100);
-    const circumference = 2 * Math.PI * 40;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-    return (
-      <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          className="text-theme-border"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          className="transition-all duration-500"
-        />
-      </svg>
-    );
-  };
+  // Compact card style for client view
+  const cardClass = compact 
+    ? "bg-theme-card border border-theme-border rounded-xl p-4"
+    : "bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden";
 
   return (
-    <div className="mb-6">
-      {/* Section Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-theme-accent/15 flex items-center justify-center">
-          <Building2 className="w-4 h-4 text-theme-accent" />
+    <div className={compact ? "mb-4" : "mb-6"}>
+      {/* Section Header - Hide on compact */}
+      {!compact && (
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-theme-accent/15 flex items-center justify-center">
+            <Home className="w-4 h-4 text-theme-accent" />
+          </div>
+          <h2 className="text-lg font-semibold text-theme-text">{t('investmentOverview') || 'Investment Overview'}</h2>
         </div>
-        <h2 className="text-lg font-semibold text-theme-text">{t('investmentOverview') || 'Investment Overview'}</h2>
-      </div>
+      )}
 
-      {/* 4-Card Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Card 1: The Entry */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-16 translate-x-16" />
+      {/* Cards Grid - 3 cards now */}
+      <div className={cn(
+        "grid gap-4",
+        compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-3"
+      )}>
+        {/* Card 1: Cash to Start */}
+        <div className={cardClass}>
+          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-16 translate-x-16" />}
           
-          <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 mb-3">
+            <div className={cn(
+              "rounded-lg flex items-center justify-center",
+              compact ? "w-7 h-7 bg-emerald-500/15" : "w-8 h-8 bg-emerald-500/20"
+            )}>
+              <Wallet className={cn("text-emerald-400", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
             </div>
-            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+            <span className={cn(
+              "font-medium text-theme-text-muted uppercase tracking-wide",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
               {t('overviewCashToStart') || 'Cash to Start'}
             </span>
           </div>
 
-          <div className="mb-4">
-            <p className="text-2xl sm:text-3xl font-bold text-emerald-400">
+          <div className="mb-3">
+            <p className={cn(
+              "font-bold text-emerald-400",
+              compact ? "text-xl" : "text-2xl sm:text-3xl"
+            )}>
               {formatCurrency(entryData.cashToStart, currency, rate)}
             </p>
-            <p className="text-xs text-theme-text-muted mt-1">
+            <p className="text-[10px] text-theme-text-muted mt-1">
               {t('includesDownpaymentFees') || 'Includes downpayment + DLD + fees'}
             </p>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-3">
-            <div className="flex h-2.5 rounded-full overflow-hidden bg-slate-700">
-              <div 
-                className="bg-emerald-500 transition-all duration-500"
-                style={{ width: `${entryData.cashPercent}%` }}
-              />
-              {mortgageEnabled && (
-                <div 
-                  className="bg-blue-500/60 transition-all duration-500"
-                  style={{ width: `${entryData.financedPercent}%` }}
-                />
-              )}
+          {/* Payment Split Badge */}
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-theme-card-alt text-xs">
+            <span className="text-theme-text-muted">{t('paymentPlan') || 'Plan'}:</span>
+            <span className="text-theme-accent font-semibold">{entryData.preHandoverPercent}/{entryData.handoverPercent}</span>
+          </div>
+        </div>
+
+        {/* Card 2: Rental Income & ROI */}
+        <div className={cardClass}>
+          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-16 translate-x-16" />}
+          
+          <div className="flex items-center gap-2 mb-3">
+            <div className={cn(
+              "rounded-lg flex items-center justify-center",
+              compact ? "w-7 h-7 bg-cyan-500/15" : "w-8 h-8 bg-cyan-500/20"
+            )}>
+              <Banknote className={cn("text-cyan-400", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
             </div>
-            <div className="flex justify-between mt-1.5 text-[10px] text-theme-text-muted">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                {t('cash') || 'Cash'} {entryData.cashPercent}%
+            <span className={cn(
+              "font-medium text-theme-text-muted uppercase tracking-wide",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
+              {t('rentalIncome') || 'Rental Income'}
+            </span>
+          </div>
+
+          {/* Long Term */}
+          <div className="mb-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-theme-text-muted">{t('longTerm') || 'Long Term'}</span>
+              <span className={cn(
+                "font-bold text-emerald-400",
+                compact ? "text-lg" : "text-xl"
+              )}>
+                {formatCurrency(rentalData.monthlyRentLT, currency, rate)}<span className="text-xs text-theme-text-muted font-normal">/mo</span>
               </span>
-              {mortgageEnabled && (
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-500/60" />
-                  {t('financed') || 'Financed'} {entryData.financedPercent}%
-                </span>
-              )}
+            </div>
+            <div className="flex items-center justify-between mt-0.5">
+              <span className="text-[9px] text-theme-text-muted">{t('annualNet') || 'Annual Net'}</span>
+              <span className="text-xs text-theme-text">{formatCurrency(rentalData.annualRentLT, currency, rate)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-theme-text-muted">ROI</span>
+              <span className="text-xs text-cyan-400 font-semibold">{rentalData.roiLT.toFixed(1)}%</span>
             </div>
           </div>
 
-          {entryData.nextPayment && (
-            <div className="flex items-center gap-1.5 text-xs text-theme-text-muted bg-theme-card/50 rounded-lg px-2.5 py-1.5">
-              <ArrowRight className="w-3 h-3" />
-              <span>{t('nextMilestone') || 'Next'}: {entryData.nextPayment.label}</span>
+          {/* Short Term - if toggled */}
+          {showAirbnb && (
+            <div className="pt-2 border-t border-theme-border">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-orange-400">{t('shortTerm') || 'Short Term'}</span>
+                <span className={cn(
+                  "font-bold text-orange-400",
+                  compact ? "text-lg" : "text-xl"
+                )}>
+                  {formatCurrency(rentalData.monthlyRentST, currency, rate)}<span className="text-xs text-theme-text-muted font-normal">/mo</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-0.5">
+                <span className="text-[9px] text-theme-text-muted">{t('annualNet') || 'Annual Net'}</span>
+                <span className="text-xs text-theme-text">{formatCurrency(rentalData.annualRentST, currency, rate)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-theme-text-muted">ROI</span>
+                <span className="text-xs text-orange-400 font-semibold">{rentalData.roiST.toFixed(1)}%</span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Card 2: The Sustainability */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-16 translate-x-16" />
+        {/* Card 3: Years to Break Even */}
+        <div className={cardClass}>
+          {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full -translate-y-16 translate-x-16" />}
           
-          <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-              <Banknote className="w-4 h-4 text-cyan-400" />
+          <div className="flex items-center gap-2 mb-3">
+            <div className={cn(
+              "rounded-lg flex items-center justify-center",
+              compact ? "w-7 h-7 bg-violet-500/15" : "w-8 h-8 bg-violet-500/20"
+            )}>
+              <Clock className={cn("text-violet-400", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
             </div>
-            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
-              {t('overviewMonthlyPerformance') || 'Monthly Performance'}
-            </span>
-          </div>
-
-          {/* Comparison Bars */}
-          <div className="space-y-3 mb-4">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-theme-text-muted">{t('rentIncome') || 'Rent Income'}</span>
-                <span className="text-emerald-400 font-medium">
-                  {formatCurrency(sustainabilityData.monthlyRent, currency, rate)}
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-700">
-                <div 
-                  className="h-full rounded-full bg-emerald-500"
-                  style={{ width: '100%' }}
-                />
-              </div>
-            </div>
-            
-            {mortgageEnabled && (
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-theme-text-muted">{t('mortgageCost') || 'Mortgage Cost'}</span>
-                  <span className="text-theme-text font-medium">
-                    {formatCurrency(sustainabilityData.monthlyMortgage, currency, rate)}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-theme-border">
-                  <div 
-                    className="h-full rounded-full bg-theme-text-muted"
-                    style={{ 
-                      width: `${Math.min(100, (sustainabilityData.monthlyMortgage / sustainabilityData.monthlyRent) * 100)}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Status Badge */}
-          <div className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold",
-            sustainabilityData.isSelfFunding 
-              ? "bg-emerald-500/20 text-emerald-400"
-              : "bg-amber-500/20 text-amber-400"
-          )}>
-            {sustainabilityData.isSelfFunding ? '✓' : '!'} {' '}
-            {sustainabilityData.isSelfFunding 
-              ? `${t('selfFunding') || 'Self-Funding'} (+${formatCurrency(sustainabilityData.monthlyCashflow, currency, rate)}/mo)`
-              : `${t('monthlyGap') || 'Gap'}: ${formatCurrency(Math.abs(sustainabilityData.monthlyCashflow), currency, rate)}/mo`
-            }
-          </div>
-
-          <p className="text-[10px] text-theme-text-muted mt-2">
-            {sustainabilityData.isSelfFunding 
-              ? (t('propertyPaysItself') || 'Property pays for itself')
-              : (t('monthlyContributionNeeded') || 'Monthly contribution needed')
-            }
-          </p>
-        </div>
-
-        {/* Card 3: The Prize */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-16 translate-x-16" />
-          
-          <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-amber-400" />
-            </div>
-            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
-              {t('overviewProjectedProfit') || 'Projected Net Profit'}
-            </span>
-          </div>
-
-          <div className="mb-3">
-            <p className="text-2xl sm:text-3xl font-bold text-amber-400">
-              {formatCurrency(prizeData.totalWealth, currency, rate)}
-            </p>
-            <div className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] font-medium">
-              <TrendingUp className="w-3 h-3" />
-              {t('recommendedExit') || 'Recommended Exit'}: {prizeData.recommendedExitYears} {t('years') || 'years'}
-            </div>
-          </div>
-
-          {/* Breakdown */}
-          <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between">
-              <span className="text-theme-text-muted">{t('profitFromSale') || 'Profit from Sale'}</span>
-              <span className="text-theme-text">{formatCurrency(prizeData.saleProfit, currency, rate)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-theme-text-muted">{t('profitFromRent') || 'Profit from Rent'}</span>
-              <span className="text-theme-text">{formatCurrency(prizeData.rentProfit, currency, rate)}</span>
-            </div>
-          </div>
-
-          {/* ROE Badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-bold">
-            ROE: {prizeData.roe.toFixed(0)}%
-          </div>
-        </div>
-
-        {/* Card 4: The Speed */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 rounded-xl p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full -translate-y-16 translate-x-16" />
-          
-          <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-              <Clock className="w-4 h-4 text-violet-400" />
-            </div>
-            <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+            <span className={cn(
+              "font-medium text-theme-text-muted uppercase tracking-wide",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
               {t('overviewBreakeven') || 'Time to Breakeven'}
             </span>
           </div>
 
-          <div className="flex items-center gap-4 mb-3">
-            {/* Donut Chart */}
-            <div className="relative">
-              <DonutProgress 
-                value={speedData.yearsToPayOff} 
-                max={speedData.marketAvgPayoff} 
-                color={speedData.isFasterThanMarket ? '#a78bfa' : '#fbbf24'}
-              />
-              <div className="absolute inset-0 flex items-center justify-center rotate-90">
-                <span className="text-lg font-bold text-white">
-                  {speedData.yearsToPayOff.toFixed(1)}
+          {/* Long Term Break Even */}
+          <div className="mb-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-theme-text-muted">{t('longTerm') || 'Long Term'}</span>
+              <div className="text-right">
+                <span className={cn(
+                  "font-bold text-violet-400",
+                  compact ? "text-xl" : "text-2xl"
+                )}>
+                  {breakEvenData.yearsToPayOffLT.toFixed(1)}
                 </span>
+                <span className="text-xs text-theme-text-muted ml-1">{t('years') || 'years'}</span>
               </div>
             </div>
-
-            <div>
-              <p className="text-2xl font-bold text-violet-400">
-                {speedData.yearsToPayOff.toFixed(1)} <span className="text-sm font-normal text-theme-text-muted">{t('years') || 'yrs'}</span>
-              </p>
-              <p className="text-[10px] text-theme-text-muted">
-                {t('marketAvg') || 'Market Avg'}: {speedData.marketAvgPayoff}y
-              </p>
+            <div className="flex items-center justify-between mt-0.5">
+              <span className="text-[9px] text-theme-text-muted">{t('overviewNetYield') || 'Net Yield'}</span>
+              <span className="text-xs text-violet-400 font-semibold">{breakEvenData.netYieldLT.toFixed(1)}%</span>
             </div>
           </div>
 
-          {/* Net Yield KPI */}
-          <div className="flex items-center justify-between bg-theme-card/50 rounded-lg px-3 py-2">
-            <span className="text-xs text-theme-text-muted">{t('overviewNetYield') || 'Net Yield'}</span>
-            <span className="text-sm font-bold text-violet-400">{speedData.netYield.toFixed(1)}%</span>
-          </div>
+          {/* Short Term Break Even - if toggled */}
+          {showAirbnb && (
+            <div className="pt-2 border-t border-theme-border">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-orange-400">{t('shortTerm') || 'Short Term'}</span>
+                <div className="text-right">
+                  <span className={cn(
+                    "font-bold text-orange-400",
+                    compact ? "text-xl" : "text-2xl"
+                  )}>
+                    {breakEvenData.yearsToPayOffST.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-theme-text-muted ml-1">{t('years') || 'years'}</span>
+                </div>
+              </div>
+              {breakEvenData.yearsToPayOffST < breakEvenData.yearsToPayOffLT && (
+                <p className="text-[9px] text-emerald-400 mt-1">
+                  ✓ {(breakEvenData.yearsToPayOffLT - breakEvenData.yearsToPayOffST).toFixed(1)} {t('yearsFaster') || 'years faster'}
+                </p>
+              )}
+            </div>
+          )}
 
-          {speedData.isFasterThanMarket && (
-            <p className="text-[10px] text-emerald-400 mt-2">
-              ✓ {t('fasterThanMarket') || 'Faster than market average'}
-            </p>
+          {/* Net Yield Badge - only show in non-compact when no airbnb */}
+          {!showAirbnb && !compact && (
+            <div className="mt-3 flex items-center justify-between bg-theme-card/50 rounded-lg px-3 py-2">
+              <span className="text-xs text-theme-text-muted">{t('overviewNetYield') || 'Net Yield'}</span>
+              <span className="text-sm font-bold text-violet-400">{breakEvenData.netYieldLT.toFixed(1)}%</span>
+            </div>
           )}
         </div>
       </div>
