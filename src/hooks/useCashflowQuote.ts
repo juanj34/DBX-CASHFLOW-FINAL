@@ -332,97 +332,21 @@ export const useCashflowQuote = (quoteId?: string) => {
       // Capture the intended target quote id for this autosave cycle
       const targetExistingId = existingQuoteId;
 
+      // Only schedule database auto-save for existing quotes
+      if (!targetExistingId) {
+        return; // New quotes only saved to localStorage draft above
+      }
+
       autoSaveTimeout.current = setTimeout(async () => {
-        // If we were meant to update an existing quote, require that we still have the same quote loaded.
-        // This prevents overwriting when the user switches quotes during the debounce window.
-        if (targetExistingId && quote?.id !== targetExistingId) {
+        // Safety check - ensure we're still on the same quote
+        if (quote?.id !== targetExistingId) {
           return;
         }
 
-        // Use _exitScenarios from inputs as source of truth (set by configurator or ExitScenariosCards)
         const exitScenarios = inputs._exitScenarios || [];
-
-        if (targetExistingId) {
-          // Update existing quote after 15 seconds - pass exitScenarios from inputs AND images
-          await saveQuote(inputs, clientInfo, targetExistingId, exitScenarios, mortgageInputs, undefined, images);
-          return;
-        }
-
-        if (isQuoteConfigured) {
-          // Auto-save NEW quote as draft after 60 seconds to prevent data loss
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-          if (!user) return;
-
-          const firstClient = clientInfo.clients?.[0];
-          const clientName = firstClient?.name || clientInfo.clientName || null;
-          const clientNames = clientInfo.clients?.map((c) => c.name).filter(Boolean).join(', ');
-          const titleClientPart = clientNames || clientName || '';
-
-          const inputsWithClients = {
-            ...inputs,
-            schemaVersion: CURRENT_SCHEMA_VERSION,
-            _clients: clientInfo.clients || [],
-            _clientInfo: {
-              developer: clientInfo.developer,
-              projectName: clientInfo.projectName,
-              unit: clientInfo.unit,
-              unitType: clientInfo.unitType,
-              unitSizeSqf: clientInfo.unitSizeSqf,
-              unitSizeM2: clientInfo.unitSizeM2,
-              brokerName: clientInfo.brokerName,
-              splitEnabled: clientInfo.splitEnabled,
-              clientShares: clientInfo.clientShares,
-              zoneId: clientInfo.zoneId,
-              zoneName: clientInfo.zoneName,
-            },
-            // Preserve _exitScenarios from inputs
-            _exitScenarios: exitScenarios,
-            _mortgageInputs: mortgageInputs,
-          };
-
-          const quoteData = {
-            broker_id: user.id,
-            inputs: inputsWithClients as any,
-            client_name: clientName,
-            client_country: firstClient?.country || clientInfo.clientCountry || null,
-            project_name: clientInfo.projectName || null,
-            developer: clientInfo.developer || null,
-            unit: clientInfo.unit || null,
-            unit_type: clientInfo.unitType || null,
-            unit_size_sqf: clientInfo.unitSizeSqf || null,
-            unit_size_m2: clientInfo.unitSizeM2 || null,
-            is_draft: true, // Mark as draft for auto-saved quotes
-            title: titleClientPart
-              ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
-              : 'Draft Quote',
-          };
-
-          const { data } = await supabase.from('cashflow_quotes').insert(quoteData).select().single();
-
-          if (data) {
-            // Clear localStorage after saving to DB
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            setLastSaved(new Date());
-            
-            // Update internal state with newly created quote
-            setQuote({
-              ...data,
-              inputs: data.inputs as unknown as OIInputs,
-            });
-            
-            // Notify parent component to navigate to the new quote URL
-            if (onNewQuoteCreated) {
-              onNewQuoteCreated(data.id);
-            }
-            
-            if (!suppressToast) {
-              toast({ title: 'Draft auto-saved', description: 'Your quote has been saved to the database.' });
-            }
-          }
-        }
-      }, targetExistingId ? 15000 : 60000); // 15s for existing, 60s for new
+        console.log('Auto-saving existing quote:', targetExistingId);
+        await saveQuote(inputs, clientInfo, targetExistingId, exitScenarios, mortgageInputs, undefined, images);
+      }, 15000);
     },
     [saveDraft, toast, quote?.id, saveQuote]
   );
