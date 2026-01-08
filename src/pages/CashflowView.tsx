@@ -50,6 +50,10 @@ const CashflowViewContent = () => {
   const [clientInfo, setClientInfo] = useState<ClientUnitData | null>(null);
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
+  const [quoteImages, setQuoteImages] = useState<{ heroImageUrl: string | null; buildingRenderUrl: string | null }>({
+    heroImageUrl: null,
+    buildingRenderUrl: null,
+  });
   const { showOnboarding, setShowOnboarding } = useClientOnboarding();
   // Force story view only - no dashboard toggle for client view
   const viewTrackedRef = useRef(false);
@@ -143,6 +147,22 @@ const CashflowViewContent = () => {
         whatsapp_number: (data.profiles as any)?.whatsapp_number || null,
         whatsapp_country_code: (data.profiles as any)?.whatsapp_country_code || '+971',
       });
+      
+      // Fetch quote images
+      const { data: imagesData } = await supabase
+        .from('cashflow_images')
+        .select('image_type, image_url')
+        .eq('quote_id', data.id);
+
+      if (imagesData) {
+        const buildingRender = imagesData.find(img => img.image_type === 'building_render');
+        const heroImage = imagesData.find(img => img.image_type === 'hero_image');
+        setQuoteImages({
+          heroImageUrl: heroImage?.image_url || null,
+          buildingRenderUrl: buildingRender?.image_url || null,
+        });
+      }
+      
       setLoading(false);
     };
 
@@ -337,6 +357,7 @@ const CashflowViewContent = () => {
                 currency={currency}
                 rate={rate}
                 compact={true}
+                renderImageUrl={quoteImages.heroImageUrl || quoteImages.buildingRenderUrl}
               />
             </div>
 
