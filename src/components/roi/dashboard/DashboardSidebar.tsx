@@ -412,6 +412,12 @@ export const DashboardSidebar = ({
             collapsed={collapsed}
           />
           <ActionButton 
+            icon={GitCompare} 
+            label="Compare" 
+            onClick={() => setCompareModalOpen(true)} 
+            collapsed={collapsed}
+          />
+          <ActionButton 
             icon={BarChart3} 
             label="Analytics" 
             to="/quotes-analytics" 
@@ -421,17 +427,6 @@ export const DashboardSidebar = ({
             icon={LayoutGrid} 
             label="Portfolios" 
             to="/presentations" 
-            collapsed={collapsed}
-          />
-        </div>
-
-        {/* TOOLS Section */}
-        <SectionHeader label="Tools" collapsed={collapsed} />
-        <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-          <ActionButton 
-            icon={GitCompare} 
-            label="Compare" 
-            onClick={() => setCompareModalOpen(true)} 
             collapsed={collapsed}
           />
         </div>
