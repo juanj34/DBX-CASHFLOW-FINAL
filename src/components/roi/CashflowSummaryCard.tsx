@@ -227,30 +227,30 @@ export const CashflowSummaryCard = ({
         <div className="bg-theme-bg-alt border border-theme-border rounded-xl p-3 sm:p-6">
           {/* View Mode Toggle - ALWAYS visible (including client view) */}
           <div className="mb-4 pb-4 border-b border-theme-border">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-4 flex-wrap">
               <button
                 onClick={() => setViewMode('structured')}
                 className={cn(
-                  "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
+                  "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-xs font-medium transition-colors",
                   viewMode === 'structured' 
                     ? "bg-theme-accent/20 text-theme-accent" 
                     : "bg-theme-card text-theme-text-muted hover:text-theme-text"
                 )}
               >
-                <LayoutList className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                {t('dataView')}
+                <LayoutList className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">{t('dataView')}</span>
               </button>
               <button
                 onClick={() => setViewMode('conversational')}
                 className={cn(
-                  "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors",
+                  "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-xs font-medium transition-colors",
                   viewMode === 'conversational' 
                     ? "bg-theme-accent/20 text-theme-accent" 
                     : "bg-theme-card text-theme-text-muted hover:text-theme-text"
                 )}
               >
-                <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                {t('explanationView')}
+                <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">{t('explanationView')}</span>
               </button>
             </div>
             
@@ -258,39 +258,39 @@ export const CashflowSummaryCard = ({
             {!readOnly && (
               <>
                 <p className="text-[10px] sm:text-xs text-theme-text-muted mb-3">{t('sectionsToInclude')}</p>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-6">
-                  <div className="flex items-center gap-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-6">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <Switch
                       id="toggle-rental"
                       checked={localToggles.showRental}
                       onCheckedChange={(checked) => handleToggleChange('showRental', checked)}
-                      className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
+                      className="data-[state=checked]:bg-theme-accent scale-75 sm:scale-100 flex-shrink-0"
                     />
-                    <Label htmlFor="toggle-rental" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
+                    <Label htmlFor="toggle-rental" className="text-[9px] sm:text-sm text-theme-text-muted cursor-pointer truncate">
                       {t('includeRentalAnalysis')}
                     </Label>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <Switch
                       id="toggle-exit"
                       checked={localToggles.showExit}
                       onCheckedChange={(checked) => handleToggleChange('showExit', checked)}
-                      className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
+                      className="data-[state=checked]:bg-theme-accent scale-75 sm:scale-100 flex-shrink-0"
                     />
-                    <Label htmlFor="toggle-exit" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
+                    <Label htmlFor="toggle-exit" className="text-[9px] sm:text-sm text-theme-text-muted cursor-pointer truncate">
                       {t('includeExitScenarios')}
                     </Label>
                   </div>
                   {/* Mortgage Toggle - Only show if mortgage is enabled */}
                   {isMortgageEnabled && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                       <Switch
                         id="toggle-mortgage"
                         checked={localToggles.showMortgage}
                         onCheckedChange={(checked) => handleToggleChange('showMortgage', checked)}
-                        className="data-[state=checked]:bg-theme-accent scale-90 sm:scale-100"
+                        className="data-[state=checked]:bg-theme-accent scale-75 sm:scale-100 flex-shrink-0"
                       />
-                      <Label htmlFor="toggle-mortgage" className="text-[10px] sm:text-sm text-theme-text-muted cursor-pointer">
+                      <Label htmlFor="toggle-mortgage" className="text-[9px] sm:text-sm text-theme-text-muted cursor-pointer truncate">
                         {t('includeMortgageAnalysis')}
                       </Label>
                     </div>

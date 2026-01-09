@@ -159,12 +159,12 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
         {showAirbnbComparison && (
           <div className={`p-4 space-y-3 border-t md:border-t-0 md:border-l border-[#2a3142] ${isScenarioMode ? 'bg-orange-500/10' : 'bg-orange-500/5'}`}>
             {/* Short-Term Header with Interactive Occupancy Badge */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-orange-400" />
-                <h4 className="text-sm font-medium text-white">{t('shortTermComparison')}</h4>
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400 flex-shrink-0" />
+                <h4 className="text-xs sm:text-sm font-medium text-white truncate">{t('shortTermComparison')}</h4>
                 {isScenarioMode && (
-                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] px-1.5 py-0 animate-fade-in">
+                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0 animate-fade-in flex-shrink-0">
                     {t('scenarioModeActive')}
                   </Badge>
                 )}
@@ -172,14 +172,14 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
               <Popover>
                 <PopoverTrigger asChild>
                   <button 
-                    className={`cursor-pointer transition-all hover:scale-105 rounded-full border text-[10px] px-2 py-0.5 flex items-center gap-1 ${
+                    className={`cursor-pointer transition-all hover:scale-105 rounded-full border text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ${
                       isScenarioMode 
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' 
                         : 'bg-orange-500/10 text-orange-300 border-orange-500/30'
                     }`}
                   >
-                    <SlidersHorizontal className="w-3 h-3" />
-                    {occupancyPercent}% {t('occupancy')}
+                    <SlidersHorizontal className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span className="whitespace-nowrap">{occupancyPercent}%</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 bg-[#1a1f2e] border-[#2a3142] p-4" side="bottom" align="end">
