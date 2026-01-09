@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, Layers, Target, Building2, Sparkles, Users, Landmark, Home, ArrowLeft, TrendingUp, Menu } from "lucide-react";
+import { LogOut, Layers, Target, Building2, Sparkles, Users, Landmark, Home, TrendingUp, Menu, Scale, BarChart3, FileText, Map, ChevronDown } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -10,6 +10,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AppLogo } from "@/components/AppLogo";
 import ZonesManager from "./ZonesManager";
 import HotspotsManager from "./HotspotsManager";
 import ProjectsManager from "./ProjectsManager";
@@ -46,36 +48,61 @@ const DashboardLayout = () => {
 
   const SidebarContent = () => (
     <>
-      {/* Navigation to Home/Map */}
-      <div className="p-4 border-b border-theme-border space-y-2">
-        <Link to="/home" onClick={() => setMobileMenuOpen(false)}>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-        </Link>
-        <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Map
-          </Button>
-        </Link>
-      </div>
+      {/* Quick Access - Tools Navigation */}
+      <Collapsible defaultOpen className="border-b border-theme-border">
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-theme-text-muted hover:text-theme-text transition-colors group">
+          <span className="text-xs font-semibold uppercase tracking-wider">Quick Access</span>
+          <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-4 pb-4 space-y-1">
+          <Link to="/home" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+              <Home className="mr-2 h-4 w-4" />
+              Home
+            </Button>
+          </Link>
+          <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+              <FileText className="mr-2 h-4 w-4" />
+              All Opportunities
+            </Button>
+          </Link>
+          <Link to="/compare" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+              <Scale className="mr-2 h-4 w-4" />
+              Compare
+            </Button>
+          </Link>
+          <Link to="/quotes-analytics" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
+            </Button>
+          </Link>
+          <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+              <Map className="mr-2 h-4 w-4" />
+              Map
+            </Button>
+          </Link>
+        </CollapsibleContent>
+      </Collapsible>
       
-      <nav className="p-4 space-y-2 flex-1">
-        <NavButton tab="zones" icon={Layers} label="Zones" />
-        <NavButton tab="presets" icon={TrendingUp} label="Appreciation Presets" />
-        <NavButton tab="hotspots" icon={Target} label="Hotspots" />
-        <NavButton tab="projects" icon={Building2} label="Projects" />
-        <NavButton tab="developers" icon={Users} label="Developers" />
-        <NavButton tab="landmarks" icon={Landmark} label="Landmarks" />
-      </nav>
+      {/* Data Management - Collapsible */}
+      <Collapsible defaultOpen className="flex-1">
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-theme-text-muted hover:text-theme-text transition-colors group">
+          <span className="text-xs font-semibold uppercase tracking-wider">Data Management</span>
+          <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-4 pb-4 space-y-2">
+          <NavButton tab="zones" icon={Layers} label="Zones" />
+          <NavButton tab="presets" icon={TrendingUp} label="Appreciation Presets" />
+          <NavButton tab="hotspots" icon={Target} label="Hotspots" />
+          <NavButton tab="projects" icon={Building2} label="Projects" />
+          <NavButton tab="developers" icon={Users} label="Developers" />
+          <NavButton tab="landmarks" icon={Landmark} label="Landmarks" />
+        </CollapsibleContent>
+      </Collapsible>
 
       <div className="p-4 border-t border-theme-border">
         <Button 
@@ -95,8 +122,8 @@ const DashboardLayout = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r border-theme-border bg-theme-card">
         <div className="p-6 border-b border-theme-border">
-          <h1 className="text-xl font-semibold text-theme-text">Configuration Center</h1>
-          <p className="text-sm text-theme-text-muted">Manage data & presets</p>
+          <AppLogo size="md" linkTo="/home" showGlow={false} />
+          <p className="text-sm text-theme-text-muted mt-2">Configuration Center</p>
         </div>
         <SidebarContent />
       </aside>
@@ -104,9 +131,12 @@ const DashboardLayout = () => {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-theme-card border-b border-theme-border">
         <div className="flex items-center justify-between p-4">
-          <div>
-            <h1 className="text-lg font-semibold text-theme-text">Configuration</h1>
-            <p className="text-xs text-theme-text-muted">Manage data & presets</p>
+          <div className="flex items-center gap-3">
+            <AppLogo size="sm" linkTo="/home" showGlow={false} collapsed />
+            <div>
+              <h1 className="text-lg font-semibold text-theme-text">Configuration</h1>
+              <p className="text-xs text-theme-text-muted">Manage data & presets</p>
+            </div>
           </div>
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
