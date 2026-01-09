@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -62,6 +62,10 @@ const QuotesCompare = () => {
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedFocus, setSelectedFocus] = useState<InvestmentFocus | null>(null);
   
+  // Drag state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
   // Save/Load state
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
@@ -87,6 +91,36 @@ const QuotesCompare = () => {
 
   const handleCalculated = (quoteId: string, calc: any) => {
     setCalculationsMap(prev => ({ ...prev, [quoteId]: calc }));
+  };
+
+  // Drag handlers for reordering
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (dropIndex: number) => {
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    
+    const newIds = [...selectedIds];
+    const [draggedId] = newIds.splice(draggedIndex, 1);
+    newIds.splice(dropIndex, 0, draggedId);
+    setSelectedIds(newIds);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   // Build quotes with calculations
@@ -280,9 +314,30 @@ const QuotesCompare = () => {
                 return (
                   <div
                     key={quote.id}
-                    className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-4 relative"
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={() => handleDrop(index)}
+                    onDragEnd={handleDragEnd}
+                    className={`bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-4 pl-8 relative cursor-grab active:cursor-grabbing transition-all ${
+                      dragOverIndex === index ? 'ring-2 ring-[#CCFF00] scale-[1.02]' : ''
+                    } ${draggedIndex === index ? 'opacity-50' : ''}`}
                     style={{ borderTopColor: color, borderTopWidth: '3px' }}
                   >
+                    {/* Drag handle */}
+                    <div className="absolute top-1/2 left-2 -translate-y-1/2 text-gray-600">
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+
+                    {/* Edit button */}
+                    <button
+                      onClick={() => navigate(`/cashflow/${quote.id}`)}
+                      className="absolute top-2 right-9 p-1 rounded-full hover:bg-white/10 text-gray-500 hover:text-[#CCFF00] transition-colors"
+                      title="Edit this quote"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+
                     {/* Remove button */}
                     <button
                       onClick={() => handleRemoveQuote(quote.id)}
@@ -373,7 +428,10 @@ const QuotesCompare = () => {
             )}
 
             {/* Rental Yield Comparison */}
-            {quotesWithCalcs.some(q => (q.quote.inputs.rentalYieldPercent || 0) > 0) && (
+            {quotesWithCalcs.some(q => 
+              (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
+              (q.calculations.holdAnalysis?.netAnnualRent || 0) > 0
+            ) && (
               <CollapsibleSection
                 title="Rental Yield"
                 icon={<Percent className="w-4 h-4 text-theme-accent" />}

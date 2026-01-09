@@ -382,7 +382,10 @@ const CompareView = () => {
             )}
 
             {/* Rental Yield Comparison */}
-            {quotesWithCalcs.some(q => (q.quote.inputs.rentalYieldPercent || 0) > 0) && (
+            {quotesWithCalcs.some(q => 
+              (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
+              (q.calculations.holdAnalysis?.netAnnualRent || 0) > 0
+            ) && (
               <CollapsibleSection
                 title="Rental Yield"
                 icon={<Percent className="w-4 h-4 text-theme-accent" />}
