@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +7,8 @@ interface CollapsibleSectionProps {
   subtitle?: string;
   icon?: React.ReactNode;
   defaultOpen?: boolean;
+  isOpen?: boolean; // Controlled state
+  onOpenChange?: (open: boolean) => void; // For controlled state
   children: React.ReactNode;
   className?: string;
   headerAction?: React.ReactNode;
@@ -17,16 +19,37 @@ export const CollapsibleSection = ({
   subtitle,
   icon,
   defaultOpen = true,
+  isOpen: controlledIsOpen,
+  onOpenChange,
   children,
   className,
   headerAction,
 }: CollapsibleSectionProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
+  
+  // Use controlled state if provided, otherwise internal state
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  
+  const handleToggle = () => {
+    const newValue = !isOpen;
+    if (onOpenChange) {
+      onOpenChange(newValue);
+    } else {
+      setInternalIsOpen(newValue);
+    }
+  };
+
+  // Sync internal state when defaultOpen changes (for expand/collapse all)
+  useEffect(() => {
+    if (controlledIsOpen === undefined) {
+      setInternalIsOpen(defaultOpen);
+    }
+  }, [defaultOpen, controlledIsOpen]);
 
   return (
     <div className={cn("mb-6", className)}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between p-4 bg-theme-card border border-theme-border rounded-xl hover:bg-theme-card/80 transition-colors group"
       >
         <div className="flex items-center gap-3">

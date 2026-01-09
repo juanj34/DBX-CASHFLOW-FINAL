@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, X, Building2, User, Calendar } from 'lucide-react';
+import { Search, Plus, X, Building2, User, Calendar, FolderOpen, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
+import { useSavedComparisons } from '@/hooks/useSavedComparisons';
 import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -18,6 +19,7 @@ interface QuoteSelectorProps {
   selectedIds: string[];
   onSelect: (ids: string[]) => void;
   maxQuotes?: number;
+  onLoadComparison?: (comparison: any) => void;
 }
 
 export const QuoteSelector = ({
@@ -26,10 +28,17 @@ export const QuoteSelector = ({
   selectedIds,
   onSelect,
   maxQuotes = 4,
+  onLoadComparison,
 }: QuoteSelectorProps) => {
   const { quotes, loading } = useQuotesList();
+  const { comparisons } = useSavedComparisons();
   const [search, setSearch] = useState('');
   const { t } = useLanguage();
+
+  // Get recent comparisons (last 5)
+  const recentComparisons = comparisons
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 5);
 
   const filteredQuotes = quotes.filter((quote) => {
     const searchLower = search.toLowerCase();
@@ -56,6 +65,15 @@ export const QuoteSelector = ({
     });
   };
 
+  const handleLoadComparison = (comparison: any) => {
+    if (onLoadComparison) {
+      onLoadComparison(comparison);
+    } else {
+      onSelect(comparison.quote_ids);
+    }
+    onClose();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-[#1a1f2e] border-[#2a3142] max-w-lg max-h-[80vh] flex flex-col">
@@ -67,6 +85,33 @@ export const QuoteSelector = ({
             </span>
           </DialogTitle>
         </DialogHeader>
+
+        {/* Recent Comparisons Section */}
+        {recentComparisons.length > 0 && !search && (
+          <div className="border-b border-[#2a3142] pb-4 mb-4">
+            <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
+              <FolderOpen className="w-4 h-4" />
+              <span>Recent Comparisons</span>
+            </div>
+            <div className="space-y-2">
+              {recentComparisons.map((comparison) => (
+                <button
+                  key={comparison.id}
+                  onClick={() => handleLoadComparison(comparison)}
+                  className="w-full text-left p-2 rounded-lg bg-[#0f172a] border border-[#2a3142] hover:border-[#CCFF00]/50 transition-all flex items-center justify-between group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{comparison.title}</p>
+                    <p className="text-xs text-gray-500">
+                      {comparison.quote_ids.length} quotes · {formatDate(comparison.updated_at)}
+                    </p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-[#CCFF00] transition-colors" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
