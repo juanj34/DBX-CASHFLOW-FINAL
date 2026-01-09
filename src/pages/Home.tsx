@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
-  SlidersHorizontal, Menu, Scale, DollarSign, MessageCircle, 
-  Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2
+  SlidersHorizontal, Menu, Scale, DollarSign, 
+  Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useAdminRole } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -39,6 +40,8 @@ import { toast } from "sonner";
 import { MarketPulseModal } from "@/components/dashboard/MarketPulseModal";
 import { PipelineAnalyticsChart } from "@/components/dashboard/PipelineAnalyticsChart";
 import { RecentComparisons } from "@/components/dashboard/RecentComparisons";
+import { ShareIconButton } from "@/components/roi/ShareIconButton";
+import { QuoteAnalyticsPopover } from "@/components/analytics/QuoteAnalyticsPopover";
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -53,11 +56,13 @@ interface QuoteWithDetails {
   created_at: string;
   status: QuoteStatus | null;
   sold_at?: string | null;
+  share_token?: string | null;
   inputs: {
     basePrice?: number;
     rentalYieldPercent?: number;
     _clientInfo?: {
       zoneName?: string;
+      zoneColor?: string;
     };
     [key: string]: any;
   };
@@ -71,7 +76,6 @@ const Home = () => {
   const { t } = useLanguage();
   const [quotes, setQuotes] = useState<QuoteWithDetails[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('30days');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -102,7 +106,7 @@ const Home = () => {
     return <Moon className="w-5 h-5 text-blue-300" />;
   };
 
-  // Filter quotes based on status, date, and search
+  // Filter quotes based on search only (status is already filtered server-side for active)
   const filteredQuotes = useMemo(() => {
     return quotes.filter(quote => {
       // Search filter
@@ -113,9 +117,6 @@ const Home = () => {
         const developerMatch = quote.developer?.toLowerCase().includes(query);
         if (!clientMatch && !projectMatch && !developerMatch) return false;
       }
-      
-      // Status filter
-      if (statusFilter !== 'all' && quote.status !== statusFilter) return false;
       
       // Date filter
       const created = new Date(quote.created_at);
@@ -133,7 +134,7 @@ const Home = () => {
       
       return true;
     });
-  }, [quotes, statusFilter, dateFilter, searchQuery]);
+  }, [quotes, dateFilter, searchQuery]);
 
   // Sort quotes
   const sortedQuotes = useMemo(() => {
@@ -268,12 +269,15 @@ const Home = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    // Only load active quotes (presented, negotiating) - not drafts or sold
     const { data, error } = await supabase
       .from("cashflow_quotes")
-      .select("id, client_name, client_email, project_name, developer, created_at, status, sold_at, inputs")
+      .select("id, client_name, client_email, project_name, developer, created_at, status, sold_at, share_token, inputs")
       .eq("broker_id", session.user.id)
+      .in("status", ["presented", "negotiating"])
+      .or('is_archived.is.null,is_archived.eq.false')
       .order("updated_at", { ascending: false })
-      .limit(50);
+      .limit(20);
 
     if (data) {
       setQuotes(data as QuoteWithDetails[]);
@@ -582,23 +586,9 @@ const Home = () => {
                 )}
               </div>
               
-              {/* Filters */}
+              {/* Date Filter only - status is pre-filtered for active */}
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-theme-text-muted hidden sm:block" />
-                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as QuoteStatus | 'all')}>
-                  <SelectTrigger className="w-[130px] h-9 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
-                    <SelectValue placeholder={t("allStatuses")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-theme-card border-theme-border">
-                    <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allStatuses")}</SelectItem>
-                    {Object.entries(statusConfig).map(([key, config]) => (
-                      <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt">
-                        {config.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
                 <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as 'week' | 'month' | '30days' | 'all')}>
                   <SelectTrigger className="w-[130px] h-9 text-xs bg-theme-bg-alt border-theme-border text-theme-text">
                     <SelectValue />
@@ -676,51 +666,52 @@ const Home = () => {
                           </span>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <span className="text-theme-text-muted text-sm">
+                          <span 
+                            className="text-sm px-2 py-0.5 rounded"
+                            style={{ 
+                              backgroundColor: quote.inputs?._clientInfo?.zoneColor ? `${quote.inputs._clientInfo.zoneColor}20` : undefined,
+                              color: quote.inputs?._clientInfo?.zoneColor || 'inherit'
+                            }}
+                          >
                             {quote.inputs?._clientInfo?.zoneName || "—"}
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={currentStatus}
-                            onValueChange={(value) => updateQuoteStatus(quote.id, value as QuoteStatus)}
-                          >
-                            <SelectTrigger className={`w-[130px] h-8 text-xs border ${statusConfig[currentStatus].className} bg-transparent`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-theme-card border-theme-border">
-                              {Object.entries(statusConfig).map(([key, config]) => (
-                                <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt">
-                                  {config.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Badge className={`text-xs border ${statusConfig[currentStatus].className}`}>
+                            {statusConfig[currentStatus].label}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-theme-text-muted hover:text-green-400 hover:bg-green-500/10"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleWhatsAppShare(quote);
-                              }}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/cashflow/${quote.id}`);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
+                            <QuoteAnalyticsPopover quoteId={quote.id} />
+                            
+                            <ShareIconButton
+                              quoteId={quote.id}
+                              shareToken={quote.share_token}
+                              projectName={quote.project_name}
+                              clientEmail={quote.client_email}
+                            />
+                            
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      navigate(`/cashflow/${quote.id}`);
+                                    }}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Edit</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </TableCell>
                       </TableRow>
