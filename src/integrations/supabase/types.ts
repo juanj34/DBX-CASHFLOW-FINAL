@@ -97,6 +97,7 @@ export type Database = {
           id: string
           inputs: Json
           is_draft: boolean | null
+          last_viewed_at: string | null
           negotiation_started_at: string | null
           presented_at: string | null
           project_name: string | null
@@ -123,6 +124,7 @@ export type Database = {
           id?: string
           inputs?: Json
           is_draft?: boolean | null
+          last_viewed_at?: string | null
           negotiation_started_at?: string | null
           presented_at?: string | null
           project_name?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           id?: string
           inputs?: Json
           is_draft?: boolean | null
+          last_viewed_at?: string | null
           negotiation_started_at?: string | null
           presented_at?: string | null
           project_name?: string | null
@@ -711,6 +714,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "quote_versions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_views: {
+        Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          ip_address: string | null
+          quote_id: string
+          region: string | null
+          session_id: string
+          started_at: string
+          timezone: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string | null
+          quote_id: string
+          region?: string | null
+          session_id: string
+          started_at?: string
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string | null
+          quote_id?: string
+          region?: string | null
+          session_id?: string
+          started_at?: string
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_views_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "cashflow_quotes"
