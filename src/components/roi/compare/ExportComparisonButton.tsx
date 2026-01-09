@@ -10,12 +10,14 @@ interface ExportComparisonButtonProps {
   quotesWithCalcs: QuoteWithCalculations[];
   title?: string;
   disabled?: boolean;
+  variant?: 'button' | 'dropdown';
 }
 
 export const ExportComparisonButton = ({
   quotesWithCalcs,
   title = 'Property Comparison',
   disabled = false,
+  variant = 'button',
 }: ExportComparisonButtonProps) => {
   const [exporting, setExporting] = useState(false);
   const { profile } = useProfile();
@@ -82,6 +84,23 @@ export const ExportComparisonButton = ({
       setExporting(false);
     }
   };
+
+  if (variant === 'dropdown') {
+    return (
+      <button
+        onClick={handleExportPDF}
+        disabled={disabled || exporting || quotesWithCalcs.length < 2}
+        className="flex items-center w-full px-2 py-1.5 text-sm text-theme-text hover:bg-theme-card-alt disabled:opacity-50 disabled:pointer-events-none"
+      >
+        {exporting ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <FileDown className="w-4 h-4 mr-2" />
+        )}
+        Export PDF
+      </button>
+    );
+  }
 
   return (
     <Button

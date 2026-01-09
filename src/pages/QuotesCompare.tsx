@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical, ChevronDown, ChevronUp, Coins, Wallet, Banknote } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical, ChevronDown, ChevronUp, Coins, Wallet, Banknote, MoreHorizontal, FileDown, Share2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
@@ -188,56 +189,110 @@ const QuotesCompare = () => {
         shortcuts={shortcuts}
         actions={
           <div className="flex items-center gap-2">
-            {/* Save Button */}
-            <Button
-              onClick={() => setShowSaveModal(true)}
-              variant="outline"
-              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
-              disabled={selectedIds.length < 2}
-            >
-              <Save className="w-4 h-4" />
-              <span className="hidden sm:inline">Save</span>
-            </Button>
-            
-            {/* Load Button */}
-            <Button
-              onClick={() => setShowLoadModal(true)}
-              variant="outline"
-              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
-            >
-              <FolderOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Load</span>
-            </Button>
+            {/* File Actions Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span className="hidden sm:inline">File</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-theme-card border-theme-border">
+                <DropdownMenuItem 
+                  onClick={() => setShowSaveModal(true)}
+                  disabled={selectedIds.length < 2}
+                  className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt cursor-pointer"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Comparison
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setShowLoadModal(true)}
+                  className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt cursor-pointer"
+                >
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Load Saved
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-theme-border" />
+                <DropdownMenuItem 
+                  disabled={!allCalculated}
+                  className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt cursor-pointer p-0"
+                >
+                  <ExportComparisonButton 
+                    quotesWithCalcs={quotesWithCalcs}
+                    title={currentComparisonTitle || 'Property Comparison'}
+                    disabled={!allCalculated}
+                    variant="dropdown"
+                  />
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt cursor-pointer p-0"
+                >
+                  <ShareComparisonButton 
+                    comparisonId={currentComparisonId || undefined}
+                    shareToken={currentShareToken}
+                    title={currentComparisonTitle || 'Property Comparison'}
+                    variant="dropdown"
+                  />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            {/* Export PDF */}
-            <ExportComparisonButton 
-              quotesWithCalcs={quotesWithCalcs}
-              title={currentComparisonTitle || 'Property Comparison'}
-              disabled={!allCalculated}
-            />
+            {/* View Options Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden sm:inline">View</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 bg-theme-card border-theme-border">
+                <DropdownMenuItem 
+                  onClick={() => setShowRecommendations(!showRecommendations)}
+                  className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt cursor-pointer justify-between"
+                >
+                  <div className="flex items-center">
+                    <Sparkles className={`w-4 h-4 mr-2 ${showRecommendations ? 'text-theme-accent' : ''}`} />
+                    AI Recommendations
+                  </div>
+                  <Switch
+                    checked={showRecommendations}
+                    onCheckedChange={setShowRecommendations}
+                    className="data-[state=checked]:bg-theme-accent scale-75"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-theme-border" />
+                <DropdownMenuItem 
+                  onClick={() => setAllExpanded(!allExpanded)}
+                  className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt cursor-pointer"
+                >
+                  {allExpanded ? (
+                    <>
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Collapse All Sections
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4 mr-2" />
+                      Expand All Sections
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            {/* Share Button */}
-            <ShareComparisonButton 
-              comparisonId={currentComparisonId || undefined}
-              shareToken={currentShareToken}
-              title={currentComparisonTitle || 'Property Comparison'}
-            />
-
-            {/* Recommendation Toggle */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-card border border-theme-border">
-              <Sparkles className={`w-4 h-4 ${showRecommendations ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
-              <span className="text-sm text-theme-text-muted hidden md:inline">AI</span>
-              <Switch
-                checked={showRecommendations}
-                onCheckedChange={setShowRecommendations}
-                className="data-[state=checked]:bg-theme-accent"
-              />
-            </div>
-
-            {/* Currency Selector */}
+            {/* Currency Selector - Kept visible as it's frequently used */}
             <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-              <SelectTrigger className="w-[90px] h-9 border-theme-border bg-theme-card text-theme-text text-sm">
-                <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
+              <SelectTrigger className="w-[80px] h-9 border-theme-border bg-theme-card text-theme-text text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
@@ -249,21 +304,10 @@ const QuotesCompare = () => {
               </SelectContent>
             </Select>
 
-            {/* Expand/Collapse All */}
-            <Button
-              onClick={() => setAllExpanded(!allExpanded)}
-              variant="outline"
-              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
-              title={allExpanded ? 'Collapse All' : 'Expand All'}
-            >
-              {allExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              <span className="hidden sm:inline">{allExpanded ? 'Collapse' : 'Expand'}</span>
-            </Button>
-
+            {/* Add Quote Button - Primary action */}
             <Button 
               onClick={() => setShowSelector(true)}
-              variant="outline"
-              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text gap-2"
+              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add</span>
