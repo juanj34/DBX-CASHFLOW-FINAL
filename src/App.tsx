@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useContrastChecker } from "@/hooks/useContrastChecker";
+import { useQuoteViewNotifications } from "@/hooks/useQuoteViewNotifications";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -18,6 +19,7 @@ import CashflowDashboard from "./pages/CashflowDashboard";
 import AccountSettings from "./pages/AccountSettings";
 import QuotesDashboard from "./pages/QuotesDashboard";
 import QuotesCompare from "./pages/QuotesCompare";
+import QuotesAnalytics from "./pages/QuotesAnalytics";
 import CashflowView from "./pages/CashflowView";
 import DeveloperRanking from "./pages/DeveloperRanking";
 import ResetPassword from "./pages/ResetPassword";
@@ -36,6 +38,12 @@ function ContrastCheckerProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Component to enable real-time notifications
+function NotificationProvider({ children }: { children: React.ReactNode }) {
+  useQuoteViewNotifications();
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,6 +54,7 @@ function App() {
               <Toaster />
               <Sonner />
               <BrowserRouter>
+              <NotificationProvider>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
@@ -60,6 +69,7 @@ function App() {
                 <Route path="/cashflow-dashboard/:quoteId" element={<CashflowDashboard />} />
                 <Route path="/account-settings" element={<AccountSettings />} />
                 <Route path="/my-quotes" element={<QuotesDashboard />} />
+                <Route path="/quotes-analytics" element={<QuotesAnalytics />} />
                 <Route path="/compare" element={<QuotesCompare />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
                 <Route path="/developer-ranking" element={<DeveloperRanking />} />
@@ -78,6 +88,7 @@ function App() {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </NotificationProvider>
               </BrowserRouter>
             </ContrastCheckerProvider>
           </TooltipProvider>

@@ -1,35 +1,77 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import type { User, Session } from "@supabase/supabase-js";
+
+const STORAGE_KEY = "sb-gxllyxusfyjjqpqylxrs-auth-token";
 
 export const useAuth = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Set up auth state listener FIRST
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/login");
-  };
+  // Sync auth state across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        // Session changed in another tab
+        supabase.auth.getSession().then(({ data: { session: newSession } }) => {
+          if (!newSession) {
+            // User logged out in another tab
+            setSession(null);
+            setUser(null);
+            navigate("/login");
+          } else if (newSession.user.id !== user?.id) {
+            // Different user logged in, reload to sync
+            window.location.reload();
+          }
+        });
+      }
+    };
 
-  return { user, loading, signOut };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [user, navigate]);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    navigate("/login");
+  }, [navigate]);
+
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/home`,
+      },
+    });
+    return { error };
+  }, []);
+
+  return { user, session, loading, signOut, signInWithGoogle };
 };
 
 export const useAdminRole = () => {
@@ -42,7 +84,7 @@ export const useAdminRole = () => {
       if (authLoading) {
         return;
       }
-      
+
       if (!user) {
         setIsAdmin(false);
         setLoading(false);

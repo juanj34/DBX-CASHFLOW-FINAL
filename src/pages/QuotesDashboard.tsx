@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
   LayoutGrid, Check, Search, Filter, MessageCircle, ArrowUpDown, ArrowUp, ArrowDown, X,
-  FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy
+  FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy, CheckSquare, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +59,9 @@ const QuotesDashboard = () => {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('all');
@@ -286,8 +290,38 @@ const QuotesDashboard = () => {
     }
   };
 
-  const handleCompare = () => {
-    if (selectedForCompare.length >= 2) {
+  const handleBulkDelete = async () => {
+    const { error } = await supabase
+      .from('cashflow_quotes')
+      .delete()
+      .in('id', selectedForDelete);
+
+    if (error) {
+      toast({ title: 'Failed to delete quotes', variant: 'destructive' });
+    } else {
+      toast({ title: `${selectedForDelete.length} quotes deleted` });
+      setSelectedForDelete([]);
+      setSelectMode(false);
+      window.location.reload();
+    }
+    setShowBulkDeleteDialog(false);
+  };
+
+  const toggleDeleteSelection = (id: string) => {
+    setSelectedForDelete(prev => 
+      prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedForDelete.length === sortedQuotes.length) {
+      setSelectedForDelete([]);
+    } else {
+      setSelectedForDelete(sortedQuotes.map(q => q.id));
+    }
+  };
+
+  if (loading) {
       navigate(`/compare?ids=${selectedForCompare.join(',')}`);
     }
   };
@@ -316,12 +350,20 @@ const QuotesDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/quotes-analytics">
+              <Button variant="outline" className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2">
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Analytics</span>
+              </Button>
+            </Link>
             {quotes.length >= 2 && (
               <Button
                 variant={compareMode ? "default" : "outline"}
                 onClick={() => {
                   setCompareMode(!compareMode);
                   setSelectedForCompare([]);
+                  setSelectMode(false);
+                  setSelectedForDelete([]);
                 }}
                 className={compareMode 
                   ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2" 
@@ -330,6 +372,22 @@ const QuotesDashboard = () => {
               >
                 <LayoutGrid className="w-4 h-4" />
                 {compareMode ? t('quotesCancel') : t('compare')}
+              </Button>
+            )}
+            {quotes.length >= 1 && !compareMode && (
+              <Button
+                variant={selectMode ? "default" : "outline"}
+                onClick={() => {
+                  setSelectMode(!selectMode);
+                  setSelectedForDelete([]);
+                }}
+                className={selectMode 
+                  ? "bg-red-600 text-white hover:bg-red-500 gap-2" 
+                  : "border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
+                }
+              >
+                <CheckSquare className="w-4 h-4" />
+                {selectMode ? t('quotesCancel') : 'Select'}
               </Button>
             )}
             <Link to="/cashflow-generator">
@@ -354,6 +412,24 @@ const QuotesDashboard = () => {
                 className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
               >
                 {t('compareSelected')}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk delete bar */}
+        {selectMode && selectedForDelete.length > 0 && (
+          <div className="container mx-auto px-4 sm:px-6 pb-4">
+            <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+              <span className="text-theme-text-muted text-sm">
+                {selectedForDelete.length} selected for deletion
+              </span>
+              <Button
+                onClick={() => setShowBulkDeleteDialog(true)}
+                className="bg-red-600 text-white hover:bg-red-500"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Selected
               </Button>
             </div>
           </div>
@@ -484,6 +560,14 @@ const QuotesDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="border-theme-border hover:bg-transparent">
+                    {selectMode && (
+                      <TableHead className="w-12">
+                        <Checkbox 
+                          checked={selectedForDelete.length === sortedQuotes.length && sortedQuotes.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                    )}
                     {compareMode && <TableHead className="w-12"></TableHead>}
                     <TableHead 
                       className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
@@ -534,9 +618,20 @@ const QuotesDashboard = () => {
                     return (
                       <TableRow 
                         key={quote.id} 
-                        className={`border-theme-border ${compareMode ? 'cursor-pointer' : ''} ${isSelected ? 'bg-theme-accent/10' : 'hover:bg-theme-card-alt/50'}`}
-                        onClick={() => compareMode && toggleCompareSelection(quote.id)}
+                        className={`border-theme-border ${compareMode || selectMode ? 'cursor-pointer' : ''} ${isSelected ? 'bg-theme-accent/10' : selectedForDelete.includes(quote.id) ? 'bg-red-500/10' : 'hover:bg-theme-card-alt/50'}`}
+                        onClick={() => {
+                          if (compareMode) toggleCompareSelection(quote.id);
+                          if (selectMode) toggleDeleteSelection(quote.id);
+                        }}
                       >
+                        {selectMode && (
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox 
+                              checked={selectedForDelete.includes(quote.id)}
+                              onCheckedChange={() => toggleDeleteSelection(quote.id)}
+                            />
+                          </TableCell>
+                        )}
                         {compareMode && (
                           <TableCell>
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
@@ -623,7 +718,7 @@ const QuotesDashboard = () => {
                           </Select>
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                          {!compareMode && (
+                          {!compareMode && !selectMode && (
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost"
@@ -726,6 +821,28 @@ const QuotesDashboard = () => {
               className="bg-cyan-600 hover:bg-cyan-500 text-white"
             >
               {isDuplicating ? 'Duplicating...' : t('duplicate') || 'Duplicate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-theme-text">Delete {selectedForDelete.length} quotes?</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              This action cannot be undone. All selected quotes will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-theme-bg-alt text-theme-text border-theme-border hover:bg-theme-card-alt hover:text-theme-text">
+              {t('quotesCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              Delete {selectedForDelete.length} Quotes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
