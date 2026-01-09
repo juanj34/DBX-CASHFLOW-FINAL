@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, Trash2, Edit, Calendar, DollarSign, MapPin, 
   LayoutGrid, Check, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, X,
-  FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy, CheckSquare, BarChart3
+  FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy, CheckSquare, BarChart3, Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +53,7 @@ type SortDirection = 'asc' | 'desc';
 
 const QuotesDashboard = () => {
   useDocumentTitle("All Opportunities");
-  const { quotes, loading, deleteQuote, duplicateQuote } = useQuotesList();
+  const { quotes, loading, deleteQuote, archiveQuote, duplicateQuote } = useQuotesList();
   const { profile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -190,6 +190,15 @@ const QuotesDashboard = () => {
       toast({ title: 'Quote deleted' });
     }
     setDeletingQuote(null);
+  };
+
+  const handleArchive = async (quote: CashflowQuote) => {
+    const { error } = await archiveQuote(quote.id);
+    if (error) {
+      toast({ title: 'Failed to archive', variant: 'destructive' });
+    } else {
+      toast({ title: 'Quote archived' });
+    }
   };
 
   const handleDuplicateClick = (quote: CashflowQuote) => {
@@ -468,6 +477,17 @@ const QuotesDashboard = () => {
           commissionRate={commissionRate} 
         />
 
+        {/* Link to Archived Quotes */}
+        <div className="flex justify-end mb-4">
+          <Link 
+            to="/archived-quotes"
+            className="text-sm text-theme-text-muted hover:text-theme-text flex items-center gap-2 transition-colors"
+          >
+            <Archive className="w-4 h-4" />
+            View archived quotes
+          </Link>
+        </div>
+
         {quotes.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-theme-card flex items-center justify-center">
@@ -743,6 +763,24 @@ const QuotesDashboard = () => {
                                   </TooltipTrigger>
                                   <TooltipContent side="top">
                                     <p className="text-xs">Edit</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleArchive(quote)}
+                                      className="h-8 w-8 text-theme-text-muted hover:text-amber-400 hover:bg-amber-500/10"
+                                    >
+                                      <Archive className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-xs">Archive</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>

@@ -441,6 +441,7 @@ export const useQuotesList = () => {
         .from('cashflow_quotes')
         .select('*')
         .eq('broker_id', user.id)
+        .or('is_archived.is.null,is_archived.eq.false')
         .order('updated_at', { ascending: false });
 
       if (!error && data) {
@@ -456,6 +457,18 @@ export const useQuotesList = () => {
     const { error } = await supabase
       .from('cashflow_quotes')
       .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setQuotes(prev => prev.filter(q => q.id !== id));
+    }
+    return { error };
+  };
+
+  const archiveQuote = async (id: string) => {
+    const { error } = await supabase
+      .from('cashflow_quotes')
+      .update({ is_archived: true, archived_at: new Date().toISOString() })
       .eq('id', id);
 
     if (!error) {
@@ -535,5 +548,5 @@ export const useQuotesList = () => {
     return { newId: newQuote.id, error: null };
   };
 
-  return { quotes, loading, deleteQuote, duplicateQuote, refetch: () => setLoading(true) };
+  return { quotes, loading, deleteQuote, archiveQuote, duplicateQuote, refetch: () => setLoading(true) };
 };

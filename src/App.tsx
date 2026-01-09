@@ -29,6 +29,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
 import Help from "./pages/Help";
 import ColorTest from "./pages/ColorTest";
+import ArchivedQuotes from "./pages/ArchivedQuotes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ function App() {
                 <Route path="/cashflow-dashboard/:quoteId" element={<CashflowDashboard />} />
                 <Route path="/account-settings" element={<AccountSettings />} />
                 <Route path="/my-quotes" element={<QuotesDashboard />} />
+                <Route path="/archived-quotes" element={<ArchivedQuotes />} />
                 <Route path="/quotes-analytics" element={<QuotesAnalytics />} />
                 <Route path="/compare" element={<QuotesCompare />} />
                 <Route path="/compare-view/:shareToken" element={<CompareView />} />

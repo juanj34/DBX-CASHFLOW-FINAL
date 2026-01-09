@@ -87,6 +87,7 @@ export type Database = {
       }
       cashflow_quotes: {
         Row: {
+          archived_at: string | null
           broker_id: string
           client_country: string | null
           client_email: string | null
@@ -96,6 +97,7 @@ export type Database = {
           first_viewed_at: string | null
           id: string
           inputs: Json
+          is_archived: boolean | null
           is_draft: boolean | null
           last_viewed_at: string | null
           negotiation_started_at: string | null
@@ -114,6 +116,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          archived_at?: string | null
           broker_id: string
           client_country?: string | null
           client_email?: string | null
@@ -123,6 +126,7 @@ export type Database = {
           first_viewed_at?: string | null
           id?: string
           inputs?: Json
+          is_archived?: boolean | null
           is_draft?: boolean | null
           last_viewed_at?: string | null
           negotiation_started_at?: string | null
@@ -141,6 +145,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          archived_at?: string | null
           broker_id?: string
           client_country?: string | null
           client_email?: string | null
@@ -150,6 +155,7 @@ export type Database = {
           first_viewed_at?: string | null
           id?: string
           inputs?: Json
+          is_archived?: boolean | null
           is_draft?: boolean | null
           last_viewed_at?: string | null
           negotiation_started_at?: string | null
