@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -15,6 +15,7 @@ import { MetricsTable } from '@/components/roi/compare/MetricsTable';
 import { PaymentComparison } from '@/components/roi/compare/PaymentComparison';
 import { GrowthComparisonChart } from '@/components/roi/compare/GrowthComparisonChart';
 import { ExitComparison } from '@/components/roi/compare/ExitComparison';
+import { MortgageComparison } from '@/components/roi/compare/MortgageComparison';
 import { DifferentiatorsComparison } from '@/components/roi/compare/DifferentiatorsComparison';
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
@@ -358,6 +359,17 @@ const QuotesCompare = () => {
             >
               <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
             </CollapsibleSection>
+
+            {/* Mortgage Comparison */}
+            {quotesWithCalcs.some(q => (q.quote.inputs as any)?._mortgageInputs?.enabled) && (
+              <CollapsibleSection
+                title="Mortgage Comparison"
+                icon={<Home className="w-4 h-4 text-theme-accent" />}
+                defaultOpen={true}
+              >
+                <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
+              </CollapsibleSection>
+            )}
 
             {/* Exit Scenarios */}
             {quotesWithCalcs.some(q => (q.quote.inputs as any)?.enabledSections?.exitStrategy !== false) && (

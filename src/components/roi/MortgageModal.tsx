@@ -153,16 +153,16 @@ export const MortgageModal = ({
                   </Label>
                   <span className="text-[#CCFF00] font-mono font-bold">{mortgageInputs.financingPercent}%</span>
                 </div>
-                <Slider
+              <Slider
                   value={[mortgageInputs.financingPercent]}
                   onValueChange={([v]) => updateInput('financingPercent', v)}
-                  min={40}
+                  min={20}
                   max={80}
                   step={5}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>40%</span>
+                  <span>20%</span>
                   <span>80%</span>
                 </div>
               </div>
