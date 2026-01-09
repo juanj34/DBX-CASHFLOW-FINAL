@@ -58,10 +58,13 @@ export const TopQuotesTable = ({ quotes }: TopQuotesTableProps) => {
                       <span className="w-6 h-6 rounded-full bg-theme-accent/20 text-theme-accent text-xs flex items-center justify-center font-medium">
                         {idx + 1}
                       </span>
-                      <div>
-                        <p className="text-sm font-medium text-theme-text">{quote.clientName}</p>
+                      <Link 
+                        to={`/cashflow/${quote.id}`}
+                        className="hover:opacity-80 transition-opacity"
+                      >
+                        <p className="text-sm font-medium text-theme-text hover:text-theme-accent transition-colors">{quote.clientName}</p>
                         <p className="text-xs text-theme-text-muted">{quote.projectName}</p>
-                      </div>
+                      </Link>
                     </div>
                   </td>
                   <td className="py-3 px-2 text-center">

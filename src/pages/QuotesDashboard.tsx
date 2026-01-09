@@ -668,8 +668,14 @@ const QuotesDashboard = () => {
                           </TableCell>
                         )}
                         <TableCell>
-                          <div>
-                            <p className="font-medium text-theme-text">
+                          <div 
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!compareMode && !selectMode) navigate(`/cashflow/${quote.id}`);
+                            }}
+                          >
+                            <p className={`font-medium text-theme-text ${!compareMode && !selectMode ? 'hover:text-theme-accent transition-colors' : ''}`}>
                               {quote.client_name || t('homeUnnamedClient')}
                             </p>
                             <p className="text-xs text-theme-text-muted">

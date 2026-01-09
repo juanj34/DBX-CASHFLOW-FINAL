@@ -760,8 +760,11 @@ const Home = () => {
                     return (
                       <TableRow key={quote.id} className="border-theme-border hover:bg-theme-card-alt/50">
                         <TableCell>
-                          <div>
-                            <p className="font-medium text-theme-text">
+                          <div 
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => navigate(`/cashflow/${quote.id}`)}
+                          >
+                            <p className="font-medium text-theme-text hover:text-theme-accent transition-colors">
                               {quote.client_name || t('homeUnnamedClient')}
                             </p>
                             <p className="text-xs text-theme-text-muted">
