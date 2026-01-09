@@ -4,10 +4,11 @@ import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
 export interface PresentationItem {
-  type: 'quote' | 'comparison';
+  type: 'quote' | 'comparison' | 'inline_comparison';
   id: string;
   viewMode?: 'story' | 'vertical' | 'compact';
-  title?: string; // For inline comparison display
+  title?: string; // For display
+  quoteIds?: string[]; // For inline comparisons only
 }
 
 export interface Presentation {
