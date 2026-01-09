@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { MarketPulseModal } from "@/components/dashboard/MarketPulseModal";
 import { PipelineAnalyticsChart } from "@/components/dashboard/PipelineAnalyticsChart";
+import { RecentComparisons } from "@/components/dashboard/RecentComparisons";
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -539,6 +540,11 @@ const Home = () => {
               </Link>
             );
           })}
+        </div>
+
+        {/* Recent Comparisons */}
+        <div className="mb-6 sm:mb-8">
+          <RecentComparisons limit={3} />
         </div>
 
         {/* Active Opportunities Table */}
