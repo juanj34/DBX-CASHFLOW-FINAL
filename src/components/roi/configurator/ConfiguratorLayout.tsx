@@ -530,18 +530,10 @@ export const ConfiguratorLayout = ({
     }
   };
 
-  // Handle Apply & Close with celebration
+  // Handle Apply & Close
   const handleApplyAndClose = useCallback(() => {
-    if (!hasShownCelebrationRef.current) {
-      hasShownCelebrationRef.current = true;
-      setShowCelebration(true);
-      setTimeout(() => {
-        setShowCelebration(false);
-        onClose();
-      }, 2500);
-    } else {
-      onClose();
-    }
+    // Close immediately (no delay) so the modal always dismisses reliably.
+    onClose();
   }, [onClose]);
 
   return (
