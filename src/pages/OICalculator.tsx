@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Columns3, Sparkles, Rocket } from "lucide-react";
+import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Columns3, Sparkles, Rocket, Scale, BarChart3, Globe, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -301,6 +302,53 @@ const OICalculatorContent = () => {
                 </Link>
               )}
               {profile && <AdvisorInfo profile={profile} size="lg" showSubtitle />}
+              
+              {/* Quick Navigation Shortcuts */}
+              <div className="hidden lg:flex items-center gap-0.5 px-2 border-l border-r border-theme-border mx-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/home">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
+                        <Home className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Home</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/my-quotes">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>All Opportunities</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/quotes-analytics">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
+                        <BarChart3 className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Analytics</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/compare">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
+                        <Scale className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>Compare</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
 
             {/* Right: Actions */}
@@ -352,7 +400,39 @@ const OICalculatorContent = () => {
                 {/* Separator */}
                 <div className="w-px h-6 bg-theme-border mx-0.5" />
 
-                {/* Settings Dropdown */}
+                {/* Fast Language Toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                      className="h-8 px-2 text-theme-text-muted hover:text-theme-text gap-1"
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">{language === 'en' ? 'EN' : 'ES'}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Switch to {language === 'en' ? 'Español' : 'English'}</TooltipContent>
+                </Tooltip>
+
+                {/* Fast Currency Selector */}
+                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <SelectTrigger className="w-[85px] h-8 text-xs border-theme-border bg-transparent text-theme-text">
+                    <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-theme-card border-theme-border">
+                    <SelectItem value="AED">🇦🇪 AED</SelectItem>
+                    <SelectItem value="USD">🇺🇸 USD</SelectItem>
+                    <SelectItem value="EUR">🇪🇺 EUR</SelectItem>
+                    <SelectItem value="GBP">🇬🇧 GBP</SelectItem>
+                    <SelectItem value="RUB">🇷🇺 RUB</SelectItem>
+                    <SelectItem value="CNY">🇨🇳 CNY</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Settings Dropdown (for profile/full settings) */}
                 <SettingsDropdown
                   language={language}
                   setLanguage={setLanguage}

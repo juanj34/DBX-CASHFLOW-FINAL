@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, Trash2, Edit, Calendar, DollarSign, MapPin, 
@@ -6,6 +6,7 @@ import {
   FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy, CheckSquare, BarChart3, Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -71,6 +72,14 @@ const QuotesDashboard = () => {
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [chartCollapsed, setChartCollapsed] = useState(() => {
+    return localStorage.getItem('quotes_chart_collapsed') === 'true';
+  });
+
+  // Persist chart collapse state
+  useEffect(() => {
+    localStorage.setItem('quotes_chart_collapsed', String(chartCollapsed));
+  }, [chartCollapsed]);
 
   const commissionRate = profile?.commission_rate ?? 2;
 
@@ -470,17 +479,25 @@ const QuotesDashboard = () => {
           </div>
         </div>
 
-        {/* Pipeline Analytics Chart */}
-        <PipelineAnalyticsChart 
-          quotes={quotes.map(q => ({
-            id: q.id,
-            created_at: q.created_at || q.updated_at,
-            status: q.status,
-            sold_at: q.sold_at,
-            inputs: q.inputs
-          }))} 
-          commissionRate={commissionRate} 
-        />
+        {/* Pipeline Analytics Chart - Collapsible */}
+        <CollapsibleSection
+          title={t("pipelineAnalytics") || "Pipeline Analytics"}
+          subtitle={`${quotes.length} opportunities tracked`}
+          icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
+          defaultOpen={!chartCollapsed}
+          className="mb-4"
+        >
+          <PipelineAnalyticsChart 
+            quotes={quotes.map(q => ({
+              id: q.id,
+              created_at: q.created_at || q.updated_at,
+              status: q.status,
+              sold_at: q.sold_at,
+              inputs: q.inputs
+            }))} 
+            commissionRate={commissionRate} 
+          />
+        </CollapsibleSection>
 
         {/* Link to Archived Quotes */}
         <div className="flex justify-end mb-4">
