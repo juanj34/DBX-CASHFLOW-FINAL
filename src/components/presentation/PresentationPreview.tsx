@@ -70,8 +70,8 @@ const QuotePreview = ({
 
   const exitScenarios = useMemo(() => {
     if (!calculations) return [];
-    return calculateAutoExitScenarios(quoteData.inputs, calculations.totalMonths);
-  }, [quoteData.inputs, calculations]);
+    return calculateAutoExitScenarios(calculations.totalMonths);
+  }, [calculations]);
 
   if (!calculations) {
     return (
