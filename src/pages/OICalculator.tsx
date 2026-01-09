@@ -302,7 +302,7 @@ const OICalculatorContent = () => {
 
   return (
     <CashflowErrorBoundary>
-      <DashboardLayout
+        <DashboardLayout
         inputs={inputs}
         mortgageInputs={mortgageInputs}
         profile={profile}
@@ -312,8 +312,8 @@ const OICalculatorContent = () => {
         onViewHistory={() => setVersionHistoryOpen(true)}
         onShare={handleShare}
         onPresent={handlePresent}
+        onShowcase={isFullyConfigured ? handlePresentMode : undefined}
         viewCount={quote?.view_count ?? undefined}
-        firstViewedAt={quote?.first_viewed_at ?? undefined}
         quoteId={quoteId}
         language={language}
         setLanguage={setLanguage}
@@ -321,7 +321,6 @@ const OICalculatorContent = () => {
         setCurrency={setCurrency}
         hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
         saving={saving}
-        lastSaved={lastSaved}
         onSave={handleSave}
       >
         {/* Top Navigation Bar */}

@@ -336,7 +336,6 @@ const CashflowDashboardContent = () => {
           }}
           onPresent={handlePresent}
           viewCount={quote?.view_count ?? undefined}
-          firstViewedAt={quote?.first_viewed_at ?? undefined}
           quoteId={quoteId}
           language={language}
           setLanguage={setLanguage}
@@ -344,7 +343,6 @@ const CashflowDashboardContent = () => {
           setCurrency={setCurrency}
           hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
           saving={saving}
-          lastSaved={lastSaved}
           onSave={handleSave}
         >
           {!isFullyConfigured ? (
