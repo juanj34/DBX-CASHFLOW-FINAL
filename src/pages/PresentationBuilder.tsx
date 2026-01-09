@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, GripVertical, Trash2, Save, Share2, Play, Eye, ChevronLeft, ChevronRight, FileText, GitCompare, LayoutGrid, Layers } from "lucide-react";
+import { 
+  ArrowLeft, Plus, Trash2, Save, Share2, Eye, ChevronLeft, ChevronRight, 
+  FileText, GitCompare, Layers, ChevronDown, ChevronUp, Sparkles 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -14,19 +16,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { usePresentations, PresentationItem, Presentation } from "@/hooks/usePresentations";
 import { useQuotesList } from "@/hooks/useCashflowQuote";
 import { useSavedComparisons } from "@/hooks/useSavedComparisons";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+// New presentation components
+import { 
+  AddQuoteModal, 
+  CreateComparisonModal, 
+  PresentationPreview,
+  QuoteToAdd 
+} from "@/components/presentation";
 
 const PresentationBuilder = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +49,18 @@ const PresentationBuilder = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [addItemSheetOpen, setAddItemSheetOpen] = useState(false);
+  
+  // Modal states
+  const [addQuoteModalOpen, setAddQuoteModalOpen] = useState(false);
+  const [createComparisonModalOpen, setCreateComparisonModalOpen] = useState(false);
+  
+  // Preview state
+  const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
+  
+  // Section collapsed states
+  const [showcasesOpen, setShowcasesOpen] = useState(true);
+  const [cashflowsOpen, setCashflowsOpen] = useState(true);
+  const [comparisonsOpen, setComparisonsOpen] = useState(true);
   
   useDocumentTitle(presentation?.title || "Presentation Builder");
 
@@ -67,6 +85,11 @@ const PresentationBuilder = () => {
     setHasChanges(changed);
   }, [presentation, title, description, items]);
 
+  // Group items by type and viewMode
+  const showcaseItems = items.filter(item => item.type === 'quote' && item.viewMode === 'story');
+  const cashflowItems = items.filter(item => item.type === 'quote' && item.viewMode === 'vertical');
+  const comparisonItems = items.filter(item => item.type === 'comparison' || item.type === 'inline_comparison');
+
   const handleSave = async () => {
     if (!id) return;
     setSaving(true);
@@ -88,35 +111,48 @@ const PresentationBuilder = () => {
     }
   };
 
-  const addItem = (type: 'quote' | 'comparison', itemId: string, title?: string) => {
+  // Add quotes from modal
+  const handleAddQuotes = (quotesToAdd: QuoteToAdd[]) => {
+    const newItems: PresentationItem[] = quotesToAdd.map(q => ({
+      type: 'quote' as const,
+      id: q.quoteId,
+      viewMode: q.viewMode,
+      title: q.title,
+    }));
+    setItems(prev => [...prev, ...newItems]);
+  };
+
+  // Create inline comparison
+  const handleCreateComparison = (comparisonTitle: string, quoteIds: string[]) => {
     const newItem: PresentationItem = {
-      type,
-      id: itemId,
-      viewMode: type === 'quote' ? 'story' : undefined,
-      title,
+      type: 'inline_comparison',
+      id: crypto.randomUUID(),
+      title: comparisonTitle,
+      quoteIds,
     };
     setItems(prev => [...prev, newItem]);
-    setAddItemSheetOpen(false);
+    toast.success("Comparison created");
   };
 
-  const removeItem = (index: number) => {
-    setItems(prev => prev.filter((_, i) => i !== index));
+  const removeItem = (itemToRemove: PresentationItem) => {
+    const index = items.findIndex(item => 
+      item.type === itemToRemove.type && item.id === itemToRemove.id
+    );
+    if (index !== -1) {
+      setItems(prev => prev.filter((_, i) => i !== index));
+      // Adjust preview index if needed
+      if (selectedPreviewIndex >= items.length - 1) {
+        setSelectedPreviewIndex(Math.max(0, items.length - 2));
+      }
+    }
   };
 
-  const updateItemViewMode = (index: number, viewMode: 'story' | 'vertical' | 'compact') => {
-    setItems(prev => prev.map((item, i) => 
-      i === index ? { ...item, viewMode } : item
+  const updateItemViewMode = (itemToUpdate: PresentationItem, newViewMode: 'story' | 'vertical') => {
+    setItems(prev => prev.map(item => 
+      item.type === itemToUpdate.type && item.id === itemToUpdate.id
+        ? { ...item, viewMode: newViewMode }
+        : item
     ));
-  };
-
-  const moveItem = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= items.length) return;
-    setItems(prev => {
-      const newItems = [...prev];
-      const [removed] = newItems.splice(fromIndex, 1);
-      newItems.splice(toIndex, 0, removed);
-      return newItems;
-    });
   };
 
   const getQuoteTitle = (quoteId: string) => {
@@ -125,10 +161,20 @@ const PresentationBuilder = () => {
     return quote.project_name || quote.client_name || "Quote";
   };
 
-  const getComparisonTitle = (comparisonId: string) => {
-    const comparison = comparisons.find(c => c.id === comparisonId);
-    return comparison?.title || "Comparison";
+  const getItemIndex = (item: PresentationItem) => {
+    return items.findIndex(i => i.type === item.type && i.id === item.id);
   };
+
+  const selectItem = (item: PresentationItem) => {
+    const index = getItemIndex(item);
+    if (index !== -1) {
+      setSelectedPreviewIndex(index);
+    }
+  };
+
+  const existingQuoteIds = items
+    .filter(item => item.type === 'quote')
+    .map(item => item.id);
 
   if (!presentation) {
     return (
@@ -137,6 +183,99 @@ const PresentationBuilder = () => {
       </div>
     );
   }
+
+  // Sidebar Item Component
+  const SidebarItem = ({ item, showViewModeSelector = false }: { item: PresentationItem; showViewModeSelector?: boolean }) => {
+    const isSelected = getItemIndex(item) === selectedPreviewIndex;
+    const isComparison = item.type === 'comparison' || item.type === 'inline_comparison';
+    
+    return (
+      <div
+        className={cn(
+          "group flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer",
+          isSelected
+            ? isComparison
+              ? "border-purple-500/50 bg-purple-500/10"
+              : "border-theme-accent/50 bg-theme-accent/10"
+            : "border-transparent hover:border-theme-border hover:bg-theme-bg/50"
+        )}
+        onClick={() => selectItem(item)}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {isComparison ? (
+              <GitCompare className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+            ) : (
+              <FileText className="w-3.5 h-3.5 text-theme-accent flex-shrink-0" />
+            )}
+            <span className="text-sm text-theme-text truncate">
+              {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
+            </span>
+          </div>
+          {showViewModeSelector && item.type === 'quote' && (
+            <div className="mt-1 pl-5" onClick={(e) => e.stopPropagation()}>
+              <Select
+                value={item.viewMode || 'story'}
+                onValueChange={(v) => updateItemViewMode(item, v as 'story' | 'vertical')}
+              >
+                <SelectTrigger className="h-6 text-xs bg-transparent border-none text-theme-text-muted p-0 focus:ring-0 w-auto">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-theme-card border-theme-border">
+                  <SelectItem value="story">Showcase</SelectItem>
+                  <SelectItem value="vertical">Cashflow</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            removeItem(item);
+          }}
+          className="p-1 text-theme-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  };
+
+  // Section Header Component
+  const SectionHeader = ({ 
+    label, 
+    count, 
+    isOpen, 
+    onToggle,
+    accentColor = "theme-accent"
+  }: { 
+    label: string; 
+    count: number; 
+    isOpen: boolean; 
+    onToggle: () => void;
+    accentColor?: string;
+  }) => (
+    <CollapsibleTrigger asChild onClick={onToggle}>
+      <button className="w-full flex items-center justify-between py-2 text-xs uppercase tracking-wider text-theme-text-muted font-semibold hover:text-theme-text transition-colors">
+        <span className="flex items-center gap-2">
+          {label}
+          {count > 0 && (
+            <span className={cn(
+              "px-1.5 py-0.5 rounded text-[10px] font-medium",
+              accentColor === "purple" 
+                ? "bg-purple-500/20 text-purple-300" 
+                : "bg-theme-accent/20 text-theme-accent"
+            )}>
+              {count}
+            </span>
+          )}
+        </span>
+        {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+      </button>
+    </CollapsibleTrigger>
+  );
 
   return (
     <div className="min-h-screen bg-theme-bg flex">
@@ -193,167 +332,105 @@ const PresentationBuilder = () => {
           </div>
         )}
 
-        {/* Items List */}
+        {/* Items List - Grouped */}
         <div className="flex-1 overflow-y-auto">
           {!sidebarCollapsed && (
-            <div className="p-4 space-y-2">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase tracking-wider text-theme-text-muted font-semibold">
-                  Content ({items.length})
-                </span>
-                <Sheet open={addItemSheetOpen} onOpenChange={setAddItemSheetOpen}>
-                  <SheetTrigger asChild>
-                    <Button size="sm" variant="outline" className="h-7 text-xs border-theme-border text-theme-text-muted hover:text-theme-text">
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="bg-theme-card border-theme-border text-theme-text">
-                    <SheetHeader>
-                      <SheetTitle className="text-theme-text">Add Content</SheetTitle>
-                      <SheetDescription className="text-theme-text-muted">
-                        Select quotes or comparisons to add to your presentation.
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-6 space-y-6">
-                      {/* Quotes Section */}
-                      <div>
-                        <h4 className="text-sm font-medium text-theme-text mb-3 flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-theme-accent" />
-                          Quotes
-                        </h4>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {quotesLoading ? (
-                            <p className="text-sm text-theme-text-muted">Loading...</p>
-                          ) : quotes.length === 0 ? (
-                            <p className="text-sm text-theme-text-muted">No quotes available</p>
-                          ) : (
-                            quotes.map(quote => (
-                              <button
-                                key={quote.id}
-                                onClick={() => addItem('quote', quote.id, quote.project_name || quote.client_name || undefined)}
-                                className="w-full text-left px-3 py-2 rounded-lg bg-theme-bg hover:bg-theme-bg/80 border border-theme-border hover:border-theme-accent/30 transition-colors"
-                              >
-                                <p className="text-sm font-medium text-theme-text truncate">
-                                  {quote.project_name || "Untitled Quote"}
-                                </p>
-                                <p className="text-xs text-theme-text-muted">
-                                  {quote.client_name || "No client"} • {quote.unit_type || "Unit"}
-                                </p>
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
+            <div className="p-4 space-y-1">
+              {/* Showcases Section */}
+              <Collapsible open={showcasesOpen} onOpenChange={setShowcasesOpen}>
+                <SectionHeader 
+                  label="Showcases" 
+                  count={showcaseItems.length} 
+                  isOpen={showcasesOpen}
+                  onToggle={() => setShowcasesOpen(!showcasesOpen)}
+                />
+                <CollapsibleContent className="space-y-1 pb-3">
+                  {showcaseItems.length === 0 ? (
+                    <p className="text-xs text-theme-text-muted py-2 pl-2">No showcases added</p>
+                  ) : (
+                    showcaseItems.map((item, idx) => (
+                      <SidebarItem key={`showcase-${item.id}-${idx}`} item={item} />
+                    ))
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
 
-                      {/* Comparisons Section */}
-                      <div>
-                        <h4 className="text-sm font-medium text-theme-text mb-3 flex items-center gap-2">
-                          <GitCompare className="w-4 h-4 text-purple-400" />
-                          Comparisons
-                        </h4>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {comparisonsLoading ? (
-                            <p className="text-sm text-theme-text-muted">Loading...</p>
-                          ) : comparisons.length === 0 ? (
-                            <p className="text-sm text-theme-text-muted">No comparisons saved</p>
-                          ) : (
-                            comparisons.map(comparison => (
-                              <button
-                                key={comparison.id}
-                                onClick={() => addItem('comparison', comparison.id, comparison.title)}
-                                className="w-full text-left px-3 py-2 rounded-lg bg-theme-bg hover:bg-theme-bg/80 border border-theme-border hover:border-theme-accent/30 transition-colors"
-                              >
-                                <p className="text-sm font-medium text-theme-text truncate">
-                                  {comparison.title}
-                                </p>
-                                <p className="text-xs text-theme-text-muted">
-                                  {comparison.quote_ids.length} quotes compared
-                                </p>
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+              {/* Cashflows Section */}
+              <Collapsible open={cashflowsOpen} onOpenChange={setCashflowsOpen}>
+                <SectionHeader 
+                  label="Cashflows" 
+                  count={cashflowItems.length} 
+                  isOpen={cashflowsOpen}
+                  onToggle={() => setCashflowsOpen(!cashflowsOpen)}
+                />
+                <CollapsibleContent className="space-y-1 pb-3">
+                  {cashflowItems.length === 0 ? (
+                    <p className="text-xs text-theme-text-muted py-2 pl-2">No cashflows added</p>
+                  ) : (
+                    cashflowItems.map((item, idx) => (
+                      <SidebarItem key={`cashflow-${item.id}-${idx}`} item={item} />
+                    ))
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
 
-              {items.length === 0 ? (
+              {/* Comparisons Section */}
+              <Collapsible open={comparisonsOpen} onOpenChange={setComparisonsOpen}>
+                <SectionHeader 
+                  label="Comparisons" 
+                  count={comparisonItems.length} 
+                  isOpen={comparisonsOpen}
+                  onToggle={() => setComparisonsOpen(!comparisonsOpen)}
+                  accentColor="purple"
+                />
+                <CollapsibleContent className="space-y-1 pb-3">
+                  {comparisonItems.length === 0 ? (
+                    <p className="text-xs text-theme-text-muted py-2 pl-2">No comparisons added</p>
+                  ) : (
+                    comparisonItems.map((item, idx) => (
+                      <SidebarItem key={`comparison-${item.id}-${idx}`} item={item} />
+                    ))
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Empty State */}
+              {items.length === 0 && (
                 <div className="text-center py-8 text-theme-text-muted">
                   <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No content added yet</p>
-                  <p className="text-xs mt-1">Click "Add" to include quotes or comparisons</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {items.map((item, index) => (
-                    <div
-                      key={`${item.type}-${item.id}-${index}`}
-                      className="group flex items-center gap-2 p-2 rounded-lg bg-theme-bg border border-theme-border hover:border-theme-accent/30 transition-colors"
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <button
-                          onClick={() => moveItem(index, index - 1)}
-                          disabled={index === 0}
-                          className="p-0.5 text-theme-text-muted hover:text-theme-text disabled:opacity-30"
-                        >
-                          <ChevronLeft className="w-3 h-3 rotate-90" />
-                        </button>
-                        <button
-                          onClick={() => moveItem(index, index + 1)}
-                          disabled={index === items.length - 1}
-                          className="p-0.5 text-theme-text-muted hover:text-theme-text disabled:opacity-30"
-                        >
-                          <ChevronRight className="w-3 h-3 rotate-90" />
-                        </button>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {item.type === 'quote' ? (
-                            <FileText className="w-3.5 h-3.5 text-theme-accent flex-shrink-0" />
-                          ) : (
-                            <GitCompare className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-                          )}
-                          <span className="text-sm text-theme-text truncate">
-                            {item.type === 'quote' 
-                              ? getQuoteTitle(item.id)
-                              : getComparisonTitle(item.id)
-                            }
-                          </span>
-                        </div>
-                        {item.type === 'quote' && (
-                          <Select
-                            value={item.viewMode || 'story'}
-                            onValueChange={(v) => updateItemViewMode(index, v as 'story' | 'vertical' | 'compact')}
-                          >
-                            <SelectTrigger className="h-6 mt-1 text-xs bg-transparent border-none text-theme-text-muted p-0 focus:ring-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-theme-card border-theme-border">
-                              <SelectItem value="story">Story View</SelectItem>
-                              <SelectItem value="vertical">Vertical View</SelectItem>
-                              <SelectItem value="compact">Compact View</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                      
-                      <button
-                        onClick={() => removeItem(index)}
-                        className="p-1 text-theme-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                  <p className="text-xs mt-1">Add quotes or create comparisons</p>
                 </div>
               )}
             </div>
           )}
         </div>
+
+        {/* Add Buttons */}
+        {!sidebarCollapsed && (
+          <div className="px-4 py-3 border-t border-theme-border">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAddQuoteModalOpen(true)}
+                className="flex-1 border-theme-border text-theme-text hover:bg-theme-accent/10 hover:border-theme-accent/50"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Quote
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCreateComparisonModalOpen(true)}
+                className="flex-1 border-theme-border text-theme-text hover:bg-purple-500/10 hover:border-purple-500/50"
+              >
+                <GitCompare className="w-3.5 h-3.5 mr-1.5" />
+                Compare
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Sidebar Footer */}
         <div className={cn(
@@ -379,7 +456,7 @@ const PresentationBuilder = () => {
                 className="flex-1 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {saving ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
+                {saving ? "Saving..." : hasChanges ? "Save" : "Saved"}
               </Button>
               <Button
                 variant="outline"
@@ -404,29 +481,29 @@ const PresentationBuilder = () => {
         </div>
       </aside>
 
-      {/* Main Content - Preview Area */}
+      {/* Main Content - Live Preview */}
       <main className="flex-1 overflow-hidden">
-        <div className="h-full flex items-center justify-center p-8">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mx-auto mb-6">
-              <Play className="w-10 h-10 text-purple-400" />
-            </div>
-            <h2 className="text-xl font-semibold text-theme-text mb-2">Presentation Preview</h2>
-            <p className="text-theme-text-muted mb-6">
-              Add quotes and comparisons from the sidebar, then share your presentation with clients.
-            </p>
-            {items.length > 0 && presentation.share_token && (
-              <Button
-                onClick={() => window.open(`/present/${presentation.share_token}`, '_blank')}
-                className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white hover:opacity-90"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Preview Presentation
-              </Button>
-            )}
-          </div>
-        </div>
+        <PresentationPreview
+          items={items}
+          selectedIndex={selectedPreviewIndex}
+          onSelectIndex={setSelectedPreviewIndex}
+          quotes={quotes}
+        />
       </main>
+
+      {/* Modals */}
+      <AddQuoteModal
+        open={addQuoteModalOpen}
+        onClose={() => setAddQuoteModalOpen(false)}
+        onAddQuotes={handleAddQuotes}
+        existingQuoteIds={existingQuoteIds}
+      />
+
+      <CreateComparisonModal
+        open={createComparisonModalOpen}
+        onClose={() => setCreateComparisonModalOpen(false)}
+        onCreateComparison={handleCreateComparison}
+      />
     </div>
   );
 };
