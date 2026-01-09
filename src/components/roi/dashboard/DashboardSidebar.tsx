@@ -176,14 +176,14 @@ export const DashboardSidebar = ({
       <button
         onClick={onClick}
         className={cn(
-          "w-full flex items-center rounded-lg text-sm font-medium transition-all",
-          collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+          "w-full flex items-center rounded-lg text-xs font-medium transition-all",
+          collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
           isActive
             ? "bg-theme-accent/15 text-theme-accent"
             : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
         )}
       >
-        <Icon className="w-4 h-4 flex-shrink-0" />
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
         {!collapsed && <span className="truncate">{label}</span>}
       </button>
     );
@@ -308,16 +308,13 @@ export const DashboardSidebar = ({
               <button
                 onClick={() => onSectionChange('overview')}
                 className={cn(
-                  "w-full flex items-center justify-center p-2.5 rounded-lg transition-all",
+                  "w-full flex items-center justify-center p-2 rounded-lg transition-all",
                   activeSection === 'overview'
                     ? "bg-theme-accent/15 text-theme-accent"
                     : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
                 )}
               >
-                <Sparkles className={cn(
-                  "flex-shrink-0",
-                  activeSection === 'overview' ? "w-5 h-5" : "w-4 h-4"
-                )} />
+                <Sparkles className="w-4 h-4 flex-shrink-0" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">{presentationSection.label}</TooltipContent>
@@ -326,16 +323,13 @@ export const DashboardSidebar = ({
           <button
             onClick={() => onSectionChange('overview')}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
               activeSection === 'overview'
                 ? "bg-theme-accent/15 text-theme-accent"
                 : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
             )}
           >
-            <Sparkles className={cn(
-              "flex-shrink-0",
-              activeSection === 'overview' ? "w-5 h-5" : "w-4 h-4"
-            )} />
+            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate">{presentationSection.label}</span>
           </button>
         )}
@@ -356,33 +350,45 @@ export const DashboardSidebar = ({
 
         {/* Analysis Navigation Items */}
         <div className="space-y-1">
-          {analysisSections.map(({ id, label, icon: Icon }) => {
+          {analysisSections.map(({ id, label, icon: Icon }, index) => {
             const isActive = activeSection === id;
+            const stepNumber = index + 1;
             
             const content = (
               <button
                 key={id}
                 onClick={() => onSectionChange(id)}
                 className={cn(
-                  "w-full flex items-center rounded-lg text-sm font-medium transition-all",
-                  collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+                  "w-full flex items-center rounded-lg text-xs font-medium transition-all",
+                  collapsed ? "justify-center p-2" : "gap-2 px-2.5 py-1.5",
                   isActive
                     ? "bg-theme-accent/15 text-theme-accent"
                     : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
                 )}
               >
-                <Icon className={cn(
-                  "flex-shrink-0",
-                  isActive ? "w-5 h-5" : "w-4 h-4"
-                )} />
-                {!collapsed && <span className="truncate">{label}</span>}
+                {/* Step Number Badge */}
+                <span className={cn(
+                  "flex items-center justify-center rounded text-[10px] font-bold flex-shrink-0",
+                  collapsed ? "w-5 h-5" : "w-4 h-4",
+                  isActive 
+                    ? "bg-theme-accent text-theme-bg" 
+                    : "bg-theme-border text-theme-text-muted"
+                )}>
+                  {stepNumber}
+                </span>
+                {!collapsed && (
+                  <>
+                    <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </>
+                )}
               </button>
             );
             
             return collapsed ? (
               <Tooltip key={id}>
                 <TooltipTrigger asChild>{content}</TooltipTrigger>
-                <TooltipContent side="right">{label}</TooltipContent>
+                <TooltipContent side="right">{stepNumber}. {label}</TooltipContent>
               </Tooltip>
             ) : content;
           })}
@@ -589,8 +595,8 @@ export const DashboardSidebar = ({
                   <TooltipContent side="right">Currency: {currency}</TooltipContent>
                 </Tooltip>
               ) : (
-                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                  <SelectTrigger className="w-full h-9 bg-transparent border-theme-border text-sm">
+              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <SelectTrigger className="w-full h-8 bg-theme-bg/50 border-theme-border text-theme-text text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
