@@ -12,11 +12,11 @@ const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const systemPrompt = `You are an AI assistant for a Dubai real estate map application. Help admins add and edit projects, hotspots, and DEVELOPERS.
+const systemPrompt = `You are an AI assistant for a Dubai real estate map application. Help admins add and edit projects, hotspots, DEVELOPERS, and ZONES.
 
 CAPABILITIES:
 1. Analyze brochures/images to extract project details
-2. Parse text descriptions for project/hotspot/developer information  
+2. Parse text descriptions for project/hotspot/developer/zone information  
 3. Use knowledge of Dubai real estate to fill in details
 4. Geocode locations to get coordinates
 5. Search for existing items to edit them
@@ -25,6 +25,27 @@ CAPABILITIES:
 8. **CREATE DEVELOPERS** with full research including logo URLs, ratings, etc.
 9. **BATCH CREATE PROJECTS** - Create multiple projects for a developer at once
 10. **DOWNLOAD LOGOS** - Automatically download and process logos from URLs
+11. **CREATE/UPDATE ZONES** - Manage investment zones with maturity levels, appreciation rates, etc.
+
+CRITICAL - ZONE MANAGEMENT:
+- Zones represent investment areas in Dubai with specific characteristics
+- Each zone has: name, tagline, concept, maturity_level, investment_focus, property_types, price ranges, appreciation rates
+- Maturity levels: 0-30 = Emerging, 31-60 = Growth, 61-80 = Established, 81-100 = Mature
+- Investment focus options: "Capital Growth", "Rental Yield", "Balanced"
+- Always search_items first when editing zones to find the zone_id
+
+ZONE MATURITY GUIDELINES:
+- Emerging (0-30): New developments, high risk/reward, limited infrastructure
+- Growth (31-60): Developing areas, infrastructure coming, good upside potential
+- Established (61-80): Mature infrastructure, stable returns, proven demand
+- Mature (81-100): Prime locations, lower growth but stable, premium pricing
+
+ZONE APPRECIATION RATE GUIDELINES:
+- construction_appreciation: Off-plan appreciation during construction (5-20%)
+- growth_appreciation: Post-handover appreciation in growth phase (3-12%)
+- mature_appreciation: Long-term appreciation when area is mature (2-5%)
+- growth_period_years: Years until area transitions to mature phase (3-10)
+- rent_growth_rate: Annual rent increase rate (3-8%)
 
 CRITICAL - WEB RESEARCH FOR DEVELOPERS:
 - When user asks to create a developer (e.g., "create London Gate developer"), FIRST use web_search to research them
@@ -116,7 +137,7 @@ CRITICAL - LOGO HANDLING:
 
 CRITICAL - EDITING vs CREATING:
 - When user mentions editing/updating/modifying an EXISTING item, you MUST FIRST use search_items to find it
-- If the item exists, use update_project, update_hotspot, or update_developer (NOT create_*)
+- If the item exists, use update_project, update_hotspot, update_developer, or update_zone (NOT create_*)
 - If multiple matches found, ask user to clarify which one
 - If no matches found, ask if they want to create a new item instead
 
@@ -129,6 +150,7 @@ REQUIRED FIELDS FOR NEW ITEMS:
 - Projects: name, location (for geocoding)
 - Hotspots: title, category, location
 - Developers: name AND all 6 ratings (estimate if not found in research)
+- Zones: name (polygon will be auto-generated as placeholder)
 
 ALWAYS:
 - Extract maximum data automatically
@@ -404,6 +426,83 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_zone",
+      description: "Create a NEW zone/investment area. Use when user asks to add a new zone.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Zone name (e.g., 'Dubai Marina', 'Business Bay')" },
+          tagline: { type: "string", description: "Short tagline for the zone" },
+          concept: { type: "string", description: "Zone concept/development vision" },
+          description: { type: "string", description: "Detailed zone description" },
+          maturity_level: { type: "number", description: "Maturity level 0-100 (0-30=Emerging, 31-60=Growth, 61-80=Established, 81-100=Mature)" },
+          maturity_label: { type: "string", enum: ["Emerging", "Growth", "Established", "Mature"], description: "Maturity category label" },
+          investment_focus: { type: "string", enum: ["Capital Growth", "Rental Yield", "Balanced"], description: "Primary investment focus" },
+          main_developer: { type: "string", description: "Main developer in the area" },
+          property_types: { type: "string", description: "Types of properties (e.g., 'Apartments, Villas, Townhouses')" },
+          price_range_min: { type: "number", description: "Minimum price per sqft in AED" },
+          price_range_max: { type: "number", description: "Maximum price per sqft in AED" },
+          ticket_1br_min: { type: "number", description: "Minimum 1BR price in AED" },
+          ticket_1br_max: { type: "number", description: "Maximum 1BR price in AED" },
+          construction_appreciation: { type: "number", description: "Off-plan appreciation rate % (5-20)" },
+          growth_appreciation: { type: "number", description: "Growth phase appreciation rate % (3-12)" },
+          mature_appreciation: { type: "number", description: "Mature phase appreciation rate % (2-5)" },
+          growth_period_years: { type: "number", description: "Years until area matures (3-10)" },
+          rent_growth_rate: { type: "number", description: "Annual rent growth rate % (3-8)" },
+        },
+        required: ["name"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_zone",
+      description: "Update an EXISTING zone. Use after search_items confirms the zone exists.",
+      parameters: {
+        type: "object",
+        properties: {
+          zone_id: { type: "string", description: "UUID of the zone to update (from search_items)" },
+          name: { type: "string", description: "Zone name" },
+          tagline: { type: "string", description: "Short tagline" },
+          concept: { type: "string", description: "Zone concept" },
+          description: { type: "string", description: "Detailed description" },
+          maturity_level: { type: "number", description: "Maturity level 0-100" },
+          maturity_label: { type: "string", enum: ["Emerging", "Growth", "Established", "Mature"], description: "Maturity label" },
+          investment_focus: { type: "string", enum: ["Capital Growth", "Rental Yield", "Balanced"], description: "Investment focus" },
+          main_developer: { type: "string", description: "Main developer" },
+          property_types: { type: "string", description: "Property types" },
+          price_range_min: { type: "number", description: "Min price per sqft" },
+          price_range_max: { type: "number", description: "Max price per sqft" },
+          ticket_1br_min: { type: "number", description: "Min 1BR price" },
+          ticket_1br_max: { type: "number", description: "Max 1BR price" },
+          construction_appreciation: { type: "number", description: "Construction appreciation %" },
+          growth_appreciation: { type: "number", description: "Growth appreciation %" },
+          mature_appreciation: { type: "number", description: "Mature appreciation %" },
+          growth_period_years: { type: "number", description: "Growth period years" },
+          rent_growth_rate: { type: "number", description: "Rent growth rate %" },
+        },
+        required: ["zone_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_zones",
+      description: "Search for zones by name. Use this to find zone_id before updating.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Zone name to search for" },
+        },
+        required: ["query"],
+      },
+    },
+  },
 ];
 
 async function webSearch(query: string): Promise<{ success: boolean; data?: any; error?: string }> {
@@ -471,7 +570,7 @@ async function geocodeLocation(location: string): Promise<{ latitude: number; lo
 }
 
 async function searchItems(supabase: any, query: string, itemType: string = "all") {
-  const results: { projects: any[]; hotspots: any[]; developers: any[] } = { projects: [], hotspots: [], developers: [] };
+  const results: { projects: any[]; hotspots: any[]; developers: any[]; zones: any[] } = { projects: [], hotspots: [], developers: [], zones: [] };
   
   if (itemType === "project" || itemType === "all") {
     const { data: projects } = await supabase
@@ -500,7 +599,25 @@ async function searchItems(supabase: any, query: string, itemType: string = "all
     results.developers = developers || [];
   }
   
+  if (itemType === "zone" || itemType === "all") {
+    const { data: zones } = await supabase
+      .from("zones")
+      .select("id, name, tagline, maturity_level, maturity_label, investment_focus, main_developer, property_types, construction_appreciation, growth_appreciation, mature_appreciation")
+      .ilike("name", `%${query}%`)
+      .limit(5);
+    results.zones = zones || [];
+  }
+  
   return results;
+}
+
+async function searchZones(supabase: any, query: string) {
+  const { data: zones } = await supabase
+    .from("zones")
+    .select("id, name, tagline, maturity_level, maturity_label, investment_focus, main_developer, property_types, price_range_min, price_range_max, construction_appreciation, growth_appreciation, mature_appreciation, growth_period_years, rent_growth_rate")
+    .ilike("name", `%${query}%`)
+    .limit(10);
+  return zones || [];
 }
 
 async function downloadAndProcessLogo(imageUrl: string, developerName: string, supabase: any): Promise<{ logo_url: string; white_logo_url: string | null } | null> {
@@ -664,6 +781,42 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      } else if (data.type === "zone") {
+        // Generate a default polygon centered on Dubai
+        const defaultPolygon = {
+          type: "Polygon",
+          coordinates: [[[55.27, 25.20], [55.28, 25.20], [55.28, 25.21], [55.27, 25.21], [55.27, 25.20]]]
+        };
+        
+        const { error } = await supabase.from("zones").insert({
+          name: data.name,
+          tagline: data.tagline,
+          concept: data.concept,
+          description: data.description,
+          maturity_level: data.maturity_level || 50,
+          maturity_label: data.maturity_label,
+          investment_focus: data.investment_focus,
+          main_developer: data.main_developer,
+          property_types: data.property_types,
+          price_range_min: data.price_range_min,
+          price_range_max: data.price_range_max,
+          ticket_1br_min: data.ticket_1br_min,
+          ticket_1br_max: data.ticket_1br_max,
+          construction_appreciation: data.construction_appreciation,
+          growth_appreciation: data.growth_appreciation,
+          mature_appreciation: data.mature_appreciation,
+          growth_period_years: data.growth_period_years,
+          rent_growth_rate: data.rent_growth_rate,
+          polygon: defaultPolygon,
+          visible: true,
+          color: '#2563EB',
+        });
+        
+        if (error) throw error;
+        return new Response(
+          JSON.stringify({ success: true, message: `Zone "${data.name}" creada exitosamente.` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
@@ -747,6 +900,37 @@ serve(async (req) => {
         if (error) throw error;
         return new Response(
           JSON.stringify({ success: true, message: `Hotspot "${data.title}" actualizado exitosamente.` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else if (data.type === "zone" && data.id) {
+        const updateData: any = {};
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.tagline !== undefined) updateData.tagline = data.tagline;
+        if (data.concept !== undefined) updateData.concept = data.concept;
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.maturity_level !== undefined) updateData.maturity_level = data.maturity_level;
+        if (data.maturity_label !== undefined) updateData.maturity_label = data.maturity_label;
+        if (data.investment_focus !== undefined) updateData.investment_focus = data.investment_focus;
+        if (data.main_developer !== undefined) updateData.main_developer = data.main_developer;
+        if (data.property_types !== undefined) updateData.property_types = data.property_types;
+        if (data.price_range_min !== undefined) updateData.price_range_min = data.price_range_min;
+        if (data.price_range_max !== undefined) updateData.price_range_max = data.price_range_max;
+        if (data.ticket_1br_min !== undefined) updateData.ticket_1br_min = data.ticket_1br_min;
+        if (data.ticket_1br_max !== undefined) updateData.ticket_1br_max = data.ticket_1br_max;
+        if (data.construction_appreciation !== undefined) updateData.construction_appreciation = data.construction_appreciation;
+        if (data.growth_appreciation !== undefined) updateData.growth_appreciation = data.growth_appreciation;
+        if (data.mature_appreciation !== undefined) updateData.mature_appreciation = data.mature_appreciation;
+        if (data.growth_period_years !== undefined) updateData.growth_period_years = data.growth_period_years;
+        if (data.rent_growth_rate !== undefined) updateData.rent_growth_rate = data.rent_growth_rate;
+        
+        const { error } = await supabase
+          .from("zones")
+          .update(updateData)
+          .eq("id", data.id);
+        
+        if (error) throw error;
+        return new Response(
+          JSON.stringify({ success: true, message: `Zone "${data.name}" actualizada exitosamente.` }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -911,7 +1095,7 @@ serve(async (req) => {
         // Handle search_items
         if (functionName === "search_items") {
           const results = await searchItems(supabase, args.query, args.item_type || "all");
-          const totalResults = results.projects.length + results.hotspots.length + results.developers.length;
+          const totalResults = results.projects.length + results.hotspots.length + results.developers.length + results.zones.length;
           
           console.log("Search results:", results);
           
@@ -1212,6 +1396,104 @@ serve(async (req) => {
                 longitude: coords.longitude,
               },
               message: `He extraído la información del hotspot "${args.title}". Revisa los datos y confirma para guardarlo.`,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Handle search_zones
+        if (functionName === "search_zones") {
+          const zones = await searchZones(supabase, args.query);
+          
+          let resultContent;
+          if (zones.length === 0) {
+            resultContent = `No encontré zones con el nombre "${args.query}". ¿Quieres crear una nueva zone?`;
+          } else {
+            const zonesInfo = zones.map((z: any) => 
+              `- ${z.name} (ID: ${z.id}, Maturity: ${z.maturity_level || 'N/A'}%, Focus: ${z.investment_focus || 'N/A'})`
+            ).join("\n");
+            resultContent = `Encontré ${zones.length} zone(s):\n${zonesInfo}`;
+          }
+          
+          // Add tool result to messages and continue loop
+          aiMessages.push({
+            role: "assistant",
+            content: null,
+            tool_calls: message.tool_calls,
+          });
+          aiMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: resultContent,
+          });
+          continue;
+        }
+
+        // Handle create_zone
+        if (functionName === "create_zone") {
+          return new Response(
+            JSON.stringify({
+              type: "preview",
+              itemType: "zone",
+              data: {
+                type: "zone",
+                ...args,
+                maturity_level: args.maturity_level || 50,
+              },
+              message: `He preparado la zona "${args.name}". Revisa los datos y confirma para guardarla.`,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Handle update_zone
+        if (functionName === "update_zone") {
+          const { data: existingZone } = await supabase
+            .from("zones")
+            .select("*")
+            .eq("id", args.zone_id)
+            .single();
+          
+          if (!existingZone) {
+            return new Response(
+              JSON.stringify({
+                type: "message",
+                message: "No encontré la zona especificada. ¿Podrías buscarla primero con search_zones?",
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          const updatedData = {
+            type: "zone",
+            id: args.zone_id,
+            name: args.name || existingZone.name,
+            tagline: args.tagline !== undefined ? args.tagline : existingZone.tagline,
+            concept: args.concept !== undefined ? args.concept : existingZone.concept,
+            description: args.description !== undefined ? args.description : existingZone.description,
+            maturity_level: args.maturity_level !== undefined ? args.maturity_level : existingZone.maturity_level,
+            maturity_label: args.maturity_label !== undefined ? args.maturity_label : existingZone.maturity_label,
+            investment_focus: args.investment_focus !== undefined ? args.investment_focus : existingZone.investment_focus,
+            main_developer: args.main_developer !== undefined ? args.main_developer : existingZone.main_developer,
+            property_types: args.property_types !== undefined ? args.property_types : existingZone.property_types,
+            price_range_min: args.price_range_min !== undefined ? args.price_range_min : existingZone.price_range_min,
+            price_range_max: args.price_range_max !== undefined ? args.price_range_max : existingZone.price_range_max,
+            ticket_1br_min: args.ticket_1br_min !== undefined ? args.ticket_1br_min : existingZone.ticket_1br_min,
+            ticket_1br_max: args.ticket_1br_max !== undefined ? args.ticket_1br_max : existingZone.ticket_1br_max,
+            construction_appreciation: args.construction_appreciation !== undefined ? args.construction_appreciation : existingZone.construction_appreciation,
+            growth_appreciation: args.growth_appreciation !== undefined ? args.growth_appreciation : existingZone.growth_appreciation,
+            mature_appreciation: args.mature_appreciation !== undefined ? args.mature_appreciation : existingZone.mature_appreciation,
+            growth_period_years: args.growth_period_years !== undefined ? args.growth_period_years : existingZone.growth_period_years,
+            rent_growth_rate: args.rent_growth_rate !== undefined ? args.rent_growth_rate : existingZone.rent_growth_rate,
+          };
+
+          return new Response(
+            JSON.stringify({
+              type: "update_preview",
+              itemType: "zone",
+              data: updatedData,
+              originalData: existingZone,
+              message: `Voy a actualizar la zona "${updatedData.name}". Revisa los cambios y confirma.`,
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );

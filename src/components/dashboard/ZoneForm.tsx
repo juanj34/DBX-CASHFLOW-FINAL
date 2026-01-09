@@ -267,13 +267,46 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     }
   };
 
+  // Show loading state while token is being fetched
+  if (isLoading) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
+          <DialogHeader>
+            <DialogTitle className="text-theme-text">{zone ? t('editZone') : t('createNewZone')}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-theme-text-muted">{t('loadingMap') || 'Loading map...'}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Show error if token failed to load
+  if (!token) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
+          <DialogHeader>
+            <DialogTitle className="text-theme-text">{zone ? t('editZone') : t('createNewZone')}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <p className="text-destructive">{t('mapLoadError') || 'Failed to load map. Please try again.'}</p>
+            <Button onClick={onClose} variant="outline">{t('close')}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
         <DialogHeader>
           <DialogTitle className="text-theme-text">{zone ? t('editZone') : t('createNewZone')}</DialogTitle>
         </DialogHeader>
-
         <div className="space-y-6">
           {/* Section 1: Basic Information */}
           <div className="space-y-4">
