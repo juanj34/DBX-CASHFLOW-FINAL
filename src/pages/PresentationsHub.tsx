@@ -23,7 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { usePresentations, CreatePresentationInput } from "@/hooks/usePresentations";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { TopNavBar } from "@/components/roi/dashboard/TopNavBar";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -65,10 +64,13 @@ const PresentationsHub = () => {
 
   return (
     <div className="min-h-screen bg-theme-bg">
-      {/* Top Navigation */}
+      {/* Header */}
       <div className="sticky top-0 z-40 px-4 py-3 bg-theme-bg/80 backdrop-blur-xl border-b border-theme-border/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <TopNavBar />
+          <Link to="/cashflow-generator" className="flex items-center gap-2 text-theme-text-muted hover:text-theme-text transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back to Generator</span>
+          </Link>
           <Button
             onClick={() => setCreateDialogOpen(true)}
             className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"

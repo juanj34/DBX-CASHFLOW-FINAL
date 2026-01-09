@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -402,6 +402,29 @@ export const DashboardSidebar = ({
           </>
         )}
 
+        {/* NAVIGATE Section */}
+        <SectionHeader label="Navigate" collapsed={collapsed} />
+        <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+          <ActionButton 
+            icon={LayoutGrid} 
+            label="Opportunities" 
+            to="/my-quotes" 
+            collapsed={collapsed}
+          />
+          <ActionButton 
+            icon={BarChart3} 
+            label="Analytics" 
+            to="/quotes-analytics" 
+            collapsed={collapsed}
+          />
+          <ActionButton 
+            icon={LayoutGrid} 
+            label="Portfolios" 
+            to="/presentations" 
+            collapsed={collapsed}
+          />
+        </div>
+
         {/* TOOLS Section */}
         <SectionHeader label="Tools" collapsed={collapsed} />
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
@@ -409,12 +432,6 @@ export const DashboardSidebar = ({
             icon={GitCompare} 
             label="Compare" 
             onClick={() => setCompareModalOpen(true)} 
-            collapsed={collapsed}
-          />
-          <ActionButton 
-            icon={LayoutGrid} 
-            label="Portfolios" 
-            to="/presentations" 
             collapsed={collapsed}
           />
         </div>
