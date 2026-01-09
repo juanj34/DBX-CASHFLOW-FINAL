@@ -735,6 +735,8 @@ const translations: Translations = {
   loginSubtitle: { en: 'Advisory Platform', es: 'Plataforma de Asesoría' },
   loginSignIn: { en: 'Sign in', es: 'Iniciar sesión' },
   loginSignUp: { en: 'Sign up', es: 'Registrarse' },
+  continueWithGoogle: { en: 'Continue with Google', es: 'Continuar con Google' },
+  orContinueWith: { en: 'Or continue with email', es: 'O continúa con email' },
   
   // Home Page
   homeWelcome: { en: 'Welcome', es: 'Bienvenido' },

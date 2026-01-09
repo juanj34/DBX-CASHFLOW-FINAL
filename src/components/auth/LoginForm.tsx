@@ -132,8 +132,8 @@ export const LoginForm = () => {
           <span className="w-full border-t border-white/10" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-transparent px-4 text-white/40 backdrop-blur-sm">
-            {t('orContinueWith') || 'or continue with email'}
+          <span className="bg-transparent px-4 text-white/60 backdrop-blur-sm">
+            {t('orContinueWith')}
           </span>
         </div>
       </div>

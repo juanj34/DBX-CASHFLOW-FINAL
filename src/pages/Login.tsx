@@ -82,7 +82,7 @@ const Login = () => {
             <h1 className="text-2xl font-bold text-white mb-2">
               {t('loginTitle')}
             </h1>
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-white/80">
               {t('loginSubtitle')}
             </p>
           </motion.div>
@@ -97,13 +97,13 @@ const Login = () => {
               <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 p-1 rounded-xl mb-6">
                 <TabsTrigger 
                   value="login" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-white/20 text-white/50 rounded-lg transition-all duration-300"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-white/20 text-white/70 rounded-lg transition-all duration-300"
                 >
                   {t('loginSignIn')}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-white/20 text-white/50 rounded-lg transition-all duration-300"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-white/20 text-white/70 rounded-lg transition-all duration-300"
                 >
                   {t('loginSignUp')}
                 </TabsTrigger>
