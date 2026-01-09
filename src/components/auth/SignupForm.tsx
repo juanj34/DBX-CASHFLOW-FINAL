@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Mail, Lock } from "lucide-react";
 import { signupSchema, type SignupFormData } from "@/lib/validationSchemas";
 import { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { motion } from "framer-motion";
 
 export const SignupForm = () => {
   const navigate = useNavigate();
@@ -106,19 +107,24 @@ export const SignupForm = () => {
   };
 
   return (
-    <div className="space-y-4 w-full max-w-sm">
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-5"
+    >
       {/* Google Sign Up */}
       <Button
         type="button"
         variant="outline"
-        className="w-full gap-2 border-theme-border text-theme-text hover:bg-theme-card-alt"
+        className="w-full h-12 gap-3 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 hover:text-white transition-all duration-300 rounded-xl group"
         onClick={handleGoogleSignUp}
         disabled={googleLoading || loading}
       >
         {googleLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : (
-          <svg className="h-4 w-4" viewBox="0 0 24 24">
+          <svg className="h-5 w-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
               fill="#4285F4"
@@ -137,86 +143,103 @@ export const SignupForm = () => {
             />
           </svg>
         )}
-        {t('continueWithGoogle') || 'Continue with Google'}
+        <span className="font-medium">{t('continueWithGoogle') || 'Continue with Google'}</span>
       </Button>
 
+      {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-theme-border" />
+          <span className="w-full border-t border-white/10" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-theme-card px-2 text-theme-text-muted">
+          <span className="bg-transparent px-4 text-white/40 backdrop-blur-sm">
             {t('orContinueWith') || 'or continue with email'}
           </span>
         </div>
       </div>
 
+      {/* Signup Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="fullName">{t('signupFullName')}</Label>
-          <Input
-            id="fullName"
-            type="text"
-            placeholder="John Doe"
-            {...register("fullName")}
-            disabled={loading || googleLoading}
-            className={errors.fullName ? "border-red-500" : ""}
-          />
+          <Label htmlFor="fullName" className="text-white/80 text-sm font-medium">
+            {t('signupFullName')}
+          </Label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              id="fullName"
+              type="text"
+              placeholder="John Doe"
+              {...register("fullName")}
+              disabled={loading || googleLoading}
+              className={`h-12 pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/30 focus:border-cyan-400/50 focus:ring-cyan-400/20 rounded-xl transition-all ${errors.fullName ? "border-red-400/50" : ""}`}
+            />
+          </div>
           {errors.fullName && (
             <p className="text-xs text-red-400">{errors.fullName.message}</p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">{t('loginEmail')}</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            {...register("email")}
-            disabled={loading || googleLoading}
-            className={errors.email ? "border-red-500" : ""}
-          />
+          <Label htmlFor="signup-email" className="text-white/80 text-sm font-medium">
+            {t('loginEmail')}
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              id="signup-email"
+              type="email"
+              placeholder="you@example.com"
+              {...register("email")}
+              disabled={loading || googleLoading}
+              className={`h-12 pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/30 focus:border-cyan-400/50 focus:ring-cyan-400/20 rounded-xl transition-all ${errors.email ? "border-red-400/50" : ""}`}
+            />
+          </div>
           {errors.email && (
             <p className="text-xs text-red-400">{errors.email.message}</p>
           )}
         </div>
-        
+
         <div className="space-y-2">
-          <Label htmlFor="password">{t('loginPassword')}</Label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            {...register("password")}
-            disabled={loading || googleLoading}
-            className={errors.password ? "border-red-500" : ""}
-          />
+          <Label htmlFor="signup-password" className="text-white/80 text-sm font-medium">
+            {t('loginPassword')}
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              id="signup-password"
+              type="password"
+              placeholder="••••••••"
+              {...register("password")}
+              disabled={loading || googleLoading}
+              className={`h-12 pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/30 focus:border-cyan-400/50 focus:ring-cyan-400/20 rounded-xl transition-all ${errors.password ? "border-red-400/50" : ""}`}
+            />
+          </div>
           {errors.password && (
             <p className="text-xs text-red-400">{errors.password.message}</p>
           )}
           <PasswordStrengthIndicator password={passwordValue} />
         </div>
 
-        <div className="flex items-start gap-3 pt-2">
+        <div className="flex items-start space-x-3 pt-2">
           <Checkbox
             id="acceptTerms"
             checked={acceptTerms}
             onCheckedChange={(checked) => setValue("acceptTerms", checked as boolean)}
             disabled={loading || googleLoading}
-            className={errors.acceptTerms ? "border-red-500" : ""}
+            className={`mt-0.5 border-white/30 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500 ${errors.acceptTerms ? "border-red-400/50" : ""}`}
           />
-          <div className="grid gap-1.5 leading-none">
+          <div className="grid gap-1 leading-none">
             <label
               htmlFor="acceptTerms"
-              className="text-sm text-gray-400 cursor-pointer"
+              className="text-xs text-white/60 leading-relaxed cursor-pointer"
             >
               {t('signupAcceptTerms')}{" "}
-              <Link to="/terms" className="text-theme-accent hover:underline" target="_blank">
+              <Link to="/terms-of-service" className="text-cyan-400 hover:text-cyan-300 transition-colors">
                 {t('landingTerms')}
               </Link>{" "}
               {t('signupAnd')}{" "}
-              <Link to="/privacy" className="text-theme-accent hover:underline" target="_blank">
+              <Link to="/privacy-policy" className="text-cyan-400 hover:text-cyan-300 transition-colors">
                 {t('landingPrivacy')}
               </Link>
             </label>
@@ -226,7 +249,11 @@ export const SignupForm = () => {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+        <Button 
+          type="submit" 
+          className="w-full h-12 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02]" 
+          disabled={loading || googleLoading}
+        >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -237,6 +264,6 @@ export const SignupForm = () => {
           )}
         </Button>
       </form>
-    </div>
+    </motion.div>
   );
 };
