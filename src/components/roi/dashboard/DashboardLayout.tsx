@@ -68,7 +68,18 @@ export const DashboardLayout = ({
   onSave,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  
+  // Persist collapsed state in localStorage
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem('cashflow_sidebar_collapsed');
+    return saved === 'true';
+  });
+
+  // Save collapsed state to localStorage when it changes
+  const handleCollapsedChange = useCallback((value: boolean) => {
+    setCollapsed(value);
+    localStorage.setItem('cashflow_sidebar_collapsed', String(value));
+  }, []);
 
   // In vertical mode, clicking a section scrolls to it instead of switching tabs
   const handleSectionClick = useCallback((section: SectionId) => {
@@ -125,7 +136,7 @@ export const DashboardLayout = ({
     inputs,
     mortgageInputs,
     collapsed,
-    onCollapsedChange: setCollapsed,
+    onCollapsedChange: handleCollapsedChange,
     profile,
     isAdmin,
     onConfigure,
