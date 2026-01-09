@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check, GitCompare } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check, GitCompare, Presentation, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -38,6 +38,7 @@ interface DashboardSidebarProps {
   onViewHistory?: () => void;
   onSwitchView?: () => void;
   onShare?: () => void;
+  onPresent?: () => void;
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -117,6 +118,7 @@ export const DashboardSidebar = ({
   onViewHistory,
   onSwitchView,
   onShare,
+  onPresent,
   viewCount,
   firstViewedAt,
   quoteId,
@@ -512,7 +514,33 @@ export const DashboardSidebar = ({
             />
           )}
 
-          {/* Share */}
+          {/* Present - Opens client view in new tab */}
+          {onPresent && quoteId && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onPresent}
+                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20"
+                  >
+                    <Presentation className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Present to Client</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={onPresent}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20 transition-all"
+              >
+                <Presentation className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 truncate">Present</span>
+                <ExternalLink className="w-3 h-3 opacity-60" />
+              </button>
+            )
+          )}
+
+          {/* Share - Copy link */}
           {onShare && quoteId && (
             collapsed ? (
               <Tooltip>
@@ -530,7 +558,7 @@ export const DashboardSidebar = ({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Share {viewCount ? `(${viewCount} views)` : ''}
+                  Copy Link {viewCount ? `(${viewCount} views)` : ''}
                 </TooltipContent>
               </Tooltip>
             ) : (
@@ -539,7 +567,7 @@ export const DashboardSidebar = ({
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
               >
                 <Share2 className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 truncate">Share</span>
+                <span className="flex-1 truncate">Copy Link</span>
                 {viewCount != null && viewCount > 0 && (
                   <span className="flex items-center gap-1 px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full">
                     {viewCount}
