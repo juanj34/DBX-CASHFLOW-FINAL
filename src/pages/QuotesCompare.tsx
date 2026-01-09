@@ -534,6 +534,10 @@ const QuotesCompare = () => {
       <SaveComparisonModal
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
+        onSaved={(id, title) => {
+          setCurrentComparisonId(id);
+          setCurrentComparisonTitle(title);
+        }}
         quoteIds={selectedIds}
         investmentFocus={selectedFocus}
         showRecommendations={showRecommendations}
