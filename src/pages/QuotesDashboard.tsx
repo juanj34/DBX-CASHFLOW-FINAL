@@ -53,7 +53,7 @@ type SortDirection = 'asc' | 'desc';
 
 const QuotesDashboard = () => {
   useDocumentTitle("All Opportunities");
-  const { quotes, loading, deleteQuote, archiveQuote, duplicateQuote } = useQuotesList();
+  const { quotes, setQuotes, loading, deleteQuote, archiveQuote, duplicateQuote } = useQuotesList();
   const { profile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -244,6 +244,13 @@ const QuotesDashboard = () => {
       return;
     }
     
+    // Update local state instead of reloading
+    setQuotes(prev => prev.map(q => 
+      q.id === quoteId 
+        ? { ...q, ...updateData }
+        : q
+    ));
+    
     if (status === 'sold') {
       sonnerToast.success("🎉 " + t("dealClosed"));
       
@@ -268,9 +275,6 @@ const QuotesDashboard = () => {
     } else {
       sonnerToast.success(t("statusUpdated"));
     }
-    
-    // Reload page to refresh data
-    window.location.reload();
   };
 
   const formatDate = (dateStr: string) => {
@@ -299,9 +303,10 @@ const QuotesDashboard = () => {
       toast({ title: 'Failed to delete quotes', variant: 'destructive' });
     } else {
       toast({ title: `${selectedForDelete.length} quotes deleted` });
+      // Update local state instead of reloading
+      setQuotes(prev => prev.filter(q => !selectedForDelete.includes(q.id)));
       setSelectedForDelete([]);
       setSelectMode(false);
-      window.location.reload();
     }
     setShowBulkDeleteDialog(false);
   };

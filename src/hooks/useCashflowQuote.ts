@@ -548,5 +548,5 @@ export const useQuotesList = () => {
     return { newId: newQuote.id, error: null };
   };
 
-  return { quotes, loading, deleteQuote, archiveQuote, duplicateQuote, refetch: () => setLoading(true) };
+  return { quotes, setQuotes, loading, deleteQuote, archiveQuote, duplicateQuote, refetch: () => setLoading(true) };
 };
