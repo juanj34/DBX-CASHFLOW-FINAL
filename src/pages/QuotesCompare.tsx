@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical, ChevronDown, ChevronUp, Coins, Wallet, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { useQuotesComparison, computeComparisonMetrics, QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { useOICalculations } from '@/components/roi/useOICalculations';
 import { useRecommendationEngine, InvestmentFocus } from '@/hooks/useRecommendationEngine';
 import { useSavedComparisons, SavedComparison } from '@/hooks/useSavedComparisons';
+import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { QuoteSelector } from '@/components/roi/compare/QuoteSelector';
 import { CompareHeader } from '@/components/roi/compare/CompareHeader';
 import { MetricsTable } from '@/components/roi/compare/MetricsTable';
@@ -17,6 +20,7 @@ import { GrowthComparisonChart } from '@/components/roi/compare/GrowthComparison
 import { ExitComparison } from '@/components/roi/compare/ExitComparison';
 import { MortgageComparison } from '@/components/roi/compare/MortgageComparison';
 import { RentalYieldComparison } from '@/components/roi/compare/RentalYieldComparison';
+import { CashflowKPIComparison } from '@/components/roi/compare/CashflowKPIComparison';
 import { DifferentiatorsComparison } from '@/components/roi/compare/DifferentiatorsComparison';
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
@@ -75,6 +79,10 @@ const QuotesCompare = () => {
   const [currentComparisonId, setCurrentComparisonId] = useState<string | null>(null);
   const [currentComparisonTitle, setCurrentComparisonTitle] = useState<string>('');
   const [currentShareToken, setCurrentShareToken] = useState<string | null>(null);
+  
+  // Currency state
+  const [currency, setCurrency] = useState<Currency>('AED');
+  const exchangeRate = useExchangeRate(currency);
 
   const { quotes, loading, error } = useQuotesComparison(selectedIds);
   const { comparisons } = useSavedComparisons();
@@ -226,6 +234,21 @@ const QuotesCompare = () => {
               />
             </div>
 
+            {/* Currency Selector */}
+            <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+              <SelectTrigger className="w-[90px] h-9 border-theme-border bg-theme-card text-theme-text text-sm">
+                <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-theme-card border-theme-border">
+                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key} className="text-theme-text hover:bg-theme-card-alt focus:bg-theme-card-alt">
+                    {config.flag} {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {/* Expand/Collapse All */}
             <Button
               onClick={() => setAllExpanded(!allExpanded)}
@@ -371,28 +394,36 @@ const QuotesCompare = () => {
                       </div>
                     )}
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div>
                         <h3 className="font-semibold text-white truncate">
                           {quote.title || 'Untitled Quote'}
                         </h3>
-                        {quote.projectName && (
-                          <p className="text-sm text-gray-400 mt-1">
-                            {quote.projectName}
-                          </p>
-                        )}
                         {quote.developer && (
                           <p className="text-xs text-gray-500 mt-0.5">
                             by {quote.developer}
                           </p>
                         )}
                       </div>
-
-                      {/* Score Display when recommendations enabled */}
-                      {showRecommendations && recommendation && (
-                        <ScoreDisplay scores={recommendation.scores} focus={selectedFocus} />
-                      )}
+                      
+                      {/* Unit Info */}
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+                        {quote.unit && (
+                          <span>Unit: {quote.unit}</span>
+                        )}
+                        {quote.unitSizeSqf && (
+                          <span>{quote.unitSizeSqf.toLocaleString()} sqft</span>
+                        )}
+                        {quote.unitType && (
+                          <span>{quote.unitType}</span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Score Display when recommendations enabled */}
+                    {showRecommendations && recommendation && (
+                      <ScoreDisplay scores={recommendation.scores} focus={selectedFocus} />
+                    )}
                   </div>
                 );
               })}
@@ -409,39 +440,39 @@ const QuotesCompare = () => {
               </CollapsibleSection>
             )}
 
-            {/* Two column layout for Payment and Growth */}
+            {/* Payment Plans Section */}
             <CollapsibleSection
-              title="Payment & Growth"
+              title="Payment Plans"
+              icon={<Wallet className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={allExpanded}
+            >
+              <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
+            </CollapsibleSection>
+
+            {/* Growth Chart Section */}
+            <CollapsibleSection
+              title="Value Growth"
               icon={<TrendingUp className="w-4 h-4 text-theme-accent" />}
               defaultOpen={allExpanded}
             >
-              <div className="grid lg:grid-cols-2 gap-6">
-                <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
-                <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
-              </div>
+              <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
             </CollapsibleSection>
 
-            {/* Value Differentiators Comparison */}
-            <CollapsibleSection
-              title="Value Differentiators"
-              icon={<Gem className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={allExpanded}
-            >
-              <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
-            </CollapsibleSection>
-
-            {/* Mortgage Comparison */}
-            {quotesWithCalcs.some(q => (q.quote.inputs as any)?._mortgageInputs?.enabled) && (
+            {/* Cashflow KPI - Rent vs Mortgage */}
+            {quotesWithCalcs.some(q => 
+              (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
+              (q.quote.inputs as any)?._mortgageInputs?.enabled
+            ) && (
               <CollapsibleSection
-                title="Mortgage Comparison"
-                icon={<Home className="w-4 h-4 text-theme-accent" />}
+                title="Monthly Cashflow"
+                icon={<Banknote className="w-4 h-4 text-theme-accent" />}
                 defaultOpen={allExpanded}
               >
-                <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
+                <CashflowKPIComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
               </CollapsibleSection>
             )}
 
-            {/* Rental Yield Comparison */}
+            {/* Rental Yield Comparison - BEFORE Mortgage */}
             {quotesWithCalcs.some(q => 
               (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
               (q.calculations.holdAnalysis?.netAnnualRent || 0) > 0
@@ -451,9 +482,29 @@ const QuotesCompare = () => {
                 icon={<Percent className="w-4 h-4 text-theme-accent" />}
                 defaultOpen={allExpanded}
               >
-                <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} />
+                <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
               </CollapsibleSection>
             )}
+
+            {/* Mortgage Comparison - AFTER Rental Yield */}
+            {quotesWithCalcs.some(q => (q.quote.inputs as any)?._mortgageInputs?.enabled) && (
+              <CollapsibleSection
+                title="Mortgage Comparison"
+                icon={<Home className="w-4 h-4 text-theme-accent" />}
+                defaultOpen={allExpanded}
+              >
+                <MortgageComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
+              </CollapsibleSection>
+            )}
+
+            {/* Value Differentiators Comparison */}
+            <CollapsibleSection
+              title="Value Differentiators"
+              icon={<Gem className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={allExpanded}
+            >
+              <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
+            </CollapsibleSection>
 
             {/* Exit Scenarios */}
             {quotesWithCalcs.some(q => (q.quote.inputs as any)?.enabledSections?.exitStrategy !== false) && (

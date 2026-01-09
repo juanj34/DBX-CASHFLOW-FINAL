@@ -1,12 +1,18 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
-import { formatCurrency } from '@/components/roi/currencyUtils';
+import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 
 interface GrowthComparisonChartProps {
   quotesWithCalcs: QuoteWithCalculations[];
+  currency?: Currency;
+  exchangeRate?: number;
 }
 
-export const GrowthComparisonChart = ({ quotesWithCalcs }: GrowthComparisonChartProps) => {
+export const GrowthComparisonChart = ({ 
+  quotesWithCalcs,
+  currency = 'AED',
+  exchangeRate = 1,
+}: GrowthComparisonChartProps) => {
   const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
 
   // Build chart data combining all quotes
@@ -39,7 +45,7 @@ export const GrowthComparisonChart = ({ quotesWithCalcs }: GrowthComparisonChart
             />
             <span className="text-gray-300">{entry.payload[`quote${idx}Name`]}:</span>
             <span className="text-white font-medium">
-              {formatCurrency(entry.value, 'AED', 1)}
+              {formatCurrency(entry.value, currency, exchangeRate)}
             </span>
           </div>
         ))}
@@ -63,7 +69,7 @@ export const GrowthComparisonChart = ({ quotesWithCalcs }: GrowthComparisonChart
             <YAxis 
               stroke="#4a5568"
               tick={{ fill: '#9ca3af', fontSize: 12 }}
-              tickFormatter={(v) => formatCurrency(v, 'AED', 1)}
+              tickFormatter={(v) => formatCurrency(v, currency, exchangeRate)}
               width={80}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -106,7 +112,7 @@ export const GrowthComparisonChart = ({ quotesWithCalcs }: GrowthComparisonChart
                 className="text-sm font-semibold"
                 style={{ color: colors[idx % colors.length] }}
               >
-                {finalProjection ? formatCurrency(finalProjection.propertyValue, 'AED', 1) : 'N/A'}
+                {finalProjection ? formatCurrency(finalProjection.propertyValue, currency, exchangeRate) : 'N/A'}
               </p>
               <p className="text-xs text-emerald-400">+{growth.toFixed(0)}%</p>
             </div>

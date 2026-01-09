@@ -1,11 +1,17 @@
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
-import { formatCurrency } from '@/components/roi/currencyUtils';
+import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 
 interface PaymentComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
+  currency?: Currency;
+  exchangeRate?: number;
 }
 
-export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) => {
+export const PaymentComparison = ({ 
+  quotesWithCalcs,
+  currency = 'AED',
+  exchangeRate = 1,
+}: PaymentComparisonProps) => {
   const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
 
   return (
@@ -107,7 +113,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                     <span className="text-theme-text-muted">Downpayment</span>
                   </span>
                   <span className="text-white font-medium">
-                    {formatCurrency(downpaymentAmount, 'AED', 1)}
+                    {formatCurrency(downpaymentAmount, currency, exchangeRate)}
                   </span>
                 </div>
                 {installments > 0 && (
@@ -117,7 +123,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                       <span className="text-theme-text-muted">Installments</span>
                     </span>
                     <span className="text-white font-medium">
-                      {formatCurrency(installmentsAmount, 'AED', 1)}
+                      {formatCurrency(installmentsAmount, currency, exchangeRate)}
                     </span>
                   </div>
                 )}
@@ -127,7 +133,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                     <span className="text-theme-text-muted">On Handover</span>
                   </span>
                   <span className="text-white font-medium">
-                    {formatCurrency(postHandoverAmount, 'AED', 1)}
+                    {formatCurrency(postHandoverAmount, currency, exchangeRate)}
                   </span>
                 </div>
               </div>
@@ -138,7 +144,7 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                   <div className="flex justify-between text-xs">
                     <span className="text-theme-text-muted">Monthly avg (construction)</span>
                     <span className="text-theme-text-muted font-medium">
-                      ~{formatCurrency(avgMonthlyPayment, 'AED', 1)}/mo
+                      ~{formatCurrency(avgMonthlyPayment, currency, exchangeRate)}/mo
                     </span>
                   </div>
                 </div>
@@ -149,13 +155,13 @@ export const PaymentComparison = ({ quotesWithCalcs }: PaymentComparisonProps) =
                 <div className="flex justify-between text-xs">
                   <span className="text-theme-text-muted">Entry Costs (DLD, etc.)</span>
                   <span className="text-theme-text-muted">
-                    {formatCurrency(calculations.totalEntryCosts, 'AED', 1)}
+                    {formatCurrency(calculations.totalEntryCosts, currency, exchangeRate)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs mt-1">
                   <span className="text-theme-text-muted">Total Capital Required</span>
                   <span className="text-white font-medium">
-                    {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, 'AED', 1)}
+                    {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency, exchangeRate)}
                   </span>
                 </div>
               </div>
