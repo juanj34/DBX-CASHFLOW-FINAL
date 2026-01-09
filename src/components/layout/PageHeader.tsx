@@ -155,7 +155,7 @@ export const PageHeader = ({
                           </Button>
                         )}
                       </TooltipTrigger>
-                      <TooltipContent side="bottom" className="bg-theme-card border-theme-border">
+                      <TooltipContent side="bottom" className="bg-theme-card border-theme-border text-theme-text">
                         <p className="text-xs">{shortcut.label}</p>
                       </TooltipContent>
                     </Tooltip>
