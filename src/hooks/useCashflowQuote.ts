@@ -33,7 +33,7 @@ export interface CashflowQuote {
   first_viewed_at: string | null;
 }
 
-const LOCAL_STORAGE_KEY = 'cashflow_quote_draft';
+// Removed: localStorage draft system - now using immediate database persistence
 
 export interface QuoteImages {
   floorPlanUrl: string | null;
@@ -56,7 +56,7 @@ export const useCashflowQuote = (quoteId?: string) => {
   const { toast } = useToast();
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Load quote from database or localStorage
+  // Load quote from database
   useEffect(() => {
     // Reset state immediately when quoteId changes to avoid stale data + accidental overwrites
     if (autoSaveTimeout.current) {
@@ -104,18 +104,8 @@ export const useCashflowQuote = (quoteId?: string) => {
               });
             }
           }
-        } else {
-          // Load from localStorage for new quotes
-          const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              setQuote(parsed);
-            } catch (e) {
-              console.error('Failed to parse saved quote:', e);
-            }
-          }
         }
+        // No localStorage fallback - drafts are created immediately in DB
       } finally {
         setLoading(false);
       }
@@ -124,24 +114,36 @@ export const useCashflowQuote = (quoteId?: string) => {
     loadQuote();
   }, [quoteId]);
 
-  // Save to localStorage as draft
-  const saveDraft = useCallback((inputs: OIInputs, clientInfo: ClientUnitData) => {
-    // Get first client for backward compatibility with DB
-    const firstClient = clientInfo.clients?.[0];
-    const draft = {
-      inputs,
-      clientInfo, // Save full clientInfo with clients array
-      client_name: firstClient?.name || clientInfo.clientName || '',
-      client_country: firstClient?.country || clientInfo.clientCountry || '',
-      project_name: clientInfo.projectName,
-      developer: clientInfo.developer,
-      unit: clientInfo.unit,
-      unit_type: clientInfo.unitType,
-      unit_size_sqf: clientInfo.unitSizeSqf,
-      unit_size_m2: clientInfo.unitSizeM2,
-    };
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(draft));
-  }, []);
+  // Create a new draft immediately in the database
+  const createDraft = useCallback(async (): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: 'Please login to create a quote', variant: 'destructive' });
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('cashflow_quotes')
+      .insert({
+        broker_id: user.id,
+        inputs: {} as any,
+        is_draft: true,
+        status: 'draft',
+        title: 'New Draft',
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Failed to create draft:', error);
+      toast({ title: 'Failed to create draft', variant: 'destructive' });
+      return null;
+    }
+
+    return data.id;
+  }, [toast]);
+
+  // Removed: saveDraft localStorage function - now using immediate database persistence
 
   // Save quote to database (with version snapshot for existing quotes)
   const saveQuote = useCallback(
@@ -302,15 +304,12 @@ export const useCashflowQuote = (quoteId?: string) => {
       });
       setLastSaved(new Date());
 
-      // Clear localStorage draft after saving to DB
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-
       return result.data;
     },
     [toast]
   );
 
-  // Auto-save with debounce - uses _exitScenarios from inputs as source of truth
+  // Auto-save with debounce - always saves to database (since we always have a quote ID now)
   const scheduleAutoSave = useCallback(
     (
       inputs: OIInputs,
@@ -326,29 +325,23 @@ export const useCashflowQuote = (quoteId?: string) => {
         clearTimeout(autoSaveTimeout.current);
       }
 
-      // Always save to localStorage immediately
-      saveDraft(inputs, clientInfo);
-
-      // Capture the intended target quote id for this autosave cycle
-      const targetExistingId = existingQuoteId;
-
-      // Only schedule database auto-save for existing quotes
-      if (!targetExistingId) {
-        return; // New quotes only saved to localStorage draft above
+      // Only schedule database auto-save if we have a quote ID
+      if (!existingQuoteId) {
+        return; // Draft will be created automatically on mount
       }
 
       autoSaveTimeout.current = setTimeout(async () => {
         // Safety check - ensure we're still on the same quote
-        if (quote?.id !== targetExistingId) {
+        if (quote?.id !== existingQuoteId) {
           return;
         }
 
         const exitScenarios = inputs._exitScenarios || [];
-        console.log('Auto-saving existing quote:', targetExistingId);
-        await saveQuote(inputs, clientInfo, targetExistingId, exitScenarios, mortgageInputs, undefined, images);
-      }, 15000);
+        console.log('Auto-saving quote:', existingQuoteId);
+        await saveQuote(inputs, clientInfo, existingQuoteId, exitScenarios, mortgageInputs, undefined, images);
+      }, 5000); // Reduced from 15 seconds to 5 seconds for better UX
     },
-    [saveDraft, toast, quote?.id, saveQuote]
+    [toast, quote?.id, saveQuote]
   );
 
   // Save as new quote
@@ -373,41 +366,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     return token;
   };
 
-  // Load from localStorage draft
-  const loadDraft = (): { inputs?: OIInputs; clientInfo?: Partial<ClientUnitData> } | null => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Support both new clientInfo format and legacy format
-        if (parsed.clientInfo) {
-          return {
-            // Migrate inputs from draft to ensure all fields have defaults
-            inputs: migrateInputs(parsed.inputs),
-            clientInfo: parsed.clientInfo,
-          };
-        }
-        // Legacy format migration
-        return {
-          inputs: migrateInputs(parsed.inputs),
-          clientInfo: {
-            clients: parsed.client_name 
-              ? [{ id: '1', name: parsed.client_name, country: parsed.client_country || '' }]
-              : [],
-            projectName: parsed.project_name || '',
-            developer: parsed.developer || '',
-            unit: parsed.unit || '',
-            unitType: parsed.unit_type || '',
-            unitSizeSqf: parsed.unit_size_sqf || 0,
-            unitSizeM2: parsed.unit_size_m2 || 0,
-          }
-        };
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  };
+  // Removed: loadDraft localStorage function - now using immediate database persistence
 
   return {
     quote,
@@ -420,7 +379,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     saveAsNew,
     scheduleAutoSave,
     generateShareToken,
-    loadDraft,
+    createDraft,
   };
 };
 

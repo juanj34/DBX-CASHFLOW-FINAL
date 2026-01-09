@@ -54,7 +54,7 @@ const CashflowDashboardContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
@@ -91,7 +91,24 @@ const CashflowDashboardContent = () => {
     );
   }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
-  // Load quote data
+  // Create draft immediately on mount if no quoteId
+  const [creatingDraft, setCreatingDraft] = useState(false);
+  
+  useEffect(() => {
+    const initDraft = async () => {
+      if (!quoteId && !creatingDraft && !quoteLoading) {
+        setCreatingDraft(true);
+        const newId = await createDraft();
+        if (newId) {
+          navigate(`/cashflow-dashboard/${newId}`, { replace: true });
+        }
+        setCreatingDraft(false);
+      }
+    };
+    initDraft();
+  }, [quoteId, creatingDraft, createDraft, navigate, quoteLoading]);
+
+  // Load quote data from database
   useEffect(() => {
     if (dataLoaded) return;
     if (quote) {
@@ -122,13 +139,8 @@ const CashflowDashboardContent = () => {
         setMortgageInputs(savedMortgageInputs);
       }
       setDataLoaded(true);
-    } else if (!quoteId) {
-      const draft = loadDraft();
-      if (draft?.inputs) setInputs(migrateInputs(draft.inputs));
-      if (draft?.clientInfo) setClientInfo(prev => ({ ...prev, ...draft.clientInfo }));
-      setDataLoaded(true);
     }
-  }, [quote, quoteId, dataLoaded, loadDraft]);
+  }, [quote, quoteId, dataLoaded]);
 
   useEffect(() => { setDataLoaded(false); }, [quoteId]);
 
