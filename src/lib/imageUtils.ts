@@ -6,9 +6,9 @@ export interface ImageConfig {
 }
 
 export const PROJECT_IMAGE_CONFIG: ImageConfig = {
-  maxWidth: 800,
-  maxHeight: 450,
-  quality: 0.85,
+  maxWidth: 1920,
+  maxHeight: 1080,
+  quality: 0.90,
   format: 'webp'
 };
 
@@ -27,9 +27,9 @@ export const PROFILE_AVATAR_CONFIG: ImageConfig = {
 };
 
 export const ZONE_IMAGE_CONFIG: ImageConfig = {
-  maxWidth: 800,
-  maxHeight: 450,
-  quality: 0.85,
+  maxWidth: 1920,
+  maxHeight: 1080,
+  quality: 0.90,
   format: 'webp'
 };
 

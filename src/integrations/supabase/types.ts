@@ -499,6 +499,118 @@ export type Database = {
           },
         ]
       }
+      presentation_views: {
+        Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          ip_address: string | null
+          presentation_id: string
+          region: string | null
+          session_id: string
+          started_at: string
+          timezone: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string | null
+          presentation_id: string
+          region?: string | null
+          session_id: string
+          started_at?: string
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string | null
+          presentation_id?: string
+          region?: string | null
+          session_id?: string
+          started_at?: string
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_views_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentations: {
+        Row: {
+          broker_id: string
+          created_at: string
+          description: string | null
+          first_viewed_at: string | null
+          id: string
+          is_public: boolean
+          items: Json
+          last_viewed_at: string | null
+          share_token: string | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          description?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          is_public?: boolean
+          items?: Json
+          last_viewed_at?: string | null
+          share_token?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          description?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          is_public?: boolean
+          items?: Json
+          last_viewed_at?: string | null
+          share_token?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentations_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

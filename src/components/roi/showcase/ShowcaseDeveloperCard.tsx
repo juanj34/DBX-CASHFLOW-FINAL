@@ -9,12 +9,14 @@ interface ShowcaseDeveloperCardProps {
   developerName: string;
   developerId?: string;
   className?: string;
+  onClick?: () => void;
 }
 
 export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
   developerName,
   developerId,
   className,
+  onClick,
 }) => {
   const [developer, setDeveloper] = useState<Developer | null>(null);
 
@@ -35,10 +37,14 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
   const tierInfo = getTierInfo(trustScore);
 
   return (
-    <div className={cn(
-      "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
-      className
-    )}>
+    <div 
+      className={cn(
+        "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
+        onClick && "cursor-pointer hover:bg-white/10 transition-colors",
+        className
+      )}
+      onClick={onClick}
+    >
       <div className="flex items-center gap-2">
         {developer?.white_logo_url ? (
           <img src={developer.white_logo_url} alt={developerName} className="w-8 h-8 rounded-lg object-contain" />

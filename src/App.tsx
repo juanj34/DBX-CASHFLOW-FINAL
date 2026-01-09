@@ -31,6 +31,8 @@ import Contact from "./pages/Contact";
 import Help from "./pages/Help";
 import ColorTest from "./pages/ColorTest";
 import ArchivedQuotes from "./pages/ArchivedQuotes";
+import PresentationsHub from "./pages/PresentationsHub";
+import PresentationBuilder from "./pages/PresentationBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +95,8 @@ function App() {
                 <Route path="/quotes-analytics" element={<ProtectedRoute><QuotesAnalytics /></ProtectedRoute>} />
                 <Route path="/compare" element={<ProtectedRoute><QuotesCompare /></ProtectedRoute>} />
                 <Route path="/developer-ranking" element={<ProtectedRoute><DeveloperRanking /></ProtectedRoute>} />
+                <Route path="/presentations" element={<ProtectedRoute><PresentationsHub /></ProtectedRoute>} />
+                <Route path="/presentations/:id" element={<ProtectedRoute><PresentationBuilder /></ProtectedRoute>} />
                 <Route path="/color-test" element={<ProtectedRoute><ColorTest /></ProtectedRoute>} />
                 
                 {/* Redirects for old routes */}

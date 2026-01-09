@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, Check, GitCompare, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, Check, GitCompare, ExternalLink, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -421,6 +421,12 @@ export const DashboardSidebar = ({
             icon={GitCompare} 
             label="Compare" 
             onClick={() => setCompareModalOpen(true)} 
+            collapsed={collapsed}
+          />
+          <ActionButton 
+            icon={Presentation} 
+            label="Present" 
+            to="/presentations" 
             collapsed={collapsed}
           />
         </div>

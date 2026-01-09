@@ -14,6 +14,7 @@ interface ShowcaseProjectCardProps {
   projectName: string;
   projectId?: string;
   className?: string;
+  onClick?: () => void;
 }
 
 const getStatusBadge = (status: string | null) => {
@@ -29,6 +30,7 @@ export const ShowcaseProjectCard: React.FC<ShowcaseProjectCardProps> = ({
   projectName,
   projectId,
   className,
+  onClick,
 }) => {
   const [project, setProject] = useState<Project | null>(null);
 
@@ -48,10 +50,14 @@ export const ShowcaseProjectCard: React.FC<ShowcaseProjectCardProps> = ({
   const statusBadge = project ? getStatusBadge(project.construction_status) : null;
 
   return (
-    <div className={cn(
-      "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
-      className
-    )}>
+    <div 
+      className={cn(
+        "bg-white/5 backdrop-blur-xl rounded-lg p-2.5 border border-white/10 shadow-2xl",
+        onClick && "cursor-pointer hover:bg-white/10 transition-colors",
+        className
+      )}
+      onClick={onClick}
+    >
       <div className="flex items-center gap-2">
         {project?.logo_url ? (
           <img src={project.logo_url} alt={projectName} className="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5" />
