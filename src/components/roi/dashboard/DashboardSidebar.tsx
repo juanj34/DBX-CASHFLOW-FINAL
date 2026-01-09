@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Currency } from "@/components/roi/currencyUtils";
 
 export type SectionId = 'overview' | 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
+export type ViewMode = 'tabs' | 'vertical';
 
 interface DashboardSidebarProps {
   activeSection: SectionId;
@@ -25,6 +26,8 @@ interface DashboardSidebarProps {
   mortgageInputs: MortgageInputs;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  // View mode
+  viewMode?: ViewMode;
   // New props for bottom section
   profile?: Profile | null;
   isAdmin?: boolean;
@@ -104,6 +107,7 @@ export const DashboardSidebar = ({
   mortgageInputs,
   collapsed,
   onCollapsedChange,
+  viewMode = 'tabs',
   profile,
   isAdmin,
   onConfigure,
