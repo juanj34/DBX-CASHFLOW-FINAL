@@ -88,11 +88,6 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           formatter={formatMonths}
         />
         <MetricRow
-          label="Pre-Handover %"
-          values={metrics.preHandoverPercent}
-          formatter={(v) => `${v}%`}
-        />
-        <MetricRow
           label="Rental Yield (Y1)"
           values={metrics.rentalYieldY1}
           formatter={(v) => v !== null ? `${v.toFixed(1)}%` : 'N/A'}
@@ -108,12 +103,6 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           label="Growth Appr."
           values={metrics.growthAppreciation}
           formatter={(v) => `${v}%`}
-          higherIsBetter
-        />
-        <MetricRow
-          label="ROI @ 36mo"
-          values={metrics.roiAt36Months}
-          formatter={(v) => v !== null ? `${v.toFixed(1)}%` : 'N/A'}
           higherIsBetter
         />
       </div>

@@ -230,13 +230,15 @@ export const InvestmentStoryDashboard = ({
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
   // Define story sections - showcase first
+  const hasExitScenarios = exitScenarios && exitScenarios.length > 0 && inputs.enabledSections?.exitStrategy !== false;
+  
   const storySections: StorySectionConfig[] = useMemo(() => [
     { id: 'showcase', labelKey: 'theProperty', fallbackLabel: 'Property', icon: Sparkles },
     { id: 'entry', labelKey: 'theEntry', fallbackLabel: 'Entry', icon: Wallet },
     { id: 'income', labelKey: 'yourIncome', fallbackLabel: 'Income', icon: Home },
-    { id: 'exit', labelKey: 'exitScenarios', fallbackLabel: 'Exits', icon: Target },
+    { id: 'exit', labelKey: 'exitScenarios', fallbackLabel: 'Exits', icon: Target, show: hasExitScenarios },
     { id: 'leverage', labelKey: 'leverage', fallbackLabel: 'Leverage', icon: CreditCard, show: mortgageEnabled },
-  ], [mortgageEnabled]);
+  ], [mortgageEnabled, hasExitScenarios]);
 
 
   // Handle section change with direction tracking
