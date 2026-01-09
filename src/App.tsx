@@ -22,6 +22,7 @@ import QuotesCompare from "./pages/QuotesCompare";
 import QuotesAnalytics from "./pages/QuotesAnalytics";
 import CashflowView from "./pages/CashflowView";
 import DeveloperRanking from "./pages/DeveloperRanking";
+import CompareView from "./pages/CompareView";
 import ResetPassword from "./pages/ResetPassword";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -71,6 +72,7 @@ function App() {
                 <Route path="/my-quotes" element={<QuotesDashboard />} />
                 <Route path="/quotes-analytics" element={<QuotesAnalytics />} />
                 <Route path="/compare" element={<QuotesCompare />} />
+                <Route path="/compare-view/:shareToken" element={<CompareView />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
                 <Route path="/developer-ranking" element={<DeveloperRanking />} />
                 {/* Auth & Legal Routes */}

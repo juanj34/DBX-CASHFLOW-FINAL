@@ -780,6 +780,48 @@ export type Database = {
           },
         ]
       }
+      saved_comparisons: {
+        Row: {
+          broker_id: string
+          created_at: string
+          description: string | null
+          id: string
+          investment_focus: string | null
+          is_public: boolean | null
+          quote_ids: string[]
+          share_token: string | null
+          show_recommendations: boolean | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          investment_focus?: string | null
+          is_public?: boolean | null
+          quote_ids: string[]
+          share_token?: string | null
+          show_recommendations?: boolean | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          investment_focus?: string | null
+          is_public?: boolean | null
+          quote_ids?: string[]
+          share_token?: string | null
+          show_recommendations?: boolean | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
