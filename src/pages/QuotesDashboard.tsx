@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
-  LayoutGrid, Check, Search, Filter, MessageCircle, ArrowUpDown, ArrowUp, ArrowDown, X,
+  Plus, Trash2, Edit, Calendar, DollarSign, MapPin, 
+  LayoutGrid, Check, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, X,
   FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy, CheckSquare, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +45,7 @@ import {
 import { PipelineAnalyticsChart } from '@/components/dashboard/PipelineAnalyticsChart';
 import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 import { QuoteAnalyticsPopover } from '@/components/analytics/QuoteAnalyticsPopover';
+import { ShareIconButton } from '@/components/roi/ShareIconButton';
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -190,14 +192,6 @@ const QuotesDashboard = () => {
     setDeletingQuote(null);
   };
 
-  const handleShare = async (quote: CashflowQuote) => {
-    if (quote.share_token) {
-      const url = `${window.location.origin}/view/${quote.share_token}`;
-      await navigator.clipboard.writeText(url);
-      toast({ title: 'Share link copied!' });
-    }
-  };
-
   const handleDuplicateClick = (quote: CashflowQuote) => {
     setDuplicatingQuote(quote);
   };
@@ -216,12 +210,6 @@ const QuotesDashboard = () => {
       navigate(`/cashflow/${newId}`);
     }
     setDuplicatingQuote(null);
-  };
-
-  const handleWhatsAppShare = (quote: CashflowQuote) => {
-    const message = `${t("checkOutProperty")}: ${quote.project_name || t("property")}`;
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
   };
 
   const updateQuoteStatus = async (quoteId: string, status: QuoteStatus) => {
@@ -716,49 +704,66 @@ const QuotesDashboard = () => {
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           {!compareMode && !selectMode && (
                             <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-theme-text-muted hover:text-green-400 hover:bg-green-500/10"
-                                onClick={() => handleWhatsAppShare(quote)}
-                              >
-                                <MessageCircle className="w-4 h-4" />
-                              </Button>
-                              {quote.share_token && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleShare(quote)}
-                                  className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDuplicateClick(quote)}
-                                className="h-8 w-8 text-theme-text-muted hover:text-cyan-400 hover:bg-cyan-500/10"
-                                title={t('duplicate') || 'Duplicate'}
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => navigate(`/cashflow/${quote.id}`)}
-                                className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteClick(quote)}
-                                className="h-8 w-8 text-theme-text-muted hover:text-red-400 hover:bg-red-500/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <ShareIconButton
+                                quoteId={quote.id}
+                                shareToken={quote.share_token}
+                                projectName={quote.project_name}
+                                clientEmail={quote.client_email}
+                              />
+                              
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDuplicateClick(quote)}
+                                      className="h-8 w-8 text-theme-text-muted hover:text-cyan-400 hover:bg-cyan-500/10"
+                                    >
+                                      <Copy className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-xs">Duplicate</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => navigate(`/cashflow/${quote.id}`)}
+                                      className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-xs">Edit</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteClick(quote)}
+                                      className="h-8 w-8 text-theme-text-muted hover:text-red-400 hover:bg-red-500/10"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-xs">Delete</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           )}
                         </TableCell>
