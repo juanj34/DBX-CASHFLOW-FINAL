@@ -24,10 +24,8 @@ interface GeoLocation {
 
 // Get client IP from request headers
 function getClientIP(req: Request): string | null {
-  // Check common headers for client IP (in order of preference)
   const xForwardedFor = req.headers.get("x-forwarded-for");
   if (xForwardedFor) {
-    // x-forwarded-for can contain multiple IPs, take the first one
     return xForwardedFor.split(",")[0].trim();
   }
   
@@ -47,7 +45,6 @@ function getClientIP(req: Request): string | null {
 // Get geolocation data from IP using free ip-api.com service
 async function getGeoLocation(ip: string): Promise<GeoLocation | null> {
   try {
-    // Skip geolocation for localhost/private IPs
     if (ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
       console.log("Skipping geolocation for private IP:", ip);
       return null;
@@ -77,7 +74,6 @@ async function getGeoLocation(ip: string): Promise<GeoLocation | null> {
 const handler = async (req: Request): Promise<Response> => {
   console.log("track-quote-view function called");
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -95,8 +91,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Tracking view for shareToken: ${shareToken}`);
 
-    // Get client IP and geolocation
     const clientIP = getClientIP(req);
+    const userAgent = req.headers.get("user-agent") || null;
     console.log("Client IP:", clientIP);
     
     let geoLocation: GeoLocation | null = null;
@@ -105,7 +101,6 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Geolocation:", geoLocation);
     }
 
-    // Create Supabase client with service role to bypass RLS
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -149,9 +144,36 @@ const handler = async (req: Request): Promise<Response> => {
     const newViewCount = (quote.view_count || 0) + 1;
     const now = new Date().toISOString();
 
-    // Update view count and first_viewed_at if first view
-    const updateData: { view_count: number; first_viewed_at?: string } = {
+    // Generate session ID for this view
+    const sessionId = crypto.randomUUID();
+
+    // Create a new view session record
+    const { error: viewInsertError } = await supabase
+      .from("quote_views")
+      .insert({
+        quote_id: quote.id,
+        session_id: sessionId,
+        started_at: now,
+        city: geoLocation?.city || null,
+        region: geoLocation?.region || null,
+        country: geoLocation?.country || null,
+        country_code: geoLocation?.countryCode || null,
+        timezone: geoLocation?.timezone || null,
+        ip_address: clientIP || null,
+        user_agent: userAgent,
+      });
+
+    if (viewInsertError) {
+      console.error("Error inserting view session:", viewInsertError);
+      // Continue - don't fail the whole request if view tracking fails
+    } else {
+      console.log("Created view session:", sessionId);
+    }
+
+    // Update view count, first_viewed_at, and last_viewed_at
+    const updateData: { view_count: number; first_viewed_at?: string; last_viewed_at: string } = {
       view_count: newViewCount,
+      last_viewed_at: now,
     };
 
     if (isFirstView) {
@@ -175,14 +197,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email notification on first view
     if (isFirstView && quote.profiles) {
-      // profiles is a single object from the join, not an array
       const brokerProfile = quote.profiles as unknown as { email: string; full_name: string | null; business_email: string | null };
       const brokerEmail = brokerProfile?.business_email || brokerProfile?.email;
       
       if (brokerEmail) {
         console.log(`Sending first view notification to broker: ${brokerEmail}`);
         try {
-          // Build location string
           let locationString = "Unknown location";
           let locationFlag = "🌍";
           
@@ -196,7 +216,6 @@ const handler = async (req: Request): Promise<Response> => {
               locationString = parts.join(", ");
             }
             
-            // Add country flag emoji
             if (geoLocation.countryCode) {
               const codePoints = geoLocation.countryCode
                 .toUpperCase()
@@ -219,26 +238,21 @@ const handler = async (req: Request): Promise<Response> => {
               </head>
               <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
                 <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-                  <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #1a1f2e 0%, #2a3142 100%); padding: 30px; text-align: center;">
                       <h1 style="color: #CCFF00; margin: 0; font-size: 24px; font-weight: bold;">🎉 Your client is interested!</h1>
                     </td>
                   </tr>
-                  
-                  <!-- Main Content -->
                   <tr>
                     <td style="padding: 30px;">
                       <h2 style="color: #1a1f2e; margin: 0 0 15px 0; font-size: 20px;">
                         Hi ${brokerProfile.full_name || "there"},
                       </h2>
-                      
                       <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                         Great news! <strong style="color: #1a1f2e;">${quote.client_name || "Your client"}</strong> 
                         just opened the investment analysis you shared for 
                         <strong style="color: #1a1f2e;">${quote.project_name || "the property"}</strong>.
                       </p>
-                      
                       <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 8px; margin: 20px 0;">
                         <tr>
                           <td style="padding: 20px;">
@@ -259,19 +273,14 @@ const handler = async (req: Request): Promise<Response> => {
                           </td>
                         </tr>
                       </table>
-                      
                       <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
                         This is a great time to follow up! Consider reaching out via WhatsApp or email to answer any questions they might have.
                       </p>
-                      
                       <p style="color: #888888; font-size: 13px; line-height: 1.5; margin: 0;">
                         💡 <em>Tip: Knowing your client's location can help you time your follow-up calls for when they're most available.</em>
                       </p>
-                      
                     </td>
                   </tr>
-                  
-                  <!-- Footer -->
                   <tr>
                     <td style="background-color: #1a1f2e; padding: 20px; text-align: center;">
                       <p style="color: #888888; font-size: 12px; margin: 0;">
@@ -288,7 +297,6 @@ const handler = async (req: Request): Promise<Response> => {
           console.log("First view notification email sent successfully");
         } catch (emailError) {
           console.error("Error sending first view notification email:", emailError);
-          // Don't fail the request if email fails
         }
       }
     }
@@ -298,7 +306,8 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         view_count: newViewCount, 
         first_viewed_at: isFirstView ? now : quote.first_viewed_at,
-        is_first_view: isFirstView 
+        is_first_view: isFirstView,
+        session_id: sessionId,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
