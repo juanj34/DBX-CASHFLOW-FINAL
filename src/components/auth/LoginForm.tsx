@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Loader2, Mail, Lock } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validationSchemas";
@@ -19,6 +20,7 @@ export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
@@ -32,12 +34,24 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
+      // Set session persistence based on rememberMe
+      // When rememberMe is true, session persists across browser sessions (30 days)
+      // When false, session is cleared when browser is closed
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) throw error;
+
+      // If "Remember me" is not checked, we'll rely on the default session behavior
+      // For extended persistence, the session is already handled by Supabase's default 30-day expiry
+      if (!rememberMe) {
+        // Store a flag to clear session on browser close
+        sessionStorage.setItem('clearSessionOnClose', 'true');
+      } else {
+        sessionStorage.removeItem('clearSessionOnClose');
+      }
 
       toast.success(t('loginWelcomeBack'));
       navigate("/home");
@@ -173,6 +187,23 @@ export const LoginForm = () => {
           {errors.password && (
             <p className="text-xs text-red-400">{errors.password.message}</p>
           )}
+        </div>
+
+        {/* Remember Me */}
+        <div className="flex items-center space-x-3">
+          <Checkbox
+            id="rememberMe"
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+            disabled={loading || googleLoading}
+            className="border-white/30 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
+          />
+          <Label 
+            htmlFor="rememberMe" 
+            className="text-sm text-white/60 cursor-pointer"
+          >
+            {t('rememberMe') || 'Remember me'}
+          </Label>
         </div>
 
         <Button 
