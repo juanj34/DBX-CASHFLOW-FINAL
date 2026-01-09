@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -65,6 +65,9 @@ const QuotesCompare = () => {
   // Drag state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  // Expand/Collapse all state
+  const [allExpanded, setAllExpanded] = useState(false);
   
   // Save/Load state
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -222,6 +225,17 @@ const QuotesCompare = () => {
                 className="data-[state=checked]:bg-theme-accent"
               />
             </div>
+
+            {/* Expand/Collapse All */}
+            <Button
+              onClick={() => setAllExpanded(!allExpanded)}
+              variant="outline"
+              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
+              title={allExpanded ? 'Collapse All' : 'Expand All'}
+            >
+              {allExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <span className="hidden sm:inline">{allExpanded ? 'Collapse' : 'Expand'}</span>
+            </Button>
 
             <Button 
               onClick={() => setShowSelector(true)}
@@ -389,7 +403,7 @@ const QuotesCompare = () => {
               <CollapsibleSection
                 title="Key Metrics Comparison"
                 icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={true}
+                defaultOpen={allExpanded}
               >
                 <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} />
               </CollapsibleSection>
@@ -399,7 +413,7 @@ const QuotesCompare = () => {
             <CollapsibleSection
               title="Payment & Growth"
               icon={<TrendingUp className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={true}
+              defaultOpen={allExpanded}
             >
               <div className="grid lg:grid-cols-2 gap-6">
                 <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
@@ -411,7 +425,7 @@ const QuotesCompare = () => {
             <CollapsibleSection
               title="Value Differentiators"
               icon={<Gem className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={true}
+              defaultOpen={allExpanded}
             >
               <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
             </CollapsibleSection>
@@ -421,7 +435,7 @@ const QuotesCompare = () => {
               <CollapsibleSection
                 title="Mortgage Comparison"
                 icon={<Home className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={true}
+                defaultOpen={allExpanded}
               >
                 <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
               </CollapsibleSection>
@@ -435,7 +449,7 @@ const QuotesCompare = () => {
               <CollapsibleSection
                 title="Rental Yield"
                 icon={<Percent className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={true}
+                defaultOpen={allExpanded}
               >
                 <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} />
               </CollapsibleSection>
@@ -446,7 +460,7 @@ const QuotesCompare = () => {
               <CollapsibleSection
                 title="Exit Scenarios"
                 icon={<DoorOpen className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={true}
+                defaultOpen={allExpanded}
               >
                 <ExitComparison quotesWithCalcs={quotesWithCalcs} />
               </CollapsibleSection>
@@ -462,6 +476,7 @@ const QuotesCompare = () => {
         selectedIds={selectedIds}
         onSelect={setSelectedIds}
         maxQuotes={4}
+        onLoadComparison={handleLoadComparison}
       />
 
       {/* Save Comparison Modal */}

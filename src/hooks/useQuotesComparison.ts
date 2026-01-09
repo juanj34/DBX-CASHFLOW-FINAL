@@ -40,62 +40,74 @@ export const useQuotesComparison = (quoteIds: string[]) => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  const fetchQuotes = async () => {
+    if (quoteIds.length === 0) {
+      setQuotes([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('cashflow_quotes')
+        .select('*')
+        .in('id', quoteIds);
+
+      if (fetchError) throw fetchError;
+
+      const mappedQuotes: ComparisonQuote[] = (data || []).map((q) => {
+        const rawInputs = q.inputs as any;
+        const migratedInputs = migrateInputs(rawInputs);
+        
+        return {
+          id: q.id,
+          title: q.title,
+          clientName: q.client_name,
+          projectName: q.project_name,
+          developer: q.developer,
+          unit: q.unit,
+          unitType: q.unit_type,
+          unitSizeSqf: q.unit_size_sqf,
+          inputs: {
+            ...migratedInputs,
+            unitSizeSqf: q.unit_size_sqf || migratedInputs.unitSizeSqf,
+          } as OIInputs,
+          updatedAt: q.updated_at || '',
+        };
+      });
+
+      // Maintain order from quoteIds
+      const orderedQuotes = quoteIds
+        .map(id => mappedQuotes.find(q => q.id === id))
+        .filter((q): q is ComparisonQuote => q !== undefined);
+
+      setQuotes(orderedQuotes);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch quotes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchQuotes = async () => {
-      if (quoteIds.length === 0) {
-        setQuotes([]);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const { data, error: fetchError } = await supabase
-          .from('cashflow_quotes')
-          .select('*')
-          .in('id', quoteIds);
-
-        if (fetchError) throw fetchError;
-
-        const mappedQuotes: ComparisonQuote[] = (data || []).map((q) => {
-          const rawInputs = q.inputs as any;
-          const migratedInputs = migrateInputs(rawInputs);
-          
-          return {
-            id: q.id,
-            title: q.title,
-            clientName: q.client_name,
-            projectName: q.project_name,
-            developer: q.developer,
-            unit: q.unit,
-            unitType: q.unit_type,
-            unitSizeSqf: q.unit_size_sqf,
-            inputs: {
-              ...migratedInputs,
-              unitSizeSqf: q.unit_size_sqf || migratedInputs.unitSizeSqf,
-            } as OIInputs,
-            updatedAt: q.updated_at || '',
-          };
-        });
-
-        // Maintain order from quoteIds
-        const orderedQuotes = quoteIds
-          .map(id => mappedQuotes.find(q => q.id === id))
-          .filter((q): q is ComparisonQuote => q !== undefined);
-
-        setQuotes(orderedQuotes);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch quotes');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchQuotes();
   }, [quoteIds.join(',')]);
 
-  return { quotes, loading, error };
+  // Refetch when window regains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (quoteIds.length > 0) {
+        fetchQuotes();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [quoteIds.join(',')]);
+
+  return { quotes, loading, error, refetch: fetchQuotes };
 };
 
 // Hook to calculate metrics for a single quote (for use in comparison)
