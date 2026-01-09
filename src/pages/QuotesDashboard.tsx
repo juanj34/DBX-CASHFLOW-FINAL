@@ -47,6 +47,7 @@ import { PipelineAnalyticsChart } from '@/components/dashboard/PipelineAnalytics
 import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 import { QuoteAnalyticsPopover } from '@/components/analytics/QuoteAnalyticsPopover';
 import { ShareIconButton } from '@/components/roi/ShareIconButton';
+import { CompareModal } from '@/components/roi/compare/CompareModal';
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -64,6 +65,7 @@ const QuotesDashboard = () => {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
@@ -73,7 +75,9 @@ const QuotesDashboard = () => {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [chartCollapsed, setChartCollapsed] = useState(() => {
-    return localStorage.getItem('quotes_chart_collapsed') === 'true';
+    const saved = localStorage.getItem('quotes_chart_collapsed');
+    // Default to collapsed (true) if no saved preference
+    return saved !== null ? saved === 'true' : true;
   });
 
   // Persist chart collapse state
@@ -336,7 +340,7 @@ const QuotesDashboard = () => {
 
   const handleCompare = () => {
     if (selectedForCompare.length >= 2) {
-      navigate(`/compare?ids=${selectedForCompare.join(',')}`);
+      setShowCompareModal(true);
     }
   };
 
@@ -363,40 +367,6 @@ const QuotesDashboard = () => {
         shortcuts={shortcuts}
         actions={
           <div className="flex items-center gap-2 sm:gap-3">
-            {quotes.length >= 2 && (
-              <Button
-                variant={compareMode ? "default" : "outline"}
-                onClick={() => {
-                  setCompareMode(!compareMode);
-                  setSelectedForCompare([]);
-                  setSelectMode(false);
-                  setSelectedForDelete([]);
-                }}
-                className={compareMode 
-                  ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2" 
-                  : "border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
-                }
-              >
-                <LayoutGrid className="w-4 h-4" />
-                <span className="hidden sm:inline">{compareMode ? t('quotesCancel') : t('compare')}</span>
-              </Button>
-            )}
-            {quotes.length >= 1 && !compareMode && (
-              <Button
-                variant={selectMode ? "default" : "outline"}
-                onClick={() => {
-                  setSelectMode(!selectMode);
-                  setSelectedForDelete([]);
-                }}
-                className={selectMode 
-                  ? "bg-red-600 text-white hover:bg-red-500 gap-2" 
-                  : "border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2"
-                }
-              >
-                <CheckSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">{selectMode ? t('quotesCancel') : 'Select'}</span>
-              </Button>
-            )}
             <Link to="/cashflow-generator">
               <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2">
                 <Plus className="w-4 h-4" />

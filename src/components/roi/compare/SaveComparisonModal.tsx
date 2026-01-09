@@ -19,6 +19,7 @@ import { InvestmentFocus } from '@/hooks/useRecommendationEngine';
 interface SaveComparisonModalProps {
   open: boolean;
   onClose: () => void;
+  onSaved?: (id: string, title: string) => void;
   quoteIds: string[];
   investmentFocus: InvestmentFocus | null;
   showRecommendations: boolean;
@@ -30,6 +31,7 @@ interface SaveComparisonModalProps {
 export const SaveComparisonModal = ({
   open,
   onClose,
+  onSaved,
   quoteIds,
   investmentFocus,
   showRecommendations,
@@ -66,6 +68,7 @@ export const SaveComparisonModal = ({
         toast({ title: 'Failed to update comparison', variant: 'destructive' });
       } else {
         toast({ title: 'Comparison updated!' });
+        onSaved?.(existingId, title.trim());
         onClose();
       }
     } else {
@@ -77,12 +80,15 @@ export const SaveComparisonModal = ({
         showRecommendations,
       };
 
-      const { error } = await saveComparison(input);
+      const { id, error } = await saveComparison(input);
 
       if (error) {
         toast({ title: 'Failed to save comparison', variant: 'destructive' });
       } else {
         toast({ title: 'Comparison saved!' });
+        if (id) {
+          onSaved?.(id, title.trim());
+        }
         onClose();
       }
     }
