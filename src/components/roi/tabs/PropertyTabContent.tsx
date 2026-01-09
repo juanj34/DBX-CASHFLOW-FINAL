@@ -483,11 +483,48 @@ export const PropertyTabContent = ({
     );
   }
 
-  // Default variant (non-dashboard)
+  // Default variant (vertical view) - with clickable developer/project
   return (
     <div className="space-y-6">
+      {/* Header with clickable project/developer */}
+      <div className="bg-theme-card border border-theme-border rounded-xl p-5">
+        <h1 
+          className={cn(
+            "text-2xl font-bold text-theme-text mb-1",
+            project && "cursor-pointer hover:text-theme-accent transition-colors"
+          )}
+          onClick={() => project && setProjectModalOpen(true)}
+        >
+          {project?.name || clientInfo.projectName || 'Investment Property'}
+        </h1>
+        <div className="flex items-center gap-2 text-theme-text-muted flex-wrap">
+          <MapPin className="w-4 h-4 flex-shrink-0" />
+          <span className="text-sm">
+            {zone?.name || clientInfo.zoneName || 'Dubai'}
+          </span>
+          {(developer?.name || clientInfo.developer) && (
+            <>
+              <span className="text-theme-border">•</span>
+              <span 
+                className={cn(
+                  "text-sm transition-all duration-200",
+                  developer && [
+                    "cursor-pointer",
+                    "underline decoration-transparent decoration-1 underline-offset-2",
+                    "hover:decoration-theme-accent hover:text-theme-accent"
+                  ]
+                )}
+                onClick={() => developer && setDeveloperModalOpen(true)}
+              >
+                by {developer?.name || clientInfo.developer}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ClientUnitInfo data={clientInfo} onEditClick={onEditClient} />
+        <ClientUnitInfo data={clientInfo} onEditClick={readOnly ? undefined : onEditClient} />
         <InvestmentSnapshot 
           inputs={inputs} 
           currency={currency} 
@@ -502,8 +539,27 @@ export const PropertyTabContent = ({
       <ValueDifferentiatorsDisplay
         selectedDifferentiators={inputs.valueDifferentiators || []}
         customDifferentiators={customDifferentiators}
-        onEditClick={onEditConfig}
+        onEditClick={readOnly ? undefined : onEditConfig}
       />
+
+      {/* Developer Modal */}
+      {developer && (
+        <DeveloperInfoModal
+          developerId={developer.id}
+          open={developerModalOpen}
+          onOpenChange={setDeveloperModalOpen}
+        />
+      )}
+
+      {/* Project Modal */}
+      {project && (
+        <ProjectInfoModal
+          project={project}
+          zoneName={clientInfo.zoneName}
+          open={projectModalOpen}
+          onOpenChange={setProjectModalOpen}
+        />
+      )}
     </div>
   );
 };
