@@ -11,7 +11,7 @@ import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
 import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, TrendingUp, Wallet, Receipt, Info } from "lucide-react";
+import { Home, Ruler, Calendar, Building2, MapPin, Users, ChevronRight, TrendingUp, Wallet, Receipt, Info, Expand } from "lucide-react";
 import { LocationMiniMap } from "@/components/roi/LocationMiniMap";
 import { FullscreenMapModal } from "@/components/roi/FullscreenMapModal";
 import { cn } from "@/lib/utils";
@@ -522,6 +522,57 @@ export const PropertyTabContent = ({
           )}
         </div>
       </div>
+
+      {/* Hero Project Image with Lightbox */}
+      {(buildingRenderUrl || project?.hero_image_url || project?.image_url) && (
+        <div 
+          className="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden cursor-pointer group"
+          onClick={() => setLightboxOpen(true)}
+        >
+          <img 
+            src={buildingRenderUrl || project?.hero_image_url || project?.image_url}
+            alt={project?.name || clientInfo.projectName || 'Property'}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          
+          {/* Gradient overlays for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
+          
+          {/* Developer name - top left, small */}
+          {(developer?.name || clientInfo.developer) && (
+            <div className="absolute top-4 left-4">
+              <span className="text-xs font-medium text-white/80 uppercase tracking-wider">
+                {developer?.name || clientInfo.developer}
+              </span>
+            </div>
+          )}
+          
+          {/* Project name - bottom left, prominent */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <h2 className="text-xl md:text-2xl font-bold text-white drop-shadow-lg">
+              {project?.name || clientInfo.projectName || 'Investment Property'}
+            </h2>
+            <p className="text-sm text-white/70 mt-1">
+              {zone?.name || clientInfo.zoneName || 'Dubai'}
+            </p>
+          </div>
+          
+          {/* Expand icon hint */}
+          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-black/40 backdrop-blur-sm rounded-full p-2">
+              <Expand className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox for hero image */}
+      <FloorPlanLightbox
+        imageUrl={buildingRenderUrl || project?.hero_image_url || project?.image_url || ''}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        title={project?.name || clientInfo.projectName || 'Property View'}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ClientUnitInfo data={clientInfo} onEditClick={readOnly ? undefined : onEditClient} />
