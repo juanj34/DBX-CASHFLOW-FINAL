@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, User, Camera, Zap, Briefcase, Moon } from 'lucide-react';
+import { User, Camera, Zap, Briefcase, Moon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
@@ -12,6 +12,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeKey, THEMES } from '@/config/themes';
+import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 
 const AccountSettings = () => {
   useDocumentTitle("Account Settings");
@@ -101,16 +102,13 @@ const AccountSettings = () => {
 
   return (
     <div className="min-h-screen bg-theme-bg">
-      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/home">
-              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                <LayoutDashboard className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-xl font-bold text-theme-text">{t('accountSettingsTitle')}</h1>
-          </div>
+      <PageHeader
+        title={t('accountSettingsTitle')}
+        subtitle="Manage your profile and preferences"
+        icon={<Settings className="w-5 h-5" />}
+        backLink="/home"
+        shortcuts={defaultShortcuts}
+        actions={
           <Button
             variant="outline"
             onClick={signOut}
@@ -118,8 +116,8 @@ const AccountSettings = () => {
           >
             {t('signOut')}
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       <main className="container mx-auto px-6 py-8 max-w-2xl">
         <div className="bg-theme-card border border-theme-border rounded-2xl p-8">
