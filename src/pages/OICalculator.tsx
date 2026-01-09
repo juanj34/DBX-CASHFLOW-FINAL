@@ -39,7 +39,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
-import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
+import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
@@ -62,7 +62,6 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [presentationMode, setPresentationMode] = useState(false);
 
   const { profile } = useProfile();
@@ -304,17 +303,13 @@ const OICalculatorContent = () => {
   return (
     <CashflowErrorBoundary>
       <DashboardLayout
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
         inputs={inputs}
         mortgageInputs={mortgageInputs}
-        viewMode="vertical"
         profile={profile}
         isAdmin={isAdmin}
         onConfigure={() => setModalOpen(true)}
         onLoadQuote={() => setLoadQuoteModalOpen(true)}
         onViewHistory={() => setVersionHistoryOpen(true)}
-        onPresentMode={handlePresentMode}
         onShare={handleShare}
         onPresent={handlePresent}
         viewCount={quote?.view_count ?? undefined}

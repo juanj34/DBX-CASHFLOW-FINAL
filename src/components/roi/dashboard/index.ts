@@ -1,3 +1,3 @@
-export { DashboardSidebar, type SectionId } from './DashboardSidebar';
-export { DashboardLayout, type ViewMode } from './DashboardLayout';
+export { DashboardSidebar } from './DashboardSidebar';
+export { DashboardLayout } from './DashboardLayout';
 export { CompactInvestmentSnapshot } from './CompactInvestmentSnapshot';
