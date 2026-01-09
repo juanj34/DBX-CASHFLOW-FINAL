@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, Check, GitCompare, ExternalLink, Presentation } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -31,6 +31,7 @@ interface DashboardSidebarProps {
   onViewHistory?: () => void;
   onShare?: () => void;
   onPresent?: () => void; // Open client view in new tab
+  onShowcase?: () => void; // Open showcase/story mode
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -42,7 +43,6 @@ interface DashboardSidebarProps {
   // Save status
   hasUnsavedChanges?: boolean;
   saving?: boolean;
-  lastSaved?: Date | null;
   onSave?: () => void;
 }
 
@@ -186,8 +186,8 @@ export const DashboardSidebar = ({
   onViewHistory,
   onShare,
   onPresent,
+  onShowcase,
   viewCount,
-  firstViewedAt,
   quoteId,
   language,
   setLanguage,
@@ -195,7 +195,6 @@ export const DashboardSidebar = ({
   setCurrency,
   hasUnsavedChanges,
   saving,
-  lastSaved,
   onSave,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
@@ -292,67 +291,47 @@ export const DashboardSidebar = ({
         </Link>
       )}
 
-      {/* Save Status Indicator */}
-      {(hasUnsavedChanges || saving || lastSaved) && (
+      {/* Save Draft Button - only when unsaved */}
+      {hasUnsavedChanges && onSave && (
         <div className={cn(
           "border-b border-theme-border",
           collapsed ? "p-2" : "px-3 py-2"
         )}>
-          {hasUnsavedChanges && onSave ? (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={onSave}
-                    disabled={saving}
-                    size="icon"
-                    className="w-10 h-10 mx-auto bg-amber-600 hover:bg-amber-500 text-white"
-                  >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-amber-900 text-amber-100 border-amber-700">
-                  Unsaved draft – Click to save
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button
-                onClick={onSave}
-                disabled={saving}
-                className="w-full bg-amber-600 hover:bg-amber-500 text-white justify-start gap-2"
-                size="sm"
-              >
-                {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {saving ? 'Saving...' : 'Save Draft'}
-              </Button>
-            )
-          ) : lastSaved ? (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-10 h-10 mx-auto flex items-center justify-center">
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
-                <Check className="w-3.5 h-3.5" />
-                <span>Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            )
-          ) : null}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onSave}
+                  disabled={saving}
+                  size="icon"
+                  className="w-10 h-10 mx-auto bg-amber-600 hover:bg-amber-500 text-white"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-amber-900 text-amber-100 border-amber-700">
+                Unsaved draft – Click to save
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              onClick={onSave}
+              disabled={saving}
+              className="w-full bg-amber-600 hover:bg-amber-500 text-white justify-start gap-2"
+              size="sm"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {saving ? 'Saving...' : 'Save Draft'}
+            </Button>
+          )}
         </div>
       )}
 
@@ -389,10 +368,19 @@ export const DashboardSidebar = ({
         </div>
 
         {/* SHARE Section - Only show if quote exists */}
-        {quoteId && (onPresent || onShare) && (
+        {quoteId && (onShowcase || onPresent || onShare) && (
           <>
             <SectionHeader label="Share" collapsed={collapsed} />
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+              {onShowcase && (
+                <ActionButton 
+                  icon={Sparkles} 
+                  label="Showcase" 
+                  onClick={onShowcase} 
+                  collapsed={collapsed}
+                  variant="primary"
+                />
+              )}
               {onPresent && (
                 <ActionButton 
                   icon={ExternalLink} 
@@ -424,8 +412,8 @@ export const DashboardSidebar = ({
             collapsed={collapsed}
           />
           <ActionButton 
-            icon={Presentation} 
-            label="Present" 
+            icon={LayoutGrid} 
+            label="Portfolios" 
             to="/presentations" 
             collapsed={collapsed}
           />

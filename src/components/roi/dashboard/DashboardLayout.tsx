@@ -20,8 +20,8 @@ interface DashboardLayoutProps {
   onViewHistory?: () => void;
   onShare?: () => void;
   onPresent?: () => void; // Open client view in new tab
+  onShowcase?: () => void; // Open showcase/story mode
   viewCount?: number;
-  firstViewedAt?: string | null;
   quoteId?: string;
   // Language and currency
   language?: string;
@@ -31,7 +31,6 @@ interface DashboardLayoutProps {
   // Save status
   hasUnsavedChanges?: boolean;
   saving?: boolean;
-  lastSaved?: Date | null;
   onSave?: () => void;
 }
 
@@ -46,8 +45,8 @@ export const DashboardLayout = ({
   onViewHistory,
   onShare,
   onPresent,
+  onShowcase,
   viewCount,
-  firstViewedAt,
   quoteId,
   language,
   setLanguage,
@@ -55,7 +54,6 @@ export const DashboardLayout = ({
   setCurrency,
   hasUnsavedChanges,
   saving,
-  lastSaved,
   onSave,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -84,8 +82,8 @@ export const DashboardLayout = ({
     onViewHistory,
     onShare,
     onPresent,
+    onShowcase,
     viewCount,
-    firstViewedAt,
     quoteId,
     language,
     setLanguage,
@@ -93,7 +91,6 @@ export const DashboardLayout = ({
     setCurrency,
     hasUnsavedChanges,
     saving,
-    lastSaved,
     onSave,
   };
 
