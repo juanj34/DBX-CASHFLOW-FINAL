@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Plus, Trash2, Save, Share2, Eye, ChevronLeft, ChevronRight, 
-  FileText, GitCompare, Layers, ChevronDown, ChevronUp, GripVertical 
+  FileText, GitCompare, Layers, ChevronDown, ChevronUp, GripVertical,
+  Maximize2, X, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,6 +125,9 @@ const PresentationBuilder = () => {
 
   // Drag state
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Fullscreen mode
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   useDocumentTitle(presentation?.title || "Presentation Builder");
 
@@ -159,6 +163,26 @@ const PresentationBuilder = () => {
       JSON.stringify(items) !== JSON.stringify(presentation.items);
     setHasChanges(changed);
   }, [presentation, title, description, items]);
+
+  // Fullscreen keyboard handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      } else if (isFullscreen) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          setSelectedPreviewIndex(prev => Math.max(0, prev - 1));
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          setSelectedPreviewIndex(prev => Math.min(items.length - 1, prev + 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, items.length]);
 
   // Group items by type and viewMode
   const showcaseItems = items.filter(item => item.type === 'quote' && item.viewMode === 'story');
@@ -594,6 +618,14 @@ const PresentationBuilder = () => {
             <div className="flex flex-col items-center gap-2">
               <Button
                 size="icon"
+                onClick={() => setIsFullscreen(true)}
+                disabled={items.length === 0}
+                className="h-10 w-10 bg-purple-600 text-white hover:bg-purple-700"
+              >
+                <Play className="w-4 h-4" />
+              </Button>
+              <Button
+                size="icon"
                 onClick={handleSave}
                 disabled={!hasChanges || saving}
                 className="h-10 w-10 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
@@ -602,33 +634,46 @@ const PresentationBuilder = () => {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              {/* Present Button */}
               <Button
-                onClick={handleSave}
-                disabled={!hasChanges || saving}
-                className="flex-1 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                onClick={() => setIsFullscreen(true)}
+                disabled={items.length === 0}
+                className="w-full bg-purple-600 text-white hover:bg-purple-700"
               >
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? "Saving..." : hasChanges ? "Save" : "Saved"}
+                <Play className="w-4 h-4 mr-2" />
+                Present
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleShare}
-                className="border-theme-border text-theme-text-muted hover:text-theme-text"
-              >
-                <Share2 className="w-4 h-4" />
-              </Button>
-              {presentation.share_token && (
+              
+              {/* Save & Share Row */}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={!hasChanges || saving}
+                  className="flex-1 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? "Saving..." : hasChanges ? "Save" : "Saved"}
+                </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => window.open(`/present/${presentation.share_token}`, '_blank')}
+                  onClick={handleShare}
                   className="border-theme-border text-theme-text-muted hover:text-theme-text"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Share2 className="w-4 h-4" />
                 </Button>
-              )}
+                {presentation.share_token && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => window.open(`/present/${presentation.share_token}`, '_blank')}
+                    className="border-theme-border text-theme-text-muted hover:text-theme-text"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -657,6 +702,86 @@ const PresentationBuilder = () => {
         onClose={() => setCreateComparisonModalOpen(false)}
         onCreateComparison={handleCreateComparison}
       />
+
+      {/* Fullscreen Presentation Mode */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-theme-bg flex flex-col">
+          {/* Fullscreen Header */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+            <div className="flex items-center gap-3">
+              <span className="text-white/70 text-sm">
+                {selectedPreviewIndex + 1} / {items.length}
+              </span>
+              <span className="text-white font-medium">
+                {title || "Presentation"}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullscreen(false)}
+              className="text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Fullscreen Content */}
+          <div className="flex-1 overflow-hidden">
+            <PresentationPreview
+              items={items}
+              selectedIndex={selectedPreviewIndex}
+              onSelectIndex={setSelectedPreviewIndex}
+              quotes={quotes}
+            />
+          </div>
+
+          {/* Fullscreen Navigation */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center gap-4 p-6 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => setSelectedPreviewIndex(prev => Math.max(0, prev - 1))}
+              disabled={selectedPreviewIndex === 0}
+              className="text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              {items.map((item, index) => (
+                <button
+                  key={`fullscreen-dot-${item.type}-${item.id}-${index}`}
+                  onClick={() => setSelectedPreviewIndex(index)}
+                  className={cn(
+                    "w-3 h-3 rounded-full transition-all",
+                    index === selectedPreviewIndex
+                      ? item.type === 'comparison' || item.type === 'inline_comparison'
+                        ? "bg-purple-500 scale-125"
+                        : "bg-theme-accent scale-125"
+                      : "bg-white/30 hover:bg-white/50"
+                  )}
+                />
+              ))}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => setSelectedPreviewIndex(prev => Math.min(items.length - 1, prev + 1))}
+              disabled={selectedPreviewIndex === items.length - 1}
+              className="text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </Button>
+          </div>
+
+          {/* Keyboard hints */}
+          <div className="absolute bottom-4 right-4 text-white/40 text-xs">
+            ESC to exit • ← → to navigate
+          </div>
+        </div>
+      )}
     </div>
   );
 };
