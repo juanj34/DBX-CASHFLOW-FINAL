@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { useQuoteViewNotifications } from "@/hooks/useQuoteViewNotifications";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -62,38 +63,41 @@ function App() {
               <BrowserRouter>
               <NotificationProvider>
               <Routes>
+                {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/map" element={<Map />} />
-                <Route path="/map-config" element={<Dashboard />} />
-            {/* ROI Calculator temporarily disabled - redirect to home */}
-            <Route path="/roi-calculator" element={<Navigate to="/home" replace />} />
-                <Route path="/cashflow-generator" element={<OICalculator />} />
-                <Route path="/cashflow/:quoteId" element={<OICalculator />} />
-                <Route path="/cashflow-dashboard" element={<CashflowDashboard />} />
-                <Route path="/cashflow-dashboard/:quoteId" element={<CashflowDashboard />} />
-                <Route path="/account-settings" element={<AccountSettings />} />
-                <Route path="/my-quotes" element={<QuotesDashboard />} />
-                <Route path="/archived-quotes" element={<ArchivedQuotes />} />
-                <Route path="/quotes-analytics" element={<QuotesAnalytics />} />
-                <Route path="/compare" element={<QuotesCompare />} />
-                <Route path="/compare-view/:shareToken" element={<CompareView />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
-                <Route path="/developer-ranking" element={<DeveloperRanking />} />
-                {/* Auth & Legal Routes */}
+                <Route path="/compare-view/:shareToken" element={<CompareView />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/help" element={<Help />} />
-                <Route path="/color-test" element={<ColorTest />} />
+                
+                {/* Protected Routes - Require Authentication */}
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/map" element={<ProtectedRoute><Map /></ProtectedRoute>} />
+                <Route path="/map-config" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/roi-calculator" element={<Navigate to="/home" replace />} />
+                <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
+                <Route path="/cashflow/:quoteId" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
+                <Route path="/cashflow-dashboard" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
+                <Route path="/cashflow-dashboard/:quoteId" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
+                <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
+                <Route path="/my-quotes" element={<ProtectedRoute><QuotesDashboard /></ProtectedRoute>} />
+                <Route path="/archived-quotes" element={<ProtectedRoute><ArchivedQuotes /></ProtectedRoute>} />
+                <Route path="/quotes-analytics" element={<ProtectedRoute><QuotesAnalytics /></ProtectedRoute>} />
+                <Route path="/compare" element={<ProtectedRoute><QuotesCompare /></ProtectedRoute>} />
+                <Route path="/developer-ranking" element={<ProtectedRoute><DeveloperRanking /></ProtectedRoute>} />
+                <Route path="/color-test" element={<ProtectedRoute><ColorTest /></ProtectedRoute>} />
+                
                 {/* Redirects for old routes */}
                 <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/dashboard" element={<Navigate to="/map-config" replace />} />
                 <Route path="/quotes" element={<Navigate to="/my-quotes" replace />} />
                 <Route path="/quotes/compare" element={<LegacyCompareRedirect />} />
+                
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
