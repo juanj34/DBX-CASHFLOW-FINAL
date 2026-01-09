@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check, GitCompare, Presentation, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, Check, GitCompare, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -18,25 +18,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Currency } from "@/components/roi/currencyUtils";
 import { QuoteSelector } from "@/components/roi/compare/QuoteSelector";
 
-export type SectionId = 'overview' | 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
-export type ViewMode = 'tabs' | 'vertical';
-
 interface DashboardSidebarProps {
-  activeSection: SectionId;
-  onSectionChange: (section: SectionId) => void;
   inputs: OIInputs;
   mortgageInputs: MortgageInputs;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
-  // View mode
-  viewMode?: ViewMode;
   // New props for bottom section
   profile?: Profile | null;
   isAdmin?: boolean;
   onConfigure?: () => void;
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
-  onPresentMode?: () => void; // Toggle presentation mode (internal)
   onShare?: () => void;
   onPresent?: () => void; // Open client view in new tab
   viewCount?: number;
@@ -103,20 +95,95 @@ const AppLogo = ({ collapsed }: { collapsed: boolean }) => (
   </div>
 );
 
+// Section Header Component
+const SectionHeader = ({ label, collapsed }: { label: string; collapsed: boolean }) => {
+  if (collapsed) return null;
+  return (
+    <div className="px-3 pt-4 pb-2">
+      <span className="text-[10px] uppercase tracking-wider text-theme-text-muted/60 font-semibold">
+        {label}
+      </span>
+    </div>
+  );
+};
+
+// Action Button Component - Uniform styling for all action buttons
+const ActionButton = ({ 
+  icon: Icon, 
+  label, 
+  onClick, 
+  collapsed,
+  variant = 'default',
+  badge,
+  to,
+}: { 
+  icon: typeof Settings2;
+  label: string;
+  onClick?: () => void;
+  collapsed: boolean;
+  variant?: 'default' | 'primary';
+  badge?: number | string;
+  to?: string;
+}) => {
+  const baseStyles = cn(
+    "w-full flex items-center rounded-lg text-sm font-medium transition-all relative",
+    collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-3 px-3 py-2.5"
+  );
+  
+  const variantStyles = variant === 'primary'
+    ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+    : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50";
+
+  const content = (
+    <button onClick={onClick} className={cn(baseStyles, variantStyles)}>
+      <Icon className="w-4 h-4 flex-shrink-0" />
+      {!collapsed && <span className="flex-1 text-left truncate">{label}</span>}
+      {!collapsed && badge != null && (
+        <span className="flex items-center gap-1 px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full">
+          {badge}
+        </span>
+      )}
+      {collapsed && badge != null && (
+        <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-cyan-500 text-[10px] text-white rounded-full flex items-center justify-center px-1">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+
+  if (to) {
+    return (
+      <Link to={to}>
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{content}</TooltipTrigger>
+            <TooltipContent side="right">{label}</TooltipContent>
+          </Tooltip>
+        ) : content}
+      </Link>
+    );
+  }
+
+  return collapsed ? (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="right">
+        {label}{badge != null ? ` (${badge})` : ''}
+      </TooltipContent>
+    </Tooltip>
+  ) : content;
+};
+
 export const DashboardSidebar = ({
-  activeSection,
-  onSectionChange,
   inputs,
   mortgageInputs,
   collapsed,
   onCollapsedChange,
-  viewMode = 'tabs',
   profile,
   isAdmin,
   onConfigure,
   onLoadQuote,
   onViewHistory,
-  onPresentMode,
   onShare,
   onPresent,
   viewCount,
@@ -147,70 +214,6 @@ export const DashboardSidebar = ({
     }
   };
 
-  // Presentation section - simple single word label
-  const presentationSection = {
-    id: 'overview' as SectionId,
-    label: 'Present',
-    icon: Sparkles,
-  };
-
-  // Check if exit scenarios exist
-  const hasExitScenarios = Array.isArray(inputs._exitScenarios) && inputs._exitScenarios.length > 0;
-
-  // Analysis sections
-  const analysisSections = [
-    { id: 'property' as SectionId, label: t('tabProperty'), icon: Building2, show: true },
-    { id: 'payments' as SectionId, label: t('tabPayments'), icon: CreditCard, show: true },
-    { id: 'hold' as SectionId, label: t('tabHold'), icon: Home, show: inputs.enabledSections?.longTermHold !== false },
-    { id: 'exit' as SectionId, label: t('tabExit'), icon: TrendingUp, show: hasExitScenarios },
-    { id: 'mortgage' as SectionId, label: t('tabMortgage'), icon: Landmark, show: mortgageInputs.enabled },
-    { id: 'summary' as SectionId, label: t('tabSummary'), icon: FileText, show: true },
-  ].filter(section => section.show);
-
-  const NavButton = ({ icon: Icon, label, onClick, isActive, to }: { 
-    icon: typeof Home; 
-    label: string; 
-    onClick?: () => void; 
-    isActive?: boolean;
-    to?: string;
-  }) => {
-    const content = (
-      <button
-        onClick={onClick}
-        className={cn(
-          "w-full flex items-center rounded-lg text-xs font-medium transition-all",
-          collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
-          isActive
-            ? "bg-theme-accent/15 text-theme-accent"
-            : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-        )}
-      >
-        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-        {!collapsed && <span className="truncate">{label}</span>}
-      </button>
-    );
-
-    if (to) {
-      return (
-        <Link to={to}>
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>{content}</TooltipTrigger>
-              <TooltipContent side="right">{label}</TooltipContent>
-            </Tooltip>
-          ) : content}
-        </Link>
-      );
-    }
-
-    return collapsed ? (
-      <Tooltip>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent side="right">{label}</TooltipContent>
-      </Tooltip>
-    ) : content;
-  };
-
   return (
     <aside 
       className={cn(
@@ -220,7 +223,7 @@ export const DashboardSidebar = ({
     >
       {/* Logo + Collapse Toggle */}
       <div className={cn(
-        "p-3 border-b border-theme-border flex items-center",
+        "h-14 border-b border-theme-border flex items-center px-3",
         collapsed ? "justify-center" : "justify-between"
       )}>
         <AppLogo collapsed={collapsed} />
@@ -238,7 +241,7 @@ export const DashboardSidebar = ({
 
       {/* Expand button when collapsed */}
       {collapsed && (
-        <div className="p-2 flex justify-center">
+        <div className="py-2 flex justify-center border-b border-theme-border">
           <Button
             variant="ghost"
             size="icon"
@@ -289,315 +292,145 @@ export const DashboardSidebar = ({
         </Link>
       )}
 
-      {/* Main Navigation */}
-      <nav className={cn(
-        "flex-1 overflow-y-auto",
-        collapsed ? "p-2" : "p-3"
-      )}>
-        {/* PRESENT Section */}
-        {!collapsed && (
-          <div className="mb-2">
-            <span className="text-[10px] uppercase tracking-wider text-theme-text-muted/70 font-medium px-1">
-              Present
-            </span>
-          </div>
-        )}
-        
-        {/* Presentation Button - Same style as other nav items */}
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => onSectionChange('overview')}
-                className={cn(
-                  "w-full flex items-center justify-center p-2 rounded-lg transition-all",
-                  activeSection === 'overview'
-                    ? "bg-theme-accent/15 text-theme-accent"
-                    : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-                )}
-              >
-                <Sparkles className="w-4 h-4 flex-shrink-0" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">{presentationSection.label}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            onClick={() => onSectionChange('overview')}
-            className={cn(
-              "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
-              activeSection === 'overview'
-                ? "bg-theme-accent/15 text-theme-accent"
-                : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate">{presentationSection.label}</span>
-          </button>
-        )}
-
-        {/* Visual Separator */}
-        <div className={cn("my-3", collapsed ? "px-1" : "px-0")}>
-          <div className="h-px bg-gradient-to-r from-transparent via-theme-border to-transparent" />
-        </div>
-
-        {/* ANALYZE Section */}
-        {!collapsed && (
-          <div className="mb-2">
-            <span className="text-[10px] uppercase tracking-wider text-theme-text-muted/70 font-medium px-1">
-              Analyze
-            </span>
-          </div>
-        )}
-
-        {/* Analysis Navigation Items */}
-        <div className="space-y-1">
-          {analysisSections.map(({ id, label, icon: Icon }, index) => {
-            const isActive = activeSection === id;
-            const stepNumber = index + 1;
-            
-            const content = (
-              <button
-                key={id}
-                onClick={() => onSectionChange(id)}
-                className={cn(
-                  "w-full flex items-center rounded-lg text-xs font-medium transition-all",
-                  collapsed ? "justify-center p-2" : "gap-2 px-2.5 py-1.5",
-                  isActive
-                    ? "bg-theme-accent/15 text-theme-accent"
-                    : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-                )}
-              >
-                {/* Step Number Badge */}
-                <span className={cn(
-                  "flex items-center justify-center rounded text-[10px] font-bold flex-shrink-0",
-                  collapsed ? "w-5 h-5" : "w-4 h-4",
-                  isActive 
-                    ? "bg-theme-accent text-theme-bg" 
-                    : "bg-theme-border text-theme-text-muted"
-                )}>
-                  {stepNumber}
-                </span>
-                {!collapsed && (
-                  <>
-                    <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="truncate">{label}</span>
-                  </>
-                )}
-              </button>
-            );
-            
-            return collapsed ? (
-              <Tooltip key={id}>
-                <TooltipTrigger asChild>{content}</TooltipTrigger>
-                <TooltipContent side="right">{stepNumber}. {label}</TooltipContent>
-              </Tooltip>
-            ) : content;
-          })}
-        </div>
-      </nav>
-
-      {/* Bottom Section */}
-      <div className="border-t border-theme-border">
-        {/* Save Status Indicator */}
-        {(hasUnsavedChanges || saving || lastSaved) && (
-          <div className={cn(
-            "border-b border-theme-border",
-            collapsed ? "p-2" : "p-3"
-          )}>
-            {hasUnsavedChanges && onSave ? (
-              collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={onSave}
-                      disabled={saving}
-                      size="icon"
-                      className="w-full h-9 bg-amber-600 hover:bg-amber-500 text-white"
-                    >
-                      {saving ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-amber-900 text-amber-100 border-amber-700">
-                    Unsaved draft – Click to save
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Button
-                  onClick={onSave}
-                  disabled={saving}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-white justify-start gap-2"
-                  size="sm"
-                >
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {saving ? 'Saving...' : 'Save Draft'}
-                </Button>
-              )
-            ) : lastSaved ? (
-              collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="w-full flex items-center justify-center p-2.5">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <div className="flex items-center gap-2 text-xs text-emerald-400">
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              )
-            ) : null}
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
-          {/* Configure Button - Primary Action */}
-          {onConfigure && (
+      {/* Save Status Indicator */}
+      {(hasUnsavedChanges || saving || lastSaved) && (
+        <div className={cn(
+          "border-b border-theme-border",
+          collapsed ? "p-2" : "px-3 py-2"
+        )}>
+          {hasUnsavedChanges && onSave ? (
             collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={onConfigure}
+                    onClick={onSave}
+                    disabled={saving}
                     size="icon"
-                    className="w-full h-9 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                    className="w-10 h-10 mx-auto bg-amber-600 hover:bg-amber-500 text-white"
                   >
-                    <Settings2 className="w-4 h-4" />
+                    {saving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Configure</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button
-                onClick={onConfigure}
-                className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 justify-start gap-2"
-                size="sm"
-              >
-                <Settings2 className="w-4 h-4" />
-                Configure
-              </Button>
-            )
-          )}
-
-          {/* Load Quote */}
-          {onLoadQuote && (
-            <NavButton icon={FolderOpen} label={t('loadQuote') || 'Load Quote'} onClick={onLoadQuote} />
-          )}
-
-          {/* Compare Quotes */}
-          <NavButton icon={GitCompare} label="Compare" onClick={() => setCompareModalOpen(true)} />
-
-          {/* Version History */}
-          {onViewHistory && quoteId && (
-            <NavButton icon={History} label={t('versionHistory') || 'History'} onClick={onViewHistory} />
-          )}
-
-          {/* Present Mode - Toggles internal presentation view */}
-          {onPresentMode && quoteId && (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onPresentMode}
-                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20"
-                  >
-                    <Presentation className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Present</TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                onClick={onPresentMode}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20 transition-all"
-              >
-                <Presentation className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 truncate">Present</span>
-              </button>
-            )
-          )}
-
-          {/* View Quote - Opens client view in new tab */}
-          {onPresent && quoteId && (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onPresent}
-                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">View Client Quote</TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                onClick={onPresent}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
-              >
-                <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 truncate">View Quote</span>
-              </button>
-            )
-          )}
-
-          {/* Copy Link - Share */}
-          {onShare && quoteId && (
-            collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onShare}
-                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    {viewCount != null && viewCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-500 text-[10px] text-white rounded-full flex items-center justify-center">
-                        {viewCount}
-                      </span>
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Copy Link {viewCount ? `(${viewCount} views)` : ''}
+                <TooltipContent side="right" className="bg-amber-900 text-amber-100 border-amber-700">
+                  Unsaved draft – Click to save
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <button
-                onClick={onShare}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
+              <Button
+                onClick={onSave}
+                disabled={saving}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-white justify-start gap-2"
+                size="sm"
               >
-                <Share2 className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 truncate">Copy Link</span>
-                {viewCount != null && viewCount > 0 && (
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full">
-                    {viewCount}
-                  </span>
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
                 )}
-              </button>
+                {saving ? 'Saving...' : 'Save Draft'}
+              </Button>
             )
+          ) : lastSaved ? (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-10 h-10 mx-auto flex items-center justify-center">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-emerald-400">
+                <Check className="w-3.5 h-3.5" />
+                <span>Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            )
+          ) : null}
+        </div>
+      )}
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* QUOTE Section */}
+        <SectionHeader label="Quote" collapsed={collapsed} />
+        <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+          {onConfigure && (
+            <ActionButton 
+              icon={Settings2} 
+              label="Configure" 
+              onClick={onConfigure} 
+              collapsed={collapsed}
+              variant="primary"
+            />
+          )}
+          {onLoadQuote && (
+            <ActionButton 
+              icon={FolderOpen} 
+              label={t('loadQuote') || 'Load Quote'} 
+              onClick={onLoadQuote} 
+              collapsed={collapsed}
+            />
+          )}
+          {onViewHistory && quoteId && (
+            <ActionButton 
+              icon={History} 
+              label={t('versionHistory') || 'History'} 
+              onClick={onViewHistory} 
+              collapsed={collapsed}
+            />
           )}
         </div>
 
-        <Separator className="bg-theme-border" />
+        {/* SHARE Section - Only show if quote exists */}
+        {quoteId && (onPresent || onShare) && (
+          <>
+            <SectionHeader label="Share" collapsed={collapsed} />
+            <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+              {onPresent && (
+                <ActionButton 
+                  icon={ExternalLink} 
+                  label="View Quote" 
+                  onClick={onPresent} 
+                  collapsed={collapsed}
+                />
+              )}
+              {onShare && (
+                <ActionButton 
+                  icon={Share2} 
+                  label="Copy Link" 
+                  onClick={onShare} 
+                  collapsed={collapsed}
+                  badge={viewCount && viewCount > 0 ? viewCount : undefined}
+                />
+              )}
+            </div>
+          </>
+        )}
 
+        {/* TOOLS Section */}
+        <SectionHeader label="Tools" collapsed={collapsed} />
+        <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+          <ActionButton 
+            icon={GitCompare} 
+            label="Compare" 
+            onClick={() => setCompareModalOpen(true)} 
+            collapsed={collapsed}
+          />
+        </div>
+      </div>
+
+      {/* Bottom Section - Settings & Navigation */}
+      <div className="border-t border-theme-border">
         {/* Language & Currency Settings */}
         {(setLanguage || setCurrency) && (
-          <div className={cn("space-y-2", collapsed ? "p-2" : "p-3")}>
+          <div className={cn("space-y-1 border-b border-theme-border", collapsed ? "p-2" : "p-3")}>
             {/* Language Toggle */}
             {setLanguage && (
               collapsed ? (
@@ -605,7 +438,7 @@ export const DashboardSidebar = ({
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                      className="w-full flex items-center justify-center p-2.5 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
+                      className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
                     >
                       <Globe className="w-4 h-4" />
                     </button>
@@ -615,10 +448,10 @@ export const DashboardSidebar = ({
               ) : (
                 <button
                   onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
                 >
                   <Globe className="w-4 h-4 flex-shrink-0" />
-                  <span>{language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}</span>
+                  <span>{language === 'en' ? '🇬🇧 English' : '🇪🇸 Español'}</span>
                 </button>
               )
             )}
@@ -630,7 +463,7 @@ export const DashboardSidebar = ({
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setCurrency(currency === 'AED' ? 'USD' : currency === 'USD' ? 'EUR' : 'AED')}
-                      className="w-full flex items-center justify-center p-2.5 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all text-xs font-medium"
+                      className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all text-xs font-medium"
                     >
                       {currency}
                     </button>
@@ -638,8 +471,8 @@ export const DashboardSidebar = ({
                   <TooltipContent side="right">Currency: {currency}</TooltipContent>
                 </Tooltip>
               ) : (
-              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                  <SelectTrigger className="w-full h-8 bg-theme-bg/50 border-theme-border text-theme-text text-xs">
+                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <SelectTrigger className="w-full h-10 bg-theme-bg/50 border-theme-border text-theme-text text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -654,21 +487,29 @@ export const DashboardSidebar = ({
           </div>
         )}
 
-        <Separator className="bg-theme-border" />
-
         {/* Navigation Links */}
         <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
-          <NavButton icon={LayoutDashboard} label="Home" to="/home" />
+          <ActionButton 
+            icon={LayoutDashboard} 
+            label="Home" 
+            to="/home" 
+            collapsed={collapsed}
+          />
           {isAdmin && (
-            <NavButton icon={SlidersHorizontal} label="Admin" to="/dashboard" />
+            <ActionButton 
+              icon={SlidersHorizontal} 
+              label="Admin" 
+              to="/dashboard" 
+              collapsed={collapsed}
+            />
           )}
         </div>
 
         {/* Keyboard Shortcuts Hint */}
         {!collapsed && (
-          <div className="p-3 pt-0">
-            <p className="text-[10px] text-theme-text-muted text-center">
-              Press <span className="text-theme-accent">P</span> to present · <span className="text-theme-text-muted">1-{analysisSections.length}</span> to analyze
+          <div className="px-3 pb-3">
+            <p className="text-[10px] text-theme-text-muted/60 text-center">
+              Press <span className="text-theme-accent font-medium">C</span> to configure
             </p>
           </div>
         )}

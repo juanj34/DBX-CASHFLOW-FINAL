@@ -26,7 +26,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
+import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent, PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
@@ -49,7 +49,7 @@ const CashflowDashboardContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<SectionId>('overview');
+  const [activeSection, setActiveSection] = useState<string>('overview');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -319,8 +319,6 @@ const CashflowDashboardContent = () => {
 
         {/* Always render DashboardLayout to keep sidebar visible */}
         <DashboardLayout
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
           inputs={inputs}
           mortgageInputs={mortgageInputs}
           profile={profile}
@@ -328,7 +326,6 @@ const CashflowDashboardContent = () => {
           onConfigure={() => setModalOpen(true)}
           onLoadQuote={() => setLoadQuoteModalOpen(true)}
           onViewHistory={() => setVersionHistoryOpen(true)}
-          onPresentMode={() => setActiveSection('overview')}
           onShare={async () => {
             const url = await handleShare();
             if (url) {
