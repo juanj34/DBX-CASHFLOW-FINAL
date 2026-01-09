@@ -321,7 +321,8 @@ const QuotesDashboard = () => {
     }
   };
 
-  if (loading) {
+  const handleCompare = () => {
+    if (selectedForCompare.length >= 2) {
       navigate(`/compare?ids=${selectedForCompare.join(',')}`);
     }
   };
