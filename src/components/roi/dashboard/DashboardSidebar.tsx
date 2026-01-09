@@ -1,4 +1,5 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check } from "lucide-react";
+import { useState } from "react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -6,7 +7,7 @@ import { MortgageInputs } from "@/components/roi/useMortgageCalculations";
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/hooks/useProfile";
 import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Currency } from "@/components/roi/currencyUtils";
+import { QuoteSelector } from "@/components/roi/compare/QuoteSelector";
 
 export type SectionId = 'overview' | 'property' | 'payments' | 'hold' | 'exit' | 'mortgage' | 'summary';
 export type ViewMode = 'tabs' | 'vertical';
@@ -128,6 +130,20 @@ export const DashboardSidebar = ({
   onSave,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>(quoteId ? [quoteId] : []);
+
+  const handleCompareSelect = (ids: string[]) => {
+    setSelectedQuoteIds(ids);
+  };
+
+  const handleCompareConfirm = () => {
+    if (selectedQuoteIds.length >= 2) {
+      setCompareModalOpen(false);
+      navigate(`/quotes/compare?ids=${selectedQuoteIds.join(',')}`);
+    }
+  };
 
   // Presentation section - simple single word label
   const presentationSection = {
@@ -473,6 +489,9 @@ export const DashboardSidebar = ({
             <NavButton icon={FolderOpen} label={t('loadQuote') || 'Load Quote'} onClick={onLoadQuote} />
           )}
 
+          {/* Compare Quotes */}
+          <NavButton icon={GitCompare} label="Compare" onClick={() => setCompareModalOpen(true)} />
+
           {/* Version History */}
           {onViewHistory && quoteId && (
             <NavButton icon={History} label={t('versionHistory') || 'History'} onClick={onViewHistory} />
@@ -605,6 +624,21 @@ export const DashboardSidebar = ({
           </div>
         )}
       </div>
+
+      {/* Compare Quotes Modal */}
+      <QuoteSelector
+        open={compareModalOpen}
+        onClose={() => {
+          if (selectedQuoteIds.length >= 2) {
+            handleCompareConfirm();
+          } else {
+            setCompareModalOpen(false);
+          }
+        }}
+        selectedIds={selectedQuoteIds}
+        onSelect={handleCompareSelect}
+        maxQuotes={4}
+      />
     </aside>
   );
 };
