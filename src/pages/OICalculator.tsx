@@ -39,7 +39,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
-import { DashboardLayout } from "@/components/roi/dashboard";
+import { DashboardLayout, TopNavBar } from "@/components/roi/dashboard";
 import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
@@ -324,6 +324,11 @@ const OICalculatorContent = () => {
         lastSaved={lastSaved}
         onSave={handleSave}
       >
+        {/* Top Navigation Bar */}
+        <div className="sticky top-0 z-40 px-4 py-3 bg-theme-bg/80 backdrop-blur-xl border-b border-theme-border/50">
+          <TopNavBar />
+        </div>
+
         {/* Draft banner removed - all quotes now auto-save to database */}
 
         {!isFullyConfigured ? (
