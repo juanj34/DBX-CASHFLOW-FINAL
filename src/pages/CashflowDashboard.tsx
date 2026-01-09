@@ -328,7 +328,7 @@ const CashflowDashboardContent = () => {
           onConfigure={() => setModalOpen(true)}
           onLoadQuote={() => setLoadQuoteModalOpen(true)}
           onViewHistory={() => setVersionHistoryOpen(true)}
-          onSwitchView={handleSwitchToVertical}
+          onPresentMode={() => setActiveSection('overview')}
           onShare={async () => {
             const url = await handleShare();
             if (url) {

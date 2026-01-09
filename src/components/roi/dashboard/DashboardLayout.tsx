@@ -24,9 +24,9 @@ interface DashboardLayoutProps {
   onConfigure?: () => void;
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
-  onSwitchView?: () => void;
+  onPresentMode?: () => void; // Toggle presentation mode (internal)
   onShare?: () => void;
-  onPresent?: () => void;
+  onPresent?: () => void; // Open client view in new tab
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -54,7 +54,7 @@ export const DashboardLayout = ({
   onConfigure,
   onLoadQuote,
   onViewHistory,
-  onSwitchView,
+  onPresentMode,
   onShare,
   onPresent,
   viewCount,
@@ -144,7 +144,7 @@ export const DashboardLayout = ({
     onConfigure,
     onLoadQuote,
     onViewHistory,
-    onSwitchView,
+    onPresentMode,
     onShare,
     onPresent,
     viewCount,
