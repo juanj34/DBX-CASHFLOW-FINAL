@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { Share2, Copy, Mail, MessageCircle, Check, Eye, Loader2 } from 'lucide-react';
+import { Share2, Copy, Mail, MessageCircle, Check, Eye, Loader2, Clock, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuoteViews, formatDuration, getCountryFlag } from '@/hooks/useQuoteViews';
 
 interface ShareButtonProps {
   quoteId?: string;
@@ -17,6 +18,7 @@ interface ShareButtonProps {
   advisorEmail?: string;
   viewCount?: number;
   firstViewedAt?: string | null;
+  lastViewedAt?: string | null;
   onGenerateShareUrl: () => Promise<string | null>;
   className?: string;
 }
@@ -32,6 +34,7 @@ export const ShareButton = ({
   advisorEmail,
   viewCount = 0,
   firstViewedAt,
+  lastViewedAt,
   onGenerateShareUrl,
   className = '',
 }: ShareButtonProps) => {
@@ -43,6 +46,9 @@ export const ShareButton = ({
   const [shareUrl, setShareUrl] = useState<string | null>(
     shareToken ? `${window.location.origin}/view/${shareToken}` : null
   );
+  
+  // Fetch detailed view analytics
+  const { analytics, loading: loadingAnalytics } = useQuoteViews(quoteId);
 
   const generateUrl = useCallback(async () => {
     if (shareUrl) return shareUrl;
@@ -122,7 +128,6 @@ export const ShareButton = ({
         setSendingEmail(false);
       }
     } else {
-      // Fallback to mailto if no client email
       const subject = encodeURIComponent(`Your Investment Analysis for ${projectName || 'Property'}`);
       const body = encodeURIComponent(`Hi,\n\nHere is your personalized investment analysis:\n\n${url}\n\nBest regards,\n${advisorName || 'Your Advisor'}`);
       window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
@@ -136,6 +141,11 @@ export const ShareButton = ({
     });
   };
 
+  // Use analytics if available, otherwise fall back to props
+  const displayViewCount = analytics?.totalViews ?? viewCount;
+  const displayLastViewed = analytics?.lastViewedAt ?? lastViewedAt;
+  const displayFirstViewed = firstViewedAt;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -147,7 +157,7 @@ export const ShareButton = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-64 p-3 bg-theme-card border-theme-border"
+        className="w-72 p-3 bg-theme-card border-theme-border"
         align="end"
       >
         <div className="space-y-3">
@@ -197,23 +207,68 @@ export const ShareButton = ({
             </Button>
           </div>
 
-          {/* Analytics */}
-          {(viewCount > 0 || firstViewedAt) && (
+          {/* Enhanced Analytics */}
+          {(displayViewCount > 0 || displayFirstViewed) && (
             <>
-              <div className="border-t border-theme-border pt-3">
-                <div className="flex items-center gap-2 text-xs text-theme-text-muted">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>
-                    {viewCount} {viewCount === 1 ? t('view') || 'view' : t('views') || 'views'}
-                    {firstViewedAt && (
-                      <span className="ml-1">
-                        • {t('firstOpened') || 'First opened'} {formatDate(firstViewedAt)}
-                      </span>
-                    )}
-                  </span>
+              <div className="border-t border-theme-border pt-3 space-y-2">
+                {/* View count and avg time */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-theme-text-muted">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>
+                      {displayViewCount} {displayViewCount === 1 ? t('view') || 'view' : t('views') || 'views'}
+                    </span>
+                  </div>
+                  {analytics?.averageDuration && (
+                    <div className="flex items-center gap-1.5 text-xs text-theme-text-muted">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>avg {formatDuration(analytics.averageDuration)}</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Last viewed with location */}
+                {displayLastViewed && (
+                  <div className="flex items-center gap-2 text-xs text-theme-text-muted">
+                    <span className="text-theme-accent">●</span>
+                    <span>
+                      {t('lastViewed') || 'Last viewed'} {formatDate(displayLastViewed)}
+                      {analytics?.lastViewLocation && (
+                        <span className="ml-1">
+                          {getCountryFlag(analytics.lastViewCountryCode)} {analytics.lastViewLocation}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {/* First opened */}
+                {displayFirstViewed && (
+                  <div className="flex items-center gap-2 text-xs text-theme-text-muted">
+                    <span>
+                      {t('firstOpened') || 'First opened'} {formatDate(displayFirstViewed)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Total time spent */}
+                {analytics && analytics.totalTimeSpent > 60 && (
+                  <div className="flex items-center gap-2 text-xs text-cyan-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>
+                      {t('totalTimeSpent') || 'Total time spent'}: {formatDuration(analytics.totalTimeSpent)}
+                    </span>
+                  </div>
+                )}
               </div>
             </>
+          )}
+
+          {/* Loading state for analytics */}
+          {loadingAnalytics && displayViewCount === 0 && (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="w-4 h-4 animate-spin text-theme-text-muted" />
+            </div>
           )}
         </div>
       </PopoverContent>

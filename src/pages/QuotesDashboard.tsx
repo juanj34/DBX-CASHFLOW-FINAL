@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
   LayoutGrid, Check, Search, Filter, MessageCircle, ArrowUpDown, ArrowUp, ArrowDown, X,
-  FileText, TrendingUp, CheckCircle2, Eye, EyeOff
+  FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,12 +48,14 @@ type SortDirection = 'asc' | 'desc';
 
 const QuotesDashboard = () => {
   useDocumentTitle("All Opportunities");
-  const { quotes, loading, deleteQuote } = useQuotesList();
+  const { quotes, loading, deleteQuote, duplicateQuote } = useQuotesList();
   const { profile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [deletingQuote, setDeletingQuote] = useState<CashflowQuote | null>(null);
+  const [duplicatingQuote, setDuplicatingQuote] = useState<CashflowQuote | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,6 +190,26 @@ const QuotesDashboard = () => {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Share link copied!' });
     }
+  };
+
+  const handleDuplicateClick = (quote: CashflowQuote) => {
+    setDuplicatingQuote(quote);
+  };
+
+  const confirmDuplicate = async () => {
+    if (!duplicatingQuote) return;
+    
+    setIsDuplicating(true);
+    const { newId, error } = await duplicateQuote(duplicatingQuote.id);
+    setIsDuplicating(false);
+    
+    if (error) {
+      toast({ title: 'Failed to duplicate quote', variant: 'destructive' });
+    } else if (newId) {
+      toast({ title: 'Quote duplicated successfully!' });
+      navigate(`/cashflow/${newId}`);
+    }
+    setDuplicatingQuote(null);
   };
 
   const handleWhatsAppShare = (quote: CashflowQuote) => {
@@ -624,6 +646,15 @@ const QuotesDashboard = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => handleDuplicateClick(quote)}
+                                className="h-8 w-8 text-theme-text-muted hover:text-cyan-400 hover:bg-cyan-500/10"
+                                title={t('duplicate') || 'Duplicate'}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => navigate(`/cashflow/${quote.id}`)}
                                 className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
                               >
@@ -668,6 +699,33 @@ const QuotesDashboard = () => {
               className="bg-red-600 hover:bg-red-500 text-white"
             >
               {t('quotesDelete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Duplicate Confirmation Dialog */}
+      <AlertDialog open={!!duplicatingQuote} onOpenChange={() => setDuplicatingQuote(null)}>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-theme-text">{t('duplicateQuote') || 'Duplicate Quote'}</AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {t('duplicateQuoteDesc') || 'A copy of this quote will be created with all current settings. You will be redirected to edit the new copy.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="bg-theme-bg-alt text-theme-text border-theme-border hover:bg-theme-card-alt hover:text-theme-text"
+              disabled={isDuplicating}
+            >
+              {t('quotesCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDuplicate}
+              disabled={isDuplicating}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white"
+            >
+              {isDuplicating ? 'Duplicating...' : t('duplicate') || 'Duplicate'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

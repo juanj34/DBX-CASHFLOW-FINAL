@@ -464,5 +464,76 @@ export const useQuotesList = () => {
     return { error };
   };
 
-  return { quotes, loading, deleteQuote, refetch: () => setLoading(true) };
+  const duplicateQuote = async (id: string): Promise<{ newId: string | null; error: any }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { newId: null, error: new Error('Not authenticated') };
+    }
+
+    // Fetch the original quote
+    const { data: originalQuote, error: fetchError } = await supabase
+      .from('cashflow_quotes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !originalQuote) {
+      return { newId: null, error: fetchError };
+    }
+
+    // Create a copy with modified title
+    const originalTitle = originalQuote.title || 'Untitled Quote';
+    const newTitle = `${originalTitle} (Copy)`;
+
+    const { data: newQuote, error: insertError } = await supabase
+      .from('cashflow_quotes')
+      .insert({
+        broker_id: user.id,
+        inputs: originalQuote.inputs,
+        client_name: originalQuote.client_name,
+        client_country: originalQuote.client_country,
+        client_email: originalQuote.client_email,
+        project_name: originalQuote.project_name,
+        developer: originalQuote.developer,
+        unit: originalQuote.unit,
+        unit_type: originalQuote.unit_type,
+        unit_size_sqf: originalQuote.unit_size_sqf,
+        unit_size_m2: originalQuote.unit_size_m2,
+        title: newTitle,
+        is_draft: true,
+        status: 'draft',
+      })
+      .select()
+      .single();
+
+    if (insertError || !newQuote) {
+      return { newId: null, error: insertError };
+    }
+
+    // Copy images if any exist
+    const { data: images } = await supabase
+      .from('cashflow_images')
+      .select('image_type, image_url')
+      .eq('quote_id', id);
+
+    if (images && images.length > 0) {
+      await supabase.from('cashflow_images').insert(
+        images.map(img => ({
+          quote_id: newQuote.id,
+          image_type: img.image_type,
+          image_url: img.image_url,
+        }))
+      );
+    }
+
+    // Add the new quote to local state
+    setQuotes(prev => [{
+      ...newQuote,
+      inputs: newQuote.inputs as unknown as OIInputs,
+    }, ...prev]);
+
+    return { newId: newQuote.id, error: null };
+  };
+
+  return { quotes, loading, deleteQuote, duplicateQuote, refetch: () => setLoading(true) };
 };

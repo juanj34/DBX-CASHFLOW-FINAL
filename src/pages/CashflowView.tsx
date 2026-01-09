@@ -169,23 +169,34 @@ const CashflowViewContent = () => {
     fetchQuote();
   }, [shareToken]);
 
-  // Track view - only once per session
+  // Track view - only once per session, also track time spent
+  const viewStartTime = useRef<number>(Date.now());
+  const sessionIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (!shareToken || viewTrackedRef.current) return;
     
     const sessionKey = `quote_viewed_${shareToken}`;
-    if (sessionStorage.getItem(sessionKey)) {
+    const existingSessionId = sessionStorage.getItem(`quote_session_${shareToken}`);
+    
+    if (sessionStorage.getItem(sessionKey) && existingSessionId) {
       viewTrackedRef.current = true;
+      sessionIdRef.current = existingSessionId;
       return;
     }
     
     const trackView = async () => {
       try {
-        await supabase.functions.invoke('track-quote-view', {
+        const { data } = await supabase.functions.invoke('track-quote-view', {
           body: { shareToken },
         });
         sessionStorage.setItem(sessionKey, 'true');
         viewTrackedRef.current = true;
+        
+        if (data?.session_id) {
+          sessionIdRef.current = data.session_id;
+          sessionStorage.setItem(`quote_session_${shareToken}`, data.session_id);
+        }
       } catch (error) {
         console.error('Error tracking view:', error);
       }
@@ -193,6 +204,43 @@ const CashflowViewContent = () => {
     
     trackView();
   }, [shareToken]);
+
+  // Track time spent when user leaves the page
+  useEffect(() => {
+    const sendDuration = () => {
+      if (!sessionIdRef.current) return;
+      
+      const durationSeconds = (Date.now() - viewStartTime.current) / 1000;
+      
+      // Use sendBeacon for reliable tracking on page close
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-quote-view-duration`;
+      const payload = JSON.stringify({
+        sessionId: sessionIdRef.current,
+        durationSeconds,
+      });
+      
+      navigator.sendBeacon(url, payload);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        sendDuration();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      sendDuration();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      sendDuration();
+    };
+  }, []);
 
   const calculations = inputs ? useOICalculations(inputs) : null;
   const mortgageAnalysis = useMortgageCalculations({
