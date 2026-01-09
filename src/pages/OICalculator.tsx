@@ -240,6 +240,22 @@ const OICalculatorContent = () => {
     return null;
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
+  // Present - opens the client view in a new tab
+  const handlePresent = useCallback(async () => {
+    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
+    if (!savedQuote) return;
+    
+    let token = savedQuote.share_token;
+    if (!token) {
+      token = await generateShareToken(savedQuote.id);
+    }
+    
+    if (token) {
+      const url = `${window.location.origin}/view/${token}`;
+      window.open(url, '_blank');
+    }
+  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
+
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
       inputs,
@@ -281,6 +297,7 @@ const OICalculatorContent = () => {
         onViewHistory={() => setVersionHistoryOpen(true)}
         onSwitchView={handleSwitchToDashboard}
         onShare={handleShare}
+        onPresent={handlePresent}
         viewCount={quote?.view_count ?? undefined}
         firstViewedAt={quote?.first_viewed_at ?? undefined}
         quoteId={quoteId}

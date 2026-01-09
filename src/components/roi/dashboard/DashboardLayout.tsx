@@ -26,6 +26,7 @@ interface DashboardLayoutProps {
   onViewHistory?: () => void;
   onSwitchView?: () => void;
   onShare?: () => void;
+  onPresent?: () => void;
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -55,6 +56,7 @@ export const DashboardLayout = ({
   onViewHistory,
   onSwitchView,
   onShare,
+  onPresent,
   viewCount,
   firstViewedAt,
   quoteId,
@@ -144,6 +146,7 @@ export const DashboardLayout = ({
     onViewHistory,
     onSwitchView,
     onShare,
+    onPresent,
     viewCount,
     firstViewedAt,
     quoteId,
