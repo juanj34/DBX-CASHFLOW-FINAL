@@ -100,6 +100,8 @@ const CashflowDashboardContent = () => {
         setCreatingDraft(true);
         const newId = await createDraft();
         if (newId) {
+          // Set flag to open configurator after navigation
+          localStorage.setItem('cashflow_open_configurator', 'true');
           navigate(`/cashflow-dashboard/${newId}`, { replace: true });
         }
         setCreatingDraft(false);
@@ -155,14 +157,18 @@ const CashflowDashboardContent = () => {
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
-  // Auto-open configurator for new quotes (no quoteId)
+  // Open configurator after navigation (for new drafts or restored state)
   useEffect(() => {
-    if (!quoteId && dataLoaded && !isQuoteConfigured) {
-      // Small delay to ensure UI is ready
-      const timer = setTimeout(() => setModalOpen(true), 100);
-      return () => clearTimeout(timer);
+    if (dataLoaded) {
+      const shouldOpen = localStorage.getItem('cashflow_open_configurator') === 'true' ||
+                         localStorage.getItem('cashflow_configurator_open') === 'true';
+      if (shouldOpen) {
+        setModalOpen(true);
+        localStorage.removeItem('cashflow_open_configurator');
+        localStorage.removeItem('cashflow_configurator_open');
+      }
     }
-  }, [quoteId, dataLoaded, isQuoteConfigured]);
+  }, [dataLoaded]);
 
   // Handler for when a new quote is auto-created - preserve configurator state across navigation
   const handleNewQuoteCreated = useCallback((newId: string) => {
@@ -172,17 +178,6 @@ const CashflowDashboardContent = () => {
     }
     navigate(`/cashflow-dashboard/${newId}`, { replace: true });
   }, [navigate, modalOpen]);
-
-  // Restore configurator state after navigation (for autosave-triggered navigations)
-  useEffect(() => {
-    if (dataLoaded) {
-      const shouldReopen = localStorage.getItem('cashflow_configurator_open') === 'true';
-      if (shouldReopen) {
-        setModalOpen(true);
-        localStorage.removeItem('cashflow_configurator_open');
-      }
-    }
-  }, [dataLoaded]);
 
   // Autosave
   useEffect(() => {

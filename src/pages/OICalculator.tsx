@@ -113,6 +113,8 @@ const OICalculatorContent = () => {
         setCreatingDraft(true);
         const newId = await createDraft();
         if (newId) {
+          // Set flag to open configurator after navigation
+          localStorage.setItem('cashflow_open_configurator', 'true');
           navigate(`/cashflow/${newId}`, { replace: true });
         }
         setCreatingDraft(false);
@@ -171,12 +173,14 @@ const OICalculatorContent = () => {
     navigate(`/cashflow/${newId}`, { replace: true });
   }, [navigate, modalOpen]);
 
-  // Restore configurator state after navigation
+  // Open configurator after navigation (for new drafts or restored state)
   useEffect(() => {
     if (dataLoaded) {
-      const shouldReopen = localStorage.getItem('cashflow_configurator_open') === 'true';
-      if (shouldReopen) {
+      const shouldOpen = localStorage.getItem('cashflow_open_configurator') === 'true' ||
+                         localStorage.getItem('cashflow_configurator_open') === 'true';
+      if (shouldOpen) {
         setModalOpen(true);
+        localStorage.removeItem('cashflow_open_configurator');
         localStorage.removeItem('cashflow_configurator_open');
       }
     }
