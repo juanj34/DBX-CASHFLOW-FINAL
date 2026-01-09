@@ -136,12 +136,15 @@ export const DashboardSidebar = ({
     icon: Sparkles,
   };
 
+  // Check if exit scenarios exist
+  const hasExitScenarios = Array.isArray(inputs._exitScenarios) && inputs._exitScenarios.length > 0;
+
   // Analysis sections
   const analysisSections = [
     { id: 'property' as SectionId, label: t('tabProperty'), icon: Building2, show: true },
     { id: 'payments' as SectionId, label: t('tabPayments'), icon: CreditCard, show: true },
     { id: 'hold' as SectionId, label: t('tabHold'), icon: Home, show: inputs.enabledSections?.longTermHold !== false },
-    { id: 'exit' as SectionId, label: t('tabExit'), icon: TrendingUp, show: inputs.enabledSections?.exitStrategy !== false },
+    { id: 'exit' as SectionId, label: t('tabExit'), icon: TrendingUp, show: hasExitScenarios },
     { id: 'mortgage' as SectionId, label: t('tabMortgage'), icon: Landmark, show: mortgageInputs.enabled },
     { id: 'summary' as SectionId, label: t('tabSummary'), icon: FileText, show: true },
   ].filter(section => section.show);
