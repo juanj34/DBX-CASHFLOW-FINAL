@@ -33,6 +33,7 @@ import ColorTest from "./pages/ColorTest";
 import ArchivedQuotes from "./pages/ArchivedQuotes";
 import PresentationsHub from "./pages/PresentationsHub";
 import PresentationBuilder from "./pages/PresentationBuilder";
+import PresentationView from "./pages/PresentationView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
                 <Route path="/compare-view/:shareToken" element={<CompareView />} />
+                <Route path="/present/:shareToken" element={<PresentationView />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
