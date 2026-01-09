@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, FolderOpen, History, LayoutDashboard, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -480,7 +480,11 @@ export const DashboardSidebar = ({
 
           {/* Switch View */}
           {onSwitchView && (
-            <NavButton icon={Rows3} label="Vertical View" onClick={onSwitchView} />
+            <NavButton 
+              icon={viewMode === 'vertical' ? LayoutDashboard : Rows3} 
+              label={viewMode === 'vertical' ? 'Dashboard View' : 'Vertical View'} 
+              onClick={onSwitchView} 
+            />
           )}
 
           {/* Share */}
