@@ -285,7 +285,8 @@ export const ConfiguratorLayout = ({
       case 'rent':
         return inputs.rentalYieldPercent > 0;
       case 'exits':
-        return inputs._exitScenarios && inputs._exitScenarios.length > 0;
+        // Allow proceeding if exits are disabled OR if there are exit scenarios
+        return !inputs.enabledSections?.exitStrategy || (inputs._exitScenarios && inputs._exitScenarios.length > 0);
       // Optional sections
       case 'value':
       case 'mortgage':

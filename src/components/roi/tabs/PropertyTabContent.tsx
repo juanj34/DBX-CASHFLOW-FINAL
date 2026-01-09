@@ -180,7 +180,17 @@ export const PropertyTabContent = ({
             
             {/* MASTER HEADER - Identity (No Box) */}
             <motion.div className="flex-shrink-0" variants={itemVariants}>
-              <h1 className="text-2xl md:text-3xl font-bold text-theme-text mb-1 leading-tight">
+              <h1 
+                className={cn(
+                  "text-2xl md:text-3xl font-bold text-theme-text mb-1 leading-tight",
+                  project && [
+                    "cursor-pointer",
+                    "transition-all duration-200",
+                    "hover:text-theme-accent"
+                  ]
+                )}
+                onClick={() => project && setProjectModalOpen(true)}
+              >
                 {project?.name || clientInfo.projectName || 'Investment Property'}
               </h1>
               <div className="flex items-center gap-2 text-theme-text-muted flex-wrap">
