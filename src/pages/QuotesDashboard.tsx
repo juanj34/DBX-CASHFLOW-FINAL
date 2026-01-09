@@ -396,42 +396,41 @@ const QuotesDashboard = () => {
         }
       />
         
-        {/* Compare bar */}
-        {compareMode && selectedForCompare.length > 0 && (
-          <div className="container mx-auto px-4 sm:px-6 pb-4">
-            <div className="flex items-center justify-between bg-theme-card border border-theme-accent/30 rounded-lg px-4 py-3">
-              <span className="text-theme-text-muted text-sm">
-                {selectedForCompare.length} {t('quotesSelected')} ({t('min2Max4')})
-              </span>
-              <Button
-                onClick={handleCompare}
-                disabled={selectedForCompare.length < 2}
-                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
-              >
-                {t('compareSelected')}
-              </Button>
-            </div>
+      {/* Compare bar */}
+      {compareMode && selectedForCompare.length > 0 && (
+        <div className="container mx-auto px-4 sm:px-6 py-4 border-b border-theme-border bg-theme-bg/80">
+          <div className="flex items-center justify-between bg-theme-card border border-theme-accent/30 rounded-lg px-4 py-3">
+            <span className="text-theme-text-muted text-sm">
+              {selectedForCompare.length} {t('quotesSelected')} ({t('min2Max4')})
+            </span>
+            <Button
+              onClick={handleCompare}
+              disabled={selectedForCompare.length < 2}
+              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+            >
+              {t('compareSelected')}
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Bulk delete bar */}
-        {selectMode && selectedForDelete.length > 0 && (
-          <div className="container mx-auto px-4 sm:px-6 pb-4">
-            <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
-              <span className="text-theme-text-muted text-sm">
-                {selectedForDelete.length} selected for deletion
-              </span>
-              <Button
-                onClick={() => setShowBulkDeleteDialog(true)}
-                className="bg-red-600 text-white hover:bg-red-500"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Selected
-              </Button>
-            </div>
+      {/* Bulk delete bar */}
+      {selectMode && selectedForDelete.length > 0 && (
+        <div className="container mx-auto px-4 sm:px-6 py-4 border-b border-theme-border bg-theme-bg/80">
+          <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+            <span className="text-theme-text-muted text-sm">
+              {selectedForDelete.length} selected for deletion
+            </span>
+            <Button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              className="bg-red-600 text-white hover:bg-red-500"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Selected
+            </Button>
           </div>
-        )}
-      </header>
+        </div>
+      )}
 
       <main className="container mx-auto px-4 sm:px-6 py-6">
         {/* Pipeline Stats */}
