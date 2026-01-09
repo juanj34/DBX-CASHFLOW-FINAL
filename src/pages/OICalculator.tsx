@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Home, TrendingUp, CreditCard, Building2, Sparkles, Rocket } from "lucide-react";
+import { Home, TrendingUp, CreditCard, Building2, Sparkles, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
@@ -40,6 +40,7 @@ import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
 import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
+import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -62,6 +63,7 @@ const OICalculatorContent = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
+  const [presentationMode, setPresentationMode] = useState(false);
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -269,11 +271,28 @@ const OICalculatorContent = () => {
     });
   }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
-  // Navigate to dashboard view and save preference
-  const handleSwitchToDashboard = useCallback(() => {
-    localStorage.setItem('cashflow_view_preference', 'dashboard');
-    navigate(quoteId ? `/cashflow-dashboard/${quoteId}` : '/cashflow-dashboard');
-  }, [quoteId, navigate]);
+  // Toggle presentation mode
+  const handlePresentMode = useCallback(() => {
+    setPresentationMode(prev => !prev);
+  }, []);
+
+  // Keyboard shortcut for presentation mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      // P key toggles presentation mode
+      if (e.key === 'p' || e.key === 'P') {
+        if (isFullyConfigured) {
+          setPresentationMode(prev => !prev);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullyConfigured]);
 
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
@@ -295,7 +314,7 @@ const OICalculatorContent = () => {
         onConfigure={() => setModalOpen(true)}
         onLoadQuote={() => setLoadQuoteModalOpen(true)}
         onViewHistory={() => setVersionHistoryOpen(true)}
-        onSwitchView={handleSwitchToDashboard}
+        onPresentMode={handlePresentMode}
         onShare={handleShare}
         onPresent={handlePresent}
         viewCount={quote?.view_count ?? undefined}
@@ -339,6 +358,42 @@ const OICalculatorContent = () => {
                 </p>
               </div>
             </div>
+          </div>
+        ) : presentationMode ? (
+          /* Presentation Mode - Show InvestmentStoryDashboard */
+          <div className="relative h-full flex flex-col">
+            {/* Exit Presentation Button */}
+            <div className="absolute top-4 right-4 z-20">
+              <Button
+                onClick={() => setPresentationMode(false)}
+                variant="ghost"
+                size="sm"
+                className="bg-theme-card/90 backdrop-blur-sm border border-theme-border hover:bg-theme-card text-theme-text gap-2"
+              >
+                <X className="w-4 h-4" />
+                Exit Presentation
+              </Button>
+            </div>
+            <OverviewTabContent
+              inputs={inputs}
+              calculations={calculations}
+              mortgageInputs={mortgageInputs}
+              mortgageAnalysis={mortgageAnalysis}
+              exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+              clientInfo={{
+                developer: clientInfo.developer,
+                projectName: clientInfo.projectName,
+                clients: clientInfo.clients,
+                unitType: clientInfo.unitType,
+                zoneName: clientInfo.zoneName,
+                zoneId: clientInfo.zoneId,
+              }}
+              heroImageUrl={quoteImages.heroImageUrl}
+              buildingRenderUrl={quoteImages.buildingRenderUrl}
+              customDifferentiators={customDifferentiators}
+            />
           </div>
         ) : (
           /* Configured State - All sections stacked vertically */

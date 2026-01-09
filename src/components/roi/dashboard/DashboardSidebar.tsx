@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, Rows3, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check, GitCompare, Presentation, ExternalLink } from "lucide-react";
+import { Building2, CreditCard, Home, TrendingUp, Landmark, FileText, ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Sparkles, Globe, Share2, Save, Loader2, Check, GitCompare, Presentation, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -36,9 +36,9 @@ interface DashboardSidebarProps {
   onConfigure?: () => void;
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
-  onSwitchView?: () => void;
+  onPresentMode?: () => void; // Toggle presentation mode (internal)
   onShare?: () => void;
-  onPresent?: () => void;
+  onPresent?: () => void; // Open client view in new tab
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -116,7 +116,7 @@ export const DashboardSidebar = ({
   onConfigure,
   onLoadQuote,
   onViewHistory,
-  onSwitchView,
+  onPresentMode,
   onShare,
   onPresent,
   viewCount,
@@ -505,13 +505,29 @@ export const DashboardSidebar = ({
             <NavButton icon={History} label={t('versionHistory') || 'History'} onClick={onViewHistory} />
           )}
 
-          {/* Switch View */}
-          {onSwitchView && (
-            <NavButton 
-              icon={viewMode === 'vertical' ? LayoutDashboard : Rows3} 
-              label={viewMode === 'vertical' ? 'Dashboard View' : 'Vertical View'} 
-              onClick={onSwitchView} 
-            />
+          {/* Present Mode - Toggles internal presentation view */}
+          {onPresentMode && quoteId && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onPresentMode}
+                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20"
+                  >
+                    <Presentation className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Present</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={onPresentMode}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20 transition-all"
+              >
+                <Presentation className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 truncate">Present</span>
+              </button>
+            )
           )}
 
           {/* View Quote - Opens client view in new tab */}
@@ -521,7 +537,7 @@ export const DashboardSidebar = ({
                 <TooltipTrigger asChild>
                   <button
                     onClick={onPresent}
-                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20"
+                    className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </button>
@@ -531,7 +547,7 @@ export const DashboardSidebar = ({
             ) : (
               <button
                 onClick={onPresent}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20 transition-all"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 transition-all"
               >
                 <ExternalLink className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 truncate">View Quote</span>

@@ -81,8 +81,12 @@ function App() {
                 <Route path="/roi-calculator" element={<Navigate to="/home" replace />} />
                 <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
                 <Route path="/cashflow/:quoteId" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
-                <Route path="/cashflow-dashboard" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
-                <Route path="/cashflow-dashboard/:quoteId" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
+                {/* Legacy Dashboard View - kept for reference */}
+                <Route path="/legacy/cashflow-dashboard" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
+                <Route path="/legacy/cashflow-dashboard/:quoteId" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
+                {/* Redirects for old dashboard URLs */}
+                <Route path="/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />
+                <Route path="/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow/:quoteId" replace />} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
                 <Route path="/my-quotes" element={<ProtectedRoute><QuotesDashboard /></ProtectedRoute>} />
                 <Route path="/archived-quotes" element={<ProtectedRoute><ArchivedQuotes /></ProtectedRoute>} />
