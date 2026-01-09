@@ -3,9 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
   SlidersHorizontal, Menu, Scale, DollarSign, 
-  Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin
+  Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin,
+  Plus, BarChart3, Archive, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppLogo } from "@/components/AppLogo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -357,78 +366,186 @@ const Home = () => {
     );
   }
 
-  const NavItems = () => (
+  const NavItems = ({ mobile = false }: { mobile?: boolean }) => (
     <>
+      {/* Primary Actions */}
+      <Link to="/cashflow-generator" onClick={() => setMobileMenuOpen(false)}>
+        <Button 
+          className={mobile 
+            ? "w-full justify-start gap-2 bg-theme-accent text-theme-bg hover:bg-theme-accent/90" 
+            : "gap-2 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+          }
+        >
+          <Plus className="w-4 h-4" />
+          {t('quotesNewQuote')}
+        </Button>
+      </Link>
+
+      {/* Main Navigation Links */}
       <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card gap-2">
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <FileText className="w-4 h-4" />
           {t('allOpportunities')}
         </Button>
       </Link>
-      {isAdmin && (
-        <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-          <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card gap-2">
-            <SlidersHorizontal className="w-4 h-4" />
-            {t('homeConfiguration')}
-          </Button>
-        </Link>
-      )}
-      <Link to="/account-settings" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card gap-2">
-          <Settings className="w-4 h-4" />
-          {t('homeAccountSettings')}
+      
+      <Link to="/compare" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <Scale className="w-4 h-4" />
+          {t('compare')}
         </Button>
       </Link>
-      <Button 
-        variant="ghost" 
-        onClick={() => {
-          handleSignOut();
-          setMobileMenuOpen(false);
-        }}
-        className="w-full justify-start sm:w-auto sm:px-3 text-theme-text-muted hover:text-destructive hover:bg-theme-card gap-2"
-      >
-        <LogOut className="w-5 h-5" />
-        <span className="sm:hidden">{t('signOut')}</span>
-      </Button>
+      
+      <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <Map className="w-4 h-4" />
+          {t('map')}
+        </Button>
+      </Link>
+      
+      <Link to="/quotes-analytics" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <BarChart3 className="w-4 h-4" />
+          {t('analytics')}
+        </Button>
+      </Link>
+
+      {/* Mobile-only additional items */}
+      {mobile && (
+        <>
+          <div className="border-t border-theme-border my-2" />
+          <Link to="/archived-quotes" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+              <Archive className="w-4 h-4" />
+              {t('archivedQuotes')}
+            </Button>
+          </Link>
+          {isAdmin && (
+            <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                {t('homeConfiguration')}
+              </Button>
+            </Link>
+          )}
+          <Link to="/account-settings" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+              <Settings className="w-4 h-4" />
+              {t('homeAccountSettings')}
+            </Button>
+          </Link>
+          <Button 
+            variant="ghost" 
+            onClick={() => {
+              handleSignOut();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full justify-start text-theme-text-muted hover:text-destructive hover:bg-theme-card-alt gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            {t('signOut')}
+          </Button>
+        </>
+      )}
     </>
   );
 
   return (
     <div className="min-h-screen bg-theme-bg">
       {/* Header */}
-      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="p-2 bg-theme-accent/20 rounded-xl">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-theme-accent" />
+      <header className="border-b border-theme-border bg-theme-bg/95 backdrop-blur-xl sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <AppLogo size="md" linkTo="/home" showGlow={false} />
+            
+            {/* Desktop Navigation - Center */}
+            <nav className="hidden lg:flex items-center gap-1">
+              <NavItems />
+            </nav>
+            
+            {/* Desktop Right Side - Profile Menu */}
+            <div className="hidden lg:flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-theme-accent to-purple-500 flex items-center justify-center text-theme-bg text-sm font-semibold">
+                      {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-theme-card border-theme-border">
+                  <div className="px-3 py-2 border-b border-theme-border">
+                    <p className="text-sm font-medium text-theme-text">{profile?.full_name || 'User'}</p>
+                    <p className="text-xs text-theme-text-muted">{profile?.email}</p>
+                  </div>
+                  <DropdownMenuItem asChild className="cursor-pointer text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+                    <Link to="/archived-quotes" className="flex items-center gap-2">
+                      <Archive className="w-4 h-4" />
+                      {t('archivedQuotes')}
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild className="cursor-pointer text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+                      <Link to="/dashboard" className="flex items-center gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        {t('homeConfiguration')}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild className="cursor-pointer text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+                    <Link to="/account-settings" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      {t('homeAccountSettings')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-theme-border" />
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    className="cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    {t('signOut')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-theme-text">{t('loginTitle')}</h1>
-              <p className="text-xs sm:text-sm text-theme-text-muted">{t('loginSubtitle')}</p>
+            
+            {/* Mobile/Tablet - Compact Nav */}
+            <div className="flex lg:hidden items-center gap-2">
+              <Link to="/cashflow-generator">
+                <Button size="sm" className="gap-1.5 bg-theme-accent text-theme-bg hover:bg-theme-accent/90">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('quotesNewQuote')}</span>
+                </Button>
+              </Link>
+              
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
+                    <Menu className="w-5 h-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] bg-theme-card border-theme-border">
+                  <SheetHeader className="pb-4 border-b border-theme-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-theme-accent to-purple-500 flex items-center justify-center text-theme-bg font-semibold">
+                        {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="text-left">
+                        <SheetTitle className="text-theme-text">{profile?.full_name || 'User'}</SheetTitle>
+                        <p className="text-xs text-theme-text-muted">{profile?.email}</p>
+                      </div>
+                    </div>
+                  </SheetHeader>
+                  <nav className="flex flex-col gap-1 mt-4">
+                    <NavItems mobile />
+                  </nav>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
-          
-          {/* Desktop Navigation */}
-          <nav className="hidden sm:flex items-center gap-2">
-            <NavItems />
-          </nav>
-          
-          {/* Mobile Hamburger Menu */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild className="sm:hidden">
-              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                <Menu className="w-6 h-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] bg-theme-card border-theme-border">
-              <SheetHeader>
-                <SheetTitle className="text-theme-text text-left">{t('landingMenu')}</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-2 mt-6">
-                <NavItems />
-              </nav>
-            </SheetContent>
-          </Sheet>
         </div>
       </header>
 
@@ -546,13 +663,8 @@ const Home = () => {
           })}
         </div>
 
-        {/* Recent Comparisons */}
-        <div className="mb-6 sm:mb-8">
-          <RecentComparisons limit={3} />
-        </div>
-
         {/* Active Opportunities Table */}
-        <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl overflow-hidden">
+        <div className="bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl overflow-hidden mb-6 sm:mb-8">
           <div className="flex flex-col gap-4 p-5 border-b border-theme-border">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="font-semibold text-theme-text">{t("activeOpportunities")}</h3>
@@ -732,6 +844,9 @@ const Home = () => {
             </div>
           )}
         </div>
+
+        {/* Recent Comparisons */}
+        <RecentComparisons limit={3} />
       </main>
 
       {/* Footer */}
