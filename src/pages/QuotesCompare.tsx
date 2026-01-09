@@ -23,7 +23,8 @@ import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
 import { SaveComparisonModal } from '@/components/roi/compare/SaveComparisonModal';
 import { LoadComparisonModal } from '@/components/roi/compare/LoadComparisonModal';
 import { ShareComparisonButton } from '@/components/roi/compare/ShareComparisonButton';
-import { AppLogo } from '@/components/AppLogo';
+import { ExportComparisonButton } from '@/components/roi/compare/ExportComparisonButton';
+import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 
 // Wrapper component to calculate for a single quote
 const QuoteCalculator = ({ 
@@ -116,6 +117,11 @@ const QuotesCompare = () => {
     setCurrentShareToken(comparison.share_token);
   };
 
+  const shortcuts = defaultShortcuts.map(s => ({
+    ...s,
+    active: s.href === '/compare'
+  }));
+
   return (
     <div className="min-h-screen bg-theme-bg">
       {/* Hidden calculators */}
@@ -127,26 +133,14 @@ const QuotesCompare = () => {
         />
       ))}
 
-      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <AppLogo size="md" collapsed />
-            <Link to="/my-quotes">
-              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-theme-text flex items-center gap-2">
-                <LayoutGrid className="w-5 h-5 text-theme-accent" />
-                {currentComparisonTitle || 'Compare Quotes'}
-              </h1>
-              <p className="text-sm text-theme-text-muted">
-                {selectedIds.length} quotes selected
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+      <PageHeader
+        title={currentComparisonTitle || 'Compare Quotes'}
+        subtitle={`${selectedIds.length} quotes selected`}
+        icon={<LayoutGrid className="w-5 h-5" />}
+        backLink="/my-quotes"
+        shortcuts={shortcuts}
+        actions={
+          <div className="flex items-center gap-2">
             {/* Save Button */}
             <Button
               onClick={() => setShowSaveModal(true)}
@@ -168,6 +162,13 @@ const QuotesCompare = () => {
               <span className="hidden sm:inline">Load</span>
             </Button>
 
+            {/* Export PDF */}
+            <ExportComparisonButton 
+              quotesWithCalcs={quotesWithCalcs}
+              title={currentComparisonTitle || 'Property Comparison'}
+              disabled={!allCalculated}
+            />
+
             {/* Share Button */}
             <ShareComparisonButton 
               comparisonId={currentComparisonId || undefined}
@@ -178,24 +179,25 @@ const QuotesCompare = () => {
             {/* Recommendation Toggle */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-card border border-theme-border">
               <Sparkles className={`w-4 h-4 ${showRecommendations ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
-              <span className="text-sm text-theme-text-muted hidden md:inline">AI Insights</span>
+              <span className="text-sm text-theme-text-muted hidden md:inline">AI</span>
               <Switch
                 checked={showRecommendations}
                 onCheckedChange={setShowRecommendations}
                 className="data-[state=checked]:bg-theme-accent"
               />
             </div>
+
             <Button 
               onClick={() => setShowSelector(true)}
               variant="outline"
               className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text gap-2"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Quote</span>
+              <span className="hidden sm:inline">Add</span>
             </Button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="container mx-auto px-6 py-8">
         {loading ? (

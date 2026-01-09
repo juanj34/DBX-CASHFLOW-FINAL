@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
+  Plus, Trash2, Share2, Edit, Calendar, DollarSign, MapPin, 
   LayoutGrid, Check, Search, Filter, MessageCircle, ArrowUpDown, ArrowUp, ArrowDown, X,
   FileText, TrendingUp, CheckCircle2, Eye, EyeOff, Copy, CheckSquare, BarChart3
 } from 'lucide-react';
@@ -42,6 +42,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PipelineAnalyticsChart } from '@/components/dashboard/PipelineAnalyticsChart';
+import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
+import { QuoteAnalyticsPopover } from '@/components/analytics/QuoteAnalyticsPopover';
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -335,28 +337,21 @@ const QuotesDashboard = () => {
     );
   }
 
+  const shortcuts = defaultShortcuts.map(s => ({
+    ...s,
+    active: s.href === '/my-quotes'
+  }));
+
   return (
     <div className="min-h-screen bg-theme-bg">
-      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/home">
-              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-theme-text">{t('allOpportunities')}</h1>
-              <p className="text-sm text-theme-text-muted">{quotes.length} {t('quotesSaved')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/quotes-analytics">
-              <Button variant="outline" className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt gap-2">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Analytics</span>
-              </Button>
-            </Link>
+      <PageHeader
+        title={t('allOpportunities')}
+        subtitle={`${quotes.length} ${t('quotesSaved')}`}
+        icon={<FileText className="w-5 h-5" />}
+        backLink="/home"
+        shortcuts={shortcuts}
+        actions={
+          <div className="flex items-center gap-2 sm:gap-3">
             {quotes.length >= 2 && (
               <Button
                 variant={compareMode ? "default" : "outline"}
@@ -372,7 +367,7 @@ const QuotesDashboard = () => {
                 }
               >
                 <LayoutGrid className="w-4 h-4" />
-                {compareMode ? t('quotesCancel') : t('compare')}
+                <span className="hidden sm:inline">{compareMode ? t('quotesCancel') : t('compare')}</span>
               </Button>
             )}
             {quotes.length >= 1 && !compareMode && (
@@ -388,17 +383,18 @@ const QuotesDashboard = () => {
                 }
               >
                 <CheckSquare className="w-4 h-4" />
-                {selectMode ? t('quotesCancel') : 'Select'}
+                <span className="hidden sm:inline">{selectMode ? t('quotesCancel') : 'Select'}</span>
               </Button>
             )}
             <Link to="/cashflow-generator">
               <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2">
                 <Plus className="w-4 h-4" />
-                {t('quotesNewQuote')}
+                <span className="hidden sm:inline">{t('quotesNewQuote')}</span>
               </Button>
             </Link>
           </div>
-        </div>
+        }
+      />
         
         {/* Compare bar */}
         {compareMode && selectedForCompare.length > 0 && (
