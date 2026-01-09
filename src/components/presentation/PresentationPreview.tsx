@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Gem, Home, Percent, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { OIInputs, useOICalculations } from "@/components/roi/useOICalculations";
@@ -19,6 +19,16 @@ import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
+
+// Comparison components
+import { MetricsTable } from "@/components/roi/compare/MetricsTable";
+import { PaymentComparison } from "@/components/roi/compare/PaymentComparison";
+import { GrowthComparisonChart } from "@/components/roi/compare/GrowthComparisonChart";
+import { ExitComparison } from "@/components/roi/compare/ExitComparison";
+import { MortgageComparison } from "@/components/roi/compare/MortgageComparison";
+import { RentalYieldComparison } from "@/components/roi/compare/RentalYieldComparison";
+import { DifferentiatorsComparison } from "@/components/roi/compare/DifferentiatorsComparison";
+import { computeComparisonMetrics, QuoteWithCalculations, ComparisonQuote } from "@/hooks/useQuotesComparison";
 
 interface PresentationPreviewProps {
   items: PresentationItem[];
@@ -180,33 +190,211 @@ const QuotePreview = ({
   );
 };
 
-// Comparison preview component (simplified for inline)
+// Helper component to calculate for a single quote
+const QuoteCalculator = ({ 
+  quote, 
+  onCalculated 
+}: { 
+  quote: CashflowQuote; 
+  onCalculated: (quoteId: string, calc: any) => void;
+}) => {
+  const calculations = useOICalculations(quote.inputs);
+  
+  useEffect(() => {
+    if (calculations) {
+      onCalculated(quote.id, calculations);
+    }
+  }, [calculations, quote.id, onCalculated]);
+
+  return null;
+};
+
+// Full comparison preview component with all comparison sections
 const ComparisonPreview = ({ 
   comparisonData 
 }: { 
   comparisonData: ComparisonData;
 }) => {
+  const { rate } = useExchangeRate('AED');
+  const [calculationsMap, setCalculationsMap] = useState<Record<string, any>>({});
+
+  const handleCalculated = (quoteId: string, calc: any) => {
+    setCalculationsMap(prev => ({ ...prev, [quoteId]: calc }));
+  };
+
+  // Build quotesWithCalcs from comparisonData.quotes
+  const quotesWithCalcs: QuoteWithCalculations[] = useMemo(() => {
+    return comparisonData.quotes
+      .filter(q => calculationsMap[q.id])
+      .map(q => {
+        // Map CashflowQuote to ComparisonQuote structure
+        const comparisonQuote: ComparisonQuote = {
+          id: q.id,
+          title: q.title || q.project_name || 'Quote',
+          projectName: q.project_name || undefined,
+          developer: q.developer || undefined,
+          clientName: q.client_name || undefined,
+          unit: q.unit || undefined,
+          unitType: q.unit_type || undefined,
+          unitSizeSqf: q.unit_size_sqf || undefined,
+          inputs: q.inputs,
+        };
+        return {
+          quote: comparisonQuote,
+          calculations: calculationsMap[q.id],
+        };
+      });
+  }, [comparisonData.quotes, calculationsMap]);
+
+  const metrics = useMemo(() => {
+    if (quotesWithCalcs.length < 2) return null;
+    return computeComparisonMetrics(quotesWithCalcs);
+  }, [quotesWithCalcs]);
+
+  const allCalculated = comparisonData.quotes.length > 0 && 
+    comparisonData.quotes.every(q => calculationsMap[q.id]);
+
+  // Check for mortgage and rental data
+  const hasMortgage = quotesWithCalcs.some(q => 
+    (q.quote.inputs as any)?._mortgageInputs?.enabled
+  );
+  const hasRentalYield = quotesWithCalcs.some(q => 
+    (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
+    (q.calculations.holdAnalysis?.netAnnualRent || 0) > 0
+  );
+
   return (
-    <div className="h-full flex items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-xl bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
-          <GitCompare className="w-8 h-8 text-purple-400" />
+    <div className="h-full overflow-y-auto">
+      {/* Hidden calculators */}
+      {comparisonData.quotes.map(quote => (
+        <QuoteCalculator 
+          key={quote.id}
+          quote={quote}
+          onCalculated={handleCalculated}
+        />
+      ))}
+
+      {!allCalculated ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-accent mx-auto mb-4" />
+            <p className="text-theme-text-muted">Calculating projections...</p>
+          </div>
         </div>
-        <h3 className="text-lg font-semibold text-theme-text mb-2">{comparisonData.title}</h3>
-        <p className="text-theme-text-muted text-sm mb-4">
-          Comparing {comparisonData.quoteIds.length} properties
-        </p>
-        <div className="flex flex-wrap gap-2 justify-center">
-          {comparisonData.quotes.slice(0, 4).map(quote => (
-            <span 
-              key={quote.id}
-              className="px-3 py-1 rounded-full bg-theme-bg text-theme-text text-xs border border-theme-border"
+      ) : (
+        <div className="p-6 space-y-6">
+          {/* Comparison Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-theme-text flex items-center gap-2">
+                <GitCompare className="w-5 h-5 text-purple-400" />
+                {comparisonData.title}
+              </h2>
+              <p className="text-sm text-theme-text-muted">
+                Comparing {comparisonData.quotes.length} properties
+              </p>
+            </div>
+          </div>
+
+          {/* Property Cards */}
+          <div 
+            className="grid gap-4" 
+            style={{ gridTemplateColumns: `repeat(${Math.min(comparisonData.quotes.length, 4)}, minmax(200px, 1fr))` }}
+          >
+            {comparisonData.quotes.map((quote, index) => {
+              const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+              const color = colors[index % colors.length];
+
+              return (
+                <div
+                  key={quote.id}
+                  className="bg-theme-card border border-theme-border rounded-xl p-4 relative"
+                  style={{ borderTopColor: color, borderTopWidth: '3px' }}
+                >
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-theme-text truncate">
+                      {quote.title || quote.project_name || 'Quote'}
+                    </h3>
+                    {quote.project_name && quote.title !== quote.project_name && (
+                      <p className="text-sm text-theme-text-muted truncate">
+                        {quote.project_name}
+                      </p>
+                    )}
+                    {quote.developer && (
+                      <p className="text-xs text-theme-text-muted">
+                        by {quote.developer}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Key Metrics Table */}
+          {metrics && (
+            <CollapsibleSection
+              title="Key Metrics Comparison"
+              icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={true}
             >
-              {quote.project_name || "Quote"}
-            </span>
-          ))}
+              <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} />
+            </CollapsibleSection>
+          )}
+
+          {/* Payment & Growth */}
+          <CollapsibleSection
+            title="Payment & Growth"
+            icon={<TrendingUp className="w-4 h-4 text-theme-accent" />}
+            defaultOpen={true}
+          >
+            <div className="grid lg:grid-cols-2 gap-6">
+              <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
+              <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
+            </div>
+          </CollapsibleSection>
+
+          {/* Value Differentiators */}
+          <CollapsibleSection
+            title="Value Differentiators"
+            icon={<Gem className="w-4 h-4 text-theme-accent" />}
+            defaultOpen={true}
+          >
+            <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
+          </CollapsibleSection>
+
+          {/* Mortgage Comparison */}
+          {hasMortgage && (
+            <CollapsibleSection
+              title="Mortgage Comparison"
+              icon={<Home className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={true}
+            >
+              <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
+            </CollapsibleSection>
+          )}
+
+          {/* Rental Yield Comparison */}
+          {hasRentalYield && (
+            <CollapsibleSection
+              title="Rental Yield"
+              icon={<Percent className="w-4 h-4 text-theme-accent" />}
+              defaultOpen={true}
+            >
+              <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} />
+            </CollapsibleSection>
+          )}
+
+          {/* Exit Scenarios */}
+          <CollapsibleSection
+            title="Exit Scenarios"
+            icon={<DoorOpen className="w-4 h-4 text-theme-accent" />}
+            defaultOpen={true}
+          >
+            <ExitComparison quotesWithCalcs={quotesWithCalcs} />
+          </CollapsibleSection>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Plus, Trash2, Save, Share2, Eye, ChevronLeft, ChevronRight, 
-  FileText, GitCompare, Layers, ChevronDown, ChevronUp, Sparkles 
+  FileText, GitCompare, Layers, ChevronDown, ChevronUp, GripVertical 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,27 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// Drag and drop
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 // New presentation components
 import { 
   AddQuoteModal, 
@@ -34,6 +55,45 @@ import {
   PresentationPreview,
   QuoteToAdd 
 } from "@/components/presentation";
+
+// Sortable sidebar item wrapper
+const SortableItem = ({ 
+  item, 
+  children,
+  id,
+}: { 
+  item: PresentationItem;
+  children: React.ReactNode;
+  id: string;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group/sortable">
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 p-1 cursor-grab opacity-0 group-hover/sortable:opacity-100 transition-opacity text-theme-text-muted hover:text-theme-text"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </div>
+      {children}
+    </div>
+  );
+};
 
 const PresentationBuilder = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,8 +121,23 @@ const PresentationBuilder = () => {
   const [showcasesOpen, setShowcasesOpen] = useState(true);
   const [cashflowsOpen, setCashflowsOpen] = useState(true);
   const [comparisonsOpen, setComparisonsOpen] = useState(true);
+
+  // Drag state
+  const [activeId, setActiveId] = useState<string | null>(null);
   
   useDocumentTitle(presentation?.title || "Presentation Builder");
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Load presentation data
   useEffect(() => {
@@ -89,6 +164,30 @@ const PresentationBuilder = () => {
   const showcaseItems = items.filter(item => item.type === 'quote' && item.viewMode === 'story');
   const cashflowItems = items.filter(item => item.type === 'quote' && item.viewMode === 'vertical');
   const comparisonItems = items.filter(item => item.type === 'comparison' || item.type === 'inline_comparison');
+
+  // Generate unique IDs for sortable items
+  const getItemUniqueId = (item: PresentationItem, index: number) => `${item.type}-${item.id}-${index}`;
+
+  // All item IDs for sortable context
+  const allItemIds = items.map((item, index) => getItemUniqueId(item, index));
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      const oldIndex = allItemIds.indexOf(active.id as string);
+      const newIndex = allItemIds.indexOf(over.id as string);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setItems(prev => arrayMove(prev, oldIndex, newIndex));
+      }
+    }
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -185,14 +284,14 @@ const PresentationBuilder = () => {
   }
 
   // Sidebar Item Component
-  const SidebarItem = ({ item, showViewModeSelector = false }: { item: PresentationItem; showViewModeSelector?: boolean }) => {
+  const SidebarItemContent = ({ item, showViewModeSelector = false }: { item: PresentationItem; showViewModeSelector?: boolean }) => {
     const isSelected = getItemIndex(item) === selectedPreviewIndex;
     const isComparison = item.type === 'comparison' || item.type === 'inline_comparison';
     
     return (
       <div
         className={cn(
-          "group flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer",
+          "group flex items-center gap-2 p-2 pl-6 rounded-lg border transition-all cursor-pointer",
           isSelected
             ? isComparison
               ? "border-purple-500/50 bg-purple-500/10"
@@ -277,6 +376,15 @@ const PresentationBuilder = () => {
     </CollapsibleTrigger>
   );
 
+  // Get the active item for drag overlay
+  const getActiveItem = () => {
+    if (!activeId) return null;
+    const index = allItemIds.indexOf(activeId);
+    return index !== -1 ? items[index] : null;
+  };
+
+  const activeItem = getActiveItem();
+
   return (
     <div className="min-h-screen bg-theme-bg flex">
       {/* Sidebar */}
@@ -332,77 +440,122 @@ const PresentationBuilder = () => {
           </div>
         )}
 
-        {/* Items List - Grouped */}
+        {/* Items List - Grouped with Drag and Drop */}
         <div className="flex-1 overflow-y-auto">
           {!sidebarCollapsed && (
-            <div className="p-4 space-y-1">
-              {/* Showcases Section */}
-              <Collapsible open={showcasesOpen} onOpenChange={setShowcasesOpen}>
-                <SectionHeader 
-                  label="Showcases" 
-                  count={showcaseItems.length} 
-                  isOpen={showcasesOpen}
-                  onToggle={() => setShowcasesOpen(!showcasesOpen)}
-                />
-                <CollapsibleContent className="space-y-1 pb-3">
-                  {showcaseItems.length === 0 ? (
-                    <p className="text-xs text-theme-text-muted py-2 pl-2">No showcases added</p>
-                  ) : (
-                    showcaseItems.map((item, idx) => (
-                      <SidebarItem key={`showcase-${item.id}-${idx}`} item={item} />
-                    ))
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={allItemIds} strategy={verticalListSortingStrategy}>
+                <div className="p-4 space-y-1">
+                  {/* Showcases Section */}
+                  <Collapsible open={showcasesOpen} onOpenChange={setShowcasesOpen}>
+                    <SectionHeader 
+                      label="Showcases" 
+                      count={showcaseItems.length} 
+                      isOpen={showcasesOpen}
+                      onToggle={() => setShowcasesOpen(!showcasesOpen)}
+                    />
+                    <CollapsibleContent className="space-y-1 pb-3">
+                      {showcaseItems.length === 0 ? (
+                        <p className="text-xs text-theme-text-muted py-2 pl-2">No showcases added</p>
+                      ) : (
+                        showcaseItems.map((item) => {
+                          const originalIndex = items.findIndex(i => i.type === item.type && i.id === item.id);
+                          const uniqueId = getItemUniqueId(item, originalIndex);
+                          return (
+                            <SortableItem key={uniqueId} item={item} id={uniqueId}>
+                              <SidebarItemContent item={item} />
+                            </SortableItem>
+                          );
+                        })
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              {/* Cashflows Section */}
-              <Collapsible open={cashflowsOpen} onOpenChange={setCashflowsOpen}>
-                <SectionHeader 
-                  label="Cashflows" 
-                  count={cashflowItems.length} 
-                  isOpen={cashflowsOpen}
-                  onToggle={() => setCashflowsOpen(!cashflowsOpen)}
-                />
-                <CollapsibleContent className="space-y-1 pb-3">
-                  {cashflowItems.length === 0 ? (
-                    <p className="text-xs text-theme-text-muted py-2 pl-2">No cashflows added</p>
-                  ) : (
-                    cashflowItems.map((item, idx) => (
-                      <SidebarItem key={`cashflow-${item.id}-${idx}`} item={item} />
-                    ))
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
+                  {/* Cashflows Section */}
+                  <Collapsible open={cashflowsOpen} onOpenChange={setCashflowsOpen}>
+                    <SectionHeader 
+                      label="Cashflows" 
+                      count={cashflowItems.length} 
+                      isOpen={cashflowsOpen}
+                      onToggle={() => setCashflowsOpen(!cashflowsOpen)}
+                    />
+                    <CollapsibleContent className="space-y-1 pb-3">
+                      {cashflowItems.length === 0 ? (
+                        <p className="text-xs text-theme-text-muted py-2 pl-2">No cashflows added</p>
+                      ) : (
+                        cashflowItems.map((item) => {
+                          const originalIndex = items.findIndex(i => i.type === item.type && i.id === item.id);
+                          const uniqueId = getItemUniqueId(item, originalIndex);
+                          return (
+                            <SortableItem key={uniqueId} item={item} id={uniqueId}>
+                              <SidebarItemContent item={item} />
+                            </SortableItem>
+                          );
+                        })
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              {/* Comparisons Section */}
-              <Collapsible open={comparisonsOpen} onOpenChange={setComparisonsOpen}>
-                <SectionHeader 
-                  label="Comparisons" 
-                  count={comparisonItems.length} 
-                  isOpen={comparisonsOpen}
-                  onToggle={() => setComparisonsOpen(!comparisonsOpen)}
-                  accentColor="purple"
-                />
-                <CollapsibleContent className="space-y-1 pb-3">
-                  {comparisonItems.length === 0 ? (
-                    <p className="text-xs text-theme-text-muted py-2 pl-2">No comparisons added</p>
-                  ) : (
-                    comparisonItems.map((item, idx) => (
-                      <SidebarItem key={`comparison-${item.id}-${idx}`} item={item} />
-                    ))
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
+                  {/* Comparisons Section */}
+                  <Collapsible open={comparisonsOpen} onOpenChange={setComparisonsOpen}>
+                    <SectionHeader 
+                      label="Comparisons" 
+                      count={comparisonItems.length} 
+                      isOpen={comparisonsOpen}
+                      onToggle={() => setComparisonsOpen(!comparisonsOpen)}
+                      accentColor="purple"
+                    />
+                    <CollapsibleContent className="space-y-1 pb-3">
+                      {comparisonItems.length === 0 ? (
+                        <p className="text-xs text-theme-text-muted py-2 pl-2">No comparisons added</p>
+                      ) : (
+                        comparisonItems.map((item) => {
+                          const originalIndex = items.findIndex(i => i.type === item.type && i.id === item.id);
+                          const uniqueId = getItemUniqueId(item, originalIndex);
+                          return (
+                            <SortableItem key={uniqueId} item={item} id={uniqueId}>
+                              <SidebarItemContent item={item} />
+                            </SortableItem>
+                          );
+                        })
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
 
-              {/* Empty State */}
-              {items.length === 0 && (
-                <div className="text-center py-8 text-theme-text-muted">
-                  <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No content added yet</p>
-                  <p className="text-xs mt-1">Add quotes or create comparisons</p>
+                  {/* Empty State */}
+                  {items.length === 0 && (
+                    <div className="text-center py-8 text-theme-text-muted">
+                      <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No content added yet</p>
+                      <p className="text-xs mt-1">Add quotes or create comparisons</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </SortableContext>
+
+              {/* Drag Overlay */}
+              <DragOverlay>
+                {activeItem ? (
+                  <div className="bg-theme-card border border-theme-accent rounded-lg p-2 shadow-lg">
+                    <div className="flex items-center gap-2">
+                      {activeItem.type === 'comparison' || activeItem.type === 'inline_comparison' ? (
+                        <GitCompare className="w-3.5 h-3.5 text-purple-400" />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 text-theme-accent" />
+                      )}
+                      <span className="text-sm text-theme-text">
+                        {activeItem.title || (activeItem.type === 'quote' ? getQuoteTitle(activeItem.id) : "Comparison")}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           )}
         </div>
 
