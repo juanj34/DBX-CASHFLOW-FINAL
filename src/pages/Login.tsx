@@ -1,16 +1,51 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AppLogo } from "@/components/AppLogo";
+import { supabase } from "@/integrations/supabase/client";
 import loginBg from "@/assets/login-bg.jpg";
 import { motion } from "framer-motion";
 
 const Login = () => {
   useDocumentTitle("Sign In");
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   
+  // Redirect if already authenticated
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/home', { replace: true });
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    checkSession();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate('/home', { replace: true });
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+  
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CCFF00]" />
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background Image with Overlay */}
