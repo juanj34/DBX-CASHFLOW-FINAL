@@ -238,6 +238,7 @@ const ComparisonPreview = ({
           unitType: q.unit_type || undefined,
           unitSizeSqf: q.unit_size_sqf || undefined,
           inputs: q.inputs,
+          updatedAt: q.updated_at || new Date().toISOString(),
         };
         return {
           quote: comparisonQuote,
