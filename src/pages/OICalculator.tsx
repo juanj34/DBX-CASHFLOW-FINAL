@@ -131,7 +131,11 @@ const OICalculatorContent = () => {
         zoneName: savedClientInfo.zoneName || '',
       });
       if (savedMortgageInputs) {
-        setMortgageInputs(savedMortgageInputs);
+        // Merge saved values over defaults to ensure all fields exist
+        setMortgageInputs({ ...DEFAULT_MORTGAGE_INPUTS, ...savedMortgageInputs });
+      } else {
+        // No mortgage data saved - keep defaults (disabled)
+        setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
       }
       setDataLoaded(true);
     } else if (!quoteId) {

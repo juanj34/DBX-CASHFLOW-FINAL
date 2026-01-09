@@ -141,7 +141,7 @@ export const DashboardSidebar = ({
   const handleCompareConfirm = () => {
     if (selectedQuoteIds.length >= 2) {
       setCompareModalOpen(false);
-      navigate(`/quotes/compare?ids=${selectedQuoteIds.join(',')}`);
+      navigate(`/compare?ids=${selectedQuoteIds.join(',')}`);
     }
   };
 

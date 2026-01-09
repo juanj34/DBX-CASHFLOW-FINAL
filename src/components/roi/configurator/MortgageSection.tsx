@@ -135,7 +135,7 @@ export const MortgageSection = ({ inputs, mortgageInputs, setMortgageInputs, cur
               <Slider
                 value={[mortgageInputs.financingPercent]}
                 onValueChange={([v]) => updateInput('financingPercent', v)}
-                min={40}
+                min={20}
                 max={maxFinancingPercent}
                 step={5}
                 className="w-full"
