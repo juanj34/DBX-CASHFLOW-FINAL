@@ -1,8 +1,14 @@
+import { useState } from "react";
 import { Building, User, MapPin, Home, Pencil, Ruler, Plus, Building2, Users, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UNIT_TYPES, Client } from "./ClientUnitModal";
 import { COUNTRIES, getCountryByCode } from "@/data/countries";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { DeveloperInfoModal } from "./DeveloperInfoModal";
+import { ProjectInfoModal } from "./ProjectInfoModal";
+import { cn } from "@/lib/utils";
 
 export interface ClientShare {
   clientId: string;
@@ -32,18 +38,73 @@ export interface ClientUnitData {
   // Zone feature
   zoneId?: string;
   zoneName?: string;
+  // IDs for direct lookup
+  developerId?: string;
+  projectId?: string;
 }
 
 interface ClientUnitInfoProps {
   data: ClientUnitData;
-  onEditClick: () => void;
+  onEditClick?: () => void;
   readOnly?: boolean;
 }
 
 export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUnitInfoProps) => {
   const { language, t } = useLanguage();
+  const [developerModalOpen, setDeveloperModalOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
 
   const unitType = UNIT_TYPES.find(u => u.value === data.unitType);
+
+  // Fetch developer by ID or name
+  const { data: developer } = useQuery({
+    queryKey: ['developer-info', data.developerId, data.developer],
+    queryFn: async () => {
+      if (data.developerId) {
+        const { data: dev } = await supabase
+          .from('developers')
+          .select('*')
+          .eq('id', data.developerId)
+          .maybeSingle();
+        return dev;
+      }
+      if (data.developer) {
+        const { data: dev } = await supabase
+          .from('developers')
+          .select('*')
+          .ilike('name', data.developer)
+          .maybeSingle();
+        return dev;
+      }
+      return null;
+    },
+    enabled: !!(data.developerId || data.developer),
+  });
+
+  // Fetch project by ID or name
+  const { data: project } = useQuery({
+    queryKey: ['project-info', data.projectId, data.projectName],
+    queryFn: async () => {
+      if (data.projectId) {
+        const { data: proj } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', data.projectId)
+          .maybeSingle();
+        return proj;
+      }
+      if (data.projectName) {
+        const { data: proj } = await supabase
+          .from('projects')
+          .select('*')
+          .ilike('name', data.projectName)
+          .maybeSingle();
+        return proj;
+      }
+      return null;
+    },
+    enabled: !!(data.projectId || data.projectName),
+  });
 
   // Get clients array, handling legacy single client format
   const clients = data.clients?.length > 0 
@@ -57,7 +118,7 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
   if (!hasData) {
     return (
       <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl p-4 mb-4">
-        {!readOnly ? (
+        {!readOnly && onEditClick ? (
           <div 
             onClick={onEditClick}
             className="border border-dashed border-[#2a3142] rounded-xl p-4 flex items-center justify-center cursor-pointer hover:bg-[#0d1117] hover:border-[#CCFF00]/30 transition-all"
@@ -81,24 +142,40 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
       <div className="flex flex-wrap items-start gap-4">
         {/* Property Info Grid */}
         <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-3">
-          {/* Developer */}
+          {/* Developer - Clickable */}
           {data.developer && (
             <div className="flex items-start gap-2">
               <Building className="w-4 h-4 text-[#CCFF00] mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs text-gray-500">{t('developer')}</p>
-                <p className="text-sm font-medium text-white">{data.developer}</p>
+                <p 
+                  className={cn(
+                    "text-sm font-medium text-white",
+                    developer && "cursor-pointer hover:text-[#CCFF00] transition-colors"
+                  )}
+                  onClick={() => developer && setDeveloperModalOpen(true)}
+                >
+                  {data.developer}
+                </p>
               </div>
             </div>
           )}
 
-          {/* Project Name */}
+          {/* Project Name - Clickable */}
           {data.projectName && (
             <div className="flex items-start gap-2">
               <Building2 className="w-4 h-4 text-[#CCFF00] mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs text-gray-500">{t('projectName')}</p>
-                <p className="text-sm font-medium text-white">{data.projectName}</p>
+                <p 
+                  className={cn(
+                    "text-sm font-medium text-white",
+                    project && "cursor-pointer hover:text-[#CCFF00] transition-colors"
+                  )}
+                  onClick={() => project && setProjectModalOpen(true)}
+                >
+                  {data.projectName}
+                </p>
               </div>
             </div>
           )}
@@ -182,7 +259,7 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
         </div>
 
         {/* Edit Button - hidden in read-only mode */}
-        {!readOnly && (
+        {!readOnly && onEditClick && (
           <Button
             variant="ghost"
             size="sm"
@@ -193,6 +270,25 @@ export const ClientUnitInfo = ({ data, onEditClick, readOnly = false }: ClientUn
           </Button>
         )}
       </div>
+
+      {/* Developer Modal */}
+      {developer && (
+        <DeveloperInfoModal
+          developerId={developer.id}
+          open={developerModalOpen}
+          onOpenChange={setDeveloperModalOpen}
+        />
+      )}
+
+      {/* Project Modal */}
+      {project && (
+        <ProjectInfoModal
+          project={project}
+          zoneName={data.zoneName}
+          open={projectModalOpen}
+          onOpenChange={setProjectModalOpen}
+        />
+      )}
     </div>
   );
 };
