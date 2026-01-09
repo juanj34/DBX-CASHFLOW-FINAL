@@ -1,49 +1,31 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Home, TrendingUp, SlidersHorizontal, Settings2, CreditCard, AlertCircle, Building2, MoreVertical, Users, FolderOpen, FileText, FilePlus, History, Columns3, Sparkles, Rocket, Scale, BarChart3, Globe, Coins } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Home, TrendingUp, CreditCard, Building2, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
 import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
 import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
-import { PaymentSplitBreakdown } from "@/components/roi/PaymentSplitBreakdown";
 import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
 import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
 import { RentSnapshot } from "@/components/roi/RentSnapshot";
-import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
+import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
-import { QuotesDropdown } from "@/components/roi/QuotesDropdown";
-import { SettingsDropdown } from "@/components/roi/SettingsDropdown";
-import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
-import { ViewVisibilityControls, ViewVisibility } from "@/components/roi/ViewVisibilityControls";
+import { ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
 import { CashflowSummaryCard } from "@/components/roi/CashflowSummaryCard";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { VersionHistoryModal } from "@/components/roi/VersionHistoryModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
-import { CashflowErrorBoundary, SectionErrorBoundary } from "@/components/roi/ErrorBoundary";
+import { CashflowErrorBoundary } from "@/components/roi/ErrorBoundary";
 import { MortgageModal } from "@/components/roi/MortgageModal";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
-import { FloatingNav, useFloatingNavSections } from "@/components/roi/FloatingNav";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
+import { AlertTriangle, Save } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -53,9 +35,11 @@ import { useQuoteVersions } from "@/hooks/useQuoteVersions";
 import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
 import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
-import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { toast } from "sonner";
+import { DashboardLayout, SectionId } from "@/components/roi/dashboard";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -77,7 +61,7 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  
+  const [activeSection, setActiveSection] = useState<SectionId>('overview');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -93,7 +77,6 @@ const OICalculatorContent = () => {
     monthlyServiceCharges: calculations.holdAnalysis.annualServiceCharges / 12,
   });
   const { rate, isLive } = useExchangeRate(currency);
-  const floatingNavSections = useFloatingNavSections(inputs.enabledSections, mortgageInputs.enabled);
 
   // Stricter validation: needs both client details AND property configured
   const hasClientDetails = useMemo(() => {
@@ -131,7 +114,6 @@ const OICalculatorContent = () => {
       delete (cleanInputs as any)._clients;
       delete (cleanInputs as any)._clientInfo;
       delete (cleanInputs as any)._mortgageInputs;
-      // Migrate inputs to ensure all fields have defaults
       setInputs(migrateInputs(cleanInputs));
       const clients = savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [];
       setClientInfo({ 
@@ -154,7 +136,6 @@ const OICalculatorContent = () => {
       setDataLoaded(true);
     } else if (!quoteId) {
       const draft = loadDraft();
-      // Migrate draft inputs to ensure all fields have defaults
       if (draft?.inputs) setInputs(migrateInputs(draft.inputs));
       if (draft?.clientInfo) setClientInfo(prev => ({ ...prev, ...draft.clientInfo }));
       setDataLoaded(true);
@@ -162,27 +143,18 @@ const OICalculatorContent = () => {
   }, [quote, quoteId, dataLoaded, loadDraft]);
 
   useEffect(() => { setDataLoaded(false); }, [quoteId]);
-  useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
+  useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile?.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
-  // Redirect to preferred view if set to dashboard
-  useEffect(() => {
-    const preference = localStorage.getItem('cashflow_view_preference');
-    if (preference === 'dashboard' && dataLoaded) {
-      navigate(quoteId ? `/cashflow-dashboard/${quoteId}` : '/cashflow-dashboard', { replace: true });
-    }
-  }, [dataLoaded, navigate, quoteId]);
-
-  // Handler for when a new quote is auto-created - preserve configurator state across navigation
+  // Handler for when a new quote is auto-created
   const handleNewQuoteCreated = useCallback((newId: string) => {
-    // Store configurator state before navigation
     if (modalOpen) {
       localStorage.setItem('cashflow_configurator_open', 'true');
     }
     navigate(`/cashflow/${newId}`, { replace: true });
   }, [navigate, modalOpen]);
 
-  // Restore configurator state after navigation (for autosave-triggered navigations)
+  // Restore configurator state after navigation
   useEffect(() => {
     if (dataLoaded) {
       const shouldReopen = localStorage.getItem('cashflow_configurator_open') === 'true';
@@ -194,7 +166,6 @@ const OICalculatorContent = () => {
   }, [dataLoaded]);
 
   useEffect(() => {
-    // Prevent autosave from writing into the wrong quote during route transitions
     if (!dataLoaded) return;
     if (quoteLoading) return;
 
@@ -209,22 +180,19 @@ const OICalculatorContent = () => {
       mortgageInputs,
       { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl },
       handleNewQuoteCreated,
-      modalOpen // suppress toast when configurator is open
+      modalOpen
     );
   }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
 
-  // Exit scenarios - derived from inputs._exitScenarios as single source of truth
-  // Only use auto-generated fallback if no custom exits exist
+  // Exit scenarios
   const exitScenarios = useMemo(() => {
     const saved = inputs._exitScenarios;
     if (saved && Array.isArray(saved) && saved.length > 0) {
-      // Clamp to valid bounds and remove duplicates
       return saved
         .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))
         .filter((m: number, i: number, arr: number[]) => arr.indexOf(m) === i)
         .sort((a, b) => a - b);
     }
-    // Only return auto-calculated exits if user hasn't configured any (empty array means user cleared them)
     return [];
   }, [inputs._exitScenarios, calculations.totalMonths]);
 
@@ -235,14 +203,18 @@ const OICalculatorContent = () => {
   const quoteImagesPayload = { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl };
   const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion, quoteImagesPayload), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion, quoteImages]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs, quoteImagesPayload); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate, quoteImages]);
+  
   const handleShare = useCallback(async () => {
-    // Always save first to ensure the client sees the latest data (including exit scenarios and mortgage)
     const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
     if (!savedQuote) return null;
     
     const token = await generateShareToken(savedQuote.id);
     if (token) {
-      return `${window.location.origin}/view/${token}`;
+      const url = `${window.location.origin}/view/${token}`;
+      await navigator.clipboard.writeText(url);
+      setShareUrl(url);
+      toast.success("Share link copied to clipboard!");
+      return url;
     }
     return null;
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
@@ -275,351 +247,56 @@ const OICalculatorContent = () => {
 
   return (
     <CashflowErrorBoundary>
-      <div className="min-h-screen bg-theme-bg">
-      <div className="hidden print-only print:block bg-theme-bg text-theme-text p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold text-theme-accent">Cashflow Generator</h1><p className="text-theme-text-muted text-sm mt-1">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
-          {profile && <div className="text-right"><p className="text-sm text-theme-text-muted">{t('advisor')}</p><p className="font-medium">{profile.full_name || 'Advisor'}</p></div>}
-        </div>
-      </div>
-
-      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50 print:hidden">
-        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          {/* Main header row */}
-          <div className="flex items-center justify-between gap-2 w-full min-w-0">
-            {/* Left: Navigation + Advisor */}
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <Link to="/home" className="flex-shrink-0">
-                <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8 sm:h-9 sm:w-9">
-                  <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
-              </Link>
-              {isAdmin && (
-                <Link to="/dashboard" className="flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 w-8 sm:h-9 sm:w-9">
-                    <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
-                </Link>
-              )}
-              {profile && <AdvisorInfo profile={profile} size="lg" showSubtitle />}
-              
-              {/* Quick Navigation Shortcuts */}
-              <div className="hidden lg:flex items-center gap-0.5 px-2 border-l border-r border-theme-border mx-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/home">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                        <Home className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>Home</TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/my-quotes">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                        <FileText className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>All Opportunities</TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/quotes-analytics">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                        <BarChart3 className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>Analytics</TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/compare">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                        <Scale className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>Compare</TooltipContent>
-                </Tooltip>
+      <DashboardLayout
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        inputs={inputs}
+        mortgageInputs={mortgageInputs}
+        viewMode="vertical"
+        profile={profile}
+        isAdmin={isAdmin}
+        onConfigure={() => setModalOpen(true)}
+        onLoadQuote={() => setLoadQuoteModalOpen(true)}
+        onViewHistory={() => setVersionHistoryOpen(true)}
+        onSwitchView={handleSwitchToDashboard}
+        onShare={handleShare}
+        viewCount={quote?.view_count ?? undefined}
+        firstViewedAt={quote?.first_viewed_at ?? undefined}
+        quoteId={quoteId}
+        language={language}
+        setLanguage={setLanguage}
+        currency={currency}
+        setCurrency={setCurrency}
+        hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
+        saving={saving}
+        lastSaved={lastSaved}
+        onSave={handleSave}
+      >
+        {/* Unsaved Draft Warning Banner */}
+        {isQuoteConfigured && !quoteId && !lastSaved && (
+          <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg mb-6 print:hidden">
+            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-amber-200 text-sm">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>Draft – Changes are only saved locally on this device. Save to prevent data loss.</span>
               </div>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {/* Autosave Status Indicator */}
-              <div className="flex items-center gap-1.5 mr-1">
-                {saving ? (
-                  <span className="text-[10px] text-gray-400 flex items-center gap-1 animate-fade-in">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span className="hidden sm:inline">Saving...</span>
-                  </span>
-                ) : lastSaved ? (
-                  <span className="text-[10px] text-gray-500 flex items-center gap-1 animate-fade-in">
-                    <Check className="w-3 h-3 text-green-500" />
-                    <span className="hidden sm:inline">Autosaved</span>
-                  </span>
-                ) : null}
-              </div>
-
-              {/* Desktop: Show all buttons */}
-              <div className="hidden sm:flex items-center gap-2">
-                {/* Quotes Dropdown */}
-                <QuotesDropdown
-                  saving={saving}
-                  lastSaved={lastSaved}
-                  onSave={handleSave}
-                  onSaveAs={handleSaveAs}
-                  onLoadQuote={() => setLoadQuoteModalOpen(true)}
-                  onViewHistory={() => setVersionHistoryOpen(true)}
-                  hasQuoteId={!!quoteId}
-                />
-
-                {/* Share Controls */}
-                <ViewVisibilityControls 
-                  shareUrl={shareUrl} 
-                  onGenerateShareUrl={handleShare} 
-                  onExportPDF={handleExportPDF}
-                  enabledSections={inputs.enabledSections || { exitStrategy: true, longTermHold: true }}
-                  clientInfo={{
-                    clientName: clientInfo.clients?.[0]?.name || '',
-                    clientEmail: clientInfo.clients?.[0]?.email || '',
-                    projectName: clientInfo.projectName || '',
-                    unitType: clientInfo.unitType || '',
-                    advisorName: profile?.full_name || '',
-                    advisorEmail: profile?.business_email || profile?.email || '',
-                  }}
-                />
-
-                {/* Separator */}
-                <div className="w-px h-6 bg-theme-border mx-0.5" />
-
-                {/* Fast Language Toggle */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                      className="h-8 px-2 text-theme-text-muted hover:text-theme-text gap-1"
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span className="text-xs font-medium">{language === 'en' ? 'EN' : 'ES'}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Switch to {language === 'en' ? 'Español' : 'English'}</TooltipContent>
-                </Tooltip>
-
-                {/* Fast Currency Selector */}
-                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                  <SelectTrigger className="w-[85px] h-8 text-xs border-theme-border bg-transparent text-theme-text">
-                    <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-theme-card border-theme-border">
-                    <SelectItem value="AED">🇦🇪 AED</SelectItem>
-                    <SelectItem value="USD">🇺🇸 USD</SelectItem>
-                    <SelectItem value="EUR">🇪🇺 EUR</SelectItem>
-                    <SelectItem value="GBP">🇬🇧 GBP</SelectItem>
-                    <SelectItem value="RUB">🇷🇺 RUB</SelectItem>
-                    <SelectItem value="CNY">🇨🇳 CNY</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Settings Dropdown (for profile/full settings) */}
-                <SettingsDropdown
-                  language={language}
-                  setLanguage={setLanguage}
-                  currency={currency}
-                  setCurrency={setCurrency}
-                  exchangeRate={rate}
-                  isLive={isLive}
-                />
-
-                {/* Switch to Dashboard View */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSwitchToDashboard}
-                      className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card h-8 gap-1.5"
-                    >
-                      <Columns3 className="w-4 h-4" />
-                      <span className="text-xs">Dashboard</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Switch to sidebar dashboard layout</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Configure Button */}
-                <Button 
-                  onClick={() => setModalOpen(true)}
-                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold relative"
-                >
-                  <Settings2 className="w-4 h-4 mr-2" />
-                  Configure
-                  {mortgageInputs.enabled && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-theme-bg" />
-                  )}
-                </Button>
-              </div>
-
-              {/* Mobile: Show condensed actions + More menu */}
-              <div className="flex sm:hidden items-center gap-1.5">
-                {/* Share (icon only) */}
-                <ViewVisibilityControls shareUrl={shareUrl} onGenerateShareUrl={handleShare} onExportPDF={handleExportPDF} />
-
-                {/* Configure (icon only) */}
-                <Button 
-                  size="sm"
-                  onClick={() => setModalOpen(true)}
-                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold h-8 px-2 relative"
-                >
-                  <Settings2 className="w-4 h-4" />
-                  {mortgageInputs.enabled && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-theme-bg" />
-                  )}
-                </Button>
-
-                {/* More Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-theme-card border-theme-border z-50 w-52">
-
-                    {/* Quotes actions */}
-                    <DropdownMenuItem
-                      onClick={() => {
-                        localStorage.removeItem('cashflow_quote_draft');
-                        navigate('/cashflow-generator');
-                        window.location.reload();
-                      }}
-                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                    >
-                      <FilePlus className="w-4 h-4" />
-                      {t('newQuote')}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => setLoadQuoteModalOpen(true)}
-                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                    >
-                      <FolderOpen className="w-4 h-4" />
-                      {t('loadQuote')}
-                    </DropdownMenuItem>
-
-                    {quoteId && (
-                      <DropdownMenuItem
-                        onClick={() => setVersionHistoryOpen(true)}
-                        className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                      >
-                        <History className="w-4 h-4" />
-                        {t('versionHistory')}
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuSeparator className="bg-theme-border" />
-
-                    {/* Settings section */}
-                    <DropdownMenuItem
-                      onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                    >
-                      🌐 {language === 'en' ? 'Español' : 'English'}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => setCurrency(currency === 'AED' ? 'USD' : 'AED')}
-                      className="text-theme-text-muted hover:bg-theme-card-alt focus:bg-theme-card-alt gap-2"
-                    >
-                      💰 {currency === 'AED' ? 'USD' : 'AED'}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Modals - rendered outside the visible button area */}
-              <MortgageModal
-                mortgageInputs={mortgageInputs}
-                setMortgageInputs={setMortgageInputs}
-                preHandoverPercent={inputs.preHandoverPercent}
-                open={mortgageModalOpen}
-                onOpenChange={setMortgageModalOpen}
-              />
-              <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-              <OIInputModal 
-                inputs={inputs} 
-                setInputs={setInputs} 
-                open={modalOpen} 
-                onOpenChange={setModalOpen} 
-                currency={currency} 
-                mortgageInputs={mortgageInputs} 
-                setMortgageInputs={setMortgageInputs} 
-                clientInfo={clientInfo} 
-                setClientInfo={setClientInfo} 
-                quoteId={quoteId}
-                floorPlanUrl={quoteImages.floorPlanUrl}
-                buildingRenderUrl={quoteImages.buildingRenderUrl}
-                heroImageUrl={quoteImages.heroImageUrl}
-                showLogoOverlay={quoteImages.showLogoOverlay}
-                onFloorPlanChange={(url) => setQuoteImages(prev => ({ ...prev, floorPlanUrl: url }))}
-                onBuildingRenderChange={(url) => setQuoteImages(prev => ({ ...prev, buildingRenderUrl: url }))}
-                onHeroImageChange={(url) => setQuoteImages(prev => ({ ...prev, heroImageUrl: url }))}
-                onShowLogoOverlayChange={(show) => setQuoteImages(prev => ({ ...prev, showLogoOverlay: show }))}
-              />
-              <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
-              <VersionHistoryModal 
-                open={versionHistoryOpen} 
-                onOpenChange={setVersionHistoryOpen}
-                quoteId={quoteId}
-                onRestore={() => {
-                  setDataLoaded(false);
-                }}
-              />
-              
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-500 text-white gap-1.5 flex-shrink-0"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {saving ? 'Saving...' : 'Save Now'}
+              </Button>
             </div>
           </div>
-        </div>
-      </header>
+        )}
 
-      {/* Unsaved Draft Warning Banner */}
-      {isQuoteConfigured && !quoteId && !lastSaved && (
-        <div className="bg-amber-900/30 border-b border-amber-700/50 print:hidden">
-          <div className="container mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-amber-200 text-sm">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              <span>Draft – Changes are only saved locally on this device. Save to prevent data loss.</span>
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              size="sm"
-              className="bg-amber-600 hover:bg-amber-500 text-white gap-1.5 flex-shrink-0"
-            >
-              <Save className="w-3.5 h-3.5" />
-              {saving ? 'Saving...' : 'Save Now'}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {!isFullyConfigured ? (
-          /* Unconfigured State - Simple welcome with Configure CTA */
-          <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-16 text-center">
-            <div className="max-w-lg mx-auto">
+          /* Unconfigured State */
+          <div className="flex-1 flex items-center justify-center">
+            <div className="bg-theme-card border border-theme-border rounded-2xl p-8 sm:p-16 text-center max-w-lg">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 flex items-center justify-center mx-auto mb-8">
                 <Rocket className="w-10 h-10 text-theme-accent" />
               </div>
@@ -645,14 +322,12 @@ const OICalculatorContent = () => {
             </div>
           </div>
         ) : (
-          /* Configured State - Show full content with ClientUnitInfo */
-          <>
+          /* Configured State - All sections stacked vertically */
+          <div className="space-y-6">
             <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
-            {/* Floating Navigation */}
-            <FloatingNav sections={floatingNavSections} />
 
-            {/* Investment Overview Grid - Executive Summary */}
-            <div id="overview-section" className="mb-4 sm:mb-6 scroll-mt-20">
+            {/* Overview Section */}
+            <div id="overview-section" className="scroll-mt-20">
               <InvestmentOverviewGrid
                 inputs={inputs}
                 calculations={calculations}
@@ -665,12 +340,12 @@ const OICalculatorContent = () => {
               />
             </div>
 
-            {/* Investment Snapshot */}
-            <div id="property-section" className="mb-4 sm:mb-6 scroll-mt-20">
+            {/* Property Section */}
+            <div id="property-section" className="scroll-mt-20">
               <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
             </div>
 
-            {/* Payment Breakdown - Collapsible, default collapsed */}
+            {/* Payments Section */}
             <div id="payments-section" className="scroll-mt-20">
               <CollapsibleSection
                 title={t('paymentBreakdownTitle') || "Payment Breakdown"}
@@ -682,14 +357,14 @@ const OICalculatorContent = () => {
               </CollapsibleSection>
             </div>
 
-            {/* Value Differentiators Display */}
+            {/* Value Differentiators */}
             <ValueDifferentiatorsDisplay
               selectedDifferentiators={inputs.valueDifferentiators || []}
               customDifferentiators={customDifferentiators}
               onEditClick={() => setModalOpen(true)}
             />
 
-            {/* Hold Strategy Analysis - Collapsible - Only show if enabled */}
+            {/* Hold Section */}
             {(inputs.enabledSections?.longTermHold !== false) && (
               <div id="hold-section" className="scroll-mt-20">
                 <CollapsibleSection
@@ -714,9 +389,9 @@ const OICalculatorContent = () => {
               </div>
             )}
 
-            {/* Exit Scenarios - Collapsible - Only show if enabled */}
-                {(inputs.enabledSections?.exitStrategy === true || 
-                  (inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0)) && (
+            {/* Exit Section */}
+            {(inputs.enabledSections?.exitStrategy === true || 
+              (inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0)) && (
               <div id="exit-section" className="scroll-mt-20">
                 <CollapsibleSection
                   title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
@@ -732,7 +407,7 @@ const OICalculatorContent = () => {
               </div>
             )}
 
-            {/* Mortgage Analysis - Collapsible */}
+            {/* Mortgage Section */}
             {mortgageInputs.enabled && (
               <div id="mortgage-section" className="scroll-mt-20">
                 <CollapsibleSection
@@ -777,7 +452,7 @@ const OICalculatorContent = () => {
               </div>
             )}
 
-            {/* Investment Summary - Last, collapsed by default */}
+            {/* Summary Section */}
             <div id="summary-section" className="scroll-mt-20">
               <CashflowSummaryCard
                 inputs={inputs}
@@ -791,11 +466,48 @@ const OICalculatorContent = () => {
                 defaultOpen={false}
               />
             </div>
-          </>
+          </div>
         )}
 
-      </main>
-    </div>
+        {/* Modals */}
+        <MortgageModal
+          mortgageInputs={mortgageInputs}
+          setMortgageInputs={setMortgageInputs}
+          preHandoverPercent={inputs.preHandoverPercent}
+          open={mortgageModalOpen}
+          onOpenChange={setMortgageModalOpen}
+        />
+        <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
+        <OIInputModal 
+          inputs={inputs} 
+          setInputs={setInputs} 
+          open={modalOpen} 
+          onOpenChange={setModalOpen} 
+          currency={currency} 
+          mortgageInputs={mortgageInputs} 
+          setMortgageInputs={setMortgageInputs} 
+          clientInfo={clientInfo} 
+          setClientInfo={setClientInfo} 
+          quoteId={quoteId}
+          floorPlanUrl={quoteImages.floorPlanUrl}
+          buildingRenderUrl={quoteImages.buildingRenderUrl}
+          heroImageUrl={quoteImages.heroImageUrl}
+          showLogoOverlay={quoteImages.showLogoOverlay}
+          onFloorPlanChange={(url) => setQuoteImages(prev => ({ ...prev, floorPlanUrl: url }))}
+          onBuildingRenderChange={(url) => setQuoteImages(prev => ({ ...prev, buildingRenderUrl: url }))}
+          onHeroImageChange={(url) => setQuoteImages(prev => ({ ...prev, heroImageUrl: url }))}
+          onShowLogoOverlayChange={(show) => setQuoteImages(prev => ({ ...prev, showLogoOverlay: show }))}
+        />
+        <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
+        <VersionHistoryModal 
+          open={versionHistoryOpen} 
+          onOpenChange={setVersionHistoryOpen}
+          quoteId={quoteId}
+          onRestore={() => {
+            setDataLoaded(false);
+          }}
+        />
+      </DashboardLayout>
     </CashflowErrorBoundary>
   );
 };

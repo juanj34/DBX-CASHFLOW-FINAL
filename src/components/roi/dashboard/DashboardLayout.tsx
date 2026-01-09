@@ -8,12 +8,16 @@ import { Menu } from "lucide-react";
 import { Profile } from "@/hooks/useProfile";
 import { Currency } from "@/components/roi/currencyUtils";
 
+export type ViewMode = 'tabs' | 'vertical';
+
 interface DashboardLayoutProps {
   children: ReactNode;
   activeSection: SectionId;
   onSectionChange: (section: SectionId) => void;
   inputs: OIInputs;
   mortgageInputs: MortgageInputs;
+  // View mode: tabs (one section at a time) or vertical (scroll all sections)
+  viewMode?: ViewMode;
   // New props for sidebar bottom section
   profile?: Profile | null;
   isAdmin?: boolean;
@@ -43,6 +47,7 @@ export const DashboardLayout = ({
   onSectionChange,
   inputs,
   mortgageInputs,
+  viewMode = 'tabs',
   profile,
   isAdmin,
   onConfigure,
@@ -65,6 +70,27 @@ export const DashboardLayout = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  // In vertical mode, clicking a section scrolls to it instead of switching tabs
+  const handleSectionClick = useCallback((section: SectionId) => {
+    if (viewMode === 'vertical') {
+      const sectionMap: Record<SectionId, string> = {
+        'overview': 'overview-section',
+        'property': 'property-section',
+        'payments': 'payments-section',
+        'hold': 'hold-section',
+        'exit': 'exit-section',
+        'mortgage': 'mortgage-section',
+        'summary': 'summary-section',
+      };
+      const element = document.getElementById(sectionMap[section]);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    onSectionChange(section);
+    setMobileMenuOpen(false);
+  }, [viewMode, onSectionChange]);
+
   // Get visible sections for keyboard navigation
   const getVisibleSections = useCallback((): SectionId[] => {
     const sections: SectionId[] = ['overview', 'property', 'payments'];
@@ -85,19 +111,14 @@ export const DashboardLayout = ({
       if (key >= 1 && key <= 9) {
         const sections = getVisibleSections();
         if (key <= sections.length) {
-          onSectionChange(sections[key - 1]);
+          handleSectionClick(sections[key - 1]);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onSectionChange, getVisibleSections]);
-
-  const handleSectionChange = (section: SectionId) => {
-    onSectionChange(section);
-    setMobileMenuOpen(false);
-  };
+  }, [handleSectionClick, getVisibleSections]);
 
   const sidebarProps = {
     activeSection,
@@ -123,6 +144,7 @@ export const DashboardLayout = ({
     saving,
     lastSaved,
     onSave,
+    viewMode,
   };
 
   return (
@@ -131,7 +153,7 @@ export const DashboardLayout = ({
       <div className="hidden lg:flex h-full">
         <DashboardSidebar
           {...sidebarProps}
-          onSectionChange={onSectionChange}
+          onSectionChange={handleSectionClick}
         />
       </div>
 
@@ -149,7 +171,7 @@ export const DashboardLayout = ({
           <SheetContent side="left" className="w-[260px] bg-theme-card border-theme-border p-0">
             <DashboardSidebar
               {...sidebarProps}
-              onSectionChange={handleSectionChange}
+              onSectionChange={handleSectionClick}
               collapsed={false}
               onCollapsedChange={() => {}}
             />
