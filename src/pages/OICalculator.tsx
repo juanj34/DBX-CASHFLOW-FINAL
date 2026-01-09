@@ -66,7 +66,7 @@ const OICalculatorContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, loadDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
@@ -104,6 +104,24 @@ const OICalculatorContent = () => {
     );
   }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
+  // Create draft immediately on mount if no quoteId
+  const [creatingDraft, setCreatingDraft] = useState(false);
+  
+  useEffect(() => {
+    const initDraft = async () => {
+      if (!quoteId && !creatingDraft && !quoteLoading) {
+        setCreatingDraft(true);
+        const newId = await createDraft();
+        if (newId) {
+          navigate(`/cashflow/${newId}`, { replace: true });
+        }
+        setCreatingDraft(false);
+      }
+    };
+    initDraft();
+  }, [quoteId, creatingDraft, createDraft, navigate, quoteLoading]);
+
+  // Load quote data from database
   useEffect(() => {
     if (dataLoaded) return;
     if (quote) {
@@ -138,13 +156,8 @@ const OICalculatorContent = () => {
         setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
       }
       setDataLoaded(true);
-    } else if (!quoteId) {
-      const draft = loadDraft();
-      if (draft?.inputs) setInputs(migrateInputs(draft.inputs));
-      if (draft?.clientInfo) setClientInfo(prev => ({ ...prev, ...draft.clientInfo }));
-      setDataLoaded(true);
     }
-  }, [quote, quoteId, dataLoaded, loadDraft]);
+  }, [quote, quoteId, dataLoaded]);
 
   useEffect(() => { setDataLoaded(false); }, [quoteId]);
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile?.full_name || '' })); }, [profile?.full_name]);
@@ -276,26 +289,7 @@ const OICalculatorContent = () => {
         lastSaved={lastSaved}
         onSave={handleSave}
       >
-        {/* Unsaved Draft Warning Banner */}
-        {isQuoteConfigured && !quoteId && !lastSaved && (
-          <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg mb-6 print:hidden">
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-amber-200 text-sm">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                <span>Draft – Changes are only saved locally on this device. Save to prevent data loss.</span>
-              </div>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                size="sm"
-                className="bg-amber-600 hover:bg-amber-500 text-white gap-1.5 flex-shrink-0"
-              >
-                <Save className="w-3.5 h-3.5" />
-                {saving ? 'Saving...' : 'Save Now'}
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Draft banner removed - all quotes now auto-save to database */}
 
         {!isFullyConfigured ? (
           /* Unconfigured State */
