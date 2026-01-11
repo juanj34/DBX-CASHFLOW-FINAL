@@ -14,14 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -29,11 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { usePresentations, CreatePresentationInput } from "@/hooks/usePresentations";
+import { usePresentations, PresentationItem } from "@/hooks/usePresentations";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { CreatePresentationWizard, WizardQuote, WizardComparison } from "@/components/presentation";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -43,19 +33,38 @@ const PresentationsHub = () => {
   useDocumentTitle("Presentations");
   const navigate = useNavigate();
   const { presentations, loading, createPresentation, deletePresentation, duplicatePresentation, generateShareToken } = usePresentations();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newPresentation, setNewPresentation] = useState<CreatePresentationInput>({ title: "" });
+  const [createWizardOpen, setCreateWizardOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-  const handleCreate = async () => {
-    if (!newPresentation.title.trim()) {
-      toast.error("Please enter a title");
-      return;
-    }
-    const created = await createPresentation(newPresentation);
+  const handleCreate = async (data: {
+    title: string;
+    description: string;
+    quotes: WizardQuote[];
+    comparisons: WizardComparison[];
+  }) => {
+    // Build items array from wizard data
+    const items: PresentationItem[] = [
+      ...data.quotes.map(q => ({
+        type: 'quote' as const,
+        id: q.quoteId,
+        viewMode: q.viewMode,
+        title: q.title,
+      })),
+      ...data.comparisons.map(c => ({
+        type: 'inline_comparison' as const,
+        id: c.id,
+        title: c.title,
+        quoteIds: c.quoteIds,
+      })),
+    ];
+
+    const created = await createPresentation({
+      title: data.title,
+      description: data.description,
+      items,
+    });
+    
     if (created) {
-      setCreateDialogOpen(false);
-      setNewPresentation({ title: "" });
       navigate(`/presentations/${created.id}`);
     }
   };
@@ -90,7 +99,7 @@ const PresentationsHub = () => {
         shortcuts={shortcuts}
         actions={
           <Button
-            onClick={() => setCreateDialogOpen(true)}
+            onClick={() => setCreateWizardOpen(true)}
             className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -157,7 +166,7 @@ const PresentationsHub = () => {
               Create your first presentation to bundle quotes and comparisons for client meetings.
             </p>
             <Button
-              onClick={() => setCreateDialogOpen(true)}
+              onClick={() => setCreateWizardOpen(true)}
               className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -394,48 +403,12 @@ const PresentationsHub = () => {
         )}
       </div>
 
-      {/* Create Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="bg-theme-card border-theme-border text-theme-text">
-          <DialogHeader>
-            <DialogTitle>Create Presentation</DialogTitle>
-            <DialogDescription className="text-theme-text-muted">
-              Create a new presentation to bundle quotes and comparisons.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                placeholder="e.g., Q1 Investment Options for John"
-                value={newPresentation.title}
-                onChange={(e) => setNewPresentation(prev => ({ ...prev, title: e.target.value }))}
-                className="bg-theme-bg border-theme-border text-theme-text"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Brief description of this presentation..."
-                value={newPresentation.description || ""}
-                onChange={(e) => setNewPresentation(prev => ({ ...prev, description: e.target.value }))}
-                className="bg-theme-bg border-theme-border text-theme-text resize-none"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="border-theme-border text-theme-text">
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90">
-              Create Presentation
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Create Presentation Wizard */}
+      <CreatePresentationWizard
+        open={createWizardOpen}
+        onClose={() => setCreateWizardOpen(false)}
+        onCreate={handleCreate}
+      />
     </div>
   );
 };

@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
   ArrowLeft, Plus, Trash2, Share2, 
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
-  Settings, Layers, BookOpen, Eye, TrendingUp, BarChart3
+  Settings, Layers, BookOpen, Eye, TrendingUp, BarChart3,
+  Home, PieChart, Presentation, FolderOpen, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { usePresentations, PresentationItem, Presentation } from "@/hooks/usePresentations";
+import { usePresentations, PresentationItem, Presentation as PresentationType } from "@/hooks/usePresentations";
 import { useQuotesList } from "@/hooks/useCashflowQuote";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
@@ -51,6 +52,7 @@ import {
   CreateComparisonModal, 
   ConfigurePresentationModal,
   PresentationPreview,
+  LoadPresentationModal,
   QuoteToAdd 
 } from "@/components/presentation";
 import { PresentationAnalyticsModal } from "@/components/presentation/PresentationAnalyticsModal";
@@ -98,7 +100,7 @@ const PresentationBuilder = () => {
   const { presentations, updatePresentation, generateShareToken } = usePresentations();
   const { quotes, loading: quotesLoading } = useQuotesList();
   
-  const [presentation, setPresentation] = useState<Presentation | null>(null);
+  const [presentation, setPresentation] = useState<PresentationType | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [items, setItems] = useState<PresentationItem[]>([]);
@@ -109,8 +111,10 @@ const PresentationBuilder = () => {
   const [addQuoteModalOpen, setAddQuoteModalOpen] = useState(false);
   const [createComparisonModalOpen, setCreateComparisonModalOpen] = useState(false);
   const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
+  const [loadModalOpen, setLoadModalOpen] = useState(false);
   
-  // Preview state
+  // Navigation section collapsed state
+  const [navOpen, setNavOpen] = useState(true);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
   
   // Section collapsed states
@@ -384,6 +388,19 @@ const PresentationBuilder = () => {
           )}
         </div>
         
+        {/* Edit button - only for quotes */}
+        {item.type === 'quote' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`/cashflow-dashboard/${item.id}`, '_blank');
+            }}
+            className="p-1 text-theme-text-muted hover:text-theme-accent opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
+        
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -396,7 +413,6 @@ const PresentationBuilder = () => {
       </div>
     );
   };
-
   // Section Header Component
   const SectionHeader = ({ 
     label, 
@@ -554,28 +570,37 @@ const PresentationBuilder = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <aside className="w-72 bg-theme-card border-r border-theme-border flex flex-col">
-          {/* Add Buttons */}
-          <div className="p-3 border-b border-theme-border">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAddQuoteModalOpen(true)}
-                className="flex-1 border-theme-accent/50 text-theme-accent hover:bg-theme-accent/10"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Quote
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCreateComparisonModalOpen(true)}
-                className="flex-1 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
-              >
-                <GitCompare className="w-3.5 h-3.5 mr-1.5" />
-                Compare
-              </Button>
-            </div>
+          {/* Presentation Actions */}
+          <div className="p-3 border-b border-theme-border space-y-1">
+            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted font-semibold mb-2">Presentation</p>
+            <button
+              onClick={() => setConfigModalOpen(true)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              Configure
+            </button>
+            <button
+              onClick={() => setAnalyticsModalOpen(true)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Analytics
+            </button>
+            <button
+              onClick={handleShare}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+            <button
+              onClick={() => setLoadModalOpen(true)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+            >
+              <FolderOpen className="w-4 h-4" />
+              Load Other
+            </button>
           </div>
 
           {/* Items List */}
@@ -669,6 +694,30 @@ const PresentationBuilder = () => {
               </DragOverlay>
             </DndContext>
           </div>
+          
+          {/* Add Buttons at Bottom */}
+          <div className="p-3 border-t border-theme-border mt-auto">
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAddQuoteModalOpen(true)}
+                className="flex-1 text-theme-accent hover:bg-theme-accent/10 h-8"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span className="text-xs">Quote</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCreateComparisonModalOpen(true)}
+                className="flex-1 text-purple-400 hover:bg-purple-500/10 h-8"
+              >
+                <GitCompare className="w-3.5 h-3.5 mr-1" />
+                <span className="text-xs">Compare</span>
+              </Button>
+            </div>
+          </div>
         </aside>
 
         {/* Main Content - Live Preview */}
@@ -722,6 +771,13 @@ const PresentationBuilder = () => {
         onClose={() => setAnalyticsModalOpen(false)}
         presentationId={id || ''}
         presentationTitle={title}
+      />
+
+      <LoadPresentationModal
+        open={loadModalOpen}
+        onClose={() => setLoadModalOpen(false)}
+        onLoad={(p) => navigate(`/presentations/${p.id}`)}
+        currentPresentationId={id}
       />
     </div>
   );
