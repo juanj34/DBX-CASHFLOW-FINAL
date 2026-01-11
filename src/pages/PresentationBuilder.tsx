@@ -278,6 +278,18 @@ const PresentationBuilder = () => {
     return quote.project_name || quote.client_name || "Quote";
   };
 
+  const getQuoteDetails = (quoteId: string) => {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) return null;
+    
+    const details: string[] = [];
+    if (quote.unit) details.push(quote.unit);
+    if (quote.unit_type) details.push(quote.unit_type);
+    if (quote.unit_size_sqf) details.push(`${quote.unit_size_sqf.toLocaleString()} sqft`);
+    
+    return details.length > 0 ? details.join(' • ') : null;
+  };
+
   const getItemIndex = (item: PresentationItem) => {
     return items.findIndex((i, idx) => getItemUniqueId(i, idx) === getItemUniqueId(item, items.indexOf(item)));
   };
@@ -339,6 +351,11 @@ const PresentationBuilder = () => {
               {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
             </span>
           </div>
+          {item.type === 'quote' && (
+            <div className="mt-0.5 ml-5 text-[10px] text-theme-text-muted truncate">
+              {getQuoteDetails(item.id) || 'No unit details'}
+            </div>
+          )}
           {item.type === 'quote' && (
             <div className="mt-0.5 pl-5 flex items-center gap-1.5">
               <button
