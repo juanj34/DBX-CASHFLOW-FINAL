@@ -367,10 +367,10 @@ export const DashboardSidebar = ({
           )}
         </div>
 
-        {/* SHARE Section - Only show if quote exists */}
+        {/* VIEW Section - View modes and share */}
         {quoteId && (onShowcase || onPresent || onShare) && (
           <>
-            <SectionHeader label="Share" collapsed={collapsed} />
+            <SectionHeader label="View" collapsed={collapsed} />
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
               {onShowcase && (
                 <ActionButton 
@@ -378,21 +378,21 @@ export const DashboardSidebar = ({
                   label="Showcase" 
                   onClick={onShowcase} 
                   collapsed={collapsed}
-                  variant="primary"
                 />
               )}
               {onPresent && (
                 <ActionButton 
-                  icon={ExternalLink} 
-                  label="View Quote" 
+                  icon={LayoutDashboard} 
+                  label="Cashflow" 
                   onClick={onPresent} 
                   collapsed={collapsed}
+                  variant="primary"
                 />
               )}
               {onShare && (
                 <ActionButton 
                   icon={Share2} 
-                  label="Copy Link" 
+                  label="Share Link" 
                   onClick={onShare} 
                   collapsed={collapsed}
                   badge={viewCount && viewCount > 0 ? viewCount : undefined}
@@ -425,7 +425,7 @@ export const DashboardSidebar = ({
           />
           <ActionButton 
             icon={LayoutGrid} 
-            label="Portfolios" 
+            label="Presentations" 
             to="/presentations" 
             collapsed={collapsed}
           />
