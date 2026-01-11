@@ -222,8 +222,8 @@ const CashflowDashboardContent = () => {
     return null;
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
-  // Present - opens the client view in a new tab
-  const handlePresent = useCallback(async () => {
+  // Present - opens the client view (story/showcase) in a new tab
+  const handleShowcase = useCallback(async () => {
     const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
     if (!savedQuote) return;
     
@@ -237,6 +237,14 @@ const CashflowDashboardContent = () => {
       window.open(url, '_blank');
     }
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
+
+  // Cashflow view - stays on this page (standard dashboard view)
+  const handleCashflowView = useCallback(() => {
+    // Already on cashflow dashboard, just ensure we're on the right page
+    if (quoteId) {
+      navigate(`/cashflow-dashboard/${quoteId}`);
+    }
+  }, [quoteId, navigate]);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
@@ -326,7 +334,8 @@ const CashflowDashboardContent = () => {
               toast.success("Share link copied to clipboard!");
             }
           }}
-          onPresent={handlePresent}
+          onPresent={handleCashflowView}
+          onShowcase={handleShowcase}
           viewCount={quote?.view_count ?? undefined}
           quoteId={quoteId}
           language={language}
