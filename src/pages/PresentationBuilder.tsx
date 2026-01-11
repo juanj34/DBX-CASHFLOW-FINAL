@@ -760,6 +760,15 @@ const PresentationBuilder = () => {
                               );
                             })
                           )}
+                          
+                          {/* Create Comparison from quotes */}
+                          <button
+                            onClick={() => setCreateComparisonModalOpen(true)}
+                            className="w-full flex items-center gap-2 mt-2 px-2 py-1.5 text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded transition-colors"
+                          >
+                            <GitCompare className="w-3 h-3" />
+                            <span>Create Comparison</span>
+                          </button>
                         </CollapsibleContent>
                       </Collapsible>
                     ) : (
