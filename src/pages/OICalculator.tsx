@@ -10,7 +10,8 @@ import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
 import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
 import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
-import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { PropertyHeroCard } from "@/components/roi/PropertyHeroCard";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
@@ -395,7 +396,12 @@ const OICalculatorContent = () => {
         ) : (
           /* Configured State - All sections stacked vertically */
           <div className="space-y-6 animate-fade-in" key="cashflow-view">
-            <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
+            <PropertyHeroCard 
+              data={clientInfo} 
+              heroImageUrl={quoteImages.heroImageUrl}
+              buildingRenderUrl={quoteImages.buildingRenderUrl}
+              onEditClick={() => setClientModalOpen(true)} 
+            />
 
             {/* Overview Section */}
             <div id="overview-section" className="scroll-mt-20">
