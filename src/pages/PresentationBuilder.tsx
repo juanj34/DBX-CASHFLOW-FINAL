@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
-  ArrowLeft, Plus, Trash2, Share2, 
+  Plus, Trash2, Share2, 
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
-  Settings, Layers, BookOpen, Eye, TrendingUp, BarChart3,
+  Settings, Layers, Eye, TrendingUp, BarChart3,
   ChevronLeft, ChevronRight, FolderOpen, Pencil, LayoutDashboard,
   LayoutGrid, Presentation, Sparkles
 } from "lucide-react";
@@ -267,6 +267,7 @@ const PresentationBuilder = () => {
   // Section collapsed states
   const [quotesOpen, setQuotesOpen] = useState(true);
   const [comparisonsOpen, setComparisonsOpen] = useState(true);
+  const [navigateOpen, setNavigateOpen] = useState(false); // Collapsed by default
 
   // Drag state
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -461,7 +462,7 @@ const PresentationBuilder = () => {
     );
   }
 
-  // Sidebar Item Component
+  // Sidebar Item Component - Compact version with icon toggle for view mode
   const SidebarItemContent = ({ item }: { item: PresentationItem }) => {
     const itemIndex = items.indexOf(item);
     const isSelected = itemIndex === selectedPreviewIndex;
@@ -479,57 +480,53 @@ const PresentationBuilder = () => {
         )}
         onClick={() => selectItem(item)}
       >
+        {/* Icon */}
+        {isComparison ? (
+          <GitCompare className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+        ) : (
+          <FileText className="w-3.5 h-3.5 text-theme-accent flex-shrink-0" />
+        )}
+        
+        {/* Title and details */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            {isComparison ? (
-              <GitCompare className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-            ) : (
-              <FileText className="w-3.5 h-3.5 text-theme-accent flex-shrink-0" />
-            )}
-            <span className="text-sm text-theme-text truncate">
-              {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
-            </span>
-          </div>
+          <span className="text-sm text-theme-text truncate block">
+            {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
+          </span>
           {item.type === 'quote' && !sidebarCollapsed && (
-            <>
-              <div className="mt-0.5 ml-5 text-[10px] text-theme-text-muted truncate">
-                {getQuoteDetails(item.id) || 'No unit details'}
-              </div>
-              <div className="mt-0.5 pl-5 flex items-center gap-1.5">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleViewMode(item);
-                  }}
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded transition-colors",
-                    item.viewMode === 'story' 
-                      ? "bg-theme-accent/20 text-theme-accent" 
-                      : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
-                  )}
-                >
-                  <BookOpen className="w-3 h-3 inline mr-0.5" />
-                  Showcase
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleViewMode(item);
-                  }}
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded transition-colors",
-                    item.viewMode === 'vertical' 
-                      ? "bg-theme-accent/20 text-theme-accent" 
-                      : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
-                  )}
-                >
-                  <BarChart3 className="w-3 h-3 inline mr-0.5" />
-                  Cashflow
-                </button>
-              </div>
-            </>
+            <span className="text-[10px] text-theme-text-muted truncate block">
+              {getQuoteDetails(item.id) || 'No unit details'}
+            </span>
           )}
         </div>
+
+        {/* View mode toggle - compact icon button for quotes */}
+        {item.type === 'quote' && !sidebarCollapsed && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleViewMode(item);
+                }}
+                className={cn(
+                  "p-1 rounded transition-colors",
+                  item.viewMode === 'story' 
+                    ? "text-theme-accent bg-theme-accent/10" 
+                    : "text-theme-text-muted hover:text-theme-text"
+                )}
+              >
+                {item.viewMode === 'story' ? (
+                  <Sparkles className="w-3.5 h-3.5" />
+                ) : (
+                  <BarChart3 className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {item.viewMode === 'story' ? 'Showcase mode' : 'Cashflow mode'} - Click to toggle
+            </TooltipContent>
+          </Tooltip>
+        )}
         
         {/* Edit button - only for quotes */}
         {item.type === 'quote' && (
@@ -671,11 +668,67 @@ const PresentationBuilder = () => {
             </Link>
           )}
 
+          {/* Add Buttons - At top, after agent thumbnail */}
+          <div className="p-3 border-b border-theme-border flex-shrink-0">
+            <div className={cn("flex gap-2", sidebarCollapsed && "flex-col")}>
+              {sidebarCollapsed ? (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setAddQuoteModalOpen(true)}
+                        className="w-10 h-10 text-theme-accent hover:bg-theme-accent/10"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Add Quote</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setCreateComparisonModalOpen(true)}
+                        className="w-10 h-10 text-purple-400 hover:bg-purple-500/10"
+                      >
+                        <GitCompare className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Create Comparison</TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAddQuoteModalOpen(true)}
+                    className="flex-1 text-theme-accent hover:bg-theme-accent/10 h-8"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    <span className="text-xs">Quote</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCreateComparisonModalOpen(true)}
+                    className="flex-1 text-purple-400 hover:bg-purple-500/10 h-8"
+                  >
+                    <GitCompare className="w-3.5 h-3.5 mr-1" />
+                    <span className="text-xs">Compare</span>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Scrollable Content Area - Only this section scrolls */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* CONTENT Section - Quotes & Comparisons */}
-            <SidebarSectionHeader label="Content" collapsed={sidebarCollapsed} />
-            <div className={cn("px-3", sidebarCollapsed && "px-2")}>
+            {/* Quotes & Comparisons */}
+            <div className={cn("px-3 py-2", sidebarCollapsed && "px-2")}>
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -840,100 +893,61 @@ const PresentationBuilder = () => {
             </div>
           </div>
 
-          {/* NAVIGATE Section - Fixed */}
-          <div className="border-t border-theme-border flex-shrink-0">
-            <SidebarSectionHeader label="Navigate" collapsed={sidebarCollapsed} />
-            <div className={cn("space-y-1 pb-2", sidebarCollapsed ? "px-2" : "px-3")}>
-              <ActionButton 
-                icon={LayoutDashboard} 
-                label="Home" 
-                to="/home" 
-                collapsed={sidebarCollapsed}
-              />
-              <ActionButton 
-                icon={LayoutGrid} 
-                label="All Quotes" 
-                to="/my-quotes" 
-                collapsed={sidebarCollapsed}
-              />
-              <ActionButton 
-                icon={GitCompare} 
-                label="Compare" 
-                to="/compare" 
-                collapsed={sidebarCollapsed}
-              />
-              <ActionButton 
-                icon={Presentation} 
-                label="Presentations" 
-                to="/presentations" 
-                collapsed={sidebarCollapsed}
-                isActive
-              />
-              <ActionButton 
-                icon={BarChart3} 
-                label="Analytics" 
-                to="/quotes-analytics" 
-                collapsed={sidebarCollapsed}
-              />
+          {/* NAVIGATE Section - Collapsible */}
+          {!sidebarCollapsed ? (
+            <div className="border-t border-theme-border flex-shrink-0">
+              <Collapsible open={navigateOpen} onOpenChange={setNavigateOpen}>
+                <div className="px-3">
+                  <ContentSectionHeader 
+                    label="Navigate" 
+                    count={0} 
+                    isOpen={navigateOpen}
+                    onToggle={() => setNavigateOpen(!navigateOpen)}
+                  />
+                </div>
+                <CollapsibleContent>
+                  <div className="space-y-1 pb-2 px-3">
+                    <ActionButton 
+                      icon={LayoutDashboard} 
+                      label="Home" 
+                      to="/home" 
+                      collapsed={sidebarCollapsed}
+                    />
+                    <ActionButton 
+                      icon={LayoutGrid} 
+                      label="All Quotes" 
+                      to="/my-quotes" 
+                      collapsed={sidebarCollapsed}
+                    />
+                    <ActionButton 
+                      icon={GitCompare} 
+                      label="Compare" 
+                      to="/compare" 
+                      collapsed={sidebarCollapsed}
+                    />
+                    <ActionButton 
+                      icon={Presentation} 
+                      label="Presentations" 
+                      to="/presentations" 
+                      collapsed={sidebarCollapsed}
+                      isActive
+                    />
+                    <ActionButton 
+                      icon={BarChart3} 
+                      label="Analytics" 
+                      to="/quotes-analytics" 
+                      collapsed={sidebarCollapsed}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
-          </div>
-          
-          {/* Add Buttons at Bottom - Fixed */}
-          <div className="p-3 border-t border-theme-border flex-shrink-0">
-            <div className={cn("flex gap-2", sidebarCollapsed && "flex-col")}>
-              {sidebarCollapsed ? (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setAddQuoteModalOpen(true)}
-                        className="w-10 h-10 text-theme-accent hover:bg-theme-accent/10"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Add Quote</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setCreateComparisonModalOpen(true)}
-                        className="w-10 h-10 text-purple-400 hover:bg-purple-500/10"
-                      >
-                        <GitCompare className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Create Comparison</TooltipContent>
-                  </Tooltip>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAddQuoteModalOpen(true)}
-                    className="flex-1 text-theme-accent hover:bg-theme-accent/10 h-8"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    <span className="text-xs">Quote</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCreateComparisonModalOpen(true)}
-                    className="flex-1 text-purple-400 hover:bg-purple-500/10 h-8"
-                  >
-                    <GitCompare className="w-3.5 h-3.5 mr-1" />
-                    <span className="text-xs">Compare</span>
-                  </Button>
-                </>
-              )}
+          ) : (
+            <div className="border-t border-theme-border flex-shrink-0 py-2 px-2 space-y-1">
+              <ActionButton icon={LayoutDashboard} label="Home" to="/home" collapsed={sidebarCollapsed} />
+              <ActionButton icon={LayoutGrid} label="All Quotes" to="/my-quotes" collapsed={sidebarCollapsed} />
             </div>
-          </div>
+          )}
         </aside>
 
         {/* Main Content - Live Preview */}
