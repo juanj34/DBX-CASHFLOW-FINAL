@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Home, BarChart3, FileText, Scale, Settings, Plus, LucideIcon } from 'lucide-react';
+import { ArrowLeft, Home, BarChart3, FileText, Scale, Presentation, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/AppLogo';
 import {
@@ -32,8 +32,9 @@ interface PageHeaderProps {
 export const defaultShortcuts: ShortcutItem[] = [
   { label: 'Home', icon: Home, href: '/home' },
   { label: 'All Quotes', icon: FileText, href: '/my-quotes' },
-  { label: 'Analytics', icon: BarChart3, href: '/quotes-analytics' },
   { label: 'Compare', icon: Scale, href: '/compare' },
+  { label: 'Presentations', icon: Presentation, href: '/presentations' },
+  { label: 'Analytics', icon: BarChart3, href: '/quotes-analytics' },
 ];
 
 export const PageHeader = ({

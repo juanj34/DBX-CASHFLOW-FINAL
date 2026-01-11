@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
   ArrowLeft, Plus, Trash2, Share2, 
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
-  Settings, Home, BarChart3, Scale, Layers, BookOpen, Eye, TrendingUp
+  Settings, Layers, BookOpen, Eye, TrendingUp, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,14 +54,6 @@ import {
   QuoteToAdd 
 } from "@/components/presentation";
 import { PresentationAnalyticsModal } from "@/components/presentation/PresentationAnalyticsModal";
-
-// Navigation shortcuts
-const navShortcuts = [
-  { label: "Home", icon: Home, href: "/home" },
-  { label: "All Quotes", icon: FileText, href: "/quotes" },
-  { label: "Compare", icon: Scale, href: "/compare" },
-  { label: "Analytics", icon: BarChart3, href: "/quotes/analytics" },
-];
 
 // Sortable sidebar item wrapper
 const SortableItem = ({ 
@@ -469,14 +461,19 @@ const PresentationBuilder = () => {
           {/* Nav shortcuts */}
           <TooltipProvider>
             <div className="hidden md:flex items-center gap-1">
-              {navShortcuts.map((shortcut) => (
+              {[
+                { label: "Home", href: "/home" },
+                { label: "All Quotes", href: "/my-quotes" },
+                { label: "Compare", href: "/compare" },
+                { label: "Analytics", href: "/quotes-analytics" },
+              ].map((shortcut) => (
                 <Tooltip key={shortcut.href}>
                   <TooltipTrigger asChild>
                     <Link
                       to={shortcut.href}
-                      className="p-2 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+                      className="px-2 py-1.5 rounded-lg text-xs text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
                     >
-                      <shortcut.icon className="w-4 h-4" />
+                      {shortcut.label}
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-theme-card border-theme-border text-theme-text">

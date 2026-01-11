@@ -91,7 +91,7 @@ const CashflowDashboardContent = () => {
     );
   }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
-  // Create draft immediately on mount if no quoteId
+  // Create draft silently on mount if no quoteId - no navigation, no modal auto-open
   const [creatingDraft, setCreatingDraft] = useState(false);
   
   useEffect(() => {
@@ -100,15 +100,14 @@ const CashflowDashboardContent = () => {
         setCreatingDraft(true);
         const newId = await createDraft();
         if (newId) {
-          // Set flag to open configurator after navigation
-          localStorage.setItem('cashflow_open_configurator', 'true');
-          navigate(`/cashflow-dashboard/${newId}`, { replace: true });
+          // Update URL silently without page reload
+          window.history.replaceState(null, '', `/cashflow-dashboard/${newId}`);
         }
         setCreatingDraft(false);
       }
     };
     initDraft();
-  }, [quoteId, creatingDraft, createDraft, navigate, quoteLoading]);
+  }, [quoteId, creatingDraft, createDraft, quoteLoading]);
 
   // Load quote data from database
   useEffect(() => {
@@ -157,18 +156,11 @@ const CashflowDashboardContent = () => {
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
-  // Open configurator after navigation (for new drafts or restored state)
+  // Clear any stale localStorage flags from previous behavior
   useEffect(() => {
-    if (dataLoaded) {
-      const shouldOpen = localStorage.getItem('cashflow_open_configurator') === 'true' ||
-                         localStorage.getItem('cashflow_configurator_open') === 'true';
-      if (shouldOpen) {
-        setModalOpen(true);
-        localStorage.removeItem('cashflow_open_configurator');
-        localStorage.removeItem('cashflow_configurator_open');
-      }
-    }
-  }, [dataLoaded]);
+    localStorage.removeItem('cashflow_open_configurator');
+    localStorage.removeItem('cashflow_configurator_open');
+  }, []);
 
   // Handler for when a new quote is auto-created - preserve configurator state across navigation
   const handleNewQuoteCreated = useCallback((newId: string) => {
