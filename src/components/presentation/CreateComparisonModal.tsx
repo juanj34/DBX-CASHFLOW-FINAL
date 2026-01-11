@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, GitCompare, Check, Building2, User, MapPin } from "lucide-react";
+import { Search, GitCompare, Check, Building2, User, MapPin, Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +19,14 @@ interface CreateComparisonModalProps {
   open: boolean;
   onClose: () => void;
   onCreateComparison: (title: string, quoteIds: string[]) => void;
+  presentationQuoteIds?: string[]; // Quotes already in the presentation (show first)
 }
 
 export const CreateComparisonModal = ({
   open,
   onClose,
   onCreateComparison,
+  presentationQuoteIds = [],
 }: CreateComparisonModalProps) => {
   const { quotes, loading } = useQuotesList();
   const [search, setSearch] = useState("");
@@ -34,18 +36,27 @@ export const CreateComparisonModal = ({
   const maxQuotes = 4;
   const minQuotes = 2;
 
-  // Apply search filter
-  const filteredQuotes = useMemo(() => {
-    if (!search) return quotes;
+  // Separate presentation quotes and other quotes, apply search filter
+  const { presentationQuotes, otherQuotes } = useMemo(() => {
     const searchLower = search.toLowerCase();
-    return quotes.filter(q => {
+    const matchesSearch = (q: CashflowQuote) => {
+      if (!search) return true;
       const matchesProject = q.project_name?.toLowerCase().includes(searchLower);
       const matchesClient = q.client_name?.toLowerCase().includes(searchLower);
       const matchesDeveloper = q.developer?.toLowerCase().includes(searchLower);
       const matchesUnit = q.unit?.toLowerCase().includes(searchLower);
       return matchesProject || matchesClient || matchesDeveloper || matchesUnit;
-    });
-  }, [quotes, search]);
+    };
+
+    const inPresentation = quotes.filter(q => 
+      presentationQuoteIds.includes(q.id) && matchesSearch(q)
+    );
+    const notInPresentation = quotes.filter(q => 
+      !presentationQuoteIds.includes(q.id) && matchesSearch(q)
+    );
+
+    return { presentationQuotes: inPresentation, otherQuotes: notInPresentation };
+  }, [quotes, presentationQuoteIds, search]);
 
   const toggleQuote = (quoteId: string) => {
     setSelectedQuoteIds(prev => {
@@ -90,6 +101,87 @@ export const CreateComparisonModal = ({
   };
 
   const isValid = selectedQuoteIds.length >= minQuotes;
+
+  const renderQuoteItem = (quote: CashflowQuote, isInPresentation: boolean = false) => {
+    const isSelected = selectedQuoteIds.includes(quote.id);
+    const isDisabled = !isSelected && selectedQuoteIds.length >= maxQuotes;
+    const price = getQuotePrice(quote);
+    
+    return (
+      <div
+        key={quote.id}
+        className={cn(
+          "p-3 rounded-lg border transition-all",
+          isDisabled 
+            ? "border-theme-border/50 bg-theme-bg/50 opacity-50 cursor-not-allowed"
+            : "cursor-pointer",
+          isSelected
+            ? "border-purple-500 bg-purple-500/10"
+            : !isDisabled && "border-theme-border bg-theme-bg hover:border-purple-500/50"
+        )}
+        onClick={() => !isDisabled && toggleQuote(quote.id)}
+      >
+        <div className="flex items-start gap-3">
+          {/* Selection indicator */}
+          <div className={cn(
+            "w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+            isSelected
+              ? "border-purple-500 bg-purple-500"
+              : "border-theme-border"
+          )}>
+            {isSelected && <Check className="w-3 h-3 text-white" />}
+          </div>
+
+          {/* Quote info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-medium text-theme-text truncate">
+                {quote.project_name || "Untitled Project"}
+              </span>
+              {isInPresentation && (
+                <Badge variant="outline" className="text-[10px] border-theme-accent/50 text-theme-accent px-1.5 py-0">
+                  <Star className="w-2.5 h-2.5 mr-0.5 fill-current" />
+                  In Presentation
+                </Badge>
+              )}
+              {price && (
+                <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
+                  {price}
+                </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-theme-text-muted">
+              {quote.client_name && (
+                <span className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {quote.client_name}
+                </span>
+              )}
+              {quote.developer && (
+                <span className="flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  {quote.developer}
+                </span>
+              )}
+              {quote.unit_type && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {quote.unit_type}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Order indicator when selected */}
+          {isSelected && (
+            <div className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-medium flex items-center justify-center">
+              {selectedQuoteIds.indexOf(quote.id) + 1}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -146,86 +238,38 @@ export const CreateComparisonModal = ({
             <div className="text-center py-8 text-theme-text-muted">
               Loading quotes...
             </div>
-          ) : filteredQuotes.length === 0 ? (
+          ) : (presentationQuotes.length === 0 && otherQuotes.length === 0) ? (
             <div className="text-center py-8 text-theme-text-muted">
               {search ? "No quotes match your search" : "No quotes available"}
             </div>
           ) : (
-            <div className="space-y-2 py-2">
-              {filteredQuotes.map((quote) => {
-                const isSelected = selectedQuoteIds.includes(quote.id);
-                const isDisabled = !isSelected && selectedQuoteIds.length >= maxQuotes;
-                const price = getQuotePrice(quote);
-                
-                return (
-                  <div
-                    key={quote.id}
-                    className={cn(
-                      "p-3 rounded-lg border transition-all",
-                      isDisabled 
-                        ? "border-theme-border/50 bg-theme-bg/50 opacity-50 cursor-not-allowed"
-                        : "cursor-pointer",
-                      isSelected
-                        ? "border-purple-500 bg-purple-500/10"
-                        : !isDisabled && "border-theme-border bg-theme-bg hover:border-purple-500/50"
-                    )}
-                    onClick={() => !isDisabled && toggleQuote(quote.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Selection indicator */}
-                      <div className={cn(
-                        "w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                        isSelected
-                          ? "border-purple-500 bg-purple-500"
-                          : "border-theme-border"
-                      )}>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-
-                      {/* Quote info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-theme-text truncate">
-                            {quote.project_name || "Untitled Project"}
-                          </span>
-                          {price && (
-                            <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
-                              {price}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-theme-text-muted">
-                          {quote.client_name && (
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {quote.client_name}
-                            </span>
-                          )}
-                          {quote.developer && (
-                            <span className="flex items-center gap-1">
-                              <Building2 className="w-3 h-3" />
-                              {quote.developer}
-                            </span>
-                          )}
-                          {quote.unit_type && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {quote.unit_type}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Order indicator when selected */}
-                      {isSelected && (
-                        <div className="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-medium flex items-center justify-center">
-                          {selectedQuoteIds.indexOf(quote.id) + 1}
-                        </div>
-                      )}
-                    </div>
+            <div className="space-y-4 py-2">
+              {/* Presentation Quotes Section */}
+              {presentationQuotes.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wider text-theme-accent font-semibold flex items-center gap-1.5">
+                    <Star className="w-3 h-3" />
+                    In This Presentation
+                  </h4>
+                  <div className="space-y-2">
+                    {presentationQuotes.map((quote) => renderQuoteItem(quote, true))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Other Quotes Section */}
+              {otherQuotes.length > 0 && (
+                <div className="space-y-2">
+                  {presentationQuotes.length > 0 && (
+                    <h4 className="text-xs uppercase tracking-wider text-theme-text-muted font-semibold">
+                      Other Quotes
+                    </h4>
+                  )}
+                  <div className="space-y-2">
+                    {otherQuotes.map((quote) => renderQuoteItem(quote, false))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </ScrollArea>
