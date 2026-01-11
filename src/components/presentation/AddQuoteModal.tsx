@@ -10,13 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useQuotesList, CashflowQuote } from "@/hooks/useCashflowQuote";
 import { formatCurrency } from "@/components/roi/currencyUtils";
 import { cn } from "@/lib/utils";
@@ -44,7 +37,7 @@ export const AddQuoteModal = ({
 }: AddQuoteModalProps) => {
   const { quotes, loading } = useQuotesList();
   const [search, setSearch] = useState("");
-  const [selectedQuotes, setSelectedQuotes] = useState<Map<string, ViewMode>>(new Map());
+  const [selectedQuotes, setSelectedQuotes] = useState<Set<string>>(new Set());
 
   // Filter out already added quotes and apply search
   const availableQuotes = useMemo(() => {
@@ -67,44 +60,45 @@ export const AddQuoteModal = ({
 
   const toggleQuote = (quoteId: string) => {
     setSelectedQuotes(prev => {
-      const newMap = new Map(prev);
-      if (newMap.has(quoteId)) {
-        newMap.delete(quoteId);
+      const newSet = new Set(prev);
+      if (newSet.has(quoteId)) {
+        newSet.delete(quoteId);
       } else {
-        newMap.set(quoteId, 'story'); // Default to story view
+        newSet.add(quoteId);
       }
-      return newMap;
+      return newSet;
     });
   };
 
-  const updateViewMode = (quoteId: string, viewMode: ViewMode) => {
-    setSelectedQuotes(prev => {
-      const newMap = new Map(prev);
-      newMap.set(quoteId, viewMode);
-      return newMap;
-    });
-  };
-
+  // Add BOTH Showcase and Cashflow versions for each selected quote
   const handleAddSelected = () => {
     const quotesToAdd: QuoteToAdd[] = [];
-    selectedQuotes.forEach((viewMode, quoteId) => {
+    selectedQuotes.forEach((quoteId) => {
       const quote = quotes.find(q => q.id === quoteId);
       if (quote) {
+        const title = quote.project_name || quote.client_name || "Quote";
+        // Add Showcase version
         quotesToAdd.push({
           quoteId,
-          viewMode,
-          title: quote.project_name || quote.client_name || "Quote",
+          viewMode: 'story',
+          title: `${title} - Showcase`,
+        });
+        // Add Cashflow version
+        quotesToAdd.push({
+          quoteId,
+          viewMode: 'vertical',
+          title: `${title} - Cashflow`,
         });
       }
     });
     onAddQuotes(quotesToAdd);
-    setSelectedQuotes(new Map());
+    setSelectedQuotes(new Set());
     setSearch("");
     onClose();
   };
 
   const handleClose = () => {
-    setSelectedQuotes(new Map());
+    setSelectedQuotes(new Set());
     setSearch("");
     onClose();
   };
@@ -115,6 +109,8 @@ export const AddQuoteModal = ({
     return formatCurrency(price, 'AED', 1);
   };
 
+  const totalSlides = selectedQuotes.size * 2;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="bg-theme-card border-theme-border text-theme-text max-w-2xl max-h-[80vh] flex flex-col">
@@ -123,6 +119,9 @@ export const AddQuoteModal = ({
             <FileText className="w-5 h-5 text-theme-accent" />
             Add Quotes to Presentation
           </DialogTitle>
+          <p className="text-xs text-theme-text-muted mt-1">
+            Each quote adds both Showcase and Cashflow slides automatically
+          </p>
         </DialogHeader>
 
         {/* Search */}
@@ -150,7 +149,6 @@ export const AddQuoteModal = ({
             <div className="space-y-2 py-2">
               {availableQuotes.map((quote) => {
                 const isSelected = selectedQuotes.has(quote.id);
-                const viewMode = selectedQuotes.get(quote.id) || 'story';
                 const price = getQuotePrice(quote);
                 
                 return (
@@ -209,22 +207,11 @@ export const AddQuoteModal = ({
                         </div>
                       </div>
 
-                      {/* View mode selector (only when selected) */}
+                      {/* Slide count indicator when selected */}
                       {isSelected && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={viewMode}
-                            onValueChange={(v) => updateViewMode(quote.id, v as ViewMode)}
-                          >
-                            <SelectTrigger className="w-28 h-8 text-xs bg-theme-card border-theme-border text-theme-text">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-theme-card border-theme-border">
-                              <SelectItem value="story">Showcase</SelectItem>
-                              <SelectItem value="vertical">Cashflow</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <Badge variant="outline" className="text-xs border-theme-accent/50 text-theme-accent">
+                          2 slides
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -238,6 +225,9 @@ export const AddQuoteModal = ({
         <div className="flex items-center justify-between pt-4 border-t border-theme-border -mx-6 px-6">
           <span className="text-sm text-theme-text-muted">
             {selectedQuotes.size} quote{selectedQuotes.size !== 1 ? 's' : ''} selected
+            {selectedQuotes.size > 0 && (
+              <span className="text-theme-accent ml-1">({totalSlides} slides)</span>
+            )}
           </span>
           <div className="flex gap-2">
             <Button
@@ -250,9 +240,9 @@ export const AddQuoteModal = ({
             <Button
               onClick={handleAddSelected}
               disabled={selectedQuotes.size === 0}
-              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
             >
-              Add {selectedQuotes.size > 0 ? `(${selectedQuotes.size})` : ''}
+              Add {selectedQuotes.size > 0 ? `(${totalSlides} slides)` : ''}
             </Button>
           </div>
         </div>

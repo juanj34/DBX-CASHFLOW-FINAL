@@ -4,7 +4,7 @@ import {
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
   SlidersHorizontal, Menu, Scale, DollarSign, 
   Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin,
-  Plus, BarChart3, Archive, ChevronDown
+  Plus, BarChart3, Archive, ChevronDown, Presentation
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/AppLogo";
@@ -244,6 +244,16 @@ const Home = () => {
       action: t("analyze"),
     },
     {
+      id: "presentations",
+      title: "Client Presentations",
+      description: "Bundle quotes and comparisons into shareable presentations",
+      icon: Presentation,
+      route: "/presentations",
+      gradient: "from-pink-500/30 via-pink-500/10 to-transparent",
+      iconColor: "text-pink-400",
+      action: "Create",
+    },
+    {
       id: "map",
       title: t("marketIntelligence"),
       description: t("marketIntelligenceDesc"),
@@ -407,6 +417,13 @@ const Home = () => {
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <BarChart3 className="w-4 h-4" />
           {t('analytics')}
+        </Button>
+      </Link>
+
+      <Link to="/presentations" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <Presentation className="w-4 h-4" />
+          Presentations
         </Button>
       </Link>
 
