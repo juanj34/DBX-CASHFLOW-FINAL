@@ -114,15 +114,14 @@ const OICalculatorContent = () => {
         setCreatingDraft(true);
         const newId = await createDraft();
         if (newId) {
-          // Set flag to open configurator after navigation
-          localStorage.setItem('cashflow_open_configurator', 'true');
-          navigate(`/cashflow/${newId}`, { replace: true });
+          // Update URL silently without navigation/refresh - don't auto-open configurator
+          window.history.replaceState(null, '', `/cashflow/${newId}`);
         }
         setCreatingDraft(false);
       }
     };
     initDraft();
-  }, [quoteId, creatingDraft, createDraft, navigate, quoteLoading]);
+  }, [quoteId, creatingDraft, createDraft, quoteLoading]);
 
   // Load quote data from database
   useEffect(() => {
@@ -174,14 +173,12 @@ const OICalculatorContent = () => {
     navigate(`/cashflow/${newId}`, { replace: true });
   }, [navigate, modalOpen]);
 
-  // Open configurator after navigation (for new drafts or restored state)
+  // Keep configurator open when navigating to new quote (if it was already open)
   useEffect(() => {
     if (dataLoaded) {
-      const shouldOpen = localStorage.getItem('cashflow_open_configurator') === 'true' ||
-                         localStorage.getItem('cashflow_configurator_open') === 'true';
+      const shouldOpen = localStorage.getItem('cashflow_configurator_open') === 'true';
       if (shouldOpen) {
         setModalOpen(true);
-        localStorage.removeItem('cashflow_open_configurator');
         localStorage.removeItem('cashflow_configurator_open');
       }
     }
