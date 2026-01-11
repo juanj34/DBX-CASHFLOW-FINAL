@@ -323,6 +323,13 @@ export const DashboardSidebar = ({
               collapsed={collapsed}
             />
           )}
+          {/* Create Comparison */}
+          <ActionButton 
+            icon={GitCompare} 
+            label="Create Comparison" 
+            onClick={() => setCompareModalOpen(true)} 
+            collapsed={collapsed}
+          />
         </div>
 
         {/* VIEW Section - View modes and share */}
