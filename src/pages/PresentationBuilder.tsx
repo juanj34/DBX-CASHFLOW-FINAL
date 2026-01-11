@@ -588,19 +588,19 @@ const PresentationBuilder = () => {
           <div className="px-4 py-3 border-t border-theme-border">
             <div className="flex gap-2">
               <Button
-                variant="outline"
+                variant="outlineDark"
                 size="sm"
                 onClick={() => setAddQuoteModalOpen(true)}
-                className="flex-1 border-theme-border text-theme-text hover:bg-theme-accent/10 hover:border-theme-accent/50"
+                className="flex-1 hover:bg-theme-accent/10 hover:border-theme-accent/50"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
                 Quote
               </Button>
               <Button
-                variant="outline"
+                variant="outlineDark"
                 size="sm"
                 onClick={() => setCreateComparisonModalOpen(true)}
-                className="flex-1 border-theme-border text-theme-text hover:bg-purple-500/10 hover:border-purple-500/50"
+                className="flex-1 hover:bg-purple-500/10 hover:border-purple-500/50"
               >
                 <GitCompare className="w-3.5 h-3.5 mr-1.5" />
                 Compare
@@ -650,25 +650,23 @@ const PresentationBuilder = () => {
                 <Button
                   onClick={handleSave}
                   disabled={!hasChanges || saving}
-                  className="flex-1 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                  className="flex-1 bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? "Saving..." : hasChanges ? "Save" : "Saved"}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="outlineDark"
                   size="icon"
                   onClick={handleShare}
-                  className="border-theme-border text-theme-text-muted hover:text-theme-text"
                 >
                   <Share2 className="w-4 h-4" />
                 </Button>
                 {presentation.share_token && (
                   <Button
-                    variant="outline"
+                    variant="outlineDark"
                     size="icon"
                     onClick={() => window.open(`/present/${presentation.share_token}`, '_blank')}
-                    className="border-theme-border text-theme-text-muted hover:text-theme-text"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
