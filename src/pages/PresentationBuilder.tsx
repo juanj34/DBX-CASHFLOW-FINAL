@@ -4,7 +4,8 @@ import {
   ArrowLeft, Plus, Trash2, Share2, 
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
   Settings, Layers, BookOpen, Eye, TrendingUp, BarChart3,
-  Home, PieChart, Presentation, FolderOpen, Pencil
+  ChevronLeft, ChevronRight, FolderOpen, Pencil, LayoutDashboard,
+  LayoutGrid, Presentation, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,9 +22,10 @@ import {
 import { usePresentations, PresentationItem, Presentation as PresentationType } from "@/hooks/usePresentations";
 import { useQuotesList } from "@/hooks/useCashflowQuote";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useProfile } from "@/hooks/useProfile";
+import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { AppLogo } from "@/components/AppLogo";
 
 // Drag and drop
 import {
@@ -57,7 +59,139 @@ import {
 } from "@/components/presentation";
 import { PresentationAnalyticsModal } from "@/components/presentation/PresentationAnalyticsModal";
 
-// Sortable sidebar item wrapper
+// App Logo Component (matching DashboardSidebar)
+const AppLogo = ({ collapsed }: { collapsed: boolean }) => (
+  <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2")}>
+    <div className="relative flex-shrink-0">
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-purple-500 to-[#CCFF00] p-[2px]">
+        <div className="w-full h-full rounded-lg bg-theme-card flex items-center justify-center">
+          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+            <path 
+              d="M12 2L2 7L12 12L22 7L12 2Z" 
+              stroke="url(#presentation-logo-gradient)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+            <path 
+              d="M2 17L12 22L22 17" 
+              stroke="url(#presentation-logo-gradient)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+            <path 
+              d="M2 12L12 17L22 12" 
+              stroke="url(#presentation-logo-gradient)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            />
+            <defs>
+              <linearGradient id="presentation-logo-gradient" x1="2" y1="2" x2="22" y2="22">
+                <stop stopColor="#00EAFF" />
+                <stop offset="0.5" stopColor="#A855F7" />
+                <stop offset="1" stopColor="#CCFF00" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+    {!collapsed && (
+      <span className="text-sm font-bold tracking-tight">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-[#CCFF00]">Dubai</span>
+        <span className="text-theme-text">Invest</span>
+        <span className="text-[#CCFF00]">Pro</span>
+      </span>
+    )}
+  </div>
+);
+
+// Section Header Component for sidebar sections
+const SidebarSectionHeader = ({ label, collapsed }: { label: string; collapsed: boolean }) => {
+  if (collapsed) return null;
+  return (
+    <div className="px-3 pt-4 pb-2">
+      <span className="text-[10px] uppercase tracking-wider text-theme-text-muted/60 font-semibold">
+        {label}
+      </span>
+    </div>
+  );
+};
+
+// Action Button Component (matching DashboardSidebar pattern)
+const ActionButton = ({ 
+  icon: Icon, 
+  label, 
+  onClick, 
+  collapsed,
+  variant = 'default',
+  badge,
+  to,
+  isActive = false,
+}: { 
+  icon: typeof Settings;
+  label: string;
+  onClick?: () => void;
+  collapsed: boolean;
+  variant?: 'default' | 'primary';
+  badge?: number | string;
+  to?: string;
+  isActive?: boolean;
+}) => {
+  const baseStyles = cn(
+    "w-full flex items-center rounded-lg text-sm font-medium transition-all relative",
+    collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-3 px-3 py-2.5"
+  );
+  
+  const variantStyles = variant === 'primary'
+    ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+    : isActive 
+      ? "text-theme-text bg-theme-bg/50"
+      : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50";
+
+  const content = (
+    <button onClick={onClick} className={cn(baseStyles, variantStyles)}>
+      <Icon className="w-4 h-4 flex-shrink-0" />
+      {!collapsed && <span className="flex-1 text-left truncate">{label}</span>}
+      {!collapsed && badge != null && (
+        <span className="flex items-center gap-1 px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full">
+          {badge}
+        </span>
+      )}
+      {collapsed && badge != null && (
+        <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-cyan-500 text-[10px] text-white rounded-full flex items-center justify-center px-1">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+
+  if (to) {
+    return (
+      <Link to={to}>
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{content}</TooltipTrigger>
+            <TooltipContent side="right">{label}</TooltipContent>
+          </Tooltip>
+        ) : content}
+      </Link>
+    );
+  }
+
+  return collapsed ? (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="right">
+        {label}{badge != null ? ` (${badge})` : ''}
+      </TooltipContent>
+    </Tooltip>
+  ) : content;
+};
+
+// Sortable sidebar item wrapper with improved drag handle visibility
 const SortableItem = ({ 
   children,
   id,
@@ -81,13 +215,24 @@ const SortableItem = ({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group/sortable">
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={cn(
+        "relative group/sortable",
+        isDragging && "ring-2 ring-theme-accent/50 rounded-lg"
+      )}
+    >
       <div 
         {...attributes} 
         {...listeners}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 p-1 cursor-grab opacity-0 group-hover/sortable:opacity-100 transition-opacity text-theme-text-muted hover:text-theme-text"
+        className={cn(
+          "absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 p-1.5 cursor-grab rounded transition-all",
+          "text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10",
+          "opacity-40 group-hover/sortable:opacity-100"
+        )}
       >
-        <GripVertical className="w-3.5 h-3.5" />
+        <GripVertical className="w-4 h-4" />
       </div>
       {children}
     </div>
@@ -99,12 +244,16 @@ const PresentationBuilder = () => {
   const navigate = useNavigate();
   const { presentations, updatePresentation, generateShareToken } = usePresentations();
   const { quotes, loading: quotesLoading } = useQuotesList();
+  const { profile } = useProfile();
   
   const [presentation, setPresentation] = useState<PresentationType | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [items, setItems] = useState<PresentationItem[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Sidebar collapsed state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Modal states
   const [configModalOpen, setConfigModalOpen] = useState(false);
@@ -113,8 +262,6 @@ const PresentationBuilder = () => {
   const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   
-  // Navigation section collapsed state
-  const [navOpen, setNavOpen] = useState(true);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
   
   // Section collapsed states
@@ -286,10 +433,6 @@ const PresentationBuilder = () => {
     return details.length > 0 ? details.join(' • ') : null;
   };
 
-  const getItemIndex = (item: PresentationItem) => {
-    return items.findIndex((i, idx) => getItemUniqueId(i, idx) === getItemUniqueId(item, items.indexOf(item)));
-  };
-
   const selectItem = (item: PresentationItem) => {
     const index = items.indexOf(item);
     if (index !== -1) {
@@ -347,44 +490,44 @@ const PresentationBuilder = () => {
               {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
             </span>
           </div>
-          {item.type === 'quote' && (
-            <div className="mt-0.5 ml-5 text-[10px] text-theme-text-muted truncate">
-              {getQuoteDetails(item.id) || 'No unit details'}
-            </div>
-          )}
-          {item.type === 'quote' && (
-            <div className="mt-0.5 pl-5 flex items-center gap-1.5">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleViewMode(item);
-                }}
-                className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded transition-colors",
-                  item.viewMode === 'story' 
-                    ? "bg-theme-accent/20 text-theme-accent" 
-                    : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
-                )}
-              >
-                <BookOpen className="w-3 h-3 inline mr-0.5" />
-                Showcase
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleViewMode(item);
-                }}
-                className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded transition-colors",
-                  item.viewMode === 'vertical' 
-                    ? "bg-theme-accent/20 text-theme-accent" 
-                    : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
-                )}
-              >
-                <BarChart3 className="w-3 h-3 inline mr-0.5" />
-                Cashflow
-              </button>
-            </div>
+          {item.type === 'quote' && !sidebarCollapsed && (
+            <>
+              <div className="mt-0.5 ml-5 text-[10px] text-theme-text-muted truncate">
+                {getQuoteDetails(item.id) || 'No unit details'}
+              </div>
+              <div className="mt-0.5 pl-5 flex items-center gap-1.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleViewMode(item);
+                  }}
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded transition-colors",
+                    item.viewMode === 'story' 
+                      ? "bg-theme-accent/20 text-theme-accent" 
+                      : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
+                  )}
+                >
+                  <BookOpen className="w-3 h-3 inline mr-0.5" />
+                  Showcase
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleViewMode(item);
+                  }}
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded transition-colors",
+                    item.viewMode === 'vertical' 
+                      ? "bg-theme-accent/20 text-theme-accent" 
+                      : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
+                  )}
+                >
+                  <BarChart3 className="w-3 h-3 inline mr-0.5" />
+                  Cashflow
+                </button>
+              </div>
+            </>
           )}
         </div>
         
@@ -413,8 +556,9 @@ const PresentationBuilder = () => {
       </div>
     );
   };
-  // Section Header Component
-  const SectionHeader = ({ 
+
+  // Section Header Component for collapsible content sections
+  const ContentSectionHeader = ({ 
     label, 
     count, 
     isOpen, 
@@ -448,274 +592,346 @@ const PresentationBuilder = () => {
   );
 
   return (
-    <div className="min-h-screen bg-theme-bg flex flex-col">
-      {/* Top Header */}
-      <header className="h-14 border-b border-theme-border bg-theme-card flex items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <AppLogo size="sm" showGlow={false} />
-          
-          <div className="h-6 w-px bg-theme-border" />
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/presentations")}
-            className="text-theme-text-muted hover:text-theme-text -ml-2"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Presentations
-          </Button>
-          
-          <div className="h-6 w-px bg-theme-border hidden sm:block" />
-          
-          <h1 className="text-sm font-medium text-theme-text truncate max-w-[200px] hidden sm:block">
-            {title || "Untitled Presentation"}
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Nav shortcuts */}
-          <TooltipProvider>
-            <div className="hidden md:flex items-center gap-1">
-              {[
-                { label: "Home", href: "/home" },
-                { label: "All Quotes", href: "/my-quotes" },
-                { label: "Compare", href: "/compare" },
-                { label: "Analytics", href: "/quotes-analytics" },
-              ].map((shortcut) => (
-                <Tooltip key={shortcut.href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={shortcut.href}
-                      className="px-2 py-1.5 rounded-lg text-xs text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
-                    >
-                      {shortcut.label}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-theme-card border-theme-border text-theme-text">
-                    {shortcut.label}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </TooltipProvider>
-
-          <div className="h-6 w-px bg-theme-border hidden md:block" />
-
-          {/* Configure Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setConfigModalOpen(true)}
-            className="border-theme-border text-theme-text-muted hover:text-theme-text"
-          >
-            <Settings className="w-4 h-4 mr-1.5" />
-            Configure
-          </Button>
-
-          {/* Analytics Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setAnalyticsModalOpen(true)}
-                  className="border-theme-border text-theme-text-muted hover:text-theme-text h-9 w-9"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-theme-card border-theme-border text-theme-text">
-                View Analytics
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* Share Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShare}
-            className="border-theme-border text-theme-text-muted hover:text-theme-text"
-          >
-            <Share2 className="w-4 h-4 mr-1.5" />
-            Share
-          </Button>
-
-          {/* View Shared Link */}
-          {presentation.share_token && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => window.open(`/present/${presentation.share_token}`, '_blank')}
-                    className="border-theme-border text-theme-text-muted hover:text-theme-text h-9 w-9"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-theme-card border-theme-border text-theme-text">
-                  View Shared Presentation
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+    <TooltipProvider>
+      <div className="h-screen bg-theme-bg flex overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-72 bg-theme-card border-r border-theme-border flex flex-col">
-          {/* Presentation Actions */}
-          <div className="p-3 border-b border-theme-border space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted font-semibold mb-2">Presentation</p>
-            <button
-              onClick={() => setConfigModalOpen(true)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              Configure
-            </button>
-            <button
-              onClick={() => setAnalyticsModalOpen(true)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
-            >
-              <TrendingUp className="w-4 h-4" />
-              Analytics
-            </button>
-            <button
-              onClick={handleShare}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
-            >
-              <Share2 className="w-4 h-4" />
-              Share
-            </button>
-            <button
-              onClick={() => setLoadModalOpen(true)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
-            >
-              <FolderOpen className="w-4 h-4" />
-              Load Other
-            </button>
+        <aside 
+          className={cn(
+            "bg-theme-card border-r border-theme-border flex flex-col h-full transition-all duration-300 ease-in-out",
+            sidebarCollapsed ? "w-16" : "w-64"
+          )}
+        >
+          {/* Logo + Collapse Toggle */}
+          <div className={cn(
+            "h-14 border-b border-theme-border flex items-center px-3 flex-shrink-0",
+            sidebarCollapsed ? "justify-center" : "justify-between"
+          )}>
+            <AppLogo collapsed={sidebarCollapsed} />
+            {!sidebarCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(true)}
+                className="h-7 w-7 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
-          {/* Items List */}
-          <div className="flex-1 overflow-y-auto p-3">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={allItemIds} strategy={verticalListSortingStrategy}>
-                <div className="space-y-1">
-                  {/* Quotes Section */}
-                  <Collapsible open={quotesOpen} onOpenChange={setQuotesOpen}>
-                    <SectionHeader 
-                      label="Quotes" 
-                      count={quoteItems.length} 
-                      isOpen={quotesOpen}
-                      onToggle={() => setQuotesOpen(!quotesOpen)}
-                    />
-                    <CollapsibleContent className="space-y-1 pb-3">
-                      {quoteItems.length === 0 ? (
-                        <p className="text-xs text-theme-text-muted py-2 pl-2">No quotes added</p>
-                      ) : (
-                        quoteItems.map((item) => {
-                          const originalIndex = items.indexOf(item);
-                          const uniqueId = getItemUniqueId(item, originalIndex);
-                          return (
-                            <SortableItem key={uniqueId} id={uniqueId}>
-                              <SidebarItemContent item={item} />
-                            </SortableItem>
-                          );
-                        })
-                      )}
-                    </CollapsibleContent>
-                  </Collapsible>
+          {/* Expand button when collapsed */}
+          {sidebarCollapsed && (
+            <div className="py-2 flex justify-center border-b border-theme-border flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(false)}
+                className="h-7 w-7 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
 
-                  {/* Comparisons Section */}
-                  <Collapsible open={comparisonsOpen} onOpenChange={setComparisonsOpen}>
-                    <SectionHeader 
-                      label="Comparisons" 
-                      count={comparisonItems.length} 
-                      isOpen={comparisonsOpen}
-                      onToggle={() => setComparisonsOpen(!comparisonsOpen)}
-                      accentColor="purple"
-                    />
-                    <CollapsibleContent className="space-y-1 pb-3">
-                      {comparisonItems.length === 0 ? (
-                        <p className="text-xs text-theme-text-muted py-2 pl-2">No comparisons added</p>
-                      ) : (
-                        comparisonItems.map((item) => {
-                          const originalIndex = items.indexOf(item);
-                          const uniqueId = getItemUniqueId(item, originalIndex);
-                          return (
-                            <SortableItem key={uniqueId} id={uniqueId}>
-                              <SidebarItemContent item={item} />
-                            </SortableItem>
-                          );
-                        })
-                      )}
-                    </CollapsibleContent>
-                  </Collapsible>
+          {/* Agent Thumbnail */}
+          {profile && (
+            <Link to="/account-settings" className="block flex-shrink-0">
+              <div className={cn(
+                "border-b border-theme-border hover:bg-theme-bg/50 transition-colors cursor-pointer",
+                sidebarCollapsed ? "p-2 flex justify-center" : "p-3"
+              )}>
+                {sidebarCollapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#2a3142] ring-2 ring-[#CCFF00]/30">
+                        {profile.avatar_url ? (
+                          <img 
+                            src={profile.avatar_url} 
+                            alt={profile.full_name || 'Advisor'} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-theme-text-muted text-xs font-medium">
+                            {profile.full_name?.charAt(0) || 'A'}
+                          </div>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <div>
+                        <p className="font-medium">{profile.full_name}</p>
+                        <p className="text-xs text-muted-foreground">Wealth Advisor</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <AdvisorInfo profile={profile} size="sm" showSubtitle />
+                )}
+              </div>
+            </Link>
+          )}
 
-                  {/* Empty State */}
-                  {items.length === 0 && (
-                    <div className="text-center py-8 text-theme-text-muted">
-                      <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No content added yet</p>
-                      <p className="text-xs mt-1">Add quotes or create comparisons</p>
-                    </div>
-                  )}
-                </div>
-              </SortableContext>
+          {/* Scrollable Content Area - Only this section scrolls */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {/* CONTENT Section - Quotes & Comparisons */}
+            <SidebarSectionHeader label="Content" collapsed={sidebarCollapsed} />
+            <div className={cn("px-3", sidebarCollapsed && "px-2")}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={allItemIds} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-1">
+                    {/* Quotes Section */}
+                    {!sidebarCollapsed ? (
+                      <Collapsible open={quotesOpen} onOpenChange={setQuotesOpen}>
+                        <ContentSectionHeader 
+                          label="Quotes" 
+                          count={quoteItems.length} 
+                          isOpen={quotesOpen}
+                          onToggle={() => setQuotesOpen(!quotesOpen)}
+                        />
+                        <CollapsibleContent className="space-y-1 pb-2">
+                          {quoteItems.length === 0 ? (
+                            <p className="text-xs text-theme-text-muted py-2 pl-2">No quotes added</p>
+                          ) : (
+                            quoteItems.map((item) => {
+                              const originalIndex = items.indexOf(item);
+                              const uniqueId = getItemUniqueId(item, originalIndex);
+                              return (
+                                <SortableItem key={uniqueId} id={uniqueId}>
+                                  <SidebarItemContent item={item} />
+                                </SortableItem>
+                              );
+                            })
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 relative">
+                            <FileText className="w-4 h-4" />
+                            {quoteItems.length > 0 && (
+                              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-theme-accent text-[10px] text-theme-bg rounded-full flex items-center justify-center px-1">
+                                {quoteItems.length}
+                              </span>
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">Quotes ({quoteItems.length})</TooltipContent>
+                      </Tooltip>
+                    )}
 
-              {/* Drag Overlay */}
-              <DragOverlay>
-                {activeItem ? (
-                  <div className="bg-theme-card border border-theme-accent rounded-lg p-2 shadow-lg">
-                    <div className="flex items-center gap-2">
-                      {activeItem.type === 'comparison' || activeItem.type === 'inline_comparison' ? (
-                        <GitCompare className="w-3.5 h-3.5 text-purple-400" />
-                      ) : (
-                        <FileText className="w-3.5 h-3.5 text-theme-accent" />
-                      )}
-                      <span className="text-sm text-theme-text">
-                        {activeItem.title || (activeItem.type === 'quote' ? getQuoteTitle(activeItem.id) : "Comparison")}
-                      </span>
-                    </div>
+                    {/* Comparisons Section */}
+                    {!sidebarCollapsed ? (
+                      <Collapsible open={comparisonsOpen} onOpenChange={setComparisonsOpen}>
+                        <ContentSectionHeader 
+                          label="Comparisons" 
+                          count={comparisonItems.length} 
+                          isOpen={comparisonsOpen}
+                          onToggle={() => setComparisonsOpen(!comparisonsOpen)}
+                          accentColor="purple"
+                        />
+                        <CollapsibleContent className="space-y-1 pb-2">
+                          {comparisonItems.length === 0 ? (
+                            <p className="text-xs text-theme-text-muted py-2 pl-2">No comparisons added</p>
+                          ) : (
+                            comparisonItems.map((item) => {
+                              const originalIndex = items.indexOf(item);
+                              const uniqueId = getItemUniqueId(item, originalIndex);
+                              return (
+                                <SortableItem key={uniqueId} id={uniqueId}>
+                                  <SidebarItemContent item={item} />
+                                </SortableItem>
+                              );
+                            })
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50 relative">
+                            <GitCompare className="w-4 h-4" />
+                            {comparisonItems.length > 0 && (
+                              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-purple-500 text-[10px] text-white rounded-full flex items-center justify-center px-1">
+                                {comparisonItems.length}
+                              </span>
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">Comparisons ({comparisonItems.length})</TooltipContent>
+                      </Tooltip>
+                    )}
+
+                    {/* Empty State */}
+                    {items.length === 0 && !sidebarCollapsed && (
+                      <div className="text-center py-6 text-theme-text-muted">
+                        <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No content added yet</p>
+                        <p className="text-xs mt-1">Add quotes or create comparisons</p>
+                      </div>
+                    )}
                   </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+                </SortableContext>
+
+                {/* Drag Overlay */}
+                <DragOverlay>
+                  {activeItem ? (
+                    <div className="bg-theme-card border border-theme-accent rounded-lg p-2 shadow-lg">
+                      <div className="flex items-center gap-2">
+                        {activeItem.type === 'comparison' || activeItem.type === 'inline_comparison' ? (
+                          <GitCompare className="w-3.5 h-3.5 text-purple-400" />
+                        ) : (
+                          <FileText className="w-3.5 h-3.5 text-theme-accent" />
+                        )}
+                        <span className="text-sm text-theme-text">
+                          {activeItem.title || (activeItem.type === 'quote' ? getQuoteTitle(activeItem.id) : "Comparison")}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
+          </div>
+
+          {/* PRESENTATION Section - Fixed */}
+          <div className="border-t border-theme-border flex-shrink-0">
+            <SidebarSectionHeader label="Presentation" collapsed={sidebarCollapsed} />
+            <div className={cn("space-y-1 pb-2", sidebarCollapsed ? "px-2" : "px-3")}>
+              <ActionButton 
+                icon={Settings} 
+                label="Configure" 
+                onClick={() => setConfigModalOpen(true)} 
+                collapsed={sidebarCollapsed}
+                variant="primary"
+              />
+              <ActionButton 
+                icon={TrendingUp} 
+                label="Analytics" 
+                onClick={() => setAnalyticsModalOpen(true)} 
+                collapsed={sidebarCollapsed}
+                badge={presentation.view_count > 0 ? presentation.view_count : undefined}
+              />
+              <ActionButton 
+                icon={Share2} 
+                label="Share" 
+                onClick={handleShare} 
+                collapsed={sidebarCollapsed}
+              />
+              {presentation.share_token && (
+                <ActionButton 
+                  icon={Eye} 
+                  label="View Live" 
+                  onClick={() => window.open(`/present/${presentation.share_token}`, '_blank')} 
+                  collapsed={sidebarCollapsed}
+                />
+              )}
+              <ActionButton 
+                icon={FolderOpen} 
+                label="Load Other" 
+                onClick={() => setLoadModalOpen(true)} 
+                collapsed={sidebarCollapsed}
+              />
+            </div>
+          </div>
+
+          {/* NAVIGATE Section - Fixed */}
+          <div className="border-t border-theme-border flex-shrink-0">
+            <SidebarSectionHeader label="Navigate" collapsed={sidebarCollapsed} />
+            <div className={cn("space-y-1 pb-2", sidebarCollapsed ? "px-2" : "px-3")}>
+              <ActionButton 
+                icon={LayoutDashboard} 
+                label="Home" 
+                to="/home" 
+                collapsed={sidebarCollapsed}
+              />
+              <ActionButton 
+                icon={LayoutGrid} 
+                label="All Quotes" 
+                to="/my-quotes" 
+                collapsed={sidebarCollapsed}
+              />
+              <ActionButton 
+                icon={GitCompare} 
+                label="Compare" 
+                to="/compare" 
+                collapsed={sidebarCollapsed}
+              />
+              <ActionButton 
+                icon={Presentation} 
+                label="Presentations" 
+                to="/presentations" 
+                collapsed={sidebarCollapsed}
+                isActive
+              />
+              <ActionButton 
+                icon={BarChart3} 
+                label="Analytics" 
+                to="/quotes-analytics" 
+                collapsed={sidebarCollapsed}
+              />
+            </div>
           </div>
           
-          {/* Add Buttons at Bottom */}
-          <div className="p-3 border-t border-theme-border mt-auto">
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setAddQuoteModalOpen(true)}
-                className="flex-1 text-theme-accent hover:bg-theme-accent/10 h-8"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                <span className="text-xs">Quote</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCreateComparisonModalOpen(true)}
-                className="flex-1 text-purple-400 hover:bg-purple-500/10 h-8"
-              >
-                <GitCompare className="w-3.5 h-3.5 mr-1" />
-                <span className="text-xs">Compare</span>
-              </Button>
+          {/* Add Buttons at Bottom - Fixed */}
+          <div className="p-3 border-t border-theme-border flex-shrink-0">
+            <div className={cn("flex gap-2", sidebarCollapsed && "flex-col")}>
+              {sidebarCollapsed ? (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setAddQuoteModalOpen(true)}
+                        className="w-10 h-10 text-theme-accent hover:bg-theme-accent/10"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Add Quote</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setCreateComparisonModalOpen(true)}
+                        className="w-10 h-10 text-purple-400 hover:bg-purple-500/10"
+                      >
+                        <GitCompare className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Create Comparison</TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAddQuoteModalOpen(true)}
+                    className="flex-1 text-theme-accent hover:bg-theme-accent/10 h-8"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    <span className="text-xs">Quote</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCreateComparisonModalOpen(true)}
+                    className="flex-1 text-purple-400 hover:bg-purple-500/10 h-8"
+                  >
+                    <GitCompare className="w-3.5 h-3.5 mr-1" />
+                    <span className="text-xs">Compare</span>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </aside>
@@ -729,57 +945,57 @@ const PresentationBuilder = () => {
             quotes={quotes}
           />
         </main>
+
+        {/* Modals */}
+        <ConfigurePresentationModal
+          open={configModalOpen}
+          onClose={() => setConfigModalOpen(false)}
+          title={title}
+          description={description}
+          items={items}
+          onSave={handleConfigSave}
+          onOpenAddQuotes={() => {
+            setConfigModalOpen(false);
+            setTimeout(() => setAddQuoteModalOpen(true), 150);
+          }}
+          onOpenCreateComparison={() => {
+            setConfigModalOpen(false);
+            setTimeout(() => setCreateComparisonModalOpen(true), 150);
+          }}
+          onRemoveItem={removeItem}
+          onToggleViewMode={toggleViewMode}
+          getQuoteTitle={getQuoteTitle}
+        />
+
+        <AddQuoteModal
+          open={addQuoteModalOpen}
+          onClose={() => setAddQuoteModalOpen(false)}
+          onAddQuotes={handleAddQuotes}
+          existingQuoteIds={existingQuoteIds}
+        />
+
+        <CreateComparisonModal
+          open={createComparisonModalOpen}
+          onClose={() => setCreateComparisonModalOpen(false)}
+          onCreateComparison={handleCreateComparison}
+          presentationQuoteIds={existingQuoteIds}
+        />
+
+        <PresentationAnalyticsModal
+          open={analyticsModalOpen}
+          onClose={() => setAnalyticsModalOpen(false)}
+          presentationId={id || ''}
+          presentationTitle={title}
+        />
+
+        <LoadPresentationModal
+          open={loadModalOpen}
+          onClose={() => setLoadModalOpen(false)}
+          onLoad={(p) => navigate(`/presentations/${p.id}`)}
+          currentPresentationId={id}
+        />
       </div>
-
-      {/* Modals */}
-      <ConfigurePresentationModal
-        open={configModalOpen}
-        onClose={() => setConfigModalOpen(false)}
-        title={title}
-        description={description}
-        items={items}
-        onSave={handleConfigSave}
-        onOpenAddQuotes={() => {
-          setConfigModalOpen(false);
-          setTimeout(() => setAddQuoteModalOpen(true), 150);
-        }}
-        onOpenCreateComparison={() => {
-          setConfigModalOpen(false);
-          setTimeout(() => setCreateComparisonModalOpen(true), 150);
-        }}
-        onRemoveItem={removeItem}
-        onToggleViewMode={toggleViewMode}
-        getQuoteTitle={getQuoteTitle}
-      />
-
-      <AddQuoteModal
-        open={addQuoteModalOpen}
-        onClose={() => setAddQuoteModalOpen(false)}
-        onAddQuotes={handleAddQuotes}
-        existingQuoteIds={existingQuoteIds}
-      />
-
-      <CreateComparisonModal
-        open={createComparisonModalOpen}
-        onClose={() => setCreateComparisonModalOpen(false)}
-        onCreateComparison={handleCreateComparison}
-        presentationQuoteIds={existingQuoteIds}
-      />
-
-      <PresentationAnalyticsModal
-        open={analyticsModalOpen}
-        onClose={() => setAnalyticsModalOpen(false)}
-        presentationId={id || ''}
-        presentationTitle={title}
-      />
-
-      <LoadPresentationModal
-        open={loadModalOpen}
-        onClose={() => setLoadModalOpen(false)}
-        onLoad={(p) => navigate(`/presentations/${p.id}`)}
-        currentPresentationId={id}
-      />
-    </div>
+    </TooltipProvider>
   );
 };
 
