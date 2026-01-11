@@ -79,7 +79,7 @@ export const AddQuoteModal = ({
         const title = quote.project_name || quote.client_name || "Quote";
         quotesToAdd.push({
           quoteId,
-          viewMode: 'story', // Default to Showcase view
+          viewMode: 'vertical', // Default to Cashflow view
           title,
         });
       }
