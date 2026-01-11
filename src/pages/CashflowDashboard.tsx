@@ -50,6 +50,7 @@ const CashflowDashboardContent = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('overview');
+  const [viewMode, setViewMode] = useState<'cashflow' | 'showcase'>('cashflow');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -222,29 +223,14 @@ const CashflowDashboardContent = () => {
     return null;
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
-  // Present - opens the client view (story/showcase) in a new tab
-  const handleShowcase = useCallback(async () => {
-    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
-    if (!savedQuote) return;
-    
-    let token = savedQuote.share_token;
-    if (!token) {
-      token = await generateShareToken(savedQuote.id);
-    }
-    
-    if (token) {
-      const url = `${window.location.origin}/view/${token}`;
-      window.open(url, '_blank');
-    }
-  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
+  // View toggle handlers - switch between cashflow and showcase views in-page
+  const handleShowcaseView = useCallback(() => {
+    setViewMode('showcase');
+  }, []);
 
-  // Cashflow view - stays on this page (standard dashboard view)
   const handleCashflowView = useCallback(() => {
-    // Already on cashflow dashboard, just ensure we're on the right page
-    if (quoteId) {
-      navigate(`/cashflow-dashboard/${quoteId}`);
-    }
-  }, [quoteId, navigate]);
+    setViewMode('cashflow');
+  }, []);
 
   const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
     await exportCashflowPDF({
@@ -334,9 +320,9 @@ const CashflowDashboardContent = () => {
               toast.success("Share link copied to clipboard!");
             }
           }}
-          onPresent={undefined}
-          onShowcase={handleShowcase}
-          activeView="cashflow"
+          onPresent={handleCashflowView}
+          onShowcase={handleShowcaseView}
+          activeView={viewMode}
           viewCount={quote?.view_count ?? undefined}
           quoteId={quoteId}
           language={language}
