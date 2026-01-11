@@ -531,7 +531,7 @@ export const PresentationPreview = ({
         {currentItem?.type === 'quote' && quoteData && (
           <QuotePreview 
             quoteData={quoteData} 
-            viewMode={currentItem.viewMode || 'story'} 
+            viewMode={currentItem.viewMode || 'vertical'} 
           />
         )}
         {(currentItem?.type === 'comparison' || currentItem?.type === 'inline_comparison') && comparisonData && (
