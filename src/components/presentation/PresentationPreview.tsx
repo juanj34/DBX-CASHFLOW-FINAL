@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Gem, Home, Percent, DoorOpen } from "lucide-react";
+import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Gem, Home, Percent, DoorOpen, CreditCard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { OIInputs, useOICalculations } from "@/components/roi/useOICalculations";
@@ -9,6 +9,7 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { PresentationItem } from "@/hooks/usePresentations";
 import { CashflowQuote } from "@/hooks/useCashflowQuote";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Vertical view components
 import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
@@ -19,6 +20,12 @@ import { ExitScenariosCards, calculateAutoExitScenarios } from "@/components/roi
 import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
+import { ClientUnitInfo, ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
+import { RentSnapshot } from "@/components/roi/RentSnapshot";
+import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
+import { CashflowSummaryCard } from "@/components/roi/CashflowSummaryCard";
+import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
 
 // Comparison components
 import { MetricsTable } from "@/components/roi/compare/MetricsTable";
@@ -52,8 +59,10 @@ interface QuoteData {
     zoneName?: string;
     zoneId?: string;
   };
+  clientUnitData: ClientUnitData;
   developerId?: string;
   projectId?: string;
+  exitScenarios?: number[];
 }
 
 interface ComparisonData {
@@ -71,17 +80,24 @@ const QuotePreview = ({
   viewMode: 'story' | 'vertical' | 'compact';
 }) => {
   const { rate } = useExchangeRate('AED');
+  const { t } = useLanguage();
   const calculations = useOICalculations(quoteData.inputs);
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs: quoteData.mortgageInputs,
     basePrice: quoteData.inputs.basePrice,
     preHandoverPercent: quoteData.inputs.preHandoverPercent,
+    monthlyRent: calculations?.holdAnalysis?.annualRent ? calculations.holdAnalysis.annualRent / 12 : 0,
+    monthlyServiceCharges: calculations?.holdAnalysis?.annualServiceCharges ? calculations.holdAnalysis.annualServiceCharges / 12 : 0,
   });
 
+  // Use saved exit scenarios or auto-calculate
   const exitScenarios = useMemo(() => {
-    if (!calculations) return [];
+    if (quoteData.exitScenarios && quoteData.exitScenarios.length > 0) {
+      return quoteData.exitScenarios;
+    }
+    if (!calculations) return [12, 24, 36];
     return calculateAutoExitScenarios(calculations.totalMonths);
-  }, [calculations]);
+  }, [quoteData.exitScenarios, calculations]);
 
   if (!calculations) {
     return (
@@ -113,79 +129,194 @@ const QuotePreview = ({
     );
   }
 
-  // Vertical/Cashflow view
+  // Vertical/Cashflow view - matching CashflowView.tsx layout exactly
+  const year7Projection = calculations.yearlyProjections[6] || calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
+  const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
+
   return (
-    <div className="h-full overflow-y-auto p-6 space-y-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      {/* Client & Unit Info */}
+      <ClientUnitInfo data={quoteData.clientUnitData} onEditClick={() => {}} readOnly={true} />
+
+      {/* Investment Overview Grid with hero image */}
       <InvestmentOverviewGrid
         inputs={quoteData.inputs}
         calculations={calculations}
+        mortgageAnalysis={mortgageAnalysis}
+        mortgageEnabled={quoteData.mortgageInputs.enabled}
         currency="AED"
         rate={rate}
+        compact={true}
+        renderImageUrl={quoteData.heroImageUrl || quoteData.buildingRenderUrl}
       />
-      
-      <CollapsibleSection title="Payment Schedule" defaultOpen>
-        <PaymentBreakdown
-          inputs={quoteData.inputs}
-          totalMonths={calculations.totalMonths}
-          currency="AED"
-          rate={rate}
+
+      {/* Investment Snapshot */}
+      <InvestmentSnapshot 
+        inputs={quoteData.inputs} 
+        currency="AED" 
+        totalMonths={calculations.totalMonths} 
+        totalEntryCosts={calculations.totalEntryCosts} 
+        rate={rate} 
+        holdAnalysis={calculations.holdAnalysis} 
+        unitSizeSqf={quoteData.clientUnitData.unitSizeSqf} 
+      />
+
+      {/* Payment Breakdown - Collapsible */}
+      <CollapsibleSection
+        title={t('paymentBreakdownTitle') || "Payment Schedule"}
+        subtitle={`${quoteData.inputs.preHandoverPercent}/${100 - quoteData.inputs.preHandoverPercent} ${t('paymentStructure') || 'Payment Structure'}`}
+        icon={<CreditCard className="w-5 h-5 text-theme-accent" />}
+        defaultOpen={false}
+      >
+        <PaymentBreakdown 
+          inputs={quoteData.inputs} 
+          currency="AED" 
+          totalMonths={calculations.totalMonths} 
+          rate={rate} 
+          unitSizeSqf={quoteData.clientUnitData.unitSizeSqf} 
+          clientInfo={quoteData.clientUnitData} 
         />
       </CollapsibleSection>
 
-      <CollapsibleSection title="Growth Projection" defaultOpen>
-        <OIGrowthCurve
-          inputs={quoteData.inputs}
-          calculations={calculations}
-          exitScenarios={exitScenarios}
-          currency="AED"
-          rate={rate}
-        />
-      </CollapsibleSection>
+      {/* Value Differentiators Display */}
+      <ValueDifferentiatorsDisplay
+        selectedDifferentiators={quoteData.inputs.valueDifferentiators || []}
+        readOnly={true}
+        showAppreciationBonus={true}
+      />
 
-      <CollapsibleSection title="Rental Income" defaultOpen>
-        <CumulativeIncomeChart
-          projections={calculations.yearlyProjections}
-          totalCapitalInvested={calculations.holdAnalysis.totalCapitalInvested}
-          showAirbnbComparison={quoteData.inputs.showAirbnbComparison || false}
-          currency="AED"
-          rate={rate}
-        />
-      </CollapsibleSection>
-
-      {quoteData.mortgageInputs.enabled && (
-        <CollapsibleSection title="Mortgage Analysis" defaultOpen>
-          <MortgageBreakdown
-            mortgageInputs={quoteData.mortgageInputs}
-            mortgageAnalysis={mortgageAnalysis}
-            basePrice={quoteData.inputs.basePrice}
-            currency="AED"
-            rate={rate}
-            preHandoverPercent={quoteData.inputs.preHandoverPercent}
-          />
+      {/* Hold Strategy Analysis - Collapsible */}
+      {(quoteData.inputs.enabledSections?.longTermHold !== false) && (
+        <CollapsibleSection
+          title={t('holdStrategyAnalysis') || "Long-Term Hold Analysis"}
+          subtitle={t('holdStrategySubtitle') || "Rental income projections over time"}
+          icon={<Home className="w-5 h-5 text-theme-accent" />}
+          defaultOpen={false}
+        >
+          <div className="space-y-4 sm:space-y-6">
+            <RentSnapshot 
+              inputs={quoteData.inputs} 
+              currency="AED" 
+              rate={rate} 
+              holdAnalysis={calculations.holdAnalysis} 
+            />
+            <CumulativeIncomeChart 
+              projections={calculations.yearlyProjections.slice(0, 7)} 
+              currency="AED" 
+              rate={rate} 
+              totalCapitalInvested={totalCapitalInvested} 
+              showAirbnbComparison={calculations.showAirbnbComparison} 
+            />
+            <OIYearlyProjectionTable 
+              projections={calculations.yearlyProjections.slice(0, 7)} 
+              currency="AED" 
+              rate={rate} 
+              showAirbnbComparison={calculations.showAirbnbComparison} 
+            />
+            <WealthSummaryCard 
+              propertyValueFinal={year7Projection.propertyValue} 
+              cumulativeRentIncome={year7Projection.cumulativeNetIncome} 
+              airbnbCumulativeIncome={calculations.showAirbnbComparison ? year7Projection.airbnbCumulativeNetIncome : undefined} 
+              initialInvestment={totalCapitalInvested} 
+              currency="AED" 
+              rate={rate} 
+              showAirbnbComparison={calculations.showAirbnbComparison} 
+            />
+          </div>
         </CollapsibleSection>
       )}
 
-      <CollapsibleSection title="Exit Scenarios" defaultOpen>
-        <ExitScenariosCards
-          inputs={quoteData.inputs}
-          totalMonths={calculations.totalMonths}
-          basePrice={quoteData.inputs.basePrice}
-          totalEntryCosts={calculations.totalEntryCosts}
-          exitScenarios={exitScenarios}
-          currency="AED"
-          rate={rate}
-          readOnly
-        />
-      </CollapsibleSection>
+      {/* Exit Strategy - Collapsible */}
+      {(quoteData.inputs.enabledSections?.exitStrategy === true || (quoteData.inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0)) && (
+        <CollapsibleSection
+          title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
+          subtitle={t('whenToSell') || "When to flip for maximum return"}
+          icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
+          defaultOpen={false}
+        >
+          <div className="space-y-4 sm:space-y-6">
+            <ExitScenariosCards 
+              inputs={quoteData.inputs} 
+              currency="AED" 
+              totalMonths={calculations.totalMonths} 
+              basePrice={calculations.basePrice} 
+              totalEntryCosts={calculations.totalEntryCosts} 
+              exitScenarios={exitScenarios} 
+              rate={rate} 
+              readOnly={true} 
+              unitSizeSqf={quoteData.clientUnitData.unitSizeSqf} 
+            />
+            <OIGrowthCurve 
+              calculations={calculations} 
+              inputs={quoteData.inputs} 
+              currency="AED" 
+              exitScenarios={exitScenarios} 
+              rate={rate} 
+            />
+          </div>
+        </CollapsibleSection>
+      )}
 
-      <CollapsibleSection title="Year-by-Year Projection">
-        <OIYearlyProjectionTable
-          projections={calculations.yearlyProjections}
-          showAirbnbComparison={quoteData.inputs.showAirbnbComparison || false}
-          currency="AED"
-          rate={rate}
-        />
-      </CollapsibleSection>
+      {/* Mortgage Analysis - Collapsible */}
+      {quoteData.mortgageInputs.enabled && calculations && (
+        <CollapsibleSection
+          title={t('mortgageAnalysis') || "Mortgage Analysis"}
+          subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
+          icon={<Building2 className="w-5 h-5 text-theme-accent" />}
+          defaultOpen={false}
+        >
+          {(() => {
+            const firstFullRentalYear = calculations.yearlyProjections.find(p => 
+              !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
+            );
+            const fullAnnualRent = firstFullRentalYear?.annualRent || (quoteData.inputs.basePrice * quoteData.inputs.rentalYieldPercent / 100);
+            const monthlyLongTermRent = fullAnnualRent / 12;
+            const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
+            const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
+            const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
+            
+            const year5RentalYear = (firstFullRentalYear?.year || 0) + 4;
+            const year5Projection = calculations.yearlyProjections.find(p => p.year === year5RentalYear);
+            const year5LongTermRent = year5Projection?.annualRent ? (year5Projection.annualRent / 12) : undefined;
+            const year5AirbnbNet = year5Projection?.airbnbNetIncome ? (year5Projection.airbnbNetIncome / 12) : undefined;
+            
+            return (
+              <MortgageBreakdown
+                mortgageInputs={quoteData.mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                basePrice={calculations.basePrice}
+                currency="AED"
+                rate={rate}
+                preHandoverPercent={quoteData.inputs.preHandoverPercent}
+                monthlyLongTermRent={monthlyLongTermRent}
+                monthlyServiceCharges={monthlyServiceCharges}
+                monthlyAirbnbNet={monthlyAirbnbNet}
+                showAirbnbComparison={calculations.showAirbnbComparison}
+                rentGrowthRate={quoteData.inputs.rentGrowthRate}
+                year5LongTermRent={year5LongTermRent}
+                year5AirbnbNet={year5AirbnbNet}
+              />
+            );
+          })()}
+        </CollapsibleSection>
+      )}
+
+      {/* Investment Summary */}
+      <CashflowSummaryCard
+        inputs={quoteData.inputs}
+        clientInfo={quoteData.clientUnitData}
+        calculations={calculations}
+        mortgageAnalysis={mortgageAnalysis}
+        mortgageInputs={quoteData.mortgageInputs}
+        exitScenarios={exitScenarios}
+        currency="AED"
+        rate={rate}
+        showExitScenarios={quoteData.inputs.enabledSections?.exitStrategy === true || (quoteData.inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0)}
+        showRentalPotential={true}
+        showMortgageAnalysis={quoteData.mortgageInputs?.enabled ?? false}
+        readOnly={true}
+        defaultOpen={false}
+      />
     </div>
   );
 };
@@ -444,7 +575,47 @@ export const PresentationPreview = ({
           } : DEFAULT_MORTGAGE_INPUTS;
 
           // Extract zone info from inputs
-          const inputsWithZone = quote.inputs as unknown as { zoneName?: string; zoneId?: string; developerId?: string; projectId?: string };
+          const inputsWithZone = quote.inputs as unknown as { 
+            zoneName?: string; 
+            zoneId?: string; 
+            developerId?: string; 
+            projectId?: string;
+            _clients?: Array<{ id: string; name: string; country: string; share?: number }>;
+            _clientInfo?: {
+              developer?: string;
+              projectName?: string;
+              unit?: string;
+              unitType?: string;
+              unitSizeSqf?: number;
+              unitSizeM2?: number;
+              brokerName?: string;
+              splitEnabled?: boolean;
+              clientShares?: Array<{ clientId: string; sharePercent: number }>;
+            };
+            _exitScenarios?: number[];
+          };
+
+          // Build clientUnitData from quote
+          const savedClients = inputsWithZone._clients;
+          const savedClientInfo = inputsWithZone._clientInfo;
+          const clients = savedClients && savedClients.length > 0
+            ? savedClients
+            : quote.client_name 
+              ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }]
+              : [];
+
+          const clientUnitData: ClientUnitData = {
+            developer: savedClientInfo?.developer || quote.developer || '',
+            clients,
+            brokerName: savedClientInfo?.brokerName || '',
+            projectName: savedClientInfo?.projectName || quote.project_name || '',
+            unit: savedClientInfo?.unit || quote.unit || '',
+            unitSizeSqf: savedClientInfo?.unitSizeSqf || quote.unit_size_sqf || 0,
+            unitSizeM2: savedClientInfo?.unitSizeM2 || quote.unit_size_m2 || 0,
+            unitType: savedClientInfo?.unitType || quote.unit_type || '',
+            splitEnabled: savedClientInfo?.splitEnabled || false,
+            clientShares: savedClientInfo?.clientShares || [],
+          };
 
           setQuoteData({
             inputs: quote.inputs,
@@ -461,8 +632,10 @@ export const PresentationPreview = ({
               zoneName: inputsWithZone?.zoneName,
               zoneId: inputsWithZone?.zoneId || quote.inputs.zoneId,
             },
+            clientUnitData,
             developerId: inputsWithZone?.developerId,
             projectId: inputsWithZone?.projectId,
+            exitScenarios: inputsWithZone?._exitScenarios,
           });
           setComparisonData(null);
         }
