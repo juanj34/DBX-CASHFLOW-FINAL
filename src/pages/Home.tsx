@@ -49,6 +49,7 @@ import { toast } from "sonner";
 import { MarketPulseModal } from "@/components/dashboard/MarketPulseModal";
 import { PipelineAnalyticsChart } from "@/components/dashboard/PipelineAnalyticsChart";
 import { RecentComparisons } from "@/components/dashboard/RecentComparisons";
+import { RecentPresentations } from "@/components/dashboard/RecentPresentations";
 import { ShareIconButton } from "@/components/roi/ShareIconButton";
 import { QuoteAnalyticsPopover } from "@/components/analytics/QuoteAnalyticsPopover";
 
@@ -865,8 +866,11 @@ const Home = () => {
           )}
         </div>
 
-        {/* Recent Comparisons */}
-        <RecentComparisons limit={3} />
+        {/* Recent Comparisons & Presentations */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RecentComparisons limit={3} />
+          <RecentPresentations limit={5} />
+        </div>
       </main>
 
       {/* Footer */}
