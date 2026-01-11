@@ -70,24 +70,17 @@ export const AddQuoteModal = ({
     });
   };
 
-  // Add BOTH Showcase and Cashflow versions for each selected quote
+  // Add ONE item per quote with default viewMode 'story'
   const handleAddSelected = () => {
     const quotesToAdd: QuoteToAdd[] = [];
     selectedQuotes.forEach((quoteId) => {
       const quote = quotes.find(q => q.id === quoteId);
       if (quote) {
         const title = quote.project_name || quote.client_name || "Quote";
-        // Add Showcase version
         quotesToAdd.push({
           quoteId,
-          viewMode: 'story',
-          title: `${title} - Showcase`,
-        });
-        // Add Cashflow version
-        quotesToAdd.push({
-          quoteId,
-          viewMode: 'vertical',
-          title: `${title} - Cashflow`,
+          viewMode: 'story', // Default to Showcase view
+          title,
         });
       }
     });
@@ -109,8 +102,6 @@ export const AddQuoteModal = ({
     return formatCurrency(price, 'AED', 1);
   };
 
-  const totalSlides = selectedQuotes.size * 2;
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="bg-theme-card border-theme-border text-theme-text max-w-2xl max-h-[80vh] flex flex-col">
@@ -120,7 +111,7 @@ export const AddQuoteModal = ({
             Add Quotes to Presentation
           </DialogTitle>
           <p className="text-xs text-theme-text-muted mt-1">
-            Each quote adds both Showcase and Cashflow slides automatically
+            Select quotes to add. You can toggle between Showcase and Cashflow views in the sidebar.
           </p>
         </DialogHeader>
 
@@ -206,13 +197,6 @@ export const AddQuoteModal = ({
                           )}
                         </div>
                       </div>
-
-                      {/* Slide count indicator when selected */}
-                      {isSelected && (
-                        <Badge variant="outline" className="text-xs border-theme-accent/50 text-theme-accent">
-                          2 slides
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 );
@@ -225,9 +209,6 @@ export const AddQuoteModal = ({
         <div className="flex items-center justify-between pt-4 border-t border-theme-border -mx-6 px-6">
           <span className="text-sm text-theme-text-muted">
             {selectedQuotes.size} quote{selectedQuotes.size !== 1 ? 's' : ''} selected
-            {selectedQuotes.size > 0 && (
-              <span className="text-theme-accent ml-1">({totalSlides} slides)</span>
-            )}
           </span>
           <div className="flex gap-2">
             <Button
@@ -242,7 +223,7 @@ export const AddQuoteModal = ({
               disabled={selectedQuotes.size === 0}
               className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
             >
-              Add {selectedQuotes.size > 0 ? `(${totalSlides} slides)` : ''}
+              Add {selectedQuotes.size > 0 ? `${selectedQuotes.size} Quote${selectedQuotes.size !== 1 ? 's' : ''}` : ''}
             </Button>
           </div>
         </div>
