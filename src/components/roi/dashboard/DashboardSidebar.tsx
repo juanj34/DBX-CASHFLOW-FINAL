@@ -30,8 +30,9 @@ interface DashboardSidebarProps {
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
   onShare?: () => void;
-  onPresent?: () => void; // Open client view in new tab
-  onShowcase?: () => void; // Open showcase/story mode
+  onPresent?: () => void; // Switch to cashflow view
+  onShowcase?: () => void; // Open showcase/story mode in new tab
+  activeView?: 'cashflow' | 'showcase'; // Which view is currently active
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -121,7 +122,7 @@ const ActionButton = ({
   label: string;
   onClick?: () => void;
   collapsed: boolean;
-  variant?: 'default' | 'primary';
+  variant?: 'default' | 'primary' | 'active';
   badge?: number | string;
   to?: string;
 }) => {
@@ -132,6 +133,8 @@ const ActionButton = ({
   
   const variantStyles = variant === 'primary'
     ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+    : variant === 'active'
+    ? "bg-theme-accent/20 text-theme-accent border border-theme-accent/30"
     : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50";
 
   const content = (
@@ -187,6 +190,7 @@ export const DashboardSidebar = ({
   onShare,
   onPresent,
   onShowcase,
+  activeView,
   viewCount,
   quoteId,
   language,
@@ -333,27 +337,26 @@ export const DashboardSidebar = ({
         </div>
 
         {/* VIEW Section - View modes and share */}
-        {quoteId && (onShowcase || onPresent || onShare) && (
+        {quoteId && (onShowcase || activeView || onShare) && (
           <>
             <SectionHeader label="View" collapsed={collapsed} />
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-              {onShowcase && (
-                <ActionButton 
-                  icon={Sparkles} 
-                  label="Showcase" 
-                  onClick={onShowcase} 
-                  collapsed={collapsed}
-                />
-              )}
-              {onPresent && (
-                <ActionButton 
-                  icon={LayoutDashboard} 
-                  label="Cashflow" 
-                  onClick={onPresent} 
-                  collapsed={collapsed}
-                  variant="primary"
-                />
-              )}
+              {/* Showcase - opens story view in new tab */}
+              <ActionButton 
+                icon={Sparkles} 
+                label="Showcase" 
+                onClick={onShowcase} 
+                collapsed={collapsed}
+                variant={activeView === 'showcase' ? 'active' : 'default'}
+              />
+              {/* Cashflow - current vertical view (always visible, shows as active when on this page) */}
+              <ActionButton 
+                icon={LayoutDashboard} 
+                label="Cashflow" 
+                onClick={onPresent} 
+                collapsed={collapsed}
+                variant={activeView === 'cashflow' ? 'active' : 'default'}
+              />
               {onShare && (
                 <ActionButton 
                   icon={Share2} 

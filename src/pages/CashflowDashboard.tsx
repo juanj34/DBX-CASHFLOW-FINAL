@@ -334,8 +334,9 @@ const CashflowDashboardContent = () => {
               toast.success("Share link copied to clipboard!");
             }
           }}
-          onPresent={handleCashflowView}
+          onPresent={undefined}
           onShowcase={handleShowcase}
+          activeView="cashflow"
           viewCount={quote?.view_count ?? undefined}
           quoteId={quoteId}
           language={language}
