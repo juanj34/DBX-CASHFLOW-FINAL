@@ -267,9 +267,13 @@ const OICalculatorContent = () => {
     });
   }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
-  // Toggle presentation mode
-  const handlePresentMode = useCallback(() => {
-    setPresentationMode(prev => !prev);
+  // View toggle handlers - switch between cashflow and showcase views in-page
+  const handleShowcaseView = useCallback(() => {
+    setPresentationMode(true);
+  }, []);
+
+  const handleCashflowView = useCallback(() => {
+    setPresentationMode(false);
   }, []);
 
   // Keyboard shortcut for presentation mode
@@ -278,11 +282,11 @@ const OICalculatorContent = () => {
       // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
-      // P key toggles presentation mode
-      if (e.key === 'p' || e.key === 'P') {
-        if (isFullyConfigured) {
-          setPresentationMode(prev => !prev);
-        }
+      // S key = Showcase, C key = Cashflow
+      if ((e.key === 's' || e.key === 'S') && isFullyConfigured) {
+        setPresentationMode(true);
+      } else if ((e.key === 'c' || e.key === 'C') && isFullyConfigured) {
+        setPresentationMode(false);
       }
     };
 
@@ -308,9 +312,9 @@ const OICalculatorContent = () => {
         onLoadQuote={() => setLoadQuoteModalOpen(true)}
         onViewHistory={() => setVersionHistoryOpen(true)}
         onShare={handleShare}
-        onPresent={undefined}
-        onShowcase={handlePresent}
-        activeView="cashflow"
+        onPresent={handleCashflowView}
+        onShowcase={handleShowcaseView}
+        activeView={presentationMode ? 'showcase' : 'cashflow'}
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
         language={language}
