@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { useQuoteViewNotifications } from "@/hooks/useQuoteViewNotifications";
+import { usePresentationViewNotifications } from "@/hooks/usePresentationViewNotifications";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -47,6 +48,7 @@ function ContrastCheckerProvider({ children }: { children: React.ReactNode }) {
 // Component to enable real-time notifications
 function NotificationProvider({ children }: { children: React.ReactNode }) {
   useQuoteViewNotifications();
+  usePresentationViewNotifications();
   return <>{children}</>;
 }
 function LegacyCompareRedirect() {
