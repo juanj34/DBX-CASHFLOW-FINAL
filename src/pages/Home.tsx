@@ -392,32 +392,18 @@ const Home = () => {
         </Button>
       </Link>
 
-      {/* Main Navigation Links */}
+      {/* Main Navigation Links - Order: All Quotes, Compare, Presentations, Analytics, Map */}
       <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <FileText className="w-4 h-4" />
-          {t('allOpportunities')}
+          All Quotes
         </Button>
       </Link>
       
       <Link to="/compare" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <Scale className="w-4 h-4" />
-          {t('compare')}
-        </Button>
-      </Link>
-      
-      <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <Map className="w-4 h-4" />
-          {t('map')}
-        </Button>
-      </Link>
-      
-      <Link to="/quotes-analytics" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <BarChart3 className="w-4 h-4" />
-          {t('analytics')}
+          Compare
         </Button>
       </Link>
 
@@ -425,6 +411,20 @@ const Home = () => {
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <Presentation className="w-4 h-4" />
           Presentations
+        </Button>
+      </Link>
+      
+      <Link to="/quotes-analytics" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <BarChart3 className="w-4 h-4" />
+          Analytics
+        </Button>
+      </Link>
+
+      <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <Map className="w-4 h-4" />
+          Map
         </Button>
       </Link>
 
@@ -649,31 +649,62 @@ const Home = () => {
         {/* Pipeline Analytics Chart */}
         <PipelineAnalyticsChart quotes={quotes} commissionRate={commissionRate} />
 
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {/* Action Cards - Unique design per tool */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
           {solutions.map((solution) => {
             const Icon = solution.icon;
+            const isMain = solution.id === 'cashflow';
+            
             return (
               <Link 
                 key={solution.id} 
                 to={solution.route}
                 className="group"
               >
-                <div className={`bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl p-5 sm:p-6 h-full transition-all duration-300 hover:border-theme-border-alt hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1 relative overflow-hidden`}>
-                  <div className={`absolute inset-0 bg-gradient-to-br ${solution.gradient} opacity-50`} />
+                <div className={`relative h-full rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:-translate-y-1 overflow-hidden ${
+                  isMain 
+                    ? 'bg-gradient-to-br from-theme-accent via-theme-accent/90 to-theme-accent/70 border-2 border-theme-accent shadow-lg shadow-theme-accent/20' 
+                    : 'bg-theme-card/80 backdrop-blur-xl border border-theme-border hover:border-theme-border-alt hover:shadow-xl hover:shadow-black/20'
+                }`}>
+                  {/* Decorative background element */}
+                  {!isMain && (
+                    <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br ${solution.gradient} blur-2xl opacity-60 group-hover:opacity-100 transition-opacity`} />
+                  )}
+                  
+                  {/* Corner accent for non-main cards */}
+                  {!isMain && (
+                    <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl ${solution.gradient} opacity-30`} 
+                      style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} 
+                    />
+                  )}
+                  
                   <div className="relative">
-                    <div className="flex items-center justify-between mb-4">
-                      <div 
-                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-theme-bg/50 transition-transform duration-300 group-hover:scale-110"
-                      >
-                        <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${solution.iconColor}`} />
-                      </div>
-                      <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
-                        {solution.action} →
-                      </span>
+                    {/* Icon with unique styling */}
+                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 ${
+                      isMain 
+                        ? 'bg-white/20 backdrop-blur-sm' 
+                        : 'bg-theme-bg/50 border border-theme-border group-hover:border-theme-border-alt'
+                    }`}>
+                      <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${isMain ? 'text-theme-bg' : solution.iconColor}`} />
                     </div>
-                    <h3 className="text-base sm:text-lg font-semibold text-theme-text mb-2">{solution.title}</h3>
-                    <p className="text-sm text-theme-text-muted">{solution.description}</p>
+                    
+                    {/* Title */}
+                    <h3 className={`text-base sm:text-lg font-bold mb-2 ${isMain ? 'text-theme-bg' : 'text-theme-text'}`}>
+                      {solution.title}
+                    </h3>
+                    
+                    {/* Description */}
+                    <p className={`text-sm mb-4 ${isMain ? 'text-theme-bg/80' : 'text-theme-text-muted'}`}>
+                      {solution.description}
+                    </p>
+                    
+                    {/* Action indicator */}
+                    <div className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider ${
+                      isMain ? 'text-theme-bg/90' : 'text-theme-text-muted group-hover:text-theme-accent'
+                    } transition-colors`}>
+                      {solution.action}
+                      <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
+                    </div>
                   </div>
                 </div>
               </Link>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -360,12 +360,18 @@ export const DashboardSidebar = ({
           </>
         )}
 
-        {/* NAVIGATE Section */}
+        {/* NAVIGATE Section - Order matches PageHeader: Home, Quotes, Compare, Presentations, Analytics */}
         <SectionHeader label="Navigate" collapsed={collapsed} />
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
           <ActionButton 
+            icon={LayoutDashboard} 
+            label="Home" 
+            to="/home" 
+            collapsed={collapsed}
+          />
+          <ActionButton 
             icon={LayoutGrid} 
-            label="Opportunities" 
+            label="All Quotes" 
             to="/my-quotes" 
             collapsed={collapsed}
           />
@@ -376,15 +382,15 @@ export const DashboardSidebar = ({
             collapsed={collapsed}
           />
           <ActionButton 
-            icon={BarChart3} 
-            label="Analytics" 
-            to="/quotes-analytics" 
+            icon={Presentation} 
+            label="Presentations" 
+            to="/presentations" 
             collapsed={collapsed}
           />
           <ActionButton 
-            icon={LayoutGrid} 
-            label="Presentations" 
-            to="/presentations" 
+            icon={BarChart3} 
+            label="Analytics" 
+            to="/quotes-analytics" 
             collapsed={collapsed}
           />
         </div>
@@ -451,23 +457,17 @@ export const DashboardSidebar = ({
           </div>
         )}
 
-        {/* Navigation Links */}
-        <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
-          <ActionButton 
-            icon={LayoutDashboard} 
-            label="Home" 
-            to="/home" 
-            collapsed={collapsed}
-          />
-          {isAdmin && (
+        {/* Admin Link - Home is now in Navigate section */}
+        {isAdmin && (
+          <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
             <ActionButton 
               icon={SlidersHorizontal} 
               label="Admin" 
               to="/dashboard" 
               collapsed={collapsed}
             />
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Keyboard Shortcuts Hint */}
         {!collapsed && (
