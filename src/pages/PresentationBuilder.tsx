@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
   ArrowLeft, Plus, Trash2, Share2, 
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
-  Settings, Home, BarChart3, Scale, Layers, BookOpen, Eye
+  Settings, Home, BarChart3, Scale, Layers, BookOpen, Eye, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +53,7 @@ import {
   PresentationPreview,
   QuoteToAdd 
 } from "@/components/presentation";
+import { PresentationAnalyticsModal } from "@/components/presentation/PresentationAnalyticsModal";
 
 // Navigation shortcuts
 const navShortcuts = [
@@ -115,6 +116,7 @@ const PresentationBuilder = () => {
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [addQuoteModalOpen, setAddQuoteModalOpen] = useState(false);
   const [createComparisonModalOpen, setCreateComparisonModalOpen] = useState(false);
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
   
   // Preview state
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
@@ -481,6 +483,25 @@ const PresentationBuilder = () => {
             Configure
           </Button>
 
+          {/* Analytics Button */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setAnalyticsModalOpen(true)}
+                  className="border-theme-border text-theme-text-muted hover:text-theme-text h-9 w-9"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="bg-theme-card border-theme-border text-theme-text">
+                View Analytics
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {/* Share Button */}
           <Button
             variant="outline"
@@ -680,6 +701,13 @@ const PresentationBuilder = () => {
         onClose={() => setCreateComparisonModalOpen(false)}
         onCreateComparison={handleCreateComparison}
         presentationQuoteIds={existingQuoteIds}
+      />
+
+      <PresentationAnalyticsModal
+        open={analyticsModalOpen}
+        onClose={() => setAnalyticsModalOpen(false)}
+        presentationId={id || ''}
+        presentationTitle={title}
       />
     </div>
   );
