@@ -361,9 +361,26 @@ const CashflowDashboardContent = () => {
                 </div>
               </div>
             </div>
+          ) : viewMode === 'showcase' ? (
+            /* Showcase Mode - Full overview presentation */
+            <div className="animate-fade-in" key="showcase-view">
+              <OverviewTabContent
+                inputs={inputs}
+                calculations={calculations}
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+                clientInfo={clientInfo}
+                heroImageUrl={quoteImages.heroImageUrl}
+                buildingRenderUrl={quoteImages.buildingRenderUrl}
+                customDifferentiators={customDifferentiators}
+              />
+            </div>
           ) : (
             /* Configured State - Tab content */
-            <>
+            <div className="animate-fade-in" key="cashflow-view">
               {activeSection === 'overview' && (
                 <OverviewTabContent
                   inputs={inputs}
@@ -455,7 +472,7 @@ const CashflowDashboardContent = () => {
                   rate={rate}
                 />
               )}
-            </>
+            </div>
           )}
         </DashboardLayout>
       </div>
