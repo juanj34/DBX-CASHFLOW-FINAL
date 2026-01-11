@@ -358,7 +358,7 @@ const OICalculatorContent = () => {
           </div>
         ) : presentationMode ? (
           /* Presentation Mode - Show InvestmentStoryDashboard */
-          <div className="relative h-full flex flex-col">
+          <div className="relative h-full flex flex-col animate-fade-in" key="showcase-view">
             {/* Exit Presentation Button */}
             <div className="absolute top-4 right-4 z-20">
               <Button
@@ -394,7 +394,7 @@ const OICalculatorContent = () => {
           </div>
         ) : (
           /* Configured State - All sections stacked vertically */
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in" key="cashflow-view">
             <ClientUnitInfo data={clientInfo} onEditClick={() => setClientModalOpen(true)} />
 
             {/* Overview Section */}
