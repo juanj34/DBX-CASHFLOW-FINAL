@@ -308,8 +308,9 @@ const OICalculatorContent = () => {
         onLoadQuote={() => setLoadQuoteModalOpen(true)}
         onViewHistory={() => setVersionHistoryOpen(true)}
         onShare={handleShare}
-        onPresent={handlePresent}
-        onShowcase={isFullyConfigured ? handlePresentMode : undefined}
+        onPresent={undefined}
+        onShowcase={handlePresent}
+        activeView="cashflow"
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
         language={language}
