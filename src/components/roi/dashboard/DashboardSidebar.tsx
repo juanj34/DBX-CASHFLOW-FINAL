@@ -291,49 +291,7 @@ export const DashboardSidebar = ({
         </Link>
       )}
 
-      {/* Save Draft Button - only when unsaved */}
-      {hasUnsavedChanges && onSave && (
-        <div className={cn(
-          "border-b border-theme-border",
-          collapsed ? "p-2" : "px-3 py-2"
-        )}>
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={onSave}
-                  disabled={saving}
-                  size="icon"
-                  className="w-10 h-10 mx-auto bg-amber-600 hover:bg-amber-500 text-white"
-                >
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-amber-900 text-amber-100 border-amber-700">
-                Unsaved draft – Click to save
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              onClick={onSave}
-              disabled={saving}
-              className="w-full bg-amber-600 hover:bg-amber-500 text-white justify-start gap-2"
-              size="sm"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {saving ? 'Saving...' : 'Save Draft'}
-            </Button>
-          )}
-        </div>
-      )}
+      {/* Auto-save is always enabled - no save button needed */}
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto">

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { 
   Plus, Presentation, MoreVertical, Copy, Trash2, Share2, Eye, Calendar, 
-  ArrowLeft, LayoutGrid, List, FileText, GitCompare 
+  LayoutGrid, List, FileText, GitCompare 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,6 +37,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageHeader, defaultShortcuts } from "@/components/layout/PageHeader";
 
 const PresentationsHub = () => {
   useDocumentTitle("Presentations");
@@ -74,15 +75,20 @@ const PresentationsHub = () => {
     toast.success("Share link copied to clipboard");
   };
 
+  const shortcuts = defaultShortcuts.map(s => ({
+    ...s,
+    active: s.href === '/presentations'
+  }));
+
   return (
     <div className="min-h-screen bg-theme-bg">
-      {/* Header */}
-      <div className="sticky top-0 z-40 px-4 py-3 bg-theme-bg/80 backdrop-blur-xl border-b border-theme-border/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <Link to="/cashflow-generator" className="flex items-center gap-2 text-theme-text-muted hover:text-theme-text transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back to Generator</span>
-          </Link>
+      <PageHeader
+        title="Presentations"
+        subtitle={`${presentations.length} presentations`}
+        icon={<Presentation className="w-5 h-5 text-purple-400" />}
+        backLink="/home"
+        shortcuts={shortcuts}
+        actions={
           <Button
             onClick={() => setCreateDialogOpen(true)}
             className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
@@ -90,8 +96,8 @@ const PresentationsHub = () => {
             <Plus className="w-4 h-4 mr-2" />
             New Presentation
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -101,7 +107,7 @@ const PresentationsHub = () => {
               <Presentation className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-theme-text">Presentations</h1>
+              <h2 className="text-xl font-semibold text-theme-text">All Presentations</h2>
               <p className="text-sm text-theme-text-muted">Create and manage client presentations</p>
             </div>
           </div>
