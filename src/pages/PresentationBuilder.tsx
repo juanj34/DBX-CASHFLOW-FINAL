@@ -923,6 +923,12 @@ const PresentationBuilder = () => {
                       collapsed={sidebarCollapsed}
                     />
                     <ActionButton 
+                      icon={Sparkles} 
+                      label="Generator" 
+                      to="/cashflow-dashboard" 
+                      collapsed={sidebarCollapsed}
+                    />
+                    <ActionButton 
                       icon={LayoutGrid} 
                       label="All Quotes" 
                       to="/my-quotes" 

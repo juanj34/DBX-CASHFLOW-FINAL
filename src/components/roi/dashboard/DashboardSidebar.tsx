@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -370,13 +370,19 @@ export const DashboardSidebar = ({
           </>
         )}
 
-        {/* NAVIGATE Section - Order matches PageHeader: Home, Quotes, Compare, Presentations, Analytics */}
+        {/* NAVIGATE Section - Order matches PageHeader: Home, Generator, Quotes, Compare, Presentations, Analytics */}
         <SectionHeader label="Navigate" collapsed={collapsed} />
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
           <ActionButton 
             icon={LayoutDashboard} 
             label="Home" 
             to="/home" 
+            collapsed={collapsed}
+          />
+          <ActionButton 
+            icon={Wand2} 
+            label="Generator" 
+            to="/cashflow-dashboard" 
             collapsed={collapsed}
           />
           <ActionButton 
