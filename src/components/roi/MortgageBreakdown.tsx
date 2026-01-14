@@ -213,27 +213,27 @@ export const MortgageBreakdown = ({
             <CreditCard className="w-4 h-4 text-theme-accent" />
             <span className="text-sm font-medium text-theme-text-muted">{t('loanSummary')}</span>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
             {/* Gap Payment - only if exists */}
             {hasGap && (
-              <div>
+              <div className="max-w-xs">
                 <p className="text-xs text-theme-text-muted">{t('gapPayment')}</p>
                 <p className="text-sm font-mono text-yellow-300">{formatCurrency(gapAmount, currency, rate)}</p>
               </div>
             )}
-            <div>
+            <div className="max-w-xs">
               <p className="text-xs text-theme-text-muted">{t('loanAmount')}</p>
               <p className="text-sm font-mono text-theme-text">{formatCurrency(loanAmount, currency, rate)}</p>
             </div>
-            <div>
+            <div className="max-w-xs">
               <p className="text-xs text-theme-text-muted">{t('monthlyPayment')}</p>
               <p className="text-sm font-mono text-theme-accent">{formatCurrency(monthlyPayment, currency, rate)}</p>
             </div>
-            <div>
+            <div className="max-w-xs">
               <p className="text-xs text-theme-text-muted">Total Monthly (+ Insurance)</p>
               <p className="text-sm font-mono text-theme-accent">{formatCurrency(monthlyMortgageTotal, currency, rate)}</p>
             </div>
-            <div>
+            <div className="max-w-xs">
               <p className="text-xs text-theme-text-muted">{t('loanTerm')}</p>
               <p className="text-sm font-mono text-theme-text">{mortgageInputs.loanTermYears} {t('years')}</p>
             </div>

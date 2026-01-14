@@ -100,7 +100,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
           </div>
 
           {/* Gross Annual Rent */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none">
             <div className="flex items-center gap-2">
               <DollarSign className="w-3.5 h-3.5 text-gray-500" />
               <span className="text-sm text-gray-400">{t('grossAnnualRent')}</span>
@@ -111,7 +111,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
 
           {/* Service Charges (subtracted) */}
           {unitSizeSqf > 0 && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none">
               <div className="flex items-center gap-2">
                 <Minus className="w-3.5 h-3.5 text-red-400" />
                 <span className="text-sm text-gray-400">{t('serviceCharges')}</span>
@@ -125,7 +125,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
           <div className="border-t border-[#2a3142] pt-2"></div>
 
           {/* Net Annual Rent - HERO NUMBER */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none">
             <div className="flex items-center gap-2">
               <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
               <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
@@ -136,7 +136,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
 
           {/* Yield Summary */}
           <div className="bg-[#0d1117] rounded-lg p-3 mt-2 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none">
               <div className="flex items-center gap-2">
                 <Percent className="w-3.5 h-3.5 text-gray-500" />
                 <span className="text-sm text-gray-400">{t('grossYield')}</span>
@@ -144,7 +144,7 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
               </div>
               <span className="text-sm font-bold text-white font-mono">{rentalYieldPercent.toFixed(1)}%</span>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none">
               <div className="flex items-center gap-2">
                 <Percent className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="text-sm text-gray-400">{t('netYieldAfterCharges')}</span>
