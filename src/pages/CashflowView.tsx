@@ -8,7 +8,7 @@ import { OIGrowthCurve } from '@/components/roi/OIGrowthCurve';
 import { OIYearlyProjectionTable } from '@/components/roi/OIYearlyProjectionTable';
 import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
 import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
-import { InvestmentOverviewGrid } from '@/components/roi/InvestmentOverviewGrid';
+import { UnifiedInvestmentOverview } from '@/components/roi/UnifiedInvestmentOverview';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { ExitScenariosCards, calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { ClientUnitInfo, ClientUnitData } from '@/components/roi/ClientUnitInfo';
@@ -392,29 +392,23 @@ const CashflowViewContent = () => {
         </div>
 
         {/* Story View - Client share view */}
-        <>
+        <div className="select-none">
             <ClientUnitInfo data={clientInfo} onEditClick={() => {}} readOnly={true} />
 
-            {/* Investment Overview Cards - Compact version for client view */}
+            {/* Unified Investment Overview - Combines grid and exit scenarios */}
             <div className="mb-4 sm:mb-6">
-              <InvestmentOverviewGrid
+              <UnifiedInvestmentOverview
                 inputs={inputs}
                 calculations={calculations}
                 mortgageAnalysis={mortgageAnalysis}
                 mortgageEnabled={mortgageInputs.enabled}
+                exitScenarios={exitScenarios}
                 currency={currency}
                 rate={rate}
+                readOnly={true}
                 compact={true}
-                renderImageUrl={quoteImages.heroImageUrl || quoteImages.buildingRenderUrl}
               />
             </div>
-
-            {/* Investment Snapshot first on mobile, then grid on desktop */}
-            {visibility.investmentSnapshot && (
-              <div className="mb-4 sm:mb-6">
-                <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
-              </div>
-            )}
 
             {/* Payment Breakdown - Collapsible */}
             {visibility.paymentBreakdown && (
@@ -531,7 +525,7 @@ const CashflowViewContent = () => {
               readOnly={true}
               defaultOpen={false}
             />
-          </>
+          </div>
 
         <footer className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-theme-border text-center">
           <p className="text-xs text-theme-text-muted">{t('disclaimerText')}</p>
