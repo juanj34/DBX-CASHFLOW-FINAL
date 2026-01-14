@@ -65,6 +65,7 @@ const SummarySection = ({
 );
 
 // Row component for label/value pairs - optimized for mobile with color variants
+// Added max-w-xl to prevent excessive stretching on large screens
 const SummaryRow = ({ 
   label, 
   value, 
@@ -86,7 +87,7 @@ const SummaryRow = ({
   };
   
   return (
-    <div className="flex items-center justify-between gap-2 min-w-0">
+    <div className="flex items-center justify-between gap-4 min-w-0 max-w-xl xl:max-w-none">
       <span className="text-[10px] sm:text-xs text-theme-text-muted shrink-0">{label}</span>
       <div className="text-right whitespace-nowrap min-w-0">
         <span className={cn("text-xs sm:text-sm font-mono", getColorClass())}>
