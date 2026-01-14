@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Wallet, TrendingUp, Clock, Banknote, Home } from "lucide-react";
+import { Wallet, TrendingUp, Clock, Banknote, Home, Building, Landmark, FileImage, ChevronRight } from "lucide-react";
 import { OIInputs, OICalculations } from "./useOICalculations";
 import { MortgageAnalysis } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
@@ -15,7 +15,13 @@ interface InvestmentOverviewGridProps {
   currency: Currency;
   rate: number;
   compact?: boolean; // For client view - more compact layout
-  renderImageUrl?: string | null; // For 4th card with project image
+  renderImageUrl?: string | null; // For 4th card with project image (legacy, now replaced by action links)
+  developerId?: string;
+  projectId?: string;
+  floorPlanUrl?: string | null;
+  onViewDeveloper?: () => void;
+  onViewProject?: () => void;
+  onViewFloorPlan?: () => void;
 }
 
 export const InvestmentOverviewGrid = ({
@@ -27,6 +33,12 @@ export const InvestmentOverviewGrid = ({
   rate,
   compact = false,
   renderImageUrl,
+  developerId,
+  projectId,
+  floorPlanUrl,
+  onViewDeveloper,
+  onViewProject,
+  onViewFloorPlan,
 }: InvestmentOverviewGridProps) => {
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'lt' | 'st' | 'both'>('lt');
@@ -138,6 +150,12 @@ export const InvestmentOverviewGrid = ({
     );
   };
 
+  // Determine if we should show action links card
+  const hasActionLinks = developerId || projectId || floorPlanUrl;
+  
+  // Use action links if available, otherwise fall back to renderImageUrl for backwards compatibility
+  const showFourthCard = hasActionLinks || renderImageUrl;
+
   return (
     <div className={compact ? "mb-4" : "mb-6"}>
       {/* Section Header - Hide on compact */}
@@ -150,10 +168,10 @@ export const InvestmentOverviewGrid = ({
         </div>
       )}
 
-      {/* Cards Grid - 3 or 4 cards based on render image */}
+      {/* Cards Grid - 3 or 4 cards based on action links or render image */}
       <div className={cn(
         "grid gap-4 items-start",
-        renderImageUrl 
+        showFourthCard 
           ? (compact ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 md:grid-cols-4")
           : (compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-3")
       )}>
@@ -356,8 +374,66 @@ export const InvestmentOverviewGrid = ({
           )}
         </div>
 
-        {/* Card 4: Project Render Image (if available) */}
-        {renderImageUrl && (
+        {/* Card 4: Explore More / Action Links (if developer, project, or floor plan exists) */}
+        {hasActionLinks && (
+          <div className={cn(cardClass, "h-[220px] flex flex-col justify-center")}>
+            {!compact && <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-16 translate-x-16 z-0" />}
+            
+            <p className="text-xs text-theme-text-muted uppercase tracking-wide mb-3 relative z-10">
+              {t('exploreMore') || 'Explore More'}
+            </p>
+            
+            <div className="space-y-2 relative z-10">
+              {developerId && onViewDeveloper && (
+                <button 
+                  onClick={onViewDeveloper}
+                  className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-theme-card-alt hover:bg-emerald-500/10 transition-colors text-left group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <Building className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                  <span className="text-sm text-theme-text group-hover:text-emerald-400 transition-colors flex-1">
+                    {t('viewDeveloper') || 'View Developer'}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-theme-text-muted group-hover:text-emerald-400 transition-colors" />
+                </button>
+              )}
+              
+              {projectId && onViewProject && (
+                <button 
+                  onClick={onViewProject}
+                  className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-theme-card-alt hover:bg-cyan-500/10 transition-colors text-left group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                    <Landmark className="w-3.5 h-3.5 text-cyan-400" />
+                  </div>
+                  <span className="text-sm text-theme-text group-hover:text-cyan-400 transition-colors flex-1">
+                    {t('viewProject') || 'View Project'}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-theme-text-muted group-hover:text-cyan-400 transition-colors" />
+                </button>
+              )}
+              
+              {floorPlanUrl && onViewFloorPlan && (
+                <button 
+                  onClick={onViewFloorPlan}
+                  className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-theme-card-alt hover:bg-violet-500/10 transition-colors text-left group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                    <FileImage className="w-3.5 h-3.5 text-violet-400" />
+                  </div>
+                  <span className="text-sm text-theme-text group-hover:text-violet-400 transition-colors flex-1">
+                    {t('viewFloorPlan') || 'View Floor Plan'}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-theme-text-muted group-hover:text-violet-400 transition-colors" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Fallback: Project Render Image (if no action links but image available - backwards compatibility) */}
+        {!hasActionLinks && renderImageUrl && (
           <div className={cn(cardClass, "p-0 overflow-hidden h-[220px]")}>
             <img 
               src={renderImageUrl} 

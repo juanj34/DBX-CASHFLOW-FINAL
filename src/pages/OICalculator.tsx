@@ -26,6 +26,9 @@ import { MortgageModal } from "@/components/roi/MortgageModal";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
+import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
+import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
+import { FloorPlanLightbox } from "@/components/roi/FloorPlanLightbox";
 import { AlertTriangle, Save } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
@@ -57,6 +60,9 @@ const OICalculatorContent = () => {
   const [loadQuoteModalOpen, setLoadQuoteModalOpen] = useState(false);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [mortgageModalOpen, setMortgageModalOpen] = useState(false);
+  const [developerModalOpen, setDeveloperModalOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [floorPlanLightboxOpen, setFloorPlanLightboxOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(NEW_QUOTE_OI_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
@@ -413,7 +419,12 @@ const OICalculatorContent = () => {
                 exitScenarios={exitScenarios}
                 currency={currency}
                 rate={rate}
-                renderImageUrl={quoteImages.heroImageUrl || quoteImages.buildingRenderUrl}
+                developerId={clientInfo.developerId}
+                projectId={clientInfo.projectId}
+                floorPlanUrl={quoteImages.floorPlanUrl}
+                onViewDeveloper={() => clientInfo.developerId && setDeveloperModalOpen(true)}
+                onViewProject={() => clientInfo.projectId && setProjectModalOpen(true)}
+                onViewFloorPlan={() => quoteImages.floorPlanUrl && setFloorPlanLightboxOpen(true)}
               />
             </div>
 
@@ -584,6 +595,30 @@ const OICalculatorContent = () => {
             setDataLoaded(false);
           }}
         />
+        
+        {/* Developer Info Modal */}
+        <DeveloperInfoModal
+          developerId={clientInfo.developerId || null}
+          open={developerModalOpen}
+          onOpenChange={setDeveloperModalOpen}
+        />
+        
+        {/* Project Info Modal */}
+        <ProjectInfoModal
+          project={clientInfo.projectId ? { id: clientInfo.projectId, name: clientInfo.projectName } : null}
+          zoneName={clientInfo.zoneName}
+          open={projectModalOpen}
+          onOpenChange={setProjectModalOpen}
+        />
+        
+        {/* Floor Plan Lightbox */}
+        {quoteImages.floorPlanUrl && (
+          <FloorPlanLightbox
+            imageUrl={quoteImages.floorPlanUrl}
+            open={floorPlanLightboxOpen}
+            onOpenChange={setFloorPlanLightboxOpen}
+          />
+        )}
       </DashboardLayout>
     </CashflowErrorBoundary>
   );

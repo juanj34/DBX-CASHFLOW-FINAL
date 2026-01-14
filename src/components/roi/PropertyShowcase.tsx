@@ -282,8 +282,8 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
         </div>
       </div>
 
-      {/* Desktop Layout - Full Height */}
-      <div className="hidden md:flex md:flex-col h-full flex-1">
+      {/* Desktop Layout - Full Height with taller banner */}
+      <div className="hidden md:flex md:flex-col h-full flex-1 min-h-[280px] lg:min-h-[320px] xl:min-h-[360px]">
         {/* Full Background Hero Image - Absolute positioned */}
         <div className="absolute inset-0 overflow-hidden flex-1">
           {displayImage ? (
@@ -305,8 +305,8 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
         </div>
         
         {/* Flowing Text Content - Left Aligned, Full Height */}
-        <div className="relative z-10 h-full flex-1 p-6 lg:p-8 flex flex-col justify-center">
-          <div className="flex flex-col gap-6 w-[38%] min-w-[320px] max-w-[480px]">
+        <div className="relative z-10 h-full flex-1 p-6 lg:p-8 xl:p-10 flex flex-col justify-center">
+          <div className="flex flex-col gap-5 lg:gap-6 w-[45%] min-w-[320px] max-w-[520px]">
             
             {/* Prepared For - All Client Names */}
             <motion.p 
@@ -318,11 +318,11 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               {allClientNames ? `Prepared for ${allClientNames}` : 'Investment Opportunity'}
             </motion.p>
 
-            {/* Project Title - Clickable */}
+            {/* Project Title - Larger, amber color, Clickable */}
             <motion.h1 
               className={cn(
-                "text-4xl lg:text-5xl font-bold text-white leading-tight",
-                project && "cursor-pointer hover:text-white/90 transition-colors"
+                "text-5xl lg:text-6xl xl:text-7xl font-bold text-amber-400 leading-tight drop-shadow-lg",
+                project && "cursor-pointer hover:text-amber-300 transition-colors"
               )}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -332,12 +332,27 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               {clientInfo.projectName || 'Property Investment'}
             </motion.h1>
 
-            {/* Zone + Maturity Badge */}
+            {/* Property Price - Prominent */}
+            <motion.div 
+              className="space-y-1"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.4 }}
+            >
+              <p className="text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white tracking-tight">
+                {formatCurrency(calculations.basePrice, currency, rate)}
+              </p>
+              <p className="text-sm text-white/50 uppercase tracking-wide">
+                Property Price
+              </p>
+            </motion.div>
+
+            {/* Zone + Location */}
             <motion.div 
               className="flex items-center gap-2 flex-wrap"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
+              transition={{ delay: 0.35, duration: 0.4 }}
             >
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-white/60" />
@@ -374,22 +389,19 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               )}
             </motion.div>
 
-            {/* Price + Unit Details */}
+            {/* Unit Details Row */}
             <motion.div 
-              className="space-y-1"
+              className="flex items-center gap-3 flex-wrap"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
+              transition={{ delay: 0.45, duration: 0.4 }}
             >
-              <p className="text-3xl lg:text-4xl font-bold text-amber-400">
-                {formatCurrency(calculations.basePrice, currency, rate)}
-              </p>
-              <p className="text-sm text-white/50 uppercase tracking-wide">
+              <p className="text-sm text-white/60 uppercase tracking-wide">
                 {[
                   clientInfo.unit ? `Unit ${clientInfo.unit}` : null,
                   clientInfo.unitType,
                   unitSizeSqft ? `${unitSizeSqft.toLocaleString()} SQFT${unitSizeM2 ? ` (${unitSizeM2} m²)` : ''}` : null
-                ].filter(Boolean).join(' | ') || 'Unit Details'}
+                ].filter(Boolean).join(' • ') || 'Unit Details'}
               </p>
             </motion.div>
 
@@ -399,7 +411,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
                 className="space-y-3"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.4 }}
+                transition={{ delay: 0.5, duration: 0.4 }}
               >
                 <p className="text-xs text-white/40 uppercase tracking-wide">Key Features</p>
                 <div className="flex flex-wrap gap-2">
@@ -409,7 +421,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
                       className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.7 + i * 0.05, duration: 0.3 }}
+                      transition={{ delay: 0.55 + i * 0.05, duration: 0.3 }}
                     >
                       {d.name}
                     </motion.span>
