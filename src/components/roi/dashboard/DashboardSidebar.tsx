@@ -394,7 +394,7 @@ export const DashboardSidebar = ({
           <ActionButton 
             icon={GitCompare} 
             label="Compare" 
-            onClick={() => setCompareModalOpen(true)} 
+            to="/compare" 
             collapsed={collapsed}
           />
           <ActionButton 
