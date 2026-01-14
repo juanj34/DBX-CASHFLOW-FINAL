@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Camera, Zap, Briefcase, Moon, Settings } from 'lucide-react';
+import { User, Camera, Zap, Briefcase, Moon, Settings, TrendingUp, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeKey, THEMES } from '@/config/themes';
 import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AccountSettings = () => {
   useDocumentTitle("Account Settings");
@@ -20,7 +22,7 @@ const AccountSettings = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -31,6 +33,12 @@ const AccountSettings = () => {
   const [commissionRate, setCommissionRate] = useState('2');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Growth projection defaults
+  const [constructionAppreciation, setConstructionAppreciation] = useState(12);
+  const [growthAppreciation, setGrowthAppreciation] = useState(8);
+  const [matureAppreciation, setMatureAppreciation] = useState(4);
+  const [growthPeriodYears, setGrowthPeriodYears] = useState(5);
 
   // Initialize form when profile loads
   useEffect(() => {
@@ -40,6 +48,11 @@ const AccountSettings = () => {
       setWhatsappNumber(profile.whatsapp_number || '');
       setWhatsappCountryCode(profile.whatsapp_country_code || '+971');
       setCommissionRate(String(profile.commission_rate ?? 2));
+      // Growth projection defaults
+      setConstructionAppreciation(profile.default_construction_appreciation ?? 12);
+      setGrowthAppreciation(profile.default_growth_appreciation ?? 8);
+      setMatureAppreciation(profile.default_mature_appreciation ?? 4);
+      setGrowthPeriodYears(profile.default_growth_period_years ?? 5);
     }
   }, [profile]);
 
@@ -78,6 +91,11 @@ const AccountSettings = () => {
       whatsapp_number: whatsappNumber || null,
       whatsapp_country_code: whatsappCountryCode,
       commission_rate: parseFloat(commissionRate) || 2,
+      // Growth projection defaults
+      default_construction_appreciation: constructionAppreciation,
+      default_growth_appreciation: growthAppreciation,
+      default_mature_appreciation: matureAppreciation,
+      default_growth_period_years: growthPeriodYears,
     });
     if (error) {
       toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
@@ -228,6 +246,172 @@ const AccountSettings = () => {
                   className="bg-theme-bg-alt border-theme-border text-theme-text w-32"
                 />
                 <p className="text-xs text-theme-text-muted mt-1">{t('commissionRateDesc')}</p>
+              </div>
+            </div>
+
+            {/* Growth Projection Defaults */}
+            <div className="pt-6 border-t border-theme-border">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-theme-accent" />
+                <h3 className="text-lg font-semibold text-theme-text">
+                  {language === 'es' ? 'Proyección de Crecimiento por Defecto' : 'Growth Projection Defaults'}
+                </h3>
+              </div>
+              <p className="text-sm text-theme-text-muted mb-6">
+                {language === 'es' 
+                  ? 'Personaliza las tasas de apreciación predeterminadas para nuevas cotizaciones. Los cambios aplican solo a futuras inversiones.'
+                  : 'Customize the default appreciation rates for new quotes. Changes apply to future investments only.'}
+              </p>
+              
+              <div className="space-y-5 p-4 bg-theme-bg-alt rounded-xl border border-theme-border">
+                {/* Construction Phase */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-theme-text">
+                        {language === 'es' ? 'Fase Construcción' : 'Construction Phase'}
+                      </label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3.5 h-3.5 text-theme-text-muted" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[280px] bg-theme-card border-theme-border">
+                            <p className="text-xs text-theme-text">
+                              {language === 'es' 
+                                ? 'Tasa de apreciación anual durante la construcción. Típicamente 8-15% dependiendo del mercado y desarrollador.'
+                                : 'Annual appreciation rate during construction. Typically 8-15% depending on market and developer.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <span className="text-sm text-orange-400 font-mono font-medium">{constructionAppreciation}%</span>
+                  </div>
+                  <Slider
+                    value={[constructionAppreciation]}
+                    onValueChange={([value]) => setConstructionAppreciation(value)}
+                    min={5}
+                    max={20}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Growth Phase */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-theme-text">
+                        {language === 'es' ? 'Fase Crecimiento' : 'Growth Phase'}
+                      </label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3.5 h-3.5 text-theme-text-muted" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[280px] bg-theme-card border-theme-border">
+                            <p className="text-xs text-theme-text">
+                              {language === 'es' 
+                                ? 'Tasa de apreciación en los primeros años post-entrega mientras el área se desarrolla. Típicamente 5-12%.'
+                                : 'Appreciation rate in the first years after handover while the area develops. Typically 5-12%.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <span className="text-sm text-green-400 font-mono font-medium">{growthAppreciation}%</span>
+                  </div>
+                  <Slider
+                    value={[growthAppreciation]}
+                    onValueChange={([value]) => setGrowthAppreciation(value)}
+                    min={3}
+                    max={15}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Growth Period Years */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-theme-text">
+                        {language === 'es' ? 'Duración de Crecimiento' : 'Growth Duration'}
+                      </label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3.5 h-3.5 text-theme-text-muted" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[280px] bg-theme-card border-theme-border">
+                            <p className="text-xs text-theme-text">
+                              {language === 'es' 
+                                ? 'Cuántos años aplica la tasa de crecimiento antes de transicionar a la tasa madura. Depende de la madurez de la zona.'
+                                : 'How many years the growth rate applies before transitioning to the mature rate. Depends on zone maturity.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <span className="text-sm text-theme-text font-mono font-medium">
+                      {growthPeriodYears} {language === 'es' ? 'años' : 'years'}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[growthPeriodYears]}
+                    onValueChange={([value]) => setGrowthPeriodYears(value)}
+                    min={2}
+                    max={10}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Mature Phase */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-theme-text">
+                        {language === 'es' ? 'Fase Madurez' : 'Mature Phase'}
+                      </label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3.5 h-3.5 text-theme-text-muted" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[280px] bg-theme-card border-theme-border">
+                            <p className="text-xs text-theme-text">
+                              {language === 'es' 
+                                ? 'Tasa de apreciación a largo plazo una vez que el área está totalmente desarrollada. Típicamente 2-6%.'
+                                : 'Long-term appreciation rate once the area is fully developed. Typically 2-6%.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <span className="text-sm text-blue-400 font-mono font-medium">{matureAppreciation}%</span>
+                  </div>
+                  <Slider
+                    value={[matureAppreciation]}
+                    onValueChange={([value]) => setMatureAppreciation(value)}
+                    min={1}
+                    max={8}
+                    step={1}
+                    className="roi-slider-lime"
+                  />
+                </div>
+
+                {/* Summary */}
+                <div className="pt-3 border-t border-theme-border">
+                  <div className="flex items-center justify-center gap-2 text-xs font-mono">
+                    <span className="text-orange-400">{constructionAppreciation}%</span>
+                    <span className="text-theme-text-muted">→</span>
+                    <span className="text-green-400">{growthAppreciation}% ({growthPeriodYears}y)</span>
+                    <span className="text-theme-text-muted">→</span>
+                    <span className="text-blue-400">{matureAppreciation}%</span>
+                  </div>
+                </div>
               </div>
             </div>
 

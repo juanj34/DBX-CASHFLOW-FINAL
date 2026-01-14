@@ -617,6 +617,10 @@ export type Database = {
           business_email: string | null
           commission_rate: number | null
           created_at: string
+          default_construction_appreciation: number | null
+          default_growth_appreciation: number | null
+          default_growth_period_years: number | null
+          default_mature_appreciation: number | null
           email: string
           full_name: string | null
           id: string
@@ -633,6 +637,10 @@ export type Database = {
           business_email?: string | null
           commission_rate?: number | null
           created_at?: string
+          default_construction_appreciation?: number | null
+          default_growth_appreciation?: number | null
+          default_growth_period_years?: number | null
+          default_mature_appreciation?: number | null
           email: string
           full_name?: string | null
           id: string
@@ -649,6 +657,10 @@ export type Database = {
           business_email?: string | null
           commission_rate?: number | null
           created_at?: string
+          default_construction_appreciation?: number | null
+          default_growth_appreciation?: number | null
+          default_growth_period_years?: number | null
+          default_mature_appreciation?: number | null
           email?: string
           full_name?: string | null
           id?: string

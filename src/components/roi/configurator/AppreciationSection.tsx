@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppreciationPresets } from "@/hooks/useAppreciationPresets";
 
-// Predefined appreciation profiles
+// Predefined appreciation profiles with tooltips
 const APPRECIATION_PROFILES = {
   aggressive: {
     id: 'aggressive',
@@ -28,6 +28,8 @@ const APPRECIATION_PROFILES = {
     growthPeriodYears: 3,
     riskLevel: 'Higher risk, higher reward',
     riskLevelEs: 'Mayor riesgo, mayor retorno',
+    tooltipEn: 'Best for emerging areas like Dubai South, new masterplans. Construction: 15%/year, Growth: 12%/year for 3 years, Mature: 6%/year. Higher volatility but potential for 2-3x returns.',
+    tooltipEs: 'Ideal para zonas emergentes como Dubai South. Construcción: 15%/año, Crecimiento: 12%/año por 3 años, Madurez: 6%/año. Mayor volatilidad pero potencial de 2-3x retornos.',
   },
   balanced: {
     id: 'balanced',
@@ -43,6 +45,8 @@ const APPRECIATION_PROFILES = {
     growthPeriodYears: 3,
     riskLevel: 'Moderate risk, solid returns',
     riskLevelEs: 'Riesgo moderado, retornos sólidos',
+    tooltipEn: 'Best for developing areas like Creek Harbour, Dubai Hills. Construction: 12%/year, Growth: 8%/year for 3 years, Mature: 4%/year. Good balance of growth and stability.',
+    tooltipEs: 'Ideal para zonas en desarrollo como Creek Harbour, Dubai Hills. Construcción: 12%/año, Crecimiento: 8%/año por 3 años, Madurez: 4%/año. Buen equilibrio.',
   },
   conservative: {
     id: 'conservative',
@@ -58,6 +62,8 @@ const APPRECIATION_PROFILES = {
     growthPeriodYears: 3,
     riskLevel: 'Lower risk, stable growth',
     riskLevelEs: 'Menor riesgo, crecimiento estable',
+    tooltipEn: 'Best for mature areas like Downtown, Marina, Palm. Construction: 8%/year, Growth: 5%/year for 3 years, Mature: 3%/year. Capital preservation focus.',
+    tooltipEs: 'Ideal para zonas maduras como Downtown, Marina, Palm. Construcción: 8%/año, Crecimiento: 5%/año por 3 años, Madurez: 3%/año. Enfoque en preservar capital.',
   },
 } as const;
 
