@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, Trash2, Edit, Calendar, DollarSign, MapPin, 
@@ -547,6 +548,30 @@ const QuotesDashboard = () => {
                       <SelectItem value="all" className="text-theme-text hover:bg-theme-card-alt">{t("allTime")}</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Divider */}
+                  <div className="w-px h-6 bg-theme-border hidden sm:block" />
+
+                  {/* Select Mode Toggle */}
+                  <Button
+                    variant={selectMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectMode(!selectMode);
+                      if (selectMode) {
+                        setSelectedForDelete([]);
+                      }
+                    }}
+                    className={cn(
+                      "h-9 gap-2",
+                      selectMode 
+                        ? "bg-red-600 hover:bg-red-500 text-white border-red-600" 
+                        : "border-theme-border text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
+                    )}
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
+                  </Button>
                 </div>
               </div>
             </div>
