@@ -263,6 +263,10 @@ export const ConfiguratorLayout = ({
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
   const isLastSection = currentIndex === SECTIONS.length - 1;
+  
+  // Progress for the visual bar - based on current section index position
+  // First step (index 0) = 0%, last step (index 8) = 100%
+  const stepProgressPercent = (currentIndex / (SECTIONS.length - 1)) * 100;
 
   // Validation for current section
   const canProceedFromCurrentSection = useMemo(() => {
@@ -657,9 +661,12 @@ export const ConfiguratorLayout = ({
             {/* Progress line behind steps */}
             <div className="absolute top-3 left-0 right-0 h-0.5 bg-[#2a3142]" />
             <div 
-              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-[#CCFF00] to-green-400 transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
+              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-[#CCFF00] to-green-400 transition-all duration-500 ease-out"
+              style={{ width: `${stepProgressPercent}%` }}
+            >
+              {/* Glowing end marker */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#CCFF00] shadow-[0_0_8px_2px_rgba(204,255,0,0.6)]" />
+            </div>
             
             {/* Step indicators */}
             {SECTIONS.map((section, index) => {
@@ -726,7 +733,7 @@ export const ConfiguratorLayout = ({
           </Button>
 
           <span className="text-xs font-medium text-gray-400">
-            {progressPercent}% complete
+            Step {currentIndex + 1} of {SECTIONS.length} • {progressPercent}% complete
           </span>
 
           {isLastSection ? (
