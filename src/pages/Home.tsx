@@ -4,7 +4,7 @@ import {
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
   SlidersHorizontal, Menu, Scale, DollarSign, 
   Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin,
-  Plus, BarChart3, Archive, ChevronDown, Presentation
+  Plus, BarChart3, Archive, ChevronDown, Presentation, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/AppLogo";
@@ -392,7 +392,14 @@ const Home = () => {
         </Button>
       </Link>
 
-      {/* Main Navigation Links - Order: All Quotes, Compare, Presentations, Analytics, Map */}
+      {/* Main Navigation Links - Order: Generator, All Quotes, Compare, Presentations, Analytics, Map */}
+      <Link to="/cashflow-dashboard" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <Sparkles className="w-4 h-4" />
+          Generator
+        </Button>
+      </Link>
+
       <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <FileText className="w-4 h-4" />

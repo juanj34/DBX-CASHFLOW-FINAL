@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Home, BarChart3, FileText, Scale, Presentation, LucideIcon } from 'lucide-react';
+import { ArrowLeft, Home, BarChart3, FileText, Scale, Presentation, LucideIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/AppLogo';
 import {
@@ -31,6 +31,7 @@ interface PageHeaderProps {
 // Default shortcuts for navigation
 export const defaultShortcuts: ShortcutItem[] = [
   { label: 'Home', icon: Home, href: '/home' },
+  { label: 'Generator', icon: Sparkles, href: '/cashflow-dashboard' },
   { label: 'All Quotes', icon: FileText, href: '/my-quotes' },
   { label: 'Compare', icon: Scale, href: '/compare' },
   { label: 'Presentations', icon: Presentation, href: '/presentations' },
