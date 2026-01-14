@@ -69,11 +69,6 @@ export const ShowcaseZoneCard: React.FC<ShowcaseZoneCardProps> = ({
           <p className="text-[10px] text-white/60 uppercase tracking-wide">Zone</p>
           <p className="text-sm font-semibold text-white truncate">{zone?.name || zoneName}</p>
         </div>
-        {maturityBadge && (
-          <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-medium flex-shrink-0", maturityBadge.color)}>
-            {maturityBadge.emoji} {maturityBadge.label}
-          </span>
-        )}
       </div>
 
       {/* Investment Focus */}

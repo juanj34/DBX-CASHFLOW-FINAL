@@ -209,11 +209,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
                   {zone?.name || clientInfo.zoneName}
                 </span>
               </div>
-              {zone?.maturity_label && (
-                <Badge variant="outline" className={cn("text-[10px] border", maturityBadge.color)}>
-                  {maturityBadge.emoji} {zone.maturity_label}
-                </Badge>
-              )}
             </div>
           )}
 
@@ -230,20 +225,8 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
                 </div>
               )}
               <span className="text-sm text-white font-medium">{developer?.name || clientInfo.developer}</span>
-              {trustScore && tierInfo && (
-                <div className="flex items-center gap-1.5 ml-auto">
-                  <TrustScoreRing score={trustScore} size={32} />
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded text-[9px] font-bold",
-                    trustScore >= 9 
-                      ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 shadow-lg shadow-amber-500/30" 
-                      : trustScore >= 8 
-                        ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow-lg shadow-emerald-500/20"
-                        : "bg-white/10 text-white/70"
-                  )}>
-                    {tierInfo.label}
-                  </span>
-                </div>
+              {trustScore && (
+                <TrustScoreRing score={trustScore} size={32} className="ml-auto" />
               )}
             </div>
           )}
@@ -362,11 +345,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
                   {zone?.name || clientInfo.zoneName || 'Dubai'}
                 </span>
               </div>
-              {zone?.maturity_label && (
-                <Badge variant="outline" className={cn("text-[10px] border", maturityBadge.color)}>
-                  {maturityBadge.emoji} {zone.maturity_label}
-                </Badge>
-              )}
             </motion.div>
 
             {/* Developer Trust Row - Clickable */}
@@ -391,20 +369,8 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               )}
               <span className="text-sm text-white font-medium">{developer?.name || clientInfo.developer}</span>
               
-              {trustScore && tierInfo && (
-                <div className="flex items-center gap-2 ml-2">
-                  <TrustScoreRing score={trustScore} size={36} />
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-bold",
-                    trustScore >= 9 
-                      ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 shadow-lg shadow-amber-500/30" 
-                      : trustScore >= 8 
-                        ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow-lg shadow-emerald-500/20"
-                        : "bg-white/10 text-white/70"
-                  )}>
-                    {tierInfo.emoji} {tierInfo.label}
-                  </span>
-                </div>
+              {trustScore && (
+                <TrustScoreRing score={trustScore} size={36} />
               )}
             </motion.div>
 

@@ -63,21 +63,9 @@ export const ShowcaseDeveloperCard: React.FC<ShowcaseDeveloperCardProps> = ({
           )}
         </div>
         
-        {/* Trust Score Ring + Tier Badge */}
+        {/* Trust Score Ring only - no tier badge */}
         {developer && (
-          <div className="flex flex-col items-center gap-0.5">
-            <TrustScoreRing score={trustScore} size={40} />
-            <span className={cn(
-              "px-1.5 py-0.5 rounded text-[8px] font-bold shadow-sm",
-              trustScore >= 9 
-                ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900" 
-                : trustScore >= 8 
-                  ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
-                  : "bg-white/10 text-white/70"
-            )}>
-              {tierInfo.emoji} {tierInfo.label}
-            </span>
-          </div>
+          <TrustScoreRing score={trustScore} size={40} />
         )}
       </div>
     </div>
