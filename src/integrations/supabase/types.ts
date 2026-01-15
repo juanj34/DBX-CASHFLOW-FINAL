@@ -98,7 +98,6 @@ export type Database = {
           id: string
           inputs: Json
           is_archived: boolean | null
-          is_draft: boolean | null
           last_viewed_at: string | null
           negotiation_started_at: string | null
           presented_at: string | null
@@ -127,7 +126,6 @@ export type Database = {
           id?: string
           inputs?: Json
           is_archived?: boolean | null
-          is_draft?: boolean | null
           last_viewed_at?: string | null
           negotiation_started_at?: string | null
           presented_at?: string | null
@@ -156,7 +154,6 @@ export type Database = {
           id?: string
           inputs?: Json
           is_archived?: boolean | null
-          is_draft?: boolean | null
           last_viewed_at?: string | null
           negotiation_started_at?: string | null
           presented_at?: string | null
