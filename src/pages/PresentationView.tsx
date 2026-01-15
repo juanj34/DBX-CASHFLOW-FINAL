@@ -94,11 +94,17 @@ const PresentationView = () => {
           }
         }
 
-        // Fetch all quotes
+        // Fetch all quotes with explicit columns
         if (quoteIds.size > 0) {
           const { data: quotesData } = await supabase
             .from('cashflow_quotes')
-            .select('*')
+            .select(`
+              id, broker_id, share_token, client_name, client_country, client_email,
+              project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+              inputs, title, created_at, updated_at, status, status_changed_at,
+              presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+              is_archived, archived_at, last_viewed_at
+            `)
             .in('id', Array.from(quoteIds));
 
           if (quotesData) {

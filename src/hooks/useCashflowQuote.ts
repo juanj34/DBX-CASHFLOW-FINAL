@@ -70,10 +70,16 @@ export const useCashflowQuote = (quoteId?: string) => {
     const loadQuote = async () => {
       try {
         if (quoteId) {
-          // Load quote data
+          // Load quote data with explicit columns (avoid select('*') for schema stability)
           const { data, error } = await supabase
             .from('cashflow_quotes')
-            .select('*')
+            .select(`
+              id, broker_id, share_token, client_name, client_country, client_email,
+              project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+              inputs, title, created_at, updated_at, status, status_changed_at,
+              presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+              is_archived, archived_at, last_viewed_at
+            `)
             .eq('id', quoteId)
             .maybeSingle();
 
@@ -439,7 +445,13 @@ export const useQuotesList = () => {
 
       const { data, error } = await supabase
         .from('cashflow_quotes')
-        .select('*')
+        .select(`
+          id, broker_id, share_token, client_name, client_country, client_email,
+          project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+          inputs, title, created_at, updated_at, status, status_changed_at,
+          presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+          is_archived, archived_at, last_viewed_at
+        `)
         .eq('broker_id', user.id)
         .or('is_archived.is.null,is_archived.eq.false')
         .order('updated_at', { ascending: false });
@@ -483,10 +495,14 @@ export const useQuotesList = () => {
       return { newId: null, error: new Error('Not authenticated') };
     }
 
-    // Fetch the original quote
+    // Fetch the original quote with explicit columns
     const { data: originalQuote, error: fetchError } = await supabase
       .from('cashflow_quotes')
-      .select('*')
+      .select(`
+        id, broker_id, share_token, client_name, client_country, client_email,
+        project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+        inputs, title, created_at, updated_at, status
+      `)
       .eq('id', id)
       .single();
 

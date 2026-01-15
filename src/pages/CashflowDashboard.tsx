@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Save, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -94,21 +94,27 @@ const CashflowDashboardContent = () => {
 
   // Create draft silently on mount if no quoteId - no navigation, no modal auto-open
   const [creatingDraft, setCreatingDraft] = useState(false);
+  const draftInitializedRef = useRef(false);
   
   useEffect(() => {
     const initDraft = async () => {
-      if (!quoteId && !creatingDraft && !quoteLoading) {
-        setCreatingDraft(true);
-        const newId = await createDraft();
-        if (newId) {
-          // Update URL silently without page reload
-          window.history.replaceState(null, '', `/cashflow-dashboard/${newId}`);
-        }
-        setCreatingDraft(false);
+      // Guard: only run once and only when we have no quoteId
+      if (quoteId || creatingDraft || quoteLoading || draftInitializedRef.current) {
+        return;
       }
+      
+      draftInitializedRef.current = true;
+      setCreatingDraft(true);
+      
+      const newId = await createDraft();
+      if (newId) {
+        // Use navigate with replace to properly update React Router state
+        navigate(`/cashflow-dashboard/${newId}`, { replace: true });
+      }
+      setCreatingDraft(false);
     };
     initDraft();
-  }, [quoteId, creatingDraft, createDraft, quoteLoading]);
+  }, [quoteId, creatingDraft, createDraft, quoteLoading, navigate]);
 
   // Load quote data from database
   useEffect(() => {

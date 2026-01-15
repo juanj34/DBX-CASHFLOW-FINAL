@@ -72,7 +72,14 @@ const CashflowViewContent = () => {
 
       const { data, error: fetchError } = await supabase
         .from('cashflow_quotes')
-        .select(`*, profiles:broker_id (full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code)`)
+        .select(`
+          id, broker_id, share_token, client_name, client_country, client_email,
+          project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+          inputs, title, created_at, updated_at, status, status_changed_at,
+          presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+          is_archived, archived_at, last_viewed_at,
+          profiles:broker_id (full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code)
+        `)
         .eq('share_token', shareToken)
         .single();
 
