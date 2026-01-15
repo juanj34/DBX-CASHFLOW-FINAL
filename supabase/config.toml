@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.update-presentation-view-duration]
 verify_jwt = false
+
+[functions.cleanup-empty-drafts]
+verify_jwt = false

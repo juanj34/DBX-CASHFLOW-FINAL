@@ -116,42 +116,75 @@ export const useCashflowQuote = (quoteId?: string) => {
 
   // Rate limiting for draft creation to prevent loops
   const lastDraftCreatedAt = useRef<number>(0);
+  const draftCreationInProgress = useRef<boolean>(false);
 
   // Create a new draft immediately in the database
   const createDraft = useCallback(async (): Promise<string | null> => {
-    // Rate limit: prevent creating drafts more than once per 5 seconds
+    // Prevent concurrent draft creation
+    if (draftCreationInProgress.current) {
+      console.warn('Draft creation already in progress');
+      return null;
+    }
+    
+    // Rate limit: prevent creating drafts more than once per 10 seconds
     const now = Date.now();
-    if (now - lastDraftCreatedAt.current < 5000) {
+    if (now - lastDraftCreatedAt.current < 10000) {
       console.warn('Rate limited: Draft creation attempted too soon');
       return null;
     }
+    
+    draftCreationInProgress.current = true;
     lastDraftCreatedAt.current = now;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast({ title: 'Please login to create a quote', variant: 'destructive' });
-      return null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: 'Please login to create a quote', variant: 'destructive' });
+        return null;
+      }
+
+      // Check if user already has an empty draft from the last 5 minutes
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data: existingDraft } = await supabase
+        .from('cashflow_quotes')
+        .select('id')
+        .eq('broker_id', user.id)
+        .eq('status', 'draft')
+        .is('client_name', null)
+        .is('project_name', null)
+        .gte('created_at', fiveMinutesAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingDraft) {
+        console.log('Reusing existing recent empty draft:', existingDraft.id);
+        return existingDraft.id;
+      }
+
+      const { data, error } = await supabase
+        .from('cashflow_quotes')
+        .insert({
+          broker_id: user.id,
+          inputs: {} as any,
+          is_draft: true,
+          status: 'draft',
+          title: 'New Draft',
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Failed to create draft:', error);
+        toast({ title: 'Failed to create draft', variant: 'destructive' });
+        return null;
+      }
+
+      console.log('Created new draft:', data.id);
+      return data.id;
+    } finally {
+      draftCreationInProgress.current = false;
     }
-
-    const { data, error } = await supabase
-      .from('cashflow_quotes')
-      .insert({
-        broker_id: user.id,
-        inputs: {} as any,
-        is_draft: true,
-        status: 'draft',
-        title: 'New Draft',
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error('Failed to create draft:', error);
-      toast({ title: 'Failed to create draft', variant: 'destructive' });
-      return null;
-    }
-
-    return data.id;
   }, [toast]);
 
   // Removed: saveDraft localStorage function - now using immediate database persistence
