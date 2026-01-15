@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Home, TrendingUp, CreditCard, Building2, Sparkles, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,23 +112,30 @@ const OICalculatorContent = () => {
     );
   }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
-  // Create draft immediately on mount if no quoteId
-  const [creatingDraft, setCreatingDraft] = useState(false);
+  // Create draft immediately on mount if no quoteId - use ref to prevent loops
+  const draftCreatedRef = useRef(false);
   
   useEffect(() => {
     const initDraft = async () => {
-      if (!quoteId && !creatingDraft && !quoteLoading) {
-        setCreatingDraft(true);
+      // Use ref to prevent duplicate creation - persists across re-renders without causing re-renders
+      if (!quoteId && !draftCreatedRef.current && !quoteLoading) {
+        draftCreatedRef.current = true;
         const newId = await createDraft();
         if (newId) {
-          // Update URL silently without navigation/refresh - don't auto-open configurator
-          window.history.replaceState(null, '', `/cashflow/${newId}`);
+          // Use React Router navigate with replace - this properly updates useParams()
+          navigate(`/cashflow/${newId}`, { replace: true });
         }
-        setCreatingDraft(false);
       }
     };
     initDraft();
-  }, [quoteId, creatingDraft, createDraft, quoteLoading]);
+  }, [quoteId, createDraft, quoteLoading, navigate]);
+  
+  // Reset ref when quoteId changes (for when user navigates away and back)
+  useEffect(() => {
+    if (quoteId) {
+      draftCreatedRef.current = false;
+    }
+  }, [quoteId]);
 
   // Load quote data from database
   useEffect(() => {

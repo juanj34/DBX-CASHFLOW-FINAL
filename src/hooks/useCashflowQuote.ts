@@ -114,8 +114,19 @@ export const useCashflowQuote = (quoteId?: string) => {
     loadQuote();
   }, [quoteId]);
 
+  // Rate limiting for draft creation to prevent loops
+  const lastDraftCreatedAt = useRef<number>(0);
+
   // Create a new draft immediately in the database
   const createDraft = useCallback(async (): Promise<string | null> => {
+    // Rate limit: prevent creating drafts more than once per 5 seconds
+    const now = Date.now();
+    if (now - lastDraftCreatedAt.current < 5000) {
+      console.warn('Rate limited: Draft creation attempted too soon');
+      return null;
+    }
+    lastDraftCreatedAt.current = now;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ title: 'Please login to create a quote', variant: 'destructive' });
