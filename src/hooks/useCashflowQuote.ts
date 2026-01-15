@@ -21,7 +21,6 @@ export interface CashflowQuote {
   unit_size_m2: number | null;
   inputs: OIInputs;
   title: string | null;
-  is_draft: boolean;
   created_at: string;
   updated_at: string;
   status: string | null;
@@ -167,7 +166,6 @@ export const useCashflowQuote = (quoteId?: string) => {
         .insert({
           broker_id: user.id,
           inputs: {} as any,
-          is_draft: true,
           status: 'draft',
           title: 'New Draft',
         })
@@ -253,7 +251,6 @@ export const useCashflowQuote = (quoteId?: string) => {
         unit_type: clientInfo.unitType || null,
         unit_size_sqf: clientInfo.unitSizeSqf || null,
         unit_size_m2: clientInfo.unitSizeM2 || null,
-        is_draft: false,
         title: titleClientPart
           ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
           : 'Untitled Quote',
@@ -516,7 +513,6 @@ export const useQuotesList = () => {
         unit_size_sqf: originalQuote.unit_size_sqf,
         unit_size_m2: originalQuote.unit_size_m2,
         title: newTitle,
-        is_draft: true,
         status: 'draft',
       })
       .select()

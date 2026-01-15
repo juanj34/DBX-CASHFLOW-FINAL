@@ -16,7 +16,7 @@ interface Quote {
   developer: string | null;
   created_at: string | null;
   updated_at: string | null;
-  is_draft: boolean | null;
+  status: string | null;
   inputs: any;
 }
 
@@ -49,7 +49,7 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
 
     const { data, error } = await supabase
       .from('cashflow_quotes')
-      .select('id, project_name, client_name, developer, created_at, updated_at, is_draft, inputs')
+      .select('id, project_name, client_name, developer, created_at, updated_at, status, inputs')
       .eq('broker_id', user.id)
       .order('updated_at', { ascending: false });
 
@@ -140,7 +140,7 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
                           <h4 className="font-medium text-white truncate group-hover:text-[#CCFF00] transition-colors">
                             {quote.project_name || 'Untitled Quote'}
                           </h4>
-                          {quote.is_draft && (
+                          {quote.status === 'draft' && (
                             <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">
                               {t('draft') || 'Draft'}
                             </span>
