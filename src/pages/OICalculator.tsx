@@ -358,40 +358,22 @@ const OICalculatorContent = () => {
             </div>
           </div>
         ) : viewMode === 'snapshot' ? (
-          /* Snapshot Mode - Show compact spreadsheet-style view */
-          <div className="relative h-full flex flex-col animate-fade-in" key="snapshot-view">
-            {/* Exit Snapshot Button */}
-            <div className="absolute top-4 right-4 z-20">
-              <Button
-                onClick={() => setViewMode('cashflow')}
-                variant="ghost"
-                size="sm"
-                className="bg-theme-card/90 backdrop-blur-sm border border-theme-border hover:bg-theme-card text-theme-text gap-2"
-              >
-                <X className="w-4 h-4" />
-                Exit Snapshot
-              </Button>
-            </div>
-            <SnapshotContent
-              inputs={inputs}
-              calculations={calculations}
-              clientInfo={clientInfo}
-              mortgageInputs={mortgageInputs}
-              mortgageAnalysis={mortgageAnalysis}
-              exitScenarios={exitScenarios}
-              quoteImages={{
-                heroImageUrl: quoteImages.heroImageUrl,
-                floorPlanUrl: quoteImages.floorPlanUrl,
-              }}
-              currency={currency}
-              rate={rate}
-              brokerInfo={{
-                name: profile?.full_name,
-                avatarUrl: profile?.avatar_url,
-              }}
-              onCurrencyChange={setCurrency}
-            />
-          </div>
+          /* Snapshot Mode - Full-width view matching app styling */
+          <SnapshotContent
+            inputs={inputs}
+            calculations={calculations}
+            clientInfo={clientInfo}
+            mortgageInputs={mortgageInputs}
+            mortgageAnalysis={mortgageAnalysis}
+            exitScenarios={exitScenarios}
+            quoteImages={{
+              heroImageUrl: quoteImages.heroImageUrl,
+              floorPlanUrl: quoteImages.floorPlanUrl,
+              buildingRenderUrl: quoteImages.buildingRenderUrl,
+            }}
+            currency={currency}
+            rate={rate}
+          />
         ) : viewMode === 'showcase' ? (
           /* Presentation Mode - Show InvestmentStoryDashboard */
           <div className="relative h-full flex flex-col animate-fade-in" key="showcase-view">
