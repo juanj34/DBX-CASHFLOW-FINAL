@@ -166,9 +166,10 @@ const SnapshotView = () => {
 
   const exitScenariosData = useMemo(() => {
     if (!inputs || !calculations) return [];
-    return exitScenarios.map(months => 
-      calculateExitScenario(months, calculations.basePrice, calculations.totalMonths, inputs, calculations.totalEntryCosts)
-    );
+    return exitScenarios.map(months => ({
+      exitMonths: months,
+      ...calculateExitScenario(months, calculations.basePrice, calculations.totalMonths, inputs, calculations.totalEntryCosts)
+    }));
   }, [exitScenarios, inputs, calculations]);
 
   if (loading) {

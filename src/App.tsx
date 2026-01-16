@@ -35,6 +35,7 @@ import ArchivedQuotes from "./pages/ArchivedQuotes";
 import PresentationsHub from "./pages/PresentationsHub";
 import PresentationBuilder from "./pages/PresentationBuilder";
 import PresentationView from "./pages/PresentationView";
+import SnapshotView from "./pages/SnapshotView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
+                <Route path="/snapshot/:shareToken" element={<SnapshotView />} />
                 <Route path="/compare-view/:shareToken" element={<CompareView />} />
                 <Route path="/present/:shareToken" element={<PresentationView />} />
                 <Route path="/reset-password" element={<ResetPassword />} />

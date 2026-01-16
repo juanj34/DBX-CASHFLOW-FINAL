@@ -1,6 +1,6 @@
 import { TrendingUp, Clock, Trophy, ChevronRight } from 'lucide-react';
 import { Currency, formatCurrency } from '../currencyUtils';
-import { OIExitScenario } from '../useOICalculations';
+import { ExitScenarioResult } from '../constructionProgress';
 import {
   Tooltip,
   TooltipContent,
@@ -9,7 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface CompactExitCardsProps {
-  exitScenarios: OIExitScenario[];
+  exitScenarios: Array<ExitScenarioResult & { exitMonths: number }>;
   totalMonths: number;
   currency: Currency;
   rate: number;
@@ -55,7 +55,7 @@ export const CompactExitCards = ({
       </div>
       
       <div className="space-y-2">
-        {exitScenarios.slice(0, 4).map((scenario, idx) => {
+        {exitScenarios.slice(0, 4).map((scenario) => {
           const isBest = scenario.annualizedROE === bestROE;
           const isHandover = scenario.exitMonths === totalMonths;
           
@@ -98,7 +98,7 @@ export const CompactExitCards = ({
                   <p className="font-semibold">Exit at {formatMonths(scenario.exitMonths)}</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <span className="text-muted-foreground">Cash Invested:</span>
-                    <span>{formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}</span>
+                    <span>{formatCurrency(scenario.totalCapital, 'AED', 1)}</span>
                     <span className="text-muted-foreground">Property Value:</span>
                     <span>{formatCurrency(scenario.exitPrice, 'AED', 1)}</span>
                     <span className="text-muted-foreground">Profit:</span>
