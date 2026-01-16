@@ -11,3 +11,4 @@ export { ValueDifferentiatorsBadges } from './ValueDifferentiatorsBadges';
 export { DualCurrencyValue } from './DualCurrencyValue';
 export { ExitChartModal } from './ExitChartModal';
 export { RentalComparisonModal } from './RentalComparisonModal';
+export { SnapshotContent } from './SnapshotContent';
