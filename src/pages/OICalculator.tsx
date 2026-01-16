@@ -268,6 +268,22 @@ const OICalculatorContent = () => {
     setPresentationMode(false);
   }, []);
 
+  // Snapshot - opens compact spreadsheet-style view in new tab
+  const handleSnapshotView = useCallback(async () => {
+    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
+    if (!savedQuote) return;
+    
+    let token = savedQuote.share_token;
+    if (!token) {
+      token = await generateShareToken(savedQuote.id);
+    }
+    
+    if (token) {
+      const url = `${window.location.origin}/snapshot/${token}`;
+      window.open(url, '_blank');
+    }
+  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
+
   // Keyboard shortcut for presentation mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -306,6 +322,7 @@ const OICalculatorContent = () => {
         onShare={handleShare}
         onPresent={handleCashflowView}
         onShowcase={handleShowcaseView}
+        onSnapshot={handleSnapshotView}
         activeView={presentationMode ? 'showcase' : 'cashflow'}
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
