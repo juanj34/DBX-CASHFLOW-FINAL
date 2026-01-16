@@ -4,7 +4,7 @@ import { Currency } from '@/components/roi/currencyUtils';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { PropertyHeroCard } from '@/components/roi/PropertyHeroCard';
 import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
-import { ExitScenariosCards } from '@/components/roi/ExitScenariosCards';
+import { SnapshotExitCards } from './SnapshotExitCards';
 import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
 import { RentSnapshot } from '@/components/roi/RentSnapshot';
 import { MortgageBreakdown } from '@/components/roi/MortgageBreakdown';
@@ -66,7 +66,7 @@ export const SnapshotContent = ({
         readOnly={true}
       />
 
-      {/* Row 1: Investment Snapshot + Exit Scenarios */}
+      {/* Row 1: Investment Snapshot + Compact Exit Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <InvestmentSnapshot
           inputs={inputs}
@@ -77,20 +77,18 @@ export const SnapshotContent = ({
           holdAnalysis={calculations.holdAnalysis}
           unitSizeSqf={clientInfo.unitSizeSqf}
         />
-        <ExitScenariosCards
+        <SnapshotExitCards
           inputs={inputs}
-          currency={currency}
-          totalMonths={calculations.totalMonths}
-          basePrice={basePrice}
-          totalEntryCosts={calculations.totalEntryCosts}
           exitScenarios={exitScenarios}
+          basePrice={basePrice}
+          totalMonths={calculations.totalMonths}
+          totalEntryCosts={calculations.totalEntryCosts}
+          currency={currency}
           rate={rate}
-          readOnly={true}
-          unitSizeSqf={clientInfo.unitSizeSqf}
         />
       </div>
 
-      {/* Payment Breakdown - Full Width */}
+      {/* Payment Breakdown - Full Width, Compact Mode */}
       <PaymentBreakdown
         inputs={inputs}
         currency={currency}
@@ -98,6 +96,7 @@ export const SnapshotContent = ({
         rate={rate}
         unitSizeSqf={clientInfo.unitSizeSqf}
         clientInfo={clientInfo}
+        compact={true}
       />
 
       {/* Rent Analysis - Full Width */}

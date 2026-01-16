@@ -2,6 +2,7 @@ export { SnapshotHeader } from './SnapshotHeader';
 export { ClientUnitTable } from './ClientUnitTable';
 export { EquitySummaryCard } from './EquitySummaryCard';
 export { CompactExitCards } from './CompactExitCards';
+export { SnapshotExitCards } from './SnapshotExitCards';
 export { InitialCostTable } from './InitialCostTable';
 export { MilestoneTable } from './MilestoneTable';
 export { IncomeProjectionTable } from './IncomeProjectionTable';

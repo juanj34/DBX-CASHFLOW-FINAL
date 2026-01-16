@@ -17,6 +17,7 @@ interface PaymentBreakdownProps {
   rate: number;
   unitSizeSqf?: number;
   clientInfo?: ClientUnitData;
+  compact?: boolean;
 }
 
 // Convert booking month/year to readable date string
@@ -41,7 +42,7 @@ const estimateDateFromMonths = (months: number, bookingMonth: number, bookingYea
 // DLD Fee is always 4%
 const DLD_FEE_PERCENT = 4;
 
-export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0, clientInfo }: PaymentBreakdownProps) => {
+export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0, clientInfo, compact = false }: PaymentBreakdownProps) => {
   const { t, language } = useLanguage();
   const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
 
@@ -97,10 +98,10 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
         />
       </div>
 
-      {/* 2:1 Column Layout - KPIs & Ownership on RIGHT */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Detailed Breakdown (2/3 width) */}
-        <div className="lg:col-span-2 space-y-4">
+      {/* Layout: Full width if compact, otherwise 2:1 grid */}
+      <div className={compact ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
+        {/* Left Column: Detailed Breakdown */}
+        <div className={compact ? "" : "lg:col-span-2 space-y-4"}>
 
           {/* Detailed Breakdown Card */}
           <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
@@ -311,27 +312,29 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
           </div>
         </div>
 
-        {/* Right Column: KPIs + Ownership (1/3 width) */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* KPI Cards - Vertical Stack */}
-          <PaymentSummaryCards 
-            inputs={inputs} 
-            currency={currency} 
-            rate={rate} 
-            totalMonths={totalMonths}
-            vertical={true}
-          />
-
-          {/* Ownership Structure - Accordion */}
-          {hasClientSplit && clientInfo && (
-            <ClientSplitCards
-              inputs={inputs}
-              clientInfo={clientInfo}
-              currency={currency}
-              rate={rate}
+        {/* Right Column: KPIs + Ownership (1/3 width) - Hidden in compact mode */}
+        {!compact && (
+          <div className="lg:col-span-1 space-y-4">
+            {/* KPI Cards - Vertical Stack */}
+            <PaymentSummaryCards 
+              inputs={inputs} 
+              currency={currency} 
+              rate={rate} 
+              totalMonths={totalMonths}
+              vertical={true}
             />
-          )}
-        </div>
+
+            {/* Ownership Structure - Accordion */}
+            {hasClientSplit && clientInfo && (
+              <ClientSplitCards
+                inputs={inputs}
+                clientInfo={clientInfo}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
