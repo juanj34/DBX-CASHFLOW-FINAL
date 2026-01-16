@@ -1,22 +1,13 @@
-import { useState, useMemo } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
-import { calculateExitScenario } from '@/components/roi/constructionProgress';
-import {
-  ClientUnitTable,
-  EquitySummaryCard,
-  CompactExitCards,
-  InitialCostTable,
-  MilestoneTable,
-  IncomeProjectionTable,
-  AnnualCashflowRow,
-  MortgageSection,
-  ValueDifferentiatorsBadges,
-  ExitChartModal,
-  RentalComparisonModal,
-} from '@/components/roi/snapshot';
+import { PropertyHeroCard } from '@/components/roi/PropertyHeroCard';
+import { InvestmentSnapshot } from '@/components/roi/InvestmentSnapshot';
+import { ExitScenariosCards } from '@/components/roi/ExitScenariosCards';
+import { PaymentBreakdown } from '@/components/roi/PaymentBreakdown';
+import { RentSnapshot } from '@/components/roi/RentSnapshot';
+import { MortgageBreakdown } from '@/components/roi/MortgageBreakdown';
 
 interface SnapshotContentProps {
   inputs: OIInputs;
@@ -28,14 +19,10 @@ interface SnapshotContentProps {
   quoteImages: {
     heroImageUrl: string | null;
     floorPlanUrl: string | null;
+    buildingRenderUrl?: string | null;
   };
   currency: Currency;
   rate: number;
-  brokerInfo: {
-    name?: string | null;
-    avatarUrl?: string | null;
-  };
-  onCurrencyChange?: (currency: Currency) => void;
 }
 
 export const SnapshotContent = ({
@@ -48,165 +35,96 @@ export const SnapshotContent = ({
   quoteImages,
   currency,
   rate,
-  brokerInfo,
-  onCurrencyChange,
 }: SnapshotContentProps) => {
-  // Modals
-  const [showExitModal, setShowExitModal] = useState(false);
-  const [showRentalModal, setShowRentalModal] = useState(false);
-
-  // Calculate exit scenarios data
-  const exitScenariosData = useMemo(() => {
-    return exitScenarios.map(months => ({
-      exitMonths: months,
-      ...calculateExitScenario(months, calculations.basePrice, calculations.totalMonths, inputs, calculations.totalEntryCosts)
-    }));
-  }, [exitScenarios, inputs, calculations]);
-
   const basePrice = calculations.basePrice;
-  const downpayment = basePrice * inputs.downpaymentPercent / 100;
-  const handoverPercent = 100 - inputs.preHandoverPercent;
-  const handoverPayment = basePrice * handoverPercent / 100;
-  const installmentsTotal = inputs.additionalPayments.reduce((sum, p) => sum + (basePrice * p.paymentPercent / 100), 0);
-  const dldFee = basePrice * 0.04;
-  const appreciationBonus = inputs.valueDifferentiators?.length ? Math.min(inputs.valueDifferentiators.length * 0.3, 2) : 0;
+
+  // Calculate rent values for mortgage breakdown
+  const grossAnnualRent = basePrice * (inputs.rentalYieldPercent / 100);
+  const annualServiceCharges = (clientInfo.unitSizeSqf || 0) * (inputs.serviceChargePerSqft || 18);
+  const netAnnualRent = grossAnnualRent - annualServiceCharges;
+  const monthlyLongTermRent = netAnnualRent / 12;
+  const monthlyServiceCharges = annualServiceCharges / 12;
+
+  // Short-term rental calculations for mortgage comparison
+  const adrValue = inputs.shortTermRental?.averageDailyRate || 800;
+  const occupancyPercent = inputs.shortTermRental?.occupancyPercent || 70;
+  const operatingExpensePercent = inputs.shortTermRental?.operatingExpensePercent || 25;
+  const managementFeePercent = inputs.shortTermRental?.managementFeePercent || 15;
+  const grossAirbnbAnnual = adrValue * 365 * (occupancyPercent / 100);
+  const totalExpensePercent = operatingExpensePercent + managementFeePercent;
+  const airbnbOperatingExpenses = grossAirbnbAnnual * (totalExpensePercent / 100);
+  const netAirbnbAnnual = grossAirbnbAnnual - airbnbOperatingExpenses - annualServiceCharges;
+  const monthlyAirbnbNet = netAirbnbAnnual / 12;
 
   return (
-    <div className="flex-1 overflow-auto p-4">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{clientInfo.projectName || 'Investment Snapshot'}</h1>
-            <p className="text-sm text-muted-foreground">{clientInfo.developer} • {clientInfo.unit} • {clientInfo.unitType}</p>
-          </div>
-        </div>
-        {brokerInfo.name && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {brokerInfo.avatarUrl && (
-              <img src={brokerInfo.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
-            )}
-            <span>{brokerInfo.name}</span>
-          </div>
-        )}
+    <div className="flex-1 overflow-auto p-4 sm:p-6 space-y-6 animate-fade-in">
+      {/* PropertyHeroCard - Same as Cashflow view */}
+      <PropertyHeroCard
+        data={clientInfo}
+        heroImageUrl={quoteImages.heroImageUrl}
+        buildingRenderUrl={quoteImages.buildingRenderUrl}
+        readOnly={true}
+      />
+
+      {/* Row 1: Investment Snapshot + Exit Scenarios */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <InvestmentSnapshot
+          inputs={inputs}
+          currency={currency}
+          totalMonths={calculations.totalMonths}
+          totalEntryCosts={calculations.totalEntryCosts}
+          rate={rate}
+          holdAnalysis={calculations.holdAnalysis}
+          unitSizeSqf={clientInfo.unitSizeSqf}
+        />
+        <ExitScenariosCards
+          inputs={inputs}
+          currency={currency}
+          totalMonths={calculations.totalMonths}
+          basePrice={basePrice}
+          totalEntryCosts={calculations.totalEntryCosts}
+          exitScenarios={exitScenarios}
+          rate={rate}
+          readOnly={true}
+          unitSizeSqf={clientInfo.unitSizeSqf}
+        />
       </div>
 
-      {/* Main Grid - 2 rows layout to fit on screen */}
-      <div className="grid grid-cols-12 gap-3">
-        {/* Row 1: Key Info Cards */}
-        <div className="col-span-3">
-          <ClientUnitTable
-            clientInfo={clientInfo}
-            basePrice={basePrice}
-            currency={currency}
-            rate={rate}
-            onCurrencyChange={onCurrencyChange}
-          />
-        </div>
-        <div className="col-span-3">
-          <EquitySummaryCard
-            downpayment={downpayment}
-            installmentsTotal={installmentsTotal}
-            handoverPayment={handoverPayment}
-            entryCosts={calculations.totalEntryCosts}
-            currency={currency}
-            rate={rate}
-          />
-        </div>
-        <div className="col-span-3">
-          <InitialCostTable
-            eoiFee={inputs.eoiFee}
-            downpaymentPercent={inputs.downpaymentPercent}
-            basePrice={basePrice}
-            dldFee={dldFee}
-            oqoodFee={inputs.oqoodFee}
-            currency={currency}
-            rate={rate}
-          />
-        </div>
-        <div className="col-span-3">
-          <CompactExitCards
-            exitScenarios={exitScenariosData}
-            totalMonths={calculations.totalMonths}
-            currency={currency}
-            rate={rate}
-            onClick={() => setShowExitModal(true)}
-          />
-        </div>
-
-        {/* Row 2: Detailed Tables */}
-        <div className="col-span-6">
-          <MilestoneTable
-            inputs={inputs}
-            basePrice={basePrice}
-            totalMonths={calculations.totalMonths}
-            exitScenarios={exitScenarios}
-            currency={currency}
-            rate={rate}
-          />
-        </div>
-        <div className="col-span-6">
-          <div className="space-y-3">
-            <IncomeProjectionTable
-              holdAnalysis={calculations.holdAnalysis}
-              inputs={inputs}
-              basePrice={basePrice}
-              currency={currency}
-              rate={rate}
-              onCompareClick={inputs.showAirbnbComparison ? () => setShowRentalModal(true) : undefined}
-            />
-            {mortgageInputs.enabled && (
-              <MortgageSection
-                mortgageAnalysis={mortgageAnalysis}
-                currency={currency}
-                rate={rate}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Row 3: Cashflow + Extras */}
-        <div className="col-span-12">
-          <AnnualCashflowRow
-            yearlyProjections={calculations.yearlyProjections}
-            currency={currency}
-            rate={rate}
-          />
-        </div>
-        
-        {/* Value Differentiators - if present */}
-        {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-          <div className="col-span-12">
-            <ValueDifferentiatorsBadges
-              differentiators={inputs.valueDifferentiators}
-              appreciationBonus={appreciationBonus}
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* Modals */}
-      <ExitChartModal
-        open={showExitModal}
-        onOpenChange={setShowExitModal}
+      {/* Payment Breakdown - Full Width */}
+      <PaymentBreakdown
         inputs={inputs}
-        exitScenarios={exitScenarios}
+        currency={currency}
         totalMonths={calculations.totalMonths}
-        basePrice={basePrice}
-        totalEntryCosts={calculations.totalEntryCosts}
-        currency={currency}
         rate={rate}
+        unitSizeSqf={clientInfo.unitSizeSqf}
+        clientInfo={clientInfo}
       />
-      
-      <RentalComparisonModal
-        open={showRentalModal}
-        onOpenChange={setShowRentalModal}
-        holdAnalysis={calculations.holdAnalysis}
-        inputs={inputs}
-        basePrice={basePrice}
-        currency={currency}
-        rate={rate}
-      />
+
+      {/* Rent Analysis - Full Width */}
+      {inputs.rentalYieldPercent > 0 && (
+        <RentSnapshot
+          inputs={inputs}
+          currency={currency}
+          rate={rate}
+          holdAnalysis={calculations.holdAnalysis}
+        />
+      )}
+
+      {/* Mortgage - Full Width (if enabled) */}
+      {mortgageInputs.enabled && (
+        <MortgageBreakdown
+          mortgageInputs={mortgageInputs}
+          mortgageAnalysis={mortgageAnalysis}
+          basePrice={basePrice}
+          currency={currency}
+          rate={rate}
+          preHandoverPercent={inputs.preHandoverPercent}
+          monthlyLongTermRent={monthlyLongTermRent}
+          monthlyServiceCharges={monthlyServiceCharges}
+          monthlyAirbnbNet={inputs.showAirbnbComparison ? monthlyAirbnbNet : undefined}
+          showAirbnbComparison={inputs.showAirbnbComparison}
+        />
+      )}
     </div>
   );
 };

@@ -176,8 +176,6 @@ const SnapshotView = () => {
         quoteImages={quoteImages}
         currency={currency}
         rate={rate}
-        brokerInfo={brokerInfo}
-        onCurrencyChange={setCurrency}
       />
     </div>
   );
