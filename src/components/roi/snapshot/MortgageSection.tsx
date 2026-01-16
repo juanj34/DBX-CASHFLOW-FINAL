@@ -17,16 +17,11 @@ export const MortgageSection = ({
   rate,
   onDetailsClick,
 }: MortgageSectionProps) => {
-  const loanDetails = {
-    loanAmount: mortgageAnalysis.loanAmount,
-    monthlyPayment: mortgageAnalysis.monthlyPayment,
-    totalInterest: mortgageAnalysis.totalInterest,
-  };
-  const stressTests = mortgageAnalysis.stressScenarios || [];
+  const { loanAmount, monthlyPayment, totalInterest, stressScenarios } = mortgageAnalysis;
   
   // Find the scenario that is at break (cashflow positive)
-  const positiveScenario = stressTests.find(s => s.status === 'positive');
-  const negativeScenario = stressTests.find(s => s.status === 'negative');
+  const positiveScenario = stressScenarios.find(s => s.status === 'positive');
+  const negativeScenario = stressScenarios.find(s => s.status === 'negative');
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -62,27 +57,27 @@ export const MortgageSection = ({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Loan Amount</span>
               <span className="font-medium text-foreground">
-                {formatCurrency(loanDetails.loanAmount, 'AED', 1)}
+                {formatCurrency(loanAmount, 'AED', 1)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Interest Rate</span>
               <span className="font-medium text-foreground">
-                {loanDetails.monthlyPayment > 0 
-                  ? `${((loanDetails.totalInterest / loanDetails.loanAmount / 25) * 100).toFixed(1)}%` 
+                {loanAmount > 0 && totalInterest > 0
+                  ? `${((totalInterest / loanAmount / 25) * 100).toFixed(1)}%` 
                   : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Monthly Payment</span>
               <span className="font-medium text-primary">
-                {formatCurrency(loanDetails.monthlyPayment, 'AED', 1)}
+                {formatCurrency(monthlyPayment, 'AED', 1)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total Interest</span>
               <span className="text-red-500">
-                {formatCurrency(loanDetails.totalInterest, 'AED', 1)}
+                {formatCurrency(totalInterest, 'AED', 1)}
               </span>
             </div>
           </div>
@@ -109,9 +104,9 @@ export const MortgageSection = ({
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {positiveScenario 
-                ? `+${formatCurrency(positiveScenario.cashflow, 'AED', 1)}/mo surplus`
+                ? `+${formatCurrency(positiveScenario.netCashflow, 'AED', 1)}/mo surplus`
                 : negativeScenario 
-                  ? `${formatCurrency(negativeScenario.cashflow, 'AED', 1)}/mo deficit`
+                  ? `${formatCurrency(negativeScenario.netCashflow, 'AED', 1)}/mo deficit`
                   : 'Break-even'}
             </p>
           </div>
@@ -125,24 +120,24 @@ export const MortgageSection = ({
           </div>
           
           <div className="space-y-2 text-xs">
-            {stressTests.slice(0, 3).map((scenario, idx) => (
+            {stressScenarios.slice(0, 3).map((scenario, idx) => (
               <div 
                 key={idx}
                 className={cn(
                   "flex justify-between items-center p-2 rounded",
                   scenario.status === 'positive' && "bg-green-500/10",
                   scenario.status === 'negative' && "bg-red-500/10",
-                  scenario.status === 'break-even' && "bg-yellow-500/10"
+                  scenario.status === 'tight' && "bg-yellow-500/10"
                 )}
               >
-                <span className="text-muted-foreground">{scenario.interestRate}% rate</span>
+                <span className="text-muted-foreground">{scenario.rate}% rate</span>
                 <span className={cn(
                   "font-medium",
                   scenario.status === 'positive' && "text-green-500",
                   scenario.status === 'negative' && "text-red-500",
-                  scenario.status === 'break-even' && "text-yellow-500"
+                  scenario.status === 'tight' && "text-yellow-500"
                 )}>
-                  {formatCurrency(scenario.cashflow, 'AED', 1)}
+                  {formatCurrency(scenario.netCashflow, 'AED', 1)}
                 </span>
               </div>
             ))}

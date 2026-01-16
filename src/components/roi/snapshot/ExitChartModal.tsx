@@ -8,7 +8,7 @@ import { OIInputs } from '../useOICalculations';
 import { Currency, formatCurrency } from '../currencyUtils';
 import { Clock, TrendingUp, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { calculateExitScenario } from '../constructionProgress';
+import { calculateExitScenario, ExitScenarioResult } from '../constructionProgress';
 
 interface ExitChartModalProps {
   open: boolean;
@@ -33,9 +33,10 @@ export const ExitChartModal = ({
   currency,
   rate,
 }: ExitChartModalProps) => {
-  const scenarios = exitScenarios.map(months => 
-    calculateExitScenario(months, basePrice, totalMonths, inputs, totalEntryCosts)
-  );
+  const scenarios = exitScenarios.map(months => ({
+    months,
+    ...calculateExitScenario(months, basePrice, totalMonths, inputs, totalEntryCosts)
+  }));
   
   const bestROE = Math.max(...scenarios.map(s => s.annualizedROE));
 
@@ -47,11 +48,11 @@ export const ExitChartModal = ({
         </DialogHeader>
         
         <div className="mt-4 space-y-3">
-          {scenarios.map((scenario, idx) => {
+          {scenarios.map((scenario) => {
             const isBest = scenario.annualizedROE === bestROE;
             return (
               <div 
-                key={scenario.exitMonths}
+                key={scenario.months}
                 className={cn(
                   "p-4 rounded-lg border",
                   isBest ? "bg-green-500/10 border-green-500/30" : "bg-muted/50 border-border"
@@ -60,7 +61,7 @@ export const ExitChartModal = ({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{scenario.exitMonths} months</span>
+                    <span className="font-medium">{scenario.months} months</span>
                     {isBest && <Trophy className="w-4 h-4 text-yellow-500" />}
                   </div>
                   <span className={cn(
@@ -77,7 +78,7 @@ export const ExitChartModal = ({
                   </div>
                   <div>
                     <span className="text-muted-foreground block">Cash Invested</span>
-                    <span className="font-medium">{formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}</span>
+                    <span className="font-medium">{formatCurrency(scenario.totalCapital, 'AED', 1)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block">Profit</span>
