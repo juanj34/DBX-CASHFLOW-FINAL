@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -32,7 +32,8 @@ interface DashboardSidebarProps {
   onShare?: () => void;
   onPresent?: () => void; // Switch to cashflow view
   onShowcase?: () => void; // Open showcase/story mode in new tab
-  activeView?: 'cashflow' | 'showcase'; // Which view is currently active
+  onSnapshot?: () => void; // Open snapshot view in new tab
+  activeView?: 'cashflow' | 'showcase' | 'snapshot'; // Which view is currently active
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -190,6 +191,7 @@ export const DashboardSidebar = ({
   onShare,
   onPresent,
   onShowcase,
+  onSnapshot,
   activeView,
   viewCount,
   quoteId,
@@ -356,6 +358,14 @@ export const DashboardSidebar = ({
                 onClick={onPresent} 
                 collapsed={collapsed}
                 variant={activeView === 'cashflow' ? 'active' : 'default'}
+              />
+              {/* Snapshot - compact spreadsheet-style view */}
+              <ActionButton 
+                icon={FileSpreadsheet} 
+                label="Snapshot" 
+                onClick={onSnapshot} 
+                collapsed={collapsed}
+                variant={activeView === 'snapshot' ? 'active' : 'default'}
               />
               {onShare && (
                 <ActionButton 
