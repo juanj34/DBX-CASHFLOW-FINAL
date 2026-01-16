@@ -13,3 +13,7 @@ export { DualCurrencyValue } from './DualCurrencyValue';
 export { ExitChartModal } from './ExitChartModal';
 export { RentalComparisonModal } from './RentalComparisonModal';
 export { SnapshotContent } from './SnapshotContent';
+export { SnapshotOverviewCards } from './SnapshotOverviewCards';
+export { CompactPaymentTable } from './CompactPaymentTable';
+export { CompactRentCard } from './CompactRentCard';
+export { CompactMortgageCard } from './CompactMortgageCard';
