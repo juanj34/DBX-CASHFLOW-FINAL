@@ -112,30 +112,8 @@ const OICalculatorContent = () => {
     );
   }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 
-  // Create draft immediately on mount if no quoteId - use ref to prevent loops
-  const draftCreatedRef = useRef(false);
-  
-  useEffect(() => {
-    const initDraft = async () => {
-      // Use ref to prevent duplicate creation - persists across re-renders without causing re-renders
-      if (!quoteId && !draftCreatedRef.current && !quoteLoading) {
-        draftCreatedRef.current = true;
-        const newId = await createDraft();
-        if (newId) {
-          // Use React Router navigate with replace - this properly updates useParams()
-          navigate(`/cashflow/${newId}`, { replace: true });
-        }
-      }
-    };
-    initDraft();
-  }, [quoteId, createDraft, quoteLoading, navigate]);
-  
-  // Reset ref when quoteId changes (for when user navigates away and back)
-  useEffect(() => {
-    if (quoteId) {
-      draftCreatedRef.current = false;
-    }
-  }, [quoteId]);
+  // LAZY CREATION: No draft created on mount - quote created on first meaningful change
+  // This prevents empty quotes from cluttering the database
 
   // Load quote data from database
   useEffect(() => {

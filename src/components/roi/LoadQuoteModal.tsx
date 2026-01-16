@@ -136,16 +136,9 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-white truncate group-hover:text-[#CCFF00] transition-colors">
-                            {quote.project_name || 'Untitled Quote'}
-                          </h4>
-                          {quote.status === 'draft' && (
-                            <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">
-                              {t('draft') || 'Draft'}
-                            </span>
-                          )}
-                        </div>
+                        <h4 className="font-medium text-white truncate group-hover:text-[#CCFF00] transition-colors">
+                          {quote.project_name || 'Untitled Quote'}
+                        </h4>
                         
                         <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 flex-wrap">
                           {quote.client_name && (
