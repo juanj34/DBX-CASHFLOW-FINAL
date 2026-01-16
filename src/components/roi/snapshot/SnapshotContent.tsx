@@ -5,7 +5,6 @@ import { Currency } from '@/components/roi/currencyUtils';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { calculateExitScenario } from '@/components/roi/constructionProgress';
 import {
-  SnapshotHeader,
   ClientUnitTable,
   EquitySummaryCard,
   CompactExitCards,
@@ -73,20 +72,29 @@ export const SnapshotContent = ({
   const appreciationBonus = inputs.valueDifferentiators?.length ? Math.min(inputs.valueDifferentiators.length * 0.3, 2) : 0;
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Header */}
-        <SnapshotHeader
-          projectName={clientInfo.projectName}
-          developer={clientInfo.developer}
-          heroImageUrl={quoteImages.heroImageUrl}
-          floorPlanUrl={quoteImages.floorPlanUrl}
-          brokerName={brokerInfo.name || undefined}
-          brokerAvatarUrl={brokerInfo.avatarUrl}
-        />
-        
-        {/* Top Section: 3 columns */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
+    <div className="flex-1 overflow-auto p-4">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">{clientInfo.projectName || 'Investment Snapshot'}</h1>
+            <p className="text-sm text-muted-foreground">{clientInfo.developer} • {clientInfo.unit} • {clientInfo.unitType}</p>
+          </div>
+        </div>
+        {brokerInfo.name && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {brokerInfo.avatarUrl && (
+              <img src={brokerInfo.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
+            )}
+            <span>{brokerInfo.name}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Main Grid - 2 rows layout to fit on screen */}
+      <div className="grid grid-cols-12 gap-3">
+        {/* Row 1: Key Info Cards */}
+        <div className="col-span-3">
           <ClientUnitTable
             clientInfo={clientInfo}
             basePrice={basePrice}
@@ -94,6 +102,8 @@ export const SnapshotContent = ({
             rate={rate}
             onCurrencyChange={onCurrencyChange}
           />
+        </div>
+        <div className="col-span-3">
           <EquitySummaryCard
             downpayment={downpayment}
             installmentsTotal={installmentsTotal}
@@ -102,17 +112,8 @@ export const SnapshotContent = ({
             currency={currency}
             rate={rate}
           />
-          <CompactExitCards
-            exitScenarios={exitScenariosData}
-            totalMonths={calculations.totalMonths}
-            currency={currency}
-            rate={rate}
-            onClick={() => setShowExitModal(true)}
-          />
         </div>
-        
-        {/* Section A: Initial Costs */}
-        <div className="mb-6">
+        <div className="col-span-3">
           <InitialCostTable
             eoiFee={inputs.eoiFee}
             downpaymentPercent={inputs.downpaymentPercent}
@@ -123,9 +124,18 @@ export const SnapshotContent = ({
             rate={rate}
           />
         </div>
-        
-        {/* Section B: Milestones */}
-        <div className="mb-6">
+        <div className="col-span-3">
+          <CompactExitCards
+            exitScenarios={exitScenariosData}
+            totalMonths={calculations.totalMonths}
+            currency={currency}
+            rate={rate}
+            onClick={() => setShowExitModal(true)}
+          />
+        </div>
+
+        {/* Row 2: Detailed Tables */}
+        <div className="col-span-6">
           <MilestoneTable
             inputs={inputs}
             basePrice={basePrice}
@@ -135,21 +145,28 @@ export const SnapshotContent = ({
             rate={rate}
           />
         </div>
-        
-        {/* Section C: Income Projection */}
-        <div className="mb-6">
-          <IncomeProjectionTable
-            holdAnalysis={calculations.holdAnalysis}
-            inputs={inputs}
-            basePrice={basePrice}
-            currency={currency}
-            rate={rate}
-            onCompareClick={inputs.showAirbnbComparison ? () => setShowRentalModal(true) : undefined}
-          />
+        <div className="col-span-6">
+          <div className="space-y-3">
+            <IncomeProjectionTable
+              holdAnalysis={calculations.holdAnalysis}
+              inputs={inputs}
+              basePrice={basePrice}
+              currency={currency}
+              rate={rate}
+              onCompareClick={inputs.showAirbnbComparison ? () => setShowRentalModal(true) : undefined}
+            />
+            {mortgageInputs.enabled && (
+              <MortgageSection
+                mortgageAnalysis={mortgageAnalysis}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+          </div>
         </div>
-        
-        {/* Annual Cashflow */}
-        <div className="mb-6">
+
+        {/* Row 3: Cashflow + Extras */}
+        <div className="col-span-12">
           <AnnualCashflowRow
             yearlyProjections={calculations.yearlyProjections}
             currency={currency}
@@ -157,20 +174,9 @@ export const SnapshotContent = ({
           />
         </div>
         
-        {/* Mortgage Section (if enabled) */}
-        {mortgageInputs.enabled && (
-          <div className="mb-6">
-            <MortgageSection
-              mortgageAnalysis={mortgageAnalysis}
-              currency={currency}
-              rate={rate}
-            />
-          </div>
-        )}
-        
-        {/* Value Differentiators */}
+        {/* Value Differentiators - if present */}
         {inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0 && (
-          <div className="mb-6">
+          <div className="col-span-12">
             <ValueDifferentiatorsBadges
               differentiators={inputs.valueDifferentiators}
               appreciationBonus={appreciationBonus}
