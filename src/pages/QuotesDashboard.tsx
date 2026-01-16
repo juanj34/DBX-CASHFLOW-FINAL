@@ -89,7 +89,7 @@ const QuotesDashboard = () => {
   const commissionRate = profile?.commission_rate ?? 2;
 
   const statusConfig: Record<QuoteStatus, { label: string; className: string }> = {
-    draft: { label: t("statusDraft"), className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+    draft: { label: t("statusActive") || "Active", className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
     presented: { label: t("statusPresented"), className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
     negotiating: { label: t("statusNegotiating"), className: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
     sold: { label: t("statusSold"), className: "bg-green-500/20 text-green-400 border-green-500/30" },

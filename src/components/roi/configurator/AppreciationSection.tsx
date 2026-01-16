@@ -280,7 +280,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 <div className="flex items-center gap-0.5 text-[8px] font-mono">
                   <span className="text-orange-400">{profile.constructionAppreciation}%</span>
                   <span className="text-gray-600">→</span>
-                  <span className="text-green-400">{profile.growthAppreciation}%</span>
+                  <span className="text-green-400">{profile.growthAppreciation}% ({profile.growthPeriodYears}y)</span>
                   <span className="text-gray-600">→</span>
                   <span className="text-blue-400">{profile.matureAppreciation}%</span>
                 </div>
@@ -429,7 +429,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span className="text-gray-500">{language === 'es' ? 'Crecimiento' : 'Growth'}</span>
+            <span className="text-gray-500">
+              {language === 'es' ? 'Crecimiento' : 'Growth'}
+              <span className="text-green-400 ml-1">({growthPeriodYears}y)</span>
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-blue-400" />

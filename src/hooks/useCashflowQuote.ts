@@ -356,7 +356,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     [toast]
   );
 
-  // Auto-save with debounce - always saves to database (since we always have a quote ID now)
+  // Auto-save with debounce - creates quote on first meaningful change (lazy creation)
   const scheduleAutoSave = useCallback(
     (
       inputs: OIInputs,
@@ -372,9 +372,22 @@ export const useCashflowQuote = (quoteId?: string) => {
         clearTimeout(autoSaveTimeout.current);
       }
 
-      // Only schedule database auto-save if we have a quote ID
+      // LAZY CREATION: If no quote ID but user has configured something meaningful, create quote
+      if (!existingQuoteId && isQuoteConfigured) {
+        autoSaveTimeout.current = setTimeout(async () => {
+          console.log('Creating new quote on first meaningful change...');
+          const exitScenarios = inputs._exitScenarios || [];
+          const savedQuote = await saveQuote(inputs, clientInfo, undefined, exitScenarios, mortgageInputs, undefined, images);
+          if (savedQuote && onNewQuoteCreated) {
+            onNewQuoteCreated(savedQuote.id);
+          }
+        }, 2000); // Faster for first creation
+        return;
+      }
+
+      // Normal auto-save for existing quotes
       if (!existingQuoteId) {
-        return; // Draft will be created automatically on mount
+        return;
       }
 
       autoSaveTimeout.current = setTimeout(async () => {
@@ -386,7 +399,7 @@ export const useCashflowQuote = (quoteId?: string) => {
         const exitScenarios = inputs._exitScenarios || [];
         console.log('Auto-saving quote:', existingQuoteId);
         await saveQuote(inputs, clientInfo, existingQuoteId, exitScenarios, mortgageInputs, undefined, images);
-      }, 5000); // Reduced from 15 seconds to 5 seconds for better UX
+      }, 5000);
     },
     [toast, quote?.id, saveQuote]
   );

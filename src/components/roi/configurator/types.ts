@@ -122,7 +122,7 @@ export const SAMPLE_MORTGAGE_INPUTS: MortgageInputs = {
   propertyInsurance: 1500,
 };
 
-// Empty defaults for NEW quotes (no progress indicators until user enters data)
+// Defaults for NEW quotes - preselected "Balanced" growth profile
 export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   basePrice: 800000,
   rentalYieldPercent: 8,
@@ -143,10 +143,11 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   shortTermRental: DEFAULT_SHORT_TERM_RENTAL,
   zoneMaturityLevel: 60,
   useZoneDefaults: true,
-  constructionAppreciation: 0,
-  growthAppreciation: 0,
-  matureAppreciation: 0,
-  growthPeriodYears: 5,
+  // Balanced profile preselected
+  constructionAppreciation: 12,
+  growthAppreciation: 8,
+  matureAppreciation: 4,
+  growthPeriodYears: 3,
   rentGrowthRate: 4,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
