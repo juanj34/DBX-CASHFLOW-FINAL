@@ -45,6 +45,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
+import { SnapshotContent } from "@/components/roi/snapshot";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -69,7 +70,8 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [presentationMode, setPresentationMode] = useState(false);
+  type ViewMode = 'cashflow' | 'showcase' | 'snapshot';
+  const [viewMode, setViewMode] = useState<ViewMode>('cashflow');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -259,42 +261,32 @@ const OICalculatorContent = () => {
     });
   }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
-  // View toggle handlers - switch between cashflow and showcase views in-page
+  // View toggle handlers - switch between cashflow, showcase, and snapshot views in-page
   const handleShowcaseView = useCallback(() => {
-    setPresentationMode(true);
+    setViewMode('showcase');
   }, []);
 
   const handleCashflowView = useCallback(() => {
-    setPresentationMode(false);
+    setViewMode('cashflow');
   }, []);
 
-  // Snapshot - opens compact spreadsheet-style view in new tab
-  const handleSnapshotView = useCallback(async () => {
-    const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
-    if (!savedQuote) return;
-    
-    let token = savedQuote.share_token;
-    if (!token) {
-      token = await generateShareToken(savedQuote.id);
-    }
-    
-    if (token) {
-      const url = `${window.location.origin}/snapshot/${token}`;
-      window.open(url, '_blank');
-    }
-  }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
+  const handleSnapshotView = useCallback(() => {
+    setViewMode('snapshot');
+  }, []);
 
-  // Keyboard shortcut for presentation mode
+  // Keyboard shortcut for view modes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
-      // S key = Showcase, C key = Cashflow
+      // S key = Showcase, C key = Cashflow, N key = Snapshot
       if ((e.key === 's' || e.key === 'S') && isFullyConfigured) {
-        setPresentationMode(true);
+        setViewMode('showcase');
       } else if ((e.key === 'c' || e.key === 'C') && isFullyConfigured) {
-        setPresentationMode(false);
+        setViewMode('cashflow');
+      } else if ((e.key === 'n' || e.key === 'N') && isFullyConfigured) {
+        setViewMode('snapshot');
       }
     };
 
@@ -323,7 +315,7 @@ const OICalculatorContent = () => {
         onPresent={handleCashflowView}
         onShowcase={handleShowcaseView}
         onSnapshot={handleSnapshotView}
-        activeView={presentationMode ? 'showcase' : 'cashflow'}
+        activeView={viewMode}
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
         language={language}
@@ -365,13 +357,48 @@ const OICalculatorContent = () => {
               </div>
             </div>
           </div>
-        ) : presentationMode ? (
+        ) : viewMode === 'snapshot' ? (
+          /* Snapshot Mode - Show compact spreadsheet-style view */
+          <div className="relative h-full flex flex-col animate-fade-in" key="snapshot-view">
+            {/* Exit Snapshot Button */}
+            <div className="absolute top-4 right-4 z-20">
+              <Button
+                onClick={() => setViewMode('cashflow')}
+                variant="ghost"
+                size="sm"
+                className="bg-theme-card/90 backdrop-blur-sm border border-theme-border hover:bg-theme-card text-theme-text gap-2"
+              >
+                <X className="w-4 h-4" />
+                Exit Snapshot
+              </Button>
+            </div>
+            <SnapshotContent
+              inputs={inputs}
+              calculations={calculations}
+              clientInfo={clientInfo}
+              mortgageInputs={mortgageInputs}
+              mortgageAnalysis={mortgageAnalysis}
+              exitScenarios={exitScenarios}
+              quoteImages={{
+                heroImageUrl: quoteImages.heroImageUrl,
+                floorPlanUrl: quoteImages.floorPlanUrl,
+              }}
+              currency={currency}
+              rate={rate}
+              brokerInfo={{
+                name: profile?.full_name,
+                avatarUrl: profile?.avatar_url,
+              }}
+              onCurrencyChange={setCurrency}
+            />
+          </div>
+        ) : viewMode === 'showcase' ? (
           /* Presentation Mode - Show InvestmentStoryDashboard */
           <div className="relative h-full flex flex-col animate-fade-in" key="showcase-view">
             {/* Exit Presentation Button */}
             <div className="absolute top-4 right-4 z-20">
               <Button
-                onClick={() => setPresentationMode(false)}
+                onClick={() => setViewMode('cashflow')}
                 variant="ghost"
                 size="sm"
                 className="bg-theme-card/90 backdrop-blur-sm border border-theme-border hover:bg-theme-card text-theme-text gap-2"
