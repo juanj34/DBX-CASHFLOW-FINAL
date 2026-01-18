@@ -101,9 +101,9 @@ export const MortgageSection = ({ inputs, mortgageInputs, setMortgageInputs, cur
 
       {mortgageInputs.enabled && (
         <>
-          {/* Gap Warning - Dark Tech Style */}
+          {/* Gap Warning - Theme Style */}
           {hasGap && (
-            <div className="p-3 bg-[#1a1f2e] border border-amber-500/30 rounded-lg">
+            <div className="p-3 bg-theme-card border border-amber-500/30 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
                 <p className="text-amber-300 text-sm font-medium">Gap Payment Required</p>
@@ -111,7 +111,7 @@ export const MortgageSection = ({ inputs, mortgageInputs, setMortgageInputs, cur
               <p className="text-xs text-theme-text-muted mb-2">
                 Your pre-handover payments ({inputs.preHandoverPercent}%) don't cover the required equity ({equityRequired}%). You'll need to pay an additional {gapPercent.toFixed(0)}% at handover before financing.
               </p>
-              <div className="relative h-2 bg-[#0d1117] rounded-full overflow-hidden">
+              <div className="relative h-2 bg-theme-bg-alt rounded-full overflow-hidden">
                 <div className="absolute left-0 top-0 h-full bg-green-500/60" style={{ width: `${inputs.preHandoverPercent}%` }} />
                 <div className="absolute top-0 h-full bg-amber-500/60" style={{ left: `${inputs.preHandoverPercent}%`, width: `${gapPercent}%` }} />
                 <div className="absolute top-0 h-full bg-blue-500/60" style={{ left: `${equityRequired}%`, width: `${mortgageInputs.financingPercent}%` }} />

@@ -62,34 +62,34 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">Rental Strategy</h3>
-        <p className="text-sm text-gray-500">Configure rental income projections</p>
+        <h3 className="text-lg font-semibold text-theme-text mb-1">Rental Strategy</h3>
+        <p className="text-sm text-theme-text-muted">Configure rental income projections</p>
       </div>
 
       {/* Long-Term Rental Toggle & Config */}
-      <div className="space-y-3 p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+      <div className="space-y-3 p-3 bg-theme-card rounded-xl border border-theme-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Home className="w-4 h-4 text-[#CCFF00]" />
-            <span className="text-sm text-gray-300 font-medium">Long-Term Rental</span>
+            <Home className="w-4 h-4 text-theme-accent" />
+            <span className="text-sm text-theme-text font-medium">Long-Term Rental</span>
           </div>
           <Switch
             checked={longTermEnabled}
             onCheckedChange={handleLongTermToggle}
-            className="data-[state=checked]:bg-[#CCFF00]"
+            className="data-[state=checked]:bg-theme-accent"
           />
         </div>
 
         {longTermEnabled && (
-          <div className="space-y-3 pt-2 border-t border-[#2a3142]">
+          <div className="space-y-3 pt-2 border-t border-theme-border">
             {/* Rental Yield */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">Annual Rental Yield</label>
+                  <label className="text-xs text-theme-text-muted">Annual Rental Yield</label>
                   <InfoTooltip translationKey="tooltipRentalYield" />
                 </div>
-                <span className="text-sm text-[#CCFF00] font-mono font-bold">{inputs.rentalYieldPercent}%</span>
+                <span className="text-sm text-theme-accent font-mono font-bold">{inputs.rentalYieldPercent}%</span>
               </div>
               <Slider
                 value={[inputs.rentalYieldPercent]}
@@ -102,14 +102,14 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             </div>
 
             {/* Annual Income Display */}
-            <div className="p-2.5 bg-[#0d1117] rounded-lg border border-[#CCFF00]/20">
+            <div className="p-2.5 bg-theme-bg-alt rounded-lg border border-theme-accent/20">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Year 1 Rent</span>
-                <span className="text-base font-mono text-[#CCFF00] font-bold">
+                <span className="text-xs text-theme-text-muted">Year 1 Rent</span>
+                <span className="text-base font-mono text-theme-accent font-bold">
                   {formatCurrency(annualLongTermRent, currency)}
                 </span>
               </div>
-              <div className="text-[10px] text-gray-500 mt-0.5">
+              <div className="text-[10px] text-theme-text-muted mt-0.5">
                 {formatCurrency(annualLongTermRent / 12, currency)}/month
               </div>
             </div>
@@ -117,8 +117,8 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             {/* Service Charges - Inline */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <DollarSign className="w-3.5 h-3.5 text-gray-500" />
-                <label className="text-xs text-gray-400">Service Charges</label>
+                <DollarSign className="w-3.5 h-3.5 text-theme-text-muted" />
+                <label className="text-xs text-theme-text-muted">Service Charges</label>
                 <InfoTooltip translationKey="tooltipServiceCharges" />
               </div>
               <div className="flex items-center gap-2">
@@ -130,9 +130,9 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                     const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
                     setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
                   }}
-                  className="w-16 h-7 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
+                  className="w-16 h-7 text-right bg-theme-bg-alt border-theme-border text-theme-text font-mono text-xs"
                 />
-                <span className="text-[10px] text-gray-500">AED/sqft</span>
+                <span className="text-[10px] text-theme-text-muted">AED/sqft</span>
               </div>
             </div>
           </div>
@@ -140,11 +140,11 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
       </div>
 
       {/* Short-Term Comparison Toggle & Config */}
-      <div className="space-y-3 p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+      <div className="space-y-3 p-3 bg-theme-card rounded-xl border border-theme-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Plane className="w-4 h-4 text-orange-400" />
-            <span className="text-sm text-gray-300 font-medium">Short-Term Comparison</span>
+            <span className="text-sm text-theme-text font-medium">Short-Term Comparison</span>
           </div>
           <Switch
             checked={airbnbEnabled}
@@ -154,16 +154,16 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         </div>
 
         {airbnbEnabled && (
-          <div className="space-y-3 pt-2 border-t border-[#2a3142]">
+          <div className="space-y-3 pt-2 border-t border-theme-border">
             {/* ADR - Main visible control */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">Average Daily Rate (ADR)</label>
+                  <label className="text-xs text-theme-text-muted">Average Daily Rate (ADR)</label>
                   <InfoTooltip translationKey="tooltipADR" />
                 </div>
                 <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-[10px]">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-theme-text-muted text-[10px]">
                     {currency === 'USD' ? '$' : 'AED'}
                   </span>
                   <Input
@@ -177,7 +177,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                         shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), averageDailyRate: val }
                       }));
                     }}
-                    className="w-24 h-7 text-right bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm pl-8"
+                    className="w-24 h-7 text-right bg-theme-bg-alt border-theme-border text-theme-text font-mono text-sm pl-8"
                   />
                 </div>
               </div>
@@ -186,7 +186,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             {/* Advanced Settings - Collapsible */}
             <Collapsible open={showAdvancedAirbnb} onOpenChange={setShowAdvancedAirbnb}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between h-7 px-2 text-gray-500 hover:text-white text-xs">
+                <Button variant="ghost" className="w-full justify-between h-7 px-2 text-theme-text-muted hover:text-theme-text text-xs">
                   <span>Advanced Settings</span>
                   {showAdvancedAirbnb ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </Button>
@@ -194,7 +194,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               <CollapsibleContent className="space-y-2 pt-2">
                 {/* Occupancy */}
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-gray-400">Occupancy</label>
+                  <label className="text-xs text-theme-text-muted">Occupancy</label>
                   <div className="flex items-center gap-2">
                     <Slider
                       value={[shortTermRental.occupancyPercent]}
@@ -207,13 +207,13 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                       step={5}
                       className="w-20 roi-slider-lime"
                     />
-                    <span className="text-xs text-white font-mono w-10 text-right">{shortTermRental.occupancyPercent}%</span>
+                    <span className="text-xs text-theme-text font-mono w-10 text-right">{shortTermRental.occupancyPercent}%</span>
                   </div>
                 </div>
 
                 {/* Operating Expenses */}
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-gray-400">Op. Expenses</label>
+                  <label className="text-xs text-theme-text-muted">Op. Expenses</label>
                   <div className="flex items-center gap-2">
                     <Slider
                       value={[shortTermRental.operatingExpensePercent]}
@@ -232,7 +232,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
 
                 {/* Management Fee */}
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-gray-400">Management</label>
+                  <label className="text-xs text-theme-text-muted">Management</label>
                   <div className="flex items-center gap-2">
                     <Slider
                       value={[shortTermRental.managementFeePercent]}
@@ -252,23 +252,23 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             </Collapsible>
 
             {/* Short-Term Income Summary */}
-            <div className="p-2.5 bg-[#0d1117] rounded-lg border border-orange-500/30 space-y-1.5">
+            <div className="p-2.5 bg-theme-bg-alt rounded-lg border border-orange-500/30 space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Gross</span>
-                <span className="text-white font-mono">{formatCurrency(grossAirbnbIncome, currency)}</span>
+                <span className="text-theme-text-muted">Gross</span>
+                <span className="text-theme-text font-mono">{formatCurrency(grossAirbnbIncome, currency)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Expenses</span>
+                <span className="text-theme-text-muted">Expenses</span>
                 <span className="text-red-400 font-mono">-{formatCurrency(airbnbExpenses, currency)}</span>
               </div>
-              <div className="flex justify-between text-sm pt-1.5 border-t border-[#2a3142]">
+              <div className="flex justify-between text-sm pt-1.5 border-t border-theme-border">
                 <span className="text-orange-400 font-medium">Net</span>
-                <span className="text-[#CCFF00] font-mono font-bold">{formatCurrency(netAirbnbIncome, currency)}</span>
+                <span className="text-theme-accent font-mono font-bold">{formatCurrency(netAirbnbIncome, currency)}</span>
               </div>
               
               {/* Comparison with Long-Term */}
               {longTermEnabled && annualLongTermRent > 0 && (
-                <div className="pt-1.5 border-t border-[#2a3142]">
+                <div className="pt-1.5 border-t border-theme-border">
                   <div className={`flex items-center justify-between text-xs ${comparisonPercent >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
                     <span className="flex items-center gap-1">
                       {comparisonPercent >= 0 ? (
