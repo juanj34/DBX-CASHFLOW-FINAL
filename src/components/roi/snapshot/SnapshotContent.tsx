@@ -7,7 +7,6 @@ import { SnapshotOverviewCards } from './SnapshotOverviewCards';
 import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
-import { SnapshotToolbar } from './SnapshotToolbar';
 
 interface SnapshotContentProps {
   inputs: OIInputs;
@@ -55,8 +54,13 @@ export const SnapshotContent = ({
 
   return (
     <div className="flex-1 overflow-auto p-4 space-y-4 animate-fade-in">
-      {/* Toolbar with Price, Currency, Language toggles */}
-      <SnapshotToolbar
+      {/* Hero with integrated Price, Currency, Language controls */}
+      <PropertyHeroCard
+        data={clientInfo}
+        heroImageUrl={quoteImages.heroImageUrl}
+        buildingRenderUrl={quoteImages.buildingRenderUrl}
+        readOnly={true}
+        showPriceInfo={true}
         basePrice={basePrice}
         pricePerSqft={pricePerSqft}
         currency={currency}
@@ -64,14 +68,6 @@ export const SnapshotContent = ({
         language={language}
         setLanguage={setLanguage}
         rate={rate}
-      />
-
-      {/* Compact Hero - Just client/project info */}
-      <PropertyHeroCard
-        data={clientInfo}
-        heroImageUrl={quoteImages.heroImageUrl}
-        buildingRenderUrl={quoteImages.buildingRenderUrl}
-        readOnly={true}
       />
 
       {/* 4 Overview Cards - Full Width Row */}
