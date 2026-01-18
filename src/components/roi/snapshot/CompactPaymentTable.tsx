@@ -128,7 +128,7 @@ export const CompactPaymentTable = ({
               value={getDualValue(oqoodFee).primary}
               secondaryValue={getDualValue(oqoodFee).secondary}
             />
-            <div className="pt-1 border-t border-border mt-1">
+            <div className="pt-1 border-t border-theme-border mt-1">
               <DottedRow 
                 label="Total Entry"
                 value={getDualValue(entryTotal).primary}
@@ -160,7 +160,7 @@ export const CompactPaymentTable = ({
                   />
                 );
               })}
-              <div className="pt-1 border-t border-border mt-1">
+              <div className="pt-1 border-t border-theme-border mt-1">
                 <DottedRow 
                   label="Subtotal"
                   value={getDualValue(journeyTotal).primary}
@@ -190,7 +190,7 @@ export const CompactPaymentTable = ({
         </div>
 
         {/* Grand Total */}
-        <div className="pt-2 border-t border-border">
+        <div className="pt-2 border-t border-theme-border">
           <DottedRow 
             label="Total Investment"
             value={getDualValue(grandTotal).primary}
