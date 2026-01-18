@@ -24,7 +24,86 @@ const formatCurrency = (value: number, currency: string, rate: number): string =
   }).format(converted);
 };
 
+// Dual currency format - AED primary with reference currency below
+const formatDualCurrency = (value: number, currency: string, rate: number): string => {
+  const aedFormatted = formatCurrency(value, 'AED', 1);
+  if (currency === 'AED') return aedFormatted;
+  const refFormatted = formatCurrency(value, currency, rate);
+  return `${aedFormatted}<br><span style="font-size:10px;color:#94a3b8">${refFormatted}</span>`;
+};
+
 const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
+
+// S-curve segments for Dubai construction progress
+// Converts timeline percentage to construction completion percentage
+const timelineToConstruction = (timelinePercent: number): number => {
+  const segments: [number, number][] = [
+    [0, 0],
+    [25, 18],
+    [42, 35],
+    [50, 40],
+    [58, 50],
+    [67, 65],
+    [75, 75],
+    [89, 90],
+    [100, 100],
+  ];
+  
+  // Clamp input
+  const clamped = Math.max(0, Math.min(100, timelinePercent));
+  
+  // Find the segment we're in
+  for (let i = 0; i < segments.length - 1; i++) {
+    const [t1, c1] = segments[i];
+    const [t2, c2] = segments[i + 1];
+    if (clamped >= t1 && clamped <= t2) {
+      // Linear interpolation within segment
+      const progress = (clamped - t1) / (t2 - t1);
+      return c1 + progress * (c2 - c1);
+    }
+  }
+  return 100;
+};
+
+// Phase-based exit price calculation (Construction → Growth → Mature)
+const calculateExitPrice = (
+  months: number,
+  basePrice: number,
+  totalMonths: number,
+  constructionAppreciation: number,
+  growthAppreciation: number,
+  matureAppreciation: number,
+  growthPeriodYears: number
+): number => {
+  let currentValue = basePrice;
+  
+  // Phase 1: Construction period
+  const constructionMonths = Math.min(months, totalMonths);
+  if (constructionMonths > 0) {
+    const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyRate, constructionMonths);
+  }
+  
+  if (months <= totalMonths) return currentValue;
+  
+  // Phase 2: Growth period (first X years after handover)
+  const postHandoverMonths = months - totalMonths;
+  const growthMonthsMax = growthPeriodYears * 12;
+  const growthMonths = Math.min(postHandoverMonths, growthMonthsMax);
+  if (growthMonths > 0) {
+    const monthlyRate = Math.pow(1 + growthAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyRate, growthMonths);
+  }
+  
+  // Phase 3: Mature period (after growth period)
+  const matureMonths = Math.max(0, postHandoverMonths - growthMonthsMax);
+  if (matureMonths > 0) {
+    const monthlyRate = Math.pow(1 + matureAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyRate, matureMonths);
+  }
+  
+  return currentValue;
+};
 
 interface Visibility {
   investmentSnapshot: boolean;
@@ -55,7 +134,13 @@ serve(async (req) => {
 
     const totalMonths = calculations?.totalMonths || 36;
     const basePrice = inputs?.basePrice || 0;
-    const appreciationRate = inputs?.appreciationRate || 8;
+    
+    // Phase-based appreciation rates
+    const constructionAppreciation = inputs?.constructionAppreciation || 12;
+    const growthAppreciation = inputs?.growthAppreciation || 8;
+    const matureAppreciation = inputs?.matureAppreciation || 4;
+    const growthPeriodYears = inputs?.growthPeriodYears || 5;
+    
     const dldFeePercent = 4;
     const oqoodFee = inputs?.oqoodFee || 5000;
     const downpaymentPercent = inputs?.downpaymentPercent || 20;
@@ -65,6 +150,14 @@ serve(async (req) => {
     const rentalYieldPercent = inputs?.rentalYieldPercent || 8.5;
     const serviceChargePerSqft = inputs?.serviceChargePerSqft || 18;
     const unitSizeSqf = inputs?.unitSizeSqf || clientInfo?.unitSizeSqf || 0;
+    
+    // Exit costs
+    const exitAgentCommissionEnabled = inputs?.exitAgentCommissionEnabled ?? true;
+    const exitAgentCommissionPercent = inputs?.exitAgentCommissionPercent || 2;
+    const exitNocFee = inputs?.exitNocFee || 5000;
+    
+    // Minimum exit threshold
+    const minimumExitThreshold = inputs?.minimumExitThreshold || 30;
 
     const dldFee = basePrice * (dldFeePercent / 100);
     const totalEntryCosts = dldFee + oqoodFee;
@@ -76,36 +169,82 @@ serve(async (req) => {
     const netAnnualRent = estimatedAnnualRent - annualServiceCharges;
     const yearsToPayOff = netAnnualRent > 0 ? basePrice / netAnnualRent : 999;
 
-    // Exit scenario calculations
-    const calculateEquityAtExit = (exitMonth: number): number => {
-      const downpayment = basePrice * (downpaymentPercent / 100);
-      let additionalTotal = 0;
+    // Exit scenario calculations with S-curve and threshold logic
+    const calculateEquityAtExit = (exitMonth: number): { equity: number; advancedPayments: number } => {
+      const exitTimelinePercent = (exitMonth / totalMonths) * 100;
+      const exitConstructionPercent = timelineToConstruction(exitTimelinePercent);
+      
+      // Start with downpayment
+      let planEquity = basePrice * (downpaymentPercent / 100);
+      
+      // Add additional payments based on their triggers
       for (const payment of additionalPayments) {
-        if (payment.type === 'time' && exitMonth >= payment.triggerValue) {
-          additionalTotal += basePrice * (payment.paymentPercent / 100);
+        let triggered = false;
+        if (payment.type === 'time') {
+          triggered = exitMonth >= payment.triggerValue;
         } else if (payment.type === 'construction') {
-          const constructionAtExit = (exitMonth / totalMonths) * 100;
-          if (constructionAtExit >= payment.triggerValue) {
-            additionalTotal += basePrice * (payment.paymentPercent / 100);
-          }
+          triggered = exitConstructionPercent >= payment.triggerValue;
+        }
+        if (triggered) {
+          planEquity += basePrice * (payment.paymentPercent / 100);
         }
       }
-      return downpayment + additionalTotal;
-    };
-
-    const calculateExitPrice = (month: number): number => {
-      const years = month / 12;
-      return basePrice * Math.pow(1 + appreciationRate / 100, years);
+      
+      // Handover payment (only if past handover)
+      if (exitMonth >= totalMonths) {
+        planEquity += basePrice * (handoverPercent / 100);
+      }
+      
+      // Apply minimum threshold
+      const thresholdEquity = basePrice * (minimumExitThreshold / 100);
+      const advancedPayments = Math.max(0, thresholdEquity - planEquity);
+      const finalEquity = Math.max(planEquity, thresholdEquity);
+      
+      return { equity: finalEquity, advancedPayments };
     };
 
     const exitScenariosData = (exitScenarios || [18, 24, 30]).map((month: number) => {
-      const equity = calculateEquityAtExit(month);
-      const exitPrice = calculateExitPrice(month);
-      const profit = exitPrice - basePrice;
+      const { equity, advancedPayments } = calculateEquityAtExit(month);
+      const exitPrice = calculateExitPrice(
+        month,
+        basePrice,
+        totalMonths,
+        constructionAppreciation,
+        growthAppreciation,
+        matureAppreciation,
+        growthPeriodYears
+      );
+      
+      // Calculate construction progress using S-curve
+      const timelinePercent = (month / totalMonths) * 100;
+      const constructionPercent = Math.min(100, timelineToConstruction(timelinePercent));
+      
+      // Calculate exit costs
+      const agentCommission = exitAgentCommissionEnabled ? exitPrice * (exitAgentCommissionPercent / 100) : 0;
+      const exitCosts = agentCommission + exitNocFee;
+      
+      // Profit calculations
+      const grossProfit = exitPrice - basePrice;
+      const netProfit = grossProfit - totalEntryCosts - exitCosts;
       const totalCapital = equity + totalEntryCosts;
-      const trueROE = (profit / totalCapital) * 100;
-      const constructionPercent = Math.min(100, (month / totalMonths) * 100);
-      return { month, constructionPercent, equity, exitPrice, profit, totalCapital, trueROE };
+      
+      // True ROE and Annualized ROE
+      const trueROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
+      const annualizedROE = month > 0 ? (trueROE / (month / 12)) : 0;
+      
+      return { 
+        month, 
+        constructionPercent, 
+        equity, 
+        advancedPayments,
+        exitPrice, 
+        grossProfit,
+        exitCosts,
+        netProfit,
+        totalCapital, 
+        trueROE,
+        annualizedROE
+      };
     });
 
     const yearlyProjections = calculations?.yearlyProjections || [];
@@ -137,6 +276,7 @@ serve(async (req) => {
     .exit-metric-label { color: #64748b !important; font-size: 10px; }
     .exit-metric-value { color: #f1f5f9 !important; font-size: 13px; font-weight: 500; }
     .roe-value { color: #CCFF00 !important; font-size: 18px; font-weight: 700; }
+    .roe-label { color: #64748b !important; font-size: 10px; margin-top: 2px; }
     table { width: 100%; border-collapse: collapse; }
     th { background-color: #0f172a !important; color: #94a3b8 !important; font-size: 10px; padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
     td { padding: 10px; border-bottom: 1px solid #1e293b; color: #e2e8f0 !important; background-color: #1e293b !important; }
@@ -157,6 +297,12 @@ serve(async (req) => {
     .wealth-title { color: #CCFF00 !important; font-size: 14px; font-weight: 600; margin-bottom: 15px; }
     .wealth-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; }
     .wealth-total { font-size: 18px; color: #22d3ee !important; font-weight: 700; }
+    .appreciation-rates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155; }
+    .appreciation-item { text-align: center; }
+    .appreciation-label { color: #64748b !important; font-size: 9px; }
+    .appreciation-value { color: #CCFF00 !important; font-size: 12px; font-weight: 600; }
+    .dual-currency { line-height: 1.3; }
+    .exit-costs-note { color: #94a3b8 !important; font-size: 9px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #334155; }
     @media print { 
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
       html, body { background-color: #0f172a !important; }
@@ -179,7 +325,7 @@ serve(async (req) => {
       <div class="info-item"><div class="info-label">Client</div><div class="info-value">${clientName}</div></div>
       <div class="info-item"><div class="info-label">Unit</div><div class="info-value">${clientInfo?.unit || '-'} ${clientInfo?.unitType ? `(${clientInfo.unitType})` : ''}</div></div>
       <div class="info-item"><div class="info-label">Size</div><div class="info-value">${clientInfo?.unitSizeSqf ? `${clientInfo.unitSizeSqf} sqf` : '-'}</div></div>
-      <div class="info-item"><div class="info-label">Price</div><div class="info-value">${formatCurrency(basePrice, currency, rate)}</div></div>
+      <div class="info-item"><div class="info-label">Price</div><div class="info-value dual-currency">${formatDualCurrency(basePrice, currency, rate)}</div></div>
     </div>
   </div>
 
@@ -188,21 +334,36 @@ serve(async (req) => {
     ${vis.investmentSnapshot ? `
     <div class="section">
       <div class="section-title">Investment Snapshot</div>
-      <div class="rent-item"><span class="rent-label">Base Price</span><span class="rent-value">${formatCurrency(basePrice, currency, rate)}</span></div>
+      <div class="rent-item"><span class="rent-label">Base Price</span><span class="rent-value dual-currency">${formatDualCurrency(basePrice, currency, rate)}</span></div>
       <div class="rent-item"><span class="rent-label">Payment Plan</span><span class="rent-value" style="color:#CCFF00">${preHandoverPercent}/${handoverPercent}</span></div>
       <div class="rent-item"><span class="rent-label">Construction</span><span class="rent-value">${totalMonths} months</span></div>
-      <div class="rent-item"><span class="rent-label">At Booking (SPA)</span><span class="rent-value">${formatCurrency(basePrice * downpaymentPercent / 100 + dldFee + oqoodFee, currency, rate)}</span></div>
-      <div class="rent-item"><span class="rent-label">At Handover</span><span class="rent-value" style="color:#22d3ee">${formatCurrency(basePrice * handoverPercent / 100, currency, rate)}</span></div>
-      <div class="rent-item"><span class="rent-label">Entry Costs</span><span class="rent-value" style="color:#f87171">-${formatCurrency(totalEntryCosts, currency, rate)}</span></div>
+      <div class="rent-item"><span class="rent-label">At Booking (SPA)</span><span class="rent-value dual-currency">${formatDualCurrency(basePrice * downpaymentPercent / 100 + dldFee + oqoodFee, currency, rate)}</span></div>
+      <div class="rent-item"><span class="rent-label">At Handover</span><span class="rent-value dual-currency" style="color:#22d3ee">${formatDualCurrency(basePrice * handoverPercent / 100, currency, rate)}</span></div>
+      <div class="rent-item"><span class="rent-label">Entry Costs</span><span class="rent-value" style="color:#f87171">-${formatCurrency(totalEntryCosts, 'AED', 1)}</span></div>
+      
+      <div class="appreciation-rates">
+        <div class="appreciation-item">
+          <div class="appreciation-label">Construction</div>
+          <div class="appreciation-value">${constructionAppreciation}%/y</div>
+        </div>
+        <div class="appreciation-item">
+          <div class="appreciation-label">Growth (${growthPeriodYears}y)</div>
+          <div class="appreciation-value">${growthAppreciation}%/y</div>
+        </div>
+        <div class="appreciation-item">
+          <div class="appreciation-label">Mature</div>
+          <div class="appreciation-value">${matureAppreciation}%/y</div>
+        </div>
+      </div>
     </div>
     ` : ''}
     ${vis.rentSnapshot ? `
     <div class="section">
       <div class="section-title">Rent Snapshot</div>
       <div class="rent-item"><span class="rent-label">Rental Yield</span><span class="rent-value" style="color:#CCFF00">${rentalYieldPercent}%</span></div>
-      <div class="rent-item"><span class="rent-label">Est. Annual Rent</span><span class="rent-value">${formatCurrency(estimatedAnnualRent, currency, rate)}</span></div>
-      <div class="rent-item"><span class="rent-label">Service Charges</span><span class="rent-value" style="color:#f87171">-${formatCurrency(annualServiceCharges, currency, rate)}</span></div>
-      <div class="rent-item"><span class="rent-label">Net Annual Rent</span><span class="rent-value rent-highlight">${formatCurrency(netAnnualRent, currency, rate)}</span></div>
+      <div class="rent-item"><span class="rent-label">Est. Annual Rent</span><span class="rent-value dual-currency">${formatDualCurrency(estimatedAnnualRent, currency, rate)}</span></div>
+      <div class="rent-item"><span class="rent-label">Service Charges</span><span class="rent-value" style="color:#f87171">-${formatCurrency(annualServiceCharges, 'AED', 1)}</span></div>
+      <div class="rent-item"><span class="rent-label">Net Annual Rent</span><span class="rent-value dual-currency rent-highlight">${formatDualCurrency(netAnnualRent, currency, rate)}</span></div>
       <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #334155;">
         <div class="rent-item"><span class="rent-label">Years to Pay Off</span><span class="rent-value" style="color:#22c55e">${yearsToPayOff < 999 ? yearsToPayOff.toFixed(1) + 'y' : '-'}</span></div>
         <div class="payoff-bar"><div class="payoff-fill" style="width: ${Math.min(100, (15 / yearsToPayOff) * 100)}%"></div></div>
@@ -215,13 +376,13 @@ serve(async (req) => {
   ${vis.paymentBreakdown ? `
   <div class="section">
     <div class="section-title">Payment Breakdown</div>
-    <div class="payment-row"><span class="payment-label">EOI / Booking Fee</span><span class="payment-value">${formatCurrency(eoiFee, currency, rate)}</span></div>
-    <div class="payment-row"><span class="payment-label">Downpayment (${downpaymentPercent}%)</span><span class="payment-value">${formatCurrency(basePrice * (downpaymentPercent / 100) - eoiFee, currency, rate)}</span></div>
-    <div class="payment-row"><span class="payment-label">DLD Fee (4%)</span><span class="payment-value">${formatCurrency(dldFee, currency, rate)}</span></div>
-    <div class="payment-row"><span class="payment-label">Oqood Fee</span><span class="payment-value">${formatCurrency(oqoodFee, currency, rate)}</span></div>
-    ${additionalPayments.map((p: any) => `<div class="payment-row"><span class="payment-label">${p.label || (p.type === 'time' ? `Month ${p.triggerValue}` : `At ${p.triggerValue}% construction`)}</span><span class="payment-value">${formatCurrency(basePrice * (p.paymentPercent / 100), currency, rate)}</span></div>`).join('')}
+    <div class="payment-row"><span class="payment-label">EOI / Booking Fee</span><span class="payment-value dual-currency">${formatDualCurrency(eoiFee, currency, rate)}</span></div>
+    <div class="payment-row"><span class="payment-label">Downpayment (${downpaymentPercent}%)</span><span class="payment-value dual-currency">${formatDualCurrency(basePrice * (downpaymentPercent / 100) - eoiFee, currency, rate)}</span></div>
+    <div class="payment-row"><span class="payment-label">DLD Fee (4%)</span><span class="payment-value">${formatCurrency(dldFee, 'AED', 1)}</span></div>
+    <div class="payment-row"><span class="payment-label">Oqood Fee</span><span class="payment-value">${formatCurrency(oqoodFee, 'AED', 1)}</span></div>
+    ${additionalPayments.map((p: any) => `<div class="payment-row"><span class="payment-label">${p.label || (p.type === 'time' ? `Month ${p.triggerValue}` : `At ${p.triggerValue}% construction`)}</span><span class="payment-value dual-currency">${formatDualCurrency(basePrice * (p.paymentPercent / 100), currency, rate)}</span></div>`).join('')}
     <div class="payment-row" style="border-top: 2px solid #CCFF00; margin-top: 10px; padding-top: 15px;">
-      <span class="payment-label">At Handover (${handoverPercent}%)</span><span class="payment-value" style="color:#22d3ee">${formatCurrency(basePrice * handoverPercent / 100, currency, rate)}</span>
+      <span class="payment-label">At Handover (${handoverPercent}%)</span><span class="payment-value dual-currency" style="color:#22d3ee">${formatDualCurrency(basePrice * handoverPercent / 100, currency, rate)}</span>
     </div>
   </div>
   ` : ''}
@@ -234,12 +395,19 @@ serve(async (req) => {
       <div class="exit-card">
         <div class="exit-card-title">Exit ${i + 1} — Month ${scenario.month}</div>
         <div class="exit-metric"><div class="exit-metric-label">Construction</div><div class="exit-metric-value">${formatPercent(scenario.constructionPercent)}</div></div>
-        <div class="exit-metric"><div class="exit-metric-label">Capital Deployed</div><div class="exit-metric-value">${formatCurrency(scenario.totalCapital, currency, rate)}</div></div>
-        <div class="exit-metric"><div class="exit-metric-label">Exit Price</div><div class="exit-metric-value">${formatCurrency(scenario.exitPrice, currency, rate)}</div></div>
-        <div class="exit-metric"><div class="exit-metric-label">Profit</div><div class="exit-metric-value">${formatCurrency(scenario.profit, currency, rate)}</div></div>
-        <div class="exit-metric"><div class="exit-metric-label">True ROE</div><div class="roe-value">${formatPercent(scenario.trueROE)}</div></div>
+        <div class="exit-metric"><div class="exit-metric-label">Capital Deployed</div><div class="exit-metric-value dual-currency">${formatDualCurrency(scenario.totalCapital, currency, rate)}</div></div>
+        <div class="exit-metric"><div class="exit-metric-label">Exit Price</div><div class="exit-metric-value dual-currency">${formatDualCurrency(scenario.exitPrice, currency, rate)}</div></div>
+        <div class="exit-metric"><div class="exit-metric-label">Net Profit</div><div class="exit-metric-value" style="color:#22c55e">${formatCurrency(scenario.netProfit, 'AED', 1)}</div></div>
+        <div class="exit-metric" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #334155;">
+          <div class="exit-metric-label">ROE / Year</div>
+          <div class="roe-value">${formatPercent(scenario.annualizedROE)}</div>
+        </div>
+        ${scenario.advancedPayments > 0 ? `<div style="color:#fbbf24;font-size:9px;margin-top:5px;">⚠️ Advance: ${formatCurrency(scenario.advancedPayments, 'AED', 1)}</div>` : ''}
       </div>
       `).join('')}
+    </div>
+    <div class="exit-costs-note">
+      Exit costs: ${exitAgentCommissionEnabled ? `Agent ${exitAgentCommissionPercent}%` : 'No agent'} + NOC ${formatCurrency(exitNocFee, 'AED', 1)} | Min. exit threshold: ${minimumExitThreshold}%
     </div>
   </div>
   ` : ''}
@@ -255,7 +423,7 @@ serve(async (req) => {
         <div>
           <p style="color: #fcd34d; font-size: 11px; font-weight: 500; margin-bottom: 4px;">Hypothetical Projection</p>
           <p style="color: rgba(253, 230, 138, 0.7); font-size: 10px; line-height: 1.4;">
-            These projections are illustrative simulations based on assumed appreciation rates. Dubai's real estate market is highly dynamic—actual results may differ materially.
+            These projections use phase-based appreciation: ${constructionAppreciation}% during construction, ${growthAppreciation}% for ${growthPeriodYears} years post-handover, then ${matureAppreciation}% in mature phase. Actual results may differ.
           </p>
         </div>
       </div>
@@ -267,9 +435,9 @@ serve(async (req) => {
         ${yearlyProjections.slice(0, 7).map((proj: any) => `
         <tr class="${proj.isHandover ? 'highlight-row' : ''}">
           <td>${proj.year}</td>
-          <td>${formatCurrency(proj.propertyValue, currency, rate)}</td>
-          <td>${proj.annualRent ? formatCurrency(proj.annualRent, currency, rate) : '—'}</td>
-          <td>${proj.cumulativeNetIncome ? formatCurrency(proj.cumulativeNetIncome, currency, rate) : '—'}</td>
+          <td class="dual-currency">${formatDualCurrency(proj.propertyValue, currency, rate)}</td>
+          <td>${proj.annualRent ? formatCurrency(proj.annualRent, 'AED', 1) : '—'}</td>
+          <td>${proj.cumulativeNetIncome ? formatCurrency(proj.cumulativeNetIncome, 'AED', 1) : '—'}</td>
           <td>${proj.isConstruction ? '🏗️ Construction' : proj.isHandover ? '🏠 Handover' : '✅ Operational'}</td>
         </tr>
         `).join('')}
@@ -278,12 +446,12 @@ serve(async (req) => {
 
     <div class="wealth-card">
       <div class="wealth-title">💎 Wealth Created (7 Years)</div>
-      <div class="wealth-row"><span class="rent-label">Property Value (Y7)</span><span class="rent-value">${formatCurrency(yearlyProjections[6]?.propertyValue || lastProjection.propertyValue || 0, currency, rate)}</span></div>
-      <div class="wealth-row"><span class="rent-label">Cumulative Rent Income</span><span class="rent-value" style="color:#22d3ee">+${formatCurrency(yearlyProjections[6]?.cumulativeNetIncome || lastProjection.cumulativeNetIncome || 0, currency, rate)}</span></div>
-      <div class="wealth-row"><span class="rent-label">Initial Investment</span><span class="rent-value" style="color:#f87171">-${formatCurrency(basePrice + totalEntryCosts, currency, rate)}</span></div>
+      <div class="wealth-row"><span class="rent-label">Property Value (Y7)</span><span class="rent-value dual-currency">${formatDualCurrency(yearlyProjections[6]?.propertyValue || lastProjection.propertyValue || 0, currency, rate)}</span></div>
+      <div class="wealth-row"><span class="rent-label">Cumulative Rent Income</span><span class="rent-value" style="color:#22d3ee">+${formatCurrency(yearlyProjections[6]?.cumulativeNetIncome || lastProjection.cumulativeNetIncome || 0, 'AED', 1)}</span></div>
+      <div class="wealth-row"><span class="rent-label">Initial Investment</span><span class="rent-value" style="color:#f87171">-${formatCurrency(basePrice + totalEntryCosts, 'AED', 1)}</span></div>
       <div class="wealth-row" style="border-top: 2px solid #CCFF00; margin-top: 10px; padding-top: 10px;">
         <span class="rent-label">Net Wealth Created</span>
-        <span class="wealth-total">${formatCurrency((yearlyProjections[6]?.propertyValue || lastProjection.propertyValue || 0) + (yearlyProjections[6]?.cumulativeNetIncome || lastProjection.cumulativeNetIncome || 0) - basePrice - totalEntryCosts, currency, rate)}</span>
+        <span class="wealth-total">${formatCurrency((yearlyProjections[6]?.propertyValue || lastProjection.propertyValue || 0) + (yearlyProjections[6]?.cumulativeNetIncome || lastProjection.cumulativeNetIncome || 0) - basePrice - totalEntryCosts, 'AED', 1)}</span>
       </div>
     </div>
   </div>
@@ -300,10 +468,12 @@ serve(async (req) => {
     return new Response(html, {
       headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
     });
-
   } catch (error: unknown) {
-    console.error('Error generating PDF:', error);
+    console.error('PDF generation error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
