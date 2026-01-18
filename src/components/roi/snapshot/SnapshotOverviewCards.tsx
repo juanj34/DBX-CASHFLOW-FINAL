@@ -166,7 +166,7 @@ export const SnapshotOverviewCards = ({
             <div className="flex-1 flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-[10px] text-theme-text-muted">
-                  {activeScenario.isHandover ? 'Handover' : `Mo ${activeScenario.exitMonths}`} • {activeScenario.dateStr}
+                  {activeScenario.isHandover ? 'Handover' : `Month ${activeScenario.exitMonths}`} • {activeScenario.dateStr}
                 </span>
                 <span className="text-xs font-mono tabular-nums text-theme-text">
                   {formatCurrency(activeScenario.exitPrice, currency, rate)}
