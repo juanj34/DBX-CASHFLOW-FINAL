@@ -25,25 +25,25 @@ export const DottedRow = ({
     <div className={cn('flex items-baseline gap-1', className)}>
       <span 
         className={cn(
-          'text-muted-foreground whitespace-nowrap text-sm',
+          'text-theme-text-muted whitespace-nowrap text-sm',
           indent && 'pl-3',
-          bold && 'font-medium text-foreground',
+          bold && 'font-medium text-theme-text',
           labelClassName
         )}
       >
         {label}
       </span>
-      <span className="flex-1 border-b border-dotted border-border/50 mx-1 min-w-4" />
+      <span className="flex-1 border-b border-dotted border-theme-border/50 mx-1 min-w-4" />
       <span 
         className={cn(
-          'font-mono tabular-nums text-foreground whitespace-nowrap text-sm',
+          'font-mono tabular-nums text-theme-text whitespace-nowrap text-sm',
           bold && 'font-semibold',
           valueClassName
         )}
       >
         {value}
         {secondaryValue && (
-          <span className="text-muted-foreground text-xs ml-1">
+          <span className="text-theme-text-muted text-xs ml-1">
             ({secondaryValue})
           </span>
         )}

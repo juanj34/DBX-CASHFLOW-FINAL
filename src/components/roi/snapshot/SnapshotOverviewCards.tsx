@@ -130,27 +130,34 @@ export const SnapshotOverviewCards = ({
         </div>
       </div>
 
-      {/* Card 4: All Exit Scenarios (Inline) */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Exit Scenarios</span>
+      {/* Card 4: Exit Scenarios - Larger, More Imposing */}
+      <div className="bg-theme-card border border-theme-border rounded-xl p-4">
+        <div className="flex items-center gap-1.5 mb-3">
+          <TrendingUp className="w-4 h-4 text-green-400" />
+          <span className="text-xs text-theme-text-muted uppercase tracking-wide font-semibold">
+            Exit Scenarios
+          </span>
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {scenarios.map((scenario) => (
             <div
               key={scenario.exitMonths}
-              className="flex items-center justify-between text-[10px]"
+              className="bg-theme-bg/50 rounded-lg p-2.5 border border-theme-border/50"
             >
-              <span className="text-theme-text-muted">
-                {scenario.isHandover ? 'Handover' : `Month ${scenario.exitMonths}`}
-              </span>
-              <span className="font-mono tabular-nums text-theme-text-muted">
-                {formatCurrency(scenario.exitPrice, currency, rate)}
-              </span>
-              <span className="font-mono tabular-nums font-semibold text-theme-text">
-                {scenario.annualizedROE.toFixed(0)}%/yr
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-theme-text-muted font-medium">
+                  {scenario.isHandover ? 'Handover' : `Month ${scenario.exitMonths}`}
+                </span>
+                <span className="text-[10px] text-theme-text-muted">{scenario.dateStr}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono tabular-nums text-theme-text">
+                  {formatCurrency(scenario.exitPrice, currency, rate)}
+                </span>
+                <span className="text-lg font-bold font-mono tabular-nums text-green-400">
+                  {scenario.trueROE.toFixed(0)}%
+                </span>
+              </div>
             </div>
           ))}
         </div>
