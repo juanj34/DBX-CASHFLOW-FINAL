@@ -11,6 +11,14 @@ import { DeveloperInfoModal } from "./DeveloperInfoModal";
 import { ProjectInfoModal } from "./ProjectInfoModal";
 import { cn } from "@/lib/utils";
 import type { ClientUnitData } from "./ClientUnitInfo";
+import { Currency, CURRENCY_CONFIG, formatDualCurrency } from "./currencyUtils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PropertyHeroCardProps {
   data: ClientUnitData;
@@ -18,6 +26,15 @@ interface PropertyHeroCardProps {
   buildingRenderUrl?: string | null;
   onEditClick?: () => void;
   readOnly?: boolean;
+  // Optional props for Snapshot view
+  showPriceInfo?: boolean;
+  basePrice?: number;
+  pricePerSqft?: number;
+  currency?: Currency;
+  setCurrency?: (c: Currency) => void;
+  language?: 'en' | 'es';
+  setLanguage?: (l: 'en' | 'es') => void;
+  rate?: number;
 }
 
 export const PropertyHeroCard = ({ 
@@ -25,9 +42,19 @@ export const PropertyHeroCard = ({
   heroImageUrl, 
   buildingRenderUrl, 
   onEditClick, 
-  readOnly = false 
+  readOnly = false,
+  showPriceInfo = false,
+  basePrice = 0,
+  pricePerSqft = 0,
+  currency = 'AED',
+  setCurrency,
+  language = 'en',
+  setLanguage,
+  rate = 1,
 }: PropertyHeroCardProps) => {
-  const { language, t } = useLanguage();
+  const { language: contextLanguage, t } = useLanguage();
+  // Use prop language if provided for snapshot view, otherwise use context
+  const displayLanguage = showPriceInfo ? language : contextLanguage;
   const [developerModalOpen, setDeveloperModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
 
@@ -147,6 +174,42 @@ export const PropertyHeroCard = ({
           )}
         </div>
 
+        {/* Currency & Language Dropdowns - Top Right */}
+        {showPriceInfo && setCurrency && setLanguage && (
+          <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+            <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+              <SelectTrigger className="w-[90px] h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
+                <SelectValue>
+                  <span className="flex items-center gap-1.5">
+                    <span>{CURRENCY_CONFIG[currency].flag}</span>
+                    <span>{currency}</span>
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1f2e] border-white/20">
+                {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((c) => (
+                  <SelectItem key={c} value={c} className="text-white hover:bg-white/10">
+                    <span className="flex items-center gap-2">
+                      <span>{CURRENCY_CONFIG[c].flag}</span>
+                      <span>{c}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
+              <SelectTrigger className="w-[70px] h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
+                <SelectValue>{language.toUpperCase()}</SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1f2e] border-white/20">
+                <SelectItem value="en" className="text-white hover:bg-white/10">EN</SelectItem>
+                <SelectItem value="es" className="text-white hover:bg-white/10">ES</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Content - 2 Rows */}
         <div className="relative px-5 py-6 min-h-[160px] flex flex-col justify-end">
           
@@ -215,7 +278,7 @@ export const PropertyHeroCard = ({
                 <span className="flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-cyan-400" />
                   <span className="text-white">
-                    {language === 'es' ? unitType.labelEs : unitType.labelEn}
+                    {displayLanguage === 'es' ? unitType.labelEs : unitType.labelEn}
                     {data.bedrooms && ` ${data.bedrooms}BR`}
                   </span>
                 </span>
@@ -254,10 +317,34 @@ export const PropertyHeroCard = ({
               </span>
             )}
           </div>
+
+          {/* Price Info Row - Only in Snapshot view */}
+          {showPriceInfo && basePrice > 0 && (
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-semibold">
+                  {formatDualCurrency(basePrice, currency, rate).primary}
+                </span>
+                {formatDualCurrency(basePrice, currency, rate).secondary && (
+                  <span className="text-white/60 text-sm">
+                    ({formatDualCurrency(basePrice, currency, rate).secondary})
+                  </span>
+                )}
+              </div>
+              {pricePerSqft > 0 && (
+                <>
+                  <span className="text-white/30">•</span>
+                  <span className="text-white/80 text-sm">
+                    {formatDualCurrency(pricePerSqft, currency, rate).primary}/sqft
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Edit Button */}
-        {!readOnly && onEditClick && (
+        {/* Edit Button - Only show if not in snapshot mode */}
+        {!readOnly && onEditClick && !showPriceInfo && (
           <Button
             variant="ghost"
             size="icon"
