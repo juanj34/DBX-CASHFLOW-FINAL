@@ -182,9 +182,9 @@ export const PropertyHeroCard = ({
         {/* Content - 2 Rows */}
         <div className="relative px-5 py-6 min-h-[160px] flex flex-col justify-end">
           
-          {/* Currency & Language Dropdowns - Inside content, top left */}
+          {/* Currency & Language Dropdowns - Bottom right */}
           {showPriceInfo && setCurrency && setLanguage && (
-            <div className="absolute top-4 left-5 flex items-center gap-2 z-20">
+            <div className="absolute bottom-4 right-5 flex items-center gap-2 z-20">
               <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
                 <SelectTrigger className="w-[90px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
                   <SelectValue>
