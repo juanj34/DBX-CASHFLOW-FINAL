@@ -9,7 +9,7 @@ import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
 import { ValueDifferentiatorsBadges } from './ValueDifferentiatorsBadges';
-import { WealthProjectionChart } from './WealthProjectionChart';
+import { WealthProjectionTable } from './WealthProjectionTable';
 import { FloorPlanLightbox } from '@/components/roi/FloorPlanLightbox';
 
 interface SnapshotContentProps {
@@ -62,9 +62,9 @@ export const SnapshotContent = ({
   const appreciationBonus = (inputs as any).appreciationBonus || 0;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-theme-bg">
-      <div className="flex-1 overflow-auto p-4 space-y-4 animate-fade-in">
-        {/* Hero with integrated Price, Currency, Language controls + View Project/Floor Plan buttons */}
+    <div className="h-screen flex flex-col overflow-hidden bg-theme-bg">
+      {/* Hero - fixed height */}
+      <div className="flex-shrink-0 p-4 pb-0">
         <PropertyHeroCard
           data={clientInfo}
           heroImageUrl={quoteImages.heroImageUrl}
@@ -81,8 +81,10 @@ export const SnapshotContent = ({
           floorPlanUrl={quoteImages.floorPlanUrl}
           onViewFloorPlan={() => setFloorPlanOpen(true)}
         />
+      </div>
 
-        {/* 4 Overview Cards - Full Width Row */}
+      {/* Overview Cards - fixed height */}
+      <div className="flex-shrink-0 px-4 py-3">
         <SnapshotOverviewCards 
           inputs={inputs}
           calculations={calculations}
@@ -90,9 +92,11 @@ export const SnapshotContent = ({
           currency={currency}
           rate={rate}
         />
+      </div>
 
-        {/* 2-Column Layout that fills remaining space */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+      {/* Main content - fills remaining space */}
+      <div className="flex-1 overflow-auto px-4 pb-4 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
           {/* Left Column: Payment + Value Differentiators */}
           <div className="flex flex-col gap-4">
             <CompactPaymentTable
@@ -110,7 +114,7 @@ export const SnapshotContent = ({
             )}
           </div>
 
-          {/* Right Column: Rent + Mortgage + Wealth Chart */}
+          {/* Right Column: Rent + Mortgage + Wealth Table */}
           <div className="flex flex-col gap-4">
             {inputs.rentalYieldPercent > 0 && (
               <CompactRentCard
@@ -130,8 +134,8 @@ export const SnapshotContent = ({
               />
             )}
 
-            {/* Wealth Projection Chart */}
-            <WealthProjectionChart
+            {/* Wealth Projection Table */}
+            <WealthProjectionTable
               basePrice={basePrice}
               constructionMonths={calculations.totalMonths}
               constructionAppreciation={inputs.constructionAppreciation}
