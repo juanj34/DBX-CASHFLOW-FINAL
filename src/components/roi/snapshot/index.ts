@@ -19,3 +19,5 @@ export { CompactRentCard } from './CompactRentCard';
 export { CompactMortgageCard } from './CompactMortgageCard';
 export { DottedRow } from './DottedRow';
 export { WealthProjectionTable } from './WealthProjectionTable';
+export { WealthProjectionTimeline } from './WealthProjectionTimeline';
+export { PaymentSplitModal } from './PaymentSplitModal';

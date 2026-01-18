@@ -8,8 +8,7 @@ import { SnapshotOverviewCards } from './SnapshotOverviewCards';
 import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
-import { ValueDifferentiatorsBadges } from './ValueDifferentiatorsBadges';
-import { WealthProjectionTable } from './WealthProjectionTable';
+import { WealthProjectionTimeline } from './WealthProjectionTimeline';
 import { FloorPlanLightbox } from '@/components/roi/FloorPlanLightbox';
 
 interface SnapshotContentProps {
@@ -96,57 +95,56 @@ export const SnapshotContent = ({
 
       {/* Main content - fills remaining space */}
       <div className="flex-1 overflow-auto px-4 pb-4 min-h-0">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-          {/* Left Column: Payment + Value Differentiators */}
-          <div className="flex flex-col gap-4">
-            <CompactPaymentTable
-              inputs={inputs}
-              currency={currency}
-              rate={rate}
-              totalMonths={calculations.totalMonths}
-            />
-            
-            {valueDifferentiators.length > 0 && (
-              <ValueDifferentiatorsBadges
-                differentiators={valueDifferentiators}
-                appreciationBonus={appreciationBonus}
-              />
-            )}
-          </div>
-
-          {/* Right Column: Rent + Mortgage + Wealth Table */}
-          <div className="flex flex-col gap-4">
-            {inputs.rentalYieldPercent > 0 && (
-              <CompactRentCard
+        <div className="flex flex-col gap-4 h-full">
+          {/* Two column grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
+            {/* Left Column: Payment (with Value Differentiators integrated) */}
+            <div className="flex flex-col gap-4">
+              <CompactPaymentTable
                 inputs={inputs}
+                clientInfo={clientInfo}
+                valueDifferentiators={valueDifferentiators}
+                appreciationBonus={appreciationBonus}
                 currency={currency}
                 rate={rate}
+                totalMonths={calculations.totalMonths}
               />
-            )}
-            
-            {mortgageInputs.enabled && (
-              <CompactMortgageCard
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                monthlyRent={monthlyRent}
-                currency={currency}
-                rate={rate}
-              />
-            )}
+            </div>
 
-            {/* Wealth Projection Table */}
-            <WealthProjectionTable
-              basePrice={basePrice}
-              constructionMonths={calculations.totalMonths}
-              constructionAppreciation={inputs.constructionAppreciation}
-              growthAppreciation={inputs.growthAppreciation}
-              matureAppreciation={inputs.matureAppreciation}
-              growthPeriodYears={inputs.growthPeriodYears}
-              bookingYear={inputs.bookingYear}
-              currency={currency}
-              rate={rate}
-            />
+            {/* Right Column: Rent + Mortgage */}
+            <div className="flex flex-col gap-4">
+              {inputs.rentalYieldPercent > 0 && (
+                <CompactRentCard
+                  inputs={inputs}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+              
+              {mortgageInputs.enabled && (
+                <CompactMortgageCard
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  monthlyRent={monthlyRent}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </div>
           </div>
+          
+          {/* Wealth Projection Timeline - FULL WIDTH at bottom */}
+          <WealthProjectionTimeline
+            basePrice={basePrice}
+            constructionMonths={calculations.totalMonths}
+            constructionAppreciation={inputs.constructionAppreciation}
+            growthAppreciation={inputs.growthAppreciation}
+            matureAppreciation={inputs.matureAppreciation}
+            growthPeriodYears={inputs.growthPeriodYears}
+            bookingYear={inputs.bookingYear}
+            currency={currency}
+            rate={rate}
+          />
         </div>
       </div>
 
