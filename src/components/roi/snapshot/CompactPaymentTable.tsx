@@ -91,14 +91,14 @@ export const CompactPaymentTable = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden h-fit">
+    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden h-fit">
       {/* Header */}
-      <div className="p-3 border-b border-border flex items-center justify-between">
+      <div className="p-3 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-primary" />
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Payment Breakdown</span>
+          <CreditCard className="w-4 h-4 text-theme-accent" />
+          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Payment Breakdown</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[10px] text-theme-text-muted">
           <span>{monthToDateString(bookingMonth, bookingYear, language)}</span>
           <ArrowRight className="w-3 h-3" />
           <span>Q{handoverQuarter} {handoverYear}</span>
@@ -109,7 +109,7 @@ export const CompactPaymentTable = ({
       <div className="p-3 space-y-3">
         {/* Section: The Entry */}
         <div>
-          <div className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-2">
+          <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-2">
             The Entry
           </div>
           <div className="space-y-1">

@@ -33,12 +33,12 @@ export const CompactMortgageCard = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="p-3 border-b border-border flex items-center justify-between">
+      <div className="p-3 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Landmark className="w-4 h-4 text-purple-400" />
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Mortgage</span>
+          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Mortgage</span>
         </div>
         <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-400">
           {mortgageInputs.loanTermYears}yr @ {mortgageInputs.interestRate}%

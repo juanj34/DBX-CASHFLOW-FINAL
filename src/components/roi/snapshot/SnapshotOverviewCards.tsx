@@ -74,18 +74,18 @@ export const SnapshotOverviewCards = ({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {/* Card 1: Cash to Start */}
-      <div className="bg-card border border-border rounded-xl p-3">
+      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <CreditCard className="w-3.5 h-3.5 text-primary" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Cash to Start</span>
+          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Cash to Start</span>
         </div>
-        <div className="text-lg font-bold text-foreground font-mono tabular-nums">
+        <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
           {cashToStartDual.primary}
           {cashToStartDual.secondary && (
-            <span className="text-muted-foreground text-xs ml-1">({cashToStartDual.secondary})</span>
+            <span className="text-theme-text-muted text-xs ml-1">({cashToStartDual.secondary})</span>
           )}
         </div>
-        <div className="text-[10px] text-muted-foreground mt-1">
+        <div className="text-[10px] text-theme-text-muted mt-1">
           Downpayment + DLD + Fees
         </div>
         <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30">
@@ -94,18 +94,18 @@ export const SnapshotOverviewCards = ({
       </div>
 
       {/* Card 2: Rental Income */}
-      <div className="bg-card border border-border rounded-xl p-3">
+      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Home className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Rental Income</span>
+          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Rental Income</span>
         </div>
-        <div className="text-lg font-bold text-foreground font-mono tabular-nums">
-          {monthlyRentDual.primary}<span className="text-xs text-muted-foreground">/mo</span>
+        <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
+          {monthlyRentDual.primary}<span className="text-xs text-theme-text-muted">/mo</span>
           {monthlyRentDual.secondary && (
-            <span className="text-muted-foreground text-xs ml-1">({monthlyRentDual.secondary})</span>
+            <span className="text-theme-text-muted text-xs ml-1">({monthlyRentDual.secondary})</span>
           )}
         </div>
-        <div className="text-[10px] text-muted-foreground mt-1">
+        <div className="text-[10px] text-theme-text-muted mt-1">
           {netAnnualRentDual.primary}/year net
         </div>
         <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
@@ -114,15 +114,15 @@ export const SnapshotOverviewCards = ({
       </div>
 
       {/* Card 3: Breakeven */}
-      <div className="bg-card border border-border rounded-xl p-3">
+      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Clock className="w-3.5 h-3.5 text-purple-400" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Breakeven</span>
+          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Breakeven</span>
         </div>
-        <div className="text-lg font-bold text-foreground font-mono tabular-nums">
+        <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
           {yearsToBreakeven < 999 ? `${yearsToBreakeven.toFixed(1)} years` : 'N/A'}
         </div>
-        <div className="text-[10px] text-muted-foreground mt-1">
+        <div className="text-[10px] text-theme-text-muted mt-1">
           From rental income
         </div>
         <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30">
@@ -131,10 +131,10 @@ export const SnapshotOverviewCards = ({
       </div>
 
       {/* Card 4: All Exit Scenarios (Inline) */}
-      <div className="bg-card border border-border rounded-xl p-3">
+      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Exit Scenarios</span>
+          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Exit Scenarios</span>
         </div>
         <div className="space-y-1.5">
           {scenarios.map((scenario) => (
@@ -142,13 +142,13 @@ export const SnapshotOverviewCards = ({
               key={scenario.exitMonths}
               className="flex items-center justify-between text-[10px]"
             >
-              <span className="text-muted-foreground">
+              <span className="text-theme-text-muted">
                 {scenario.isHandover ? 'Handover' : `Month ${scenario.exitMonths}`}
               </span>
-              <span className="font-mono tabular-nums text-muted-foreground">
+              <span className="font-mono tabular-nums text-theme-text-muted">
                 {formatCurrency(scenario.exitPrice, currency, rate)}
               </span>
-              <span className="font-mono tabular-nums font-semibold text-foreground">
+              <span className="font-mono tabular-nums font-semibold text-theme-text">
                 {scenario.annualizedROE.toFixed(0)}%/yr
               </span>
             </div>
