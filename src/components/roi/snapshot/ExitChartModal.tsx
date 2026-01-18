@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { TrendingUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { OIInputs } from '../useOICalculations';
 import { Currency, formatCurrencyShort } from '../currencyUtils';
@@ -75,8 +77,8 @@ export const ExitChartModal = ({
 
   // SVG dimensions
   const width = 650;
-  const height = 280;
-  const padding = { top: 40, right: 40, bottom: 50, left: 70 };
+  const height = 300;
+  const padding = { top: 60, right: 50, bottom: 50, left: 75 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -129,27 +131,38 @@ export const ExitChartModal = ({
     return labels;
   }, [totalMonths]);
 
-  const bestROE = Math.max(...scenarios.map(s => s.annualizedROE));
+  // Get construction appreciation rate
+  const appreciationRate = inputs.constructionAppreciation || 12;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
-        <DialogHeader>
-          <DialogTitle className="text-theme-text">Exit Scenarios Analysis</DialogTitle>
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-500/10">
+              <TrendingUp className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg text-theme-text">Property Appreciation</DialogTitle>
+              <DialogDescription className="text-theme-text-muted text-sm">
+                Exit scenarios over {totalMonths} months • {appreciationRate}% construction appreciation
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
-        <div className="mt-4">
+        <div className="mt-2">
           <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
             {/* Gradient definitions */}
             <defs>
               <linearGradient id="exitCurveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#CCFF00" />
-                <stop offset="100%" stopColor="#22d3d1" />
+                <stop offset="0%" stopColor="#22d3d1" />
+                <stop offset="100%" stopColor="#4ade80" />
               </linearGradient>
               
               <linearGradient id="exitAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.15" />
-                <stop offset="100%" stopColor="#CCFF00" stopOpacity="0" />
+                <stop offset="0%" stopColor="#22d3d1" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#22d3d1" stopOpacity="0" />
               </linearGradient>
             </defs>
 
@@ -172,7 +185,7 @@ export const ExitChartModal = ({
             {yAxisValues.map((value, i) => (
               <text
                 key={`y-${i}`}
-                x={padding.left - 8}
+                x={padding.left - 10}
                 y={yScale(value)}
                 fill="hsl(var(--theme-text-muted))"
                 fontSize="10"
@@ -203,7 +216,7 @@ export const ExitChartModal = ({
               <text
                 key={`label-${months}`}
                 x={xScale(months)}
-                y={height - padding.bottom + 16}
+                y={height - padding.bottom + 18}
                 fill="hsl(var(--theme-text-muted))"
                 fontSize="10"
                 textAnchor="middle"
@@ -229,7 +242,7 @@ export const ExitChartModal = ({
               fill="#64748b"
               fontSize="10"
             >
-              Base Price: {formatCurrencyShort(basePrice, currency, rate)}
+              Base: {formatCurrencyShort(basePrice, currency, rate)}
             </text>
 
             {/* Area fill under curve */}
@@ -258,8 +271,15 @@ export const ExitChartModal = ({
 
             {/* Exit markers */}
             {scenarios.map((scenario, index) => {
-              const isBest = scenario.annualizedROE === bestROE;
               const markerDelay = 0.1 * index;
+              const profit = scenario.exitPrice - basePrice;
+              const xPos = xScale(scenario.months);
+              const yPos = yScale(scenario.exitPrice);
+              
+              // Label dimensions for background
+              const labelWidth = 70;
+              const labelHeight = 46;
+              const labelY = yPos - 54;
               
               return (
                 <g 
@@ -271,33 +291,47 @@ export const ExitChartModal = ({
                 >
                   {/* Vertical line to marker */}
                   <line
-                    x1={xScale(scenario.months)}
-                    y1={yScale(scenario.exitPrice)}
-                    x2={xScale(scenario.months)}
+                    x1={xPos}
+                    y1={yPos}
+                    x2={xPos}
                     y2={height - padding.bottom}
-                    stroke={scenario.isHandover ? '#ffffff' : '#CCFF00'}
+                    stroke={scenario.isHandover ? '#ffffff' : '#22d3d1'}
                     strokeWidth="1"
                     strokeDasharray="3,3"
                     opacity="0.4"
                   />
                   
+                  {/* Label background for legibility */}
+                  <rect
+                    x={xPos - labelWidth / 2}
+                    y={labelY}
+                    width={labelWidth}
+                    height={labelHeight}
+                    rx="4"
+                    fill="hsl(var(--theme-card))"
+                    fillOpacity="0.95"
+                    stroke={scenario.isHandover ? '#ffffff' : '#22d3d1'}
+                    strokeWidth="1"
+                    strokeOpacity="0.3"
+                  />
+                  
                   {/* Exit label */}
                   <text
-                    x={xScale(scenario.months)}
-                    y={yScale(scenario.exitPrice) - 36}
-                    fill={scenario.isHandover ? '#ffffff' : '#CCFF00'}
-                    fontSize="10"
-                    fontWeight="bold"
+                    x={xPos}
+                    y={labelY + 12}
+                    fill={scenario.isHandover ? '#ffffff' : '#22d3d1'}
+                    fontSize="9"
+                    fontWeight="600"
                     textAnchor="middle"
                   >
-                    {scenario.isHandover ? 'Handover' : `Exit ${index + 1}`}
+                    {scenario.isHandover ? 'HANDOVER' : `EXIT ${index + 1}`}
                   </text>
                   
                   {/* Price label */}
                   <text
-                    x={xScale(scenario.months)}
-                    y={yScale(scenario.exitPrice) - 24}
-                    fill={scenario.isHandover ? '#ffffff' : '#CCFF00'}
+                    x={xPos}
+                    y={labelY + 25}
+                    fill="hsl(var(--theme-text))"
                     fontSize="11"
                     fontWeight="bold"
                     textAnchor="middle"
@@ -306,69 +340,67 @@ export const ExitChartModal = ({
                     {formatCurrencyShort(scenario.exitPrice, currency, rate)}
                   </text>
 
-                  {/* ROE label */}
+                  {/* Profit label */}
                   <text
-                    x={xScale(scenario.months)}
-                    y={yScale(scenario.exitPrice) - 10}
-                    fill={isBest ? '#fbbf24' : '#22d3d1'}
+                    x={xPos}
+                    y={labelY + 38}
+                    fill="#4ade80"
                     fontSize="9"
-                    fontWeight="bold"
+                    fontWeight="600"
                     textAnchor="middle"
                     fontFamily="monospace"
                   >
-                    {scenario.trueROE.toFixed(0)}% ROE {isBest && '★'}
+                    +{formatCurrencyShort(profit, currency, rate)}
                   </text>
                   
                   {/* Marker circles */}
                   <circle
-                    cx={xScale(scenario.months)}
-                    cy={yScale(scenario.exitPrice)}
-                    r={scenario.isHandover ? 9 : 7}
+                    cx={xPos}
+                    cy={yPos}
+                    r={scenario.isHandover ? 8 : 6}
                     fill="hsl(var(--theme-card))"
-                    stroke={scenario.isHandover ? '#ffffff' : '#CCFF00'}
-                    strokeWidth={isBest ? 3 : 2}
+                    stroke={scenario.isHandover ? '#ffffff' : '#22d3d1'}
+                    strokeWidth={2}
                   />
                   <circle
-                    cx={xScale(scenario.months)}
-                    cy={yScale(scenario.exitPrice)}
+                    cx={xPos}
+                    cy={yPos}
                     r={scenario.isHandover ? 4 : 3}
-                    fill={scenario.isHandover ? '#ffffff' : '#CCFF00'}
+                    fill={scenario.isHandover ? '#ffffff' : '#22d3d1'}
                   />
                 </g>
               );
             })}
           </svg>
 
-          {/* Legend - compact grid below chart */}
+          {/* Legend - neutral grid below chart */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
             {scenarios.map((scenario, index) => {
-              const isBest = scenario.annualizedROE === bestROE;
+              const profit = scenario.exitPrice - basePrice;
               return (
                 <div 
                   key={scenario.months}
-                  className={`p-2.5 rounded-lg text-center border ${
-                    isBest 
-                      ? 'bg-yellow-500/10 border-yellow-500/30' 
-                      : scenario.isHandover 
-                        ? 'bg-white/5 border-white/20'
-                        : 'bg-theme-bg/50 border-theme-border'
+                  className={`p-3 rounded-lg text-center border ${
+                    scenario.isHandover 
+                      ? 'bg-white/5 border-white/20'
+                      : 'bg-theme-bg/50 border-theme-border'
                   }`}
                 >
-                  <div className={`text-xs font-medium mb-0.5 ${
-                    scenario.isHandover ? 'text-white' : 'text-theme-accent'
+                  <div className={`text-xs font-semibold mb-1 ${
+                    scenario.isHandover ? 'text-white' : 'text-cyan-400'
                   }`}>
                     {scenario.isHandover ? 'Handover' : `Exit ${index + 1}`}
-                    {isBest && <span className="ml-1 text-yellow-400">★</span>}
                   </div>
                   <div className="text-sm font-bold font-mono text-theme-text">
                     {formatCurrencyShort(scenario.exitPrice, currency, rate)}
                   </div>
-                  <div className={`text-xs font-bold ${
-                    scenario.trueROE >= 0 ? 'text-green-400' : 'text-red-400'
-                  }`}>
+                  <div className="text-xs font-bold text-green-400 font-mono">
+                    +{formatCurrencyShort(profit, currency, rate)}
+                  </div>
+                  <div className="text-xs font-bold text-cyan-400 mt-0.5">
                     {scenario.trueROE.toFixed(0)}% ROE
                   </div>
-                  <div className="text-[10px] text-theme-text-muted">
+                  <div className="text-[10px] text-theme-text-muted mt-0.5">
                     {scenario.months} months
                   </div>
                 </div>

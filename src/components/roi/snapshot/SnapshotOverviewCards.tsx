@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CreditCard, Home, Clock, TrendingUp, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
 import { calculateExitScenario, monthToConstruction } from '../constructionProgress';
@@ -20,6 +21,20 @@ const getDateFromMonths = (months: number, bookingMonth: number, bookingYear: nu
   const month = ((totalMonthsFromJan - 1) % 12) + 1;
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
+};
+
+// Animation variants for staggered entrance
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.4,
+      ease: "easeOut" as const
+    }
+  })
 };
 
 export const SnapshotOverviewCards = ({
@@ -81,7 +96,13 @@ export const SnapshotOverviewCards = ({
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Cash to Start */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+        <motion.div 
+          custom={0}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
+        >
           <div className="flex items-center gap-1.5 mb-1">
             <CreditCard className="w-3.5 h-3.5 text-primary" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Cash to Start</span>
@@ -95,10 +116,16 @@ export const SnapshotOverviewCards = ({
               <span className="text-[10px] text-theme-text-muted">{cashToStartDual.secondary}</span>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 2: Rental Income */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+        <motion.div 
+          custom={1}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
+        >
           <div className="flex items-center gap-1.5 mb-1">
             <Home className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Rental Income</span>
@@ -110,10 +137,16 @@ export const SnapshotOverviewCards = ({
             </div>
             <span className="text-[10px] text-theme-text-muted">{netAnnualRentDual.primary}/year</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 3: Breakeven */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+        <motion.div 
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
+        >
           <div className="flex items-center gap-1.5 mb-1">
             <Clock className="w-3.5 h-3.5 text-purple-400" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Breakeven</span>
@@ -125,10 +158,16 @@ export const SnapshotOverviewCards = ({
             </div>
             <span className="text-[10px] text-theme-text-muted">From rental income</span>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Card 4: Exit Scenarios - Carousel - Same height as others */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+        {/* Card 4: Exit Scenarios - Carousel */}
+        <motion.div 
+          custom={3}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
+        >
           {/* Header with navigation and chart button */}
           <div className="flex items-center gap-1.5 mb-1">
             <TrendingUp className="w-3.5 h-3.5 text-green-400" />
@@ -192,7 +231,7 @@ export const SnapshotOverviewCards = ({
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* Exit Chart Modal */}

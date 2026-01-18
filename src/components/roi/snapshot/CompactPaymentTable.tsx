@@ -218,7 +218,20 @@ export const CompactPaymentTable = ({
             </div>
           </div>
 
-          {/* Value Differentiators */}
+          {/* Grand Total - MOVED BEFORE Value Adds */}
+          <div className="pt-2 border-t border-theme-border">
+            <DottedRow 
+              label="Total Investment"
+              value={getDualValue(grandTotal).primary}
+              secondaryValue={getDualValue(grandTotal).secondary}
+              bold
+              className="text-sm"
+              labelClassName="text-sm"
+              valueClassName="text-sm"
+            />
+          </div>
+
+          {/* Value Differentiators - AFTER Total Investment */}
           {valueDifferentiators.length > 0 && (
             <div className="pt-2 border-t border-dashed border-theme-border">
               <div className="text-[10px] uppercase tracking-wide text-yellow-400 font-semibold mb-2 flex items-center gap-1">
@@ -242,19 +255,6 @@ export const CompactPaymentTable = ({
               </div>
             </div>
           )}
-
-          {/* Grand Total */}
-          <div className="pt-2 border-t border-theme-border">
-            <DottedRow 
-              label="Total Investment"
-              value={getDualValue(grandTotal).primary}
-              secondaryValue={getDualValue(grandTotal).secondary}
-              bold
-              className="text-sm"
-              labelClassName="text-sm"
-              valueClassName="text-sm"
-            />
-          </div>
         </div>
       </div>
 
