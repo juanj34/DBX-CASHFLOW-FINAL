@@ -53,7 +53,8 @@ export const CompactPaymentTable = ({
     bookingYear,
     handoverQuarter,
     handoverYear,
-    oqoodFee 
+    oqoodFee,
+    eoiFee = 0
   } = inputs;
   
   // Check for multiple clients
@@ -61,11 +62,15 @@ export const CompactPaymentTable = ({
   
   // Calculate amounts
   const downpaymentAmount = basePrice * (downpaymentPercent / 100);
+  const remainingDownpayment = downpaymentAmount - eoiFee; // Downpayment minus EOI
   const dldFee = basePrice * 0.04;
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * (handoverPercent / 100);
   
-  // Entry total
+  // Entry subtotal (before fees)
+  const entrySubtotal = downpaymentAmount;
+  
+  // Entry total (with fees)
   const entryTotal = downpaymentAmount + dldFee + oqoodFee;
   
   // Sort additional payments by trigger value
@@ -142,11 +147,31 @@ export const CompactPaymentTable = ({
               The Entry
             </div>
             <div className="space-y-1">
+              {/* EOI / Booking Fee */}
+              {eoiFee > 0 && (
+                <DottedRow 
+                  label="EOI / Booking Fee"
+                  value={getDualValue(eoiFee).primary}
+                  secondaryValue={getDualValue(eoiFee).secondary}
+                />
+              )}
+              {/* Remaining Downpayment (or full if no EOI) */}
               <DottedRow 
-                label={`Downpayment (${downpaymentPercent}%)`}
-                value={getDualValue(downpaymentAmount).primary}
-                secondaryValue={getDualValue(downpaymentAmount).secondary}
+                label={eoiFee > 0 ? `Downpayment Balance` : `Downpayment (${downpaymentPercent}%)`}
+                value={getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).primary}
+                secondaryValue={getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).secondary}
               />
+              {/* Subtotal Pre-Handover (if EOI exists) */}
+              {eoiFee > 0 && (
+                <div className="pt-1 border-t border-dashed border-theme-border/50 mt-1">
+                  <DottedRow 
+                    label={`Subtotal (${downpaymentPercent}%)`}
+                    value={getDualValue(entrySubtotal).primary}
+                    secondaryValue={getDualValue(entrySubtotal).secondary}
+                    className="text-theme-text-muted"
+                  />
+                </div>
+              )}
               <DottedRow 
                 label="DLD Fee (4%)"
                 value={getDualValue(dldFee).primary}
