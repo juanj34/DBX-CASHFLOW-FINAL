@@ -45,6 +45,10 @@ const AccountSettings = () => {
   const [mortgageInterestRate, setMortgageInterestRate] = useState(4.5);
   const [mortgageTermYears, setMortgageTermYears] = useState(25);
   const [mortgageProcessingFee, setMortgageProcessingFee] = useState(1);
+  const [mortgageValuationFee, setMortgageValuationFee] = useState(3000);
+  const [mortgageRegistrationPercent, setMortgageRegistrationPercent] = useState(0.25);
+  const [mortgageLifeInsurancePercent, setMortgageLifeInsurancePercent] = useState(0.4);
+  const [mortgagePropertyInsurance, setMortgagePropertyInsurance] = useState(1500);
 
   // Airbnb/STR defaults
   const [adr, setAdr] = useState(800);
@@ -71,6 +75,10 @@ const AccountSettings = () => {
       setMortgageInterestRate(profile.default_mortgage_interest_rate ?? 4.5);
       setMortgageTermYears(profile.default_mortgage_term_years ?? 25);
       setMortgageProcessingFee(profile.default_mortgage_processing_fee ?? 1);
+      setMortgageValuationFee(profile.default_mortgage_valuation_fee ?? 3000);
+      setMortgageRegistrationPercent(profile.default_mortgage_registration_percent ?? 0.25);
+      setMortgageLifeInsurancePercent(profile.default_mortgage_life_insurance_percent ?? 0.4);
+      setMortgagePropertyInsurance(profile.default_mortgage_property_insurance ?? 1500);
       // Airbnb defaults
       setAdr(profile.default_adr ?? 800);
       setOccupancyPercent(profile.default_occupancy_percent ?? 70);
@@ -125,6 +133,10 @@ const AccountSettings = () => {
       default_mortgage_interest_rate: mortgageInterestRate,
       default_mortgage_term_years: mortgageTermYears,
       default_mortgage_processing_fee: mortgageProcessingFee,
+      default_mortgage_valuation_fee: mortgageValuationFee,
+      default_mortgage_registration_percent: mortgageRegistrationPercent,
+      default_mortgage_life_insurance_percent: mortgageLifeInsurancePercent,
+      default_mortgage_property_insurance: mortgagePropertyInsurance,
       // Airbnb defaults
       default_adr: adr,
       default_occupancy_percent: occupancyPercent,
@@ -305,10 +317,18 @@ const AccountSettings = () => {
                 interestRate={mortgageInterestRate}
                 termYears={mortgageTermYears}
                 processingFee={mortgageProcessingFee}
+                valuationFee={mortgageValuationFee}
+                registrationPercent={mortgageRegistrationPercent}
+                lifeInsurancePercent={mortgageLifeInsurancePercent}
+                propertyInsurance={mortgagePropertyInsurance}
                 setFinancingPercent={setMortgageFinancingPercent}
                 setInterestRate={setMortgageInterestRate}
                 setTermYears={setMortgageTermYears}
                 setProcessingFee={setMortgageProcessingFee}
+                setValuationFee={setMortgageValuationFee}
+                setRegistrationPercent={setMortgageRegistrationPercent}
+                setLifeInsurancePercent={setMortgageLifeInsurancePercent}
+                setPropertyInsurance={setMortgagePropertyInsurance}
               />
               <AirbnbDefaultsSection
                 language={language as 'en' | 'es'}

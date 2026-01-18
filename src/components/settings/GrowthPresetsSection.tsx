@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { TrendingUp, Shield, Target, Gauge, Sliders, Check, Info, Plus, Trash2, Edit2, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, Shield, Target, Gauge, Sliders, Info, Plus, Trash2, Edit2, ChevronDown, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAppreciationPresets, AppreciationPreset } from '@/hooks/useAppreciationPresets';
 
-// Growth Profile Presets
-const GROWTH_PRESETS = {
+// Built-in Growth Profile Presets - these can be overridden by user
+const DEFAULT_BUILTIN_PRESETS = {
   conservative: {
     name: 'Conservative',
     nameEs: 'Conservador',
@@ -55,7 +55,7 @@ const GROWTH_PRESETS = {
   },
 } as const;
 
-type BuiltInPresetKey = keyof typeof GROWTH_PRESETS;
+type BuiltInPresetKey = keyof typeof DEFAULT_BUILTIN_PRESETS;
 
 interface GrowthPresetsSectionProps {
   language: 'en' | 'es';
@@ -85,43 +85,33 @@ export const GrowthPresetsSection = ({
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [editingPreset, setEditingPreset] = useState<AppreciationPreset | null>(null);
+  const [editingBuiltIn, setEditingBuiltIn] = useState<BuiltInPresetKey | null>(null);
 
-  // Detect which preset matches current values
-  const detectPreset = (): string | null => {
-    // Check built-in presets
-    for (const [key, preset] of Object.entries(GROWTH_PRESETS)) {
-      if (
-        preset.construction === constructionAppreciation &&
-        preset.growth === growthAppreciation &&
-        preset.mature === matureAppreciation &&
-        preset.growthYears === growthPeriodYears
-      ) {
-        return key;
-      }
+  // Get effective values for built-in presets (check for user overrides)
+  const getBuiltInPresetValues = (key: BuiltInPresetKey) => {
+    const override = presets.find(p => p.builtin_key === key);
+    if (override) {
+      return {
+        construction: override.construction_appreciation,
+        growth: override.growth_appreciation,
+        mature: override.mature_appreciation,
+        growthYears: override.growth_period_years,
+      };
     }
-    // Check saved presets
-    for (const preset of presets) {
-      if (
-        preset.construction_appreciation === constructionAppreciation &&
-        preset.growth_appreciation === growthAppreciation &&
-        preset.mature_appreciation === matureAppreciation &&
-        preset.growth_period_years === growthPeriodYears
-      ) {
-        return preset.id;
-      }
-    }
-    return null;
+    return DEFAULT_BUILTIN_PRESETS[key];
   };
 
-  const currentMatch = detectPreset();
-  const isModified = selectedPreset !== null && currentMatch !== selectedPreset;
+  // Check if a built-in preset has been modified
+  const isBuiltInModified = (key: BuiltInPresetKey) => {
+    return presets.some(p => p.builtin_key === key);
+  };
 
   const handleBuiltInPresetSelect = (key: BuiltInPresetKey) => {
-    const preset = GROWTH_PRESETS[key];
-    setConstructionAppreciation(preset.construction);
-    setGrowthAppreciation(preset.growth);
-    setMatureAppreciation(preset.mature);
-    setGrowthPeriodYears(preset.growthYears);
+    const values = getBuiltInPresetValues(key);
+    setConstructionAppreciation(values.construction);
+    setGrowthAppreciation(values.growth);
+    setMatureAppreciation(values.mature);
+    setGrowthPeriodYears(values.growthYears);
     setSelectedPreset(key);
   };
 
@@ -134,7 +124,7 @@ export const GrowthPresetsSection = ({
   };
 
   const handleSavePreset = async () => {
-    if (!newPresetName.trim()) return;
+    if (!newPresetName.trim() && !editingBuiltIn) return;
     
     const values = {
       constructionAppreciation,
@@ -143,7 +133,30 @@ export const GrowthPresetsSection = ({
       growthPeriodYears,
     };
 
-    if (editingPreset) {
+    if (editingBuiltIn) {
+      // Save as built-in override
+      const existingOverride = presets.find(p => p.builtin_key === editingBuiltIn);
+      if (existingOverride) {
+        await updatePreset(existingOverride.id, existingOverride.name, values);
+      } else {
+        // Create new override with special naming
+        const builtIn = DEFAULT_BUILTIN_PRESETS[editingBuiltIn];
+        const name = language === 'es' ? builtIn.nameEs : builtIn.name;
+        const result = await savePreset(name, values);
+        // Update the preset to mark it as a built-in override
+        if (result) {
+          // We need to update via direct supabase call since savePreset doesn't support builtin_key
+          const { supabase } = await import('@/integrations/supabase/client');
+          const latestPreset = presets.find(p => p.name === name);
+          if (latestPreset) {
+            await supabase
+              .from('appreciation_presets')
+              .update({ builtin_key: editingBuiltIn, is_builtin_override: true })
+              .eq('id', latestPreset.id);
+          }
+        }
+      }
+    } else if (editingPreset) {
       await updatePreset(editingPreset.id, newPresetName, values);
     } else {
       await savePreset(newPresetName, values);
@@ -152,6 +165,26 @@ export const GrowthPresetsSection = ({
     setShowSaveDialog(false);
     setNewPresetName('');
     setEditingPreset(null);
+    setEditingBuiltIn(null);
+  };
+
+  const handleEditBuiltIn = (key: BuiltInPresetKey) => {
+    // Load the current values for this preset
+    const values = getBuiltInPresetValues(key);
+    setConstructionAppreciation(values.construction);
+    setGrowthAppreciation(values.growth);
+    setMatureAppreciation(values.mature);
+    setGrowthPeriodYears(values.growthYears);
+    setSelectedPreset(key);
+    setEditingBuiltIn(key);
+    setShowSaveDialog(true);
+  };
+
+  const handleResetBuiltIn = async (key: BuiltInPresetKey) => {
+    const override = presets.find(p => p.builtin_key === key);
+    if (override) {
+      await deletePreset(override.id);
+    }
   };
 
   const handleEditPreset = (preset: AppreciationPreset) => {
@@ -164,8 +197,8 @@ export const GrowthPresetsSection = ({
     if (!selectedPreset) return language === 'es' ? 'Seleccionar perfil' : 'Select profile';
     
     // Check built-in presets
-    if (selectedPreset in GROWTH_PRESETS) {
-      const preset = GROWTH_PRESETS[selectedPreset as BuiltInPresetKey];
+    if (selectedPreset in DEFAULT_BUILTIN_PRESETS) {
+      const preset = DEFAULT_BUILTIN_PRESETS[selectedPreset as BuiltInPresetKey];
       return language === 'es' ? preset.nameEs : preset.name;
     }
     
@@ -175,6 +208,9 @@ export const GrowthPresetsSection = ({
     
     return language === 'es' ? 'Personalizado' : 'Custom';
   };
+
+  // Get custom presets (excluding built-in overrides)
+  const customPresets = presets.filter(p => !p.builtin_key);
 
   return (
     <Card className="bg-theme-card border-theme-border">
@@ -187,97 +223,110 @@ export const GrowthPresetsSection = ({
         </div>
         <CardDescription className="text-theme-text-muted">
           {language === 'es' 
-            ? 'Selecciona un perfil predefinido o crea uno personalizado.'
-            : 'Select a preset profile or create a custom one.'}
+            ? 'Selecciona, edita o crea perfiles de apreciación.'
+            : 'Select, edit or create appreciation profiles.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Preset Dropdown */}
+        {/* Built-in Preset Cards */}
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.entries(DEFAULT_BUILTIN_PRESETS) as [BuiltInPresetKey, typeof DEFAULT_BUILTIN_PRESETS[BuiltInPresetKey]][]).map(([key, preset]) => {
+            const Icon = preset.icon;
+            const isSelected = selectedPreset === key;
+            const isModified = isBuiltInModified(key);
+            const values = getBuiltInPresetValues(key);
+            
+            return (
+              <div key={key} className="relative group">
+                <button
+                  onClick={() => handleBuiltInPresetSelect(key)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    isSelected 
+                      ? `${preset.borderColor} ${preset.bgColor}` 
+                      : 'border-theme-border bg-theme-bg-alt hover:border-theme-border-alt'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Icon className={`w-5 h-5 ${isSelected ? preset.color : 'text-theme-text-muted'}`} />
+                    {isModified && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded">
+                        {language === 'es' ? 'Editado' : 'Edited'}
+                      </span>
+                    )}
+                  </div>
+                  <div className={`text-sm font-medium ${isSelected ? 'text-theme-text' : 'text-theme-text-muted'}`}>
+                    {language === 'es' ? preset.nameEs : preset.name}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-theme-border/50">
+                    <div className="text-[10px] font-mono text-theme-text-muted">
+                      {values.construction}% → {values.growth}% → {values.mature}%
+                    </div>
+                  </div>
+                </button>
+                
+                {/* Edit button on hover */}
+                <button
+                  onClick={() => handleEditBuiltIn(key)}
+                  className="absolute top-2 right-2 p-1.5 bg-theme-bg rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border border-theme-border hover:bg-theme-bg-alt"
+                >
+                  <Edit2 className="w-3 h-3 text-theme-text-muted" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Custom Presets Dropdown */}
         <div className="flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="flex-1 justify-between bg-theme-bg-alt border-theme-border text-theme-text">
                 <span className="flex items-center gap-2">
-                  {selectedPreset && selectedPreset in GROWTH_PRESETS ? (
-                    <>
-                      {(() => {
-                        const Icon = GROWTH_PRESETS[selectedPreset as BuiltInPresetKey].icon;
-                        return <Icon className="w-4 h-4" />;
-                      })()}
-                    </>
-                  ) : (
-                    <Sliders className="w-4 h-4" />
-                  )}
-                  {getSelectedLabel()}
-                  {isModified && (
-                    <span className="text-xs text-orange-400 ml-1">(modified)</span>
-                  )}
+                  <Sliders className="w-4 h-4" />
+                  {customPresets.length > 0 
+                    ? (language === 'es' ? `${customPresets.length} perfiles guardados` : `${customPresets.length} saved profiles`)
+                    : (language === 'es' ? 'Perfiles personalizados' : 'Custom profiles')}
                 </span>
                 <ChevronDown className="w-4 h-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64 bg-theme-card border-theme-border">
-              {/* Built-in presets */}
-              {(Object.entries(GROWTH_PRESETS) as [BuiltInPresetKey, typeof GROWTH_PRESETS[BuiltInPresetKey]][]).map(([key, preset]) => {
-                const Icon = preset.icon;
-                return (
+              {customPresets.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-theme-text-muted">
+                  {language === 'es' ? 'No hay perfiles personalizados' : 'No custom profiles yet'}
+                </div>
+              ) : (
+                customPresets.map((preset) => (
                   <DropdownMenuItem
-                    key={key}
-                    onClick={() => handleBuiltInPresetSelect(key)}
-                    className="flex items-center justify-between cursor-pointer"
+                    key={preset.id}
+                    onClick={() => handleSavedPresetSelect(preset)}
+                    className="flex items-center justify-between cursor-pointer group"
                   >
                     <span className="flex items-center gap-2">
-                      <Icon className={`w-4 h-4 ${preset.color}`} />
-                      <span className="text-theme-text">
-                        {language === 'es' ? preset.nameEs : preset.name}
-                      </span>
+                      <Sliders className="w-4 h-4 text-purple-400" />
+                      <span className="text-theme-text">{preset.name}</span>
                     </span>
-                    <span className="text-xs text-theme-text-muted font-mono">
-                      {preset.construction}%/{preset.growth}%/{preset.mature}%
-                    </span>
-                  </DropdownMenuItem>
-                );
-              })}
-              
-              {/* Saved presets */}
-              {presets.length > 0 && (
-                <>
-                  <DropdownMenuSeparator className="bg-theme-border" />
-                  <div className="px-2 py-1.5 text-xs text-theme-text-muted font-medium">
-                    {language === 'es' ? 'Mis Perfiles' : 'My Profiles'}
-                  </div>
-                  {presets.map((preset) => (
-                    <DropdownMenuItem
-                      key={preset.id}
-                      onClick={() => handleSavedPresetSelect(preset)}
-                      className="flex items-center justify-between cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-purple-400" />
-                        <span className="text-theme-text">{preset.name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-theme-text-muted font-mono group-hover:hidden">
+                        {preset.construction_appreciation}%/{preset.growth_appreciation}%/{preset.mature_appreciation}%
                       </span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-theme-text-muted font-mono group-hover:hidden">
-                          {preset.construction_appreciation}%/{preset.growth_appreciation}%/{preset.mature_appreciation}%
-                        </span>
-                        <div className="hidden group-hover:flex items-center gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleEditPreset(preset); }}
-                            className="p-1 hover:bg-theme-bg-alt rounded"
-                          >
-                            <Edit2 className="w-3 h-3 text-theme-text-muted" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deletePreset(preset.id); }}
-                            className="p-1 hover:bg-red-500/10 rounded"
-                          >
-                            <Trash2 className="w-3 h-3 text-red-400" />
-                          </button>
-                        </div>
+                      <div className="hidden group-hover:flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEditPreset(preset); }}
+                          className="p-1 hover:bg-theme-bg-alt rounded"
+                        >
+                          <Edit2 className="w-3 h-3 text-theme-text-muted" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deletePreset(preset.id); }}
+                          className="p-1 hover:bg-red-500/10 rounded"
+                        >
+                          <Trash2 className="w-3 h-3 text-red-400" />
+                        </button>
                       </div>
-                    </DropdownMenuItem>
-                  ))}
-                </>
+                    </div>
+                  </DropdownMenuItem>
+                ))
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -285,11 +334,11 @@ export const GrowthPresetsSection = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => { setEditingPreset(null); setNewPresetName(''); setShowSaveDialog(true); }}
+            onClick={() => { setEditingPreset(null); setEditingBuiltIn(null); setNewPresetName(''); setShowSaveDialog(true); }}
             className="border-theme-accent/30 text-theme-accent hover:bg-theme-accent/10"
           >
             <Plus className="w-4 h-4 mr-1" />
-            {language === 'es' ? 'Guardar' : 'Save'}
+            {language === 'es' ? 'Nuevo' : 'New'}
           </Button>
         </div>
 
@@ -339,20 +388,6 @@ export const GrowthPresetsSection = ({
                   <label className="text-sm text-theme-text">
                     {language === 'es' ? 'Crecimiento' : 'Growth'}
                   </label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-3.5 h-3.5 text-theme-text-muted" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[280px] bg-theme-card border-theme-border">
-                        <p className="text-xs text-theme-text">
-                          {language === 'es' 
-                            ? 'Tasa post-entrega mientras el área se desarrolla. Típicamente 5-12%.'
-                            : 'Post-handover rate while the area develops. Typically 5-12%.'}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
                 <span className="text-sm text-green-400 font-mono font-medium">{growthAppreciation}%</span>
               </div>
@@ -438,22 +473,39 @@ export const GrowthPresetsSection = ({
           <DialogContent className="bg-theme-card border-theme-border">
             <DialogHeader>
               <DialogTitle className="text-theme-text">
-                {editingPreset 
-                  ? (language === 'es' ? 'Editar Perfil' : 'Edit Profile')
-                  : (language === 'es' ? 'Guardar Perfil' : 'Save Profile')}
+                {editingBuiltIn 
+                  ? (language === 'es' 
+                      ? `Editar ${DEFAULT_BUILTIN_PRESETS[editingBuiltIn].nameEs}` 
+                      : `Edit ${DEFAULT_BUILTIN_PRESETS[editingBuiltIn].name}`)
+                  : editingPreset 
+                    ? (language === 'es' ? 'Editar Perfil' : 'Edit Profile')
+                    : (language === 'es' ? 'Guardar Perfil' : 'Save Profile')}
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <label className="block text-sm text-theme-text-muted mb-2">
-                {language === 'es' ? 'Nombre del perfil' : 'Profile name'}
-              </label>
-              <Input
-                value={newPresetName}
-                onChange={(e) => setNewPresetName(e.target.value)}
-                placeholder={language === 'es' ? 'Mi perfil personalizado' : 'My custom profile'}
-                className="bg-theme-bg-alt border-theme-border text-theme-text"
-              />
-              <div className="mt-4 p-3 bg-theme-bg-alt rounded-lg">
+              {!editingBuiltIn && (
+                <div className="mb-4">
+                  <label className="block text-sm text-theme-text-muted mb-2">
+                    {language === 'es' ? 'Nombre del perfil' : 'Profile name'}
+                  </label>
+                  <Input
+                    value={newPresetName}
+                    onChange={(e) => setNewPresetName(e.target.value)}
+                    placeholder={language === 'es' ? 'Mi perfil personalizado' : 'My custom profile'}
+                    className="bg-theme-bg-alt border-theme-border text-theme-text"
+                  />
+                </div>
+              )}
+              
+              {editingBuiltIn && (
+                <p className="text-sm text-theme-text-muted mb-4">
+                  {language === 'es' 
+                    ? 'Los cambios se guardarán como tu versión personalizada de este perfil.'
+                    : 'Changes will be saved as your custom version of this profile.'}
+                </p>
+              )}
+              
+              <div className="p-3 bg-theme-bg-alt rounded-lg">
                 <div className="text-xs text-theme-text-muted mb-2">
                   {language === 'es' ? 'Valores a guardar:' : 'Values to save:'}
                 </div>
@@ -465,6 +517,17 @@ export const GrowthPresetsSection = ({
                   <span className="text-blue-400">{matureAppreciation}%</span>
                 </div>
               </div>
+              
+              {editingBuiltIn && isBuiltInModified(editingBuiltIn) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { handleResetBuiltIn(editingBuiltIn); setShowSaveDialog(false); }}
+                  className="mt-4 w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                >
+                  {language === 'es' ? 'Restaurar valores originales' : 'Reset to default values'}
+                </Button>
+              )}
             </div>
             <DialogFooter>
               <Button
@@ -476,9 +539,10 @@ export const GrowthPresetsSection = ({
               </Button>
               <Button
                 onClick={handleSavePreset}
-                disabled={!newPresetName.trim() || saving}
+                disabled={(!newPresetName.trim() && !editingBuiltIn) || saving}
                 className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
               >
+                <Save className="w-4 h-4 mr-1" />
                 {saving 
                   ? (language === 'es' ? 'Guardando...' : 'Saving...') 
                   : (language === 'es' ? 'Guardar' : 'Save')}

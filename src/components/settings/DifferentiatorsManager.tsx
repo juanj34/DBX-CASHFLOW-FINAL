@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Plus, Edit2, Trash2, Check, X, Info, TrendingUp } from 'lucide-react';
+import { Sparkles, Plus, Trash2, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useCustomDifferentiators, CustomDifferentiatorInput } from '@/hooks/useCustomDifferentiators';
-import { CATEGORY_LABELS, DifferentiatorCategory, ValueDifferentiator } from '@/components/roi/valueDifferentiators';
+import { CATEGORY_LABELS, DifferentiatorCategory } from '@/components/roi/valueDifferentiators';
 import { Badge } from '@/components/ui/badge';
 
 interface DifferentiatorsManagerProps {
@@ -20,23 +20,19 @@ export const DifferentiatorsManager = ({ language }: DifferentiatorsManagerProps
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formData, setFormData] = useState<CustomDifferentiatorInput>({
     name: '',
-    nameEs: '',
     category: 'custom',
     impactsAppreciation: false,
     appreciationBonus: 0.2,
     tooltip: '',
-    tooltipEs: '',
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
-      nameEs: '',
       category: 'custom',
       impactsAppreciation: false,
       appreciationBonus: 0.2,
       tooltip: '',
-      tooltipEs: '',
     });
   };
 
@@ -88,8 +84,8 @@ export const DifferentiatorsManager = ({ language }: DifferentiatorsManagerProps
         </div>
         <CardDescription className="text-theme-text-muted">
           {language === 'es' 
-            ? 'Crea diferenciadores personalizados para usar en tus cotizaciones.'
-            : 'Create custom differentiators to use in your quotes.'}
+            ? 'Crea diferenciadores personalizados. Los nombres se traducirán automáticamente.'
+            : 'Create custom differentiators. Names will be auto-translated.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -122,7 +118,7 @@ export const DifferentiatorsManager = ({ language }: DifferentiatorsManagerProps
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-theme-text">
-                        {language === 'es' ? diff.nameEs : diff.name}
+                        {diff.name}
                       </span>
                       <Badge variant="outline" className={`text-[10px] ${getCategoryColor(diff.category)}`}>
                         {CATEGORY_LABELS[diff.category]?.[language === 'es' ? 'es' : 'en'] || diff.category}
@@ -168,27 +164,19 @@ export const DifferentiatorsManager = ({ language }: DifferentiatorsManagerProps
               {/* Name */}
               <div className="space-y-2">
                 <label className="text-sm text-theme-text">
-                  {language === 'es' ? 'Nombre (Inglés)' : 'Name (English)'} *
+                  {language === 'es' ? 'Nombre' : 'Name'} *
                 </label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Pool View"
+                  placeholder={language === 'es' ? 'ej. Vista a la Piscina' : 'e.g., Pool View'}
                   className="bg-theme-bg-alt border-theme-border text-theme-text"
                 />
-              </div>
-
-              {/* Name Spanish */}
-              <div className="space-y-2">
-                <label className="text-sm text-theme-text">
-                  {language === 'es' ? 'Nombre (Español)' : 'Name (Spanish)'}
-                </label>
-                <Input
-                  value={formData.nameEs}
-                  onChange={(e) => setFormData({ ...formData, nameEs: e.target.value })}
-                  placeholder="e.g., Vista a la Piscina"
-                  className="bg-theme-bg-alt border-theme-border text-theme-text"
-                />
+                <p className="text-xs text-theme-text-muted">
+                  {language === 'es' 
+                    ? 'Ingresa el nombre en tu idioma preferido. Se traducirá automáticamente.'
+                    : 'Enter name in your preferred language. It will be auto-translated.'}
+                </p>
               </div>
 
               {/* Category */}
@@ -257,27 +245,15 @@ export const DifferentiatorsManager = ({ language }: DifferentiatorsManagerProps
                 </div>
               )}
 
-              {/* Tooltip */}
+              {/* Tooltip/Description */}
               <div className="space-y-2">
                 <label className="text-sm text-theme-text">
-                  {language === 'es' ? 'Descripción (Inglés)' : 'Description (English)'}
+                  {language === 'es' ? 'Descripción (opcional)' : 'Description (optional)'}
                 </label>
                 <Input
                   value={formData.tooltip}
                   onChange={(e) => setFormData({ ...formData, tooltip: e.target.value })}
-                  placeholder="Brief explanation..."
-                  className="bg-theme-bg-alt border-theme-border text-theme-text"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm text-theme-text">
-                  {language === 'es' ? 'Descripción (Español)' : 'Description (Spanish)'}
-                </label>
-                <Input
-                  value={formData.tooltipEs}
-                  onChange={(e) => setFormData({ ...formData, tooltipEs: e.target.value })}
-                  placeholder="Breve explicación..."
+                  placeholder={language === 'es' ? 'Breve explicación...' : 'Brief explanation...'}
                   className="bg-theme-bg-alt border-theme-border text-theme-text"
                 />
               </div>

@@ -16,11 +16,13 @@ export type Database = {
     Tables: {
       appreciation_presets: {
         Row: {
+          builtin_key: string | null
           construction_appreciation: number
           created_at: string | null
           growth_appreciation: number
           growth_period_years: number
           id: string
+          is_builtin_override: boolean | null
           mature_appreciation: number
           name: string
           rent_growth_rate: number | null
@@ -28,11 +30,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          builtin_key?: string | null
           construction_appreciation?: number
           created_at?: string | null
           growth_appreciation?: number
           growth_period_years?: number
           id?: string
+          is_builtin_override?: boolean | null
           mature_appreciation?: number
           name: string
           rent_growth_rate?: number | null
@@ -40,11 +44,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          builtin_key?: string | null
           construction_appreciation?: number
           created_at?: string | null
           growth_appreciation?: number
           growth_period_years?: number
           id?: string
+          is_builtin_override?: boolean | null
           mature_appreciation?: number
           name?: string
           rent_growth_rate?: number | null
@@ -622,8 +628,12 @@ export type Database = {
           default_mature_appreciation: number | null
           default_mortgage_financing_percent: number | null
           default_mortgage_interest_rate: number | null
+          default_mortgage_life_insurance_percent: number | null
           default_mortgage_processing_fee: number | null
+          default_mortgage_property_insurance: number | null
+          default_mortgage_registration_percent: number | null
           default_mortgage_term_years: number | null
+          default_mortgage_valuation_fee: number | null
           default_occupancy_percent: number | null
           default_str_expense_percent: number | null
           default_str_management_percent: number | null
@@ -651,8 +661,12 @@ export type Database = {
           default_mature_appreciation?: number | null
           default_mortgage_financing_percent?: number | null
           default_mortgage_interest_rate?: number | null
+          default_mortgage_life_insurance_percent?: number | null
           default_mortgage_processing_fee?: number | null
+          default_mortgage_property_insurance?: number | null
+          default_mortgage_registration_percent?: number | null
           default_mortgage_term_years?: number | null
+          default_mortgage_valuation_fee?: number | null
           default_occupancy_percent?: number | null
           default_str_expense_percent?: number | null
           default_str_management_percent?: number | null
@@ -680,8 +694,12 @@ export type Database = {
           default_mature_appreciation?: number | null
           default_mortgage_financing_percent?: number | null
           default_mortgage_interest_rate?: number | null
+          default_mortgage_life_insurance_percent?: number | null
           default_mortgage_processing_fee?: number | null
+          default_mortgage_property_insurance?: number | null
+          default_mortgage_registration_percent?: number | null
           default_mortgage_term_years?: number | null
+          default_mortgage_valuation_fee?: number | null
           default_occupancy_percent?: number | null
           default_str_expense_percent?: number | null
           default_str_management_percent?: number | null

@@ -11,6 +11,8 @@ export interface AppreciationPreset {
   mature_appreciation: number;
   growth_period_years: number;
   rent_growth_rate: number | null;
+  is_builtin_override: boolean | null;
+  builtin_key: string | null;
   created_at: string;
   updated_at: string;
 }
