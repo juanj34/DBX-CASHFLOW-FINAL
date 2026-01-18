@@ -1,9 +1,8 @@
 import { TrendingUp } from "lucide-react";
 import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
-import { calculatePhasedExitPrice, calculateEquityAtExit } from "./ExitScenariosCards";
 import { useState, useEffect, useMemo } from "react";
-import { monthToConstruction } from "./constructionProgress";
+import { monthToConstruction, calculateExitPrice, calculateExitScenario } from "./constructionProgress";
 
 interface OIGrowthCurveProps {
   calculations: OICalculations;
@@ -41,7 +40,7 @@ export const OIGrowthCurve = ({
   }, []);
   
   // Calculate handover price using the SAME function as exit scenario cards
-  const handoverPrice = calculatePhasedExitPrice(totalMonths, inputs, totalMonths, basePrice);
+  const handoverPrice = calculateExitPrice(totalMonths, basePrice, totalMonths, inputs);
   const maxValue = handoverPrice * 1.08;
   const minValue = basePrice * 0.95;
 
@@ -87,19 +86,15 @@ export const OIGrowthCurve = ({
     return labels;
   }, [totalMonths]);
 
-  // Generate smooth curve path - power curve (faster early, slower later)
-  const generateCurvePath = () => {
+  // Generate smooth curve path using the SAME phased appreciation as exit cards
+  const curvePath = useMemo(() => {
     const points: { x: number; y: number }[] = [];
-    const totalAppreciation = handoverPrice - basePrice;
-    
-    // Power curve: faster appreciation early, slows down later
     const steps = 30;
     for (let i = 0; i <= steps; i++) {
       const progress = i / steps;
       const month = progress * totalMonths;
-      // Power curve with exponent < 1 for faster early growth
-      const curveProgress = Math.pow(progress, 0.7);
-      const price = basePrice + (totalAppreciation * curveProgress);
+      // Use the canonical exit price calculation
+      const price = calculateExitPrice(month, basePrice, totalMonths, inputs);
       points.push({ x: month, y: price });
     }
     
@@ -110,52 +105,24 @@ export const OIGrowthCurve = ({
     }
     
     return path;
-  };
+  }, [basePrice, totalMonths, inputs, xScale, yScale]);
 
-  // Calculate exit scenario data using power curve
-  const getExitScenarioData = (exitMonth: number) => {
-    const totalAppreciation = handoverPrice - basePrice;
-    const progress = exitMonth / totalMonths;
-    const curveProgress = Math.pow(progress, 0.7);
-    const exitPrice = basePrice + (totalAppreciation * curveProgress);
-    
-    const equityDeployed = calculateEquityAtExit(exitMonth, inputs, totalMonths, basePrice);
-    const profit = exitPrice - basePrice;
-    const trueProfit = profit - calculations.totalEntryCosts;
-    const totalCapital = equityDeployed + calculations.totalEntryCosts;
-    
-    const agentCommission = inputs.exitAgentCommissionEnabled ? exitPrice * 0.02 : 0;
-    const nocFee = inputs.exitNocFee || 0;
-    const exitCosts = agentCommission + nocFee;
-    const netProfit = trueProfit - exitCosts;
-    
-    const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
-    const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
-    const displayROE = exitCosts > 0 ? netROE : trueROE;
-    
-    return {
-      exitMonths: exitMonth,
-      exitPrice,
-      equityDeployed,
-      profit,
-      trueROE: displayROE,
-      totalCapitalDeployed: totalCapital,
-    };
-  };
+  // Calculate exit scenarios using the SAME function as SnapshotExitCards
+  const exitMarkersData = useMemo(() => {
+    return exitScenarios.map((month, index) => {
+      const scenario = calculateExitScenario(month, basePrice, totalMonths, inputs, totalEntryCosts);
+      return {
+        scenario,
+        exitMonth: month,
+        label: `Exit ${index + 1}`,
+      };
+    });
+  }, [exitScenarios, basePrice, totalMonths, inputs, totalEntryCosts]);
 
-  const exitMarkersData = exitScenarios.map((month, index) => ({
-    scenario: getExitScenarioData(month),
-    label: `Exit ${index + 1}`,
-  }));
-
-  // Handover calculation
-  const handoverScenario = {
-    exitMonths: totalMonths,
-    exitPrice: handoverPrice,
-    equityDeployed: calculateEquityAtExit(totalMonths, inputs, totalMonths, basePrice),
-    profit: handoverPrice - basePrice,
-    trueROE: ((handoverPrice - basePrice - totalEntryCosts) / (calculateEquityAtExit(totalMonths, inputs, totalMonths, basePrice) + totalEntryCosts)) * 100
-  };
+  // Handover calculation using the SAME function
+  const handoverScenario = useMemo(() => {
+    return calculateExitScenario(totalMonths, basePrice, totalMonths, inputs, totalEntryCosts);
+  }, [totalMonths, basePrice, inputs, totalEntryCosts]);
 
   // Construction progress markers for the timeline
   const constructionMarkers = useMemo(() => {
@@ -304,7 +271,7 @@ export const OIGrowthCurve = ({
 
           {/* Area fill under curve */}
           <path
-            d={`${generateCurvePath()} L ${xScale(totalMonths)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
+            d={`${curvePath} L ${xScale(totalMonths)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
             fill="url(#areaGradientMain)"
             style={{
               opacity: isAnimated ? 1 : 0,
@@ -314,7 +281,7 @@ export const OIGrowthCurve = ({
 
           {/* Growth curve */}
           <path
-            d={generateCurvePath()}
+            d={curvePath}
             fill="none"
             stroke="url(#curveGradientMain)"
             strokeWidth="2.5"
@@ -350,7 +317,7 @@ export const OIGrowthCurve = ({
           </g>
 
           {/* Exit markers with labels and ROE */}
-          {exitMarkersData.map(({ scenario, label }, index) => {
+          {exitMarkersData.map(({ scenario, exitMonth, label }, index) => {
             const isHighlighted = highlightedExit === index;
             const markerDelay = 0.1 * index;
             
@@ -368,7 +335,7 @@ export const OIGrowthCurve = ({
               >
                 {/* Exit label above */}
                 <text
-                  x={xScale(scenario.exitMonths)}
+                  x={xScale(exitMonth)}
                   y={yScale(scenario.exitPrice) - 30}
                   fill="#CCFF00"
                   fontSize="9"
@@ -380,7 +347,7 @@ export const OIGrowthCurve = ({
                 
                 {/* Price label */}
                 <text
-                  x={xScale(scenario.exitMonths)}
+                  x={xScale(exitMonth)}
                   y={yScale(scenario.exitPrice) - 18}
                   fill="#CCFF00"
                   fontSize="10"
@@ -391,9 +358,9 @@ export const OIGrowthCurve = ({
                   {formatCurrencyShort(scenario.exitPrice, currency, rate)}
                 </text>
 
-                {/* ROE label */}
+                {/* ROE label - now using annualizedROE */}
                 <text
-                  x={xScale(scenario.exitMonths)}
+                  x={xScale(exitMonth)}
                   y={yScale(scenario.exitPrice) - 6}
                   fill="#22d3d1"
                   fontSize="8"
@@ -401,12 +368,12 @@ export const OIGrowthCurve = ({
                   textAnchor="middle"
                   fontFamily="monospace"
                 >
-                  {scenario.trueROE.toFixed(0)}% ROE
+                  {scenario.annualizedROE.toFixed(0)}%/yr
                 </text>
                 
                 {/* Marker circles */}
                 <circle
-                  cx={xScale(scenario.exitMonths)}
+                  cx={xScale(exitMonth)}
                   cy={yScale(scenario.exitPrice)}
                   r={isHighlighted ? 9 : 7}
                   fill="#0f172a"
@@ -414,7 +381,7 @@ export const OIGrowthCurve = ({
                   strokeWidth={isHighlighted ? 3 : 2}
                 />
                 <circle
-                  cx={xScale(scenario.exitMonths)}
+                  cx={xScale(exitMonth)}
                   cy={yScale(scenario.exitPrice)}
                   r={isHighlighted ? 4 : 3}
                   fill="#CCFF00"
@@ -430,7 +397,7 @@ export const OIGrowthCurve = ({
           }}>
             {/* Handover label */}
             <text
-              x={xScale(handoverScenario.exitMonths)}
+              x={xScale(totalMonths)}
               y={yScale(handoverScenario.exitPrice) - 30}
               fill="#ffffff"
               fontSize="9"
@@ -442,7 +409,7 @@ export const OIGrowthCurve = ({
             
             {/* Handover price */}
             <text
-              x={xScale(handoverScenario.exitMonths)}
+              x={xScale(totalMonths)}
               y={yScale(handoverScenario.exitPrice) - 18}
               fill="#ffffff"
               fontSize="10"
@@ -453,9 +420,9 @@ export const OIGrowthCurve = ({
               {formatCurrencyShort(handoverScenario.exitPrice, currency, rate)}
             </text>
 
-            {/* Handover ROE */}
+            {/* Handover ROE - now using annualizedROE */}
             <text
-              x={xScale(handoverScenario.exitMonths)}
+              x={xScale(totalMonths)}
               y={yScale(handoverScenario.exitPrice) - 6}
               fill="#22d3d1"
               fontSize="8"
@@ -463,12 +430,12 @@ export const OIGrowthCurve = ({
               textAnchor="middle"
               fontFamily="monospace"
             >
-              {handoverScenario.trueROE.toFixed(0)}% ROE
+              {handoverScenario.annualizedROE.toFixed(0)}%/yr
             </text>
             
             {/* Marker circles */}
             <circle
-              cx={xScale(handoverScenario.exitMonths)}
+              cx={xScale(totalMonths)}
               cy={yScale(handoverScenario.exitPrice)}
               r="8"
               fill="#0f172a"
@@ -476,7 +443,7 @@ export const OIGrowthCurve = ({
               strokeWidth="2"
             />
             <circle
-              cx={xScale(handoverScenario.exitMonths)}
+              cx={xScale(totalMonths)}
               cy={yScale(handoverScenario.exitPrice)}
               r="4"
               fill="#ffffff"
