@@ -28,7 +28,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
       <div className="flex flex-col items-center gap-3 flex-1">
         {/* Property indicator */}
         <div className="flex flex-col items-center gap-1" title={`${formatCurrency(inputs.basePrice, currency)}`}>
-          <DollarSign className="w-4 h-4 text-[#CCFF00]" />
+          <DollarSign className="w-4 h-4 text-theme-accent" />
           <span className="text-[10px] text-theme-text-muted font-mono">
             {(inputs.basePrice / 1000000).toFixed(1)}M
           </span>
@@ -123,14 +123,14 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
         </button>
       </div>
 
-      <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-4 space-y-3">
+      <div className="bg-theme-bg-alt rounded-lg border border-theme-border p-4 space-y-3">
         {/* Property Value */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-theme-text-muted">
             <DollarSign className="w-3.5 h-3.5" />
             <span className="text-xs">Property</span>
           </div>
-          <span className="text-sm font-mono text-white font-medium">
+          <span className="text-sm font-mono text-theme-text font-medium">
             {formatCurrency(inputs.basePrice, currency)}
           </span>
         </div>
@@ -141,7 +141,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
             <Calendar className="w-3.5 h-3.5" />
             <span className="text-xs">Handover</span>
           </div>
-          <span className="text-sm font-mono text-white">
+          <span className="text-sm font-mono text-theme-text">
             {quarters.find(q => q.value === inputs.handoverQuarter)?.label} {inputs.handoverYear}
             <span className="text-xs text-theme-text-muted ml-1">({monthsToHandover}mo)</span>
           </span>
@@ -153,7 +153,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
             <Percent className="w-3.5 h-3.5" />
             <span className="text-xs">Payment</span>
           </div>
-          <span className="text-sm font-mono text-white">
+          <span className="text-sm font-mono text-theme-text">
             {inputs.preHandoverPercent}/{handoverPercent}
           </span>
         </div>
@@ -165,7 +165,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
             <span className="text-xs">Rental</span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-sm font-mono text-white">
+            <span className="text-sm font-mono text-theme-text">
               {inputs.rentalYieldPercent}%
             </span>
             <span className="text-[10px] text-theme-text-muted font-mono">
@@ -189,7 +189,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
               <span className="text-blue-400">{inputs.matureAppreciation ?? 4}%</span>
             </span>
             {appreciationBonus > 0 && (
-              <span className="text-xs text-[#CCFF00] font-mono">
+              <span className="text-xs text-theme-accent font-mono">
                 (+{appreciationBonus.toFixed(1)}%)
               </span>
             )}

@@ -541,7 +541,7 @@ export const ConfiguratorLayout = ({
   }, [onClose]);
 
   return (
-    <div className="flex flex-col h-full bg-[#1a1f2e] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-theme-card relative overflow-hidden">
       {/* Celebration confetti overlay */}
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
@@ -553,24 +553,24 @@ export const ConfiguratorLayout = ({
             />
           ))}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center animate-scale-in">
-            <div className="bg-[#0d1117]/90 backdrop-blur-sm rounded-2xl px-8 py-6 border border-[#CCFF00]/30">
-              <Sparkles className="w-12 h-12 text-[#CCFF00] mx-auto mb-3 animate-pulse" />
-              <h3 className="text-xl font-bold text-white mb-1">All Set!</h3>
-              <p className="text-gray-400 text-sm">Your investment is fully configured</p>
+            <div className="bg-theme-bg-alt/90 backdrop-blur-sm rounded-2xl px-8 py-6 border border-theme-accent/30">
+              <Sparkles className="w-12 h-12 text-theme-accent mx-auto mb-3 animate-pulse" />
+              <h3 className="text-xl font-bold text-theme-text mb-1">All Set!</h3>
+              <p className="text-theme-text-muted text-sm">Your investment is fully configured</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Header - Fixed */}
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#2a3142] bg-[#0d1117]">
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-theme-border bg-theme-bg-alt">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#CCFF00]/20 rounded-lg">
-            <SlidersHorizontal className="w-5 h-5 text-[#CCFF00]" />
+          <div className="p-2 bg-theme-accent/20 rounded-lg">
+            <SlidersHorizontal className="w-5 h-5 text-theme-accent" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Investment Builder</h2>
-            <p className="text-xs text-gray-500">Configure your property investment</p>
+            <h2 className="text-lg font-bold text-theme-text">Investment Builder</h2>
+            <p className="text-xs text-theme-text-muted">Configure your property investment</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -578,7 +578,7 @@ export const ConfiguratorLayout = ({
             variant="ghost"
             size="sm"
             onClick={togglePreview}
-            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+            className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
             title={isPreviewCollapsed ? "Show preview (P)" : "Hide preview (P)"}
           >
             {isPreviewCollapsed ? (
@@ -593,7 +593,7 @@ export const ConfiguratorLayout = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleLoadSample}
-                className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+                className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
               >
                 <FileText className="w-4 h-4 mr-1" />
                 Sample
@@ -654,18 +654,18 @@ export const ConfiguratorLayout = ({
       </div>
 
       {/* Footer Navigation with Step Progress */}
-      <div className="shrink-0 border-t border-[#2a3142] bg-[#0d1117]">
+      <div className="shrink-0 border-t border-theme-border bg-theme-bg-alt">
         {/* Progress Steps */}
-        <div className="px-6 py-3 border-b border-[#2a3142]/50">
+        <div className="px-6 py-3 border-b border-theme-border/50">
           <div className="flex items-start justify-between relative">
             {/* Progress line behind steps */}
-            <div className="absolute top-3 left-0 right-0 h-0.5 bg-[#2a3142]" />
+            <div className="absolute top-3 left-0 right-0 h-0.5 bg-theme-border" />
             <div 
-              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-[#CCFF00] to-green-400 transition-all duration-500 ease-out"
+              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-theme-accent to-green-400 transition-all duration-500 ease-out"
               style={{ width: `${stepProgressPercent}%` }}
             >
               {/* Glowing end marker */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#CCFF00] shadow-[0_0_8px_2px_rgba(204,255,0,0.6)]" />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_2px_rgba(var(--accent-rgb),0.6)]" />
             </div>
             
             {/* Step indicators */}
@@ -693,10 +693,10 @@ export const ConfiguratorLayout = ({
                   <div className={`
                     w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
                     ${isActive 
-                      ? 'bg-[#CCFF00] text-black ring-4 ring-[#CCFF00]/20 scale-110' 
+                      ? 'bg-theme-accent text-theme-bg ring-4 ring-theme-accent/20 scale-110' 
                       : isComplete 
                         ? 'bg-green-500 text-white' 
-                        : 'bg-[#1a1f2e] border-2 border-[#3a4152] text-gray-500 group-hover:border-gray-400'
+                        : 'bg-theme-card border-2 border-theme-border-alt text-theme-text-muted group-hover:border-theme-text-muted'
                     }
                   `}>
                     {isComplete && !isActive ? (
@@ -707,10 +707,10 @@ export const ConfiguratorLayout = ({
                   </div>
                   <span className={`text-[10px] font-medium transition-colors ${
                     isActive 
-                      ? 'text-[#CCFF00]' 
+                      ? 'text-theme-accent' 
                       : isComplete 
                         ? 'text-green-400' 
-                        : 'text-gray-500 group-hover:text-gray-400'
+                        : 'text-theme-text-muted group-hover:text-theme-text'
                   }`}>
                     {stepLabels[section]}
                   </span>
@@ -726,20 +726,20 @@ export const ConfiguratorLayout = ({
             variant="outline"
             onClick={goToPreviousSection}
             disabled={!canGoBack}
-            className="border-[#2a3142] !bg-transparent text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
+            className="border-theme-border !bg-transparent text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             Previous
           </Button>
 
-          <span className="text-xs font-medium text-gray-400">
+          <span className="text-xs font-medium text-theme-text-muted">
             Step {currentIndex + 1} of {SECTIONS.length} • {progressPercent}% complete
           </span>
 
           {isLastSection ? (
             <Button
               onClick={handleApplyAndClose}
-              className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
             >
               Apply & Close
             </Button>
@@ -751,7 +751,7 @@ export const ConfiguratorLayout = ({
               <Button
                 onClick={goToNextSection}
                 disabled={!canGoForward}
-                className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
