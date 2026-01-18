@@ -37,3 +37,35 @@ export const parseCurrencyInput = (value: string): number => {
   const cleaned = value.replace(/[^0-9.-]/g, '');
   return parseFloat(cleaned) || 0;
 };
+
+// Dual currency formatting - shows AED primary with converted value in parentheses
+export interface DualCurrencyResult {
+  primary: string;
+  secondary: string | null;
+}
+
+export const formatDualCurrency = (
+  value: number,
+  currency: Currency,
+  rate: number
+): DualCurrencyResult => {
+  const aed = formatCurrency(value, 'AED', 1);
+  if (currency === 'AED') {
+    return { primary: aed, secondary: null };
+  }
+  const converted = formatCurrency(value, currency, rate);
+  return { primary: aed, secondary: converted };
+};
+
+export const formatDualCurrencyCompact = (
+  value: number,
+  currency: Currency,
+  rate: number
+): DualCurrencyResult => {
+  const aed = formatCurrencyShort(value, 'AED', 1);
+  if (currency === 'AED') {
+    return { primary: aed, secondary: null };
+  }
+  const converted = formatCurrencyShort(value, currency, rate);
+  return { primary: aed, secondary: converted };
+};

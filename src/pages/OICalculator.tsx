@@ -372,6 +372,9 @@ const OICalculatorContent = () => {
               buildingRenderUrl: quoteImages.buildingRenderUrl,
             }}
             currency={currency}
+            setCurrency={setCurrency}
+            language={language}
+            setLanguage={setLanguage}
             rate={rate}
           />
         ) : viewMode === 'showcase' ? (

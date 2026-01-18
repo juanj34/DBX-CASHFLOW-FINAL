@@ -16,6 +16,7 @@ const SnapshotView = () => {
   useDocumentTitle("Investment Snapshot");
   const { shareToken } = useParams<{ shareToken: string }>();
   const [currency, setCurrency] = useState<Currency>('AED');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);
@@ -175,6 +176,9 @@ const SnapshotView = () => {
         exitScenarios={exitScenarios}
         quoteImages={quoteImages}
         currency={currency}
+        setCurrency={setCurrency}
+        language={language}
+        setLanguage={setLanguage}
         rate={rate}
       />
     </div>
