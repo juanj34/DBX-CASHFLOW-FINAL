@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
-import { Currency, formatCurrency } from '../currencyUtils';
+import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
 
 interface WealthProjectionTableProps {
   basePrice: number;
@@ -115,8 +115,15 @@ export const WealthProjectionTable = ({
                 <td className="py-1.5 px-3 text-theme-text font-medium">
                   {row.year}
                 </td>
-                <td className="py-1.5 px-3 text-right text-theme-text tabular-nums">
-                  {formatCurrency(row.value, currency, rate)}
+                <td className="py-1.5 px-3 text-right">
+                  <div className="text-theme-text tabular-nums">
+                    {formatCurrency(row.value, 'AED', 1)}
+                  </div>
+                  {currency !== 'AED' && (
+                    <div className="text-[10px] text-theme-text-muted tabular-nums">
+                      {formatCurrency(row.value, currency, rate)}
+                    </div>
+                  )}
                 </td>
                 <td className="py-1.5 px-3 text-center">
                   <span className="inline-flex items-center gap-1">
