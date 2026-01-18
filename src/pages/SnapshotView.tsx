@@ -153,20 +153,20 @@ const SnapshotView = () => {
 
   if (error || !inputs || !clientInfo || !calculations) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="p-4 bg-red-500/20 rounded-full inline-flex mb-4">
             <Rocket className="w-8 h-8 text-red-400" />
           </div>
-          <h1 className="text-2xl text-foreground mb-2">Quote Not Found</h1>
-          <p className="text-muted-foreground">{error || 'This quote may have been deleted.'}</p>
+          <h1 className="text-2xl text-theme-text mb-2">Quote Not Found</h1>
+          <p className="text-theme-text-muted">{error || 'This quote may have been deleted.'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-theme-bg">
       <SnapshotContent
         inputs={inputs}
         calculations={calculations}

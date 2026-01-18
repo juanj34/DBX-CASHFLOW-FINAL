@@ -57,12 +57,12 @@ export const CompactRentCard = ({
   if (rentalYieldPercent <= 0) return null;
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="p-3 border-b border-border flex items-center justify-between">
+      <div className="p-3 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Home className="w-4 h-4 text-primary" />
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Rental Income</span>
+          <Home className="w-4 h-4 text-theme-accent" />
+          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Rental Income</span>
         </div>
         {showAirbnbComparison && (
           <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400">
@@ -91,7 +91,7 @@ export const CompactRentCard = ({
             />
           )}
           
-          <div className="pt-1 border-t border-border">
+          <div className="pt-1 border-t border-theme-border">
             <DottedRow 
               label="= Net/year"
               value={getDualValue(netAnnualRent).primary}

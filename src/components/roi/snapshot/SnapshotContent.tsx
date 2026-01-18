@@ -53,7 +53,7 @@ export const SnapshotContent = ({
   const monthlyRent = netAnnualRent / 12;
 
   return (
-    <div className="flex-1 overflow-auto p-4 space-y-4 animate-fade-in">
+    <div className="flex-1 overflow-auto p-4 space-y-4 animate-fade-in bg-theme-bg">
       {/* Hero with integrated Price, Currency, Language controls */}
       <PropertyHeroCard
         data={clientInfo}
