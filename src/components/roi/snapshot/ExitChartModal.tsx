@@ -42,9 +42,9 @@ export const ExitChartModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
         <DialogHeader>
-          <DialogTitle>Exit Scenarios Analysis</DialogTitle>
+          <DialogTitle className="text-theme-text">Exit Scenarios Analysis</DialogTitle>
         </DialogHeader>
         
         <div className="mt-4 space-y-3">
@@ -55,35 +55,35 @@ export const ExitChartModal = ({
                 key={scenario.months}
                 className={cn(
                   "p-4 rounded-lg border",
-                  isBest ? "bg-green-500/10 border-green-500/30" : "bg-muted/50 border-border"
+                  isBest ? "bg-green-500/10 border-green-500/30" : "bg-theme-bg/50 border-theme-border"
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{scenario.months} months</span>
+                    <Clock className="w-4 h-4 text-theme-text-muted" />
+                    <span className="font-medium text-theme-text">{scenario.months} months</span>
                     {isBest && <Trophy className="w-4 h-4 text-yellow-500" />}
                   </div>
                   <span className={cn(
                     "font-bold",
-                    scenario.annualizedROE >= 0 ? "text-green-500" : "text-red-500"
+                    scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
                   )}>
                     {scenario.annualizedROE.toFixed(1)}% ROE/year
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground block">Property Value</span>
-                    <span className="font-medium">{formatCurrency(scenario.exitPrice, 'AED', 1)}</span>
+                    <span className="text-theme-text-muted block">Property Value</span>
+                    <span className="font-medium text-theme-text">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block">Cash Invested</span>
-                    <span className="font-medium">{formatCurrency(scenario.totalCapital, 'AED', 1)}</span>
+                    <span className="text-theme-text-muted block">Cash Invested</span>
+                    <span className="font-medium text-theme-text">{formatCurrency(scenario.totalCapital, currency, rate)}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block">Profit</span>
-                    <span className={cn("font-medium", scenario.trueProfit >= 0 ? "text-green-500" : "text-red-500")}>
-                      {formatCurrency(scenario.trueProfit, 'AED', 1)}
+                    <span className="text-theme-text-muted block">Profit</span>
+                    <span className={cn("font-medium", scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400")}>
+                      {formatCurrency(scenario.trueProfit, currency, rate)}
                     </span>
                   </div>
                 </div>

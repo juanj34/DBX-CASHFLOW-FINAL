@@ -25,16 +25,16 @@ export const ValueDifferentiatorsBadges = ({
   if (differentiators.length === 0) return null;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
+    <div className="bg-theme-card border border-theme-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-          <Sparkles className="w-4 h-4" />
+        <h3 className="text-xs font-semibold text-theme-text uppercase tracking-wider flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
           Value Differentiators
         </h3>
         
         {appreciationBonus > 0 && (
-          <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-medium">
-            +{appreciationBonus.toFixed(1)}% appreciation bonus
+          <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
+            +{appreciationBonus.toFixed(1)}% bonus
           </span>
         )}
       </div>
@@ -43,7 +43,7 @@ export const ValueDifferentiatorsBadges = ({
         {differentiators.map((id) => {
           const config = DIFFERENTIATOR_LABELS[id] || { 
             label: id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), 
-            color: 'bg-muted text-muted-foreground' 
+            color: 'bg-theme-bg text-theme-text-muted' 
           };
           
           return (
