@@ -120,9 +120,18 @@ export const WealthProjectionTimeline = ({
               {proj.year}
             </div>
             
-            {/* Value */}
-            <div className="text-[10px] sm:text-xs font-mono font-bold text-theme-text mb-2">
-              {formatCurrencyShort(proj.value, currency, rate)}
+            {/* Value - AED primary + reference currency below */}
+            <div className="mb-2 flex flex-col items-center">
+              {/* AED siempre primero */}
+              <div className="text-[10px] sm:text-xs font-mono font-bold text-theme-text">
+                {formatCurrencyShort(proj.value, 'AED', 1)}
+              </div>
+              {/* Moneda de referencia debajo (si no es AED) */}
+              {currency !== 'AED' && (
+                <div className="text-[8px] sm:text-[10px] font-mono text-theme-text-muted">
+                  {formatCurrencyShort(proj.value, currency, rate)}
+                </div>
+              )}
             </div>
             
             {/* Timeline dot + line */}
