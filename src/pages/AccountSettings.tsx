@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Camera, Zap, Briefcase, Moon, Settings, Check, Mail, Phone, Building2 } from 'lucide-react';
+import { User, Camera, Zap, Briefcase, Moon, Settings, Check, Mail, Phone, Building2, Save, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
@@ -15,6 +15,7 @@ import { ThemeKey, THEMES } from '@/config/themes';
 import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GrowthPresetsSection, MortgageDefaultsSection, AirbnbDefaultsSection, DifferentiatorsManager } from '@/components/settings';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const AccountSettings = () => {
   useDocumentTitle("Account Settings");
@@ -57,36 +58,110 @@ const AccountSettings = () => {
   const [strManagementPercent, setStrManagementPercent] = useState(15);
   const [adrGrowthRate, setAdrGrowthRate] = useState(3);
 
+  // Track if there are unsaved changes
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [initialValues, setInitialValues] = useState<Record<string, any> | null>(null);
+
+  // Check if current values differ from saved profile
+  const hasUnsavedChanges = useMemo(() => {
+    if (!profile || !initialValues) return false;
+    return (
+      fullName !== initialValues.fullName ||
+      businessEmail !== initialValues.businessEmail ||
+      whatsappNumber !== initialValues.whatsappNumber ||
+      whatsappCountryCode !== initialValues.whatsappCountryCode ||
+      commissionRate !== initialValues.commissionRate ||
+      constructionAppreciation !== initialValues.constructionAppreciation ||
+      growthAppreciation !== initialValues.growthAppreciation ||
+      matureAppreciation !== initialValues.matureAppreciation ||
+      growthPeriodYears !== initialValues.growthPeriodYears ||
+      mortgageFinancingPercent !== initialValues.mortgageFinancingPercent ||
+      mortgageInterestRate !== initialValues.mortgageInterestRate ||
+      mortgageTermYears !== initialValues.mortgageTermYears ||
+      mortgageProcessingFee !== initialValues.mortgageProcessingFee ||
+      mortgageValuationFee !== initialValues.mortgageValuationFee ||
+      mortgageRegistrationPercent !== initialValues.mortgageRegistrationPercent ||
+      mortgageLifeInsurancePercent !== initialValues.mortgageLifeInsurancePercent ||
+      mortgagePropertyInsurance !== initialValues.mortgagePropertyInsurance ||
+      adr !== initialValues.adr ||
+      occupancyPercent !== initialValues.occupancyPercent ||
+      strExpensePercent !== initialValues.strExpensePercent ||
+      strManagementPercent !== initialValues.strManagementPercent ||
+      adrGrowthRate !== initialValues.adrGrowthRate
+    );
+  }, [profile, initialValues, fullName, businessEmail, whatsappNumber, whatsappCountryCode, commissionRate,
+    constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears,
+    mortgageFinancingPercent, mortgageInterestRate, mortgageTermYears, mortgageProcessingFee,
+    mortgageValuationFee, mortgageRegistrationPercent, mortgageLifeInsurancePercent, mortgagePropertyInsurance,
+    adr, occupancyPercent, strExpensePercent, strManagementPercent, adrGrowthRate]);
+
   // Initialize form when profile loads
   useEffect(() => {
     if (profile) {
-      setFullName(profile.full_name || '');
-      setBusinessEmail(profile.business_email || '');
-      setWhatsappNumber(profile.whatsapp_number || '');
-      setWhatsappCountryCode(profile.whatsapp_country_code || '+971');
-      setCommissionRate(String(profile.commission_rate ?? 2));
-      // Growth projection defaults
-      setConstructionAppreciation(profile.default_construction_appreciation ?? 12);
-      setGrowthAppreciation(profile.default_growth_appreciation ?? 8);
-      setMatureAppreciation(profile.default_mature_appreciation ?? 4);
-      setGrowthPeriodYears(profile.default_growth_period_years ?? 5);
-      // Mortgage defaults
-      setMortgageFinancingPercent(profile.default_mortgage_financing_percent ?? 60);
-      setMortgageInterestRate(profile.default_mortgage_interest_rate ?? 4.5);
-      setMortgageTermYears(profile.default_mortgage_term_years ?? 25);
-      setMortgageProcessingFee(profile.default_mortgage_processing_fee ?? 1);
-      setMortgageValuationFee(profile.default_mortgage_valuation_fee ?? 3000);
-      setMortgageRegistrationPercent(profile.default_mortgage_registration_percent ?? 0.25);
-      setMortgageLifeInsurancePercent(profile.default_mortgage_life_insurance_percent ?? 0.4);
-      setMortgagePropertyInsurance(profile.default_mortgage_property_insurance ?? 1500);
-      // Airbnb defaults
-      setAdr(profile.default_adr ?? 800);
-      setOccupancyPercent(profile.default_occupancy_percent ?? 70);
-      setStrExpensePercent(profile.default_str_expense_percent ?? 25);
-      setStrManagementPercent(profile.default_str_management_percent ?? 15);
-      setAdrGrowthRate(profile.default_adr_growth_rate ?? 3);
+      const values = {
+        fullName: profile.full_name || '',
+        businessEmail: profile.business_email || '',
+        whatsappNumber: profile.whatsapp_number || '',
+        whatsappCountryCode: profile.whatsapp_country_code || '+971',
+        commissionRate: String(profile.commission_rate ?? 2),
+        constructionAppreciation: profile.default_construction_appreciation ?? 12,
+        growthAppreciation: profile.default_growth_appreciation ?? 8,
+        matureAppreciation: profile.default_mature_appreciation ?? 4,
+        growthPeriodYears: profile.default_growth_period_years ?? 5,
+        mortgageFinancingPercent: profile.default_mortgage_financing_percent ?? 60,
+        mortgageInterestRate: profile.default_mortgage_interest_rate ?? 4.5,
+        mortgageTermYears: profile.default_mortgage_term_years ?? 25,
+        mortgageProcessingFee: profile.default_mortgage_processing_fee ?? 1,
+        mortgageValuationFee: profile.default_mortgage_valuation_fee ?? 3000,
+        mortgageRegistrationPercent: profile.default_mortgage_registration_percent ?? 0.25,
+        mortgageLifeInsurancePercent: profile.default_mortgage_life_insurance_percent ?? 0.4,
+        mortgagePropertyInsurance: profile.default_mortgage_property_insurance ?? 1500,
+        adr: profile.default_adr ?? 800,
+        occupancyPercent: profile.default_occupancy_percent ?? 70,
+        strExpensePercent: profile.default_str_expense_percent ?? 25,
+        strManagementPercent: profile.default_str_management_percent ?? 15,
+        adrGrowthRate: profile.default_adr_growth_rate ?? 3,
+      };
+      
+      setFullName(values.fullName);
+      setBusinessEmail(values.businessEmail);
+      setWhatsappNumber(values.whatsappNumber);
+      setWhatsappCountryCode(values.whatsappCountryCode);
+      setCommissionRate(values.commissionRate);
+      setConstructionAppreciation(values.constructionAppreciation);
+      setGrowthAppreciation(values.growthAppreciation);
+      setMatureAppreciation(values.matureAppreciation);
+      setGrowthPeriodYears(values.growthPeriodYears);
+      setMortgageFinancingPercent(values.mortgageFinancingPercent);
+      setMortgageInterestRate(values.mortgageInterestRate);
+      setMortgageTermYears(values.mortgageTermYears);
+      setMortgageProcessingFee(values.mortgageProcessingFee);
+      setMortgageValuationFee(values.mortgageValuationFee);
+      setMortgageRegistrationPercent(values.mortgageRegistrationPercent);
+      setMortgageLifeInsurancePercent(values.mortgageLifeInsurancePercent);
+      setMortgagePropertyInsurance(values.mortgagePropertyInsurance);
+      setAdr(values.adr);
+      setOccupancyPercent(values.occupancyPercent);
+      setStrExpensePercent(values.strExpensePercent);
+      setStrManagementPercent(values.strManagementPercent);
+      setAdrGrowthRate(values.adrGrowthRate);
+      
+      setInitialValues(values);
     }
   }, [profile]);
+
+  // Browser beforeunload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,8 +223,33 @@ const AccountSettings = () => {
       toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Profile updated!' });
+      // Update initial values to current values after save
+      setInitialValues({
+        fullName, businessEmail, whatsappNumber, whatsappCountryCode, commissionRate,
+        constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears,
+        mortgageFinancingPercent, mortgageInterestRate, mortgageTermYears, mortgageProcessingFee,
+        mortgageValuationFee, mortgageRegistrationPercent, mortgageLifeInsurancePercent, mortgagePropertyInsurance,
+        adr, occupancyPercent, strExpensePercent, strManagementPercent, adrGrowthRate
+      });
     }
     setSaving(false);
+  };
+
+  const handleNavigateAway = useCallback((path: string) => {
+    if (hasUnsavedChanges) {
+      setPendingNavigation(path);
+      setShowLeaveWarning(true);
+    } else {
+      navigate(path);
+    }
+  }, [hasUnsavedChanges, navigate]);
+
+  const confirmLeave = () => {
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+    setShowLeaveWarning(false);
+    setPendingNavigation(null);
   };
 
   if (loading) {
@@ -166,22 +266,42 @@ const AccountSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-theme-bg">
+    <div className="min-h-screen bg-theme-bg pb-24">
+      {/* Unsaved Changes Warning Dialog */}
+      <AlertDialog open={showLeaveWarning} onOpenChange={setShowLeaveWarning}>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-theme-text flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              {language === 'es' ? 'Cambios sin guardar' : 'Unsaved Changes'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {language === 'es' 
+                ? 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir sin guardar?'
+                : 'You have unsaved changes. Are you sure you want to leave without saving?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-theme-bg-alt border-theme-border text-theme-text hover:bg-theme-bg">
+              {language === 'es' ? 'Cancelar' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLeave} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30">
+              {language === 'es' ? 'Salir sin guardar' : 'Leave without saving'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <PageHeader
         title={t('accountSettingsTitle')}
-        subtitle="Manage your profile and preferences"
+        subtitle={hasUnsavedChanges 
+          ? (language === 'es' ? '⚠️ Tienes cambios sin guardar' : '⚠️ You have unsaved changes')
+          : (language === 'es' ? 'Administra tu perfil y preferencias' : 'Manage your profile and preferences')}
         icon={<Settings className="w-5 h-5" />}
         backLink="/home"
         shortcuts={defaultShortcuts}
         actions={
           <div className="flex items-center gap-3">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
-            >
-              {saving ? t('accountSaving') : t('accountSaveChanges')}
-            </Button>
             <Button
               variant="outline"
               onClick={signOut}
@@ -284,12 +404,22 @@ const AccountSettings = () => {
             {/* Quick Links */}
             <Card className="bg-theme-card border-theme-border">
               <CardContent className="pt-4 space-y-2">
-                <Link to="/my-quotes" className="block">
-                  <Button variant="outlineDark" size="sm" className="w-full justify-start">{t('accountViewGenerators')}</Button>
-                </Link>
-                <Link to="/dashboard" className="block">
-                  <Button variant="outlineDark" size="sm" className="w-full justify-start">{t('accountAdminDashboard')}</Button>
-                </Link>
+                <Button 
+                  variant="outlineDark" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={() => handleNavigateAway('/my-quotes')}
+                >
+                  {t('accountViewGenerators')}
+                </Button>
+                <Button 
+                  variant="outlineDark" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={() => handleNavigateAway('/dashboard')}
+                >
+                  {t('accountAdminDashboard')}
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -376,6 +506,74 @@ const AccountSettings = () => {
           </div>
         </div>
       </main>
+
+      {/* Floating Save Button */}
+      <div className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ${
+        hasUnsavedChanges 
+          ? 'translate-y-0 opacity-100' 
+          : 'translate-y-full opacity-0 pointer-events-none'
+      }`}>
+        <div className="bg-gradient-to-t from-theme-bg via-theme-bg/95 to-transparent pt-8 pb-6">
+          <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+            <div className="flex items-center justify-between bg-theme-card border border-theme-accent/30 rounded-xl p-4 shadow-2xl shadow-theme-accent/10">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-sm text-theme-text">
+                  {language === 'es' 
+                    ? 'Tienes cambios sin guardar'
+                    : 'You have unsaved changes'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Reset to initial values
+                    if (initialValues) {
+                      setFullName(initialValues.fullName);
+                      setBusinessEmail(initialValues.businessEmail);
+                      setWhatsappNumber(initialValues.whatsappNumber);
+                      setWhatsappCountryCode(initialValues.whatsappCountryCode);
+                      setCommissionRate(initialValues.commissionRate);
+                      setConstructionAppreciation(initialValues.constructionAppreciation);
+                      setGrowthAppreciation(initialValues.growthAppreciation);
+                      setMatureAppreciation(initialValues.matureAppreciation);
+                      setGrowthPeriodYears(initialValues.growthPeriodYears);
+                      setMortgageFinancingPercent(initialValues.mortgageFinancingPercent);
+                      setMortgageInterestRate(initialValues.mortgageInterestRate);
+                      setMortgageTermYears(initialValues.mortgageTermYears);
+                      setMortgageProcessingFee(initialValues.mortgageProcessingFee);
+                      setMortgageValuationFee(initialValues.mortgageValuationFee);
+                      setMortgageRegistrationPercent(initialValues.mortgageRegistrationPercent);
+                      setMortgageLifeInsurancePercent(initialValues.mortgageLifeInsurancePercent);
+                      setMortgagePropertyInsurance(initialValues.mortgagePropertyInsurance);
+                      setAdr(initialValues.adr);
+                      setOccupancyPercent(initialValues.occupancyPercent);
+                      setStrExpensePercent(initialValues.strExpensePercent);
+                      setStrManagementPercent(initialValues.strManagementPercent);
+                      setAdrGrowthRate(initialValues.adrGrowthRate);
+                    }
+                  }}
+                  className="text-theme-text-muted hover:text-theme-text"
+                >
+                  {language === 'es' ? 'Descartar' : 'Discard'}
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving 
+                    ? (language === 'es' ? 'Guardando...' : 'Saving...') 
+                    : (language === 'es' ? 'Guardar cambios' : 'Save Changes')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

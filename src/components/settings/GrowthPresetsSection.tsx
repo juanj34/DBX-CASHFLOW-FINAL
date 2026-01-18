@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { TrendingUp, Shield, Target, Gauge, Sliders, Info, Plus, Trash2, Edit2, ChevronDown, Save } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { TrendingUp, Shield, Target, Gauge, Sliders, Info, Plus, Trash2, Edit2, ChevronDown, Save, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAppreciationPresets, AppreciationPreset } from '@/hooks/useAppreciationPresets';
 
 // Built-in Growth Profile Presets - these can be overridden by user
@@ -86,6 +87,14 @@ export const GrowthPresetsSection = ({
   const [newPresetName, setNewPresetName] = useState('');
   const [editingPreset, setEditingPreset] = useState<AppreciationPreset | null>(null);
   const [editingBuiltIn, setEditingBuiltIn] = useState<BuiltInPresetKey | null>(null);
+  
+  // Track if sliders have been manually modified since last preset selection
+  const [hasManualChanges, setHasManualChanges] = useState(false);
+  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
+  const [pendingPresetSwitch, setPendingPresetSwitch] = useState<{ type: 'builtin', key: BuiltInPresetKey } | { type: 'saved', preset: AppreciationPreset } | null>(null);
+  
+  // Track the last applied preset values to detect manual changes
+  const lastAppliedValuesRef = useRef<{ c: number; g: number; m: number; y: number } | null>(null);
 
   // Get effective values for built-in presets (check for user overrides)
   const getBuiltInPresetValues = (key: BuiltInPresetKey) => {
@@ -106,21 +115,73 @@ export const GrowthPresetsSection = ({
     return presets.some(p => p.builtin_key === key);
   };
 
-  const handleBuiltInPresetSelect = (key: BuiltInPresetKey) => {
-    const values = getBuiltInPresetValues(key);
+  // Detect manual slider changes
+  useEffect(() => {
+    if (lastAppliedValuesRef.current) {
+      const { c, g, m, y } = lastAppliedValuesRef.current;
+      if (
+        constructionAppreciation !== c ||
+        growthAppreciation !== g ||
+        matureAppreciation !== m ||
+        growthPeriodYears !== y
+      ) {
+        setHasManualChanges(true);
+      }
+    }
+  }, [constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears]);
+
+  const applyPresetValues = (values: { construction: number; growth: number; mature: number; growthYears: number }, presetId: string) => {
     setConstructionAppreciation(values.construction);
     setGrowthAppreciation(values.growth);
     setMatureAppreciation(values.mature);
     setGrowthPeriodYears(values.growthYears);
-    setSelectedPreset(key);
+    setSelectedPreset(presetId);
+    setHasManualChanges(false);
+    lastAppliedValuesRef.current = { c: values.construction, g: values.growth, m: values.mature, y: values.growthYears };
+  };
+
+  const handleBuiltInPresetSelect = (key: BuiltInPresetKey) => {
+    if (hasManualChanges) {
+      setPendingPresetSwitch({ type: 'builtin', key });
+      setShowSwitchWarning(true);
+      return;
+    }
+    const values = getBuiltInPresetValues(key);
+    applyPresetValues(values, key);
   };
 
   const handleSavedPresetSelect = (preset: AppreciationPreset) => {
-    setConstructionAppreciation(preset.construction_appreciation);
-    setGrowthAppreciation(preset.growth_appreciation);
-    setMatureAppreciation(preset.mature_appreciation);
-    setGrowthPeriodYears(preset.growth_period_years);
-    setSelectedPreset(preset.id);
+    if (hasManualChanges) {
+      setPendingPresetSwitch({ type: 'saved', preset });
+      setShowSwitchWarning(true);
+      return;
+    }
+    applyPresetValues({
+      construction: preset.construction_appreciation,
+      growth: preset.growth_appreciation,
+      mature: preset.mature_appreciation,
+      growthYears: preset.growth_period_years,
+    }, preset.id);
+  };
+
+  const confirmPresetSwitch = () => {
+    if (!pendingPresetSwitch) return;
+    
+    if (pendingPresetSwitch.type === 'builtin') {
+      const values = getBuiltInPresetValues(pendingPresetSwitch.key);
+      applyPresetValues(values, pendingPresetSwitch.key);
+    } else {
+      const { preset } = pendingPresetSwitch;
+      applyPresetValues({
+        construction: preset.construction_appreciation,
+        growth: preset.growth_appreciation,
+        mature: preset.mature_appreciation,
+        growthYears: preset.growth_period_years,
+      }, preset.id);
+    }
+    
+    setShowSwitchWarning(false);
+    setPendingPresetSwitch(null);
   };
 
   const handleSavePreset = async () => {
@@ -213,22 +274,56 @@ export const GrowthPresetsSection = ({
   const customPresets = presets.filter(p => !p.builtin_key);
 
   return (
-    <Card className="bg-theme-card border-theme-border">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-theme-accent" />
-          <CardTitle className="text-lg font-semibold text-theme-text">
-            {language === 'es' ? 'Perfiles de Proyección' : 'Growth Projection Profiles'}
-          </CardTitle>
-        </div>
-        <CardDescription className="text-theme-text-muted">
-          {language === 'es' 
-            ? 'Selecciona, edita o crea perfiles de apreciación.'
-            : 'Select, edit or create appreciation profiles.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Built-in Preset Cards */}
+    <>
+      {/* Warning dialog for switching presets with unsaved changes */}
+      <AlertDialog open={showSwitchWarning} onOpenChange={setShowSwitchWarning}>
+        <AlertDialogContent className="bg-theme-card border-theme-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-theme-text flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              {language === 'es' ? 'Cambios no aplicados' : 'Unapplied Changes'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-theme-text-muted">
+              {language === 'es' 
+                ? 'Has modificado los valores de apreciación. ¿Quieres cambiar de perfil y perder estos cambios?'
+                : 'You have modified the appreciation values. Do you want to switch profiles and lose these changes?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-theme-bg-alt border-theme-border text-theme-text hover:bg-theme-bg">
+              {language === 'es' ? 'Cancelar' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPresetSwitch} className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90">
+              {language === 'es' ? 'Cambiar perfil' : 'Switch Profile'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Card className="bg-theme-card border-theme-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-theme-accent" />
+              <CardTitle className="text-lg font-semibold text-theme-text">
+                {language === 'es' ? 'Perfiles de Proyección' : 'Growth Projection Profiles'}
+              </CardTitle>
+            </div>
+            {hasManualChanges && (
+              <span className="text-xs px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                {language === 'es' ? 'Modificado' : 'Modified'}
+              </span>
+            )}
+          </div>
+          <CardDescription className="text-theme-text-muted">
+            {language === 'es' 
+              ? 'Selecciona, edita o crea perfiles de apreciación.'
+              : 'Select, edit or create appreciation profiles.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Built-in Preset Cards */}
         <div className="grid grid-cols-3 gap-3">
           {(Object.entries(DEFAULT_BUILTIN_PRESETS) as [BuiltInPresetKey, typeof DEFAULT_BUILTIN_PRESETS[BuiltInPresetKey]][]).map(([key, preset]) => {
             const Icon = preset.icon;
@@ -552,5 +647,6 @@ export const GrowthPresetsSection = ({
         </Dialog>
       </CardContent>
     </Card>
+    </>
   );
 };
