@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Building, Building2, Home, Ruler, Users, Pencil, Plus, MapPin } from "lucide-react";
+import { Building, Building2, Home, Ruler, Users, Pencil, Plus, MapPin, LayoutGrid, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UNIT_TYPES } from "./ClientUnitModal";
@@ -35,6 +35,9 @@ interface PropertyHeroCardProps {
   language?: 'en' | 'es';
   setLanguage?: (l: 'en' | 'es') => void;
   rate?: number;
+  // New props for View Project and Floor Plans buttons
+  floorPlanUrl?: string | null;
+  onViewFloorPlan?: () => void;
 }
 
 export const PropertyHeroCard = ({ 
@@ -51,6 +54,8 @@ export const PropertyHeroCard = ({
   language = 'en',
   setLanguage,
   rate = 1,
+  floorPlanUrl,
+  onViewFloorPlan,
 }: PropertyHeroCardProps) => {
   const { language: contextLanguage, t } = useLanguage();
   // Use prop language if provided for snapshot view, otherwise use context
@@ -225,12 +230,42 @@ export const PropertyHeroCard = ({
               {data.projectName || 'Unnamed Project'}
             </h1>
             
-            {data.zoneName && (
-              <span className="flex items-center gap-1.5 text-white/80 text-sm">
-                <MapPin className="w-4 h-4 text-[#CCFF00]" />
-                {data.zoneName}
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {data.zoneName && (
+                <span className="flex items-center gap-1.5 text-white/80 text-sm">
+                  <MapPin className="w-4 h-4 text-[#CCFF00]" />
+                  {data.zoneName}
+                </span>
+              )}
+              
+              {/* View Project and Floor Plans buttons - Only in Snapshot view */}
+              {showPriceInfo && (
+                <div className="flex items-center gap-2">
+                  {project && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setProjectModalOpen(true)}
+                      className="h-7 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5 mr-1" />
+                      Project
+                    </Button>
+                  )}
+                  {floorPlanUrl && onViewFloorPlan && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onViewFloorPlan}
+                      className="h-7 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
+                    >
+                      <FileImage className="w-3.5 h-3.5 mr-1" />
+                      Floor Plan
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Row 2: Developer • Unit • Type • Size • Client */}
