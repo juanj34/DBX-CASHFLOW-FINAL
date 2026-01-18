@@ -18,4 +18,4 @@ export { CompactPaymentTable } from './CompactPaymentTable';
 export { CompactRentCard } from './CompactRentCard';
 export { CompactMortgageCard } from './CompactMortgageCard';
 export { DottedRow } from './DottedRow';
-export { WealthProjectionChart } from './WealthProjectionChart';
+export { WealthProjectionTable } from './WealthProjectionTable';

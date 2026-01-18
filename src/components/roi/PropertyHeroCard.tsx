@@ -179,44 +179,45 @@ export const PropertyHeroCard = ({
           )}
         </div>
 
-        {/* Currency & Language Dropdowns - Top Right */}
-        {showPriceInfo && setCurrency && setLanguage && (
-          <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-            <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-              <SelectTrigger className="w-[90px] h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
-                <SelectValue>
-                  <span className="flex items-center gap-1.5">
-                    <span>{CURRENCY_CONFIG[currency].flag}</span>
-                    <span>{currency}</span>
-                  </span>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1f2e] border-white/20">
-                {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((c) => (
-                  <SelectItem key={c} value={c} className="text-white hover:bg-white/10">
-                    <span className="flex items-center gap-2">
-                      <span>{CURRENCY_CONFIG[c].flag}</span>
-                      <span>{c}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
-              <SelectTrigger className="w-[70px] h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
-                <SelectValue>{language.toUpperCase()}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1f2e] border-white/20">
-                <SelectItem value="en" className="text-white hover:bg-white/10">EN</SelectItem>
-                <SelectItem value="es" className="text-white hover:bg-white/10">ES</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
         {/* Content - 2 Rows */}
         <div className="relative px-5 py-6 min-h-[160px] flex flex-col justify-end">
+          
+          {/* Currency & Language Dropdowns - Inside content, top left */}
+          {showPriceInfo && setCurrency && setLanguage && (
+            <div className="absolute top-4 left-5 flex items-center gap-2 z-20">
+              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                <SelectTrigger className="w-[90px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
+                  <SelectValue>
+                    <span className="flex items-center gap-1.5">
+                      <span>{CURRENCY_CONFIG[currency].flag}</span>
+                      <span>{currency}</span>
+                    </span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-white/20 z-50">
+                  {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((c) => (
+                    <SelectItem key={c} value={c} className="text-white hover:bg-white/10">
+                      <span className="flex items-center gap-2">
+                        <span>{CURRENCY_CONFIG[c].flag}</span>
+                        <span>{c}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
+                <SelectTrigger className="w-[65px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
+                  <SelectValue>{language.toUpperCase()}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1f2e] border-white/20 z-50">
+                  <SelectItem value="en" className="text-white hover:bg-white/10">EN</SelectItem>
+                  <SelectItem value="es" className="text-white hover:bg-white/10">ES</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           
           {/* Row 1: Project + Zone */}
           <div className="flex items-center justify-between mb-3">
