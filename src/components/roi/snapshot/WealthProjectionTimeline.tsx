@@ -142,15 +142,12 @@ export const WealthProjectionTimeline = ({
               )} />
             </div>
             
-            {/* Phase + Appreciation */}
+            {/* Phase label only */}
             <div className="mt-2">
               <div className={cn(
                 "text-[10px] sm:text-xs font-semibold",
                 getPhaseColor(proj.phase)
               )}>
-                {proj.appreciation}%
-              </div>
-              <div className="text-[8px] sm:text-[10px] text-theme-text-muted">
                 {getPhaseLabel(proj.phase)}
               </div>
             </div>
