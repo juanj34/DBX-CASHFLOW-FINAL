@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
-import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
+import { motion } from 'framer-motion';
+import { Currency, formatCurrency } from '../currencyUtils';
 
 interface WealthProjectionTableProps {
   basePrice: number;
@@ -81,7 +82,12 @@ export const WealthProjectionTable = ({
   };
 
   return (
-    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden flex flex-col">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="bg-theme-card border border-theme-border rounded-xl overflow-hidden flex flex-col"
+    >
       {/* Header */}
       <div className="p-3 border-b border-theme-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -90,9 +96,14 @@ export const WealthProjectionTable = ({
             Wealth Projection
           </span>
         </div>
-        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium">
+        <motion.span 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+          className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium"
+        >
           +{totalGrowth.toFixed(0)}% in 7 years
-        </span>
+        </motion.span>
       </div>
 
       {/* Table */}
@@ -108,15 +119,18 @@ export const WealthProjectionTable = ({
           </thead>
           <tbody>
             {tableData.map((row, index) => (
-              <tr 
-                key={row.year} 
+              <motion.tr 
+                key={row.year}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
                 className={`border-b border-theme-border/50 last:border-0 ${index === 0 ? 'bg-theme-accent/5' : ''}`}
               >
                 <td className="py-1.5 px-3 text-theme-text font-medium">
                   {row.year}
                 </td>
                 <td className="py-1.5 px-3 text-right">
-                  <div className="text-theme-text tabular-nums">
+                  <div className="text-theme-text tabular-nums font-medium">
                     {formatCurrency(row.value, 'AED', 1)}
                   </div>
                   {currency !== 'AED' && (
@@ -136,14 +150,19 @@ export const WealthProjectionTable = ({
                 <td className={`py-1.5 px-3 text-right tabular-nums ${getPhaseTextColor(row.phase)}`}>
                   +{row.appreciation}%
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
       </div>
 
       {/* Phase Legend */}
-      <div className="flex items-center justify-center gap-4 py-2 px-3 border-t border-theme-border/50 bg-theme-bg/30 flex-shrink-0">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.3 }}
+        className="flex items-center justify-center gap-4 py-2 px-3 border-t border-theme-border/50 bg-theme-bg/30 flex-shrink-0"
+      >
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-orange-400" />
           <span className="text-[10px] text-theme-text-muted">{constructionAppreciation}%/yr</span>
@@ -156,7 +175,7 @@ export const WealthProjectionTable = ({
           <span className="w-2 h-2 rounded-full bg-blue-400" />
           <span className="text-[10px] text-theme-text-muted">{matureAppreciation}%/yr</span>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
