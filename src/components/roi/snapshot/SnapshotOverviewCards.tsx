@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { CreditCard, Home, Clock, TrendingUp, ChevronRight, Trophy, Calendar } from 'lucide-react';
+import { CreditCard, Home, Clock, TrendingUp, Trophy, Calendar } from 'lucide-react';
 import { OIInputs, OICalculations } from '../useOICalculations';
-import { Currency, formatCurrency } from '../currencyUtils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
 import { calculateExitScenario, monthToConstruction } from '../constructionProgress';
 import { cn } from '@/lib/utils';
+import { DottedRow } from './DottedRow';
 
 interface SnapshotOverviewCardsProps {
   inputs: OIInputs;
@@ -46,8 +45,6 @@ export const SnapshotOverviewCards = ({
   currency,
   rate,
 }: SnapshotOverviewCardsProps) => {
-  const [exitPopoverOpen, setExitPopoverOpen] = useState(false);
-  
   const { basePrice, downpaymentPercent, preHandoverPercent, oqoodFee, rentalYieldPercent, serviceChargePerSqft = 18, unitSizeSqf = 0 } = inputs;
   
   // Calculate Cash to Start
@@ -88,36 +85,47 @@ export const SnapshotOverviewCards = ({
   
   const handoverPercent = 100 - preHandoverPercent;
 
+  // Dual currency values
+  const cashToStartDual = formatDualCurrency(cashToStart, currency, rate);
+  const monthlyRentDual = formatDualCurrency(monthlyRent, currency, rate);
+  const netAnnualRentDual = formatDualCurrency(netAnnualRent, currency, rate);
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {/* Card 1: Cash to Start */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
+      <div className="bg-card border border-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
-          <CreditCard className="w-3.5 h-3.5 text-theme-accent" />
-          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Cash to Start</span>
+          <CreditCard className="w-3.5 h-3.5 text-primary" />
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Cash to Start</span>
         </div>
-        <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
-          {formatCurrency(cashToStart, currency, rate)}
+        <div className="text-lg font-bold text-foreground font-mono tabular-nums">
+          {cashToStartDual.primary}
+          {cashToStartDual.secondary && (
+            <span className="text-muted-foreground text-xs ml-1">({cashToStartDual.secondary})</span>
+          )}
         </div>
-        <div className="text-[10px] text-theme-text-muted mt-1">
+        <div className="text-[10px] text-muted-foreground mt-1">
           Downpayment + DLD + Fees
         </div>
-        <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-theme-accent/10 border border-theme-accent/30">
-          <span className="text-[9px] font-medium text-theme-accent">Plan: {preHandoverPercent}/{handoverPercent}</span>
+        <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30">
+          <span className="text-[9px] font-medium text-primary">Plan: {preHandoverPercent}/{handoverPercent}</span>
         </div>
       </div>
 
       {/* Card 2: Rental Income */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
+      <div className="bg-card border border-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Home className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Rental Income</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Rental Income</span>
         </div>
-        <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
-          {formatCurrency(monthlyRent, currency, rate)}<span className="text-xs text-theme-text-muted">/mo</span>
+        <div className="text-lg font-bold text-foreground font-mono tabular-nums">
+          {monthlyRentDual.primary}<span className="text-xs text-muted-foreground">/mo</span>
+          {monthlyRentDual.secondary && (
+            <span className="text-muted-foreground text-xs ml-1">({monthlyRentDual.secondary})</span>
+          )}
         </div>
-        <div className="text-[10px] text-theme-text-muted mt-1">
-          {formatCurrency(netAnnualRent, currency, rate)}/year net
+        <div className="text-[10px] text-muted-foreground mt-1">
+          {netAnnualRentDual.primary}/year net
         </div>
         <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
           <span className="text-[9px] font-medium text-cyan-400">Yield: {netYieldPercent.toFixed(1)}%</span>
@@ -125,15 +133,15 @@ export const SnapshotOverviewCards = ({
       </div>
 
       {/* Card 3: Breakeven */}
-      <div className="bg-theme-card border border-theme-border rounded-xl p-3">
+      <div className="bg-card border border-border rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Clock className="w-3.5 h-3.5 text-purple-400" />
-          <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Breakeven</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Breakeven</span>
         </div>
-        <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
+        <div className="text-lg font-bold text-foreground font-mono tabular-nums">
           {yearsToBreakeven < 999 ? `${yearsToBreakeven.toFixed(1)} years` : 'N/A'}
         </div>
-        <div className="text-[10px] text-theme-text-muted mt-1">
+        <div className="text-[10px] text-muted-foreground mt-1">
           From rental income
         </div>
         <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30">
@@ -141,94 +149,52 @@ export const SnapshotOverviewCards = ({
         </div>
       </div>
 
-      {/* Card 4: Best Exit - Clickable */}
-      <Popover open={exitPopoverOpen} onOpenChange={setExitPopoverOpen}>
-        <PopoverTrigger asChild>
-          <div className="bg-theme-card border border-theme-border rounded-xl p-3 cursor-pointer hover:border-green-500/50 transition-colors group">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-                <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Best Exit</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-theme-text-muted group-hover:text-green-400 transition-colors" />
-            </div>
-            <div className="text-lg font-bold text-green-400 font-mono tabular-nums">
-              {bestScenario?.annualizedROE.toFixed(1)}%<span className="text-xs text-theme-text-muted">/yr</span>
-            </div>
-            <div className="text-[10px] text-theme-text-muted mt-1">
-              @ {bestScenario?.isHandover ? 'Handover' : bestScenario?.dateStr}
-            </div>
-            <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-green-500/10 border border-green-500/30">
-              <span className="text-[9px] font-medium text-green-400">Click for all exits</span>
-            </div>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-80 bg-theme-card border-theme-border p-3" 
-          side="bottom" 
-          align="end"
-        >
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-theme-border">
-              <TrendingUp className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-semibold text-theme-text">Exit Scenarios</span>
-            </div>
+      {/* Card 4: All Exit Scenarios (Inline) */}
+      <div className="bg-card border border-border rounded-xl p-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Exit Scenarios</span>
+        </div>
+        <div className="space-y-1.5">
+          {scenarios.map((scenario, index) => {
+            const isBest = scenario.annualizedROE === bestScenario?.annualizedROE && scenarios.length > 1;
+            const exitPriceDual = formatDualCurrency(scenario.exitPrice, currency, rate);
             
-            <div className="space-y-2">
-              {scenarios.map((scenario) => {
-                const isBest = scenario.annualizedROE === bestScenario?.annualizedROE && scenarios.length > 1;
-                const badge = getRoeBadge(scenario.annualizedROE);
-                
-                return (
-                  <div
-                    key={scenario.exitMonths}
-                    className={cn(
-                      "p-2 rounded-lg border flex items-center justify-between",
-                      isBest 
-                        ? "bg-green-500/10 border-green-500/30" 
-                        : "bg-theme-card-alt border-theme-border"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      {isBest && <Trophy className="w-3.5 h-3.5 text-yellow-500" />}
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3 h-3 text-theme-text-muted" />
-                          <span className="text-xs font-medium text-theme-text">
-                            {scenario.isHandover ? 'Handover' : scenario.dateStr}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-theme-text-muted">
-                          {formatMonths(scenario.exitMonths)} · {Math.round(scenario.constructionPercent)}% built
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-theme-text-muted">
-                        {formatCurrency(scenario.exitPrice, currency, rate)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className={cn(
-                          "text-sm font-bold font-mono",
-                          scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
-                        )}>
-                          {scenario.annualizedROE.toFixed(1)}%
-                        </span>
-                        <span className={cn(
-                          "text-[8px] px-1 py-0.5 rounded border",
-                          badge.className
-                        )}>
-                          {badge.label}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+            return (
+              <div
+                key={scenario.exitMonths}
+                className={cn(
+                  "flex items-center justify-between text-[10px]",
+                  isBest && "text-green-400"
+                )}
+              >
+                <div className="flex items-center gap-1">
+                  {isBest && <Trophy className="w-2.5 h-2.5 text-yellow-500" />}
+                  <Calendar className="w-2.5 h-2.5 text-muted-foreground" />
+                  <span className={cn("text-muted-foreground", isBest && "text-green-400")}>
+                    {scenario.isHandover ? 'Handover' : scenario.dateStr}
+                  </span>
+                </div>
+                <span className={cn(
+                  "font-mono tabular-nums font-semibold",
+                  scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
+                )}>
+                  {scenario.annualizedROE.toFixed(0)}%/yr
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 pt-1.5 border-t border-border">
+          <DottedRow 
+            label="Best Value" 
+            value={formatCurrency(bestScenario?.exitPrice || 0, currency, rate)}
+            className="text-[10px]"
+            labelClassName="text-[10px]"
+            valueClassName="text-[10px] text-green-400"
+          />
+        </div>
+      </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { SnapshotOverviewCards } from './SnapshotOverviewCards';
 import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
+import { SnapshotToolbar } from './SnapshotToolbar';
 
 interface SnapshotContentProps {
   inputs: OIInputs;
@@ -21,6 +22,9 @@ interface SnapshotContentProps {
     buildingRenderUrl?: string | null;
   };
   currency: Currency;
+  setCurrency: (currency: Currency) => void;
+  language: 'en' | 'es';
+  setLanguage: (language: 'en' | 'es') => void;
   rate: number;
 }
 
@@ -33,9 +37,15 @@ export const SnapshotContent = ({
   exitScenarios,
   quoteImages,
   currency,
+  setCurrency,
+  language,
+  setLanguage,
   rate,
 }: SnapshotContentProps) => {
   const basePrice = calculations.basePrice;
+
+  // Calculate price per sqft
+  const pricePerSqft = clientInfo.unitSizeSqf > 0 ? basePrice / clientInfo.unitSizeSqf : 0;
 
   // Calculate monthly rent for mortgage card
   const grossAnnualRent = basePrice * (inputs.rentalYieldPercent / 100);
@@ -45,6 +55,17 @@ export const SnapshotContent = ({
 
   return (
     <div className="flex-1 overflow-auto p-4 space-y-4 animate-fade-in">
+      {/* Toolbar with Price, Currency, Language toggles */}
+      <SnapshotToolbar
+        basePrice={basePrice}
+        pricePerSqft={pricePerSqft}
+        currency={currency}
+        setCurrency={setCurrency}
+        language={language}
+        setLanguage={setLanguage}
+        rate={rate}
+      />
+
       {/* Compact Hero - Just client/project info */}
       <PropertyHeroCard
         data={clientInfo}

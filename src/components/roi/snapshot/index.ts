@@ -17,3 +17,5 @@ export { SnapshotOverviewCards } from './SnapshotOverviewCards';
 export { CompactPaymentTable } from './CompactPaymentTable';
 export { CompactRentCard } from './CompactRentCard';
 export { CompactMortgageCard } from './CompactMortgageCard';
+export { DottedRow } from './DottedRow';
+export { SnapshotToolbar } from './SnapshotToolbar';

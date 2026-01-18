@@ -1,7 +1,8 @@
 import { CreditCard, ArrowRight } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
-import { Currency, formatCurrency } from '../currencyUtils';
+import { Currency, formatDualCurrency } from '../currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { DottedRow } from './DottedRow';
 
 interface CompactPaymentTableProps {
   inputs: OIInputs;
@@ -83,15 +84,21 @@ export const CompactPaymentTable = ({
     return '';
   };
 
+  // Dual currency helpers
+  const getDualValue = (value: number) => {
+    const dual = formatDualCurrency(value, currency, rate);
+    return { primary: dual.primary, secondary: dual.secondary };
+  };
+
   return (
-    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden h-fit">
+    <div className="bg-card border border-border rounded-xl overflow-hidden h-fit">
       {/* Header */}
-      <div className="p-3 border-b border-theme-border flex items-center justify-between">
+      <div className="p-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-theme-accent" />
-          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Payment Breakdown</span>
+          <CreditCard className="w-4 h-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Payment Breakdown</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-theme-text-muted">
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
           <span>{monthToDateString(bookingMonth, bookingYear, language)}</span>
           <ArrowRight className="w-3 h-3" />
           <span>Q{handoverQuarter} {handoverYear}</span>
@@ -102,25 +109,33 @@ export const CompactPaymentTable = ({
       <div className="p-3 space-y-3">
         {/* Section: The Entry */}
         <div>
-          <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-2">
+          <div className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-2">
             The Entry
           </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-theme-text-muted">Downpayment ({downpaymentPercent}%)</span>
-              <span className="font-mono tabular-nums text-theme-text">{formatCurrency(downpaymentAmount, currency, rate)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-theme-text-muted">DLD Fee (4%)</span>
-              <span className="font-mono tabular-nums text-theme-text">{formatCurrency(dldFee, currency, rate)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-theme-text-muted">Oqood/Admin</span>
-              <span className="font-mono tabular-nums text-theme-text">{formatCurrency(oqoodFee, currency, rate)}</span>
-            </div>
-            <div className="flex justify-between text-xs pt-1 border-t border-theme-border mt-1">
-              <span className="font-medium text-theme-text">Total Entry</span>
-              <span className="font-mono tabular-nums font-bold text-theme-accent">{formatCurrency(entryTotal, currency, rate)}</span>
+            <DottedRow 
+              label={`Downpayment (${downpaymentPercent}%)`}
+              value={getDualValue(downpaymentAmount).primary}
+              secondaryValue={getDualValue(downpaymentAmount).secondary}
+            />
+            <DottedRow 
+              label="DLD Fee (4%)"
+              value={getDualValue(dldFee).primary}
+              secondaryValue={getDualValue(dldFee).secondary}
+            />
+            <DottedRow 
+              label="Oqood/Admin"
+              value={getDualValue(oqoodFee).primary}
+              secondaryValue={getDualValue(oqoodFee).secondary}
+            />
+            <div className="pt-1 border-t border-border mt-1">
+              <DottedRow 
+                label="Total Entry"
+                value={getDualValue(entryTotal).primary}
+                secondaryValue={getDualValue(entryTotal).secondary}
+                bold
+                valueClassName="text-primary"
+              />
             </div>
           </div>
         </div>
@@ -135,19 +150,24 @@ export const CompactPaymentTable = ({
               {sortedPayments.map((payment, index) => {
                 const amount = basePrice * (payment.paymentPercent / 100);
                 const dateStr = getPaymentDate(payment);
+                const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
                 return (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span className="text-theme-text-muted">
-                      {getPaymentLabel(payment)}
-                      {dateStr && <span className="text-theme-text-muted/60 ml-1">({dateStr})</span>}
-                    </span>
-                    <span className="font-mono tabular-nums text-theme-text">{formatCurrency(amount, currency, rate)}</span>
-                  </div>
+                  <DottedRow 
+                    key={index}
+                    label={labelWithDate}
+                    value={getDualValue(amount).primary}
+                    secondaryValue={getDualValue(amount).secondary}
+                  />
                 );
               })}
-              <div className="flex justify-between text-xs pt-1 border-t border-theme-border mt-1">
-                <span className="font-medium text-theme-text">Subtotal</span>
-                <span className="font-mono tabular-nums font-medium text-cyan-400">{formatCurrency(journeyTotal, currency, rate)}</span>
+              <div className="pt-1 border-t border-border mt-1">
+                <DottedRow 
+                  label="Subtotal"
+                  value={getDualValue(journeyTotal).primary}
+                  secondaryValue={getDualValue(journeyTotal).secondary}
+                  bold
+                  valueClassName="text-cyan-400"
+                />
               </div>
             </div>
           </div>
@@ -159,19 +179,27 @@ export const CompactPaymentTable = ({
             Handover ({handoverPercent}%)
           </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-theme-text-muted">Final Payment</span>
-              <span className="font-mono tabular-nums font-bold text-green-400">{formatCurrency(handoverAmount, currency, rate)}</span>
-            </div>
+            <DottedRow 
+              label="Final Payment"
+              value={getDualValue(handoverAmount).primary}
+              secondaryValue={getDualValue(handoverAmount).secondary}
+              bold
+              valueClassName="text-green-400"
+            />
           </div>
         </div>
 
         {/* Grand Total */}
-        <div className="pt-2 border-t border-theme-border">
-          <div className="flex justify-between text-sm">
-            <span className="font-semibold text-theme-text">Total Investment</span>
-            <span className="font-mono tabular-nums font-bold text-theme-text">{formatCurrency(grandTotal, currency, rate)}</span>
-          </div>
+        <div className="pt-2 border-t border-border">
+          <DottedRow 
+            label="Total Investment"
+            value={getDualValue(grandTotal).primary}
+            secondaryValue={getDualValue(grandTotal).secondary}
+            bold
+            className="text-sm"
+            labelClassName="text-sm"
+            valueClassName="text-sm"
+          />
         </div>
       </div>
     </div>

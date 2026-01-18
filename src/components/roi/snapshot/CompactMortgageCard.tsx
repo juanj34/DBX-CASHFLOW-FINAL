@@ -1,6 +1,7 @@
 import { Landmark, TrendingUp, TrendingDown } from 'lucide-react';
 import { MortgageInputs, MortgageAnalysis } from '../useMortgageCalculations';
-import { Currency, formatCurrency } from '../currencyUtils';
+import { Currency, formatDualCurrency } from '../currencyUtils';
+import { DottedRow } from './DottedRow';
 
 interface CompactMortgageCardProps {
   mortgageInputs: MortgageInputs;
@@ -25,13 +26,19 @@ export const CompactMortgageCard = ({
   const monthlyCashflow = monthlyRent - monthlyPayment;
   const isPositive = monthlyCashflow >= 0;
 
+  // Dual currency helper
+  const getDualValue = (value: number) => {
+    const dual = formatDualCurrency(value, currency, rate);
+    return { primary: dual.primary, secondary: dual.secondary };
+  };
+
   return (
-    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="p-3 border-b border-theme-border flex items-center justify-between">
+      <div className="p-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Landmark className="w-4 h-4 text-purple-400" />
-          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Mortgage</span>
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Mortgage</span>
         </div>
         <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-400">
           {mortgageInputs.loanTermYears}yr @ {mortgageInputs.interestRate}%
@@ -39,47 +46,48 @@ export const CompactMortgageCard = ({
       </div>
 
       {/* Content */}
-      <div className="p-3 space-y-2">
+      <div className="p-3 space-y-1.5">
         {/* Loan Amount */}
-        <div className="flex justify-between text-xs">
-          <span className="text-theme-text-muted">Loan Amount ({100 - equityRequiredPercent}%)</span>
-          <span className="font-mono tabular-nums text-theme-text">{formatCurrency(loanAmount, currency, rate)}</span>
-        </div>
+        <DottedRow 
+          label={`Loan Amount (${100 - equityRequiredPercent}%)`}
+          value={getDualValue(loanAmount).primary}
+          secondaryValue={getDualValue(loanAmount).secondary}
+        />
         
         {/* Monthly Payment */}
-        <div className="flex justify-between text-xs">
-          <span className="text-theme-text-muted">Monthly Payment</span>
-          <span className="font-mono tabular-nums font-bold text-purple-400">{formatCurrency(monthlyPayment, currency, rate)}</span>
-        </div>
+        <DottedRow 
+          label="Monthly Payment"
+          value={getDualValue(monthlyPayment).primary}
+          secondaryValue={getDualValue(monthlyPayment).secondary}
+          bold
+          valueClassName="text-purple-400"
+        />
         
         {/* Rental Income */}
-        <div className="flex justify-between text-xs">
-          <span className="text-theme-text-muted">Rental Income</span>
-          <span className="font-mono tabular-nums text-cyan-400">+{formatCurrency(monthlyRent, currency, rate)}</span>
-        </div>
+        <DottedRow 
+          label="Rental Income"
+          value={`+${getDualValue(monthlyRent).primary}`}
+          valueClassName="text-cyan-400"
+        />
         
         {/* Cash Flow */}
-        <div className="flex justify-between text-xs pt-2 border-t border-theme-border">
-          <span className="font-medium text-theme-text flex items-center gap-1">
-            {isPositive ? (
-              <TrendingUp className="w-3 h-3 text-green-400" />
-            ) : (
-              <TrendingDown className="w-3 h-3 text-red-400" />
-            )}
-            Monthly Cash Flow
-          </span>
-          <span className={`font-mono tabular-nums font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-            {isPositive ? '+' : ''}{formatCurrency(monthlyCashflow, currency, rate)}
-          </span>
+        <div className="pt-2 border-t border-border">
+          <DottedRow 
+            label="Monthly Cash Flow"
+            value={`${isPositive ? '+' : ''}${getDualValue(monthlyCashflow).primary}`}
+            bold
+            valueClassName={isPositive ? 'text-green-400' : 'text-red-400'}
+          />
         </div>
         
         {/* Summary badges */}
         <div className="flex items-center gap-2 pt-1">
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-theme-card-alt border border-theme-border text-theme-text-muted">
-            Total Interest: {formatCurrency(totalInterest, currency, rate)}
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+            Interest: {getDualValue(totalInterest).primary}
           </span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${isPositive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-            {isPositive ? 'Cash Flow Positive' : 'Negative'}
+          <span className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${isPositive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+            {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+            {isPositive ? 'Positive' : 'Negative'}
           </span>
         </div>
       </div>
