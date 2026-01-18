@@ -81,133 +81,117 @@ export const SnapshotOverviewCards = ({
     <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Cash to Start */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3">
-          <div className="flex items-center gap-1.5 mb-2">
+        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+          <div className="flex items-center gap-1.5 mb-1">
             <CreditCard className="w-3.5 h-3.5 text-primary" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Cash to Start</span>
+            <span className="ml-auto text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">{preHandoverPercent}/{handoverPercent}</span>
           </div>
-          <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
-            {cashToStartDual.primary}
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
+              {cashToStartDual.primary}
+            </div>
             {cashToStartDual.secondary && (
-              <span className="text-theme-text-muted text-xs ml-1">({cashToStartDual.secondary})</span>
+              <span className="text-[10px] text-theme-text-muted">{cashToStartDual.secondary}</span>
             )}
-          </div>
-          <div className="text-[10px] text-theme-text-muted mt-1">
-            Downpayment + DLD + Fees
-          </div>
-          <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30">
-            <span className="text-[9px] font-medium text-primary">Plan: {preHandoverPercent}/{handoverPercent}</span>
           </div>
         </div>
 
         {/* Card 2: Rental Income */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3">
-          <div className="flex items-center gap-1.5 mb-2">
+        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+          <div className="flex items-center gap-1.5 mb-1">
             <Home className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Rental Income</span>
+            <span className="ml-auto text-[9px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
           </div>
-          <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
-            {monthlyRentDual.primary}<span className="text-xs text-theme-text-muted">/mo</span>
-            {monthlyRentDual.secondary && (
-              <span className="text-theme-text-muted text-xs ml-1">({monthlyRentDual.secondary})</span>
-            )}
-          </div>
-          <div className="text-[10px] text-theme-text-muted mt-1">
-            {netAnnualRentDual.primary}/year net
-          </div>
-          <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
-            <span className="text-[9px] font-medium text-cyan-400">Yield: {netYieldPercent.toFixed(1)}%</span>
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
+              {monthlyRentDual.primary}<span className="text-[10px] text-theme-text-muted">/mo</span>
+            </div>
+            <span className="text-[10px] text-theme-text-muted">{netAnnualRentDual.primary}/year</span>
           </div>
         </div>
 
         {/* Card 3: Breakeven */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3">
-          <div className="flex items-center gap-1.5 mb-2">
+        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
+          <div className="flex items-center gap-1.5 mb-1">
             <Clock className="w-3.5 h-3.5 text-purple-400" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Breakeven</span>
+            <span className="ml-auto text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
           </div>
-          <div className="text-lg font-bold text-theme-text font-mono tabular-nums">
-            {yearsToBreakeven < 999 ? `${yearsToBreakeven.toFixed(1)} years` : 'N/A'}
-          </div>
-          <div className="text-[10px] text-theme-text-muted mt-1">
-            From rental income
-          </div>
-          <div className="inline-flex items-center mt-2 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30">
-            <span className="text-[9px] font-medium text-purple-400">Net Yield: {netYieldPercent.toFixed(1)}%</span>
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
+              {yearsToBreakeven < 999 ? `${yearsToBreakeven.toFixed(1)} years` : 'N/A'}
+            </div>
+            <span className="text-[10px] text-theme-text-muted">From rental income</span>
           </div>
         </div>
 
-        {/* Card 4: Exit Scenarios - Carousel */}
-        <div className="bg-theme-card border border-theme-border rounded-xl p-3 flex flex-col">
+        {/* Card 4: Exit Scenarios - Carousel - Same height as others */}
+        <div className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col">
           {/* Header with navigation and chart button */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Exit Scenarios</span>
-            </div>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Exit</span>
+            <div className="ml-auto flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 text-theme-text-muted hover:text-theme-text"
+                className="h-5 w-5 text-theme-text-muted hover:text-theme-text p-0"
                 onClick={() => setExitModalOpen(true)}
               >
-                <BarChart3 className="w-3.5 h-3.5" />
+                <BarChart3 className="w-3 h-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 text-theme-text-muted hover:text-theme-text"
+                className="h-5 w-5 text-theme-text-muted hover:text-theme-text p-0"
                 onClick={goPrev}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-3 h-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 text-theme-text-muted hover:text-theme-text"
+                className="h-5 w-5 text-theme-text-muted hover:text-theme-text p-0"
                 onClick={goNext}
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-3 h-3" />
               </Button>
             </div>
           </div>
 
-          {/* Carousel Content */}
+          {/* Carousel Content - Compact */}
           {activeScenario && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div className="flex items-center justify-between w-full mb-1">
-                <span className="text-[10px] text-theme-text-muted font-medium">
-                  {activeScenario.isHandover ? 'Handover' : `Month ${activeScenario.exitMonths}`}
+            <div className="flex-1 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-theme-text-muted">
+                  {activeScenario.isHandover ? 'Handover' : `Mo ${activeScenario.exitMonths}`} • {activeScenario.dateStr}
                 </span>
-                <span className="text-[10px] text-theme-text-muted">{activeScenario.dateStr}</span>
+                <span className="text-xs font-mono tabular-nums text-theme-text">
+                  {formatCurrency(activeScenario.exitPrice, currency, rate)}
+                </span>
               </div>
-              
-              <div className="text-xs font-mono tabular-nums text-theme-text mb-1">
-                {formatCurrency(activeScenario.exitPrice, currency, rate)}
+              <div className="text-right">
+                <div className="text-xl font-bold font-mono tabular-nums text-green-400 leading-none">
+                  {activeScenario.trueROE.toFixed(0)}%
+                </div>
+                <div className="flex items-center justify-end gap-1 mt-0.5">
+                  {scenarios.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveExitIndex(index)}
+                      className={`w-1 h-1 rounded-full transition-colors ${
+                        index === activeExitIndex 
+                          ? 'bg-green-400' 
+                          : 'bg-theme-border hover:bg-theme-text-muted'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
-              
-              <div className="text-2xl font-bold font-mono tabular-nums text-green-400">
-                {activeScenario.trueROE.toFixed(0)}%
-              </div>
-              <div className="text-[9px] text-theme-text-muted">Total Return</div>
             </div>
           )}
-
-          {/* Dot indicators */}
-          <div className="flex items-center justify-center gap-1.5 mt-2">
-            {scenarios.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveExitIndex(index)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  index === activeExitIndex 
-                    ? 'bg-green-400' 
-                    : 'bg-theme-border hover:bg-theme-text-muted'
-                }`}
-              />
-            ))}
-          </div>
         </div>
       </div>
 
