@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Currency, formatCurrency } from '../currencyUtils';
 
@@ -13,6 +13,10 @@ interface WealthProjectionTableProps {
   bookingYear: number;
   currency: Currency;
   rate: number;
+  // Rental income props
+  rentalYieldPercent?: number;
+  rentGrowthRate?: number;
+  showRentalIncome?: boolean;
 }
 
 export const WealthProjectionTable = ({
@@ -25,25 +29,53 @@ export const WealthProjectionTable = ({
   bookingYear,
   currency,
   rate,
+  rentalYieldPercent = 6,
+  rentGrowthRate = 3,
+  showRentalIncome = true,
 }: WealthProjectionTableProps) => {
   const tableData = useMemo(() => {
-    const data: { year: number; value: number; phase: string; appreciation: number }[] = [];
+    const data: { 
+      year: number; 
+      value: number; 
+      phase: string; 
+      appreciation: number;
+      annualRent: number;
+      cumulativeRent: number;
+    }[] = [];
     const constructionYears = Math.ceil(constructionMonths / 12);
     let currentValue = basePrice;
+    let cumulativeRent = 0;
+    let currentRent = 0;
 
     for (let year = 0; year <= 7; year++) {
       let phase: string;
       let appreciation: number;
+      let annualRent = 0;
 
       if (year < constructionYears) {
         phase = 'Construction';
         appreciation = constructionAppreciation;
+        // No rent during construction
       } else if (year < constructionYears + growthPeriodYears) {
         phase = 'Growth';
         appreciation = growthAppreciation;
+        // Calculate rent after handover
+        if (year === constructionYears) {
+          // First year after handover - base rent on current value
+          currentRent = currentValue * (rentalYieldPercent / 100);
+        } else {
+          // Apply rent growth
+          currentRent = currentRent * (1 + rentGrowthRate / 100);
+        }
+        annualRent = currentRent;
+        cumulativeRent += annualRent;
       } else {
         phase = 'Mature';
         appreciation = matureAppreciation;
+        // Continue with rent growth
+        currentRent = currentRent * (1 + rentGrowthRate / 100);
+        annualRent = currentRent;
+        cumulativeRent += annualRent;
       }
 
       data.push({
@@ -51,17 +83,21 @@ export const WealthProjectionTable = ({
         value: Math.round(currentValue),
         phase,
         appreciation,
+        annualRent: Math.round(annualRent),
+        cumulativeRent: Math.round(cumulativeRent),
       });
 
       currentValue = currentValue * (1 + appreciation / 100);
     }
 
     return data;
-  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear]);
+  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, rentalYieldPercent, rentGrowthRate]);
 
   const totalGrowth = tableData.length > 0 
     ? ((tableData[tableData.length - 1].value - tableData[0].value) / tableData[0].value * 100) 
     : 0;
+
+  const totalRent = tableData[tableData.length - 1]?.cumulativeRent || 0;
 
   const getPhaseColor = (phase: string) => {
     switch (phase) {
@@ -96,14 +132,27 @@ export const WealthProjectionTable = ({
             Wealth Projection
           </span>
         </div>
-        <motion.span 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-          className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium"
-        >
-          +{totalGrowth.toFixed(0)}% in 7 years
-        </motion.span>
+        <div className="flex items-center gap-2">
+          <motion.span 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+            className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium"
+          >
+            +{totalGrowth.toFixed(0)}% value
+          </motion.span>
+          {showRentalIncome && totalRent > 0 && (
+            <motion.span 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+              className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1"
+            >
+              <Wallet className="w-3 h-3" />
+              {formatCurrency(totalRent, 'AED', 1)} rent
+            </motion.span>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -111,10 +160,16 @@ export const WealthProjectionTable = ({
         <table className="w-full text-xs">
           <thead className="bg-theme-bg/50 sticky top-0">
             <tr className="text-theme-text-muted">
-              <th className="text-left py-1.5 px-3 font-medium">Year</th>
-              <th className="text-right py-1.5 px-3 font-medium">Value</th>
-              <th className="text-center py-1.5 px-3 font-medium">Phase</th>
-              <th className="text-right py-1.5 px-3 font-medium">%</th>
+              <th className="text-left py-1.5 px-2 font-medium">Year</th>
+              <th className="text-right py-1.5 px-2 font-medium">Value</th>
+              <th className="text-center py-1.5 px-2 font-medium">Phase</th>
+              <th className="text-right py-1.5 px-2 font-medium">%</th>
+              {showRentalIncome && (
+                <>
+                  <th className="text-right py-1.5 px-2 font-medium">Rent/yr</th>
+                  <th className="text-right py-1.5 px-2 font-medium">Total Rent</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -126,10 +181,10 @@ export const WealthProjectionTable = ({
                 transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
                 className={`border-b border-theme-border/50 last:border-0 ${index === 0 ? 'bg-theme-accent/5' : ''}`}
               >
-                <td className="py-1.5 px-3 text-theme-text font-medium">
+                <td className="py-1.5 px-2 text-theme-text font-medium">
                   {row.year}
                 </td>
-                <td className="py-1.5 px-3 text-right">
+                <td className="py-1.5 px-2 text-right">
                   <div className="text-theme-text tabular-nums font-medium">
                     {formatCurrency(row.value, 'AED', 1)}
                   </div>
@@ -139,7 +194,7 @@ export const WealthProjectionTable = ({
                     </div>
                   )}
                 </td>
-                <td className="py-1.5 px-3 text-center">
+                <td className="py-1.5 px-2 text-center">
                   <span className="inline-flex items-center gap-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${getPhaseColor(row.phase)}`} />
                     <span className={`text-[10px] ${getPhaseTextColor(row.phase)}`}>
@@ -147,9 +202,31 @@ export const WealthProjectionTable = ({
                     </span>
                   </span>
                 </td>
-                <td className={`py-1.5 px-3 text-right tabular-nums ${getPhaseTextColor(row.phase)}`}>
+                <td className={`py-1.5 px-2 text-right tabular-nums ${getPhaseTextColor(row.phase)}`}>
                   +{row.appreciation}%
                 </td>
+                {showRentalIncome && (
+                  <>
+                    <td className="py-1.5 px-2 text-right tabular-nums">
+                      {row.annualRent > 0 ? (
+                        <span className="text-blue-400">
+                          {formatCurrency(row.annualRent, 'AED', 1)}
+                        </span>
+                      ) : (
+                        <span className="text-theme-text-muted">-</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 px-2 text-right tabular-nums">
+                      {row.cumulativeRent > 0 ? (
+                        <span className="text-theme-text font-medium">
+                          {formatCurrency(row.cumulativeRent, 'AED', 1)}
+                        </span>
+                      ) : (
+                        <span className="text-theme-text-muted">-</span>
+                      )}
+                    </td>
+                  </>
+                )}
               </motion.tr>
             ))}
           </tbody>

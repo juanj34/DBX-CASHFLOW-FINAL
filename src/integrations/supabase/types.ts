@@ -614,10 +614,19 @@ export type Database = {
           business_email: string | null
           commission_rate: number | null
           created_at: string
+          default_adr: number | null
+          default_adr_growth_rate: number | null
           default_construction_appreciation: number | null
           default_growth_appreciation: number | null
           default_growth_period_years: number | null
           default_mature_appreciation: number | null
+          default_mortgage_financing_percent: number | null
+          default_mortgage_interest_rate: number | null
+          default_mortgage_processing_fee: number | null
+          default_mortgage_term_years: number | null
+          default_occupancy_percent: number | null
+          default_str_expense_percent: number | null
+          default_str_management_percent: number | null
           email: string
           full_name: string | null
           id: string
@@ -634,10 +643,19 @@ export type Database = {
           business_email?: string | null
           commission_rate?: number | null
           created_at?: string
+          default_adr?: number | null
+          default_adr_growth_rate?: number | null
           default_construction_appreciation?: number | null
           default_growth_appreciation?: number | null
           default_growth_period_years?: number | null
           default_mature_appreciation?: number | null
+          default_mortgage_financing_percent?: number | null
+          default_mortgage_interest_rate?: number | null
+          default_mortgage_processing_fee?: number | null
+          default_mortgage_term_years?: number | null
+          default_occupancy_percent?: number | null
+          default_str_expense_percent?: number | null
+          default_str_management_percent?: number | null
           email: string
           full_name?: string | null
           id: string
@@ -654,10 +672,19 @@ export type Database = {
           business_email?: string | null
           commission_rate?: number | null
           created_at?: string
+          default_adr?: number | null
+          default_adr_growth_rate?: number | null
           default_construction_appreciation?: number | null
           default_growth_appreciation?: number | null
           default_growth_period_years?: number | null
           default_mature_appreciation?: number | null
+          default_mortgage_financing_percent?: number | null
+          default_mortgage_interest_rate?: number | null
+          default_mortgage_processing_fee?: number | null
+          default_mortgage_term_years?: number | null
+          default_occupancy_percent?: number | null
+          default_str_expense_percent?: number | null
+          default_str_management_percent?: number | null
           email?: string
           full_name?: string | null
           id?: string
