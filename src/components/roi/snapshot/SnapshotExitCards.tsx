@@ -1,8 +1,11 @@
-import { TrendingUp, Calendar, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { TrendingUp, Calendar, Trophy, Building2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Currency, formatCurrency } from '../currencyUtils';
 import { OIInputs } from '../useOICalculations';
 import { calculateExitScenario, monthToConstruction } from '../constructionProgress';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface SnapshotExitCardsProps {
   inputs: OIInputs;
@@ -48,6 +51,8 @@ export const SnapshotExitCards = ({
   currency,
   rate,
 }: SnapshotExitCardsProps) => {
+  const [activeTab, setActiveTab] = useState('0');
+
   // Calculate exit scenarios
   const scenarios = exitScenarios.map(exitMonths => {
     const result = calculateExitScenario(exitMonths, basePrice, totalMonths, inputs, totalEntryCosts);
@@ -64,8 +69,9 @@ export const SnapshotExitCards = ({
     };
   });
 
-  // Find best ROE
+  // Find best ROE index
   const bestROE = Math.max(...scenarios.map(s => s.annualizedROE));
+  const bestIndex = scenarios.findIndex(s => s.annualizedROE === bestROE);
 
   return (
     <div className="bg-theme-card border border-theme-border rounded-2xl p-4">
@@ -79,72 +85,128 @@ export const SnapshotExitCards = ({
         </h3>
       </div>
 
-      {/* Exit Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {scenarios.map((scenario) => {
-          const isBest = scenario.annualizedROE === bestROE && scenarios.length > 1;
-          const badge = getRoeBadge(scenario.annualizedROE);
-          
-          return (
-            <div
-              key={scenario.exitMonths}
-              className={cn(
-                "relative p-3 rounded-xl border transition-all",
-                isBest 
-                  ? "bg-green-500/10 border-green-500/40" 
-                  : "bg-theme-card-alt border-theme-border"
-              )}
-            >
-              {/* Best Badge */}
-              {isBest && (
-                <div className="absolute -top-2 -right-2">
-                  <Trophy className="w-4 h-4 text-yellow-500" />
-                </div>
-              )}
+      {/* Tabs for Exit Scenarios */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full grid grid-cols-4 gap-1 bg-theme-bg/50 p-1 rounded-lg mb-4">
+          {scenarios.map((scenario, index) => {
+            const isBest = index === bestIndex && scenarios.length > 1;
+            return (
+              <TabsTrigger
+                key={index}
+                value={String(index)}
+                className={cn(
+                  "relative text-sm font-bold py-2 rounded-md transition-all data-[state=active]:bg-theme-card data-[state=active]:shadow-sm",
+                  isBest && "text-yellow-500"
+                )}
+              >
+                {index + 1}
+                {isBest && (
+                  <Trophy className="w-3 h-3 absolute -top-1 -right-1 text-yellow-500" />
+                )}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
 
-              {/* Header: Date & Timeline */}
-              <div className="flex items-center gap-1.5 mb-2">
-                <Calendar className="w-3 h-3 text-theme-text-muted" />
-                <span className="text-xs font-medium text-theme-text">
-                  {scenario.isHandover ? 'Handover' : scenario.dateStr}
-                </span>
-              </div>
-              
-              {/* Timeline Info */}
-              <div className="text-[10px] text-theme-text-muted mb-3">
-                {formatMonths(scenario.exitMonths)} · {Math.round(scenario.constructionPercent)}% built
-              </div>
+        <AnimatePresence mode="wait">
+          {scenarios.map((scenario, index) => {
+            const isBest = index === bestIndex && scenarios.length > 1;
+            const badge = getRoeBadge(scenario.annualizedROE);
 
-              {/* Property Value */}
-              <div className="mb-2">
-                <div className="text-[10px] text-theme-text-muted uppercase tracking-wide">Property Value</div>
-                <div className="text-sm font-bold text-theme-text font-mono tabular-nums">
-                  {formatCurrency(scenario.exitPrice, currency, rate)}
-                </div>
-              </div>
+            return (
+              <TabsContent key={index} value={String(index)} className="mt-0">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className={cn(
+                    "p-4 rounded-xl border",
+                    isBest 
+                      ? "bg-green-500/10 border-green-500/40" 
+                      : "bg-theme-card-alt border-theme-border"
+                  )}
+                >
+                  {/* Best Badge */}
+                  {isBest && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <Trophy className="w-4 h-4 text-yellow-500" />
+                      <span className="text-xs font-semibold text-yellow-500 uppercase tracking-wide">
+                        Best Exit
+                      </span>
+                    </div>
+                  )}
 
-              {/* ROE */}
-              <div>
-                <div className={cn(
-                  "text-lg font-bold font-mono tabular-nums",
-                  scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
-                )}>
-                  {scenario.annualizedROE.toFixed(1)}%
-                </div>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[10px] text-theme-text-muted">ROE/year</span>
-                  <span className={cn(
-                    "text-[9px] px-1.5 py-0.5 rounded border font-medium",
-                    badge.className
-                  )}>
-                    {badge.label}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                  {/* Date & Timeline Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-theme-text-muted" />
+                      <span className="text-base font-semibold text-theme-text">
+                        {scenario.isHandover ? 'Handover' : scenario.dateStr}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-theme-text-muted">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>{Math.round(scenario.constructionPercent)}% built</span>
+                      <span className="text-theme-border">•</span>
+                      <span>{formatMonths(scenario.exitMonths)}</span>
+                    </div>
+                  </div>
+
+                  {/* Property Value */}
+                  <div className="mb-4">
+                    <div className="text-[10px] text-theme-text-muted uppercase tracking-wide mb-1">
+                      Property Value
+                    </div>
+                    <div className="text-xl font-bold text-theme-text font-mono tabular-nums">
+                      {formatCurrency(scenario.exitPrice, 'AED', 1)}
+                    </div>
+                    {currency !== 'AED' && (
+                      <div className="text-sm text-theme-text-muted font-mono tabular-nums">
+                        {formatCurrency(scenario.exitPrice, currency, rate)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ROE & Profit Row */}
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className={cn(
+                        "text-2xl font-bold font-mono tabular-nums",
+                        scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
+                      )}>
+                        {scenario.annualizedROE.toFixed(1)}%
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-theme-text-muted">ROE/year</span>
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded border font-medium",
+                          badge.className
+                        )}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Profit */}
+                    <div className="text-right">
+                      <div className="text-[10px] text-theme-text-muted uppercase tracking-wide mb-1">
+                        Profit
+                      </div>
+                      <div className={cn(
+                        "text-lg font-bold font-mono tabular-nums",
+                        scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"
+                      )}>
+                        {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, 'AED', 1)}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </TabsContent>
+            );
+          })}
+        </AnimatePresence>
+      </Tabs>
     </div>
   );
 };
