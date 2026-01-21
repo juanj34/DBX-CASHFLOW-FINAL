@@ -31,7 +31,7 @@ interface PageHeaderProps {
 // Default shortcuts for navigation
 export const defaultShortcuts: ShortcutItem[] = [
   { label: 'Home', icon: Home, href: '/home' },
-  { label: 'Generator', icon: Sparkles, href: '/cashflow-dashboard' },
+  { label: 'Generator', icon: Sparkles, href: '/cashflow-generator' },
   { label: 'All Quotes', icon: FileText, href: '/my-quotes' },
   { label: 'Compare', icon: Scale, href: '/compare' },
   { label: 'Presentations', icon: Presentation, href: '/presentations' },

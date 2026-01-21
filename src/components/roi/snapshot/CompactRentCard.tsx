@@ -1,18 +1,21 @@
-import { Home, Minus, Equal, TrendingUp } from 'lucide-react';
+import { Home, TrendingUp, Calendar } from 'lucide-react';
 import { OIInputs } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
+import { Button } from '@/components/ui/button';
 
 interface CompactRentCardProps {
   inputs: OIInputs;
   currency: Currency;
   rate: number;
+  onViewWealthProjection?: () => void;
 }
 
 export const CompactRentCard = ({
   inputs,
   currency,
   rate,
+  onViewWealthProjection,
 }: CompactRentCardProps) => {
   const { 
     basePrice,
@@ -64,11 +67,24 @@ export const CompactRentCard = ({
           <Home className="w-4 h-4 text-theme-accent" />
           <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Rental Income</span>
         </div>
-        {showAirbnbComparison && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400">
-            LT + ST
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {showAirbnbComparison && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400">
+              LT + ST
+            </span>
+          )}
+          {onViewWealthProjection && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onViewWealthProjection}
+              className="h-6 px-2 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
+            >
+              <Calendar className="w-3 h-3 mr-1" />
+              7-Year Table
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content */}

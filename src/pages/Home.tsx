@@ -393,7 +393,7 @@ const Home = () => {
       </Link>
 
       {/* Main Navigation Links - Order: Generator, All Quotes, Compare, Presentations, Analytics, Map */}
-      <Link to="/cashflow-dashboard" onClick={() => setMobileMenuOpen(false)}>
+      <Link to="/cashflow-generator" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <Sparkles className="w-4 h-4" />
           Generator

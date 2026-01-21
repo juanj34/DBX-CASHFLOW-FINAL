@@ -533,7 +533,7 @@ const PresentationBuilder = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              window.open(`/cashflow-dashboard/${item.id}`, '_blank');
+              window.open(`/cashflow/${item.id}`, '_blank');
             }}
             className="p-1 text-theme-text-muted hover:text-theme-accent opacity-0 group-hover:opacity-100 transition-opacity"
           >
@@ -925,7 +925,7 @@ const PresentationBuilder = () => {
                     <ActionButton 
                       icon={Sparkles} 
                       label="Generator" 
-                      to="/cashflow-dashboard" 
+                      to="/cashflow-generator" 
                       collapsed={sidebarCollapsed}
                     />
                     <ActionButton 
