@@ -8,8 +8,10 @@ import { SnapshotOverviewCards } from './SnapshotOverviewCards';
 import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
-import { WealthProjectionTimeline } from './WealthProjectionTimeline';
+import { CompactAllExitsCard } from './CompactAllExitsCard';
+import { WealthProjectionModal } from './WealthProjectionModal';
 import { FloorPlanLightbox } from '@/components/roi/FloorPlanLightbox';
+import { ExitChartModal } from './ExitChartModal';
 
 interface SnapshotContentProps {
   inputs: OIInputs;
@@ -45,6 +47,8 @@ export const SnapshotContent = ({
   rate,
 }: SnapshotContentProps) => {
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
+  const [wealthModalOpen, setWealthModalOpen] = useState(false);
+  const [exitModalOpen, setExitModalOpen] = useState(false);
   const basePrice = calculations.basePrice;
 
   // Calculate price per sqft
@@ -59,6 +63,10 @@ export const SnapshotContent = ({
   // Get value differentiators from inputs
   const valueDifferentiators = (inputs as any).valueDifferentiators || [];
   const appreciationBonus = (inputs as any).appreciationBonus || 0;
+
+  // Determine construction years for handover
+  const constructionYears = Math.ceil(calculations.totalMonths / 12);
+  const handoverYear = inputs.bookingYear + constructionYears;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-theme-bg">
@@ -93,58 +101,55 @@ export const SnapshotContent = ({
         />
       </div>
 
-      {/* Main content - fills remaining space */}
-      <div className="flex-1 overflow-auto px-4 pb-4 min-h-0">
-        <div className="flex flex-col gap-4 h-full">
-          {/* Two column grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
-            {/* Left Column: Payment (with Value Differentiators integrated) */}
-            <div className="flex flex-col gap-4">
-              <CompactPaymentTable
+      {/* Main content - fills remaining space without scrolling */}
+      <div className="flex-1 px-4 pb-4 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+          {/* Left Column: Payment (with Value Differentiators integrated) */}
+          <div className="flex flex-col">
+            <CompactPaymentTable
+              inputs={inputs}
+              clientInfo={clientInfo}
+              valueDifferentiators={valueDifferentiators}
+              appreciationBonus={appreciationBonus}
+              currency={currency}
+              rate={rate}
+              totalMonths={calculations.totalMonths}
+            />
+          </div>
+
+          {/* Right Column: Rent + Exits + Mortgage */}
+          <div className="flex flex-col gap-3 overflow-auto">
+            {/* Rent Card with Wealth Projection Button */}
+            {inputs.rentalYieldPercent > 0 && (
+              <CompactRentCard
                 inputs={inputs}
-                clientInfo={clientInfo}
-                valueDifferentiators={valueDifferentiators}
-                appreciationBonus={appreciationBonus}
                 currency={currency}
                 rate={rate}
-                totalMonths={calculations.totalMonths}
+                onViewWealthProjection={() => setWealthModalOpen(true)}
               />
-            </div>
-
-            {/* Right Column: Rent + Mortgage */}
-            <div className="flex flex-col gap-4">
-              {inputs.rentalYieldPercent > 0 && (
-                <CompactRentCard
-                  inputs={inputs}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-              
-              {mortgageInputs.enabled && (
-                <CompactMortgageCard
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  monthlyRent={monthlyRent}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-            </div>
+            )}
+            
+            {/* All Exits Card */}
+            <CompactAllExitsCard
+              inputs={inputs}
+              calculations={calculations}
+              exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+              onClick={() => setExitModalOpen(true)}
+            />
+            
+            {/* Mortgage Card */}
+            {mortgageInputs.enabled && (
+              <CompactMortgageCard
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                monthlyRent={monthlyRent}
+                currency={currency}
+                rate={rate}
+              />
+            )}
           </div>
-          
-          {/* Wealth Projection Timeline - FULL WIDTH at bottom */}
-          <WealthProjectionTimeline
-            basePrice={basePrice}
-            constructionMonths={calculations.totalMonths}
-            constructionAppreciation={inputs.constructionAppreciation}
-            growthAppreciation={inputs.growthAppreciation}
-            matureAppreciation={inputs.matureAppreciation}
-            growthPeriodYears={inputs.growthPeriodYears}
-            bookingYear={inputs.bookingYear}
-            currency={currency}
-            rate={rate}
-          />
         </div>
       </div>
 
@@ -156,6 +161,36 @@ export const SnapshotContent = ({
           onOpenChange={setFloorPlanOpen}
         />
       )}
+
+      {/* Wealth Projection Modal */}
+      <WealthProjectionModal
+        open={wealthModalOpen}
+        onOpenChange={setWealthModalOpen}
+        basePrice={basePrice}
+        constructionMonths={calculations.totalMonths}
+        constructionAppreciation={inputs.constructionAppreciation}
+        growthAppreciation={inputs.growthAppreciation}
+        matureAppreciation={inputs.matureAppreciation}
+        growthPeriodYears={inputs.growthPeriodYears}
+        bookingYear={inputs.bookingYear}
+        rentalYieldPercent={inputs.rentalYieldPercent}
+        rentGrowthRate={inputs.rentGrowthRate || 3}
+        currency={currency}
+        rate={rate}
+      />
+
+      {/* Exit Chart Modal */}
+      <ExitChartModal
+        open={exitModalOpen}
+        onOpenChange={setExitModalOpen}
+        inputs={inputs}
+        exitScenarios={exitScenarios}
+        totalMonths={calculations.totalMonths}
+        basePrice={calculations.basePrice}
+        totalEntryCosts={calculations.totalEntryCosts}
+        currency={currency}
+        rate={rate}
+      />
     </div>
   );
 };

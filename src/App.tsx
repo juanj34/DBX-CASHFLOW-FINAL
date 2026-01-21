@@ -15,9 +15,7 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
-import ROICalculator from "./pages/ROICalculator";
 import OICalculator from "./pages/OICalculator";
-import CashflowDashboard from "./pages/CashflowDashboard";
 import AccountSettings from "./pages/AccountSettings";
 import QuotesDashboard from "./pages/QuotesDashboard";
 import QuotesCompare from "./pages/QuotesCompare";
@@ -86,15 +84,14 @@ function App() {
                 <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/map" element={<ProtectedRoute><Map /></ProtectedRoute>} />
                 <Route path="/map-config" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/roi-calculator" element={<Navigate to="/home" replace />} />
+                <Route path="/roi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
                 <Route path="/cashflow/:quoteId" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
-                {/* Legacy Dashboard View - kept for reference */}
-                <Route path="/legacy/cashflow-dashboard" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
-                <Route path="/legacy/cashflow-dashboard/:quoteId" element={<ProtectedRoute><CashflowDashboard /></ProtectedRoute>} />
-                {/* Redirects for old dashboard URLs */}
+                {/* Redirects for old legacy URLs */}
                 <Route path="/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow/:quoteId" replace />} />
+                <Route path="/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow-generator" replace />} />
+                <Route path="/legacy/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />
+                <Route path="/legacy/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
                 <Route path="/my-quotes" element={<ProtectedRoute><QuotesDashboard /></ProtectedRoute>} />
                 <Route path="/archived-quotes" element={<ProtectedRoute><ArchivedQuotes /></ProtectedRoute>} />

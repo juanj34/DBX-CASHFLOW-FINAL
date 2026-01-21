@@ -231,7 +231,9 @@ export const DashboardSidebar = ({
         "h-14 border-b border-theme-border flex items-center px-3",
         collapsed ? "justify-center" : "justify-between"
       )}>
-        <AppLogo collapsed={collapsed} />
+        <Link to="/home">
+          <AppLogo collapsed={collapsed} />
+        </Link>
         {!collapsed && (
           <Button
             variant="ghost"
@@ -392,7 +394,7 @@ export const DashboardSidebar = ({
           <ActionButton 
             icon={Wand2} 
             label="Generator" 
-            to="/cashflow-dashboard" 
+            to="/cashflow-generator" 
             collapsed={collapsed}
           />
           <ActionButton 
