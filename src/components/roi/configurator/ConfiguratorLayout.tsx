@@ -388,11 +388,21 @@ export const ConfiguratorLayout = ({
   };
 
   const handleLoadSample = () => {
-    // Set all OI inputs with sample data
-    setInputs(DEFAULT_OI_INPUTS);
+    // Set all OI inputs with sample data - ensure all required fields are set
+    const sampleInputs = {
+      ...DEFAULT_OI_INPUTS,
+      // Ensure these are set to trigger isQuoteConfigured
+      basePrice: DEFAULT_OI_INPUTS.basePrice || 2000000,
+    };
+    setInputs(sampleInputs);
     
-    // Set client info with sample data
-    setClientInfo(SAMPLE_CLIENT_INFO);
+    // Set client info with sample data - ensure developer and projectName are set
+    const sampleClientInfo = {
+      ...SAMPLE_CLIENT_INFO,
+      developer: SAMPLE_CLIENT_INFO.developer || 'Sample Developer',
+      projectName: SAMPLE_CLIENT_INFO.projectName || 'Sample Project',
+    };
+    setClientInfo(sampleClientInfo);
     
     // Set mortgage inputs with sample data
     setMortgageInputs(SAMPLE_MORTGAGE_INPUTS);
@@ -405,7 +415,7 @@ export const ConfiguratorLayout = ({
     setTimeout(() => setShowSampleFlash(false), 1500);
     
     // Show toast notification
-    toast.success('Sample data loaded! Explore all sections to see how the tool works.');
+    toast.success('Sample data loaded! Your quote will auto-save shortly.');
   };
 
   const getAnimationClass = () => {

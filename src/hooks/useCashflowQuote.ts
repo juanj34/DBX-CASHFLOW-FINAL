@@ -381,7 +381,7 @@ export const useCashflowQuote = (quoteId?: string) => {
           if (savedQuote && onNewQuoteCreated) {
             onNewQuoteCreated(savedQuote.id);
           }
-        }, 2000); // Faster for first creation
+        }, 500); // Fast creation - 500ms debounce
         return;
       }
 
@@ -399,7 +399,7 @@ export const useCashflowQuote = (quoteId?: string) => {
         const exitScenarios = inputs._exitScenarios || [];
         console.log('Auto-saving quote:', existingQuoteId);
         await saveQuote(inputs, clientInfo, existingQuoteId, exitScenarios, mortgageInputs, undefined, images);
-      }, 5000);
+      }, 1500); // 1.5s debounce for existing quotes
     },
     [toast, quote?.id, saveQuote]
   );
