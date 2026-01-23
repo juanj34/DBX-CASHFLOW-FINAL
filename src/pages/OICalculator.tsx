@@ -294,6 +294,21 @@ const OICalculatorContent = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullyConfigured]);
 
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only warn if quote is configured but not yet saved to DB
+      if (isQuoteConfigured && !quoteId && !lastSaved) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isQuoteConfigured, quoteId, lastSaved]);
+
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
 
@@ -344,7 +359,18 @@ const OICalculatorContent = () => {
               </p>
               <div className="flex flex-col gap-4 items-center">
                 <Button 
-                  onClick={() => setModalOpen(true)}
+                  onClick={async () => {
+                    // Create draft immediately when starting configuration
+                    if (!quoteId) {
+                      const newId = await createDraft();
+                      if (newId) {
+                        localStorage.setItem('cashflow_configurator_open', 'true');
+                        navigate(`/cashflow/${newId}`, { replace: true });
+                        return;
+                      }
+                    }
+                    setModalOpen(true);
+                  }}
                   size="lg"
                   className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold gap-2 px-8 h-12"
                 >

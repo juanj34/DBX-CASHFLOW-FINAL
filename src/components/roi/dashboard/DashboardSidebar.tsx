@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -299,6 +299,33 @@ export const DashboardSidebar = ({
         </Link>
       )}
 
+      {/* Unsaved Warning Banner */}
+      {hasUnsavedChanges && !quoteId && (
+        <div className={cn(
+          "border-b border-amber-500/20 bg-amber-500/10",
+          collapsed ? "py-2 flex justify-center" : "px-3 py-2"
+        )}>
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="text-amber-400">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p className="font-medium">Not saved yet</p>
+                <p className="text-xs text-muted-foreground">Configure to auto-save</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="flex items-center gap-2 text-amber-400 text-xs">
+              <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+              <span>Configure to save automatically</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Auto-save is always enabled - no save button needed */}
 
       {/* Scrollable Content Area */}
@@ -341,7 +368,8 @@ export const DashboardSidebar = ({
         </div>
 
         {/* VIEW Section - View modes and share */}
-        {quoteId && (onShowcase || activeView || onShare) && (
+        {/* VIEW Section - Always show, but Share requires saved quote */}
+        {(onShowcase || activeView || onShare) && (
           <>
             <SectionHeader label="View" collapsed={collapsed} />
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
@@ -370,13 +398,32 @@ export const DashboardSidebar = ({
                 variant={activeView === 'snapshot' ? 'active' : 'default'}
               />
               {onShare && (
-                <ActionButton 
-                  icon={Share2} 
-                  label="Share Link" 
-                  onClick={onShare} 
-                  collapsed={collapsed}
-                  badge={viewCount && viewCount > 0 ? viewCount : undefined}
-                />
+                quoteId ? (
+                  <ActionButton 
+                    icon={Share2} 
+                    label="Share Link" 
+                    onClick={onShare} 
+                    collapsed={collapsed}
+                    badge={viewCount && viewCount > 0 ? viewCount : undefined}
+                  />
+                ) : (
+                  collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted/40 cursor-not-allowed">
+                          <Share2 className="w-4 h-4" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Save quote to unlock sharing</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted/40 cursor-not-allowed">
+                      <Share2 className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 text-left truncate">Share Link</span>
+                      <span className="text-[10px] bg-theme-bg/50 px-1.5 py-0.5 rounded">Save first</span>
+                    </div>
+                  )
+                )
               )}
             </div>
           </>
