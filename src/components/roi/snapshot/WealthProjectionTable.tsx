@@ -61,8 +61,8 @@ export const WealthProjectionTable = ({
         appreciation = growthAppreciation;
         // Calculate rent after handover
         if (year === constructionYears) {
-          // First year after handover - base rent on current value
-          currentRent = currentValue * (rentalYieldPercent / 100);
+          // First year after handover - base rent on PURCHASE PRICE (not current value)
+          currentRent = basePrice * (rentalYieldPercent / 100);
         } else {
           // Apply rent growth
           currentRent = currentRent * (1 + rentGrowthRate / 100);
