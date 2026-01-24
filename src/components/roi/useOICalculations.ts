@@ -1,7 +1,7 @@
 export interface PaymentMilestone {
   id: string;
-  type: 'time' | 'construction';
-  triggerValue: number; // months if time, % if construction
+  type: 'time' | 'construction' | 'post-handover'; // post-handover: months after handover
+  triggerValue: number; // months if time, % if construction, months-after-handover if post-handover
   paymentPercent: number;
   label?: string;
 }
@@ -26,6 +26,14 @@ export interface OIInputs {
   downpaymentPercent: number;       // Fixed downpayment at booking (default 20%)
   preHandoverPercent: number;       // Total pre-handover % from preset (e.g., 30 in 30/70)
   additionalPayments: PaymentMilestone[]; // Additional payments between downpayment and handover
+  
+  // NEW: Post-Handover Payment Plan
+  hasPostHandoverPlan: boolean;     // Toggle for post-handover payment mode
+  onHandoverPercent: number;        // % paid exactly at handover (e.g., 1%)
+  postHandoverPercent: number;      // % paid after handover (e.g., 43%)
+  postHandoverPayments: PaymentMilestone[]; // Payments after handover (type: 'post-handover')
+  postHandoverEndQuarter: number;   // When post-handover payments complete (Q1-Q4)
+  postHandoverEndYear: number;      // Year when post-handover payments complete
   
   // Entry Costs (simplified - DLD fixed at 4%)
   eoiFee: number; // EOI / Booking fee (default 50000), part of downpayment

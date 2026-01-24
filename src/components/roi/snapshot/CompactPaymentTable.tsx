@@ -57,30 +57,38 @@ export const CompactPaymentTable = ({
     eoiFee = 0
   } = inputs;
   
-  // Check for multiple clients
-  const hasMultipleClients = (clientInfo?.clients?.length || 0) > 1;
+  // Check for post-handover plan
+  const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
   
   // Calculate amounts
   const downpaymentAmount = basePrice * (downpaymentPercent / 100);
   const remainingDownpayment = downpaymentAmount - eoiFee; // Downpayment minus EOI
   const dldFee = basePrice * 0.04;
-  const handoverPercent = 100 - preHandoverPercent;
-  const handoverAmount = basePrice * (handoverPercent / 100);
+  
+  // Calculate handover and post-handover amounts
+  let handoverPercent: number;
+  let handoverAmount: number;
+  let postHandoverTotal = 0;
+  
+  if (hasPostHandoverPlan) {
+    // Post-handover plan: on-handover is a specific percentage
+    handoverPercent = inputs.onHandoverPercent || 0;
+    handoverAmount = basePrice * handoverPercent / 100;
+    // Calculate post-handover total
+    postHandoverTotal = (inputs.postHandoverPayments || []).reduce(
+      (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
+    );
+  } else {
+    // Standard plan: handover is the remaining balance
+    handoverPercent = 100 - inputs.preHandoverPercent;
+    handoverAmount = basePrice * handoverPercent / 100;
+  }
   
   // Entry subtotal (before fees)
   const entrySubtotal = downpaymentAmount;
   
   // Entry total (with fees)
   const entryTotal = downpaymentAmount + dldFee + oqoodFee;
-  
-  // Sort additional payments by trigger value
-  const sortedPayments = [...additionalPayments].sort((a, b) => a.triggerValue - b.triggerValue);
-  
-  // Journey total
-  const journeyTotal = sortedPayments.reduce((sum, p) => sum + (basePrice * p.paymentPercent / 100), 0);
-  
-  // Grand total
-  const grandTotal = basePrice + dldFee + oqoodFee;
   
   const getPaymentLabel = (payment: PaymentMilestone): string => {
     if (payment.type === 'time') {

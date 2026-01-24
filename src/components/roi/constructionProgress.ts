@@ -157,6 +157,7 @@ export interface EquityAtExitResult {
 /**
  * Calculate equity deployed at exit with full breakdown
  * Uses S-curve for construction-based payment triggers
+ * Now supports post-handover payment plans
  */
 export const calculateEquityAtExitWithDetails = (
   exitMonths: number,
@@ -164,8 +165,11 @@ export const calculateEquityAtExitWithDetails = (
   totalMonths: number,
   basePrice: number
 ): EquityAtExitResult => {
-  const exitTimelinePercent = (exitMonths / totalMonths) * 100;
-  const exitConstructionPercent = timelineToConstruction(exitTimelinePercent);
+  const isPostHandover = exitMonths > totalMonths;
+  const monthsAfterHandover = isPostHandover ? exitMonths - totalMonths : 0;
+  
+  const exitTimelinePercent = Math.min(100, (exitMonths / totalMonths) * 100);
+  const exitConstructionPercent = isPostHandover ? 100 : timelineToConstruction(exitTimelinePercent);
   
   let planEquity = 0;
   const advancedPayments: EquityAtExitResult['advancedPayments'] = [];
@@ -173,7 +177,7 @@ export const calculateEquityAtExitWithDetails = (
   // 1. Downpayment - always paid at month 0
   planEquity += basePrice * inputs.downpaymentPercent / 100;
   
-  // 2. Additional payments - check each one
+  // 2. Additional pre-handover payments - check each one
   inputs.additionalPayments.forEach(m => {
     if (m.paymentPercent <= 0) return;
     
@@ -184,7 +188,7 @@ export const calculateEquityAtExitWithDetails = (
       // Time-based: triggered if we've passed that month
       triggered = m.triggerValue <= exitMonths;
       monthTriggered = m.triggerValue;
-    } else {
+    } else if (m.type === 'construction') {
       // Construction-based: use S-curve to determine when triggered
       // Calculate what month this construction % corresponds to
       monthTriggered = constructionToMonth(m.triggerValue, totalMonths);
@@ -196,10 +200,30 @@ export const calculateEquityAtExitWithDetails = (
     }
   });
   
-  // 3. Handover payment - only if at or after handover
-  if (exitMonths >= totalMonths) {
-    const handoverPercent = 100 - inputs.preHandoverPercent;
-    planEquity += basePrice * handoverPercent / 100;
+  // 3. Handover payment logic
+  if (inputs.hasPostHandoverPlan) {
+    // With post-handover plan: on-handover is a specific percentage
+    if (exitMonths >= totalMonths) {
+      planEquity += basePrice * inputs.onHandoverPercent / 100;
+    }
+    
+    // 4. Post-handover payments - check each one
+    if (isPostHandover && inputs.postHandoverPayments) {
+      inputs.postHandoverPayments.forEach(m => {
+        if (m.paymentPercent <= 0) return;
+        
+        // Post-handover payments are triggered by months AFTER handover
+        if (m.triggerValue <= monthsAfterHandover) {
+          planEquity += basePrice * m.paymentPercent / 100;
+        }
+      });
+    }
+  } else {
+    // Standard plan: handover payment is the remaining balance
+    if (exitMonths >= totalMonths) {
+      const handoverPercent = 100 - inputs.preHandoverPercent;
+      planEquity += basePrice * handoverPercent / 100;
+    }
   }
   
   // Calculate threshold requirement
@@ -221,9 +245,10 @@ export const calculateEquityAtExitWithDetails = (
         if (m.paymentPercent <= 0) return false;
         if (m.type === 'time') {
           return m.triggerValue > exitMonths;
-        } else {
+        } else if (m.type === 'construction') {
           return exitConstructionPercent < m.triggerValue;
         }
+        return false;
       })
       .map(m => ({
         milestone: m,
@@ -248,8 +273,8 @@ export const calculateEquityAtExitWithDetails = (
       accumulatedEquity += payment.amount;
     }
     
-    // If still not enough, might need handover payment
-    if (accumulatedEquity < thresholdEquity && exitMonths < totalMonths) {
+    // If still not enough, might need handover payment (for non-post-handover plans)
+    if (accumulatedEquity < thresholdEquity && exitMonths < totalMonths && !inputs.hasPostHandoverPlan) {
       const handoverPercent = 100 - inputs.preHandoverPercent;
       const handoverAmount = basePrice * handoverPercent / 100;
       const amountNeeded = thresholdEquity - accumulatedEquity;
@@ -285,6 +310,7 @@ export const calculateEquityAtExitWithDetails = (
 
 /**
  * Calculate the month when payment plan naturally reaches threshold
+ * Now supports post-handover payment plans
  */
 export const getMonthWhenThresholdMet = (
   inputs: OIInputs,
@@ -302,6 +328,7 @@ export const getMonthWhenThresholdMet = (
   // Collect all payment events with their trigger months
   const paymentEvents: { month: number; amount: number }[] = [];
   
+  // Pre-handover payments
   inputs.additionalPayments.forEach(m => {
     if (m.paymentPercent <= 0) return;
     
@@ -316,11 +343,30 @@ export const getMonthWhenThresholdMet = (
   });
   
   // Add handover payment
-  const handoverPercent = 100 - inputs.preHandoverPercent;
-  paymentEvents.push({
-    month: totalMonths,
-    amount: basePrice * handoverPercent / 100,
-  });
+  if (inputs.hasPostHandoverPlan) {
+    // On-handover payment
+    paymentEvents.push({
+      month: totalMonths,
+      amount: basePrice * inputs.onHandoverPercent / 100,
+    });
+    
+    // Post-handover payments
+    if (inputs.postHandoverPayments) {
+      inputs.postHandoverPayments.forEach(m => {
+        if (m.paymentPercent <= 0) return;
+        paymentEvents.push({
+          month: totalMonths + m.triggerValue, // months after handover
+          amount: basePrice * m.paymentPercent / 100,
+        });
+      });
+    }
+  } else {
+    const handoverPercent = 100 - inputs.preHandoverPercent;
+    paymentEvents.push({
+      month: totalMonths,
+      amount: basePrice * handoverPercent / 100,
+    });
+  }
   
   // Sort by month
   paymentEvents.sort((a, b) => a.month - b.month);

@@ -65,6 +65,14 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   downpaymentPercent: 20,
   preHandoverPercent: 20,
   additionalPayments: [],
+  // Post-handover payment plan defaults
+  hasPostHandoverPlan: false,
+  onHandoverPercent: 0,
+  postHandoverPercent: 0,
+  postHandoverPayments: [],
+  postHandoverEndQuarter: 4,
+  postHandoverEndYear: 2030,
+  // Entry costs
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,
@@ -134,6 +142,14 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   downpaymentPercent: 20,
   preHandoverPercent: 30,
   additionalPayments: [],
+  // Post-handover payment plan defaults
+  hasPostHandoverPlan: false,
+  onHandoverPercent: 0,
+  postHandoverPercent: 0,
+  postHandoverPayments: [],
+  postHandoverEndQuarter: 4,
+  postHandoverEndYear: new Date().getFullYear() + 4,
+  // Entry costs
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,

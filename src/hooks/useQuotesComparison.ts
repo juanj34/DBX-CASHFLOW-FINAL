@@ -129,6 +129,14 @@ export const useQuoteCalculations = (inputs: OIInputs | null): OICalculations | 
     downpaymentPercent: 20,
     preHandoverPercent: 20,
     additionalPayments: [],
+    // Post-handover defaults
+    hasPostHandoverPlan: false,
+    onHandoverPercent: 0,
+    postHandoverPercent: 0,
+    postHandoverPayments: [],
+    postHandoverEndQuarter: 4,
+    postHandoverEndYear: 2030,
+    // Entry costs
     eoiFee: 0,
     oqoodFee: 0,
     minimumExitThreshold: 30,

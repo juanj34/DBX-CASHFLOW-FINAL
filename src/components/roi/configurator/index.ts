@@ -4,6 +4,7 @@ export { ConfiguratorPreview } from './ConfiguratorPreview';
 export { MobileConfiguratorSheet } from './MobileConfiguratorSheet';
 export { PropertySection } from './PropertySection';
 export { PaymentSection } from './PaymentSection';
+export { PostHandoverSection } from './PostHandoverSection';
 export { ValueSection } from './ValueSection';
 export { IncomeSection } from './IncomeSection';
 export { AppreciationSection } from './AppreciationSection';
