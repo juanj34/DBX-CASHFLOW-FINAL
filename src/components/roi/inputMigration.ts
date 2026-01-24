@@ -22,6 +22,14 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   downpaymentPercent: 20,
   preHandoverPercent: 20,
   additionalPayments: [],
+  // Post-handover payment plan defaults
+  hasPostHandoverPlan: false,
+  onHandoverPercent: 0,
+  postHandoverPercent: 0,
+  postHandoverPayments: [],
+  postHandoverEndQuarter: 4,
+  postHandoverEndYear: new Date().getFullYear() + 4,
+  // Entry costs
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,
@@ -93,6 +101,28 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     
     console.log('[inputMigration] Migrated quote from v1 to v2');
   }
+  
+  // V2 → V3 migrations (post-handover payment plan)
+  merged.hasPostHandoverPlan ??= false;
+  merged.onHandoverPercent ??= 0;
+  merged.postHandoverPercent ??= 0;
+  merged.postHandoverPayments ??= [];
+  merged.postHandoverEndQuarter ??= 4;
+  merged.postHandoverEndYear ??= new Date().getFullYear() + 4;
+  
+  // Ensure post-handover payments array is valid
+  if (!Array.isArray(merged.postHandoverPayments)) {
+    merged.postHandoverPayments = [];
+  }
+  
+  // Validate post-handover payment milestones
+  merged.postHandoverPayments = merged.postHandoverPayments.map((payment, index) => ({
+    id: payment.id || `post-payment-${index}`,
+    type: 'post-handover' as const,
+    triggerValue: payment.triggerValue ?? 0,
+    paymentPercent: payment.paymentPercent ?? 0,
+    label: payment.label || '',
+  }));
   
   // Ensure valueDifferentiators is always an array
   if (!Array.isArray(merged.valueDifferentiators)) {
