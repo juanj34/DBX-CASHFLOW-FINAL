@@ -95,7 +95,6 @@ export const SnapshotContent = ({
         <SnapshotOverviewCards 
           inputs={inputs}
           calculations={calculations}
-          exitScenarios={exitScenarios}
           currency={currency}
           rate={rate}
         />

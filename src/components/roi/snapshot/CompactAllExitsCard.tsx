@@ -133,11 +133,12 @@ export const CompactAllExitsCard = ({
                     </div>
                   </div>
                   
-                  {/* Bottom Row: Value, Profit, ROE */}
+                  {/* Bottom Row: Capital Invested, Profit, ROE */}
                   <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className="text-theme-text-muted">
-                        {formatCurrency(scenario.exitPrice, 'AED', 1)}
+                    <div className="flex items-center gap-2">
+                      <span className="text-theme-text flex items-center gap-0.5">
+                        <DollarSign className="w-3 h-3 text-theme-text-muted" />
+                        {formatCurrency(scenario.totalCapital, 'AED', 1)}
                       </span>
                       <span className={cn(
                         "font-medium",

@@ -9,6 +9,7 @@ import { formatCurrency } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
 import { PaymentMilestone } from "../useOICalculations";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PostHandoverSection } from "./PostHandoverSection";
 
 export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const [numPayments, setNumPayments] = useState(4);
@@ -20,11 +21,21 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
   const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-  const handoverPercent = 100 - inputs.preHandoverPercent;
+  const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+  const postHandoverTotal = (inputs.postHandoverPayments || []).reduce((sum, m) => sum + m.paymentPercent, 0);
+  const onHandoverPercent = inputs.onHandoverPercent || 0;
+  
+  // For non-post-handover: handover = 100 - pre
+  // For post-handover: pre + onHandover + post = 100
+  const handoverPercent = hasPostHandoverPlan 
+    ? onHandoverPercent 
+    : 100 - inputs.preHandoverPercent;
   const remainingToDistribute = inputs.preHandoverPercent - inputs.downpaymentPercent - additionalPaymentsTotal;
   
   const isValidPreHandover = Math.abs(preHandoverTotal - inputs.preHandoverPercent) < 0.01;
-  const totalPayment = preHandoverTotal + handoverPercent;
+  const totalPayment = hasPostHandoverPlan 
+    ? preHandoverTotal + onHandoverPercent + postHandoverTotal
+    : preHandoverTotal + handoverPercent;
   const isValidTotal = Math.abs(totalPayment - 100) < 0.01;
   
   // Check if payments have been added
@@ -415,46 +426,107 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
+      {/* Step 4: Post-Handover Payment Plan (Optional) */}
+      {hasSplitSelected && inputs.downpaymentPercent > 0 && (
+        <div className="pt-4 border-t border-[#2a3142]">
+          <PostHandoverSection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency} 
+          />
+        </div>
+      )}
+
       {/* Fixed Footer - Total Summary */}
       <div className="sticky bottom-0 bg-[#0d1117] pt-3 -mx-4 px-4 pb-1 border-t border-[#2a3142]">
-        <div className="flex items-center gap-3">
-          {/* Pre-Handover */}
-          <div className="flex-1 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
-            <span className="text-[10px] text-gray-500 uppercase">Pre-Handover</span>
-            <span className="text-sm font-mono text-white font-semibold ml-auto">
-              {preHandoverTotal.toFixed(0)}%
-            </span>
+        {hasPostHandoverPlan ? (
+          // 4-column layout for post-handover plan
+          <div className="flex items-center gap-2">
+            {/* Pre-Handover */}
+            <div className="flex-1 flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
+              <span className="text-[9px] text-gray-500 uppercase">Pre</span>
+              <span className="text-xs font-mono text-white font-semibold ml-auto">
+                {preHandoverTotal.toFixed(0)}%
+              </span>
+            </div>
+            
+            <div className="h-5 w-px bg-[#2a3142]" />
+            
+            {/* On Handover */}
+            <div className="flex-1 flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-400" />
+              <span className="text-[9px] text-gray-500 uppercase">Handover</span>
+              <span className="text-xs font-mono text-white font-semibold ml-auto">
+                {onHandoverPercent.toFixed(0)}%
+              </span>
+            </div>
+            
+            <div className="h-5 w-px bg-[#2a3142]" />
+            
+            {/* Post-Handover */}
+            <div className="flex-1 flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-purple-400" />
+              <span className="text-[9px] text-gray-500 uppercase">Post</span>
+              <span className="text-xs font-mono text-white font-semibold ml-auto">
+                {postHandoverTotal.toFixed(0)}%
+              </span>
+            </div>
+            
+            <div className="h-5 w-px bg-[#2a3142]" />
+            
+            {/* Total */}
+            <div className="flex-1 flex items-center gap-1.5">
+              {isValidTotal ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+              ) : (
+                <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+              )}
+              <span className="text-[9px] text-gray-500 uppercase">Total</span>
+              <span className={`text-xs font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
+                {totalPayment.toFixed(0)}%
+              </span>
+            </div>
           </div>
-          
-          {/* Divider */}
-          <div className="h-6 w-px bg-[#2a3142]" />
-          
-          {/* Handover */}
-          <div className="flex-1 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-400" />
-            <span className="text-[10px] text-gray-500 uppercase">Handover</span>
-            <span className="text-sm font-mono text-white font-semibold ml-auto">
-              {handoverPercent}%
-            </span>
+        ) : (
+          // Original 3-column layout
+          <div className="flex items-center gap-3">
+            {/* Pre-Handover */}
+            <div className="flex-1 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
+              <span className="text-[10px] text-gray-500 uppercase">Pre-Handover</span>
+              <span className="text-sm font-mono text-white font-semibold ml-auto">
+                {preHandoverTotal.toFixed(0)}%
+              </span>
+            </div>
+            
+            <div className="h-6 w-px bg-[#2a3142]" />
+            
+            {/* Handover */}
+            <div className="flex-1 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-400" />
+              <span className="text-[10px] text-gray-500 uppercase">Handover</span>
+              <span className="text-sm font-mono text-white font-semibold ml-auto">
+                {handoverPercent}%
+              </span>
+            </div>
+            
+            <div className="h-6 w-px bg-[#2a3142]" />
+            
+            {/* Total */}
+            <div className="flex-1 flex items-center gap-2">
+              {isValidTotal ? (
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-400" />
+              )}
+              <span className="text-[10px] text-gray-500 uppercase">Total</span>
+              <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
+                {totalPayment.toFixed(0)}%
+              </span>
+            </div>
           </div>
-          
-          {/* Divider */}
-          <div className="h-6 w-px bg-[#2a3142]" />
-          
-          {/* Total - Verification style */}
-          <div className="flex-1 flex items-center gap-2">
-            {isValidTotal ? (
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-red-400" />
-            )}
-            <span className="text-[10px] text-gray-500 uppercase">Total</span>
-            <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
-              {totalPayment.toFixed(0)}%
-            </span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
