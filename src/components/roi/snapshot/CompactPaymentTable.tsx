@@ -117,6 +117,26 @@ export const CompactPaymentTable = ({
     return { primary: dual.primary, secondary: dual.secondary };
   };
 
+  // Check for multiple clients
+  const hasMultipleClients = clientInfo?.clients && clientInfo.clients.length > 1;
+
+  // Sort additional payments (pre-handover installments)
+  const sortedPayments = [...(additionalPayments || [])].sort((a, b) => {
+    if (a.type === 'time' && b.type === 'time') return a.triggerValue - b.triggerValue;
+    if (a.type === 'construction' && b.type === 'construction') return a.triggerValue - b.triggerValue;
+    return a.type === 'time' ? -1 : 1;
+  });
+
+  // Calculate journey total (pre-handover installments excluding downpayment)
+  const journeyTotal = sortedPayments.reduce(
+    (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
+  );
+
+  // Grand total calculation
+  const grandTotal = hasPostHandoverPlan
+    ? entryTotal + journeyTotal + handoverAmount + postHandoverTotal
+    : entryTotal + journeyTotal + handoverAmount;
+
   return (
     <>
       <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden h-fit">
