@@ -3,6 +3,7 @@ import { OIInputs } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompactRentCardProps {
   inputs: OIInputs;
@@ -17,6 +18,7 @@ export const CompactRentCard = ({
   rate,
   onViewWealthProjection,
 }: CompactRentCardProps) => {
+  const { t } = useLanguage();
   const { 
     basePrice,
     rentalYieldPercent, 
@@ -65,12 +67,12 @@ export const CompactRentCard = ({
       <div className="p-3 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Home className="w-4 h-4 text-theme-accent" />
-          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Rental Income</span>
+          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">{t('rentalIncome')}</span>
         </div>
         <div className="flex items-center gap-2">
           {showAirbnbComparison && (
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400">
-              LT + ST
+              {t('lt')} + {t('st')}
             </span>
           )}
           {onViewWealthProjection && (
@@ -81,7 +83,7 @@ export const CompactRentCard = ({
               className="h-6 px-2 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
             >
               <Calendar className="w-3 h-3 mr-1" />
-              7-Year Table
+              {t('sevenYearTable')}
             </Button>
           )}
         </div>
@@ -91,17 +93,17 @@ export const CompactRentCard = ({
       <div className={showAirbnbComparison ? "grid grid-cols-2" : ""}>
         {/* Long-Term Section */}
         <div className="p-3 space-y-1.5">
-          <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">Long-Term</div>
+          <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">{t('longTermLabel')}</div>
           
           <DottedRow 
-            label="Gross"
+            label={t('grossLabel')}
             value={getDualValue(grossAnnualRent).primary}
             secondaryValue={getDualValue(grossAnnualRent).secondary}
           />
           
           {unitSizeSqf > 0 && (
             <DottedRow 
-              label="− Service"
+              label={`− ${t('serviceLabel')}`}
               value={`-${getDualValue(annualServiceCharges).primary}`}
               valueClassName="text-red-400"
             />
@@ -109,7 +111,7 @@ export const CompactRentCard = ({
           
           <div className="pt-1 border-t border-theme-border">
             <DottedRow 
-              label="= Net/year"
+              label={`= ${t('netYearLabel')}`}
               value={getDualValue(netAnnualRent).primary}
               secondaryValue={getDualValue(netAnnualRent).secondary}
               bold
@@ -118,7 +120,7 @@ export const CompactRentCard = ({
           </div>
           
           <DottedRow 
-            label="Monthly"
+            label={t('monthlyLabel')}
             value={getDualValue(monthlyRent).primary}
             secondaryValue={getDualValue(monthlyRent).secondary}
             valueClassName="text-cyan-400"
@@ -126,10 +128,10 @@ export const CompactRentCard = ({
           
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
-              Gross: {grossYield.toFixed(1)}%
+              {t('grossLabel')}: {grossYield.toFixed(1)}%
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              Net: {netYield.toFixed(1)}%
+              {t('netLabel')}: {netYield.toFixed(1)}%
             </span>
           </div>
         </div>
@@ -137,7 +139,7 @@ export const CompactRentCard = ({
         {/* Short-Term Section */}
         {showAirbnbComparison && (
           <div className="p-3 space-y-1.5 border-l border-border bg-orange-500/5">
-            <div className="text-[10px] uppercase tracking-wide text-orange-400 font-semibold mb-2">Short-Term</div>
+            <div className="text-[10px] uppercase tracking-wide text-orange-400 font-semibold mb-2">{t('shortTermLabel')}</div>
             
             <DottedRow 
               label={`ADR × ${occupancyPercent}%`}
@@ -145,14 +147,14 @@ export const CompactRentCard = ({
             />
             
             <DottedRow 
-              label="− Expenses"
+              label={`− ${t('expensesLabel')}`}
               value={`-${getDualValue(airbnbOperatingExpenses + annualServiceCharges).primary}`}
               valueClassName="text-red-400"
             />
             
             <div className="pt-1 border-t border-orange-500/20">
               <DottedRow 
-                label="= Net/year"
+                label={`= ${t('netYearLabel')}`}
                 value={getDualValue(netAirbnbAnnual).primary}
                 bold
                 valueClassName="text-orange-400"
@@ -160,7 +162,7 @@ export const CompactRentCard = ({
             </div>
             
             <DottedRow 
-              label="Monthly"
+              label={t('monthlyLabel')}
               value={getDualValue(monthlyAirbnb).primary}
               valueClassName="text-orange-400"
             />
@@ -168,7 +170,7 @@ export const CompactRentCard = ({
             <div className="flex items-center gap-1 pt-1">
               <TrendingUp className={`w-3 h-3 ${airbnbDifferencePercent >= 0 ? 'text-green-400' : 'text-red-400 rotate-180'}`} />
               <span className={`text-[10px] font-medium ${airbnbDifferencePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {airbnbDifferencePercent >= 0 ? '+' : ''}{airbnbDifferencePercent.toFixed(0)}% vs LT
+                {airbnbDifferencePercent >= 0 ? '+' : ''}{airbnbDifferencePercent.toFixed(0)}% {t('vsLongTerm')}
               </span>
             </div>
           </div>

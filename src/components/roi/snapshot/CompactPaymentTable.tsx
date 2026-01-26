@@ -41,7 +41,7 @@ export const CompactPaymentTable = ({
   rate,
   totalMonths,
 }: CompactPaymentTableProps) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [splitModalOpen, setSplitModalOpen] = useState(false);
   
   const { 
@@ -271,10 +271,26 @@ export const CompactPaymentTable = ({
             </div>
           </div>
 
-          {/* Grand Total - MOVED BEFORE Value Adds */}
-          <div className="pt-2 border-t border-theme-border">
+          {/* Grand Total with Fee Breakdown */}
+          <div className="pt-2 border-t border-theme-border space-y-1">
+            {/* Property Price */}
             <DottedRow 
-              label="Total Investment"
+              label={t('basePropertyPrice')}
+              value={getDualValue(basePrice).primary}
+              secondaryValue={getDualValue(basePrice).secondary}
+              className="text-xs"
+            />
+            {/* Transaction Fees */}
+            <DottedRow 
+              label={t('transactionFees')}
+              value={getDualValue(dldFee + oqoodFee).primary}
+              secondaryValue={getDualValue(dldFee + oqoodFee).secondary}
+              className="text-xs"
+              valueClassName="text-theme-text-muted"
+            />
+            {/* Total Investment */}
+            <DottedRow 
+              label={t('totalInvestmentLabel')}
               value={getDualValue(grandTotal).primary}
               secondaryValue={getDualValue(grandTotal).secondary}
               bold

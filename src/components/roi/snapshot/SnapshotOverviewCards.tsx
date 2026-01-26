@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { CreditCard, Home, Clock, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SnapshotOverviewCardsProps {
   inputs: OIInputs;
@@ -31,6 +31,7 @@ export const SnapshotOverviewCards = ({
   currency,
   rate,
 }: SnapshotOverviewCardsProps) => {
+  const { t } = useLanguage();
   const { basePrice, downpaymentPercent, preHandoverPercent, oqoodFee, rentalYieldPercent, serviceChargePerSqft = 18, unitSizeSqf = 0 } = inputs;
   
   // Calculate Cash to Start
@@ -79,7 +80,7 @@ export const SnapshotOverviewCards = ({
         >
           <div className="flex items-center gap-1.5 mb-1">
             <CreditCard className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Cash to Start</span>
+            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('cashToStartLabel')}</span>
             <span className="ml-auto text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">{preHandoverPercent}/{handoverPercent}</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
@@ -102,14 +103,14 @@ export const SnapshotOverviewCards = ({
         >
           <div className="flex items-center gap-1.5 mb-1">
             <Home className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Rental Income</span>
+            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('rentalIncome')}</span>
             <span className="ml-auto text-[9px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
-              {monthlyRentDual.primary}<span className="text-[10px] text-theme-text-muted">/mo</span>
+              {monthlyRentDual.primary}<span className="text-[10px] text-theme-text-muted">/{t('moShort')}</span>
             </div>
-            <span className="text-[10px] text-theme-text-muted">{netAnnualRentDual.primary}/year</span>
+            <span className="text-[10px] text-theme-text-muted">{netAnnualRentDual.primary}/{t('yearShort')}</span>
           </div>
         </motion.div>
 
@@ -123,14 +124,14 @@ export const SnapshotOverviewCards = ({
         >
           <div className="flex items-center gap-1.5 mb-1">
             <Clock className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Breakeven</span>
+            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('breakevenLabel')}</span>
             <span className="ml-auto text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
-              {yearsToBreakeven < 999 ? `${yearsToBreakeven.toFixed(1)} years` : 'N/A'}
+              {yearsToBreakeven < 999 ? `${yearsToBreakeven.toFixed(1)} ${t('yearsLabelLowercase')}` : 'N/A'}
             </div>
-            <span className="text-[10px] text-theme-text-muted">From rental income</span>
+            <span className="text-[10px] text-theme-text-muted">{t('fromRentalIncomeLabel')}</span>
           </div>
         </motion.div>
 
@@ -144,17 +145,17 @@ export const SnapshotOverviewCards = ({
         >
           <div className="flex items-center gap-1.5 mb-1">
             <Flame className="w-3.5 h-3.5 text-orange-400" />
-            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">Monthly Burn</span>
-            <span className="ml-auto text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded">{calculations.totalMonths}mo</span>
+            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('monthlyBurnLabel')}</span>
+            <span className="ml-auto text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded">{calculations.totalMonths}{t('moShort')}</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
-              ~{monthlyBurnDual.primary}<span className="text-[10px] text-theme-text-muted">/mo</span>
+              ~{monthlyBurnDual.primary}<span className="text-[10px] text-theme-text-muted">/{t('moShort')}</span>
             </div>
             {monthlyBurnDual.secondary && (
               <span className="text-[10px] text-theme-text-muted">{monthlyBurnDual.secondary}</span>
             )}
-            <span className="text-[10px] text-theme-text-muted">Until handover</span>
+            <span className="text-[10px] text-theme-text-muted">{t('untilHandoverLabel')}</span>
           </div>
         </motion.div>
       </div>

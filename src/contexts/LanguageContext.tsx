@@ -1377,6 +1377,51 @@ const translations: Translations = {
   projectionDisclaimerFull: { en: 'This is a hypothetical simulation based on assumed appreciation rates and historical trends. Dubai\'s real estate market is highly dynamic and subject to rapid changes. Actual results may differ materially from these projections. Past performance is not indicative of future results.', es: 'Esta es una simulación hipotética basada en tasas de apreciación asumidas y tendencias históricas. El mercado inmobiliario de Dubái es muy dinámico y sujeto a cambios rápidos. Los resultados reales pueden diferir significativamente de estas proyecciones. El rendimiento pasado no es indicativo de resultados futuros.' },
   advancedProjections: { en: 'Advanced Projections', es: 'Proyecciones Avanzadas' },
   advancedProjectionsDesc: { en: '10-year simulation for analysis purposes', es: 'Simulación a 10 años para propósitos de análisis' },
+
+  // Snapshot Overview Cards
+  cashToStartLabel: { en: 'Cash to Start', es: 'Efectivo Inicial' },
+  monthlyBurnLabel: { en: 'Monthly Burn', es: 'Gasto Mensual' },
+  breakevenLabel: { en: 'Breakeven', es: 'Punto de Equilibrio' },
+  untilHandoverLabel: { en: 'Until handover', es: 'Hasta entrega' },
+  fromRentalIncomeLabel: { en: 'From rental income', es: 'Por ingreso de alquiler' },
+  yearsLabelLowercase: { en: 'years', es: 'años' },
+  moShort: { en: 'mo', es: 'mes' },
+  yearShort: { en: 'year', es: 'año' },
+
+  // Rent Card
+  longTermLabel: { en: 'Long-Term', es: 'Largo Plazo' },
+  shortTermLabel: { en: 'Short-Term', es: 'Corto Plazo' },
+  grossLabel: { en: 'Gross', es: 'Bruto' },
+  serviceLabel: { en: 'Service', es: 'Servicio' },
+  netYearLabel: { en: 'Net/year', es: 'Neto/año' },
+  monthlyLabel: { en: 'Monthly', es: 'Mensual' },
+  netLabel: { en: 'Net', es: 'Neto' },
+  sevenYearTable: { en: '7-Year Table', es: 'Tabla 7 Años' },
+
+  // Mortgage Card
+  mortgageHeader: { en: 'Mortgage', es: 'Hipoteca' },
+  loanAmountLabel: { en: 'Loan Amount', es: 'Monto del Préstamo' },
+  monthlyPaymentLabel: { en: 'Monthly Payment', es: 'Pago Mensual' },
+  monthlyCashFlowLabel: { en: 'Monthly Cash Flow', es: 'Flujo Mensual' },
+  interestLabel: { en: 'Interest', es: 'Interés' },
+  positiveLabel: { en: 'Positive', es: 'Positivo' },
+  negativeLabel: { en: 'Negative', es: 'Negativo' },
+  yearsShort: { en: 'yr', es: 'a' },
+
+  // Exit Card
+  exitScenariosHeader: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },
+  handoverLabel: { en: 'Handover', es: 'Entrega' },
+  investedLabel: { en: 'invested', es: 'invertido' },
+  builtLabel: { en: 'built', es: 'construido' },
+  clickForDetailsLong: { en: 'Click for detailed breakdown', es: 'Clic para desglose detallado' },
+  exitAtLabel: { en: 'Exit at', es: 'Salida en' },
+  completeLabel: { en: 'complete', es: 'completo' },
+  cashInvestedLabel: { en: 'Cash Invested', es: 'Efectivo Invertido' },
+  annualizedROELabel: { en: 'Annualized ROE', es: 'ROE Anualizado' },
+
+  // Payment Table
+  transactionFees: { en: 'Fees (DLD + Oqood)', es: 'Tarifas (DLD + Oqood)' },
+  totalInvestmentLabel: { en: 'Total Investment', es: 'Inversión Total' },
 };
 
 interface LanguageContextType {
