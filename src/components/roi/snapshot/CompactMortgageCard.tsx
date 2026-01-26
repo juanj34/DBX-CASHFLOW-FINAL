@@ -2,6 +2,7 @@ import { Landmark, TrendingUp, TrendingDown } from 'lucide-react';
 import { MortgageInputs, MortgageAnalysis } from '../useMortgageCalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompactMortgageCardProps {
   mortgageInputs: MortgageInputs;
@@ -18,6 +19,8 @@ export const CompactMortgageCard = ({
   currency,
   rate,
 }: CompactMortgageCardProps) => {
+  const { t } = useLanguage();
+  
   if (!mortgageInputs.enabled) return null;
 
   const { loanAmount, monthlyPayment, totalInterest, equityRequiredPercent } = mortgageAnalysis;
@@ -38,10 +41,10 @@ export const CompactMortgageCard = ({
       <div className="p-3 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Landmark className="w-4 h-4 text-purple-400" />
-          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Mortgage</span>
+          <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">{t('mortgageHeader')}</span>
         </div>
         <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-400">
-          {mortgageInputs.loanTermYears}yr @ {mortgageInputs.interestRate}%
+          {mortgageInputs.loanTermYears}{t('yearsShort')} @ {mortgageInputs.interestRate}%
         </span>
       </div>
 
@@ -49,14 +52,14 @@ export const CompactMortgageCard = ({
       <div className="p-3 space-y-1.5">
         {/* Loan Amount */}
         <DottedRow 
-          label={`Loan Amount (${100 - equityRequiredPercent}%)`}
+          label={`${t('loanAmountLabel')} (${100 - equityRequiredPercent}%)`}
           value={getDualValue(loanAmount).primary}
           secondaryValue={getDualValue(loanAmount).secondary}
         />
         
         {/* Monthly Payment */}
         <DottedRow 
-          label="Monthly Payment"
+          label={t('monthlyPaymentLabel')}
           value={getDualValue(monthlyPayment).primary}
           secondaryValue={getDualValue(monthlyPayment).secondary}
           bold
@@ -65,7 +68,7 @@ export const CompactMortgageCard = ({
         
         {/* Rental Income */}
         <DottedRow 
-          label="Rental Income"
+          label={t('rentalIncome')}
           value={`+${getDualValue(monthlyRent).primary}`}
           valueClassName="text-cyan-400"
         />
@@ -73,7 +76,7 @@ export const CompactMortgageCard = ({
         {/* Cash Flow */}
         <div className="pt-2 border-t border-border">
           <DottedRow 
-            label="Monthly Cash Flow"
+            label={t('monthlyCashFlowLabel')}
             value={`${isPositive ? '+' : ''}${getDualValue(monthlyCashflow).primary}`}
             bold
             valueClassName={isPositive ? 'text-green-400' : 'text-red-400'}
@@ -83,11 +86,11 @@ export const CompactMortgageCard = ({
         {/* Summary badges */}
         <div className="flex items-center gap-2 pt-1">
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
-            Interest: {getDualValue(totalInterest).primary}
+            {t('interestLabel')}: {getDualValue(totalInterest).primary}
           </span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${isPositive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
             {isPositive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-            {isPositive ? 'Positive' : 'Negative'}
+            {isPositive ? t('positiveLabel') : t('negativeLabel')}
           </span>
         </div>
       </div>

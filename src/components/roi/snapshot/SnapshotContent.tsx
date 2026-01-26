@@ -69,7 +69,7 @@ export const SnapshotContent = ({
   const handoverYear = inputs.bookingYear + constructionYears;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-theme-bg">
+    <div className="h-screen flex flex-col bg-theme-bg">
       {/* Hero - fixed height */}
       <div className="flex-shrink-0 p-4 pb-0">
         <PropertyHeroCard
@@ -100,8 +100,8 @@ export const SnapshotContent = ({
         />
       </div>
 
-      {/* Main content - fills remaining space without scrolling */}
-      <div className="flex-1 px-4 pb-4 min-h-0">
+      {/* Main content - fills remaining space with scrolling */}
+      <div className="flex-1 px-4 pb-4 overflow-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
           {/* Left Column: Payment (with Value Differentiators integrated) */}
           <div className="flex flex-col">
@@ -117,7 +117,7 @@ export const SnapshotContent = ({
           </div>
 
           {/* Right Column: Rent + Exits + Mortgage */}
-          <div className="flex flex-col gap-3 overflow-auto">
+          <div className="flex flex-col gap-3">
             {/* Rent Card with Wealth Projection Button */}
             {inputs.rentalYieldPercent > 0 && (
               <CompactRentCard
@@ -128,15 +128,17 @@ export const SnapshotContent = ({
               />
             )}
             
-            {/* All Exits Card */}
-            <CompactAllExitsCard
-              inputs={inputs}
-              calculations={calculations}
-              exitScenarios={exitScenarios}
-              currency={currency}
-              rate={rate}
-              onClick={() => setExitModalOpen(true)}
-            />
+            {/* All Exits Card - only show if exitStrategy is enabled */}
+            {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
+              <CompactAllExitsCard
+                inputs={inputs}
+                calculations={calculations}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+                onClick={() => setExitModalOpen(true)}
+              />
+            )}
             
             {/* Mortgage Card */}
             {mortgageInputs.enabled && (
