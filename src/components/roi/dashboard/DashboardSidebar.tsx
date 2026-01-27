@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users, Image, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -37,6 +37,7 @@ interface DashboardSidebarProps {
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
+  shareToken?: string; // Share token for export
   // Language and currency
   language?: string;
   setLanguage?: (lang: string) => void;
@@ -46,6 +47,11 @@ interface DashboardSidebarProps {
   hasUnsavedChanges?: boolean;
   saving?: boolean;
   onSave?: () => void;
+  // Export handlers
+  onExportImage?: () => void;
+  onExportPdf?: () => void;
+  exportingImage?: boolean;
+  exportingPdf?: boolean;
 }
 
 // App Logo Component
@@ -195,6 +201,7 @@ export const DashboardSidebar = ({
   activeView,
   viewCount,
   quoteId,
+  shareToken,
   language,
   setLanguage,
   currency,
@@ -202,6 +209,10 @@ export const DashboardSidebar = ({
   hasUnsavedChanges,
   saving,
   onSave,
+  onExportImage,
+  onExportPdf,
+  exportingImage,
+  exportingPdf,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -422,6 +433,61 @@ export const DashboardSidebar = ({
                       <span className="text-[10px] bg-theme-bg/50 px-1.5 py-0.5 rounded">Save first</span>
                     </div>
                   )
+                )
+              )}
+              
+              {/* Export Buttons - only show when snapshot view and quote is saved */}
+              {activeView === 'snapshot' && shareToken && onExportImage && (
+                exportingImage ? (
+                  collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Generating image...</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted">
+                      <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
+                      <span className="flex-1 text-left truncate">Generating...</span>
+                    </div>
+                  )
+                ) : (
+                  <ActionButton 
+                    icon={Image} 
+                    label="Export Image" 
+                    onClick={onExportImage} 
+                    collapsed={collapsed}
+                  />
+                )
+              )}
+              
+              {activeView === 'snapshot' && shareToken && onExportPdf && (
+                exportingPdf ? (
+                  collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Generating PDF...</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted">
+                      <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
+                      <span className="flex-1 text-left truncate">Generating...</span>
+                    </div>
+                  )
+                ) : (
+                  <ActionButton 
+                    icon={FileDown} 
+                    label="Export PDF" 
+                    onClick={onExportPdf} 
+                    collapsed={collapsed}
+                  />
                 )
               )}
             </div>

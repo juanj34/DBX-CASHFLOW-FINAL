@@ -42,6 +42,7 @@ import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useSnapshotExport } from "@/hooks/useSnapshotExport";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
@@ -88,6 +89,12 @@ const OICalculatorContent = () => {
     monthlyServiceCharges: calculations.holdAnalysis.annualServiceCharges / 12,
   });
   const { rate, isLive } = useExchangeRate(currency);
+  
+  // Export functionality for snapshot view
+  const { exportImage, exportPdf, exportingImage, exportingPdf } = useSnapshotExport({
+    shareToken: quote?.share_token,
+    projectName: clientInfo.projectName,
+  });
 
   // Stricter validation: needs both client details AND property configured
   const hasClientDetails = useMemo(() => {
@@ -367,6 +374,7 @@ const OICalculatorContent = () => {
         activeView={viewMode}
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
+        shareToken={quote?.share_token ?? undefined}
         language={language}
         setLanguage={setLanguage}
         currency={currency}
@@ -374,6 +382,10 @@ const OICalculatorContent = () => {
         hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
         saving={saving}
         onSave={handleSave}
+        onExportImage={exportImage}
+        onExportPdf={exportPdf}
+        exportingImage={exportingImage}
+        exportingPdf={exportingPdf}
       >
 
         {/* Draft banner removed - all quotes now auto-save to database */}
