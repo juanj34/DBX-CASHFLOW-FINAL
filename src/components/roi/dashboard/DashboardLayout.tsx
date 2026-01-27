@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, useCallback, useState, forwardRef } from "react";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { OIInputs } from "@/components/roi/useOICalculations";
 import { MortgageInputs } from "@/components/roi/useMortgageCalculations";
@@ -10,6 +10,7 @@ import { Currency } from "@/components/roi/currencyUtils";
 
 interface DashboardLayoutProps {
   children: ReactNode;
+  mainContentRef?: React.RefObject<HTMLDivElement>;
   inputs: OIInputs;
   mortgageInputs: MortgageInputs;
   // New props for sidebar bottom section
@@ -43,6 +44,7 @@ export const DashboardLayout = ({
   children,
   inputs,
   mortgageInputs,
+  mainContentRef,
   profile,
   isAdmin,
   onConfigure,
@@ -110,12 +112,12 @@ export const DashboardLayout = ({
   return (
     <div className="flex h-screen">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex h-full">
+      <div className="hidden lg:flex h-full dashboard-sidebar">
         <DashboardSidebar {...sidebarProps} />
       </div>
 
       {/* Mobile Menu */}
-      <div className="lg:hidden fixed bottom-4 left-4 z-50">
+      <div className="lg:hidden fixed bottom-4 left-4 z-50" data-export-hide="true">
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
             <Button
@@ -136,7 +138,10 @@ export const DashboardLayout = ({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-theme-bg flex flex-col">
+      <main 
+        ref={mainContentRef} 
+        className="flex-1 overflow-auto bg-theme-bg flex flex-col dashboard-main-content"
+      >
         <div className="p-6 flex-1 flex flex-col min-h-0">
           {children}
         </div>

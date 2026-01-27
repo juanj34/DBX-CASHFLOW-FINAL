@@ -75,6 +75,9 @@ const OICalculatorContent = () => {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   type ViewMode = 'cashflow' | 'snapshot';
   const [viewMode, setViewMode] = useState<ViewMode>('cashflow');
+  
+  // Ref for client-side export capture
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -358,6 +361,7 @@ const OICalculatorContent = () => {
         <DashboardLayout
         inputs={inputs}
         mortgageInputs={mortgageInputs}
+        mainContentRef={mainContentRef}
         profile={profile}
         isAdmin={isAdmin}
         onConfigure={() => setModalOpen(true)}
@@ -671,11 +675,11 @@ const OICalculatorContent = () => {
         <ExportModal
           open={exportModalOpen}
           onOpenChange={setExportModalOpen}
-          shareToken={quote?.share_token}
           quoteId={quote?.id}
           projectName={clientInfo.projectName}
           activeView={viewMode}
-          generateShareToken={generateShareToken}
+          mainContentRef={mainContentRef}
+          onViewChange={setViewMode}
         />
       </DashboardLayout>
     </CashflowErrorBoundary>

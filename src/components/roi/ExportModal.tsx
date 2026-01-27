@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
-import { Download, FileImage, FileText, Loader2, X } from 'lucide-react';
+import { Download, FileImage, FileText, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useClientExport } from '@/hooks/useClientExport';
 
 type ViewType = 'cashflow' | 'snapshot' | 'both';
 type FormatType = 'png' | 'pdf';
@@ -21,22 +21,28 @@ interface ExportModalProps {
   activeView?: 'cashflow' | 'snapshot';
   generateShareToken?: (quoteId: string) => Promise<string | null>;
   onTokenGenerated?: (token: string) => void;
+  // New props for client-side export
+  mainContentRef?: React.RefObject<HTMLDivElement>;
+  onViewChange?: (view: 'cashflow' | 'snapshot') => void;
 }
 
 export const ExportModal = ({
   open,
   onOpenChange,
-  shareToken,
   quoteId,
   projectName,
   activeView = 'cashflow',
-  generateShareToken,
-  onTokenGenerated,
+  mainContentRef,
+  onViewChange,
 }: ExportModalProps) => {
   const [viewType, setViewType] = useState<ViewType>(activeView);
   const [format, setFormat] = useState<FormatType>('png');
-  const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
+
+  const { exporting, exportView, exportBothViews } = useClientExport({
+    contentRef: mainContentRef as React.RefObject<HTMLElement>,
+    projectName,
+  });
 
   // Reset to current active view when modal opens
   const handleOpenChange = (isOpen: boolean) => {
@@ -47,84 +53,35 @@ export const ExportModal = ({
     onOpenChange(isOpen);
   };
 
-  const exportSingleView = useCallback(async (
-    view: 'cashflow' | 'snapshot', 
-    exportFormat: FormatType,
-    token: string
-  ): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-snapshot-screenshot', {
-        body: { shareToken: token, format: exportFormat, view },
-      });
-
-      if (error) throw error;
-      if (!data?.data) throw new Error('No data received');
-
-      // Convert base64 to blob
-      const binaryString = atob(data.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const mimeType = exportFormat === 'pdf' ? 'application/pdf' : 'image/png';
-      const blob = new Blob([bytes], { type: mimeType });
-
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${projectName || 'investment'}-${view}.${exportFormat}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      return true;
-    } catch (err) {
-      console.error(`Export ${view} error:`, err);
-      return false;
-    }
-  }, [projectName]);
-
   const handleExport = useCallback(async () => {
-    let token = shareToken;
-
-    // Auto-generate token if not present
-    if (!token && quoteId && generateShareToken) {
-      setProgress({ current: 0, total: 1, label: 'Preparing export...' });
-      token = await generateShareToken(quoteId);
-      if (token) {
-        onTokenGenerated?.(token);
-      }
-    }
-
-    if (!token) {
+    if (!mainContentRef?.current) {
       toast({
         title: 'Cannot export',
-        description: 'Please save the quote first to enable export.',
+        description: 'Export not available. Please try again.',
         variant: 'destructive',
       });
       return;
     }
 
-    setExporting(true);
+    // Close modal before capturing (so modal doesn't appear in export)
+    onOpenChange(false);
+    
+    // Small delay to let modal close
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     try {
-      if (viewType === 'both') {
-        // Export both views sequentially
-        setProgress({ current: 1, total: 2, label: 'Generating Cashflow...' });
-        const cashflowSuccess = await exportSingleView('cashflow', format, token);
-
-        setProgress({ current: 2, total: 2, label: 'Generating Snapshot...' });
-        const snapshotSuccess = await exportSingleView('snapshot', format, token);
-
-        if (cashflowSuccess && snapshotSuccess) {
+      if (viewType === 'both' && onViewChange) {
+        // Export both views
+        setProgress({ current: 1, total: 2, label: 'Generating first view...' });
+        
+        const results = await exportBothViews(format, activeView, onViewChange);
+        
+        if (results.cashflowSuccess && results.snapshotSuccess) {
           toast({
             title: 'Export complete',
             description: `Both views have been downloaded as ${format.toUpperCase()}.`,
           });
-        } else if (cashflowSuccess || snapshotSuccess) {
+        } else if (results.cashflowSuccess || results.snapshotSuccess) {
           toast({
             title: 'Partial export',
             description: 'One of the exports failed. Please try again.',
@@ -134,21 +91,33 @@ export const ExportModal = ({
           throw new Error('Both exports failed');
         }
       } else {
-        // Export single view
-        setProgress({ current: 1, total: 1, label: `Generating ${viewType}...` });
-        const success = await exportSingleView(viewType, format, token);
+        // Export single view (current view or selected view)
+        const viewToExport = viewType === 'both' ? activeView : viewType;
+        
+        // If we need to switch views first
+        if (viewToExport !== activeView && onViewChange) {
+          onViewChange(viewToExport);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        setProgress({ current: 1, total: 1, label: `Generating ${viewToExport}...` });
+        
+        const success = await exportView({ format, viewName: viewToExport });
+
+        // Switch back if we changed views
+        if (viewToExport !== activeView && onViewChange) {
+          onViewChange(activeView);
+        }
 
         if (success) {
           toast({
             title: 'Export complete',
-            description: `Your ${viewType} ${format.toUpperCase()} has been downloaded.`,
+            description: `Your ${viewToExport} ${format.toUpperCase()} has been downloaded.`,
           });
         } else {
           throw new Error('Export failed');
         }
       }
-
-      onOpenChange(false);
     } catch (err) {
       console.error('Export error:', err);
       toast({
@@ -157,10 +126,9 @@ export const ExportModal = ({
         variant: 'destructive',
       });
     } finally {
-      setExporting(false);
       setProgress({ current: 0, total: 0, label: '' });
     }
-  }, [shareToken, quoteId, generateShareToken, onTokenGenerated, viewType, format, exportSingleView, onOpenChange]);
+  }, [mainContentRef, viewType, format, activeView, onViewChange, exportView, exportBothViews, onOpenChange]);
 
   const viewOptions = [
     { value: 'cashflow', label: 'Cashflow', description: 'Full analysis view' },
@@ -272,7 +240,7 @@ export const ExportModal = ({
           {/* Export Button */}
           <Button
             onClick={handleExport}
-            disabled={exporting || !quoteId}
+            disabled={exporting || !mainContentRef?.current}
             className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-medium"
           >
             {exporting ? (
@@ -288,9 +256,9 @@ export const ExportModal = ({
             )}
           </Button>
 
-          {!quoteId && (
+          {!mainContentRef?.current && (
             <p className="text-xs text-center text-amber-400">
-              Save the quote first to enable export
+              Export not available
             </p>
           )}
         </div>
