@@ -24,6 +24,7 @@ interface TimelinePayment {
   type: 'entry' | 'milestone' | 'handover';
   date: string;
   isEstimate: boolean;
+  isPostHandover?: boolean;
 }
 
 // DLD Fee is always 4%
@@ -116,16 +117,20 @@ export const PaymentHorizontalTimeline = ({
       
       const positionPercent = (monthsFromBooking / totalMonths) * 100;
       
+      // Check if this payment is post-handover
+      const isPostHandover = positionPercent > 100;
+      
       result.push({
         id: payment.id,
         label,
         percent: payment.paymentPercent,
         amount,
         monthsFromBooking,
-        positionPercent,
+        positionPercent: Math.min(positionPercent, 100), // Cap at 100% for positioning
         type: 'milestone',
         date: estimateDateFromMonths(monthsFromBooking),
         isEstimate,
+        isPostHandover,
       });
     });
 
@@ -247,9 +252,9 @@ export const PaymentHorizontalTimeline = ({
             const leftCalc = `calc(${leftPercent}% + 16px - ${leftPercent * 0.32}px)`;
             
             const markerSize = payment.type === 'handover' ? 'w-8 h-8' : payment.type === 'entry' ? 'w-7 h-7' : 'w-6 h-6';
-            const markerColor = payment.type === 'handover' ? 'bg-cyan-500' : payment.type === 'entry' ? 'bg-emerald-500' : 'bg-slate-500';
-            const borderColor = payment.type === 'handover' ? 'border-cyan-300' : payment.type === 'entry' ? 'border-emerald-300' : 'border-slate-400';
-            const textColor = payment.type === 'handover' ? 'text-cyan-400' : payment.type === 'entry' ? 'text-emerald-400' : 'text-slate-300';
+            const markerColor = payment.type === 'handover' ? 'bg-cyan-500' : payment.type === 'entry' ? 'bg-emerald-500' : payment.isPostHandover ? 'bg-purple-500' : 'bg-slate-500';
+            const borderColor = payment.type === 'handover' ? 'border-cyan-300' : payment.type === 'entry' ? 'border-emerald-300' : payment.isPostHandover ? 'border-purple-400' : 'border-slate-400';
+            const textColor = payment.type === 'handover' ? 'text-cyan-400' : payment.type === 'entry' ? 'text-emerald-400' : payment.isPostHandover ? 'text-purple-400' : 'text-slate-300';
             
             const isLabelOnTop = payment.labelOffset === 'top';
             
@@ -352,6 +357,11 @@ export const PaymentHorizontalTimeline = ({
                         {t('includesDldOqood') || 'Includes DLD (4%) + Oqood fees'}
                       </div>
                     )}
+                    {payment.isPostHandover && (
+                      <div className="text-[10px] text-purple-400 pt-1 border-t border-slate-700">
+                        Post-handover payment
+                      </div>
+                    )}
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -361,7 +371,7 @@ export const PaymentHorizontalTimeline = ({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-6 text-[11px] text-slate-400">
+      <div className="flex items-center justify-center gap-4 text-[11px] text-slate-400 flex-wrap">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-emerald-500 flex items-center justify-center">
             <span className="text-[8px] font-bold text-white">1</span>
@@ -379,6 +389,12 @@ export const PaymentHorizontalTimeline = ({
             <span className="text-[8px] font-bold text-white">✓</span>
           </div>
           <span>{t('handover') || 'Handover'}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-purple-500 flex items-center justify-center">
+            <span className="text-[8px] font-bold text-white">+</span>
+          </div>
+          <span>Post-HO</span>
         </div>
       </div>
     </div>

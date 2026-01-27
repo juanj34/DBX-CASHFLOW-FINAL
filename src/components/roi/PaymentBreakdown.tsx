@@ -20,6 +20,28 @@ interface PaymentBreakdownProps {
   compact?: boolean;
 }
 
+// Check if a payment is at or after handover
+const isPaymentAtOrAfterHandover = (
+  paymentMonthsFromBooking: number,
+  bookingMonth: number,
+  bookingYear: number,
+  handoverQuarter: number,
+  handoverYear: number
+): { isHandover: boolean; isPostHandover: boolean } => {
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + paymentMonthsFromBooking);
+  
+  const handoverMonthStart = (handoverQuarter - 1) * 3;
+  const handoverQuarterStart = new Date(handoverYear, handoverMonthStart);
+  const handoverQuarterEnd = new Date(handoverYear, handoverMonthStart + 3);
+  
+  const isHandover = paymentDate >= handoverQuarterStart && paymentDate < handoverQuarterEnd;
+  const isPostHandover = paymentDate >= handoverQuarterEnd;
+  
+  return { isHandover, isPostHandover };
+};
+
 // Convert booking month/year to readable date string
 const monthToDateString = (month: number, year: number, language: string): string => {
   const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -218,6 +240,14 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                         ? estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language)
                         : null;
                       
+                      // Check if this payment falls in or after handover
+                      const monthsFromBooking = isTimeBased 
+                        ? payment.triggerValue 
+                        : Math.round((payment.triggerValue / 100) * totalMonths);
+                      const { isHandover, isPostHandover } = isPaymentAtOrAfterHandover(
+                        monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
+                      );
+                      
                       return (
                         <div key={payment.id} className="flex justify-between items-center gap-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -231,6 +261,16 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                             </span>
                             {dateStr && (
                               <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
+                            )}
+                            {isHandover && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded border border-cyan-500/30 whitespace-nowrap">
+                                🔑 Handover
+                              </span>
+                            )}
+                            {isPostHandover && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30 whitespace-nowrap">
+                                Post-HO
+                              </span>
                             )}
                           </div>
                           <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(amount, currency, rate)}</span>
