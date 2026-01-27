@@ -1,163 +1,134 @@
 
-
-# Fix Double Scroll & Export Issues
+# Fix Export Layout Issues for All Components
 
 ## Problem Summary
 
-### Issue 1: Double Scroll in Snapshot View
-The Snapshot view has **nested scroll containers** that create a confusing UX:
-
-```
-DashboardLayout
-├── <main overflow-auto>              ← SCROLL #1 (outer)
-│     └── SnapshotContent
-│           └── <div h-screen>        ← Forces viewport height
-│                 └── <div overflow-auto>  ← SCROLL #2 (inner)
-```
-
-You have to scroll the outer container first, then scroll the inner container to see the Mortgage card at the bottom.
-
-### Issue 2: Content Cropping During Export
-When `html2canvas` captures the DOM, the nested scroll containers and `h-screen` constraint cause the bottom content to be clipped. The capture only sees the viewport height, not the full scrollable content.
-
-### Issue 3: 25MB PDF File Size
-Current export uses PNG format at full quality (`toDataURL('image/png', 1.0)`), which is lossless and extremely large.
-
----
-
-## Solution Overview
-
-| Problem | Fix |
-|---------|-----|
-| Double scroll | Remove inner scroll, use `min-h-full` instead of `h-screen` |
-| Content cropping | Add CSS rules to force `height: auto` during export mode |
-| Large PDF size | Use JPEG format with 85% quality for PDF exports |
-
----
-
-## Technical Changes
-
-### File 1: `src/components/roi/snapshot/SnapshotContent.tsx`
-
-**Change the layout to use a single scroll context:**
-
-- Replace `h-screen` with `min-h-full` - allows content to grow beyond viewport
-- Remove `overflow-auto` from the inner content div - no more nested scroll
-- Remove `h-full` from the grid container - let content flow naturally
-
-```tsx
-// BEFORE (line 72)
-<div className="h-screen flex flex-col bg-theme-bg">
-
-// AFTER
-<div className="min-h-full flex flex-col bg-theme-bg">
-```
-
-```tsx
-// BEFORE (line 104-105)
-<div className="flex-1 px-4 pb-4 overflow-auto">
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-
-// AFTER
-<div className="flex-1 px-4 pb-4">
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-```
-
-### File 2: `src/index.css`
-
-**Add comprehensive export-mode CSS rules to force full height capture:**
+The PDF export shows misaligned and cut-off elements (payment rows, value add badges, mortgage info) because the CSS rule added for export mode is too broad:
 
 ```css
-/* Export mode - Force auto height for full content capture */
-body.export-mode,
-body.export-mode .dashboard-main-content,
-body.export-mode .min-h-full,
-body.export-mode .h-screen {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-body.export-mode .overflow-auto,
-body.export-mode .overflow-hidden,
-body.export-mode .overflow-y-auto {
-  overflow: visible !important;
-}
-
 body.export-mode .flex-1 {
   flex: none !important;
   height: auto !important;
 }
 ```
 
-### File 3: `src/hooks/useClientExport.ts`
+This breaks **internal component layouts** that rely on `flex-1`:
 
-**Reduce PDF size by using JPEG compression:**
-
-```typescript
-// BEFORE (line 89)
-const imgData = canvas.toDataURL('image/png', 1.0);
-
-// AFTER - Use JPEG for PDF (much smaller file size)
-const imgData = canvas.toDataURL('image/jpeg', 0.85);
-```
-
-Also add:
-- Increase delay from 100ms to 200ms for layout reflow
-- Force reflow with `offsetHeight` before capture
+| Component | Uses `flex-1` For | Issue |
+|-----------|------------------|-------|
+| `DottedRow` | Dotted line separator | Line disappears or collapses |
+| `CompactPaymentTable` | Payment label containers | Labels overlap/cut off |
+| `CompactAllExitsCard` | Scenarios list | Content compressed |
+| `CompactMortgageCard` | Various internal layouts | Badges misaligned |
 
 ---
 
-## Visual Comparison
+## Solution: Targeted Data Attribute Approach
 
-**Before (Double Scroll):**
-```
-┌─────────────────────────────────────┐
-│ Sidebar │ Hero Card                 │
-│         ├───────────────────────────┤
-│         │ Overview Cards            │ ↕ Scroll #1
-│         ├───────────────────────────┤
-│         │ ┌─────────────────────┐   │
-│         │ │ Payment │ Rent      │   │
-│         │ │         │ Exits     │   │ ↕ Scroll #2
-│         │ │         │ Mortgage  │   │   (hidden)
-│         │ └─────────────────────┘   │
-└─────────────────────────────────────┘
+Instead of overriding ALL `.flex-1` elements (which breaks internal layouts), we'll:
+
+1. **Remove** the broad `.flex-1` override
+2. **Add** a data attribute (`data-export-layout="expand"`) to specific containers that need to expand
+3. **Target only those marked containers** in CSS
+
+This preserves internal component layouts while still allowing page-level containers to expand for capture.
+
+---
+
+## Files to Modify
+
+### File 1: `src/index.css`
+
+**Remove:**
+```css
+body.export-mode .flex-1 {
+  flex: none !important;
+  height: auto !important;
+}
 ```
 
-**After (Single Scroll):**
+**Replace with targeted rule:**
+```css
+/* Only expand containers explicitly marked for export */
+body.export-mode [data-export-layout="expand"] {
+  flex: none !important;
+  height: auto !important;
+  overflow: visible !important;
+}
 ```
-┌─────────────────────────────────────┐
-│ Sidebar │ Hero Card                 │
-│         ├───────────────────────────┤
-│         │ Overview Cards            │
-│         ├───────────────────────────┤  ↕ Single scroll
-│         │ Payment   │ Rent          │    for entire
-│         │           │ Exits         │    content area
-│         │           │ Mortgage      │
-└─────────────────────────────────────┘
+
+### File 2: `src/components/roi/snapshot/SnapshotContent.tsx`
+
+Add the `data-export-layout="expand"` attribute to the main content container that needs to expand:
+
+```tsx
+{/* Main content - flows naturally with single scroll */}
+<div className="flex-1 px-4 pb-4" data-export-layout="expand">
 ```
+
+### File 3: `src/hooks/useClientExport.ts`
+
+Add improvements for more reliable capture:
+- Scroll content to top before capture
+- Increase delay to 300ms for complex layouts
+
+```typescript
+// Before capture, scroll to top for consistent starting point
+if (contentRef.current) {
+  contentRef.current.scrollTop = 0;
+}
+
+// Increase delay to 300ms
+await new Promise(resolve => setTimeout(resolve, 300));
+```
+
+---
+
+## Technical Details
+
+### Why This Works
+
+| Approach | Result |
+|----------|--------|
+| **Before** (broad override) | ALL `flex-1` elements break, including DottedRow separators and payment labels |
+| **After** (targeted attribute) | Only page-level containers expand; internal layouts preserved |
+
+### Components That Will Be Preserved
+
+These components use `flex-1` internally and will now render correctly:
+
+1. **DottedRow** (line 36): `<span className="flex-1 border-b border-dotted..." />` - The dotted separator line
+2. **CompactPaymentTable** (line 291): `<div className="flex items-center gap-1 min-w-0 flex-1">` - Payment label containers
+3. **CompactAllExitsCard** (line 104): `<div className="p-3 space-y-2 flex-1 overflow-auto">` - Scenarios list
+4. **CompactMortgageCard**: Internal flex layouts for badges
+
+### What Will Expand
+
+Only the marked container in `SnapshotContent.tsx`:
+```tsx
+<div className="flex-1 px-4 pb-4" data-export-layout="expand">
+```
+
+This container needs to expand to show all content, but its children (the cards) will maintain their internal flex layouts.
 
 ---
 
 ## Expected Results
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Scroll behavior | Two nested scrollbars | Single intuitive scrollbar |
-| Mortgage visibility | Hidden until 2nd scroll | Visible with normal scroll |
-| Export cropping | Bottom content cut off | Full content captured |
-| PDF file size | ~25MB | ~2-5MB (80-90% smaller) |
-| PNG quality | High | High (unchanged) |
+| Issue | Before | After |
+|-------|--------|-------|
+| Payment row labels | Cut off / overlapping | Full text visible |
+| Dotted line separators | Missing or collapsed | Properly spanning |
+| Value Add badges | Misaligned | Correctly wrapped |
+| Mortgage badges | Offset | Properly positioned |
+| Exit scenarios | Compressed | Full height visible |
 
 ---
 
-## Files Modified
+## Summary
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/snapshot/SnapshotContent.tsx` | Replace `h-screen` → `min-h-full`, remove inner `overflow-auto` |
-| `src/index.css` | Add export-mode CSS for auto height and visible overflow |
-| `src/hooks/useClientExport.ts` | Use JPEG 85% quality for PDFs, add layout reflow delay |
-
+The fix is surgical:
+1. Remove the broad `.flex-1` override that breaks internal layouts
+2. Mark only the page-level container that needs to expand with `data-export-layout="expand"`
+3. Target only that marked container in CSS
+4. Internal component layouts (DottedRow, badges, etc.) are preserved
