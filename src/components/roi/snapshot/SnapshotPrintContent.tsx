@@ -58,11 +58,11 @@ export const SnapshotPrintContent = ({
 
   return (
     <div 
-      className="snapshot-print-content bg-theme-bg min-h-screen p-8"
-      style={{ width: '1900px', maxWidth: '1900px' }}
+      className="snapshot-print-content bg-theme-bg min-h-screen"
+      style={{ width: '1920px' }}
     >
       {/* Hero Section */}
-      <div className="pb-6">
+      <div className="p-6 pb-0">
         <PropertyHeroCard
           data={clientInfo}
           heroImageUrl={quoteImages.heroImageUrl}
@@ -82,7 +82,7 @@ export const SnapshotPrintContent = ({
       </div>
 
       {/* Overview Cards */}
-      <div className="pb-6">
+      <div className="px-6 py-4">
         <SnapshotOverviewCards 
           inputs={inputs}
           calculations={calculations}
@@ -92,8 +92,8 @@ export const SnapshotPrintContent = ({
       </div>
 
       {/* Main Content - Side by Side */}
-      <div className="pb-6">
-        <div className="grid grid-cols-[1fr_1fr] gap-6">
+      <div className="px-6 pb-4">
+        <div className="grid grid-cols-2 gap-6">
           {/* Left Column: Payment Breakdown */}
           <div>
             <CompactPaymentTable
@@ -146,17 +146,19 @@ export const SnapshotPrintContent = ({
       </div>
 
       {/* Wealth Projection Timeline - Full Width */}
-      <WealthProjectionTimeline
-        basePrice={basePrice}
-        constructionMonths={calculations.totalMonths}
-        constructionAppreciation={inputs.constructionAppreciation}
-        growthAppreciation={inputs.growthAppreciation}
-        matureAppreciation={inputs.matureAppreciation}
-        growthPeriodYears={inputs.growthPeriodYears}
-        bookingYear={inputs.bookingYear}
-        currency={currency}
-        rate={rate}
-      />
+      <div className="px-6 pb-6">
+        <WealthProjectionTimeline
+          basePrice={basePrice}
+          constructionMonths={calculations.totalMonths}
+          constructionAppreciation={inputs.constructionAppreciation}
+          growthAppreciation={inputs.growthAppreciation}
+          matureAppreciation={inputs.matureAppreciation}
+          growthPeriodYears={inputs.growthPeriodYears}
+          bookingYear={inputs.bookingYear}
+          currency={currency}
+          rate={rate}
+        />
+      </div>
     </div>
   );
 };

@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useServerExport } from '@/hooks/useServerExport';
+import { useClientExport } from '@/hooks/useClientExport';
 
 type ViewType = 'cashflow' | 'snapshot' | 'both';
 type FormatType = 'png' | 'pdf';
@@ -20,22 +20,29 @@ interface ExportModalProps {
   projectName?: string;
   activeView?: 'cashflow' | 'snapshot';
   generateShareToken?: (quoteId: string) => Promise<string | null>;
+  onTokenGenerated?: (token: string) => void;
+  // New props for client-side export
+  mainContentRef?: React.RefObject<HTMLDivElement>;
+  onViewChange?: (view: 'cashflow' | 'snapshot') => void;
 }
 
 export const ExportModal = ({
   open,
   onOpenChange,
-  shareToken,
   quoteId,
   projectName,
   activeView = 'cashflow',
-  generateShareToken,
+  mainContentRef,
+  onViewChange,
 }: ExportModalProps) => {
   const [viewType, setViewType] = useState<ViewType>(activeView);
   const [format, setFormat] = useState<FormatType>('png');
   const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
 
-  const { exporting, exportView, exportBothViews } = useServerExport();
+  const { exporting, exportView, exportBothViews } = useClientExport({
+    contentRef: mainContentRef as React.RefObject<HTMLElement>,
+    projectName,
+  });
 
   // Reset to current active view when modal opens
   const handleOpenChange = (isOpen: boolean) => {
@@ -47,36 +54,28 @@ export const ExportModal = ({
   };
 
   const handleExport = useCallback(async () => {
-    // Ensure we have a share token
-    let tokenToUse = shareToken;
-
-    if (!tokenToUse && quoteId && generateShareToken) {
-      setProgress({ current: 0, total: 1, label: 'Preparing...' });
-      tokenToUse = await generateShareToken(quoteId);
-    }
-
-    if (!tokenToUse) {
+    if (!mainContentRef?.current) {
       toast({
         title: 'Cannot export',
-        description: 'Unable to generate share link for export. Please save the quote first.',
+        description: 'Export not available. Please try again.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Close modal before export starts
+    // Close modal before capturing (so modal doesn't appear in export)
     onOpenChange(false);
+    
+    // Small delay to let modal close
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     try {
-      if (viewType === 'both') {
-        setProgress({ current: 1, total: 2, label: 'Rendering cashflow...' });
+      if (viewType === 'both' && onViewChange) {
+        // Export both views
+        setProgress({ current: 1, total: 2, label: 'Generating first view...' });
         
-        const results = await exportBothViews({
-          shareToken: tokenToUse,
-          format,
-          projectName,
-        });
-
+        const results = await exportBothViews(format, activeView, onViewChange);
+        
         if (results.cashflowSuccess && results.snapshotSuccess) {
           toast({
             title: 'Export complete',
@@ -92,35 +91,44 @@ export const ExportModal = ({
           throw new Error('Both exports failed');
         }
       } else {
-        setProgress({ current: 1, total: 1, label: `Rendering ${viewType}...` });
+        // Export single view (current view or selected view)
+        const viewToExport = viewType === 'both' ? activeView : viewType;
         
-        const result = await exportView({
-          shareToken: tokenToUse,
-          format,
-          view: viewType,
-          projectName,
-        });
+        // If we need to switch views first
+        if (viewToExport !== activeView && onViewChange) {
+          onViewChange(viewToExport);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        setProgress({ current: 1, total: 1, label: `Generating ${viewToExport}...` });
+        
+        const success = await exportView({ format, viewName: viewToExport });
 
-        if (result.success) {
+        // Switch back if we changed views
+        if (viewToExport !== activeView && onViewChange) {
+          onViewChange(activeView);
+        }
+
+        if (success) {
           toast({
             title: 'Export complete',
-            description: `Your ${viewType} ${format.toUpperCase()} has been downloaded.`,
+            description: `Your ${viewToExport} ${format.toUpperCase()} has been downloaded.`,
           });
         } else {
-          throw new Error(result.error || 'Export failed');
+          throw new Error('Export failed');
         }
       }
     } catch (err) {
       console.error('Export error:', err);
       toast({
         title: 'Export failed',
-        description: err instanceof Error ? err.message : 'Failed to generate the export. Please try again.',
+        description: 'Failed to generate the export. Please try again.',
         variant: 'destructive',
       });
     } finally {
       setProgress({ current: 0, total: 0, label: '' });
     }
-  }, [shareToken, quoteId, generateShareToken, viewType, format, projectName, exportView, exportBothViews, onOpenChange]);
+  }, [mainContentRef, viewType, format, activeView, onViewChange, exportView, exportBothViews, onOpenChange]);
 
   const viewOptions = [
     { value: 'cashflow', label: 'Cashflow', description: 'Full analysis view' },
@@ -132,8 +140,6 @@ export const ExportModal = ({
     { value: 'png', label: 'PNG', icon: FileImage, description: 'Image file' },
     { value: 'pdf', label: 'PDF', icon: FileText, description: 'Document file' },
   ];
-
-  const canExport = !!(shareToken || (quoteId && generateShareToken));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -234,13 +240,13 @@ export const ExportModal = ({
           {/* Export Button */}
           <Button
             onClick={handleExport}
-            disabled={exporting || !canExport}
+            disabled={exporting || !mainContentRef?.current}
             className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-medium"
           >
             {exporting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Rendering...
+                Generating...
               </>
             ) : (
               <>
@@ -250,9 +256,9 @@ export const ExportModal = ({
             )}
           </Button>
 
-          {!canExport && (
+          {!mainContentRef?.current && (
             <p className="text-xs text-center text-amber-400">
-              Save the quote first to enable export
+              Export not available
             </p>
           )}
         </div>
