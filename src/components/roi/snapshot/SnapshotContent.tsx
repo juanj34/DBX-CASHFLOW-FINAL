@@ -69,7 +69,7 @@ export const SnapshotContent = ({
   const handoverYear = inputs.bookingYear + constructionYears;
 
   return (
-    <div className="h-screen flex flex-col bg-theme-bg">
+    <div className="min-h-full flex flex-col bg-theme-bg">
       {/* Hero - fixed height */}
       <div className="flex-shrink-0 p-4 pb-0">
         <PropertyHeroCard
@@ -100,9 +100,9 @@ export const SnapshotContent = ({
         />
       </div>
 
-      {/* Main content - fills remaining space with scrolling */}
-      <div className="flex-1 px-4 pb-4 overflow-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+      {/* Main content - flows naturally with single scroll */}
+      <div className="flex-1 px-4 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left Column: Payment (with Value Differentiators integrated) */}
           <div className="flex flex-col">
             <CompactPaymentTable

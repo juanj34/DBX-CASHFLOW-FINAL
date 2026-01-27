@@ -24,11 +24,16 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
       return null;
     }
 
-    // Add export mode class to hide sidebar/nav
+    // Add export mode class to hide sidebar/nav and force auto height
     document.body.classList.add('export-mode');
 
-    // Small delay to let the CSS take effect
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for CSS to apply and layout to reflow
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Force a reflow to ensure layout updates
+    if (contentRef.current) {
+      void contentRef.current.offsetHeight;
+    }
 
     try {
       const canvas = await html2canvas(contentRef.current, {
@@ -86,7 +91,8 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
     if (!canvas) return false;
 
     try {
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      // Use JPEG for PDF - much smaller file size (85% quality)
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
       
       // Calculate dimensions - maintain aspect ratio
       const imgWidth = canvas.width;
