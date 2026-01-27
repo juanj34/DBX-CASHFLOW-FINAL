@@ -677,9 +677,9 @@ const OICalculatorContent = () => {
           onOpenChange={setExportModalOpen}
           quoteId={quote?.id}
           projectName={clientInfo.projectName}
+          shareToken={quote?.share_token}
+          generateShareToken={generateShareToken}
           activeView={viewMode}
-          mainContentRef={mainContentRef}
-          onViewChange={setViewMode}
         />
       </DashboardLayout>
     </CashflowErrorBoundary>
