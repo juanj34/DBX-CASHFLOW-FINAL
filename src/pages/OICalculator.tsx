@@ -42,11 +42,11 @@ import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { useCashflowExport } from "@/hooks/useCashflowExport";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
 import { SnapshotContent } from "@/components/roi/snapshot";
+import { ExportModal } from "@/components/roi/ExportModal";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -66,6 +66,7 @@ const OICalculatorContent = () => {
   const [developerModalOpen, setDeveloperModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [floorPlanLightboxOpen, setFloorPlanLightboxOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [inputs, setInputs] = useState<OIInputs>(NEW_QUOTE_OI_INPUTS);
   const [clientInfo, setClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
@@ -90,18 +91,6 @@ const OICalculatorContent = () => {
   });
   const { rate, isLive } = useExchangeRate(currency);
   
-  // Export functionality for both views - auto-generates token if needed
-  const { exportImage, exportPdf, exportingImage, exportingPdf } = useCashflowExport({
-    shareToken: quote?.share_token,
-    projectName: clientInfo.projectName,
-    activeView: viewMode,
-    quoteId: quote?.id,
-    generateShareToken,
-    onTokenGenerated: (token) => {
-      // Token generated - state will update via quote refetch
-      console.log('Share token generated for export:', token);
-    },
-  });
 
   // Stricter validation: needs both client details AND property configured
   const hasClientDetails = useMemo(() => {
@@ -389,10 +378,7 @@ const OICalculatorContent = () => {
         hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
         saving={saving}
         onSave={handleSave}
-        onExportImage={exportImage}
-        onExportPdf={exportPdf}
-        exportingImage={exportingImage}
-        exportingPdf={exportingPdf}
+        onOpenExportModal={() => setExportModalOpen(true)}
       >
 
         {/* Draft banner removed - all quotes now auto-save to database */}
@@ -680,6 +666,17 @@ const OICalculatorContent = () => {
             onOpenChange={setFloorPlanLightboxOpen}
           />
         )}
+
+        {/* Export Modal */}
+        <ExportModal
+          open={exportModalOpen}
+          onOpenChange={setExportModalOpen}
+          shareToken={quote?.share_token}
+          quoteId={quote?.id}
+          projectName={clientInfo.projectName}
+          activeView={viewMode}
+          generateShareToken={generateShareToken}
+        />
       </DashboardLayout>
     </CashflowErrorBoundary>
   );

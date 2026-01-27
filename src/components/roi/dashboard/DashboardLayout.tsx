@@ -35,11 +35,8 @@ interface DashboardLayoutProps {
   hasUnsavedChanges?: boolean;
   saving?: boolean;
   onSave?: () => void;
-  // Export handlers
-  onExportImage?: () => void;
-  onExportPdf?: () => void;
-  exportingImage?: boolean;
-  exportingPdf?: boolean;
+  // Export modal trigger
+  onOpenExportModal?: () => void;
 }
 
 export const DashboardLayout = ({
@@ -66,10 +63,7 @@ export const DashboardLayout = ({
   hasUnsavedChanges,
   saving,
   onSave,
-  onExportImage,
-  onExportPdf,
-  exportingImage,
-  exportingPdf,
+  onOpenExportModal,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -110,10 +104,7 @@ export const DashboardLayout = ({
     hasUnsavedChanges,
     saving,
     onSave,
-    onExportImage,
-    onExportPdf,
-    exportingImage,
-    exportingPdf,
+    onOpenExportModal,
   };
 
   return (
