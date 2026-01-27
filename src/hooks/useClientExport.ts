@@ -18,6 +18,21 @@ interface ExportOptions {
 export const useClientExport = ({ contentRef, projectName }: UseClientExportProps) => {
   const [exporting, setExporting] = useState(false);
 
+  const getBackgroundColor = useCallback((element: HTMLElement): string => {
+    const computedBg = getComputedStyle(element).backgroundColor;
+    // Check if transparent (rgba with 0 alpha or 'transparent')
+    if (computedBg === 'transparent' || computedBg === 'rgba(0, 0, 0, 0)') {
+      // Fallback to body background
+      const bodyBg = getComputedStyle(document.body).backgroundColor;
+      if (bodyBg === 'transparent' || bodyBg === 'rgba(0, 0, 0, 0)') {
+        // Ultimate fallback - use a neutral color based on theme
+        return document.documentElement.classList.contains('dark') ? '#0a0a0a' : '#ffffff';
+      }
+      return bodyBg;
+    }
+    return computedBg;
+  }, []);
+
   const captureElement = useCallback(async (): Promise<HTMLCanvasElement | null> => {
     if (!contentRef.current) {
       console.error('Content ref is not available');
@@ -32,6 +47,11 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
       contentRef.current.scrollTop = 0;
     }
 
+    // Wait for fonts to be fully loaded (prevents text baseline shifts)
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+
     // Wait for CSS to apply and layout to reflow (300ms for complex layouts)
     await new Promise(resolve => setTimeout(resolve, 300));
     
@@ -40,11 +60,14 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
       void contentRef.current.offsetHeight;
     }
 
+    // Get deterministic background color
+    const backgroundColor = getBackgroundColor(contentRef.current);
+
     try {
       const canvas = await html2canvas(contentRef.current, {
         scale: 2, // 2x resolution for high quality
         useCORS: true, // Allow cross-origin images
-        backgroundColor: null, // Preserve transparent backgrounds
+        backgroundColor, // Use computed theme background (no transparency artifacts)
         logging: false, // Disable console logs
         allowTaint: false, // Prevent tainted canvas issues
         scrollX: 0,
@@ -55,6 +78,48 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
         height: contentRef.current.scrollHeight,
         windowWidth: contentRef.current.scrollWidth,
         windowHeight: contentRef.current.scrollHeight,
+        // Freeze animations/transforms in the cloned DOM to prevent text baseline drift
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            /* Freeze all animations and transitions */
+            *, *::before, *::after {
+              animation: none !important;
+              animation-delay: 0s !important;
+              animation-duration: 0s !important;
+              transition: none !important;
+              transition-delay: 0s !important;
+              transition-duration: 0s !important;
+              caret-color: transparent !important;
+            }
+            
+            /* Neutralize transforms on elements that might have scale/translate */
+            /* This prevents text baseline drift caused by sub-pixel transforms */
+            [style*="transform"],
+            [class*="motion"],
+            [data-framer-name],
+            .framer-motion {
+              transform: none !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+          
+          // Additionally, iterate through elements and remove inline transforms
+          // that might cause text baseline issues
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el) => {
+            if (el instanceof HTMLElement) {
+              const computedTransform = getComputedStyle(el).transform;
+              // Only reset transforms that are not 'none' and contain scale/matrix
+              if (computedTransform && computedTransform !== 'none') {
+                // Check if it's a subtle scale (like scale(1.00001)) which causes text drift
+                if (computedTransform.includes('matrix') || computedTransform.includes('scale')) {
+                  el.style.transform = 'none';
+                }
+              }
+            }
+          });
+        },
       });
 
       return canvas;
@@ -65,7 +130,7 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
       // Remove export mode class to restore UI
       document.body.classList.remove('export-mode');
     }
-  }, [contentRef]);
+  }, [contentRef, getBackgroundColor]);
 
   const downloadBlob = useCallback((blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
