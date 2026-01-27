@@ -1,4 +1,4 @@
-import { TrendingUp, Clock, Trophy, ChevronRight, Hammer, DollarSign } from 'lucide-react';
+import { TrendingUp, Clock, ChevronRight, Hammer, DollarSign } from 'lucide-react';
 import { OIInputs, OICalculations, OIExitScenario } from '../useOICalculations';
 import { Currency, formatCurrency } from '../currencyUtils';
 import { monthToConstruction } from '../constructionProgress';
@@ -19,16 +19,6 @@ interface CompactAllExitsCardProps {
   onClick?: () => void;
 }
 
-const formatMonths = (months: number): string => {
-  if (months >= 12) {
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-    if (remainingMonths === 0) return `${years}y`;
-    return `${years}y ${remainingMonths}m`;
-  }
-  return `${months}m`;
-};
-
 const getDateFromMonths = (months: number, bookingMonth: number, bookingYear: number): string => {
   const totalMonthsFromJan = bookingMonth + months;
   const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
@@ -48,7 +38,7 @@ export const CompactAllExitsCard = ({
   const { t } = useLanguage();
   
   // Use pre-calculated scenarios from calculations instead of recalculating
-  const scenarios = exitScenarios.map(exitMonths => {
+  const scenarios = exitScenarios.map((exitMonths, index) => {
     // Find matching scenario from pre-calculated list
     const preCalcScenario = calculations.scenarios.find(s => s.exitMonths === exitMonths);
     const isHandover = exitMonths >= calculations.totalMonths;
@@ -61,6 +51,7 @@ export const CompactAllExitsCard = ({
         isHandover,
         dateStr,
         constructionPct,
+        exitNumber: index + 1,
       };
     }
     
@@ -68,17 +59,16 @@ export const CompactAllExitsCard = ({
     return {
       exitMonths,
       exitPrice: 0,
-      totalCapital: 0,
+      totalCapitalDeployed: 0,
       trueProfit: 0,
+      trueROE: 0,
       annualizedROE: 0,
       isHandover,
       dateStr,
       constructionPct,
+      exitNumber: index + 1,
     };
   });
-
-  // Find best ROE
-  const bestROE = Math.max(...scenarios.map(s => s.annualizedROE));
 
   return (
     <div 
@@ -103,26 +93,21 @@ export const CompactAllExitsCard = ({
       {/* Scenarios List */}
       <div className="p-3 space-y-2 flex-1 overflow-auto">
         {scenarios.map((scenario) => {
-          const isBest = scenario.annualizedROE === bestROE && scenario.annualizedROE > 0;
-          
           return (
             <Tooltip key={scenario.exitMonths}>
               <TooltipTrigger asChild>
                 <div 
-                  className={cn(
-                    "p-2.5 rounded-lg transition-colors",
-                    isBest 
-                      ? "bg-green-500/10 border border-green-500/30" 
-                      : "bg-muted/30 hover:bg-muted/50 border border-transparent"
-                  )}
+                  className="p-2.5 rounded-lg transition-colors bg-muted/30 hover:bg-muted/50 border border-transparent"
                 >
-                  {/* Top Row: Period, Date, Construction % */}
+                  {/* Top Row: Exit Number, Months, Date, Construction % */}
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      {isBest && <Trophy className="w-3.5 h-3.5 text-yellow-500" />}
+                      <span className="text-[10px] font-bold text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
+                        #{scenario.exitNumber}
+                      </span>
                       <Clock className="w-3 h-3 text-theme-text-muted" />
                       <span className="text-sm font-medium text-theme-text">
-                        {scenario.isHandover ? t('handoverLabel') : formatMonths(scenario.exitMonths)}
+                        {scenario.exitMonths}m
                       </span>
                       <span className="text-xs text-theme-text-muted">
                         {scenario.dateStr}
@@ -136,12 +121,12 @@ export const CompactAllExitsCard = ({
                     </div>
                   </div>
                   
-                  {/* Bottom Row: Capital Invested, Profit, ROE */}
+                  {/* Bottom Row: Capital Invested, Profit, Total ROE */}
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <span className="text-theme-text flex items-center gap-0.5">
                         <DollarSign className="w-3 h-3 text-theme-text-muted" />
-                        {formatCurrency(scenario.totalCapital, 'AED', 1)}
+                        {formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}
                       </span>
                       <span className={cn(
                         "font-medium",
@@ -152,9 +137,9 @@ export const CompactAllExitsCard = ({
                     </div>
                     <span className={cn(
                       "text-sm font-bold font-mono tabular-nums",
-                      scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
+                      scenario.trueROE >= 0 ? "text-green-400" : "text-red-400"
                     )}>
-                      {scenario.annualizedROE.toFixed(0)}%/yr
+                      {scenario.trueROE?.toFixed(0) ?? 0}%
                     </span>
                   </div>
                 </div>
@@ -162,21 +147,21 @@ export const CompactAllExitsCard = ({
               <TooltipContent side="left" className="max-w-xs bg-theme-card border-theme-border">
                 <div className="space-y-1 text-xs">
                   <p className="font-semibold text-theme-text">
-                    {t('exitAtLabel')} {scenario.isHandover ? t('handoverLabel') : formatMonths(scenario.exitMonths)}
+                    {t('exitAtLabel')} {scenario.exitMonths}m ({scenario.dateStr})
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <span className="text-theme-text-muted">{t('constructionTime')}:</span>
                     <span className="text-theme-text">{scenario.constructionPct.toFixed(0)}% {t('completeLabel')}</span>
                     <span className="text-theme-text-muted">{t('cashInvestedLabel')}:</span>
-                    <span className="text-theme-text">{formatCurrency(scenario.totalCapital, 'AED', 1)}</span>
+                    <span className="text-theme-text">{formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}</span>
                     <span className="text-theme-text-muted">{t('propertyValueLabel')}:</span>
                     <span className="text-theme-text">{formatCurrency(scenario.exitPrice, 'AED', 1)}</span>
                     <span className="text-theme-text-muted">{t('profit')}:</span>
                     <span className={scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"}>
                       {formatCurrency(scenario.trueProfit, 'AED', 1)}
                     </span>
-                    <span className="text-theme-text-muted">{t('annualizedROELabel')}:</span>
-                    <span className="font-bold text-theme-text">{scenario.annualizedROE.toFixed(2)}%</span>
+                    <span className="text-theme-text-muted">{t('totalROELabel') || 'Total ROE'}:</span>
+                    <span className="font-bold text-theme-text">{scenario.trueROE?.toFixed(2) ?? 0}%</span>
                   </div>
                 </div>
               </TooltipContent>
