@@ -13,12 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useQuotesList, CashflowQuote } from "@/hooks/useCashflowQuote";
-
-export type ViewMode = 'story' | 'vertical';
+import { PresentationViewMode } from "@/hooks/usePresentations";
 
 export interface WizardQuote {
   quoteId: string;
-  viewMode: ViewMode;
+  viewMode: PresentationViewMode;
   title?: string;
 }
 
@@ -103,9 +102,10 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
       if (exists) {
         return prev.filter(q => q.quoteId !== quote.id);
       }
+      // Default to snapshot view
       return [...prev, { 
         quoteId: quote.id, 
-        viewMode: 'story' as ViewMode,
+        viewMode: 'snapshot' as PresentationViewMode,
         title: quote.project_name || quote.client_name || 'Quote'
       }];
     });
@@ -115,7 +115,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
     setSelectedQuotes(prev => 
       prev.map(q => 
         q.quoteId === quoteId 
-          ? { ...q, viewMode: q.viewMode === 'story' ? 'vertical' : 'story' }
+          ? { ...q, viewMode: q.viewMode === 'snapshot' ? 'vertical' : 'snapshot' }
           : q
       )
     );
@@ -323,12 +323,12 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
                                 onClick={() => toggleViewMode(quote.id)}
                                 className={cn(
                                   "text-[10px] px-2 py-1 rounded transition-colors",
-                                  selected.viewMode === 'story'
+                                  selected.viewMode === 'snapshot'
                                     ? "bg-theme-accent/20 text-theme-accent"
                                     : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
                                 )}
                               >
-                                Showcase
+                                Snapshot
                               </button>
                               <button
                                 onClick={() => toggleViewMode(quote.id)}
@@ -434,11 +434,11 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-theme-border flex items-center justify-between">
+        <div className="p-6 pt-4 border-t border-theme-border flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={currentStep === 'title' ? handleClose : handleBack}
-            className="text-theme-text-muted hover:text-theme-text"
+            className="text-theme-text-muted"
           >
             {currentStep === 'title' ? (
               'Cancel'
@@ -449,12 +449,12 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
               </>
             )}
           </Button>
-          
+
           {currentStep === 'comparisons' ? (
             <Button
               onClick={handleCreate}
-              disabled={!title.trim() || isCreating}
-              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+              disabled={isCreating || !title.trim()}
+              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
             >
               {isCreating ? 'Creating...' : 'Create Presentation'}
             </Button>
@@ -462,7 +462,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
             <Button
               onClick={handleNext}
               disabled={!canProceed}
-              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
             >
               Next
               <ChevronRight className="w-4 h-4 ml-1" />

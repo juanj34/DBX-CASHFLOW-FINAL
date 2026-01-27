@@ -14,7 +14,7 @@ import { useQuotesList, CashflowQuote } from "@/hooks/useCashflowQuote";
 import { formatCurrency } from "@/components/roi/currencyUtils";
 import { cn } from "@/lib/utils";
 
-export type ViewMode = 'story' | 'vertical';
+export type ViewMode = 'snapshot' | 'vertical';
 
 export interface QuoteToAdd {
   quoteId: string;
@@ -111,7 +111,7 @@ export const AddQuoteModal = ({
             Add Quotes to Presentation
           </DialogTitle>
           <p className="text-xs text-theme-text-muted mt-1">
-            Select quotes to add. You can toggle between Showcase and Cashflow views in the sidebar.
+            Select quotes to add. You can toggle between Snapshot and Cashflow views in the sidebar.
           </p>
         </DialogHeader>
 

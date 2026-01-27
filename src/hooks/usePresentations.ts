@@ -3,10 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
+// Updated ViewMode: 'snapshot' (default) or 'vertical' (cashflow)
+export type PresentationViewMode = 'snapshot' | 'vertical';
+
 export interface PresentationItem {
   type: 'quote' | 'comparison' | 'inline_comparison';
   id: string;
-  viewMode?: 'story' | 'vertical' | 'compact';
+  viewMode?: PresentationViewMode;
   title?: string; // For display
   quoteIds?: string[]; // For inline comparisons only
 }
@@ -14,6 +17,7 @@ export interface PresentationItem {
 export interface Presentation {
   id: string;
   broker_id: string;
+  client_id: string | null;
   title: string;
   description: string | null;
   items: PresentationItem[];
@@ -30,6 +34,7 @@ export interface CreatePresentationInput {
   title: string;
   description?: string;
   items?: PresentationItem[];
+  client_id?: string;
 }
 
 export interface UpdatePresentationInput {
@@ -37,6 +42,7 @@ export interface UpdatePresentationInput {
   description?: string;
   items?: PresentationItem[];
   is_public?: boolean;
+  client_id?: string;
 }
 
 export const usePresentations = () => {
@@ -94,6 +100,7 @@ export const usePresentations = () => {
           title: input.title,
           description: input.description || null,
           items: (input.items || []) as unknown as Record<string, unknown>[],
+          client_id: input.client_id || null,
         } as never)
         .select()
         .single();
@@ -122,6 +129,7 @@ export const usePresentations = () => {
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.items !== undefined) updateData.items = updates.items as unknown as Record<string, unknown>[];
       if (updates.is_public !== undefined) updateData.is_public = updates.is_public;
+      if (updates.client_id !== undefined) updateData.client_id = updates.client_id;
 
       const { error } = await supabase
         .from("presentations")
@@ -215,6 +223,7 @@ export const usePresentations = () => {
       title: `${original.title} (Copy)`,
       description: original.description || undefined,
       items: original.items,
+      client_id: original.client_id || undefined,
     });
   }, [presentations, createPresentation]);
 

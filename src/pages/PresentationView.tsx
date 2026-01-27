@@ -182,8 +182,8 @@ const PresentationView = () => {
     return quote.project_name || quote.client_name || "Quote";
   };
 
-  // Group items for sidebar display
-  const showcaseItems = presentation?.items.filter(item => item.type === 'quote' && item.viewMode === 'story') || [];
+  // Group items for sidebar display - no more showcases, just snapshot and cashflow
+  const snapshotItems = presentation?.items.filter(item => item.type === 'quote' && item.viewMode === 'snapshot') || [];
   const cashflowItems = presentation?.items.filter(item => item.type === 'quote' && item.viewMode === 'vertical') || [];
   const comparisonItems = presentation?.items.filter(item => item.type === 'comparison' || item.type === 'inline_comparison') || [];
 
@@ -315,14 +315,14 @@ const PresentationView = () => {
 
         {/* Navigation Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Showcases */}
-          {showcaseItems.length > 0 && (
+          {/* Snapshots */}
+          {snapshotItems.length > 0 && (
             <div>
               <p className="text-xs uppercase tracking-wider text-theme-text-muted font-semibold mb-2">
-                Showcases
+                Snapshots
               </p>
               <div className="space-y-1">
-                {showcaseItems.map((item) => {
+                {snapshotItems.map((item) => {
                   const originalIndex = presentation.items.findIndex(i => i.type === item.type && i.id === item.id);
                   return <NavItem key={`nav-${item.id}`} item={item} index={originalIndex} />;
                 })}
