@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.cleanup-empty-drafts]
 verify_jwt = false
+
+[functions.generate-snapshot-screenshot]
+verify_jwt = false

@@ -244,7 +244,7 @@ const PresentationView = () => {
       <aside className="w-72 bg-theme-card border-r border-theme-border flex flex-col">
         {/* Logo */}
         <div className="h-14 border-b border-theme-border flex items-center px-4">
-          <AppLogo size="md" />
+          <AppLogo size="md" linkTo={undefined} />
         </div>
 
         {/* Advisor Card */}

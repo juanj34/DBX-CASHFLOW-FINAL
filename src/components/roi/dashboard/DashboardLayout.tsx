@@ -25,6 +25,7 @@ interface DashboardLayoutProps {
   activeView?: 'cashflow' | 'snapshot'; // Which view is currently active
   viewCount?: number;
   quoteId?: string;
+  shareToken?: string; // Share token for export
   // Language and currency
   language?: string;
   setLanguage?: (lang: string) => void;
@@ -34,6 +35,11 @@ interface DashboardLayoutProps {
   hasUnsavedChanges?: boolean;
   saving?: boolean;
   onSave?: () => void;
+  // Export handlers
+  onExportImage?: () => void;
+  onExportPdf?: () => void;
+  exportingImage?: boolean;
+  exportingPdf?: boolean;
 }
 
 export const DashboardLayout = ({
@@ -52,6 +58,7 @@ export const DashboardLayout = ({
   activeView,
   viewCount,
   quoteId,
+  shareToken,
   language,
   setLanguage,
   currency,
@@ -59,6 +66,10 @@ export const DashboardLayout = ({
   hasUnsavedChanges,
   saving,
   onSave,
+  onExportImage,
+  onExportPdf,
+  exportingImage,
+  exportingPdf,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -91,6 +102,7 @@ export const DashboardLayout = ({
     activeView,
     viewCount,
     quoteId,
+    shareToken,
     language,
     setLanguage,
     currency,
@@ -98,6 +110,10 @@ export const DashboardLayout = ({
     hasUnsavedChanges,
     saving,
     onSave,
+    onExportImage,
+    onExportPdf,
+    exportingImage,
+    exportingPdf,
   };
 
   return (

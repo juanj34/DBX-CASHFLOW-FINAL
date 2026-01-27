@@ -34,6 +34,7 @@ import PresentationsHub from "./pages/PresentationsHub";
 import PresentationBuilder from "./pages/PresentationBuilder";
 import PresentationView from "./pages/PresentationView";
 import SnapshotView from "./pages/SnapshotView";
+import SnapshotPrint from "./pages/SnapshotPrint";
 import ClientsManager from "./pages/ClientsManager";
 import ClientPortal from "./pages/ClientPortal";
 import NotFound from "./pages/NotFound";
@@ -74,6 +75,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/view/:shareToken" element={<CashflowView />} />
                 <Route path="/snapshot/:shareToken" element={<SnapshotView />} />
+                <Route path="/snapshot/:shareToken/print" element={<SnapshotPrint />} />
                 <Route path="/compare-view/:shareToken" element={<CompareView />} />
                 <Route path="/present/:shareToken" element={<PresentationView />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
