@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users, Image, FileDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -47,11 +47,8 @@ interface DashboardSidebarProps {
   hasUnsavedChanges?: boolean;
   saving?: boolean;
   onSave?: () => void;
-  // Export handlers
-  onExportImage?: () => void;
-  onExportPdf?: () => void;
-  exportingImage?: boolean;
-  exportingPdf?: boolean;
+  // Export modal trigger
+  onOpenExportModal?: () => void;
 }
 
 // App Logo Component
@@ -209,10 +206,7 @@ export const DashboardSidebar = ({
   hasUnsavedChanges,
   saving,
   onSave,
-  onExportImage,
-  onExportPdf,
-  exportingImage,
-  exportingPdf,
+  onOpenExportModal,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -436,29 +430,13 @@ export const DashboardSidebar = ({
                 )
               )}
               
-              {/* Export Buttons - available for both views, works even without shareToken (auto-generates) */}
-              {onExportImage && (
-                exportingImage ? (
-                  collapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">Generating image...</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted">
-                      <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
-                      <span className="flex-1 text-left truncate">Generating...</span>
-                    </div>
-                  )
-                ) : quoteId ? (
+              {/* Single Export Button - opens modal with view/format options */}
+              {onOpenExportModal && (
+                quoteId ? (
                   <ActionButton 
-                    icon={Image} 
-                    label={activeView === 'snapshot' ? "Export Snapshot" : "Export Cashflow"} 
-                    onClick={onExportImage} 
+                    icon={Download} 
+                    label="Export" 
+                    onClick={onOpenExportModal} 
                     collapsed={collapsed}
                   />
                 ) : (
@@ -466,59 +444,15 @@ export const DashboardSidebar = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted/40 cursor-not-allowed">
-                          <Image className="w-4 h-4" />
+                          <Download className="w-4 h-4" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="right">Save quote to export</TooltipContent>
                     </Tooltip>
                   ) : (
                     <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted/40 cursor-not-allowed">
-                      <Image className="w-4 h-4 flex-shrink-0" />
-                      <span className="flex-1 text-left truncate">{activeView === 'snapshot' ? "Export Snapshot" : "Export Cashflow"}</span>
-                      <span className="text-[10px] bg-theme-bg/50 px-1.5 py-0.5 rounded">Save first</span>
-                    </div>
-                  )
-                )
-              )}
-              
-              {onExportPdf && (
-                exportingPdf ? (
-                  collapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">Generating PDF...</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted">
-                      <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
-                      <span className="flex-1 text-left truncate">Generating...</span>
-                    </div>
-                  )
-                ) : quoteId ? (
-                  <ActionButton 
-                    icon={FileDown} 
-                    label={activeView === 'snapshot' ? "Export PDF" : "Export PDF"} 
-                    onClick={onExportPdf} 
-                    collapsed={collapsed}
-                  />
-                ) : (
-                  collapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted/40 cursor-not-allowed">
-                          <FileDown className="w-4 h-4" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">Save quote to export PDF</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted/40 cursor-not-allowed">
-                      <FileDown className="w-4 h-4 flex-shrink-0" />
-                      <span className="flex-1 text-left truncate">Export PDF</span>
+                      <Download className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 text-left truncate">Export</span>
                       <span className="text-[10px] bg-theme-bg/50 px-1.5 py-0.5 rounded">Save first</span>
                     </div>
                   )
