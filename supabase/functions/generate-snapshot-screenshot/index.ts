@@ -8,6 +8,7 @@ const corsHeaders = {
 interface RequestBody {
   shareToken: string;
   format: 'png' | 'pdf';
+  view?: 'snapshot' | 'cashflow';
 }
 
 Deno.serve(async (req) => {
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: RequestBody = await req.json();
-    const { shareToken, format = 'png' } = body;
+    const { shareToken, format = 'png', view = 'snapshot' } = body;
 
     if (!shareToken) {
       return new Response(
@@ -64,10 +65,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Generating ${format} for quote with shareToken: ${shareToken}`);
+    console.log(`Generating ${format} for ${view} view with shareToken: ${shareToken}`);
 
-    // Build the URL to screenshot
-    const targetUrl = `https://dbxprime.lovable.app/snapshot/${shareToken}/print`;
+    // Build the URL to screenshot based on view type
+    const targetUrl = view === 'cashflow'
+      ? `https://dbxprime.lovable.app/cashflow/${shareToken}/print`
+      : `https://dbxprime.lovable.app/snapshot/${shareToken}/print`;
+    
+    // Selector to wait for based on view type
+    const waitSelector = view === 'cashflow' ? '.cashflow-print-content' : '.snapshot-print-content';
 
     // Browserless API endpoint
     const browserlessUrl = format === 'pdf' 
@@ -82,7 +88,7 @@ Deno.serve(async (req) => {
         timeout: 30000,
       },
       waitForSelector: {
-        selector: '.snapshot-print-content',
+        selector: waitSelector,
         timeout: 20000,
       },
       waitForTimeout: 2000, // Extra wait for animations/images

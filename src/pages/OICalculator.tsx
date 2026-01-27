@@ -42,7 +42,7 @@ import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { useSnapshotExport } from "@/hooks/useSnapshotExport";
+import { useCashflowExport } from "@/hooks/useCashflowExport";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
@@ -90,10 +90,17 @@ const OICalculatorContent = () => {
   });
   const { rate, isLive } = useExchangeRate(currency);
   
-  // Export functionality for snapshot view
-  const { exportImage, exportPdf, exportingImage, exportingPdf } = useSnapshotExport({
+  // Export functionality for both views - auto-generates token if needed
+  const { exportImage, exportPdf, exportingImage, exportingPdf } = useCashflowExport({
     shareToken: quote?.share_token,
     projectName: clientInfo.projectName,
+    activeView: viewMode,
+    quoteId: quote?.id,
+    generateShareToken,
+    onTokenGenerated: (token) => {
+      // Token generated - state will update via quote refetch
+      console.log('Share token generated for export:', token);
+    },
   });
 
   // Stricter validation: needs both client details AND property configured
