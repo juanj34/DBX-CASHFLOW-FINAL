@@ -1,206 +1,163 @@
 
-# Implementation Plan: Unified Export Modal
+# Client-Side Export System
 
-## Problem
-Currently there are two separate export buttons in the sidebar:
-- "Export Snapshot" / "Export Cashflow" (PNG)
-- "Export PDF"
+## Overview
+Replace the current Edge Function-based export (which uses Browserless and is failing) with a direct client-side DOM capture system. This will capture exactly what the user sees on their screen, without sidebars or navigation, in high quality.
 
-These only export the current view and don't allow exporting both views at once.
-
-## Solution
-Replace both buttons with a single **"Export"** button that opens a modal with clear options.
-
----
-
-## Export Modal Design
-
-```
-┌─────────────────────────────────────────────────────┐
-│  📥 Export Quote                              [X]   │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  What to export:                                    │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
-│  │ ○ Cashflow  │ │ ○ Snapshot  │ │ ○ Both      │   │
-│  └─────────────┘ └─────────────┘ └─────────────┘   │
-│                                                     │
-│  Format:                                            │
-│  ┌─────────────┐ ┌─────────────┐                   │
-│  │ ○ PDF       │ │ ○ PNG       │                   │
-│  └─────────────┘ └─────────────┘                   │
-│                                                     │
-│  ┌─────────────────────────────────────────────┐   │
-│  │           Export                    🔽      │   │
-│  └─────────────────────────────────────────────┘   │
-│                                                     │
-│  (Generating cashflow... 1/2)  ← progress state    │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
+## Key Benefits
+- **WYSIWYG**: Exports exactly what you see, with the current theme, data, and styling
+- **Works everywhere**: No dependency on production URLs or external services
+- **High quality**: 2x scale factor for crisp exports
+- **No browser print dialogs**: Direct download of PNG or PDF files
+- **Instant**: No network round-trip to external screenshot service
 
 ---
 
 ## Technical Implementation
 
-### Step 1: Create ExportModal Component
+### Step 1: Add Dependencies
 
-**File**: `src/components/roi/ExportModal.tsx` (New)
+Install two libraries:
+- `html2canvas` - Captures DOM elements as high-resolution images
+- `jspdf` - Converts images to PDF documents
 
-A modal with:
-- **View Selection**: Radio group with "Cashflow", "Snapshot", "Both" options
-- **Format Selection**: Radio group with "PDF", "PNG" options
-- **Export Button**: Triggers export(s) based on selections
-- **Loading State**: Shows progress when exporting (especially for "Both")
-- **Auto-token Generation**: Uses existing logic from useCashflowExport
+### Step 2: Create Export Hook
 
-Props:
-```typescript
-interface ExportModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  shareToken?: string | null;
-  quoteId?: string;
-  projectName?: string;
-  generateShareToken?: (quoteId: string) => Promise<string | null>;
-  onTokenGenerated?: (token: string) => void;
+**New File**: `src/hooks/useClientExport.ts`
+
+A hook that handles the entire export flow:
+1. Adds a temporary CSS class to hide sidebar/navbar
+2. Captures the main content area using `html2canvas` with `scale: 2` for 2x resolution
+3. Converts to PDF if needed using `jsPDF`
+4. Triggers download
+5. Removes the CSS class to restore UI
+
+```
+┌──────────────────────────────────────────┐
+│           Export Flow                    │
+├──────────────────────────────────────────┤
+│ 1. Add body.export-mode class            │
+│    → Hides sidebar + mobile menu         │
+│                                          │
+│ 2. html2canvas captures contentRef       │
+│    → scale: 2 for high resolution        │
+│    → useCORS: true for external images   │
+│                                          │
+│ 3. Convert canvas → PNG blob or PDF      │
+│                                          │
+│ 4. Trigger browser download              │
+│                                          │
+│ 5. Remove body.export-mode class         │
+│    → UI restored                         │
+└──────────────────────────────────────────┘
+```
+
+### Step 3: Add Export-Mode CSS
+
+**File**: `src/index.css`
+
+Add CSS rules that hide UI elements when the body has `export-mode` class:
+
+```css
+/* Client-side export mode - hide UI elements during capture */
+body.export-mode .dashboard-sidebar,
+body.export-mode [data-export-hide="true"] {
+  display: none !important;
+}
+
+body.export-mode .dashboard-main-content {
+  margin-left: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
 }
 ```
 
----
+### Step 4: Update DashboardLayout
 
-### Step 2: Update Export Hook for Multi-View Support
+**File**: `src/components/roi/dashboard/DashboardLayout.tsx`
 
-**File**: `src/hooks/useCashflowExport.ts`
+Changes:
+1. Add `dashboard-sidebar` class to the sidebar container
+2. Add `data-export-hide="true"` to the mobile menu trigger
+3. Add `dashboard-main-content` class to the main element
+4. Accept and forward a `mainContentRef` prop for capturing
 
-Extend to support:
-- Exporting a specific view (not just activeView)
-- Exporting both views sequentially
-- Progress callback for "Both" exports
+### Step 5: Update ExportModal
 
-New functions:
-```typescript
-const exportSingleView = async (view: 'cashflow' | 'snapshot', format: 'png' | 'pdf') => {...}
+**File**: `src/components/roi/ExportModal.tsx`
 
-const exportBothViews = async (format: 'png' | 'pdf', onProgress?: (step: number, total: number) => void) => {
-  onProgress?.(1, 2);
-  await exportSingleView('cashflow', format);
-  onProgress?.(2, 2);
-  await exportSingleView('snapshot', format);
-}
-```
+Replace the Edge Function call with client-side capture:
+- Accept `mainContentRef` and `onViewChange` props
+- Use the new `useClientExport` hook
+- For "Both" views: programmatically switch views, wait for render, capture each
 
----
-
-### Step 3: Update Sidebar - Replace Two Buttons with One
-
-**File**: `src/components/roi/dashboard/DashboardSidebar.tsx`
-
-Replace:
-```typescript
-// BEFORE: Two buttons
-{onExportImage && <ActionButton label="Export Snapshot" ... />}
-{onExportPdf && <ActionButton label="Export PDF" ... />}
-```
-
-With:
-```typescript
-// AFTER: Single button
-{quoteId && (
-  <ActionButton 
-    icon={FileDown} 
-    label="Export" 
-    onClick={onOpenExportModal} 
-    collapsed={collapsed}
-  />
-)}
-```
-
-Remove props:
-- `onExportImage`
-- `onExportPdf`
-- `exportingImage`
-- `exportingPdf`
-
-Add props:
-- `onOpenExportModal?: () => void`
-
----
-
-### Step 4: Update Sidebar Props Interface
-
-**File**: `src/components/roi/dashboard/DashboardSidebar.tsx`
-
-```typescript
-interface DashboardSidebarProps {
-  // ... existing props
-  
-  // Remove these:
-  // onExportImage?: () => void;
-  // onExportPdf?: () => void;
-  // exportingImage?: boolean;
-  // exportingPdf?: boolean;
-  
-  // Add this:
-  onOpenExportModal?: () => void;
-}
-```
-
----
-
-### Step 5: Update OICalculator to Use Modal
+### Step 6: Update OICalculator
 
 **File**: `src/pages/OICalculator.tsx`
 
 Changes:
-1. Add state for export modal: `const [exportModalOpen, setExportModalOpen] = useState(false)`
-2. Remove individual export handlers from sidebar props
-3. Pass `onOpenExportModal={() => setExportModalOpen(true)}` to sidebar
-4. Render ExportModal component with necessary props
+1. Create a ref for the main content area: `const mainContentRef = useRef<HTMLDivElement>(null)`
+2. Pass the ref to DashboardLayout
+3. Pass the ref and `setViewMode` to ExportModal for "Both" view exports
 
 ---
 
-### Step 6: Update DashboardLayout Props (if needed)
-
-**File**: `src/components/roi/dashboard/DashboardLayout.tsx`
-
-Pass through the new `onOpenExportModal` prop instead of individual export handlers.
-
----
-
-## Files Summary
+## Files Changed
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/components/roi/ExportModal.tsx` | Create | Modal with view/format selection |
-| `src/hooks/useCashflowExport.ts` | Modify | Add multi-view export support |
-| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify | Replace 2 buttons with 1 "Export" button |
-| `src/pages/OICalculator.tsx` | Modify | Add modal state and render ExportModal |
-| `src/components/roi/dashboard/DashboardLayout.tsx` | Modify | Update props passthrough |
+| `package.json` | Modify | Add `html2canvas` and `jspdf` dependencies |
+| `src/hooks/useClientExport.ts` | Create | Client-side DOM capture and download logic |
+| `src/index.css` | Modify | Add `.export-mode` CSS rules to hide UI |
+| `src/components/roi/dashboard/DashboardLayout.tsx` | Modify | Add CSS classes and accept `mainContentRef` |
+| `src/components/roi/ExportModal.tsx` | Modify | Replace Edge Function with client-side capture |
+| `src/pages/OICalculator.tsx` | Modify | Create content ref and pass to modal/layout |
 
 ---
 
-## Export Flow
+## Export Quality Settings
 
-1. User clicks "Export" button in sidebar
-2. Modal opens with options:
-   - **View**: Cashflow (default to current view) / Snapshot / Both
-   - **Format**: PDF / PNG
-3. User clicks "Export" in modal
-4. If no shareToken, auto-generate one
-5. For "Both": 
-   - Export first view, show progress "Exporting 1/2..."
-   - Export second view, show progress "Exporting 2/2..."
-   - Both files download
-6. For single view: Export and download
-7. Close modal, show success toast
+The export will use these settings for maximum quality:
+
+```typescript
+html2canvas(element, {
+  scale: 2,              // 2x resolution (e.g., 1920px → 3840px)
+  useCORS: true,         // Allow cross-origin images (maps, uploads)
+  backgroundColor: null, // Preserve transparent backgrounds
+  logging: false,        // Disable console logs
+  allowTaint: false,     // Prevent tainted canvas issues
+});
+```
+
+For PDF export, the page dimensions will match the captured content exactly, maintaining aspect ratio.
 
 ---
 
-## UI/UX Details
+## "Both Views" Export Flow
 
-- Default view selection = current active view
-- Dark theme styling consistent with existing modals
-- Loading spinner with progress text for "Both"
-- Disabled button while exporting
-- Clear visual distinction between selected/unselected options
+When user selects "Both":
+
+```
+1. Save current view (cashflow or snapshot)
+2. Capture current view → download file 1
+3. Switch to other view (call onViewChange)
+4. Wait 500ms for React to render
+5. Capture other view → download file 2
+6. Switch back to original view
+7. Show success toast
+```
+
+---
+
+## What Gets Hidden During Export
+
+- ✅ Left sidebar (desktop)
+- ✅ Mobile floating menu button
+- ✅ Any element with `data-export-hide="true"` attribute
+
+## What Gets Captured
+
+- Full main content area (Cashflow or Snapshot view)
+- Current theme styling
+- All charts, tables, and images
+- Full scroll height (not just viewport)
