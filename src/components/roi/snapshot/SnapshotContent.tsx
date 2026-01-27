@@ -101,7 +101,7 @@ export const SnapshotContent = ({
       </div>
 
       {/* Main content - flows naturally with single scroll */}
-      <div className="flex-1 px-4 pb-4">
+      <div className="flex-1 px-4 pb-4" data-export-layout="expand">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left Column: Payment (with Value Differentiators integrated) */}
           <div className="flex flex-col">

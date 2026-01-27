@@ -573,9 +573,11 @@ body.export-mode .overflow-x-auto {
   overflow: visible !important;
 }
 
-body.export-mode .flex-1 {
+/* Only expand containers explicitly marked for export - preserves internal layouts */
+body.export-mode [data-export-layout="expand"] {
   flex: none !important;
   height: auto !important;
+  overflow: visible !important;
 }
 
 body.export-mode .min-h-0 {
