@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Home, TrendingUp, CreditCard, Building2, Sparkles, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
@@ -55,6 +55,7 @@ const OICalculatorContent = () => {
   useDocumentTitle("Cashflow Generator");
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -162,21 +163,31 @@ const OICalculatorContent = () => {
   // Handler for when a new quote is auto-created
   const handleNewQuoteCreated = useCallback((newId: string) => {
     if (modalOpen) {
-      localStorage.setItem('cashflow_configurator_open', 'true');
+      // Use navigation state instead of localStorage
+      navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
+    } else {
+      navigate(`/cashflow/${newId}`, { replace: true });
     }
-    navigate(`/cashflow/${newId}`, { replace: true });
   }, [navigate, modalOpen]);
 
-  // Keep configurator open when navigating to new quote (if it was already open)
+  // Handle new quote creation - clears state and navigates to generator
+  const handleNewQuote = useCallback(() => {
+    // Clear configurator localStorage state for fresh start
+    localStorage.removeItem('cashflow-configurator-state');
+    localStorage.removeItem('cashflow_configurator_open');
+    
+    // Navigate to generator without a quoteId
+    navigate('/cashflow-generator', { replace: true });
+  }, [navigate]);
+
+  // Keep configurator open when navigating to new quote (via navigation state)
   useEffect(() => {
-    if (dataLoaded) {
-      const shouldOpen = localStorage.getItem('cashflow_configurator_open') === 'true';
-      if (shouldOpen) {
-        setModalOpen(true);
-        localStorage.removeItem('cashflow_configurator_open');
-      }
+    if (dataLoaded && location.state?.openConfigurator) {
+      setModalOpen(true);
+      // Clear the state to prevent reopening on refresh
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [dataLoaded]);
+  }, [dataLoaded, location.state?.openConfigurator, navigate, location.pathname]);
 
   useEffect(() => {
     if (!dataLoaded) return;
@@ -330,6 +341,7 @@ const OICalculatorContent = () => {
         onPresent={handleCashflowView}
         onShowcase={handleShowcaseView}
         onSnapshot={handleSnapshotView}
+        onNewQuote={handleNewQuote}
         activeView={viewMode}
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
@@ -360,12 +372,15 @@ const OICalculatorContent = () => {
               <div className="flex flex-col gap-4 items-center">
                 <Button 
                   onClick={async () => {
+                    // Clear configurator state for fresh start
+                    localStorage.removeItem('cashflow-configurator-state');
+                    
                     // Create draft immediately when starting configuration
                     if (!quoteId) {
                       const newId = await createDraft();
                       if (newId) {
-                        localStorage.setItem('cashflow_configurator_open', 'true');
-                        navigate(`/cashflow/${newId}`, { replace: true });
+                        // Use navigation state instead of localStorage
+                        navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
                         return;
                       }
                     }
@@ -617,6 +632,7 @@ const OICalculatorContent = () => {
           clientInfo={clientInfo} 
           setClientInfo={setClientInfo} 
           quoteId={quoteId}
+          isNewQuote={!!(quoteId && !quote?.project_name && !quote?.developer && inputs.basePrice === 0)}
           floorPlanUrl={quoteImages.floorPlanUrl}
           buildingRenderUrl={quoteImages.buildingRenderUrl}
           heroImageUrl={quoteImages.heroImageUrl}

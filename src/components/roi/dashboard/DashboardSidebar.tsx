@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -33,6 +33,7 @@ interface DashboardSidebarProps {
   onPresent?: () => void; // Switch to cashflow view
   onShowcase?: () => void; // Open showcase/story mode in new tab
   onSnapshot?: () => void; // Open snapshot view in new tab
+  onNewQuote?: () => void; // Start a fresh new quote
   activeView?: 'cashflow' | 'showcase' | 'snapshot'; // Which view is currently active
   viewCount?: number;
   firstViewedAt?: string | null;
@@ -192,6 +193,7 @@ export const DashboardSidebar = ({
   onPresent,
   onShowcase,
   onSnapshot,
+  onNewQuote,
   activeView,
   viewCount,
   quoteId,
@@ -333,6 +335,14 @@ export const DashboardSidebar = ({
         {/* QUOTE Section */}
         <SectionHeader label="Quote" collapsed={collapsed} />
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+          {onNewQuote && (
+            <ActionButton 
+              icon={FilePlus} 
+              label="New Quote" 
+              onClick={onNewQuote} 
+              collapsed={collapsed}
+            />
+          )}
           {onConfigure && (
             <ActionButton 
               icon={Settings2} 
