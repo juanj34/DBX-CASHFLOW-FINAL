@@ -27,8 +27,13 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
     // Add export mode class to hide sidebar/nav and force auto height
     document.body.classList.add('export-mode');
 
-    // Wait for CSS to apply and layout to reflow
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Scroll to top for consistent capture starting point
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+
+    // Wait for CSS to apply and layout to reflow (300ms for complex layouts)
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Force a reflow to ensure layout updates
     if (contentRef.current) {
