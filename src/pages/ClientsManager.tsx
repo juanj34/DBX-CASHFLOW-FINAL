@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Users, ArrowLeft, Filter, Link2, ExternalLink, Copy, Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Search, Users, Filter } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -25,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { PageHeader, defaultShortcuts } from "@/components/layout/PageHeader";
 
 interface ClientStats {
   [clientId: string]: {
@@ -153,27 +153,20 @@ const ClientsManager = () => {
     }
   };
 
+  const shortcuts = defaultShortcuts.map(s => ({
+    ...s,
+    active: s.href === '/clients'
+  }));
+
   return (
     <div className="min-h-screen bg-theme-bg">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link to="/home">
-              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-theme-text flex items-center gap-2">
-                <Users className="w-6 h-6 text-theme-accent" />
-                Clients
-              </h1>
-              <p className="text-sm text-theme-text-muted mt-1">
-                Manage your client database and portal access
-              </p>
-            </div>
-          </div>
+      <PageHeader
+        title="Clients"
+        subtitle={`${clients.length} clients • Manage your client database and portal access`}
+        icon={<Users className="w-5 h-5 text-cyan-400" />}
+        backLink="/home"
+        shortcuts={shortcuts}
+        actions={
           <Button 
             onClick={() => setFormOpen(true)}
             className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
@@ -181,7 +174,10 @@ const ClientsManager = () => {
             <Plus className="w-4 h-4 mr-2" />
             New Client
           </Button>
-        </div>
+        }
+      />
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* Search and Filter */}
         <div className="flex gap-3 mb-6">

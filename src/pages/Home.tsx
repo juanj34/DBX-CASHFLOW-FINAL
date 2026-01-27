@@ -4,7 +4,7 @@ import {
   Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
   SlidersHorizontal, Menu, Scale, DollarSign, 
   Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin,
-  Plus, BarChart3, Archive, ChevronDown, Presentation, Sparkles
+  Plus, BarChart3, Archive, ChevronDown, Presentation, Sparkles, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/AppLogo";
@@ -255,6 +255,16 @@ const Home = () => {
       action: "Create",
     },
     {
+      id: "clients",
+      title: "Client Management",
+      description: "Manage your client database and share portal access",
+      icon: Users,
+      route: "/clients",
+      gradient: "from-cyan-500/30 via-cyan-500/10 to-transparent",
+      iconColor: "text-cyan-400",
+      action: "Manage",
+    },
+    {
       id: "map",
       title: t("marketIntelligence"),
       description: t("marketIntelligenceDesc"),
@@ -432,6 +442,13 @@ const Home = () => {
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <Map className="w-4 h-4" />
           Map
+        </Button>
+      </Link>
+
+      <Link to="/clients" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <Users className="w-4 h-4" />
+          Clients
         </Button>
       </Link>
 
