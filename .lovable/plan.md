@@ -1,217 +1,170 @@
 
-# Implementation Plan: Complete Export System for All Views
+# Implementation Plan: Unified Export Modal
 
-## Problem Summary
-1. **Export buttons not visible**: Currently hidden in sidebar and require both `activeView === 'snapshot'` AND `shareToken` to exist
-2. **shareToken requirement**: Users must click "Share Link" first before export becomes available
-3. **No Cashflow view export**: Only Snapshot view can be exported; Cashflow view with all sections expanded cannot be exported
+## Problem
+Currently there are two separate export buttons in the sidebar:
+- "Export Snapshot" / "Export Cashflow" (PNG)
+- "Export PDF"
+
+These only export the current view and don't allow exporting both views at once.
+
+## Solution
+Replace both buttons with a single **"Export"** button that opens a modal with clear options.
 
 ---
 
-## Solution Overview
+## Export Modal Design
 
-Create a complete export system that:
-1. Makes export buttons always visible in both views (with auto-generation of shareToken when needed)
-2. Creates a dedicated print layout for Cashflow view with all sections expanded
-3. Adds an "Export" section in the sidebar with clear options for both views
+```
+┌─────────────────────────────────────────────────────┐
+│  📥 Export Quote                              [X]   │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  What to export:                                    │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│  │ ○ Cashflow  │ │ ○ Snapshot  │ │ ○ Both      │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘   │
+│                                                     │
+│  Format:                                            │
+│  ┌─────────────┐ ┌─────────────┐                   │
+│  │ ○ PDF       │ │ ○ PNG       │                   │
+│  └─────────────┘ └─────────────┘                   │
+│                                                     │
+│  ┌─────────────────────────────────────────────┐   │
+│  │           Export                    🔽      │   │
+│  └─────────────────────────────────────────────┘   │
+│                                                     │
+│  (Generating cashflow... 1/2)  ← progress state    │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Technical Implementation
 
-### Step 1: Update Sidebar Export Button Visibility
+### Step 1: Create ExportModal Component
+
+**File**: `src/components/roi/ExportModal.tsx` (New)
+
+A modal with:
+- **View Selection**: Radio group with "Cashflow", "Snapshot", "Both" options
+- **Format Selection**: Radio group with "PDF", "PNG" options
+- **Export Button**: Triggers export(s) based on selections
+- **Loading State**: Shows progress when exporting (especially for "Both")
+- **Auto-token Generation**: Uses existing logic from useCashflowExport
+
+Props:
+```typescript
+interface ExportModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  shareToken?: string | null;
+  quoteId?: string;
+  projectName?: string;
+  generateShareToken?: (quoteId: string) => Promise<string | null>;
+  onTokenGenerated?: (token: string) => void;
+}
+```
+
+---
+
+### Step 2: Update Export Hook for Multi-View Support
+
+**File**: `src/hooks/useCashflowExport.ts`
+
+Extend to support:
+- Exporting a specific view (not just activeView)
+- Exporting both views sequentially
+- Progress callback for "Both" exports
+
+New functions:
+```typescript
+const exportSingleView = async (view: 'cashflow' | 'snapshot', format: 'png' | 'pdf') => {...}
+
+const exportBothViews = async (format: 'png' | 'pdf', onProgress?: (step: number, total: number) => void) => {
+  onProgress?.(1, 2);
+  await exportSingleView('cashflow', format);
+  onProgress?.(2, 2);
+  await exportSingleView('snapshot', format);
+}
+```
+
+---
+
+### Step 3: Update Sidebar - Replace Two Buttons with One
 
 **File**: `src/components/roi/dashboard/DashboardSidebar.tsx`
 
-Current logic (line 440):
+Replace:
 ```typescript
-{activeView === 'snapshot' && shareToken && onExportImage && (
+// BEFORE: Two buttons
+{onExportImage && <ActionButton label="Export Snapshot" ... />}
+{onExportPdf && <ActionButton label="Export PDF" ... />}
 ```
 
-Change to show export buttons for BOTH views:
-- Remove the `activeView === 'snapshot'` restriction
-- Remove the `shareToken` requirement (will be auto-generated)
-- Add separate labels: "Export Snapshot" vs "Export Cashflow"
-
-New logic:
+With:
 ```typescript
-{/* Export Section - Available for both views */}
-<SectionHeader label="Export" collapsed={collapsed} />
-{(onExportImage || onExportPdf) && (
-  <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-    {/* Export current view as Image */}
-    <ActionButton 
-      icon={Image} 
-      label={activeView === 'snapshot' ? "Export Snapshot (PNG)" : "Export Cashflow (PNG)"} 
-      onClick={onExportImage} 
-      disabled={exportingImage}
-      collapsed={collapsed}
-    />
-    {/* Export current view as PDF */}
-    <ActionButton 
-      icon={FileDown} 
-      label={activeView === 'snapshot' ? "Export Snapshot (PDF)" : "Export Cashflow (PDF)"} 
-      onClick={onExportPdf} 
-      disabled={exportingPdf}
-      collapsed={collapsed}
-    />
-  </div>
+// AFTER: Single button
+{quoteId && (
+  <ActionButton 
+    icon={FileDown} 
+    label="Export" 
+    onClick={onOpenExportModal} 
+    collapsed={collapsed}
+  />
 )}
 ```
 
----
+Remove props:
+- `onExportImage`
+- `onExportPdf`
+- `exportingImage`
+- `exportingPdf`
 
-### Step 2: Create Cashflow Print Layout
-
-**File**: `src/components/roi/cashflow/CashflowPrintContent.tsx` (New)
-
-A fixed-width (1920px) layout for server-side screenshot capture with ALL sections expanded:
-
-```
-- PropertyHeroCard
-- InvestmentOverviewGrid
-- InvestmentSnapshot
-- PaymentBreakdown (expanded, no collapse)
-- ValueDifferentiatorsDisplay
-- Hold Strategy Analysis (expanded):
-  - RentSnapshot
-  - CumulativeIncomeChart
-  - OIYearlyProjectionTable
-  - WealthSummaryCard
-- Exit Strategy Analysis (expanded, if enabled):
-  - ExitScenariosCards
-  - OIGrowthCurve
-- Mortgage Analysis (expanded, if enabled):
-  - MortgageBreakdown
-- CashflowSummaryCard
-```
-
-All `CollapsibleSection` components will be replaced with static expanded versions (just the content, no collapse headers).
+Add props:
+- `onOpenExportModal?: () => void`
 
 ---
 
-### Step 3: Create Cashflow Print Route
+### Step 4: Update Sidebar Props Interface
 
-**File**: `src/pages/CashflowPrint.tsx` (New)
-
-Similar to `SnapshotPrint.tsx`:
-- Fetches quote data using `shareToken`
-- Renders `CashflowPrintContent` with all data
-- Uses `.cashflow-print-content` CSS class for Browserless detection
-- Fixed 1920px width for consistent screenshot capture
-
----
-
-### Step 4: Update App.tsx Routes
-
-**File**: `src/App.tsx`
-
-Add the new print route:
-```typescript
-<Route path="/cashflow/:shareToken/print" element={<CashflowPrint />} />
-```
-
----
-
-### Step 5: Update Edge Function to Support Both Views
-
-**File**: `supabase/functions/generate-snapshot-screenshot/index.ts`
-
-Add support for a `view` parameter:
-```typescript
-interface RequestBody {
-  shareToken: string;
-  format: 'png' | 'pdf';
-  view: 'snapshot' | 'cashflow';  // NEW
-}
-
-// Build URL based on view type
-const targetUrl = view === 'cashflow'
-  ? `https://dbxprime.lovable.app/cashflow/${shareToken}/print`
-  : `https://dbxprime.lovable.app/snapshot/${shareToken}/print`;
-
-// Wait for appropriate selector
-waitForSelector: view === 'cashflow' 
-  ? '.cashflow-print-content'
-  : '.snapshot-print-content',
-```
-
----
-
-### Step 6: Update Export Hook with Auto-Token Generation
-
-**File**: `src/hooks/useSnapshotExport.ts`
-
-Rename to `useCashflowExport.ts` and extend to:
-1. Accept `activeView` parameter
-2. Auto-generate shareToken if not present (call `generateShareToken` before export)
-3. Pass `view` parameter to edge function
+**File**: `src/components/roi/dashboard/DashboardSidebar.tsx`
 
 ```typescript
-interface UseCashflowExportProps {
-  shareToken?: string | null;
-  projectName?: string;
-  activeView: 'cashflow' | 'snapshot';
-  generateShareToken: (quoteId: string) => Promise<string | null>;
-  quoteId?: string;
-  onTokenGenerated?: (token: string) => void;
-}
-
-export const useCashflowExport = ({ 
-  shareToken, 
-  projectName, 
-  activeView,
-  generateShareToken,
-  quoteId,
-  onTokenGenerated,
-}: UseCashflowExportProps) => {
+interface DashboardSidebarProps {
+  // ... existing props
   
-  const exportImage = useCallback(async () => {
-    let token = shareToken;
-    
-    // Auto-generate token if not present
-    if (!token && quoteId) {
-      token = await generateShareToken(quoteId);
-      if (token) {
-        onTokenGenerated?.(token);
-      }
-    }
-    
-    if (!token) {
-      toast({ title: 'Cannot export', description: 'Please save the quote first.' });
-      return;
-    }
-    
-    // Call edge function with view type
-    const { data, error } = await supabase.functions.invoke('generate-snapshot-screenshot', {
-      body: { shareToken: token, format: 'png', view: activeView },
-    });
-    // ... rest of download logic
-  }, [shareToken, projectName, activeView, quoteId, generateShareToken]);
+  // Remove these:
+  // onExportImage?: () => void;
+  // onExportPdf?: () => void;
+  // exportingImage?: boolean;
+  // exportingPdf?: boolean;
   
-  // Similar for exportPdf...
-};
+  // Add this:
+  onOpenExportModal?: () => void;
+}
 ```
 
 ---
 
-### Step 7: Update OICalculator to Pass New Props
+### Step 5: Update OICalculator to Use Modal
 
 **File**: `src/pages/OICalculator.tsx`
 
-Update the hook usage and pass new props:
-```typescript
-const { exportImage, exportPdf, exportingImage, exportingPdf } = useCashflowExport({
-  shareToken: quote?.share_token,
-  projectName: clientInfo.projectName,
-  activeView: viewMode,
-  generateShareToken,
-  quoteId: quote?.id,
-  onTokenGenerated: (token) => {
-    // Update local state if needed
-  },
-});
-```
+Changes:
+1. Add state for export modal: `const [exportModalOpen, setExportModalOpen] = useState(false)`
+2. Remove individual export handlers from sidebar props
+3. Pass `onOpenExportModal={() => setExportModalOpen(true)}` to sidebar
+4. Render ExportModal component with necessary props
+
+---
+
+### Step 6: Update DashboardLayout Props (if needed)
+
+**File**: `src/components/roi/dashboard/DashboardLayout.tsx`
+
+Pass through the new `onOpenExportModal` prop instead of individual export handlers.
 
 ---
 
@@ -219,36 +172,35 @@ const { exportImage, exportPdf, exportingImage, exportingPdf } = useCashflowExpo
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify | Show export buttons for both views, add Export section |
-| `src/components/roi/cashflow/CashflowPrintContent.tsx` | Create | Print-optimized cashflow layout with all sections expanded |
-| `src/pages/CashflowPrint.tsx` | Create | Route handler for cashflow print view |
-| `src/App.tsx` | Modify | Add `/cashflow/:shareToken/print` route |
-| `supabase/functions/generate-snapshot-screenshot/index.ts` | Modify | Support `view` parameter for both snapshot/cashflow |
-| `src/hooks/useSnapshotExport.ts` | Rename/Modify | Rename to `useCashflowExport.ts`, add activeView support and auto-token generation |
-| `src/pages/OICalculator.tsx` | Modify | Update hook usage with new parameters |
+| `src/components/roi/ExportModal.tsx` | Create | Modal with view/format selection |
+| `src/hooks/useCashflowExport.ts` | Modify | Add multi-view export support |
+| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify | Replace 2 buttons with 1 "Export" button |
+| `src/pages/OICalculator.tsx` | Modify | Add modal state and render ExportModal |
+| `src/components/roi/dashboard/DashboardLayout.tsx` | Modify | Update props passthrough |
 
 ---
 
-## Export Flow Summary
+## Export Flow
 
-1. User clicks "Export Cashflow (PNG)" or "Export Snapshot (PNG)"
-2. If no `shareToken` exists, system auto-generates one
-3. Edge function receives request with `shareToken`, `format`, and `view` type
-4. Browserless navigates to appropriate print route (`/cashflow/:token/print` or `/snapshot/:token/print`)
-5. Print content renders with all sections expanded (no interactive elements)
-6. Screenshot captured at 3840px width (1920 x 2 scale factor)
-7. Base64 response converted to blob and downloaded
+1. User clicks "Export" button in sidebar
+2. Modal opens with options:
+   - **View**: Cashflow (default to current view) / Snapshot / Both
+   - **Format**: PDF / PNG
+3. User clicks "Export" in modal
+4. If no shareToken, auto-generate one
+5. For "Both": 
+   - Export first view, show progress "Exporting 1/2..."
+   - Export second view, show progress "Exporting 2/2..."
+   - Both files download
+6. For single view: Export and download
+7. Close modal, show success toast
 
 ---
 
-## Quality Specifications
+## UI/UX Details
 
-| Setting | Value |
-|---------|-------|
-| Viewport Width | 1920px |
-| Device Scale Factor | 2x |
-| Effective Width | 3840px |
-| Full Page | true |
-| Wait Strategy | networkidle0 + selector |
-| PNG | Lossless |
-| PDF | A3 landscape, printBackground: true |
+- Default view selection = current active view
+- Dark theme styling consistent with existing modals
+- Loading spinner with progress text for "Both"
+- Disabled button while exporting
+- Clear visual distinction between selected/unselected options
