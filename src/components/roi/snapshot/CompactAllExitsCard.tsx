@@ -97,7 +97,7 @@ export const CompactAllExitsCard = ({
             <Tooltip key={scenario.exitMonths}>
               <TooltipTrigger asChild>
                 <div 
-                  className="p-2.5 rounded-lg transition-colors bg-muted/30 hover:bg-muted/50 border border-transparent"
+                  className="p-2.5 rounded-lg transition-colors bg-theme-bg/50 hover:bg-theme-border/30 border border-theme-border/30"
                 >
                   {/* Top Row: Exit Number, Months, Date, Construction % */}
                   <div className="flex items-center justify-between mb-1.5">
