@@ -71,7 +71,7 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  type ViewMode = 'cashflow' | 'showcase' | 'snapshot';
+  type ViewMode = 'cashflow' | 'snapshot';
   const [viewMode, setViewMode] = useState<ViewMode>('cashflow');
 
   const { profile } = useProfile();
@@ -272,11 +272,7 @@ const OICalculatorContent = () => {
     });
   }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
 
-  // View toggle handlers - switch between cashflow, showcase, and snapshot views in-page
-  const handleShowcaseView = useCallback(() => {
-    setViewMode('showcase');
-  }, []);
-
+  // View toggle handlers - switch between cashflow and snapshot views in-page
   const handleCashflowView = useCallback(() => {
     setViewMode('cashflow');
   }, []);
@@ -291,10 +287,8 @@ const OICalculatorContent = () => {
       // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
-      // S key = Showcase, C key = Cashflow, N key = Snapshot
-      if ((e.key === 's' || e.key === 'S') && isFullyConfigured) {
-        setViewMode('showcase');
-      } else if ((e.key === 'c' || e.key === 'C') && isFullyConfigured) {
+      // C key = Cashflow, N key = Snapshot
+      if ((e.key === 'c' || e.key === 'C') && isFullyConfigured) {
         setViewMode('cashflow');
       } else if ((e.key === 'n' || e.key === 'N') && isFullyConfigured) {
         setViewMode('snapshot');
@@ -339,7 +333,6 @@ const OICalculatorContent = () => {
         onViewHistory={() => setVersionHistoryOpen(true)}
         onShare={handleShare}
         onPresent={handleCashflowView}
-        onShowcase={handleShowcaseView}
         onSnapshot={handleSnapshotView}
         onNewQuote={handleNewQuote}
         activeView={viewMode}
@@ -418,42 +411,6 @@ const OICalculatorContent = () => {
             setLanguage={setLanguage}
             rate={rate}
           />
-        ) : viewMode === 'showcase' ? (
-          /* Presentation Mode - Show InvestmentStoryDashboard */
-          <div className="relative h-full flex flex-col animate-fade-in" key="showcase-view">
-            {/* Exit Presentation Button */}
-            <div className="absolute top-4 right-4 z-20">
-              <Button
-                onClick={() => setViewMode('cashflow')}
-                variant="ghost"
-                size="sm"
-                className="bg-theme-card/90 backdrop-blur-sm border border-theme-border hover:bg-theme-card text-theme-text gap-2"
-              >
-                <X className="w-4 h-4" />
-                Exit Presentation
-              </Button>
-            </div>
-            <OverviewTabContent
-              inputs={inputs}
-              calculations={calculations}
-              mortgageInputs={mortgageInputs}
-              mortgageAnalysis={mortgageAnalysis}
-              exitScenarios={exitScenarios}
-              currency={currency}
-              rate={rate}
-              clientInfo={{
-                developer: clientInfo.developer,
-                projectName: clientInfo.projectName,
-                clients: clientInfo.clients,
-                unitType: clientInfo.unitType,
-                zoneName: clientInfo.zoneName,
-                zoneId: clientInfo.zoneId,
-              }}
-              heroImageUrl={quoteImages.heroImageUrl}
-              buildingRenderUrl={quoteImages.buildingRenderUrl}
-              customDifferentiators={customDifferentiators}
-            />
-          </div>
         ) : (
           /* Configured State - All sections stacked vertically */
           <div className="space-y-6 animate-fade-in" key="cashflow-view">

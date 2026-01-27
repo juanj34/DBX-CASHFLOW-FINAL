@@ -20,10 +20,9 @@ interface DashboardLayoutProps {
   onViewHistory?: () => void;
   onShare?: () => void;
   onPresent?: () => void; // Switch to cashflow view
-  onShowcase?: () => void; // Open showcase/story mode in new tab
-  onSnapshot?: () => void; // Open snapshot view in new tab
+  onSnapshot?: () => void; // Open snapshot view
   onNewQuote?: () => void; // Start a fresh new quote
-  activeView?: 'cashflow' | 'showcase' | 'snapshot'; // Which view is currently active
+  activeView?: 'cashflow' | 'snapshot'; // Which view is currently active
   viewCount?: number;
   quoteId?: string;
   // Language and currency
@@ -48,7 +47,6 @@ export const DashboardLayout = ({
   onViewHistory,
   onShare,
   onPresent,
-  onShowcase,
   onSnapshot,
   onNewQuote,
   activeView,
@@ -88,7 +86,6 @@ export const DashboardLayout = ({
     onViewHistory,
     onShare,
     onPresent,
-    onShowcase,
     onSnapshot,
     onNewQuote,
     activeView,

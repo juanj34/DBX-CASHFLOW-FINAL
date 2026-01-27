@@ -50,7 +50,7 @@ const CashflowDashboardContent = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('overview');
-  const [viewMode, setViewMode] = useState<'cashflow' | 'showcase'>('cashflow');
+  const [viewMode, setViewMode] = useState<'cashflow' | 'snapshot'>('cashflow');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -326,8 +326,8 @@ const CashflowDashboardContent = () => {
               toast.success("Share link copied to clipboard!");
             }
           }}
-          onPresent={handleCashflowView}
-          onShowcase={handleShowcaseView}
+          onPresent={() => setViewMode('cashflow')}
+          onSnapshot={() => setViewMode('snapshot')}
           activeView={viewMode}
           viewCount={quote?.view_count ?? undefined}
           quoteId={quoteId}

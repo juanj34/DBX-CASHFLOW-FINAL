@@ -97,6 +97,7 @@ export type Database = {
           broker_id: string
           client_country: string | null
           client_email: string | null
+          client_id: string | null
           client_name: string | null
           created_at: string | null
           developer: string | null
@@ -125,6 +126,7 @@ export type Database = {
           broker_id: string
           client_country?: string | null
           client_email?: string | null
+          client_id?: string | null
           client_name?: string | null
           created_at?: string | null
           developer?: string | null
@@ -153,6 +155,7 @@ export type Database = {
           broker_id?: string
           client_country?: string | null
           client_email?: string | null
+          client_id?: string | null
           client_name?: string | null
           created_at?: string | null
           developer?: string | null
@@ -184,7 +187,56 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cashflow_quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      clients: {
+        Row: {
+          broker_id: string
+          country: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          portal_enabled: boolean | null
+          portal_token: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          broker_id: string
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          portal_enabled?: boolean | null
+          portal_token?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          broker_id?: string
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          portal_enabled?: boolean | null
+          portal_token?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       contact_submissions: {
         Row: {
@@ -564,6 +616,7 @@ export type Database = {
       presentations: {
         Row: {
           broker_id: string
+          client_id: string | null
           created_at: string
           description: string | null
           first_viewed_at: string | null
@@ -578,6 +631,7 @@ export type Database = {
         }
         Insert: {
           broker_id: string
+          client_id?: string | null
           created_at?: string
           description?: string | null
           first_viewed_at?: string | null
@@ -592,6 +646,7 @@ export type Database = {
         }
         Update: {
           broker_id?: string
+          client_id?: string | null
           created_at?: string
           description?: string | null
           first_viewed_at?: string | null
@@ -610,6 +665,13 @@ export type Database = {
             columns: ["broker_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
