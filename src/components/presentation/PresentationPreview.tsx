@@ -77,7 +77,7 @@ const QuotePreview = ({
   viewMode 
 }: { 
   quoteData: QuoteData; 
-  viewMode: 'story' | 'vertical' | 'compact';
+  viewMode: 'snapshot' | 'vertical' | 'compact';
 }) => {
   const { rate } = useExchangeRate('AED');
   const { t } = useLanguage();
@@ -107,23 +107,29 @@ const QuotePreview = ({
     );
   }
 
-  if (viewMode === 'story') {
+  // Snapshot view - compact spreadsheet-style layout
+  if (viewMode === 'snapshot') {
     return (
-      <div className="h-full overflow-y-auto">
-        <InvestmentStoryDashboard
+      <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4">
+        {/* Snapshot uses vertical cashflow view components in a compact layout */}
+        <InvestmentOverviewGrid
           inputs={quoteData.inputs}
           calculations={calculations}
-          mortgageInputs={quoteData.mortgageInputs}
           mortgageAnalysis={mortgageAnalysis}
-          exitScenarios={exitScenarios}
+          mortgageEnabled={quoteData.mortgageInputs.enabled}
           currency="AED"
           rate={rate}
-          clientInfo={quoteData.clientInfo}
-          heroImageUrl={quoteData.heroImageUrl}
-          buildingRenderUrl={quoteData.buildingRenderUrl}
-          developerId={quoteData.developerId}
-          projectId={quoteData.projectId}
-          zoneId={quoteData.clientInfo.zoneId}
+          compact={true}
+          renderImageUrl={quoteData.heroImageUrl || quoteData.buildingRenderUrl}
+        />
+        <InvestmentSnapshot 
+          inputs={quoteData.inputs} 
+          currency="AED" 
+          totalMonths={calculations.totalMonths} 
+          totalEntryCosts={calculations.totalEntryCosts} 
+          rate={rate} 
+          holdAnalysis={calculations.holdAnalysis} 
+          unitSizeSqf={quoteData.clientUnitData.unitSizeSqf} 
         />
       </div>
     );

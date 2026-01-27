@@ -372,7 +372,7 @@ const PresentationBuilder = () => {
     const newItems: PresentationItem[] = quotesToAdd.map(q => ({
       type: 'quote' as const,
       id: q.quoteId,
-      viewMode: q.viewMode,
+      viewMode: q.viewMode as 'snapshot' | 'vertical',
       title: q.title,
     }));
     setItems(prev => [...prev, ...newItems]);
@@ -409,7 +409,7 @@ const PresentationBuilder = () => {
       if (item.type === 'quote' && item.id === itemToToggle.id && item.viewMode === itemToToggle.viewMode) {
         return { 
           ...item, 
-          viewMode: item.viewMode === 'story' ? 'vertical' : 'story' 
+          viewMode: item.viewMode === 'snapshot' ? 'vertical' : 'snapshot' 
         };
       }
       return item;
@@ -510,20 +510,20 @@ const PresentationBuilder = () => {
                 }}
                 className={cn(
                   "p-1 rounded transition-colors",
-                  item.viewMode === 'story' 
+                  item.viewMode === 'snapshot' 
                     ? "text-theme-accent bg-theme-accent/10" 
                     : "text-theme-text-muted hover:text-theme-text"
                 )}
               >
-                {item.viewMode === 'story' ? (
-                  <Sparkles className="w-3.5 h-3.5" />
+                {item.viewMode === 'snapshot' ? (
+                  <FileText className="w-3.5 h-3.5" />
                 ) : (
                   <BarChart3 className="w-3.5 h-3.5" />
                 )}
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">
-              {item.viewMode === 'story' ? 'Showcase mode' : 'Cashflow mode'} - Click to toggle
+              {item.viewMode === 'snapshot' ? 'Snapshot mode' : 'Cashflow mode'} - Click to toggle
             </TooltipContent>
           </Tooltip>
         )}

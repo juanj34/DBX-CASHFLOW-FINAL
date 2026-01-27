@@ -152,7 +152,7 @@ export const ConfigurePresentationModal = ({
                                 {item.title || getQuoteTitle(item.id)}
                               </span>
                               <span className="text-xs text-theme-text-muted">
-                                View: {item.viewMode === 'story' ? 'Showcase' : 'Cashflow'}
+                                View: {item.viewMode === 'snapshot' ? 'Snapshot' : 'Cashflow'}
                               </span>
                             </div>
                             <Button
@@ -162,7 +162,7 @@ export const ConfigurePresentationModal = ({
                               className="text-theme-text-muted hover:text-theme-accent h-8 px-2"
                             >
                               <Eye className="w-3.5 h-3.5 mr-1" />
-                              {item.viewMode === 'story' ? 'Switch to Cashflow' : 'Switch to Showcase'}
+                              {item.viewMode === 'snapshot' ? 'Switch to Cashflow' : 'Switch to Snapshot'}
                             </Button>
                             <Button
                               variant="ghost"
