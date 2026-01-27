@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { ZoneSelect } from "@/components/ui/zone-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, ExternalLink, UserPlus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "../ClientUnitInfo";
 import { Client, UNIT_TYPES } from "../ClientUnitModal";
 import { DeveloperSelect } from "./DeveloperSelect";
 import { ProjectSelect } from "./ProjectSelect";
+import { ClientSelector } from "@/components/clients/ClientSelector";
+import { Client as DbClient, useClients } from "@/hooks/useClients";
+import { ClientForm } from "@/components/clients/ClientForm";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,11 +33,14 @@ export const ClientSection = ({
   quoteId,
 }: ClientSectionProps) => {
   const { language, t } = useLanguage();
+  const { clients: dbClients, createClient } = useClients();
   const [selectedDeveloperId, setSelectedDeveloperId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [manualDeveloper, setManualDeveloper] = useState(false);
   const [manualProject, setManualProject] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showClientForm, setShowClientForm] = useState(false);
+  const [selectedDbClientId, setSelectedDbClientId] = useState<string | null>(clientInfo.dbClientId || null);
 
   // Check if user is admin
   useEffect(() => {
@@ -158,7 +164,45 @@ export const ClientSection = ({
     }
   };
 
+  const handleDbClientSelect = (clientId: string | null, dbClient: DbClient | null) => {
+    setSelectedDbClientId(clientId);
+    if (dbClient) {
+      // Auto-populate the first client with db client info
+      const updatedClients = clients.length > 0 
+        ? clients.map((c, i) => i === 0 ? { ...c, name: dbClient.name, country: dbClient.country || '' } : c)
+        : [{ id: '1', name: dbClient.name, country: dbClient.country || '' }];
+      
+      onClientInfoChange({
+        ...clientInfo,
+        dbClientId: clientId || undefined,
+        clients: updatedClients,
+        clientName: dbClient.name, // Legacy field
+        clientCountry: dbClient.country || undefined,
+      });
+    } else {
+      onClientInfoChange({
+        ...clientInfo,
+        dbClientId: undefined,
+      });
+    }
+  };
+
+  const handleCreateNewClient = async (data: any) => {
+    const newClient = await createClient(data);
+    if (newClient) {
+      handleDbClientSelect(newClient.id, newClient);
+      setShowClientForm(false);
+    }
+  };
+
   return (
+    <>
+      <ClientForm
+        open={showClientForm}
+        onClose={() => setShowClientForm(false)}
+        onSubmit={handleCreateNewClient}
+        mode="create"
+      />
     <div className="space-y-6">
       {/* Property Details Section */}
       <div>
@@ -456,6 +500,25 @@ export const ClientSection = ({
             {t('addClient')}
           </Button>
         </div>
+
+        {/* Client Selector from Database */}
+        <div className="mb-4 p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+          <div className="flex items-center gap-2 mb-2">
+            <UserPlus className="w-4 h-4 text-[#CCFF00]" />
+            <span className="text-xs text-gray-400">Link to existing client</span>
+          </div>
+          <ClientSelector
+            value={selectedDbClientId}
+            onValueChange={handleDbClientSelect}
+            onCreateNew={() => setShowClientForm(true)}
+            placeholder="Select or create client..."
+          />
+          {selectedDbClientId && (
+            <p className="text-xs text-green-400 mt-2">
+              ✓ Quote will be linked to this client's portal
+            </p>
+          )}
+        </div>
         
         <div className="space-y-2">
           {clients.map((client) => {
@@ -557,5 +620,6 @@ export const ClientSection = ({
       </div>
 
     </div>
+    </>
   );
 };

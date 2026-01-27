@@ -41,6 +41,8 @@ export interface ClientUnitData {
   // IDs for direct lookup
   developerId?: string;
   projectId?: string;
+  // Database client link
+  dbClientId?: string;
 }
 
 interface ClientUnitInfoProps {
