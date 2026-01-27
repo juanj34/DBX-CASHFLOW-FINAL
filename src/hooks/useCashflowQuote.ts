@@ -241,6 +241,7 @@ export const useCashflowQuote = (quoteId?: string) => {
           clientShares: clientInfo.clientShares,
           zoneId: clientInfo.zoneId,
           zoneName: clientInfo.zoneName,
+          dbClientId: clientInfo.dbClientId, // Persist the database client link
         },
         _exitScenarios: exitScenarios || [],
         _mortgageInputs: mortgageInputs,
@@ -251,6 +252,7 @@ export const useCashflowQuote = (quoteId?: string) => {
         inputs: inputsWithClients as any,
         client_name: clientName,
         client_country: clientCountry,
+        client_id: clientInfo.dbClientId || null, // Link to database client
         project_name: clientInfo.projectName || null,
         developer: clientInfo.developer || null,
         unit: clientInfo.unit || null,

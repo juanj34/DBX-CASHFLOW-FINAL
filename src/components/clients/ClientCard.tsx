@@ -1,4 +1,6 @@
-import { User, Mail, Phone, MapPin, MoreVertical, ExternalLink, Pencil, Trash2, Link2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, MapPin, Phone, MoreVertical, ExternalLink, Pencil, Trash2, Link2, FileText, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -10,7 +12,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Client } from "@/hooks/useClients";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+
+interface ClientQuote {
+  id: string;
+  title: string | null;
+  project_name: string | null;
+  developer: string | null;
+  status: string | null;
+  updated_at: string;
+}
 
 interface ClientCardProps {
   client: Client;
@@ -29,6 +42,32 @@ export const ClientCard = ({
   onDelete,
   onGeneratePortal,
 }: ClientCardProps) => {
+  const [showQuotes, setShowQuotes] = useState(false);
+  const [quotes, setQuotes] = useState<ClientQuote[]>([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+
+  // Fetch quotes when expanded
+  useEffect(() => {
+    if (showQuotes && quotes.length === 0) {
+      const fetchQuotes = async () => {
+        setLoadingQuotes(true);
+        const { data } = await supabase
+          .from('cashflow_quotes')
+          .select('id, title, project_name, developer, status, updated_at')
+          .eq('client_id', client.id)
+          .or('is_archived.is.null,is_archived.eq.false')
+          .order('updated_at', { ascending: false })
+          .limit(5);
+        
+        if (data) {
+          setQuotes(data);
+        }
+        setLoadingQuotes(false);
+      };
+      fetchQuotes();
+    }
+  }, [showQuotes, client.id, quotes.length]);
+
   const handleCopyPortalLink = () => {
     if (client.portal_token) {
       const url = `${window.location.origin}/portal/${client.portal_token}`;
@@ -40,6 +79,15 @@ export const ClientCard = ({
   const handleOpenPortal = () => {
     if (client.portal_token) {
       window.open(`/portal/${client.portal_token}`, '_blank');
+    }
+  };
+
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case 'presented': return 'bg-blue-500/20 text-blue-400';
+      case 'negotiating': return 'bg-amber-500/20 text-amber-400';
+      case 'sold': return 'bg-green-500/20 text-green-400';
+      default: return 'bg-gray-500/20 text-gray-400';
     }
   };
 
@@ -112,9 +160,20 @@ export const ClientCard = ({
         </div>
 
         <div className="mt-4 flex items-center gap-2">
-          <Badge variant="secondary" className="bg-theme-bg text-theme-text-muted text-xs">
-            {quotesCount} quote{quotesCount !== 1 ? 's' : ''}
-          </Badge>
+          {quotesCount > 0 ? (
+            <button
+              onClick={() => setShowQuotes(!showQuotes)}
+              className="flex items-center gap-1 text-xs bg-theme-bg text-cyan-400 px-2 py-1 rounded hover:bg-theme-bg/80 transition-colors"
+            >
+              <FileText className="w-3 h-3" />
+              {quotesCount} quote{quotesCount !== 1 ? 's' : ''}
+              {showQuotes ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          ) : (
+            <Badge variant="secondary" className="bg-theme-bg text-theme-text-muted text-xs">
+              0 quotes
+            </Badge>
+          )}
           <Badge variant="secondary" className="bg-theme-bg text-theme-text-muted text-xs">
             {presentationsCount} presentation{presentationsCount !== 1 ? 's' : ''}
           </Badge>
@@ -124,6 +183,54 @@ export const ClientCard = ({
             </Badge>
           )}
         </div>
+
+        {/* Expandable Quotes List */}
+        {showQuotes && (
+          <div className="mt-3 pt-3 border-t border-theme-border space-y-2">
+            {loadingQuotes ? (
+              <p className="text-xs text-theme-text-muted">Loading quotes...</p>
+            ) : quotes.length === 0 ? (
+              <p className="text-xs text-theme-text-muted">No quotes found</p>
+            ) : (
+              quotes.map((quote) => (
+                <div 
+                  key={quote.id} 
+                  className="flex items-center justify-between gap-2 p-2 bg-theme-bg rounded-lg"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-theme-text truncate">
+                      {quote.title || quote.project_name || 'Untitled Quote'}
+                    </p>
+                    <p className="text-[10px] text-theme-text-muted">
+                      {quote.developer && <span>{quote.developer} • </span>}
+                      {formatDistanceToNow(new Date(quote.updated_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge className={`text-[10px] px-1.5 py-0 ${getStatusColor(quote.status)}`}>
+                      {quote.status || 'draft'}
+                    </Badge>
+                    <Link to={`/cashflow/${quote.id}`}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-theme-text-muted hover:text-theme-accent">
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                    </Link>
+                    <Link to={`/cashflow/${quote.id}/snapshot`}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-theme-text-muted hover:text-cyan-400">
+                        <Eye className="w-3 h-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
+            {quotesCount > 5 && (
+              <p className="text-[10px] text-theme-text-muted text-center">
+                Showing 5 of {quotesCount} quotes
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
