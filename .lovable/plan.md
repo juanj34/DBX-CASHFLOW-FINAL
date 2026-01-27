@@ -1,156 +1,254 @@
 
-# Implementation Plan: Server-Side Screenshot System
+# Implementation Plan: Complete Export System for All Views
 
-## Step 1: Add Browserless API Token (First Action)
-
-When implementation begins, I'll prompt you to securely add your `BROWSERLESS_TOKEN` to the backend. A modal will appear where you can paste your API key from browserless.io.
-
----
-
-## Step 2: Fix Presentation Logo Navigation
-
-**File**: `src/pages/PresentationView.tsx`
-
-Disable navigation for unauthenticated viewers by passing `linkTo={undefined}`:
-
-```typescript
-<AppLogo size="md" linkTo={undefined} />
-```
+## Problem Summary
+1. **Export buttons not visible**: Currently hidden in sidebar and require both `activeView === 'snapshot'` AND `shareToken` to exist
+2. **shareToken requirement**: Users must click "Share Link" first before export becomes available
+3. **No Cashflow view export**: Only Snapshot view can be exported; Cashflow view with all sections expanded cannot be exported
 
 ---
 
-## Step 3: Create Print-Optimized Snapshot Component
+## Solution Overview
 
-**File**: `src/components/roi/snapshot/SnapshotPrintContent.tsx` (New)
-
-A vertical, single-column layout optimized for screenshot capture:
-
-- Fixed 1920px width container
-- No sidebars, navigation, or modal triggers
-- Natural height flow (no `h-screen` constraint)
-- All content sections stacked vertically:
-  1. Property Hero Card
-  2. Overview Cards (4 key metrics)
-  3. Payment Breakdown Table
-  4. Rent Summary Card
-  5. Exit Scenarios Card (if enabled)
-  6. Mortgage Card (if enabled)
-  7. Wealth Projection Timeline
+Create a complete export system that:
+1. Makes export buttons always visible in both views (with auto-generation of shareToken when needed)
+2. Creates a dedicated print layout for Cashflow view with all sections expanded
+3. Adds an "Export" section in the sidebar with clear options for both views
 
 ---
 
-## Step 4: Create Print Route Page
+## Technical Implementation
 
-**File**: `src/pages/SnapshotPrint.tsx` (New)
-
-Minimal page component that:
-- Fetches quote data using `shareToken`
-- Renders `SnapshotPrintContent` with full data
-- Includes a `.snapshot-print-content` CSS class for Browserless detection
-- Applies print-optimized styling
-
----
-
-## Step 5: Add Route to App.tsx
-
-**File**: `src/App.tsx`
-
-Add the public print route:
-
-```typescript
-<Route path="/snapshot/:shareToken/print" element={<SnapshotPrint />} />
-```
-
----
-
-## Step 6: Create Screenshot Edge Function
-
-**File**: `supabase/functions/generate-snapshot-screenshot/index.ts` (New)
-
-Edge function that calls Browserless.io API:
-
-```typescript
-// Configuration for high-quality capture
-const browserlessPayload = {
-  url: `https://dbxprime.lovable.app/snapshot/${shareToken}/print`,
-  options: {
-    fullPage: true,
-    type: format === 'pdf' ? 'pdf' : 'png',
-  },
-  viewport: {
-    width: 1920,
-    height: 1080,
-    deviceScaleFactor: 2  // 3840px effective width
-  },
-  gotoOptions: {
-    waitUntil: 'networkidle0',
-    timeout: 30000
-  },
-  waitForSelector: '.snapshot-print-content',
-  waitForTimeout: 2000
-};
-```
-
-For PDF, additional options:
-- A3 format
-- `printBackground: true` for dark theme
-
----
-
-## Step 7: Register Edge Function
-
-**File**: `supabase/config.toml`
-
-```toml
-[functions.generate-snapshot-screenshot]
-verify_jwt = true
-```
-
----
-
-## Step 8: Add Export Buttons to Dashboard
+### Step 1: Update Sidebar Export Button Visibility
 
 **File**: `src/components/roi/dashboard/DashboardSidebar.tsx`
 
-Add two export buttons with loading states:
+Current logic (line 440):
+```typescript
+{activeView === 'snapshot' && shareToken && onExportImage && (
+```
 
-| Button | Icon | Action |
-|--------|------|--------|
-| Export Image | Image icon | Captures PNG (3840px width) |
-| Export PDF | FileDown icon | Generates A3 PDF with background |
+Change to show export buttons for BOTH views:
+- Remove the `activeView === 'snapshot'` restriction
+- Remove the `shareToken` requirement (will be auto-generated)
+- Add separate labels: "Export Snapshot" vs "Export Cashflow"
 
-Export flow:
-1. Check if quote is saved (has shareToken)
-2. Show loading spinner
-3. Call edge function
-4. Convert base64 to blob
-5. Trigger browser download
-6. Show success/error toast
+New logic:
+```typescript
+{/* Export Section - Available for both views */}
+<SectionHeader label="Export" collapsed={collapsed} />
+{(onExportImage || onExportPdf) && (
+  <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+    {/* Export current view as Image */}
+    <ActionButton 
+      icon={Image} 
+      label={activeView === 'snapshot' ? "Export Snapshot (PNG)" : "Export Cashflow (PNG)"} 
+      onClick={onExportImage} 
+      disabled={exportingImage}
+      collapsed={collapsed}
+    />
+    {/* Export current view as PDF */}
+    <ActionButton 
+      icon={FileDown} 
+      label={activeView === 'snapshot' ? "Export Snapshot (PDF)" : "Export Cashflow (PDF)"} 
+      onClick={onExportPdf} 
+      disabled={exportingPdf}
+      collapsed={collapsed}
+    />
+  </div>
+)}
+```
 
 ---
 
-## Quality Specifications
+### Step 2: Create Cashflow Print Layout
 
-| Setting | Value | Result |
-|---------|-------|--------|
-| Viewport Width | 1920px | Full HD base |
-| Device Scale Factor | 2x | 3840px actual width |
-| Full Page | true | Captures entire scrollable content |
-| Wait Strategy | networkidle0 + selector | All images/fonts loaded |
-| PNG | Lossless | Crisp text and graphics |
-| PDF | A3 + printBackground | Professional document |
+**File**: `src/components/roi/cashflow/CashflowPrintContent.tsx` (New)
+
+A fixed-width (1920px) layout for server-side screenshot capture with ALL sections expanded:
+
+```
+- PropertyHeroCard
+- InvestmentOverviewGrid
+- InvestmentSnapshot
+- PaymentBreakdown (expanded, no collapse)
+- ValueDifferentiatorsDisplay
+- Hold Strategy Analysis (expanded):
+  - RentSnapshot
+  - CumulativeIncomeChart
+  - OIYearlyProjectionTable
+  - WealthSummaryCard
+- Exit Strategy Analysis (expanded, if enabled):
+  - ExitScenariosCards
+  - OIGrowthCurve
+- Mortgage Analysis (expanded, if enabled):
+  - MortgageBreakdown
+- CashflowSummaryCard
+```
+
+All `CollapsibleSection` components will be replaced with static expanded versions (just the content, no collapse headers).
+
+---
+
+### Step 3: Create Cashflow Print Route
+
+**File**: `src/pages/CashflowPrint.tsx` (New)
+
+Similar to `SnapshotPrint.tsx`:
+- Fetches quote data using `shareToken`
+- Renders `CashflowPrintContent` with all data
+- Uses `.cashflow-print-content` CSS class for Browserless detection
+- Fixed 1920px width for consistent screenshot capture
+
+---
+
+### Step 4: Update App.tsx Routes
+
+**File**: `src/App.tsx`
+
+Add the new print route:
+```typescript
+<Route path="/cashflow/:shareToken/print" element={<CashflowPrint />} />
+```
+
+---
+
+### Step 5: Update Edge Function to Support Both Views
+
+**File**: `supabase/functions/generate-snapshot-screenshot/index.ts`
+
+Add support for a `view` parameter:
+```typescript
+interface RequestBody {
+  shareToken: string;
+  format: 'png' | 'pdf';
+  view: 'snapshot' | 'cashflow';  // NEW
+}
+
+// Build URL based on view type
+const targetUrl = view === 'cashflow'
+  ? `https://dbxprime.lovable.app/cashflow/${shareToken}/print`
+  : `https://dbxprime.lovable.app/snapshot/${shareToken}/print`;
+
+// Wait for appropriate selector
+waitForSelector: view === 'cashflow' 
+  ? '.cashflow-print-content'
+  : '.snapshot-print-content',
+```
+
+---
+
+### Step 6: Update Export Hook with Auto-Token Generation
+
+**File**: `src/hooks/useSnapshotExport.ts`
+
+Rename to `useCashflowExport.ts` and extend to:
+1. Accept `activeView` parameter
+2. Auto-generate shareToken if not present (call `generateShareToken` before export)
+3. Pass `view` parameter to edge function
+
+```typescript
+interface UseCashflowExportProps {
+  shareToken?: string | null;
+  projectName?: string;
+  activeView: 'cashflow' | 'snapshot';
+  generateShareToken: (quoteId: string) => Promise<string | null>;
+  quoteId?: string;
+  onTokenGenerated?: (token: string) => void;
+}
+
+export const useCashflowExport = ({ 
+  shareToken, 
+  projectName, 
+  activeView,
+  generateShareToken,
+  quoteId,
+  onTokenGenerated,
+}: UseCashflowExportProps) => {
+  
+  const exportImage = useCallback(async () => {
+    let token = shareToken;
+    
+    // Auto-generate token if not present
+    if (!token && quoteId) {
+      token = await generateShareToken(quoteId);
+      if (token) {
+        onTokenGenerated?.(token);
+      }
+    }
+    
+    if (!token) {
+      toast({ title: 'Cannot export', description: 'Please save the quote first.' });
+      return;
+    }
+    
+    // Call edge function with view type
+    const { data, error } = await supabase.functions.invoke('generate-snapshot-screenshot', {
+      body: { shareToken: token, format: 'png', view: activeView },
+    });
+    // ... rest of download logic
+  }, [shareToken, projectName, activeView, quoteId, generateShareToken]);
+  
+  // Similar for exportPdf...
+};
+```
+
+---
+
+### Step 7: Update OICalculator to Pass New Props
+
+**File**: `src/pages/OICalculator.tsx`
+
+Update the hook usage and pass new props:
+```typescript
+const { exportImage, exportPdf, exportingImage, exportingPdf } = useCashflowExport({
+  shareToken: quote?.share_token,
+  projectName: clientInfo.projectName,
+  activeView: viewMode,
+  generateShareToken,
+  quoteId: quote?.id,
+  onTokenGenerated: (token) => {
+    // Update local state if needed
+  },
+});
+```
 
 ---
 
 ## Files Summary
 
-| File | Action |
-|------|--------|
-| `src/pages/PresentationView.tsx` | Modify - disable logo link |
-| `src/components/roi/snapshot/SnapshotPrintContent.tsx` | Create - print layout |
-| `src/pages/SnapshotPrint.tsx` | Create - print route page |
-| `src/App.tsx` | Modify - add print route |
-| `supabase/functions/generate-snapshot-screenshot/index.ts` | Create - edge function |
-| `supabase/config.toml` | Modify - register function |
-| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify - add export buttons |
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify | Show export buttons for both views, add Export section |
+| `src/components/roi/cashflow/CashflowPrintContent.tsx` | Create | Print-optimized cashflow layout with all sections expanded |
+| `src/pages/CashflowPrint.tsx` | Create | Route handler for cashflow print view |
+| `src/App.tsx` | Modify | Add `/cashflow/:shareToken/print` route |
+| `supabase/functions/generate-snapshot-screenshot/index.ts` | Modify | Support `view` parameter for both snapshot/cashflow |
+| `src/hooks/useSnapshotExport.ts` | Rename/Modify | Rename to `useCashflowExport.ts`, add activeView support and auto-token generation |
+| `src/pages/OICalculator.tsx` | Modify | Update hook usage with new parameters |
 
+---
+
+## Export Flow Summary
+
+1. User clicks "Export Cashflow (PNG)" or "Export Snapshot (PNG)"
+2. If no `shareToken` exists, system auto-generates one
+3. Edge function receives request with `shareToken`, `format`, and `view` type
+4. Browserless navigates to appropriate print route (`/cashflow/:token/print` or `/snapshot/:token/print`)
+5. Print content renders with all sections expanded (no interactive elements)
+6. Screenshot captured at 3840px width (1920 x 2 scale factor)
+7. Base64 response converted to blob and downloaded
+
+---
+
+## Quality Specifications
+
+| Setting | Value |
+|---------|-------|
+| Viewport Width | 1920px |
+| Device Scale Factor | 2x |
+| Effective Width | 3840px |
+| Full Page | true |
+| Wait Strategy | networkidle0 + selector |
+| PNG | Lossless |
+| PDF | A3 landscape, printBackground: true |
