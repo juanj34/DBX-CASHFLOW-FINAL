@@ -113,9 +113,9 @@ Deno.serve(async (req) => {
         type: 'png',
       };
       browserlessPayload.viewport = {
-        width: 1920,
-        height: 1080,
-        deviceScaleFactor: 2, // 3840px effective width
+        width: 2000, // Slightly wider than content to ensure no clipping
+        height: 1200,
+        deviceScaleFactor: 2, // High resolution
       };
     }
 
