@@ -552,7 +552,7 @@ body.export-mode {
 }
 
 body.export-mode .dashboard-main-content > div {
-  padding: 24px !important;
+  padding: 0 !important;
 }
 
 /* Force full height for content capture - prevents cropping */

@@ -49,6 +49,10 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
         allowTaint: false, // Prevent tainted canvas issues
         scrollX: 0,
         scrollY: 0,
+        x: 0, // Start capture at element's left edge
+        y: 0, // Start capture at element's top edge
+        width: contentRef.current.scrollWidth,
+        height: contentRef.current.scrollHeight,
         windowWidth: contentRef.current.scrollWidth,
         windowHeight: contentRef.current.scrollHeight,
       });
