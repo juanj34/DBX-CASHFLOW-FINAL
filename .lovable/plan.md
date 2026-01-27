@@ -1,163 +1,163 @@
 
-# Client-Side Export System
 
-## Overview
-Replace the current Edge Function-based export (which uses Browserless and is failing) with a direct client-side DOM capture system. This will capture exactly what the user sees on their screen, without sidebars or navigation, in high quality.
+# Fix Double Scroll & Export Issues
 
-## Key Benefits
-- **WYSIWYG**: Exports exactly what you see, with the current theme, data, and styling
-- **Works everywhere**: No dependency on production URLs or external services
-- **High quality**: 2x scale factor for crisp exports
-- **No browser print dialogs**: Direct download of PNG or PDF files
-- **Instant**: No network round-trip to external screenshot service
+## Problem Summary
+
+### Issue 1: Double Scroll in Snapshot View
+The Snapshot view has **nested scroll containers** that create a confusing UX:
+
+```
+DashboardLayout
+├── <main overflow-auto>              ← SCROLL #1 (outer)
+│     └── SnapshotContent
+│           └── <div h-screen>        ← Forces viewport height
+│                 └── <div overflow-auto>  ← SCROLL #2 (inner)
+```
+
+You have to scroll the outer container first, then scroll the inner container to see the Mortgage card at the bottom.
+
+### Issue 2: Content Cropping During Export
+When `html2canvas` captures the DOM, the nested scroll containers and `h-screen` constraint cause the bottom content to be clipped. The capture only sees the viewport height, not the full scrollable content.
+
+### Issue 3: 25MB PDF File Size
+Current export uses PNG format at full quality (`toDataURL('image/png', 1.0)`), which is lossless and extremely large.
 
 ---
 
-## Technical Implementation
+## Solution Overview
 
-### Step 1: Add Dependencies
+| Problem | Fix |
+|---------|-----|
+| Double scroll | Remove inner scroll, use `min-h-full` instead of `h-screen` |
+| Content cropping | Add CSS rules to force `height: auto` during export mode |
+| Large PDF size | Use JPEG format with 85% quality for PDF exports |
 
-Install two libraries:
-- `html2canvas` - Captures DOM elements as high-resolution images
-- `jspdf` - Converts images to PDF documents
+---
 
-### Step 2: Create Export Hook
+## Technical Changes
 
-**New File**: `src/hooks/useClientExport.ts`
+### File 1: `src/components/roi/snapshot/SnapshotContent.tsx`
 
-A hook that handles the entire export flow:
-1. Adds a temporary CSS class to hide sidebar/navbar
-2. Captures the main content area using `html2canvas` with `scale: 2` for 2x resolution
-3. Converts to PDF if needed using `jsPDF`
-4. Triggers download
-5. Removes the CSS class to restore UI
+**Change the layout to use a single scroll context:**
 
-```
-┌──────────────────────────────────────────┐
-│           Export Flow                    │
-├──────────────────────────────────────────┤
-│ 1. Add body.export-mode class            │
-│    → Hides sidebar + mobile menu         │
-│                                          │
-│ 2. html2canvas captures contentRef       │
-│    → scale: 2 for high resolution        │
-│    → useCORS: true for external images   │
-│                                          │
-│ 3. Convert canvas → PNG blob or PDF      │
-│                                          │
-│ 4. Trigger browser download              │
-│                                          │
-│ 5. Remove body.export-mode class         │
-│    → UI restored                         │
-└──────────────────────────────────────────┘
+- Replace `h-screen` with `min-h-full` - allows content to grow beyond viewport
+- Remove `overflow-auto` from the inner content div - no more nested scroll
+- Remove `h-full` from the grid container - let content flow naturally
+
+```tsx
+// BEFORE (line 72)
+<div className="h-screen flex flex-col bg-theme-bg">
+
+// AFTER
+<div className="min-h-full flex flex-col bg-theme-bg">
 ```
 
-### Step 3: Add Export-Mode CSS
+```tsx
+// BEFORE (line 104-105)
+<div className="flex-1 px-4 pb-4 overflow-auto">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
 
-**File**: `src/index.css`
+// AFTER
+<div className="flex-1 px-4 pb-4">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+```
 
-Add CSS rules that hide UI elements when the body has `export-mode` class:
+### File 2: `src/index.css`
+
+**Add comprehensive export-mode CSS rules to force full height capture:**
 
 ```css
-/* Client-side export mode - hide UI elements during capture */
-body.export-mode .dashboard-sidebar,
-body.export-mode [data-export-hide="true"] {
-  display: none !important;
+/* Export mode - Force auto height for full content capture */
+body.export-mode,
+body.export-mode .dashboard-main-content,
+body.export-mode .min-h-full,
+body.export-mode .h-screen {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
-body.export-mode .dashboard-main-content {
-  margin-left: 0 !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
+body.export-mode .overflow-auto,
+body.export-mode .overflow-hidden,
+body.export-mode .overflow-y-auto {
+  overflow: visible !important;
+}
+
+body.export-mode .flex-1 {
+  flex: none !important;
+  height: auto !important;
 }
 ```
 
-### Step 4: Update DashboardLayout
+### File 3: `src/hooks/useClientExport.ts`
 
-**File**: `src/components/roi/dashboard/DashboardLayout.tsx`
-
-Changes:
-1. Add `dashboard-sidebar` class to the sidebar container
-2. Add `data-export-hide="true"` to the mobile menu trigger
-3. Add `dashboard-main-content` class to the main element
-4. Accept and forward a `mainContentRef` prop for capturing
-
-### Step 5: Update ExportModal
-
-**File**: `src/components/roi/ExportModal.tsx`
-
-Replace the Edge Function call with client-side capture:
-- Accept `mainContentRef` and `onViewChange` props
-- Use the new `useClientExport` hook
-- For "Both" views: programmatically switch views, wait for render, capture each
-
-### Step 6: Update OICalculator
-
-**File**: `src/pages/OICalculator.tsx`
-
-Changes:
-1. Create a ref for the main content area: `const mainContentRef = useRef<HTMLDivElement>(null)`
-2. Pass the ref to DashboardLayout
-3. Pass the ref and `setViewMode` to ExportModal for "Both" view exports
-
----
-
-## Files Changed
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `package.json` | Modify | Add `html2canvas` and `jspdf` dependencies |
-| `src/hooks/useClientExport.ts` | Create | Client-side DOM capture and download logic |
-| `src/index.css` | Modify | Add `.export-mode` CSS rules to hide UI |
-| `src/components/roi/dashboard/DashboardLayout.tsx` | Modify | Add CSS classes and accept `mainContentRef` |
-| `src/components/roi/ExportModal.tsx` | Modify | Replace Edge Function with client-side capture |
-| `src/pages/OICalculator.tsx` | Modify | Create content ref and pass to modal/layout |
-
----
-
-## Export Quality Settings
-
-The export will use these settings for maximum quality:
+**Reduce PDF size by using JPEG compression:**
 
 ```typescript
-html2canvas(element, {
-  scale: 2,              // 2x resolution (e.g., 1920px → 3840px)
-  useCORS: true,         // Allow cross-origin images (maps, uploads)
-  backgroundColor: null, // Preserve transparent backgrounds
-  logging: false,        // Disable console logs
-  allowTaint: false,     // Prevent tainted canvas issues
-});
+// BEFORE (line 89)
+const imgData = canvas.toDataURL('image/png', 1.0);
+
+// AFTER - Use JPEG for PDF (much smaller file size)
+const imgData = canvas.toDataURL('image/jpeg', 0.85);
 ```
 
-For PDF export, the page dimensions will match the captured content exactly, maintaining aspect ratio.
+Also add:
+- Increase delay from 100ms to 200ms for layout reflow
+- Force reflow with `offsetHeight` before capture
 
 ---
 
-## "Both Views" Export Flow
+## Visual Comparison
 
-When user selects "Both":
-
+**Before (Double Scroll):**
 ```
-1. Save current view (cashflow or snapshot)
-2. Capture current view → download file 1
-3. Switch to other view (call onViewChange)
-4. Wait 500ms for React to render
-5. Capture other view → download file 2
-6. Switch back to original view
-7. Show success toast
+┌─────────────────────────────────────┐
+│ Sidebar │ Hero Card                 │
+│         ├───────────────────────────┤
+│         │ Overview Cards            │ ↕ Scroll #1
+│         ├───────────────────────────┤
+│         │ ┌─────────────────────┐   │
+│         │ │ Payment │ Rent      │   │
+│         │ │         │ Exits     │   │ ↕ Scroll #2
+│         │ │         │ Mortgage  │   │   (hidden)
+│         │ └─────────────────────┘   │
+└─────────────────────────────────────┘
+```
+
+**After (Single Scroll):**
+```
+┌─────────────────────────────────────┐
+│ Sidebar │ Hero Card                 │
+│         ├───────────────────────────┤
+│         │ Overview Cards            │
+│         ├───────────────────────────┤  ↕ Single scroll
+│         │ Payment   │ Rent          │    for entire
+│         │           │ Exits         │    content area
+│         │           │ Mortgage      │
+└─────────────────────────────────────┘
 ```
 
 ---
 
-## What Gets Hidden During Export
+## Expected Results
 
-- ✅ Left sidebar (desktop)
-- ✅ Mobile floating menu button
-- ✅ Any element with `data-export-hide="true"` attribute
+| Metric | Before | After |
+|--------|--------|-------|
+| Scroll behavior | Two nested scrollbars | Single intuitive scrollbar |
+| Mortgage visibility | Hidden until 2nd scroll | Visible with normal scroll |
+| Export cropping | Bottom content cut off | Full content captured |
+| PDF file size | ~25MB | ~2-5MB (80-90% smaller) |
+| PNG quality | High | High (unchanged) |
 
-## What Gets Captured
+---
 
-- Full main content area (Cashflow or Snapshot view)
-- Current theme styling
-- All charts, tables, and images
-- Full scroll height (not just viewport)
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/roi/snapshot/SnapshotContent.tsx` | Replace `h-screen` → `min-h-full`, remove inner `overflow-auto` |
+| `src/index.css` | Add export-mode CSS for auto height and visible overflow |
+| `src/hooks/useClientExport.ts` | Use JPEG 85% quality for PDFs, add layout reflow delay |
+
