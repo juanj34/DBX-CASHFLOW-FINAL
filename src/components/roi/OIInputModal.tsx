@@ -35,6 +35,7 @@ interface OIInputModalProps {
   clientInfo?: ClientUnitData;
   setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
   quoteId?: string;
+  isNewQuote?: boolean; // Flag to indicate this is a fresh quote
   // Image props
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
@@ -100,6 +101,7 @@ export const OIInputModal = ({
   clientInfo, 
   setClientInfo, 
   quoteId,
+  isNewQuote,
   floorPlanUrl,
   buildingRenderUrl,
   heroImageUrl,
@@ -364,6 +366,7 @@ export const OIInputModal = ({
             clientInfo={clientInfo}
             setClientInfo={setClientInfo}
             quoteId={quoteId}
+            isNewQuote={isNewQuote}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
             heroImageUrl={heroImageUrl}

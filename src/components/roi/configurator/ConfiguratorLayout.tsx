@@ -45,6 +45,7 @@ interface ConfiguratorLayoutProps {
   clientInfo?: ClientUnitData;
   setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
   quoteId?: string;
+  isNewQuote?: boolean; // Flag to indicate this is a fresh quote (skip loading saved state)
   // Image props
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
@@ -108,6 +109,7 @@ export const ConfiguratorLayout = ({
   clientInfo: externalClientInfo,
   setClientInfo: externalSetClientInfo,
   quoteId,
+  isNewQuote,
   floorPlanUrl: externalFloorPlanUrl,
   buildingRenderUrl: externalBuildingRenderUrl,
   heroImageUrl: externalHeroImageUrl,
@@ -117,9 +119,9 @@ export const ConfiguratorLayout = ({
   onHeroImageChange,
   onShowLogoOverlayChange,
 }: ConfiguratorLayoutProps) => {
-  // Only load saved state if we have a quoteId (editing existing quote)
-  // For new quotes (no quoteId), always start fresh
-  const savedState = quoteId ? loadConfiguratorState() : null;
+  // Only load saved state if we have a quoteId AND it's not a new quote
+  // For new quotes or when isNewQuote flag is set, always start fresh
+  const savedState = (quoteId && !isNewQuote) ? loadConfiguratorState() : null;
   
   // Internal client info state (used if external not provided)
   const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
