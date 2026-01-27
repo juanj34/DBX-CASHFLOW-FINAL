@@ -229,11 +229,7 @@ const CashflowDashboardContent = () => {
     return null;
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
-  // View toggle handlers - switch between cashflow and showcase views in-page
-  const handleShowcaseView = useCallback(() => {
-    setViewMode('showcase');
-  }, []);
-
+  // View toggle handler
   const handleCashflowView = useCallback(() => {
     setViewMode('cashflow');
   }, []);
@@ -366,23 +362,6 @@ const CashflowDashboardContent = () => {
                   </p>
                 </div>
               </div>
-            </div>
-          ) : viewMode === 'showcase' ? (
-            /* Showcase Mode - Full overview presentation */
-            <div className="animate-fade-in" key="showcase-view">
-              <OverviewTabContent
-                inputs={inputs}
-                calculations={calculations}
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-                clientInfo={clientInfo}
-                heroImageUrl={quoteImages.heroImageUrl}
-                buildingRenderUrl={quoteImages.buildingRenderUrl}
-                customDifferentiators={customDifferentiators}
-              />
             </div>
           ) : (
             /* Configured State - Tab content */
