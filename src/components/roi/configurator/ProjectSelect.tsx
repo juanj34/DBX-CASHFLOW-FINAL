@@ -48,6 +48,7 @@ export const ProjectSelect = ({
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -74,6 +75,28 @@ export const ProjectSelect = ({
 
   const selectedProject = projects.find(p => p.id === value);
   const displayValue = selectedProject?.name || manualValue || "";
+  
+  // Check if there's a matching project for the current search
+  const hasExactMatch = projects.some(p => 
+    p.name?.toLowerCase() === searchValue.toLowerCase()
+  );
+  
+  const handleCreateNew = () => {
+    if (searchValue.trim()) {
+      // Create a minimal project object for manual entry
+      const manualProject: Project = {
+        id: '',
+        name: searchValue.trim(),
+        developer_id: developerId,
+        logo_url: null,
+        zone_id: null,
+        delivery_date: null,
+      };
+      onValueChange(null, manualProject);
+      setOpen(false);
+      setSearchValue('');
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -107,10 +130,31 @@ export const ProjectSelect = ({
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 bg-[#1a1f2e] border-[#2a3142]">
         <Command className="bg-transparent">
-          <CommandInput placeholder="Search projects..." className="text-white" />
+          <CommandInput 
+            placeholder="Search or type new..." 
+            className="text-white" 
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
           <CommandList>
-            <CommandEmpty className="text-gray-400 py-6 text-center">
-              {loading ? "Loading..." : developerId ? "No projects found for this developer." : "No projects found."}
+            <CommandEmpty className="text-gray-400 py-3 text-center">
+              {loading ? "Loading..." : (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-sm">
+                    {developerId ? "No projects found for this developer" : "No projects found"}
+                  </span>
+                  {searchValue.trim() && (
+                    <Button 
+                      size="sm" 
+                      onClick={handleCreateNew}
+                      className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Create "{searchValue}"
+                    </Button>
+                  )}
+                </div>
+              )}
             </CommandEmpty>
             <CommandGroup>
               {projects.map((project) => (
@@ -120,6 +164,7 @@ export const ProjectSelect = ({
                   onSelect={() => {
                     onValueChange(project.id, project);
                     setOpen(false);
+                    setSearchValue('');
                   }}
                   className="text-gray-300 hover:bg-[#2a3142] cursor-pointer"
                 >
@@ -151,19 +196,21 @@ export const ProjectSelect = ({
                 </CommandItem>
               ))}
             </CommandGroup>
-            <CommandSeparator className="bg-[#2a3142]" />
-            <CommandGroup>
-              <CommandItem
-                onSelect={() => {
-                  onManualMode();
-                  setOpen(false);
-                }}
-                className="text-[#CCFF00] hover:bg-[#2a3142] cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add manually
-              </CommandItem>
-            </CommandGroup>
+            {/* Show create option when typing something not in list */}
+            {searchValue.trim() && !hasExactMatch && (
+              <>
+                <CommandSeparator className="bg-[#2a3142]" />
+                <CommandGroup>
+                  <CommandItem
+                    onSelect={handleCreateNew}
+                    className="text-[#CCFF00] hover:bg-[#2a3142] cursor-pointer"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create "{searchValue}"
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

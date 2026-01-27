@@ -82,10 +82,11 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   shortTermRental: DEFAULT_SHORT_TERM_RENTAL,
   zoneMaturityLevel: 60,
   useZoneDefaults: true,
+  // Balanced profile values (matches APPRECIATION_PROFILES.balanced)
   constructionAppreciation: 12,
   growthAppreciation: 8,
   matureAppreciation: 4,
-  growthPeriodYears: 5,
+  growthPeriodYears: 3, // Changed from 5 to 3 to match "balanced" profile
   rentGrowthRate: 4,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,

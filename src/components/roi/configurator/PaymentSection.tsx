@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Clock, Building2, Zap, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, Clock, Building2, Zap, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -9,7 +9,36 @@ import { formatCurrency } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
 import { PaymentMilestone } from "../useOICalculations";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { PostHandoverSection } from "./PostHandoverSection";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+
+// Helper to calculate actual payment date
+const getPaymentDate = (monthsFromBooking: number, bookingMonth: number, bookingYear: number): Date => {
+  const date = new Date(bookingYear, bookingMonth - 1);
+  date.setMonth(date.getMonth() + monthsFromBooking);
+  return date;
+};
+
+// Format date as "Jul 2025"
+const formatPaymentDate = (date: Date): string => {
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+};
+
+// Check if a payment is after handover
+const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+  const paymentDate = getPaymentDate(monthsFromBooking, bookingMonth, bookingYear);
+  const handoverMonth = (handoverQuarter - 1) * 3 + 1; // Q1=Jan, Q2=Apr, Q3=Jul, Q4=Oct
+  const handoverDate = new Date(handoverYear, handoverMonth - 1);
+  return paymentDate >= handoverDate;
+};
+
+// Check if payment falls in handover quarter
+const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+  const paymentDate = getPaymentDate(monthsFromBooking, bookingMonth, bookingYear);
+  const handoverQuarterStart = new Date(handoverYear, (handoverQuarter - 1) * 3);
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarter * 3);
+  return paymentDate >= handoverQuarterStart && paymentDate < handoverQuarterEnd;
+};
 
 export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const [numPayments, setNumPayments] = useState(4);
@@ -21,21 +50,16 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
   const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-  const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
-  const postHandoverTotal = (inputs.postHandoverPayments || []).reduce((sum, m) => sum + m.paymentPercent, 0);
-  const onHandoverPercent = inputs.onHandoverPercent || 0;
   
-  // For non-post-handover: handover = 100 - pre
-  // For post-handover: pre + onHandover + post = 100
-  const handoverPercent = hasPostHandoverPlan 
-    ? onHandoverPercent 
-    : 100 - inputs.preHandoverPercent;
+  // Simple toggle for allowing payments past handover
+  const allowPastHandover = inputs.hasPostHandoverPlan ?? false;
+  
+  // For calculation purposes
+  const handoverPercent = 100 - inputs.preHandoverPercent;
   const remainingToDistribute = inputs.preHandoverPercent - inputs.downpaymentPercent - additionalPaymentsTotal;
   
   const isValidPreHandover = Math.abs(preHandoverTotal - inputs.preHandoverPercent) < 0.01;
-  const totalPayment = hasPostHandoverPlan 
-    ? preHandoverTotal + onHandoverPercent + postHandoverTotal
-    : preHandoverTotal + handoverPercent;
+  const totalPayment = preHandoverTotal + handoverPercent;
   const isValidTotal = Math.abs(totalPayment - 100) < 0.01;
   
   // Check if payments have been added
@@ -337,77 +361,127 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
               <CollapsibleContent>
                 <div className="space-y-1.5 max-h-72 overflow-y-auto pt-2 border-t border-[#2a3142]">
-                  {inputs.additionalPayments.map((payment, index) => (
-                    <div key={payment.id} className="flex items-center gap-1.5 p-1.5 bg-[#0d1117] rounded-lg">
-                      <div className="w-5 h-5 rounded-full bg-[#2a3142] flex items-center justify-center text-[10px] text-gray-400 shrink-0">
-                        {index + 2}
-                      </div>
-                      
-                      <Select
-                        value={payment.type}
-                        onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
+                  {inputs.additionalPayments.map((payment, index) => {
+                    const paymentDate = payment.type === 'time' 
+                      ? getPaymentDate(payment.triggerValue, inputs.bookingMonth, inputs.bookingYear)
+                      : null;
+                    const isPostHO = payment.type === 'time' && isPaymentPostHandover(
+                      payment.triggerValue, 
+                      inputs.bookingMonth, 
+                      inputs.bookingYear, 
+                      inputs.handoverQuarter, 
+                      inputs.handoverYear
+                    );
+                    const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
+                      payment.triggerValue, 
+                      inputs.bookingMonth, 
+                      inputs.bookingYear, 
+                      inputs.handoverQuarter, 
+                      inputs.handoverYear
+                    );
+                    
+                    return (
+                      <div 
+                        key={payment.id} 
+                        className={cn(
+                          "flex items-center gap-1.5 p-1.5 rounded-lg",
+                          isHandoverQuarter ? "bg-green-500/10 border border-green-500/30" :
+                          isPostHO ? "bg-purple-500/10 border border-purple-500/30" : 
+                          "bg-[#0d1117]"
+                        )}
                       >
-                        <SelectTrigger className="w-[70px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1.5">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
-                          <SelectItem value="time" className="text-white hover:bg-[#2a3142] text-xs">
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>Time</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="construction" className="text-white hover:bg-[#2a3142] text-xs">
-                            <div className="flex items-center gap-1">
-                              <Building2 className="w-3 h-3" />
-                              <span>Build</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <div className={cn(
+                          "w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0",
+                          isHandoverQuarter ? "bg-green-500/30 text-green-400" :
+                          isPostHO ? "bg-purple-500/30 text-purple-400" :
+                          "bg-[#2a3142] text-gray-400"
+                        )}>
+                          {index + 2}
+                        </div>
+                        
+                        <Select
+                          value={payment.type}
+                          onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
+                        >
+                          <SelectTrigger className="w-[70px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1.5">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
+                            <SelectItem value="time" className="text-white hover:bg-[#2a3142] text-xs">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>Time</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="construction" className="text-white hover:bg-[#2a3142] text-xs">
+                              <div className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
+                                <span>Build</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
 
-                      <div className="flex items-center gap-0.5">
-                        <span className="text-[10px] text-gray-500 w-5">
-                          {payment.type === 'time' ? 'Mo' : 'At'}
-                        </span>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          value={payment.triggerValue || ''}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                            updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
-                          }}
-                          className="w-10 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[10px]"
-                        />
-                        {payment.type === 'construction' && <span className="text-[10px] text-gray-500">%</span>}
+                        <div className="flex items-center gap-0.5">
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            value={payment.triggerValue || ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                              updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
+                            }}
+                            className="w-10 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[10px]"
+                          />
+                          {payment.type === 'construction' && <span className="text-[10px] text-gray-500">%</span>}
+                        </div>
+
+                        {/* Show actual date for time-based payments */}
+                        {paymentDate && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] text-gray-400 font-mono">
+                              {formatPaymentDate(paymentDate)}
+                            </span>
+                            {isHandoverQuarter && (
+                              <span className="text-[8px] px-1 py-0.5 bg-green-500/20 text-green-400 rounded flex items-center gap-0.5">
+                                <Key className="w-2.5 h-2.5" />
+                                HO
+                              </span>
+                            )}
+                            {isPostHO && !isHandoverQuarter && (
+                              <span className="text-[8px] px-1 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                                Post-HO
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-0.5 ml-auto">
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            value={payment.paymentPercent || ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                              updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, val)));
+                            }}
+                            className="w-12 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-[10px]"
+                          />
+                          <span className="text-[10px] text-gray-400">%</span>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeAdditionalPayment(payment.id)}
+                          className="h-6 w-6 text-gray-500 hover:text-red-400 hover:bg-red-400/10 shrink-0"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
-
-                      <div className="flex items-center gap-0.5 ml-auto">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          value={payment.paymentPercent || ''}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
-                            updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, val)));
-                          }}
-                          className="w-12 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-[10px]"
-                        />
-                        <span className="text-[10px] text-gray-400">%</span>
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeAdditionalPayment(payment.id)}
-                        className="h-6 w-6 text-gray-500 hover:text-red-400 hover:bg-red-400/10 shrink-0"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <Button
@@ -426,107 +500,63 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
-      {/* Step 4: Post-Handover Payment Plan (Optional) */}
+      {/* Allow Payments Past Handover Toggle */}
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
-        <div className="pt-4 border-t border-[#2a3142]">
-          <PostHandoverSection 
-            inputs={inputs} 
-            setInputs={setInputs} 
-            currency={currency} 
+        <div className="flex items-center justify-between p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-purple-400" />
+            <span className="text-sm text-gray-300">Allow Payments Past Handover</span>
+            <InfoTooltip translationKey="tooltipAllowPastHandover" />
+          </div>
+          <Switch 
+            checked={allowPastHandover} 
+            onCheckedChange={(checked) => setInputs(prev => ({ 
+              ...prev, 
+              hasPostHandoverPlan: checked 
+            }))}
           />
         </div>
       )}
 
       {/* Fixed Footer - Total Summary */}
       <div className="sticky bottom-0 bg-[#0d1117] pt-3 -mx-4 px-4 pb-1 border-t border-[#2a3142]">
-        {hasPostHandoverPlan ? (
-          // 4-column layout for post-handover plan
-          <div className="flex items-center gap-2">
-            {/* Pre-Handover */}
-            <div className="flex-1 flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
-              <span className="text-[9px] text-gray-500 uppercase">Pre</span>
-              <span className="text-xs font-mono text-white font-semibold ml-auto">
-                {preHandoverTotal.toFixed(0)}%
-              </span>
-            </div>
-            
-            <div className="h-5 w-px bg-[#2a3142]" />
-            
-            {/* On Handover */}
-            <div className="flex-1 flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-400" />
-              <span className="text-[9px] text-gray-500 uppercase">Handover</span>
-              <span className="text-xs font-mono text-white font-semibold ml-auto">
-                {onHandoverPercent.toFixed(0)}%
-              </span>
-            </div>
-            
-            <div className="h-5 w-px bg-[#2a3142]" />
-            
-            {/* Post-Handover */}
-            <div className="flex-1 flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-purple-400" />
-              <span className="text-[9px] text-gray-500 uppercase">Post</span>
-              <span className="text-xs font-mono text-white font-semibold ml-auto">
-                {postHandoverTotal.toFixed(0)}%
-              </span>
-            </div>
-            
-            <div className="h-5 w-px bg-[#2a3142]" />
-            
-            {/* Total */}
-            <div className="flex-1 flex items-center gap-1.5">
-              {isValidTotal ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-              ) : (
-                <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-              )}
-              <span className="text-[9px] text-gray-500 uppercase">Total</span>
-              <span className={`text-xs font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
-                {totalPayment.toFixed(0)}%
-              </span>
-            </div>
+        {/* Standard 3-column layout */}
+        <div className="flex items-center gap-3">
+          {/* Pre-Handover */}
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
+            <span className="text-[10px] text-gray-500 uppercase">Pre-Handover</span>
+            <span className="text-sm font-mono text-white font-semibold ml-auto">
+              {preHandoverTotal.toFixed(0)}%
+            </span>
           </div>
-        ) : (
-          // Original 3-column layout
-          <div className="flex items-center gap-3">
-            {/* Pre-Handover */}
-            <div className="flex-1 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
-              <span className="text-[10px] text-gray-500 uppercase">Pre-Handover</span>
-              <span className="text-sm font-mono text-white font-semibold ml-auto">
-                {preHandoverTotal.toFixed(0)}%
-              </span>
-            </div>
-            
-            <div className="h-6 w-px bg-[#2a3142]" />
-            
-            {/* Handover */}
-            <div className="flex-1 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-400" />
-              <span className="text-[10px] text-gray-500 uppercase">Handover</span>
-              <span className="text-sm font-mono text-white font-semibold ml-auto">
-                {handoverPercent}%
-              </span>
-            </div>
-            
-            <div className="h-6 w-px bg-[#2a3142]" />
-            
-            {/* Total */}
-            <div className="flex-1 flex items-center gap-2">
-              {isValidTotal ? (
-                <CheckCircle2 className="w-4 h-4 text-green-400" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-400" />
-              )}
-              <span className="text-[10px] text-gray-500 uppercase">Total</span>
-              <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
-                {totalPayment.toFixed(0)}%
-              </span>
-            </div>
+          
+          <div className="h-6 w-px bg-[#2a3142]" />
+          
+          {/* Handover */}
+          <div className="flex-1 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400" />
+            <span className="text-[10px] text-gray-500 uppercase">Handover</span>
+            <span className="text-sm font-mono text-white font-semibold ml-auto">
+              {handoverPercent}%
+            </span>
           </div>
-        )}
+          
+          <div className="h-6 w-px bg-[#2a3142]" />
+          
+          {/* Total */}
+          <div className="flex-1 flex items-center gap-2">
+            {isValidTotal ? (
+              <CheckCircle2 className="w-4 h-4 text-green-400" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-400" />
+            )}
+            <span className="text-[10px] text-gray-500 uppercase">Total</span>
+            <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
+              {totalPayment.toFixed(0)}%
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

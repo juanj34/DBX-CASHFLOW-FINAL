@@ -42,6 +42,7 @@ export const DeveloperSelect = ({
   const [open, setOpen] = useState(false);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     const fetchDevelopers = async () => {
@@ -61,6 +62,19 @@ export const DeveloperSelect = ({
 
   const selectedDeveloper = developers.find(d => d.id === value);
   const displayValue = selectedDeveloper?.name || manualValue || "";
+  
+  // Check if there's a matching developer for the current search
+  const hasExactMatch = developers.some(d => 
+    d.name.toLowerCase() === searchValue.toLowerCase()
+  );
+  
+  const handleCreateNew = () => {
+    if (searchValue.trim()) {
+      onValueChange(null, searchValue.trim());
+      setOpen(false);
+      setSearchValue('');
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -94,10 +108,29 @@ export const DeveloperSelect = ({
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 bg-[#1a1f2e] border-[#2a3142]">
         <Command className="bg-transparent">
-          <CommandInput placeholder="Search developers..." className="text-white" />
+          <CommandInput 
+            placeholder="Search or type new..." 
+            className="text-white" 
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
           <CommandList>
-            <CommandEmpty className="text-gray-400 py-6 text-center">
-              {loading ? "Loading..." : "No developer found."}
+            <CommandEmpty className="text-gray-400 py-3 text-center">
+              {loading ? "Loading..." : (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-sm">No developer found</span>
+                  {searchValue.trim() && (
+                    <Button 
+                      size="sm" 
+                      onClick={handleCreateNew}
+                      className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Create "{searchValue}"
+                    </Button>
+                  )}
+                </div>
+              )}
             </CommandEmpty>
             <CommandGroup>
               {developers.map((developer) => (
@@ -107,6 +140,7 @@ export const DeveloperSelect = ({
                   onSelect={() => {
                     onValueChange(developer.id, developer.name);
                     setOpen(false);
+                    setSearchValue('');
                   }}
                   className="text-gray-300 hover:bg-[#2a3142] cursor-pointer"
                 >
@@ -133,19 +167,21 @@ export const DeveloperSelect = ({
                 </CommandItem>
               ))}
             </CommandGroup>
-            <CommandSeparator className="bg-[#2a3142]" />
-            <CommandGroup>
-              <CommandItem
-                onSelect={() => {
-                  onManualMode();
-                  setOpen(false);
-                }}
-                className="text-[#CCFF00] hover:bg-[#2a3142] cursor-pointer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add manually
-              </CommandItem>
-            </CommandGroup>
+            {/* Show create option when typing something not in list */}
+            {searchValue.trim() && !hasExactMatch && (
+              <>
+                <CommandSeparator className="bg-[#2a3142]" />
+                <CommandGroup>
+                  <CommandItem
+                    onSelect={handleCreateNew}
+                    className="text-[#CCFF00] hover:bg-[#2a3142] cursor-pointer"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create "{searchValue}"
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

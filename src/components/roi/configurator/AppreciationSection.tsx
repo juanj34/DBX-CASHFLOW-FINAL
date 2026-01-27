@@ -133,7 +133,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
     const construction = inputs.constructionAppreciation ?? 12;
     const growth = inputs.growthAppreciation ?? 8;
     const mature = inputs.matureAppreciation ?? 4;
-    const period = inputs.growthPeriodYears ?? 5;
+    // Default to 3 for balanced profile matching
+    const period = inputs.growthPeriodYears ?? 3;
 
     for (const [key, profile] of Object.entries(APPRECIATION_PROFILES)) {
       if (
