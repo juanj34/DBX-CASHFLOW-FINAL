@@ -26,6 +26,7 @@ import { RentSnapshot } from "@/components/roi/RentSnapshot";
 import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
 import { CashflowSummaryCard } from "@/components/roi/CashflowSummaryCard";
 import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
+import { SnapshotContent } from "@/components/roi/snapshot";
 
 // Comparison components
 import { MetricsTable } from "@/components/roi/compare/MetricsTable";
@@ -49,6 +50,7 @@ interface QuoteData {
   mortgageInputs: MortgageInputs;
   heroImageUrl: string | null;
   buildingRenderUrl: string | null;
+  floorPlanUrl: string | null;
   clientInfo: {
     clientName?: string;
     clientCountry?: string;
@@ -107,31 +109,27 @@ const QuotePreview = ({
     );
   }
 
-  // Snapshot view - compact spreadsheet-style layout
+  // Snapshot view - use the same SnapshotContent as OICalculator and SnapshotView
   if (viewMode === 'snapshot') {
     return (
-      <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4">
-        {/* Snapshot uses vertical cashflow view components in a compact layout */}
-        <InvestmentOverviewGrid
-          inputs={quoteData.inputs}
-          calculations={calculations}
-          mortgageAnalysis={mortgageAnalysis}
-          mortgageEnabled={quoteData.mortgageInputs.enabled}
-          currency="AED"
-          rate={rate}
-          compact={true}
-          renderImageUrl={quoteData.heroImageUrl || quoteData.buildingRenderUrl}
-        />
-        <InvestmentSnapshot 
-          inputs={quoteData.inputs} 
-          currency="AED" 
-          totalMonths={calculations.totalMonths} 
-          totalEntryCosts={calculations.totalEntryCosts} 
-          rate={rate} 
-          holdAnalysis={calculations.holdAnalysis} 
-          unitSizeSqf={quoteData.clientUnitData.unitSizeSqf} 
-        />
-      </div>
+      <SnapshotContent
+        inputs={quoteData.inputs}
+        calculations={calculations}
+        clientInfo={quoteData.clientUnitData}
+        mortgageInputs={quoteData.mortgageInputs}
+        mortgageAnalysis={mortgageAnalysis}
+        exitScenarios={exitScenarios}
+        quoteImages={{
+          heroImageUrl: quoteData.heroImageUrl,
+          floorPlanUrl: quoteData.floorPlanUrl,
+          buildingRenderUrl: quoteData.buildingRenderUrl,
+        }}
+        currency="AED"
+        setCurrency={() => {}}
+        language="en"
+        setLanguage={() => {}}
+        rate={rate}
+      />
     );
   }
 
@@ -572,6 +570,7 @@ export const PresentationPreview = ({
 
           const heroImage = imagesData?.find(img => img.image_type === 'hero_image');
           const buildingRender = imagesData?.find(img => img.image_type === 'building_render');
+          const floorPlan = imagesData?.find(img => img.image_type === 'floor_plan');
 
           // Extract mortgage inputs from quote inputs (they're stored in the JSON)
           const savedMortgage = (quote.inputs as unknown as { _mortgageInputs?: Partial<MortgageInputs> })?._mortgageInputs;
@@ -628,6 +627,7 @@ export const PresentationPreview = ({
             mortgageInputs,
             heroImageUrl: heroImage?.image_url || null,
             buildingRenderUrl: buildingRender?.image_url || null,
+            floorPlanUrl: floorPlan?.image_url || null,
             clientInfo: {
               clientName: quote.client_name || undefined,
               clientCountry: quote.client_country || undefined,
