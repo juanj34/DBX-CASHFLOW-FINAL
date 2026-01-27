@@ -436,8 +436,8 @@ export const DashboardSidebar = ({
                 )
               )}
               
-              {/* Export Buttons - only show when snapshot view and quote is saved */}
-              {activeView === 'snapshot' && shareToken && onExportImage && (
+              {/* Export Buttons - available for both views, works even without shareToken (auto-generates) */}
+              {onExportImage && (
                 exportingImage ? (
                   collapsed ? (
                     <Tooltip>
@@ -454,17 +454,34 @@ export const DashboardSidebar = ({
                       <span className="flex-1 text-left truncate">Generating...</span>
                     </div>
                   )
-                ) : (
+                ) : quoteId ? (
                   <ActionButton 
                     icon={Image} 
-                    label="Export Image" 
+                    label={activeView === 'snapshot' ? "Export Snapshot" : "Export Cashflow"} 
                     onClick={onExportImage} 
                     collapsed={collapsed}
                   />
+                ) : (
+                  collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted/40 cursor-not-allowed">
+                          <Image className="w-4 h-4" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Save quote to export</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted/40 cursor-not-allowed">
+                      <Image className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 text-left truncate">{activeView === 'snapshot' ? "Export Snapshot" : "Export Cashflow"}</span>
+                      <span className="text-[10px] bg-theme-bg/50 px-1.5 py-0.5 rounded">Save first</span>
+                    </div>
+                  )
                 )
               )}
               
-              {activeView === 'snapshot' && shareToken && onExportPdf && (
+              {onExportPdf && (
                 exportingPdf ? (
                   collapsed ? (
                     <Tooltip>
@@ -481,13 +498,30 @@ export const DashboardSidebar = ({
                       <span className="flex-1 text-left truncate">Generating...</span>
                     </div>
                   )
-                ) : (
+                ) : quoteId ? (
                   <ActionButton 
                     icon={FileDown} 
-                    label="Export PDF" 
+                    label={activeView === 'snapshot' ? "Export PDF" : "Export PDF"} 
                     onClick={onExportPdf} 
                     collapsed={collapsed}
                   />
+                ) : (
+                  collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-theme-text-muted/40 cursor-not-allowed">
+                          <FileDown className="w-4 h-4" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Save quote to export PDF</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-theme-text-muted/40 cursor-not-allowed">
+                      <FileDown className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 text-left truncate">Export PDF</span>
+                      <span className="text-[10px] bg-theme-bg/50 px-1.5 py-0.5 rounded">Save first</span>
+                    </div>
+                  )
                 )
               )}
             </div>

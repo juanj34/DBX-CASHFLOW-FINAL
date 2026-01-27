@@ -2,17 +2,42 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-interface UseSnapshotExportProps {
+interface UseCashflowExportProps {
   shareToken?: string | null;
   projectName?: string;
+  activeView: 'cashflow' | 'snapshot';
+  quoteId?: string;
+  generateShareToken?: (quoteId: string) => Promise<string | null>;
+  onTokenGenerated?: (token: string) => void;
 }
 
-export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExportProps) => {
+export const useCashflowExport = ({ 
+  shareToken, 
+  projectName, 
+  activeView,
+  quoteId,
+  generateShareToken,
+  onTokenGenerated,
+}: UseCashflowExportProps) => {
   const [exportingImage, setExportingImage] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const exportImage = useCallback(async () => {
-    if (!shareToken) {
+    let token = shareToken;
+    
+    // Auto-generate token if not present
+    if (!token && quoteId && generateShareToken) {
+      toast({
+        title: 'Preparing export...',
+        description: 'Generating share link first.',
+      });
+      token = await generateShareToken(quoteId);
+      if (token) {
+        onTokenGenerated?.(token);
+      }
+    }
+    
+    if (!token) {
       toast({
         title: 'Cannot export',
         description: 'Please save the quote first to enable export.',
@@ -24,7 +49,7 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
     setExportingImage(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-snapshot-screenshot', {
-        body: { shareToken, format: 'png' },
+        body: { shareToken: token, format: 'png', view: activeView },
       });
 
       if (error) throw error;
@@ -45,7 +70,8 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${projectName || 'snapshot'}-investment-snapshot.png`;
+      const viewLabel = activeView === 'snapshot' ? 'snapshot' : 'cashflow';
+      link.download = `${projectName || 'investment'}-${viewLabel}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -53,7 +79,7 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
 
       toast({
         title: 'Image exported',
-        description: 'Your snapshot image has been downloaded.',
+        description: `Your ${activeView} image has been downloaded.`,
       });
     } catch (err) {
       console.error('Export image error:', err);
@@ -65,10 +91,24 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
     } finally {
       setExportingImage(false);
     }
-  }, [shareToken, projectName]);
+  }, [shareToken, projectName, activeView, quoteId, generateShareToken, onTokenGenerated]);
 
   const exportPdf = useCallback(async () => {
-    if (!shareToken) {
+    let token = shareToken;
+    
+    // Auto-generate token if not present
+    if (!token && quoteId && generateShareToken) {
+      toast({
+        title: 'Preparing export...',
+        description: 'Generating share link first.',
+      });
+      token = await generateShareToken(quoteId);
+      if (token) {
+        onTokenGenerated?.(token);
+      }
+    }
+    
+    if (!token) {
       toast({
         title: 'Cannot export',
         description: 'Please save the quote first to enable export.',
@@ -80,7 +120,7 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
     setExportingPdf(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-snapshot-screenshot', {
-        body: { shareToken, format: 'pdf' },
+        body: { shareToken: token, format: 'pdf', view: activeView },
       });
 
       if (error) throw error;
@@ -101,7 +141,8 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${projectName || 'snapshot'}-investment-snapshot.pdf`;
+      const viewLabel = activeView === 'snapshot' ? 'snapshot' : 'cashflow';
+      link.download = `${projectName || 'investment'}-${viewLabel}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -109,7 +150,7 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
 
       toast({
         title: 'PDF exported',
-        description: 'Your snapshot PDF has been downloaded.',
+        description: `Your ${activeView} PDF has been downloaded.`,
       });
     } catch (err) {
       console.error('Export PDF error:', err);
@@ -121,7 +162,7 @@ export const useSnapshotExport = ({ shareToken, projectName }: UseSnapshotExport
     } finally {
       setExportingPdf(false);
     }
-  }, [shareToken, projectName]);
+  }, [shareToken, projectName, activeView, quoteId, generateShareToken, onTokenGenerated]);
 
   return {
     exportImage,
