@@ -1,58 +1,109 @@
 
-# Fix Exit Cards Theme Colors
+# Fix PDF/PNG Export Y-Axis Offset
 
 ## Problem
 
-The exit scenario rows in `CompactAllExitsCard` use `bg-muted/30` which is a generic Tailwind class that doesn't respect the theme system. This creates a light gray background that clashes with the dark theme and makes text hard to read.
+The exported PDF/PNG has a visible offset at the top - a gray bar appears above the content, and all elements are shifted down on the Y-axis. This makes the export look incorrect.
 
-**Current (line 100):**
-```tsx
-className="p-2.5 rounded-lg transition-colors bg-muted/30 hover:bg-muted/50 border border-transparent"
-```
+## Root Cause Analysis
 
-The `bg-muted` color is defined as `hsl(var(--muted))` in Tailwind, which may not align with the theme CSS variables.
+Looking at the code and screenshot:
 
----
+1. **`html2canvas` element positioning**: The `useClientExport.ts` uses `scrollX: 0` and `scrollY: 0` in the html2canvas options. However, when the captured element has any offset from the document root (which happens because it's nested inside the `DashboardLayout`), html2canvas may miscalculate the starting position.
+
+2. **CSS export-mode side effects**: The export-mode CSS rules modify `padding` and `overflow` properties. Specifically, line 554-556 in `index.css`:
+   ```css
+   body.export-mode .dashboard-main-content > div {
+     padding: 24px !important;
+   }
+   ```
+   This adds padding to the content wrapper, but the capture starts from the `main` element's top edge, potentially including unintended space.
+
+3. **Element bounds calculation**: The `html2canvas` options set `windowHeight: contentRef.current.scrollHeight` but don't account for the element's `getBoundingClientRect().y` offset from the viewport.
 
 ## Solution
 
-Replace the generic `bg-muted` classes with proper theme-aware classes that are defined in the theme system:
+Fix the html2canvas configuration to properly capture the element without Y-offset:
 
-| Current | Replacement | Reason |
-|---------|-------------|--------|
-| `bg-muted/30` | `bg-theme-bg/50` | Uses theme background color with transparency |
-| `hover:bg-muted/50` | `hover:bg-theme-border/30` | Subtle hover using theme border color |
-| `border border-transparent` | `border border-theme-border/30` | Visible subtle border matching theme |
+### Changes
 
----
+#### File: `src/hooks/useClientExport.ts`
 
-## File to Modify
+Add explicit position options to html2canvas to ensure the capture starts at the element's actual top edge:
 
-### `src/components/roi/snapshot/CompactAllExitsCard.tsx`
+```typescript
+const canvas = await html2canvas(contentRef.current, {
+  scale: 2,
+  useCORS: true,
+  backgroundColor: null,
+  logging: false,
+  allowTaint: false,
+  scrollX: 0,
+  scrollY: 0,
+  x: 0,  // ADD: Start capture at element's left edge
+  y: 0,  // ADD: Start capture at element's top edge
+  width: contentRef.current.scrollWidth,
+  height: contentRef.current.scrollHeight,
+  windowWidth: contentRef.current.scrollWidth,
+  windowHeight: contentRef.current.scrollHeight,
+});
+```
 
-**Line 100 - Change from:**
-```tsx
-className="p-2.5 rounded-lg transition-colors bg-muted/30 hover:bg-muted/50 border border-transparent"
+The key additions are:
+- `x: 0` - Explicitly start capture at the element's left edge (relative to the element itself)
+- `y: 0` - Explicitly start capture at the element's top edge (relative to the element itself)
+- `width` and `height` - Explicitly define the capture dimensions based on the element's actual content size
+
+These options tell html2canvas to capture the element from its own coordinate origin (0,0) rather than calculating from the document root.
+
+#### File: `src/index.css`
+
+Remove the padding override that may be adding unexpected space. Change line 554-556:
+
+**From:**
+```css
+body.export-mode .dashboard-main-content > div {
+  padding: 24px !important;
+}
 ```
 
 **To:**
-```tsx
-className="p-2.5 rounded-lg transition-colors bg-theme-bg/50 hover:bg-theme-border/30 border border-theme-border/30"
+```css
+body.export-mode .dashboard-main-content > div {
+  padding: 0 !important;
+}
 ```
 
-This ensures:
-- Background uses the theme's `bg` color with 50% opacity
-- Hover state uses the theme's border color with 30% opacity
-- Border is visible but subtle using theme border color
+This removes the 24px padding injection during export mode. The content already has its own internal padding via the component structure.
+
+---
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/hooks/useClientExport.ts` | Add `x: 0`, `y: 0`, `width`, `height` options to html2canvas |
+| `src/index.css` | Change export-mode padding from `24px` to `0` |
 
 ---
 
 ## Expected Results
 
-| Theme | Before | After |
+| Issue | Before | After |
 |-------|--------|-------|
-| Tech Dark | Light gray background (hard to read) | Dark blue-gray matching theme |
-| Consultant | Light gray (inconsistent) | White/light gray matching theme |
-| Dark Consultant | Light gray (clashing) | Charcoal matching theme |
+| Gray bar at top | Visible gray space above content | No offset - content starts at top |
+| Content position | Shifted down on Y-axis | Properly aligned from top edge |
+| Overall export | Cropped/offset appearance | Clean full-page capture |
 
-The exit cards will now properly adapt to whichever theme the user has selected.
+---
+
+## Technical Details
+
+The `html2canvas` library captures DOM elements by rendering them to a canvas. When capturing a nested element (like `main.dashboard-main-content`), it needs explicit positioning hints to avoid including parent element offsets.
+
+The options we're adding:
+- `x: 0, y: 0` - Forces the capture to start at the top-left corner of the target element
+- `width, height` - Uses the element's scroll dimensions for complete content capture
+- `windowWidth, windowHeight` - Sets the virtual viewport size to match the content
+
+Combined with removing the padding injection, this ensures a pixel-perfect export with no Y-offset.
