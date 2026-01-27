@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, ArrowRight, Users, Sparkles } from 'lucide-react';
+import { CreditCard, ArrowRight, Users, Sparkles, Key } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { ClientUnitData } from '../ClientUnitInfo';
 import { Currency, formatDualCurrency } from '../currencyUtils';
@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DottedRow } from './DottedRow';
 import { PaymentSplitModal } from './PaymentSplitModal';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface CompactPaymentTableProps {
   inputs: OIInputs;
@@ -30,6 +31,35 @@ const estimateDateFromMonths = (monthsFromBooking: number, bookingMonth: number,
   const yearOffset = Math.floor((totalMonths - 1) / 12);
   const month = ((totalMonths - 1) % 12) + 1;
   return monthToDateString(month, bookingYear + yearOffset, language);
+};
+
+// Check if payment falls in or after handover quarter
+const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+  const totalMonthsFromStart = bookingMonth + monthsFromBooking;
+  const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
+  const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
+  const paymentYear = bookingYear + paymentYearOffset;
+  
+  const handoverQuarterStart = (handoverQuarter - 1) * 3 + 1;
+  const handoverQuarterEnd = handoverQuarter * 3;
+  
+  if (paymentYear === handoverYear) {
+    return paymentMonth >= handoverQuarterStart && paymentMonth <= handoverQuarterEnd;
+  }
+  return false;
+};
+
+const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+  const totalMonthsFromStart = bookingMonth + monthsFromBooking;
+  const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
+  const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
+  const paymentYear = bookingYear + paymentYearOffset;
+  
+  const handoverMonth = (handoverQuarter - 1) * 3 + 1;
+  const handoverDate = new Date(handoverYear, handoverMonth - 1);
+  const paymentDate = new Date(paymentYear, paymentMonth - 1);
+  
+  return paymentDate >= handoverDate;
 };
 
 export const CompactPaymentTable = ({
@@ -233,13 +263,52 @@ export const CompactPaymentTable = ({
                   const amount = basePrice * (payment.paymentPercent / 100);
                   const dateStr = getPaymentDate(payment);
                   const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
+                  
+                  // Check for handover indicators
+                  const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
+                    payment.triggerValue,
+                    bookingMonth,
+                    bookingYear,
+                    handoverQuarter,
+                    handoverYear
+                  );
+                  const isPostHO = payment.type === 'time' && isPaymentPostHandover(
+                    payment.triggerValue,
+                    bookingMonth,
+                    bookingYear,
+                    handoverQuarter,
+                    handoverYear
+                  );
+                  
                   return (
-                    <DottedRow 
+                    <div 
                       key={index}
-                      label={labelWithDate}
-                      value={getDualValue(amount).primary}
-                      secondaryValue={getDualValue(amount).secondary}
-                    />
+                      className={cn(
+                        "flex items-center justify-between gap-2",
+                        isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1"
+                      )}
+                    >
+                      <div className="flex items-center gap-1 min-w-0 flex-1">
+                        <span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
+                        {isHandoverQuarter && (
+                          <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
+                            <Key className="w-2.5 h-2.5" />
+                            Handover
+                          </span>
+                        )}
+                        {isPostHO && !isHandoverQuarter && (
+                          <span className="text-[8px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded-full border border-purple-500/30 whitespace-nowrap">
+                            Post-HO
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xs font-mono text-theme-text">{getDualValue(amount).primary}</div>
+                        {currency !== 'AED' && (
+                          <div className="text-[10px] text-theme-text-muted">{getDualValue(amount).secondary}</div>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
                 <div className="pt-1 border-t border-theme-border mt-1">

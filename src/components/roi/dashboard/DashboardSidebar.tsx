@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -465,6 +465,17 @@ export const DashboardSidebar = ({
             icon={BarChart3} 
             label="Analytics" 
             to="/quotes-analytics" 
+            collapsed={collapsed}
+          />
+        </div>
+
+        {/* MANAGEMENT Section - Clients */}
+        <SectionHeader label="Management" collapsed={collapsed} />
+        <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
+          <ActionButton 
+            icon={Users} 
+            label="Clients" 
+            to="/clients" 
             collapsed={collapsed}
           />
         </div>
