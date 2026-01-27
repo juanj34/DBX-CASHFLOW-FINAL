@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { User, MapPin, Phone, MoreVertical, ExternalLink, Pencil, Trash2, Link2, FileText, Eye, ChevronDown, ChevronUp } from "lucide-react";
-import { Link } from "react-router-dom";
+import { User, MapPin, Phone, MoreVertical, ExternalLink, Pencil, Trash2, Link2, FileText, Eye, ChevronDown, ChevronUp, Plus, Presentation } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,6 +25,15 @@ interface ClientQuote {
   updated_at: string;
 }
 
+interface ClientPresentation {
+  id: string;
+  title: string;
+  description: string | null;
+  updated_at: string;
+  is_public: boolean;
+  share_token: string | null;
+}
+
 interface ClientCardProps {
   client: Client;
   quotesCount?: number;
@@ -42,9 +51,13 @@ export const ClientCard = ({
   onDelete,
   onGeneratePortal,
 }: ClientCardProps) => {
+  const navigate = useNavigate();
   const [showQuotes, setShowQuotes] = useState(false);
+  const [showPresentations, setShowPresentations] = useState(false);
   const [quotes, setQuotes] = useState<ClientQuote[]>([]);
+  const [presentations, setPresentations] = useState<ClientPresentation[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [loadingPresentations, setLoadingPresentations] = useState(false);
 
   // Fetch quotes when expanded
   useEffect(() => {
@@ -68,6 +81,27 @@ export const ClientCard = ({
     }
   }, [showQuotes, client.id, quotes.length]);
 
+  // Fetch presentations when expanded
+  useEffect(() => {
+    if (showPresentations && presentations.length === 0) {
+      const fetchPresentations = async () => {
+        setLoadingPresentations(true);
+        const { data } = await supabase
+          .from('presentations')
+          .select('id, title, description, updated_at, is_public, share_token')
+          .eq('client_id', client.id)
+          .order('updated_at', { ascending: false })
+          .limit(5);
+        
+        if (data) {
+          setPresentations(data);
+        }
+        setLoadingPresentations(false);
+      };
+      fetchPresentations();
+    }
+  }, [showPresentations, client.id, presentations.length]);
+
   const handleCopyPortalLink = () => {
     if (client.portal_token) {
       const url = `${window.location.origin}/portal/${client.portal_token}`;
@@ -80,6 +114,17 @@ export const ClientCard = ({
     if (client.portal_token) {
       window.open(`/portal/${client.portal_token}`, '_blank');
     }
+  };
+
+  const handleCreateQuote = () => {
+    // Store client info in localStorage for the generator to pick up
+    localStorage.setItem('preselected_client', JSON.stringify({
+      dbClientId: client.id,
+      clientName: client.name,
+      clientEmail: client.email || '',
+      clientCountry: client.country || ''
+    }));
+    navigate('/cashflow-generator');
   };
 
   const getStatusColor = (status: string | null) => {
@@ -114,6 +159,11 @@ export const ClientCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-theme-card border-theme-border">
+              <DropdownMenuItem onClick={handleCreateQuote} className="text-theme-accent hover:bg-theme-bg cursor-pointer">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Quote
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-theme-border" />
               <DropdownMenuItem onClick={onEdit} className="text-theme-text hover:bg-theme-bg cursor-pointer">
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit
@@ -159,7 +209,8 @@ export const ClientCard = ({
           )}
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        {/* Stats Row with Create Quote Button */}
+        <div className="mt-4 flex items-center gap-2 flex-wrap">
           {quotesCount > 0 ? (
             <button
               onClick={() => setShowQuotes(!showQuotes)}
@@ -174,14 +225,37 @@ export const ClientCard = ({
               0 quotes
             </Badge>
           )}
-          <Badge variant="secondary" className="bg-theme-bg text-theme-text-muted text-xs">
-            {presentationsCount} presentation{presentationsCount !== 1 ? 's' : ''}
-          </Badge>
+          
+          {presentationsCount > 0 ? (
+            <button
+              onClick={() => setShowPresentations(!showPresentations)}
+              className="flex items-center gap-1 text-xs bg-theme-bg text-pink-400 px-2 py-1 rounded hover:bg-theme-bg/80 transition-colors"
+            >
+              <Presentation className="w-3 h-3" />
+              {presentationsCount} presentation{presentationsCount !== 1 ? 's' : ''}
+              {showPresentations ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          ) : (
+            <Badge variant="secondary" className="bg-theme-bg text-theme-text-muted text-xs">
+              0 presentations
+            </Badge>
+          )}
+          
           {client.portal_enabled && client.portal_token && (
             <Badge className="bg-theme-accent/20 text-theme-accent border-0 text-xs">
               Portal Active
             </Badge>
           )}
+          
+          {/* Create Quote Button */}
+          <Button
+            onClick={handleCreateQuote}
+            size="sm"
+            className="ml-auto h-6 px-2 text-xs bg-theme-accent/20 text-theme-accent hover:bg-theme-accent/30 border-0"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Quote
+          </Button>
         </div>
 
         {/* Expandable Quotes List */}
@@ -227,6 +301,57 @@ export const ClientCard = ({
             {quotesCount > 5 && (
               <p className="text-[10px] text-theme-text-muted text-center">
                 Showing 5 of {quotesCount} quotes
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Expandable Presentations List */}
+        {showPresentations && (
+          <div className="mt-3 pt-3 border-t border-theme-border space-y-2">
+            {loadingPresentations ? (
+              <p className="text-xs text-theme-text-muted">Loading presentations...</p>
+            ) : presentations.length === 0 ? (
+              <p className="text-xs text-theme-text-muted">No presentations found</p>
+            ) : (
+              presentations.map((presentation) => (
+                <div 
+                  key={presentation.id} 
+                  className="flex items-center justify-between gap-2 p-2 bg-theme-bg rounded-lg"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-theme-text truncate">
+                      {presentation.title}
+                    </p>
+                    <p className="text-[10px] text-theme-text-muted">
+                      {formatDistanceToNow(new Date(presentation.updated_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {presentation.is_public && presentation.share_token && (
+                      <Badge className="text-[10px] px-1.5 py-0 bg-green-500/20 text-green-400">
+                        Shared
+                      </Badge>
+                    )}
+                    <Link to={`/presentations/${presentation.id}`}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-theme-text-muted hover:text-pink-400">
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                    </Link>
+                    {presentation.share_token && (
+                      <Link to={`/presentation/${presentation.share_token}`} target="_blank">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-theme-text-muted hover:text-theme-accent">
+                          <Eye className="w-3 h-3" />
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            {presentationsCount > 5 && (
+              <p className="text-[10px] text-theme-text-muted text-center">
+                Showing 5 of {presentationsCount} presentations
               </p>
             )}
           </div>
