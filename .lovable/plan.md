@@ -1,108 +1,78 @@
 
-# Implementation Plan: Fix Presentation Logo + Server-Side Screenshot System
+# Implementation Plan: Server-Side Screenshot System
 
-## Part 1: Quick Fix - Presentation Logo Navigation
+## Step 1: Add Browserless API Token (First Action)
 
-### Problem
-The `AppLogo` in `PresentationView.tsx` (line ~247) defaults to `/home`, which is a protected route. When unauthenticated clients click the logo, they get redirected to login.
+When implementation begins, I'll prompt you to securely add your `BROWSERLESS_TOKEN` to the backend. A modal will appear where you can paste your API key from browserless.io.
 
-### Solution
-Pass `linkTo={undefined}` to the `AppLogo` component in the public presentation view to disable navigation.
+---
+
+## Step 2: Fix Presentation Logo Navigation
 
 **File**: `src/pages/PresentationView.tsx`
 
-```typescript
-// Change from:
-<AppLogo size="md" />
+Disable navigation for unauthenticated viewers by passing `linkTo={undefined}`:
 
-// To:
+```typescript
 <AppLogo size="md" linkTo={undefined} />
 ```
 
 ---
 
-## Part 2: Server-Side Screenshot System
+## Step 3: Create Print-Optimized Snapshot Component
 
-### Architecture Overview
+**File**: `src/components/roi/snapshot/SnapshotPrintContent.tsx` (New)
 
-```text
-┌──────────────────────────────────────────────────────────────────────────┐
-│                            EXPORT FLOW                                   │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  1. User clicks "Export Image" or "Export PDF" in DashboardSidebar      │
-│                              ↓                                           │
-│  2. Frontend calls Edge Function: generate-snapshot-screenshot           │
-│                              ↓                                           │
-│  3. Edge Function calls Browserless.io API with print URL               │
-│     URL: /snapshot/{shareToken}/print                                    │
-│                              ↓                                           │
-│  4. Browserless renders page with Playwright (1920px, 2x scale)         │
-│     - fullPage: true (captures entire scrollable height)                 │
-│     - deviceScaleFactor: 2 (3840px actual = Full HD+)                   │
-│                              ↓                                           │
-│  5. Returns base64-encoded PNG/PDF to frontend                          │
-│                              ↓                                           │
-│  6. Frontend downloads file to user's device                            │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-```
+A vertical, single-column layout optimized for screenshot capture:
 
-### Files to Create/Modify
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/pages/PresentationView.tsx` | Modify | Disable logo link |
-| `src/pages/SnapshotPrint.tsx` | **Create** | Print-optimized snapshot route |
-| `src/components/roi/snapshot/SnapshotPrintContent.tsx` | **Create** | Print layout component (no sidebars, vertical scroll) |
-| `src/App.tsx` | Modify | Add `/snapshot/:shareToken/print` route |
-| `supabase/functions/generate-snapshot-screenshot/index.ts` | **Create** | Edge function for Browserless API |
-| `supabase/config.toml` | Modify | Register new edge function |
-| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify | Add export buttons |
+- Fixed 1920px width container
+- No sidebars, navigation, or modal triggers
+- Natural height flow (no `h-screen` constraint)
+- All content sections stacked vertically:
+  1. Property Hero Card
+  2. Overview Cards (4 key metrics)
+  3. Payment Breakdown Table
+  4. Rent Summary Card
+  5. Exit Scenarios Card (if enabled)
+  6. Mortgage Card (if enabled)
+  7. Wealth Projection Timeline
 
 ---
 
-## Technical Details
+## Step 4: Create Print Route Page
 
-### 1. Print-Optimized Snapshot Route (`/snapshot/:shareToken/print`)
+**File**: `src/pages/SnapshotPrint.tsx` (New)
 
-This is a minimal, vertical layout specifically for headless browser capture:
+Minimal page component that:
+- Fetches quote data using `shareToken`
+- Renders `SnapshotPrintContent` with full data
+- Includes a `.snapshot-print-content` CSS class for Browserless detection
+- Applies print-optimized styling
 
-- **No sidebars or navigation** - just the content
-- **Single column layout** - all cards stacked vertically
-- **Fixed width: 1920px** - for consistent high-quality output
-- **No overflow/scroll containers** - content flows naturally
-- **All sections expanded** - no modals or hidden content
-- **White/dark background** - optimized for both print and digital
+---
 
-The route accepts query parameters:
-- `?format=png` or `?format=pdf` - to slightly adjust styling for each format
+## Step 5: Add Route to App.tsx
 
-### 2. SnapshotPrintContent Component
+**File**: `src/App.tsx`
 
-A vertical version of the snapshot that renders:
-
-1. **Property Hero Card** (with image, price info)
-2. **Snapshot Overview Cards** (4 key metrics in a row)
-3. **Payment Table** (full payment breakdown)
-4. **Rent Card** (rental income summary)
-5. **Exit Scenarios Card** (if enabled)
-6. **Mortgage Card** (if enabled)
-7. **Wealth Projection Timeline** (7-year projection)
-
-Key differences from `SnapshotContent`:
-- No `h-screen` constraint - natural height flow
-- All interactive buttons removed (no modals)
-- Fixed 1920px container width
-- Larger font sizes for print clarity
-- No hover states or transitions
-
-### 3. Edge Function: `generate-snapshot-screenshot`
+Add the public print route:
 
 ```typescript
-// High-quality screenshot configuration
-const browserlessConfig = {
-  url: `${PREVIEW_URL}/snapshot/${shareToken}/print?format=${format}`,
+<Route path="/snapshot/:shareToken/print" element={<SnapshotPrint />} />
+```
+
+---
+
+## Step 6: Create Screenshot Edge Function
+
+**File**: `supabase/functions/generate-snapshot-screenshot/index.ts` (New)
+
+Edge function that calls Browserless.io API:
+
+```typescript
+// Configuration for high-quality capture
+const browserlessPayload = {
+  url: `https://dbxprime.lovable.app/snapshot/${shareToken}/print`,
   options: {
     fullPage: true,
     type: format === 'pdf' ? 'pdf' : 'png',
@@ -110,87 +80,52 @@ const browserlessConfig = {
   viewport: {
     width: 1920,
     height: 1080,
-    deviceScaleFactor: 2  // 2x for crisp output (3840px actual)
+    deviceScaleFactor: 2  // 3840px effective width
   },
   gotoOptions: {
-    waitUntil: 'networkidle0',  // Wait for all content to load
+    waitUntil: 'networkidle0',
     timeout: 30000
   },
-  waitForSelector: '.snapshot-print-content',  // Ensure content is rendered
-  waitForTimeout: 2000  // Additional buffer for images
+  waitForSelector: '.snapshot-print-content',
+  waitForTimeout: 2000
 };
 ```
 
-**For PDF format**, additional options:
-```typescript
-{
-  format: 'A3',  // Larger format for detailed content
-  printBackground: true,  // Include dark theme background
-  preferCSSPageSize: false
-}
+For PDF, additional options:
+- A3 format
+- `printBackground: true` for dark theme
+
+---
+
+## Step 7: Register Edge Function
+
+**File**: `supabase/config.toml`
+
+```toml
+[functions.generate-snapshot-screenshot]
+verify_jwt = true
 ```
 
-### 4. Required Secret: `BROWSERLESS_TOKEN`
+---
 
-**Service**: [browserless.io](https://browserless.io)
+## Step 8: Add Export Buttons to Dashboard
 
-- Free tier: 2,000 sessions/month (sufficient for most use cases)
-- Paid plans available for higher volume
+**File**: `src/components/roi/dashboard/DashboardSidebar.tsx`
 
-The secret needs to be added before deployment.
+Add two export buttons with loading states:
 
-### 5. DashboardSidebar Export Buttons
+| Button | Icon | Action |
+|--------|------|--------|
+| Export Image | Image icon | Captures PNG (3840px width) |
+| Export PDF | FileDown icon | Generates A3 PDF with background |
 
-Add two new buttons in the "View" section:
-
-```typescript
-<ActionButton 
-  icon={ImageIcon} 
-  label="Export Image" 
-  onClick={() => handleExport('png')} 
-  collapsed={collapsed}
-/>
-<ActionButton 
-  icon={FileDown} 
-  label="Export PDF" 
-  onClick={() => handleExport('pdf')} 
-  collapsed={collapsed}
-/>
-```
-
-The export function:
-```typescript
-const handleExport = async (format: 'png' | 'pdf') => {
-  if (!shareToken) {
-    toast.error('Save quote first to export');
-    return;
-  }
-  
-  setExporting(format);
-  
-  const { data, error } = await supabase.functions.invoke('generate-snapshot-screenshot', {
-    body: { shareToken, format }
-  });
-  
-  if (data?.screenshot) {
-    const mimeType = format === 'pdf' ? 'application/pdf' : 'image/png';
-    const blob = base64ToBlob(data.screenshot, mimeType);
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${clientInfo.projectName || 'snapshot'}-${new Date().toISOString().slice(0,10)}.${format}`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
-    toast.success(`${format.toUpperCase()} exported successfully`);
-  } else {
-    toast.error('Export failed: ' + (error?.message || 'Unknown error'));
-  }
-  
-  setExporting(null);
-};
-```
+Export flow:
+1. Check if quote is saved (has shareToken)
+2. Show loading spinner
+3. Call edge function
+4. Convert base64 to blob
+5. Trigger browser download
+6. Show success/error toast
 
 ---
 
@@ -200,21 +135,22 @@ const handleExport = async (format: 'png' | 'pdf') => {
 |---------|-------|--------|
 | Viewport Width | 1920px | Full HD base |
 | Device Scale Factor | 2x | 3840px actual width |
-| Full Page | true | Captures ALL content, not just viewport |
-| Wait Strategy | networkidle0 + selector + timeout | Ensures all images/fonts loaded |
-| PNG Quality | lossless | Crisp text and graphics |
-| PDF Format | A3 + printBackground | Professional document with dark theme |
+| Full Page | true | Captures entire scrollable content |
+| Wait Strategy | networkidle0 + selector | All images/fonts loaded |
+| PNG | Lossless | Crisp text and graphics |
+| PDF | A3 + printBackground | Professional document |
 
 ---
 
-## Implementation Order
+## Files Summary
 
-1. **Add Browserless secret** (required first)
-2. **Fix PresentationView logo** (quick fix)
-3. **Create SnapshotPrintContent component** (print layout)
-4. **Create SnapshotPrint page** (route handler)
-5. **Add route to App.tsx**
-6. **Create edge function** (screenshot generation)
-7. **Update config.toml**
-8. **Add export buttons to DashboardSidebar**
-9. **Test with real quote**
+| File | Action |
+|------|--------|
+| `src/pages/PresentationView.tsx` | Modify - disable logo link |
+| `src/components/roi/snapshot/SnapshotPrintContent.tsx` | Create - print layout |
+| `src/pages/SnapshotPrint.tsx` | Create - print route page |
+| `src/App.tsx` | Modify - add print route |
+| `supabase/functions/generate-snapshot-screenshot/index.ts` | Create - edge function |
+| `supabase/config.toml` | Modify - register function |
+| `src/components/roi/dashboard/DashboardSidebar.tsx` | Modify - add export buttons |
+
