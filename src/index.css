@@ -554,3 +554,30 @@ body.export-mode {
 body.export-mode .dashboard-main-content > div {
   padding: 24px !important;
 }
+
+/* Force full height for content capture - prevents cropping */
+body.export-mode,
+body.export-mode .dashboard-main-content,
+body.export-mode .min-h-full,
+body.export-mode .h-screen {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+body.export-mode .overflow-auto,
+body.export-mode .overflow-hidden,
+body.export-mode .overflow-y-auto,
+body.export-mode .overflow-x-auto {
+  overflow: visible !important;
+}
+
+body.export-mode .flex-1 {
+  flex: none !important;
+  height: auto !important;
+}
+
+body.export-mode .min-h-0 {
+  min-height: 0 !important;
+}
