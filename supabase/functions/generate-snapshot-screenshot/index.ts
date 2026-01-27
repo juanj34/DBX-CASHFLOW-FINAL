@@ -142,7 +142,16 @@ Deno.serve(async (req) => {
 
     // Get the binary data
     const screenshotBuffer = await browserlessResponse.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(screenshotBuffer)));
+    
+    // Convert to base64 in chunks to avoid stack overflow
+    const uint8Array = new Uint8Array(screenshotBuffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    const base64 = btoa(binary);
 
     console.log(`Successfully generated ${format}, size: ${screenshotBuffer.byteLength} bytes`);
 
