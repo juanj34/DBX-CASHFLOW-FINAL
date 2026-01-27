@@ -31,10 +31,9 @@ interface DashboardSidebarProps {
   onViewHistory?: () => void;
   onShare?: () => void;
   onPresent?: () => void; // Switch to cashflow view
-  onShowcase?: () => void; // Open showcase/story mode in new tab
-  onSnapshot?: () => void; // Open snapshot view in new tab
+  onSnapshot?: () => void; // Open snapshot view
   onNewQuote?: () => void; // Start a fresh new quote
-  activeView?: 'cashflow' | 'showcase' | 'snapshot'; // Which view is currently active
+  activeView?: 'cashflow' | 'snapshot'; // Which view is currently active
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -191,7 +190,6 @@ export const DashboardSidebar = ({
   onViewHistory,
   onShare,
   onPresent,
-  onShowcase,
   onSnapshot,
   onNewQuote,
   activeView,
@@ -378,20 +376,11 @@ export const DashboardSidebar = ({
         </div>
 
         {/* VIEW Section - View modes and share */}
-        {/* VIEW Section - Always show, but Share requires saved quote */}
-        {(onShowcase || activeView || onShare) && (
+        {(activeView || onShare) && (
           <>
             <SectionHeader label="View" collapsed={collapsed} />
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-              {/* Showcase - opens story view in new tab */}
-              <ActionButton 
-                icon={Sparkles} 
-                label="Showcase" 
-                onClick={onShowcase} 
-                collapsed={collapsed}
-                variant={activeView === 'showcase' ? 'active' : 'default'}
-              />
-              {/* Cashflow - current vertical view (always visible, shows as active when on this page) */}
+              {/* Cashflow - current vertical view */}
               <ActionButton 
                 icon={LayoutDashboard} 
                 label="Cashflow" 
