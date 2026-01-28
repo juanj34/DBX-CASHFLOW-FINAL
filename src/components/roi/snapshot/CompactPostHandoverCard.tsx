@@ -71,20 +71,21 @@ export const CompactPostHandoverCard = ({
   
   // Calculate total post-handover payments
   const postHandoverTotal = basePrice * (postHandoverPercent / 100);
-
-  // Calculate duration in months (from handover to post-handover end)
-  const handoverMonth = (inputs.handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear, handoverMonth - 1);
-  const endMonth = (inputs.postHandoverEndQuarter - 1) * 3 + 1;
-  const endDate = new Date(inputs.postHandoverEndYear, endMonth - 1);
   
-  const postHandoverMonths = Math.max(1, 
-    (endDate.getFullYear() - handoverDate.getFullYear()) * 12 + 
-    (endDate.getMonth() - handoverDate.getMonth())
-  );
+  // Count actual number of payments
+  const numberOfPayments = postHandoverPaymentsToUse.length;
 
-  // Monthly equivalent payment
-  const monthlyEquivalent = postHandoverTotal / postHandoverMonths;
+  // Calculate duration from actual payment schedule (not calendar months)
+  const paymentMonths = postHandoverPaymentsToUse.map(p => p.triggerValue);
+  const lastPaymentMonth = Math.max(...paymentMonths);
+  const firstPaymentMonth = Math.min(...paymentMonths);
+  const actualDurationMonths = Math.max(1, lastPaymentMonth - firstPaymentMonth + 1);
+
+  // Per installment amount (what user actually pays each time)
+  const perInstallmentAmount = postHandoverTotal / numberOfPayments;
+
+  // Monthly cashflow burn rate (spread over actual payment period)
+  const monthlyEquivalent = postHandoverTotal / actualDurationMonths;
 
   // Cashflow calculation
   const monthlyCashflow = monthlyRent - monthlyEquivalent;
@@ -96,7 +97,7 @@ export const CompactPostHandoverCard = ({
   const isNotCovered = monthlyRent === 0;
 
   // Total gap over the period
-  const totalGap = Math.abs(monthlyCashflow) * postHandoverMonths;
+  const totalGap = Math.abs(monthlyCashflow) * actualDurationMonths;
 
   // Dual currency helper
   const getDualValue = (value: number) => {
@@ -147,7 +148,7 @@ export const CompactPostHandoverCard = ({
           </span>
         </div>
         <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-400">
-          {postHandoverMonths}{t('monthsShort')} @ {endDateStr}
+          {actualDurationMonths}{t('monthsShort')} ({numberOfPayments} payments)
         </span>
       </div>
 
@@ -160,13 +161,20 @@ export const CompactPostHandoverCard = ({
           secondaryValue={getDualValue(postHandoverTotal).secondary}
         />
         
-        {/* Monthly Equivalent */}
+        {/* Per Installment Amount */}
         <DottedRow 
-          label={t('monthlyEquivalent')}
-          value={`${getDualValue(monthlyEquivalent).primary}/mo`}
-          secondaryValue={currency !== 'AED' ? `${getDualValue(monthlyEquivalent).secondary}/mo` : null}
+          label={`Per Installment (${numberOfPayments}x)`}
+          value={getDualValue(perInstallmentAmount).primary}
+          secondaryValue={getDualValue(perInstallmentAmount).secondary}
           bold
           valueClassName="text-purple-400"
+        />
+        
+        {/* Monthly Equivalent (spread rate) */}
+        <DottedRow 
+          label={`${t('monthlyEquivalent')} (${actualDurationMonths}mo)`}
+          value={`${getDualValue(monthlyEquivalent).primary}/mo`}
+          secondaryValue={currency !== 'AED' ? `${getDualValue(monthlyEquivalent).secondary}/mo` : null}
         />
         
         {/* Rental Income */}
@@ -203,7 +211,7 @@ export const CompactPostHandoverCard = ({
             ) : (
               <>
                 <TrendingDown className="w-2.5 h-2.5 text-red-400" />
-                {getDualValue(totalGap).primary} {t('totalGapOver')} {postHandoverMonths}{t('monthsShort')}
+                {getDualValue(totalGap).primary} {t('totalGapOver')} {actualDurationMonths}{t('monthsShort')}
               </>
             )}
           </span>
