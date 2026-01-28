@@ -43,6 +43,7 @@ const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: num
 export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const [numPayments, setNumPayments] = useState(4);
   const [paymentInterval, setPaymentInterval] = useState(6);
+  const [percentPerPayment, setPercentPerPayment] = useState(2.5);
   const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
   const [showCustomSplit, setShowCustomSplit] = useState(false);
   const [customPreHandover, setCustomPreHandover] = useState('');
@@ -81,7 +82,6 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   };
 
   const handleGeneratePayments = () => {
-    const percentPerPayment = calculateAutoPercentage();
     const newPayments: PaymentMilestone[] = [];
     
     for (let i = 0; i < numPayments; i++) {
@@ -89,12 +89,17 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         id: `auto-${Date.now()}-${i}`,
         type: 'time',
         triggerValue: paymentInterval * (i + 1),
-        paymentPercent: parseFloat(percentPerPayment.toFixed(2))
+        paymentPercent: percentPerPayment
       });
     }
     
     setInputs(prev => ({ ...prev, additionalPayments: newPayments }));
     setShowInstallments(true);
+  };
+
+  const handleResetPayments = () => {
+    setInputs(prev => ({ ...prev, additionalPayments: [] }));
+    setShowInstallments(false);
   };
 
   const addAdditionalPayment = () => {
@@ -179,6 +184,22 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       <div>
         <h3 className="text-lg font-semibold text-white mb-1">Payment Plan</h3>
         <p className="text-sm text-gray-500">Configure your payment schedule and milestones</p>
+      </div>
+
+      {/* Post-Handover Toggle - At the top for visibility */}
+      <div className="flex items-center justify-between p-3 bg-[#1a1f2e] rounded-xl border border-purple-500/30">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-purple-400" />
+          <span className="text-sm text-gray-300">Allow Payments Past Handover</span>
+          <InfoTooltip translationKey="tooltipAllowPastHandover" />
+        </div>
+        <Switch 
+          checked={inputs.hasPostHandoverPlan ?? false} 
+          onCheckedChange={(checked) => setInputs(prev => ({ 
+            ...prev, 
+            hasPostHandoverPlan: checked 
+          }))}
+        />
       </div>
 
       {/* Step 1: Preset Split Buttons */}
@@ -295,14 +316,14 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               <span className="text-sm font-medium text-[#CCFF00]">Generate Installments</span>
             </div>
             
-            <div className="flex items-center gap-2 ml-7">
+            <div className="flex items-center gap-2 ml-7 flex-wrap">
               <div className="flex items-center gap-1">
                 <Input
                   type="text"
                   inputMode="numeric"
                   value={numPayments || ''}
                   onChange={(e) => handleNumberInputChange(e.target.value, setNumPayments, 1, 60)}
-                  className="w-14 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
+                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
                 />
                 <span className="text-[10px] text-gray-500">payments</span>
               </div>
@@ -317,15 +338,48 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                 />
                 <span className="text-[10px] text-gray-500">mo</span>
               </div>
-              <Button
-                type="button"
-                onClick={handleGeneratePayments}
-                size="sm"
-                className="h-7 px-3 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs ml-auto"
-              >
-                <Zap className="w-3 h-3 mr-1" />
-                Generate
-              </Button>
+              <span className="text-gray-600">@</span>
+              <div className="flex items-center gap-1">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={percentPerPayment || ''}
+                  onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
+                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-center text-xs"
+                />
+                <span className="text-[10px] text-gray-500">%</span>
+              </div>
+              <div className="flex items-center gap-1 ml-auto">
+                <Button
+                  type="button"
+                  onClick={handleGeneratePayments}
+                  size="sm"
+                  className="h-7 px-3 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs"
+                >
+                  <Zap className="w-3 h-3 mr-1" />
+                  Generate
+                </Button>
+                {inputs.additionalPayments.length > 0 && (
+                  <Button
+                    type="button"
+                    onClick={handleResetPayments}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            {/* Projection summary */}
+            <div className="text-[10px] text-gray-500 ml-7 mt-1 font-mono">
+              {numPayments} × {percentPerPayment}% = {(numPayments * percentPerPayment).toFixed(1)}%
+              {Math.abs(numPayments * percentPerPayment - (inputs.preHandoverPercent - inputs.downpaymentPercent)) > 0.5 && (
+                <span className="text-amber-400 ml-1">
+                  (remaining: {(inputs.preHandoverPercent - inputs.downpaymentPercent).toFixed(1)}%)
+                </span>
+              )}
             </div>
           </div>
 
@@ -500,23 +554,6 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
-      {/* Allow Payments Past Handover Toggle */}
-      {hasSplitSelected && inputs.downpaymentPercent > 0 && (
-        <div className="flex items-center justify-between p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-gray-300">Allow Payments Past Handover</span>
-            <InfoTooltip translationKey="tooltipAllowPastHandover" />
-          </div>
-          <Switch 
-            checked={allowPastHandover} 
-            onCheckedChange={(checked) => setInputs(prev => ({ 
-              ...prev, 
-              hasPostHandoverPlan: checked 
-            }))}
-          />
-        </div>
-      )}
 
       {/* Fixed Footer - Total Summary */}
       <div className="sticky bottom-0 bg-[#0d1117] pt-3 -mx-4 px-4 pb-1 border-t border-[#2a3142]">
