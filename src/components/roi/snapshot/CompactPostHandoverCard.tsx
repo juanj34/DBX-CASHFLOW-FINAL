@@ -1,5 +1,5 @@
 import { RefreshCw, TrendingUp, TrendingDown, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
-import { OIInputs } from '../useOICalculations';
+import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -11,6 +11,26 @@ interface CompactPostHandoverCardProps {
   rate: number;
 }
 
+// Check if a payment is post-handover (at or after handover quarter start)
+const isPaymentPostHandover = (
+  monthsFromBooking: number,
+  bookingMonth: number,
+  bookingYear: number,
+  handoverQuarter: number,
+  handoverYear: number
+): boolean => {
+  const totalMonthsFromStart = bookingMonth + monthsFromBooking;
+  const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
+  const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
+  const paymentYear = bookingYear + paymentYearOffset;
+  
+  const handoverMonthStart = (handoverQuarter - 1) * 3 + 1;
+  const handoverDate = new Date(handoverYear, handoverMonthStart - 1);
+  const paymentDate = new Date(paymentYear, paymentMonth - 1);
+  
+  return paymentDate >= handoverDate;
+};
+
 export const CompactPostHandoverCard = ({
   inputs,
   monthlyRent,
@@ -19,14 +39,33 @@ export const CompactPostHandoverCard = ({
 }: CompactPostHandoverCardProps) => {
   const { t } = useLanguage();
   
-  // Only show if post-handover plan is enabled and has payments
+  // Only show if post-handover plan is enabled
   if (!inputs.hasPostHandoverPlan) return null;
-  if (!inputs.postHandoverPayments?.length) return null;
 
   const basePrice = inputs.basePrice;
   
+  // First try dedicated postHandoverPayments array
+  let postHandoverPaymentsToUse: PaymentMilestone[] = inputs.postHandoverPayments || [];
+  
+  // If empty, derive from additionalPayments (time-based payments at/after handover)
+  if (postHandoverPaymentsToUse.length === 0 && inputs.additionalPayments?.length > 0) {
+    postHandoverPaymentsToUse = inputs.additionalPayments.filter(p => {
+      if (p.type !== 'time') return false;
+      return isPaymentPostHandover(
+        p.triggerValue,
+        inputs.bookingMonth,
+        inputs.bookingYear,
+        inputs.handoverQuarter,
+        inputs.handoverYear
+      );
+    });
+  }
+  
+  // Return null only if no post-handover payments found
+  if (postHandoverPaymentsToUse.length === 0) return null;
+  
   // Calculate total post-handover payments
-  const postHandoverTotal = inputs.postHandoverPayments.reduce(
+  const postHandoverTotal = postHandoverPaymentsToUse.reduce(
     (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
   );
 

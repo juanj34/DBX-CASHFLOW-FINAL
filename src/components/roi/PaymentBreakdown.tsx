@@ -273,39 +273,55 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                         monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
                       );
                       
+                      // Check if this is the first payment in delivery quarter to show divider
+                      const isFirstInDeliveryQuarter = inHandoverQuarter && !sortedAdditionalPayments.slice(0, index).some(p => {
+                        const prevMonths = p.type === 'time' ? p.triggerValue : Math.round((p.triggerValue / 100) * totalMonths);
+                        return isPaymentInHandoverQuarter(prevMonths, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+                      });
+                      
                       return (
-                        <div 
-                          key={payment.id} 
-                          className={cn(
-                            "flex justify-between items-center gap-2",
-                            inHandoverQuarter && "bg-green-500/10 rounded px-2 py-1 -mx-2 border-l-2 border-green-400"
+                        <div key={payment.id}>
+                          {/* Delivery Quarter Divider */}
+                          {isFirstInDeliveryQuarter && (
+                            <div className="flex items-center gap-2 py-2 -mx-2 px-2 mb-2 border-t border-b border-green-500/30 bg-green-500/5">
+                              <Key className="w-3.5 h-3.5 text-green-400" />
+                              <span className="text-[10px] uppercase tracking-wide font-semibold text-green-400">
+                                {t('deliveryQuarter') || 'Delivery Quarter'} (Q{handoverQuarter} {handoverYear})
+                              </span>
+                            </div>
                           )}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {isTimeBased ? (
-                              <Clock className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
-                            ) : (
-                              <Building2 className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
+                          <div 
+                            className={cn(
+                              "flex justify-between items-center gap-2",
+                              inHandoverQuarter && "bg-green-500/15 rounded px-2 py-1.5 -mx-2 border-l-4 border-green-400 shadow-[0_0_8px_rgba(34,197,94,0.15)]"
                             )}
-                            <span className="text-sm text-theme-text-muted truncate">
-                              {payment.paymentPercent}% @ {triggerLabel}
-                            </span>
-                            {dateStr && (
-                              <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
-                            )}
-                            {inHandoverQuarter && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
-                                <Key className="w-2.5 h-2.5" />
-                                Handover
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {isTimeBased ? (
+                                <Clock className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
+                              ) : (
+                                <Building2 className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
+                              )}
+                              <span className="text-sm text-theme-text-muted truncate">
+                                {payment.paymentPercent}% @ {triggerLabel}
                               </span>
-                            )}
-                            {isPostHandover && !inHandoverQuarter && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30 whitespace-nowrap">
-                                Post-HO
-                              </span>
-                            )}
+                              {dateStr && (
+                                <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
+                              )}
+                              {inHandoverQuarter && (
+                                <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
+                                  <Key className="w-2.5 h-2.5" />
+                                  {t('handover') || 'Handover'}
+                                </span>
+                              )}
+                              {isPostHandover && !inHandoverQuarter && (
+                                <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30 whitespace-nowrap">
+                                  Post-HO
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(amount, currency, rate)}</span>
                           </div>
-                          <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(amount, currency, rate)}</span>
                         </div>
                       );
                     })}

@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { constructionToMonth } from "./constructionProgress";
-import { Check, Clock, ArrowRight } from "lucide-react";
+import { Check, Clock, ArrowRight, Key } from "lucide-react";
 
 interface PaymentHorizontalTimelineProps {
   inputs: OIInputs;
@@ -79,6 +79,40 @@ export const PaymentHorizontalTimeline = ({
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
 
+  // Helper to check if payment falls in handover quarter
+  const isInDeliveryQuarter = (monthsFromBooking: number): boolean => {
+    const totalMonthsFromStart = bookingMonth + monthsFromBooking;
+    const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
+    const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
+    const paymentYear = bookingYear + paymentYearOffset;
+    
+    const handoverQuarterStart = (handoverQuarter - 1) * 3 + 1;
+    const handoverQuarterEnd = handoverQuarter * 3;
+    
+    if (paymentYear === handoverYear) {
+      return paymentMonth >= handoverQuarterStart && paymentMonth <= handoverQuarterEnd;
+    }
+    return false;
+  };
+
+  // Calculate delivery quarter band position on timeline
+  const deliveryQuarterBand = useMemo(() => {
+    // Convert handover quarter to months from booking
+    const handoverQuarterStartMonth = (handoverQuarter - 1) * 3 + 1; // 1-indexed month in year
+    const handoverQuarterEndMonth = handoverQuarter * 3;
+    
+    // Calculate months from booking start to handover quarter start
+    const monthsToQuarterStart = 
+      (handoverYear - bookingYear) * 12 + (handoverQuarterStartMonth - bookingMonth);
+    const monthsToQuarterEnd = 
+      (handoverYear - bookingYear) * 12 + (handoverQuarterEndMonth - bookingMonth);
+    
+    const startPercent = Math.max(0, Math.min(100, (monthsToQuarterStart / totalMonths) * 100));
+    const endPercent = Math.max(0, Math.min(100, (monthsToQuarterEnd / totalMonths) * 100));
+    
+    return { startPercent, endPercent, width: endPercent - startPercent };
+  }, [bookingMonth, bookingYear, handoverQuarter, handoverYear, totalMonths]);
+
   // Build payments array with TRUE proportional positioning
   const payments: TimelinePayment[] = useMemo(() => {
     const result: TimelinePayment[] = [];
@@ -117,8 +151,8 @@ export const PaymentHorizontalTimeline = ({
       
       const positionPercent = (monthsFromBooking / totalMonths) * 100;
       
-      // Check if this payment is post-handover
-      const isPostHandover = positionPercent > 100;
+      // Check if this payment is post-handover (after totalMonths, not based on positionPercent)
+      const isPostHandover = monthsFromBooking > totalMonths;
       
       result.push({
         id: payment.id,
@@ -236,6 +270,24 @@ export const PaymentHorizontalTimeline = ({
         {/* Track Background */}
         <div className="absolute top-1/2 left-4 right-4 h-2 bg-slate-700/80 rounded-full transform -translate-y-1/2" />
         
+        {/* Delivery Quarter Band - Highlighted Zone */}
+        {deliveryQuarterBand.width > 0 && (
+          <div 
+            className="absolute top-1/2 h-4 bg-gradient-to-r from-green-500/30 via-green-400/40 to-green-500/30 rounded-full transform -translate-y-1/2 border border-green-400/50"
+            style={{ 
+              left: `calc(${deliveryQuarterBand.startPercent}% + 16px - ${deliveryQuarterBand.startPercent * 0.32}px)`,
+              width: `calc(${deliveryQuarterBand.width}% - ${deliveryQuarterBand.width * 0.32}px)`,
+            }}
+          >
+            <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 flex items-center gap-0.5">
+                <Key className="w-2 h-2" />
+                Q{handoverQuarter} {handoverYear}
+              </span>
+            </div>
+          </div>
+        )}
+        
         {/* Progress Fill - only shows if payments have been made */}
         {paidProgress > 0 && (
           <div 
@@ -251,10 +303,26 @@ export const PaymentHorizontalTimeline = ({
             const leftPercent = payment.positionPercent;
             const leftCalc = `calc(${leftPercent}% + 16px - ${leftPercent * 0.32}px)`;
             
+            // Check if this marker falls in the delivery quarter
+            const isDeliveryQuarter = payment.type === 'milestone' && isInDeliveryQuarter(payment.monthsFromBooking);
+            
             const markerSize = payment.type === 'handover' ? 'w-8 h-8' : payment.type === 'entry' ? 'w-7 h-7' : 'w-6 h-6';
-            const markerColor = payment.type === 'handover' ? 'bg-cyan-500' : payment.type === 'entry' ? 'bg-emerald-500' : payment.isPostHandover ? 'bg-purple-500' : 'bg-slate-500';
-            const borderColor = payment.type === 'handover' ? 'border-cyan-300' : payment.type === 'entry' ? 'border-emerald-300' : payment.isPostHandover ? 'border-purple-400' : 'border-slate-400';
-            const textColor = payment.type === 'handover' ? 'text-cyan-400' : payment.type === 'entry' ? 'text-emerald-400' : payment.isPostHandover ? 'text-purple-400' : 'text-slate-300';
+            // Delivery quarter milestones get green styling
+            const markerColor = payment.type === 'handover' ? 'bg-cyan-500' 
+              : payment.type === 'entry' ? 'bg-emerald-500' 
+              : payment.isPostHandover ? 'bg-purple-500' 
+              : isDeliveryQuarter ? 'bg-green-500'
+              : 'bg-slate-500';
+            const borderColor = payment.type === 'handover' ? 'border-cyan-300' 
+              : payment.type === 'entry' ? 'border-emerald-300' 
+              : payment.isPostHandover ? 'border-purple-400' 
+              : isDeliveryQuarter ? 'border-green-300'
+              : 'border-slate-400';
+            const textColor = payment.type === 'handover' ? 'text-cyan-400' 
+              : payment.type === 'entry' ? 'text-emerald-400' 
+              : payment.isPostHandover ? 'text-purple-400' 
+              : isDeliveryQuarter ? 'text-green-400'
+              : 'text-slate-300';
             
             const isLabelOnTop = payment.labelOffset === 'top';
             
