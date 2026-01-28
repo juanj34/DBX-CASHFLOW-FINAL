@@ -1,13 +1,12 @@
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency } from '@/components/roi/currencyUtils';
-import { Trophy } from 'lucide-react';
 
 interface ExitComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
 }
 
 export const ExitComparison = ({ quotesWithCalcs }: ExitComparisonProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
   
   // Common exit points
   const exitPoints = [24, 36, 48, 60];
@@ -24,16 +23,9 @@ export const ExitComparison = ({ quotesWithCalcs }: ExitComparisonProps) => {
       };
     });
 
-    // Find best ROE
-    const validRoes = scenarios.filter(s => s.roe !== null).map(s => s.roe as number);
-    const maxRoe = validRoes.length > 0 ? Math.max(...validRoes) : null;
-
     return {
       months,
-      scenarios: scenarios.map(s => ({
-        ...s,
-        isBest: s.roe !== null && maxRoe !== null && s.roe === maxRoe,
-      })),
+      scenarios,
     };
   });
 
@@ -73,12 +65,9 @@ export const ExitComparison = ({ quotesWithCalcs }: ExitComparisonProps) => {
                   <td key={idx} className="py-4 px-2">
                     {scenario.available ? (
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-medium ${scenario.isBest ? 'text-emerald-400' : 'text-white'}`}>
-                            {formatCurrency(scenario.profit || 0, 'AED', 1)}
-                          </span>
-                          {scenario.isBest && <Trophy className="w-3.5 h-3.5 text-emerald-400" />}
-                        </div>
+                        <span className="text-sm font-medium text-white">
+                          {formatCurrency(scenario.profit || 0, 'AED', 1)}
+                        </span>
                         <div className="text-xs text-gray-400">
                           {scenario.roe !== null ? `${scenario.roe.toFixed(1)}% ROE/yr` : 'N/A'}
                         </div>

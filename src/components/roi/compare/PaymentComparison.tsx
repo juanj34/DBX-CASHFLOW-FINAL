@@ -12,7 +12,7 @@ export const PaymentComparison = ({
   currency = 'AED',
   exchangeRate = 1,
 }: PaymentComparisonProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
 
   return (
     <div className="space-y-4">
@@ -21,21 +21,35 @@ export const PaymentComparison = ({
           const { quote, calculations } = item;
           const color = colors[idx % colors.length];
           
-          // CORRECT CALCULATION:
-          // preHandoverPercent = TOTAL paid before handover (includes downpayment)
-          // So installments = preHandoverPercent - downpayment
+          // Check if post-handover plan
+          const hasPostHandover = quote.inputs.hasPostHandoverPlan;
+          
+          // Calculate segments based on payment plan type
           const downpayment = quote.inputs.downpaymentPercent;
           const preHandoverTotal = quote.inputs.preHandoverPercent;
-          const installments = preHandoverTotal - downpayment;
-          const postHandover = 100 - preHandoverTotal;
+          const preHandoverInstallments = preHandoverTotal - downpayment;
+          
+          let onHandover: number;
+          let postHandoverPercent: number;
+          
+          if (hasPostHandover) {
+            onHandover = quote.inputs.onHandoverPercent || 0;
+            postHandoverPercent = 100 - preHandoverTotal - onHandover;
+          } else {
+            onHandover = 100 - preHandoverTotal;
+            postHandoverPercent = 0;
+          }
 
           const basePrice = quote.inputs.basePrice;
           const downpaymentAmount = basePrice * (downpayment / 100);
-          const installmentsAmount = basePrice * (installments / 100);
-          const postHandoverAmount = basePrice * (postHandover / 100);
+          const preHandoverInstallmentsAmount = basePrice * (preHandoverInstallments / 100);
+          const onHandoverAmount = basePrice * (onHandover / 100);
+          const postHandoverAmount = basePrice * (postHandoverPercent / 100);
 
-          // Payment plan label (e.g., "30/70", "50/50")
-          const paymentPlanLabel = `${Math.round(preHandoverTotal)}/${Math.round(postHandover)}`;
+          // Payment plan label
+          const paymentPlanLabel = hasPostHandover 
+            ? `${Math.round(preHandoverTotal)}/${Math.round(onHandover)}/${Math.round(postHandoverPercent)}`
+            : `${Math.round(preHandoverTotal)}/${Math.round(onHandover)}`;
 
           // Calculate monthly payment during construction
           const additionalPayments = quote.inputs.additionalPayments || [];
@@ -52,7 +66,7 @@ export const PaymentComparison = ({
           }, 0);
           
           // Calculate average monthly payment (if there are installments)
-          const avgMonthlyPayment = installments > 0 && constructionMonths > 0 
+          const avgMonthlyPayment = preHandoverInstallments > 0 && constructionMonths > 0 
             ? totalInstallments / constructionMonths 
             : 0;
 
@@ -76,6 +90,7 @@ export const PaymentComparison = ({
 
               {/* Visual bar */}
               <div className="h-8 rounded-lg overflow-hidden flex">
+                {/* Downpayment */}
                 <div 
                   className="flex items-center justify-center text-xs font-medium text-black"
                   style={{ 
@@ -83,26 +98,41 @@ export const PaymentComparison = ({
                     backgroundColor: color,
                   }}
                 >
-                  {downpayment > 10 ? `${downpayment}%` : ''}
+                  {downpayment > 8 ? `${Math.round(downpayment)}%` : ''}
                 </div>
-                {installments > 0 && (
+                {/* Pre-handover installments */}
+                {preHandoverInstallments > 0 && (
                   <div 
                     className="flex items-center justify-center text-xs font-medium"
                     style={{ 
-                      width: `${installments}%`,
+                      width: `${preHandoverInstallments}%`,
                       backgroundColor: `${color}80`,
                       color: '#fff',
                     }}
                   >
-                    {installments > 10 ? `${installments}%` : ''}
+                    {preHandoverInstallments > 8 ? `${Math.round(preHandoverInstallments)}%` : ''}
                   </div>
                 )}
+                {/* On Handover */}
                 <div 
                   className="flex items-center justify-center text-xs font-medium bg-[#0f172a] text-theme-text-muted"
-                  style={{ width: `${postHandover}%` }}
+                  style={{ width: `${onHandover}%` }}
                 >
-                  {postHandover > 10 ? `${postHandover}%` : ''}
+                  {onHandover > 8 ? `${Math.round(onHandover)}%` : ''}
                 </div>
+                {/* Post-handover (if applicable) */}
+                {hasPostHandover && postHandoverPercent > 0 && (
+                  <div 
+                    className="flex items-center justify-center text-xs font-medium"
+                    style={{ 
+                      width: `${postHandoverPercent}%`,
+                      background: `repeating-linear-gradient(45deg, ${color}40, ${color}40 2px, ${color}20 2px, ${color}20 4px)`,
+                      color: '#fff',
+                    }}
+                  >
+                    {postHandoverPercent > 8 ? `${Math.round(postHandoverPercent)}%` : ''}
+                  </div>
+                )}
               </div>
 
               {/* Legend */}
@@ -116,14 +146,14 @@ export const PaymentComparison = ({
                     {formatCurrency(downpaymentAmount, currency, exchangeRate)}
                   </span>
                 </div>
-                {installments > 0 && (
+                {preHandoverInstallments > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded" style={{ backgroundColor: `${color}80` }} />
-                      <span className="text-theme-text-muted">Installments</span>
+                      <span className="text-theme-text-muted">Pre-Handover</span>
                     </span>
                     <span className="text-white font-medium">
-                      {formatCurrency(installmentsAmount, currency, exchangeRate)}
+                      {formatCurrency(preHandoverInstallmentsAmount, currency, exchangeRate)}
                     </span>
                   </div>
                 )}
@@ -133,9 +163,23 @@ export const PaymentComparison = ({
                     <span className="text-theme-text-muted">On Handover</span>
                   </span>
                   <span className="text-white font-medium">
-                    {formatCurrency(postHandoverAmount, currency, exchangeRate)}
+                    {formatCurrency(onHandoverAmount, currency, exchangeRate)}
                   </span>
                 </div>
+                {hasPostHandover && postHandoverPercent > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center gap-2">
+                      <span 
+                        className="w-3 h-3 rounded" 
+                        style={{ background: `repeating-linear-gradient(45deg, ${color}40, ${color}40 2px, ${color}20 2px, ${color}20 4px)` }} 
+                      />
+                      <span className="text-theme-text-muted">Post-Handover</span>
+                    </span>
+                    <span className="text-white font-medium">
+                      {formatCurrency(postHandoverAmount, currency, exchangeRate)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Monthly payment during construction */}

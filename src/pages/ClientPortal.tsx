@@ -269,25 +269,14 @@ const ClientPortal = () => {
                     </div>
 
                     {quote.share_token && (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(`/snapshot/${quote.share_token}`, '_blank')}
-                          className="flex-1 border-theme-border text-theme-text hover:bg-theme-bg"
-                        >
-                          <Eye className="w-3.5 h-3.5 mr-1.5" />
-                          Snapshot
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => window.open(`/view/${quote.share_token}`, '_blank')}
-                          className="flex-1 bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                          Cashflow
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(`/snapshot/${quote.share_token}`, '_blank')}
+                        className="w-full bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1.5" />
+                        View Snapshot
+                      </Button>
                     )}
                   </CardContent>
                 </Card>

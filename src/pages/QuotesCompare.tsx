@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, Save, FolderOpen, X, Home, Percent, Pencil, GripVertical, ChevronDown, ChevronUp, Coins, Wallet, Banknote, MoreHorizontal, FileDown, Share2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, LayoutGrid, Sparkles, BarChart3, Gem, DoorOpen, Save, FolderOpen, X, Home, Pencil, GripVertical, ChevronDown, ChevronUp, Coins, Wallet, Banknote, MoreHorizontal, FileDown, Share2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +20,7 @@ import { PaymentComparison } from '@/components/roi/compare/PaymentComparison';
 import { GrowthComparisonChart } from '@/components/roi/compare/GrowthComparisonChart';
 import { ExitComparison } from '@/components/roi/compare/ExitComparison';
 import { MortgageComparison } from '@/components/roi/compare/MortgageComparison';
-import { RentalYieldComparison } from '@/components/roi/compare/RentalYieldComparison';
+
 import { CashflowKPIComparison } from '@/components/roi/compare/CashflowKPIComparison';
 import { DifferentiatorsComparison } from '@/components/roi/compare/DifferentiatorsComparison';
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
@@ -337,7 +337,7 @@ const QuotesCompare = () => {
               <LayoutGrid className="w-8 h-8 text-theme-text-muted" />
             </div>
             <h2 className="text-xl text-theme-text mb-2">Select quotes to compare</h2>
-            <p className="text-theme-text-muted mb-6">Choose 2-4 quotes to see them side by side</p>
+            <p className="text-theme-text-muted mb-6">Choose 2-6 quotes to see them side by side</p>
             <div className="flex items-center justify-center gap-3">
               <Button 
                 onClick={() => setShowSelector(true)}
@@ -388,7 +388,7 @@ const QuotesCompare = () => {
             {/* Property Cards with Recommendation Badges */}
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${quotes.length}, minmax(200px, 1fr))` }}>
               {quotes.map((quote, index) => {
-                const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+                const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
                 const color = colors[index % colors.length];
                 const recommendation = recommendations?.recommendations.find(r => r.quoteId === quote.id);
 
@@ -484,22 +484,16 @@ const QuotesCompare = () => {
               </CollapsibleSection>
             )}
 
-            {/* Payment Plans Section */}
+            {/* Payment & Growth Section - Combined */}
             <CollapsibleSection
-              title="Payment Plans"
+              title="Payment & Growth"
               icon={<Wallet className="w-4 h-4 text-theme-accent" />}
               defaultOpen={allExpanded}
             >
-              <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
-            </CollapsibleSection>
-
-            {/* Growth Chart Section */}
-            <CollapsibleSection
-              title="Value Growth"
-              icon={<TrendingUp className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={allExpanded}
-            >
-              <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
+              <div className="grid lg:grid-cols-2 gap-6">
+                <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
+                <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
+              </div>
             </CollapsibleSection>
 
             {/* Cashflow KPI - Rent vs Mortgage */}
@@ -516,21 +510,7 @@ const QuotesCompare = () => {
               </CollapsibleSection>
             )}
 
-            {/* Rental Yield Comparison - BEFORE Mortgage */}
-            {quotesWithCalcs.some(q => 
-              (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
-              (q.calculations.holdAnalysis?.netAnnualRent || 0) > 0
-            ) && (
-              <CollapsibleSection
-                title="Rental Yield"
-                icon={<Percent className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={allExpanded}
-              >
-                <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
-              </CollapsibleSection>
-            )}
-
-            {/* Mortgage Comparison - AFTER Rental Yield */}
+            {/* Mortgage Comparison */}
             {quotesWithCalcs.some(q => (q.quote.inputs as any)?._mortgageInputs?.enabled) && (
               <CollapsibleSection
                 title="Mortgage Comparison"
@@ -570,7 +550,7 @@ const QuotesCompare = () => {
         onClose={() => setShowSelector(false)}
         selectedIds={selectedIds}
         onSelect={setSelectedIds}
-        maxQuotes={4}
+        maxQuotes={6}
         onLoadComparison={handleLoadComparison}
       />
 

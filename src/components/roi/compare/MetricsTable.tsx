@@ -1,6 +1,5 @@
 import { QuoteWithCalculations, ComparisonMetrics } from '@/hooks/useQuotesComparison';
 import { formatCurrency } from '@/components/roi/currencyUtils';
-import { Trophy } from 'lucide-react';
 
 interface MetricsTableProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -11,27 +10,20 @@ const MetricRow = ({
   label, 
   values, 
   formatter = (v: any) => v?.toString() ?? 'N/A',
-  higherIsBetter = false,
 }: { 
   label: string; 
-  values: { value: any; best: boolean }[];
+  values: { value: any }[];
   formatter?: (value: any) => string;
-  higherIsBetter?: boolean;
 }) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
-  
   return (
     <div className="grid items-center border-b border-[#2a3142] py-3" 
       style={{ gridTemplateColumns: `180px repeat(${values.length}, minmax(120px, 1fr))` }}>
       <span className="text-gray-400 text-sm">{label}</span>
       {values.map((item, idx) => (
         <div key={idx} className="flex items-center gap-2">
-          <span className={`font-medium ${item.best ? 'text-emerald-400' : 'text-white'}`}>
+          <span className="font-medium text-white">
             {formatter(item.value)}
           </span>
-          {item.best && (
-            <Trophy className="w-3.5 h-3.5 text-emerald-400" />
-          )}
         </div>
       ))}
     </div>
@@ -39,14 +31,26 @@ const MetricRow = ({
 };
 
 export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
 
-  const formatMonths = (months: number) => {
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-    if (years === 0) return `${months} mo`;
-    if (remainingMonths === 0) return `${years}y`;
-    return `${years}y ${remainingMonths}mo`;
+  // Format handover date as "Q# YYYY"
+  const formatHandoverDate = (quote: QuoteWithCalculations['quote']) => {
+    const q = quote.inputs.handoverQuarter;
+    const y = quote.inputs.handoverYear;
+    return `Q${q} ${y}`;
+  };
+
+  // Calculate monthly burn rate
+  const getMonthlyBurn = (item: QuoteWithCalculations) => {
+    const totalPreHandover = item.calculations.totalEntryCosts + 
+      (item.quote.inputs.basePrice * item.quote.inputs.preHandoverPercent / 100);
+    return totalPreHandover / item.calculations.totalMonths;
+  };
+
+  // Get Y1 rent income in AED
+  const getY1RentIncome = (item: QuoteWithCalculations) => {
+    const grossAnnualRent = item.quote.inputs.basePrice * (item.quote.inputs.rentalYieldPercent / 100);
+    return grossAnnualRent;
   };
 
   return (
@@ -67,6 +71,12 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
       </div>
 
       <div className="space-y-0">
+        {/* Developer */}
+        <MetricRow
+          label="Developer"
+          values={quotesWithCalcs.map(q => ({ value: q.quote.developer || 'N/A' }))}
+          formatter={(v) => v}
+        />
         <MetricRow
           label="Base Price"
           values={metrics.basePrice}
@@ -77,33 +87,65 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           values={metrics.pricePerSqft}
           formatter={(v) => v !== null ? `AED ${Math.round(v).toLocaleString()}` : 'N/A'}
         />
+        {/* Handover Date */}
+        <MetricRow
+          label="Handover"
+          values={quotesWithCalcs.map(q => ({ value: formatHandoverDate(q.quote) }))}
+          formatter={(v) => v}
+        />
+        {/* Monthly Burn Rate */}
+        <MetricRow
+          label="Monthly Burn"
+          values={quotesWithCalcs.map(q => ({ value: getMonthlyBurn(q) }))}
+          formatter={(v) => formatCurrency(v, 'AED', 1)}
+        />
         <MetricRow
           label="Total Investment"
           values={metrics.totalInvestment}
           formatter={(v) => formatCurrency(v, 'AED', 1)}
         />
+        {/* Pre-Handover Amount */}
         <MetricRow
-          label="Handover"
-          values={metrics.handoverMonths}
-          formatter={formatMonths}
+          label="Pre-Handover"
+          values={quotesWithCalcs.map(q => ({ 
+            value: q.quote.inputs.basePrice * q.quote.inputs.preHandoverPercent / 100 
+          }))}
+          formatter={(v) => formatCurrency(v, 'AED', 1)}
+        />
+        {/* On Handover Amount */}
+        <MetricRow
+          label="On Handover"
+          values={quotesWithCalcs.map(q => {
+            const hasPostHandover = q.quote.inputs.hasPostHandoverPlan;
+            const onHandoverPercent = hasPostHandover 
+              ? (q.quote.inputs.onHandoverPercent || 0)
+              : (100 - q.quote.inputs.preHandoverPercent);
+            return { value: q.quote.inputs.basePrice * onHandoverPercent / 100 };
+          })}
+          formatter={(v) => formatCurrency(v, 'AED', 1)}
+        />
+        {/* Post-Handover Amount (if any) */}
+        {quotesWithCalcs.some(q => q.quote.inputs.hasPostHandoverPlan) && (
+          <MetricRow
+            label="Post-Handover"
+            values={quotesWithCalcs.map(q => {
+              if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
+              const postPercent = 100 - q.quote.inputs.preHandoverPercent - (q.quote.inputs.onHandoverPercent || 0);
+              return { value: q.quote.inputs.basePrice * postPercent / 100 };
+            })}
+            formatter={(v) => v > 0 ? formatCurrency(v, 'AED', 1) : '-'}
+          />
+        )}
+        {/* Y1 Rent Income */}
+        <MetricRow
+          label="Y1 Rent Income"
+          values={quotesWithCalcs.map(q => ({ value: getY1RentIncome(q) }))}
+          formatter={(v) => v > 0 ? formatCurrency(v, 'AED', 1) : 'N/A'}
         />
         <MetricRow
-          label="Rental Yield (Y1)"
+          label="Rental Yield"
           values={metrics.rentalYieldY1}
           formatter={(v) => v !== null ? `${v.toFixed(1)}%` : 'N/A'}
-          higherIsBetter
-        />
-        <MetricRow
-          label="Construction Appr."
-          values={metrics.constructionAppreciation}
-          formatter={(v) => `${v}%`}
-          higherIsBetter
-        />
-        <MetricRow
-          label="Growth Appr."
-          values={metrics.growthAppreciation}
-          formatter={(v) => `${v}%`}
-          higherIsBetter
         />
       </div>
     </div>

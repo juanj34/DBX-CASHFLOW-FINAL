@@ -23,15 +23,15 @@ export interface QuoteWithCalculations {
 }
 
 export interface ComparisonMetrics {
-  basePrice: { value: number; best: boolean }[];
-  pricePerSqft: { value: number | null; best: boolean }[];
-  totalInvestment: { value: number; best: boolean }[];
-  handoverMonths: { value: number; best: boolean }[];
-  preHandoverPercent: { value: number; best: boolean }[];
-  rentalYieldY1: { value: number | null; best: boolean }[];
-  constructionAppreciation: { value: number; best: boolean }[];
-  growthAppreciation: { value: number; best: boolean }[];
-  roiAt36Months: { value: number | null; best: boolean }[];
+  basePrice: { value: number }[];
+  pricePerSqft: { value: number | null }[];
+  totalInvestment: { value: number }[];
+  handoverMonths: { value: number }[];
+  preHandoverPercent: { value: number }[];
+  rentalYieldY1: { value: number | null }[];
+  constructionAppreciation: { value: number }[];
+  growthAppreciation: { value: number }[];
+  roiAt36Months: { value: number | null }[];
 }
 
 export const useQuotesComparison = (quoteIds: string[]) => {
@@ -164,65 +164,44 @@ export const computeComparisonMetrics = (
   if (quotesWithCalcs.length === 0) return null;
 
   const basePrices = quotesWithCalcs.map(q => q.quote.inputs.basePrice);
-  const minBasePrice = Math.min(...basePrices);
 
   const pricePerSqfts = quotesWithCalcs.map(q => 
     q.quote.unitSizeSqf ? q.quote.inputs.basePrice / q.quote.unitSizeSqf : null
   );
-  const validPrices = pricePerSqfts.filter((p): p is number => p !== null);
-  const minPricePerSqft = validPrices.length > 0 ? Math.min(...validPrices) : null;
 
   const totalInvestments = quotesWithCalcs.map(q => 
     q.calculations.holdAnalysis.totalCapitalInvested
   );
-  const minTotalInvestment = Math.min(...totalInvestments);
 
   const handoverMonthsList = quotesWithCalcs.map(q => q.calculations.totalMonths);
-  const minHandover = Math.min(...handoverMonthsList);
 
   const preHandoverPercents = quotesWithCalcs.map(q => 
     q.quote.inputs.downpaymentPercent + q.quote.inputs.preHandoverPercent
   );
-  const minPreHandover = Math.min(...preHandoverPercents);
 
   const rentalYields = quotesWithCalcs.map(q => {
     const y1 = q.calculations.yearlyProjections.find(p => !p.isConstruction && p.netIncome !== null);
     return y1 ? q.calculations.holdAnalysis.rentalYieldOnInvestment : null;
   });
-  const validYields = rentalYields.filter((y): y is number => y !== null);
-  const maxYield = validYields.length > 0 ? Math.max(...validYields) : null;
 
   const constructionApps = quotesWithCalcs.map(q => q.quote.inputs.constructionAppreciation);
-  const maxConstruction = Math.max(...constructionApps);
 
   const growthApps = quotesWithCalcs.map(q => q.quote.inputs.growthAppreciation);
-  const maxGrowth = Math.max(...growthApps);
 
   const rois36 = quotesWithCalcs.map(q => {
     const scenario = q.calculations.scenarios.find(s => s.exitMonths === 36);
     return scenario?.annualizedROE ?? null;
   });
-  const validRois = rois36.filter((r): r is number => r !== null);
-  const maxRoi = validRois.length > 0 ? Math.max(...validRois) : null;
 
   return {
-    basePrice: basePrices.map(v => ({ value: v, best: v === minBasePrice })),
-    pricePerSqft: pricePerSqfts.map(v => ({ 
-      value: v, 
-      best: v !== null && minPricePerSqft !== null && v === minPricePerSqft 
-    })),
-    totalInvestment: totalInvestments.map(v => ({ value: v, best: v === minTotalInvestment })),
-    handoverMonths: handoverMonthsList.map(v => ({ value: v, best: v === minHandover })),
-    preHandoverPercent: preHandoverPercents.map(v => ({ value: v, best: v === minPreHandover })),
-    rentalYieldY1: rentalYields.map(v => ({ 
-      value: v, 
-      best: v !== null && maxYield !== null && v === maxYield 
-    })),
-    constructionAppreciation: constructionApps.map(v => ({ value: v, best: v === maxConstruction })),
-    growthAppreciation: growthApps.map(v => ({ value: v, best: v === maxGrowth })),
-    roiAt36Months: rois36.map(v => ({ 
-      value: v, 
-      best: v !== null && maxRoi !== null && v === maxRoi 
-    })),
+    basePrice: basePrices.map(v => ({ value: v })),
+    pricePerSqft: pricePerSqfts.map(v => ({ value: v })),
+    totalInvestment: totalInvestments.map(v => ({ value: v })),
+    handoverMonths: handoverMonthsList.map(v => ({ value: v })),
+    preHandoverPercent: preHandoverPercents.map(v => ({ value: v })),
+    rentalYieldY1: rentalYields.map(v => ({ value: v })),
+    constructionAppreciation: constructionApps.map(v => ({ value: v })),
+    growthAppreciation: growthApps.map(v => ({ value: v })),
+    roiAt36Months: rois36.map(v => ({ value: v })),
   };
 };
