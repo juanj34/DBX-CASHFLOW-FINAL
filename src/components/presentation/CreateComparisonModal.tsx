@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, GitCompare, Check, Building2, User, MapPin, Star } from "lucide-react";
 import {
   Dialog,
@@ -42,16 +42,20 @@ export const CreateComparisonModal = ({
   const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>(initialQuoteIds);
   const [title, setTitle] = useState(initialTitle);
 
-  // Reset state when modal opens with initial values (for edit mode)
+  // Track previous open state to only reset on modal open transition
+  const prevOpenRef = useRef(false);
+
+  // Reset state when modal opens (transitions from closed to open)
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setSelectedQuoteIds(initialQuoteIds);
       setTitle(initialTitle);
       setSearch("");
     }
+    prevOpenRef.current = open;
   }, [open, initialQuoteIds, initialTitle]);
 
-  const maxQuotes = 4;
+  const maxQuotes = 6;
   const minQuotes = 2;
 
   // Separate presentation quotes and other quotes, apply search filter
