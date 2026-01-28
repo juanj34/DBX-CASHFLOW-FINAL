@@ -1,17 +1,18 @@
 
-# Plan: Show ALL Payments Including During Handover
+# Plan: Fix Handover Quarter Highlighting for Payments
 
-## Root Cause Identified
+## Current State
 
-Looking at the screenshot, payments jump from Month 9 (Oct 2026) to Month 18 (Jul 2027) - **Months 10-17 are missing!**
+The code already has logic to highlight payments in the handover quarter (lines 283-307 in `CompactPaymentTable.tsx`), but it may not be working correctly because:
 
-The problem is twofold:
-1. **ScrollArea limiting visibility** - The `max-h-[180px]` constraint is cutting off payments
-2. **Filtering logic** - For post-handover plans, the code splits payments into "pre-handover" and "post-handover" but payments that fall DURING the handover quarter might be in limbo
+1. **The `isPaymentInHandoverQuarter` function** checks if a payment's calendar month falls within the handover quarter (e.g., Q4 2027 = Oct-Dec 2027)
+2. **The highlighting** applies a green background (`bg-green-500/10`) and shows a "🔑 Handover" badge
+
+The issue is that the current logic only highlights payments that fall **exactly within** the 3 months of the handover quarter. If handover is Q4 2027, it highlights payments in Oct, Nov, Dec 2027.
 
 ## Solution
 
-Remove ALL scroll limits and show every single payment in a continuous list. The page will be long but complete.
+The existing highlighting logic is correct, but we should verify it's working and make the visual indicator more prominent so users can clearly see which payments coincide with the handover period.
 
 ---
 
@@ -19,133 +20,71 @@ Remove ALL scroll limits and show every single payment in a continuous list. The
 
 ### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-### Change 1: Remove ScrollArea from The Journey Section (Lines 277-320)
+#### 1. Enhance Visual Highlighting (Lines 292-315)
+
+Make the handover quarter highlighting more visible:
+
+**Current styling:**
+```tsx
+className={cn(
+  "flex items-center justify-between gap-2",
+  isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1"
+)}
+```
+
+**Enhanced styling with left border indicator:**
+```tsx
+className={cn(
+  "flex items-center justify-between gap-2",
+  isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1 border-l-2 border-green-400"
+)}
+```
+
+#### 2. Show Handover Quarter Range in Header (Lines 208-213)
+
+Add a clearer indicator of which quarter is the handover period:
 
 **Current:**
 ```tsx
-<ScrollArea className="max-h-[180px]">
-  <div className="space-y-1 pr-2">
-    {preHandoverPayments.map((payment, index) => {
-      // ...
-    })}
-  </div>
-</ScrollArea>
+<span>Q{handoverQuarter} {handoverYear}</span>
 ```
 
-**New:**
+**Enhanced with month range:**
 ```tsx
-<div className="space-y-1">
-  {preHandoverPayments.map((payment, index) => {
-    // ...
-  })}
-</div>
+// Calculate quarter month names (e.g., Q4 = "Oct-Dec")
+const getQuarterMonths = (quarter: number): string => {
+  const quarterMonths = ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
+  return quarterMonths[quarter - 1];
+};
+
+<span>Q{handoverQuarter} ({getQuarterMonths(handoverQuarter)}) {handoverYear}</span>
 ```
 
-### Change 2: Remove ScrollArea from Post-Handover Section (Lines 349-369)
-
-**Current:**
-```tsx
-<ScrollArea className="max-h-[150px]">
-  <div className="space-y-1 pr-2">
-    {derivedPostHandoverPayments.map((payment, index) => {
-      // ...
-    })}
-  </div>
-</ScrollArea>
-```
-
-**New:**
-```tsx
-<div className="space-y-1">
-  {derivedPostHandoverPayments.map((payment, index) => {
-    // ...
-  })}
-</div>
-```
-
-### Change 3: Remove unused ScrollArea import (Line 10)
-
-Remove the import since we're no longer using it.
-
-### Change 4: Restore descriptive summary label (Lines 402-414)
-
-**Current:**
-```tsx
-<div className="flex items-center justify-between bg-theme-accent/5 border border-theme-accent/20 rounded-md px-2 py-1.5">
-  <span className="text-[10px] text-theme-accent font-medium flex items-center gap-1">
-    <Wallet className="w-3 h-3" />
-    Cash Until Handover
-  </span>
-  ...
-</div>
-```
-
-**New:**
-```tsx
-<div className="bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-2">
-  <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-1 flex items-center gap-1">
-    <Wallet className="w-3 h-3" />
-    Total Cash Until Handover
-  </div>
-  <DottedRow 
-    label="Entry + Journey + Handover"
-    value={getDualValue(totalUntilHandover).primary}
-    secondaryValue={getDualValue(totalUntilHandover).secondary}
-    bold
-    valueClassName="text-theme-accent"
-  />
-  <p className="text-[10px] text-theme-text-muted mt-1">
-    Cash required before rental income starts
-  </p>
-</div>
-```
+This shows: `Q4 (Oct-Dec) 2027` instead of just `Q4 2027`
 
 ---
 
 ## Visual Result
 
-### Before (broken - missing payments):
+### Before:
 ```
-THE JOURNEY (19MO)
-Month 1 (Feb 2026)         AED 12,284 (2,886 €)
-...
-Month 9 (Oct 2026)         AED 12,284 (2,886 €)
-                           ← Cut off! Months 10-17 MISSING!
-
-POST-HANDOVER (34%)
-Month 18 (Jul 2027)        AED 12,284 (2,886 €)
-...
-Month 25 (Feb 2028)        AED 12,284 (2,886 €)
-                           ← Also cut off!
-```
-
-### After (fixed - ALL payments visible):
-```
-THE JOURNEY (19MO)
+THE JOURNEY (51mo)
 Month 1 (Feb 2026)         AED 12,284 (2,886 €)
 Month 2 (Mar 2026)         AED 12,284 (2,886 €)
 ...
-Month 10 (Nov 2026)        AED 12,284 (2,886 €)
-Month 11 (Dec 2026)        AED 12,284 (2,886 €)  🔑 Handover
-Month 12 (Jan 2027)        AED 12,284 (2,886 €)  🔑 Handover
+Month 17 (Jun 2027)        AED 12,284 (2,886 €)   ← No indication this is handover quarter
+```
+
+### After:
+```
+PAYMENT BREAKDOWN                    Feb 2025 → Q4 (Oct-Dec) 2027
+
+THE JOURNEY (51mo)
+Month 1 (Feb 2026)         AED 12,284 (2,886 €)
+Month 2 (Mar 2026)         AED 12,284 (2,886 €)
 ...
-Month 17 (Jun 2027)        AED 12,284 (2,886 €)
-                           ← ALL pre-handover payments shown!
-
-ON HANDOVER (0%)
-Handover Payment           AED 0
-
-POST-HANDOVER (34%)
-Month 18 (Jul 2027)        AED 12,284 (2,886 €)
-Month 19 (Aug 2027)        AED 12,284 (2,886 €)
-...
-Month 51 (Dec 2029)        AED 12,284 (2,886 €)
-                           ← ALL post-handover payments shown!
-
-┌─ 💰 TOTAL CASH UNTIL HANDOVER ──────────────────┐
-│ Entry + Journey + Handover   AED 1,208,400      │
-│ Cash required before rental income starts       │
-└──────────────────────────────────────────────────┘
+▌Month 16 (May 2027)       AED 12,284 (2,886 €)  🔑 Handover  ← Green highlight + border
+▌Month 17 (Jun 2027)       AED 12,284 (2,886 €)  🔑 Handover  ← Green highlight + border
 ```
 
 ---
@@ -154,13 +93,12 @@ Month 51 (Dec 2029)        AED 12,284 (2,886 €)
 
 | File | Changes |
 |------|--------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | 1. Remove ScrollArea from The Journey section<br>2. Remove ScrollArea from Post-Handover section<br>3. Remove unused ScrollArea import<br>4. Restore descriptive "Entry + Journey + Handover" summary label |
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | 1. Add left border to handover quarter rows for stronger visual<br>2. Add helper function to show quarter month names<br>3. Update header to show month range (e.g., "Oct-Dec") |
 
 ---
 
 ## Benefits
 
-1. **All payments visible** - No more cut-off or missing payments
-2. **Complete picture** - User sees the entire payment schedule from start to finish
-3. **Clearer summary** - "Entry + Journey + Handover" explicitly shows what's included
-4. **Long page is OK** - The snapshot view can scroll vertically; PDF export uses separate component
+1. **Clear handover indication** - Green left border + background + badge makes it unmistakable
+2. **Quarter context** - Header shows "Q4 (Oct-Dec) 2027" so users know which months to expect
+3. **No confusion** - Users can immediately see when the handover is happening in the payment timeline
