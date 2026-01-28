@@ -61,7 +61,9 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
     
     if (hasPostHandover) {
       const onHandover = quote.inputs.onHandoverPercent || 0;
-      const postHandover = 100 - preHandoverTotal - onHandover;
+      // Use stored postHandoverPercent if available
+      const postHandover = quote.inputs.postHandoverPercent ?? 
+        (100 - preHandoverTotal - onHandover);
       return {
         type: 'post-handover',
         label: `${Math.round(preHandoverTotal)}/${Math.round(onHandover)}/${Math.round(postHandover)}`
@@ -174,7 +176,9 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           label="Post-Handover"
           values={quotesWithCalcs.map(q => {
             if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
-            const postPercent = 100 - q.quote.inputs.preHandoverPercent - (q.quote.inputs.onHandoverPercent || 0);
+            // Use stored postHandoverPercent if available
+            const postPercent = q.quote.inputs.postHandoverPercent ?? 
+              (100 - q.quote.inputs.preHandoverPercent - (q.quote.inputs.onHandoverPercent || 0));
             return { value: q.quote.inputs.basePrice * postPercent / 100 };
           })}
           formatter={(v) => v > 0 ? formatCurrency(v, 'AED', 1) : '—'}
