@@ -330,61 +330,59 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
-      {/* Step 3: Installment Generator - Always visible after downpayment */}
+      {/* Step 3: Installment Generator - Compact single row */}
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
         <div className="space-y-3 animate-fade-in">
-          {/* Generator Section */}
-          <div className="space-y-3 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
+          {/* Generator - Single row */}
+          <div className="p-2 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">3</div>
-              <label className="text-sm text-gray-300 font-medium">Generate Installments</label>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] text-gray-500 block mb-1"># Payments</label>
+              <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-[10px] font-bold text-[#CCFF00] shrink-0">3</div>
+              
+              <div className="flex items-center gap-1">
                 <Input
                   type="text"
                   inputMode="numeric"
                   value={numPayments}
                   onChange={(e) => setNumPayments(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="h-8 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
+                  className="w-10 h-7 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
                 />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-gray-500 block mb-1">Interval (mo)</label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={paymentInterval}
-                  onChange={(e) => setPaymentInterval(Math.min(24, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="h-8 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-sm"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-gray-500 block mb-1">% Each</label>
+                <span className="text-[10px] text-gray-500">×</span>
                 <Input
                   type="text"
                   inputMode="decimal"
                   value={paymentPercent}
                   onChange={(e) => setPaymentPercent(Math.min(50, Math.max(0.5, parseFloat(e.target.value) || 0.5)))}
-                  className="h-8 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+                  className="w-12 h-7 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
                 />
+                <span className="text-[10px] text-gray-500">%</span>
               </div>
+              
+              <span className="text-[10px] text-gray-500">every</span>
+              
+              <div className="flex items-center gap-1">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={paymentInterval}
+                  onChange={(e) => setPaymentInterval(Math.min(24, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-10 h-7 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
+                />
+                <span className="text-[10px] text-gray-500">mo</span>
+              </div>
+              
+              <span className="text-[10px] text-gray-400">=</span>
+              <span className="text-xs text-[#CCFF00] font-mono font-medium">{(numPayments * paymentPercent).toFixed(0)}%</span>
+              
+              <Button
+                type="button"
+                onClick={handleGeneratePayments}
+                size="sm"
+                className="h-7 px-3 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs ml-auto"
+              >
+                <Zap className="w-3 h-3 mr-1" />
+                Generate
+              </Button>
             </div>
-
-            <div className="text-xs text-gray-400 text-center py-1.5 bg-[#0d1117] rounded">
-              {numPayments} × {paymentPercent}% = <span className="text-[#CCFF00] font-medium">{(numPayments * paymentPercent).toFixed(1)}%</span> every {paymentInterval} month(s)
-            </div>
-
-            <Button
-              type="button"
-              onClick={handleGeneratePayments}
-              className="w-full h-9 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-sm"
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Generate {numPayments} Payments
-            </Button>
           </div>
 
           {/* Installments List - Only show if there are payments */}
