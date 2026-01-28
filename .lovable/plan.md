@@ -1,87 +1,79 @@
 
 
-# Plan: Enhance Tenant Summary with Handover Payment + Total
+# Plan: Remove "Total to this point" from Standard Payment Plans
 
-## Current State
+## Issue
 
-The "Simple Summary" section shows:
+The "Total to this point" cumulative row is currently showing in the Handover section for standard (non-post-handover) payment plans. The user wants this to only appear on post-handover payment plans.
+
+## Current Behavior
+
+For standard plans, the UI shows:
 ```
-Tenant Covers (22mo rent)    +AED 151,411
-You Pay                       AED 445,574
-```
-
-## Desired State
-
-Show the tenant's full picture:
-```
-On Handover (tenant pays)     AED 0         ← What's due on handover day
-Tenant Covers (22mo rent)    +AED 151,411   ← Rent collected over period
-You Pay                       AED 445,574   ← Your net out-of-pocket
+HANDOVER (60%)
+Final Payment           AED 702,600
+───────────────────────────────────
+Total to this point     AED 1,222,848  ← Should NOT appear
 ```
 
-**Note:** The "On Handover" row would show the on-handover installment amount (if any). This helps the user understand what cash is needed on day 1 vs. what gets covered by rent over time.
+## Desired Behavior
+
+For standard plans:
+```
+HANDOVER (60%)
+Final Payment           AED 702,600
+```
+
+The "Total to this point" cumulative should **only** appear when `hasPostHandoverPlan` is true.
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
+### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-**Step 1: Calculate on-handover payment amount**
+**Remove the "Total to this point" section from the standard plan's Handover block (lines 370-384)**
 
-Add logic to extract the on-handover payment from inputs:
-
-```tsx
-// On-handover payment (what's due at handover, separate from post-HO installments)
-const onHandoverPercent = inputs.onHandoverPercent || 0;
-const onHandoverAmount = basePrice * (onHandoverPercent / 100);
-```
-
-**Step 2: Update the Simple Summary section (lines 169-184)**
-
-Add the on-handover row before "Tenant Covers":
+Delete the cumulative display inside the standard handover section:
 
 ```tsx
-{/* Simple Summary */}
-<div className="pt-2 mt-1 border-t border-theme-border space-y-1">
-  {/* On Handover Payment - what's due on handover day */}
-  {onHandoverAmount > 0 && (
-    <DottedRow 
-      label="On Handover"
-      value={getDualValue(onHandoverAmount).primary}
-      secondaryValue={getDualValue(onHandoverAmount).secondary}
-      valueClassName="text-yellow-400"
-    />
-  )}
-  
-  {/* Tenant Covers */}
-  <DottedRow 
-    label={`Tenant Covers (${actualDurationMonths}mo rent)`}
-    value={`+${getDualValue(totalTenantContribution).primary}`}
-    secondaryValue={getDualValue(totalTenantContribution).secondary}
-    valueClassName="text-cyan-400"
-  />
-  
-  {/* You Pay */}
-  <DottedRow 
-    label="You Pay"
-    value={getDualValue(netOutOfPocket).primary}
-    secondaryValue={getDualValue(netOutOfPocket).secondary}
-    bold
-    valueClassName={netOutOfPocket > 0 ? "text-red-400" : "text-green-400"}
-  />
-</div>
+{/* For standard plans - remove this block completely */}
+{!hasPostHandoverPlan && (
+  <div>
+    <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
+      Handover ({handoverPercent}%)
+    </div>
+    <div className="space-y-1">
+      <DottedRow 
+        label="Final Payment"
+        value={getDualValue(handoverAmount).primary}
+        secondaryValue={getDualValue(handoverAmount).secondary}
+        bold
+        valueClassName="text-green-400"
+      />
+    </div>
+    {/* DELETE THIS ENTIRE BLOCK (lines 370-384) */}
+    {/* <div className="mt-2 pt-1.5 border-t border-dashed border-theme-border/50">
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="text-theme-text-muted flex items-center gap-1">
+          <Wallet className="w-2.5 h-2.5" />
+          Total to this point
+        </span>
+        ...
+      </div>
+    </div> */}
+  </div>
+)}
 ```
 
 ---
 
 ## Summary
 
-| Row | Description | Color |
-|-----|-------------|-------|
-| On Handover | Amount due at handover day (if > 0) | Yellow |
-| Tenant Covers | Total rent over post-HO period | Cyan |
-| You Pay | Net out-of-pocket after tenant covers | Red/Green |
+| Scenario | "Total to this point" |
+|----------|----------------------|
+| Standard payment plan | ❌ Not shown |
+| Post-handover plan (inline after handover quarter) | ✅ Shown |
 
 ---
 
@@ -89,5 +81,5 @@ Add the on-handover row before "Tenant Covers":
 
 | File | Change |
 |------|--------|
-| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Add on-handover payment row to the summary section |
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Remove cumulative "Total to this point" display from standard payment plan Handover section (lines 370-384) |
 
