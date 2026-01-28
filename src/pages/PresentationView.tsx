@@ -529,7 +529,7 @@ const PresentationView = () => {
         </div>
 
         {/* Export All Section */}
-        {quoteItems.length > 1 && (
+        {quoteItems.length > 0 && (
           <div className="p-4 border-t border-theme-border">
             <p className="text-xs uppercase tracking-wider text-theme-text-muted font-semibold mb-2">
               Downloads
@@ -538,10 +538,11 @@ const PresentationView = () => {
               variant="outline"
               size="sm"
               className="w-full border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
-              onClick={() => {
-                // Export first quote, user can use individual buttons for others
-                if (quoteItems.length > 0) {
-                  handleDownloadQuote(quoteItems[0].id);
+              onClick={async () => {
+                // Export all quotes sequentially
+                for (const item of quoteItems) {
+                  handleDownloadQuote(item.id);
+                  await new Promise(resolve => setTimeout(resolve, 500));
                 }
               }}
             >

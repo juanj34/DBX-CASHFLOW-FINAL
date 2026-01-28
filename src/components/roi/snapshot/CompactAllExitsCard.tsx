@@ -1,7 +1,7 @@
 import { TrendingUp, Clock, ChevronRight, Hammer, DollarSign } from 'lucide-react';
 import { OIInputs, OICalculations, OIExitScenario } from '../useOICalculations';
 import { Currency, formatCurrency } from '../currencyUtils';
-import { monthToConstruction } from '../constructionProgress';
+import { monthToConstruction, calculateExitScenario } from '../constructionProgress';
 import {
   Tooltip,
   TooltipContent,
@@ -37,32 +37,28 @@ export const CompactAllExitsCard = ({
 }: CompactAllExitsCardProps) => {
   const { t } = useLanguage();
   
-  // Use pre-calculated scenarios from calculations instead of recalculating
+  // Calculate scenarios dynamically instead of looking up from pre-calculated list
   const scenarios = exitScenarios.map((exitMonths, index) => {
-    // Find matching scenario from pre-calculated list
-    const preCalcScenario = calculations.scenarios.find(s => s.exitMonths === exitMonths);
+    // Calculate scenario dynamically using the canonical function
+    const scenarioResult = calculateExitScenario(
+      exitMonths,
+      inputs.basePrice,
+      calculations.totalMonths,
+      inputs,
+      calculations.totalEntryCosts
+    );
+    
     const isHandover = exitMonths >= calculations.totalMonths;
     const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear);
     const constructionPct = Math.min(100, monthToConstruction(exitMonths, calculations.totalMonths));
     
-    if (preCalcScenario) {
-      return {
-        ...preCalcScenario,
-        isHandover,
-        dateStr,
-        constructionPct,
-        exitNumber: index + 1,
-      };
-    }
-    
-    // Fallback - shouldn't happen if exitScenarios are properly configured
     return {
       exitMonths,
-      exitPrice: 0,
-      totalCapitalDeployed: 0,
-      trueProfit: 0,
-      trueROE: 0,
-      annualizedROE: 0,
+      exitPrice: scenarioResult.exitPrice,
+      totalCapitalDeployed: scenarioResult.totalCapital,
+      trueProfit: scenarioResult.trueProfit,
+      trueROE: scenarioResult.trueROE,
+      annualizedROE: scenarioResult.annualizedROE,
       isHandover,
       dateStr,
       constructionPct,
