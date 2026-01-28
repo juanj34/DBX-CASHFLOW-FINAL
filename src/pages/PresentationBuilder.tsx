@@ -5,7 +5,7 @@ import {
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
   Settings, Layers, Eye, TrendingUp, BarChart3,
   ChevronLeft, ChevronRight, FolderOpen, Pencil, LayoutDashboard,
-  LayoutGrid, Presentation, Sparkles
+  LayoutGrid, Presentation, Sparkles, DollarSign, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { usePresentations, PresentationItem, Presentation as PresentationType } from "@/hooks/usePresentations";
 import { useQuotesList } from "@/hooks/useCashflowQuote";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -26,6 +32,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 // Drag and drop
 import {
@@ -264,6 +272,11 @@ const PresentationBuilder = () => {
   const [editingComparisonItem, setEditingComparisonItem] = useState<PresentationItem | null>(null);
   
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
+  
+  // Global currency and language state for preview
+  const [currency, setCurrency] = useState<Currency>('AED');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const { rate } = useExchangeRate(currency);
   
   // Section collapsed states
   const [quotesOpen, setQuotesOpen] = useState(true);
@@ -872,6 +885,70 @@ const PresentationBuilder = () => {
           <div className="border-t border-theme-border flex-shrink-0">
             <SidebarSectionHeader label="Presentation" collapsed={sidebarCollapsed} />
             <div className={cn("space-y-1 pb-2", sidebarCollapsed ? "px-2" : "px-3")}>
+              {/* Currency & Language Selectors */}
+              {!sidebarCollapsed && (
+                <div className="flex items-center gap-2 mb-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 h-8 border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80 text-xs"
+                      >
+                        <DollarSign className="w-3 h-3 mr-1" />
+                        {CURRENCY_CONFIG[currency].flag} {currency}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-theme-card border-theme-border z-50">
+                      {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                        <DropdownMenuItem 
+                          key={key}
+                          onClick={() => setCurrency(key as Currency)}
+                          className={cn(
+                            "text-theme-text hover:bg-theme-bg cursor-pointer",
+                            currency === key && "bg-theme-accent/10 text-theme-accent"
+                          )}
+                        >
+                          {config.flag} {key}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 h-8 border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80 text-xs"
+                      >
+                        <Globe className="w-3 h-3 mr-1" />
+                        {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-theme-card border-theme-border z-50">
+                      <DropdownMenuItem 
+                        onClick={() => setLanguage('en')}
+                        className={cn(
+                          "text-theme-text hover:bg-theme-bg cursor-pointer",
+                          language === 'en' && "bg-theme-accent/10 text-theme-accent"
+                        )}
+                      >
+                        🇬🇧 English
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setLanguage('es')}
+                        className={cn(
+                          "text-theme-text hover:bg-theme-bg cursor-pointer",
+                          language === 'es' && "bg-theme-accent/10 text-theme-accent"
+                        )}
+                      >
+                        🇪🇸 Español
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+              
               <ActionButton 
                 icon={Settings} 
                 label="Configure" 
@@ -979,6 +1056,9 @@ const PresentationBuilder = () => {
             selectedIndex={selectedPreviewIndex}
             onSelectIndex={setSelectedPreviewIndex}
             quotes={quotes}
+            currency={currency}
+            language={language}
+            rate={rate}
           />
         </main>
 
