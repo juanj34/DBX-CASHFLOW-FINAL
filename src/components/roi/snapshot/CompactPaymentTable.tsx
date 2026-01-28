@@ -388,7 +388,6 @@ export const CompactPaymentTable = ({
             </div>
           )}
 
-
           {/* Section: Post-Handover Installments - only for post-handover plans */}
           {hasPostHandoverPlan && derivedPostHandoverPayments.length > 0 && (
             <div>
