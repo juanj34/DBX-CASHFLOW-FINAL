@@ -1,104 +1,183 @@
 
-## Goal (what will be fixed)
-Fix the export so the PNG/PDF matches the on-screen layout with no “text-only” vertical shift (badge text moving down while the bubble stays put, divider lines clipping, etc.). This is a must-have reliability fix.
+# Plan: Export DOM Estable para PNG/PDF
 
-## What’s happening (plain-language)
-Right now the export uses a screenshot-style library (html2canvas). It sometimes mis-renders text when there are:
-- live animations (especially subtle scale animations),
-- transforms (scale/translate) on parents or wrappers,
-- blur/backdrop effects,
-- fonts still settling,
-- nested scroll containers.
+## Objetivo
+Eliminar definitivamente el problema del "text baseline drift" creando un **Export DOM dedicado** (una versión del dashboard optimizada exclusivamente para exportación) que no tenga animaciones, transforms, ni responsive - solo tamaño fijo A3 horizontal.
 
-That’s why the container/bubble looks correct but the text baseline inside is shifted down (the screenshot engine computes the text baseline differently than the browser does when transforms/animations are involved).
+---
 
-The session replay strongly suggests there’s a continuous `transform: scale(1.00...)` happening on at least one element during capture; that’s a classic trigger for “text baseline drift” in html2canvas.
+## Por qué la solución actual falla
 
-## Strategy (high confidence approach)
-Instead of trying to “guess” coordinates, we will make the DOM **stable** for the export render:
+El enfoque actual intenta capturar el DOM interactivo "vivo" con html2canvas:
+- **Animaciones activas**: framer-motion en PropertyTabContent, OIGrowthCurve tiene `useEffect` con timers, PaymentHorizontalTimeline tiene `transition-all` y `animationDelay`
+- **Transforms CSS**: hover effects con `scale-125`, `scale-110`, múltiples componentes con `transition-all`
+- **Responsive**: uso de `isDesktop` hooks, breakpoints que cambian el layout según viewport
 
-1) **Wait for fonts to be fully ready** before capture  
-   - `await document.fonts.ready` (supported in modern browsers)  
-   This removes baseline shifts caused by font swapping/late loading.
+html2canvas renderiza el DOM en un momento específico, pero si hay transforms micro-animados o texto con baseline calculado durante una transición, el texto se desplaza respecto a sus contenedores.
 
-2) **Freeze animations & transitions during export** (export-mode only)  
-   - Add export-only CSS rules that stop animations/transitions in export mode.
-   - This eliminates the micro-scale updates that break text positioning.
+---
 
-3) **Neutralize transforms that affect text metrics during capture**  
-   Best practice here is to do it in the html2canvas **clone** of the document so we don’t visually disturb the user:
-   - Use html2canvas `onclone` callback to inject a `<style>` into the cloned DOM:
-     - `animation: none !important; transition: none !important;`
-     - `transform: none !important;` for elements that have transforms applied (or selectively for framer-motion elements / wrappers).
-   This prevents “text moves but container doesn’t” in the exported render while keeping the live UI untouched.
+## Solución: Export DOM Dedicado
 
-4) **Make background deterministic**  
-   - Replace `backgroundColor: null` with a computed theme background for the exported area to avoid “gray bar” artifacts caused by transparency.
+Crear componentes específicos para exportación que:
+1. **Tamaño fijo**: 1587 × 1123 px (A3 landscape @ 96dpi, sin márgenes de impresión)
+2. **Sin animaciones**: ningún `transition`, `animation`, `framer-motion`
+3. **Sin responsive**: no hay `isDesktop` checks, todo es grid fijo
+4. **Sin interactividad**: no hay hover states, botones deshabilitados, sliders ocultos
 
-5) (Optional fallback if needed) **Enable a more text-faithful rendering mode**
-   - Try `foreignObjectRendering: true` only if the above still doesn’t fully solve it.
-   - This can improve text accuracy but can introduce other quirks, so we’ll treat it as a fallback path behind a small conditional flag.
+---
 
-## Exact code changes (implementation details)
+## Arquitectura
 
-### A) `src/hooks/useClientExport.ts` (primary fix)
-Update `captureElement()` to:
-1. Add:
-   - `await document.fonts?.ready` after enabling export-mode and before html2canvas.
-2. Add `onclone` option in html2canvas call:
-   - Inject a `<style>` tag into the cloned document’s `<head>` that:
-     - Disables animations/transitions globally
-     - Disables transforms (at least for known animation wrappers)
-     - Disables caret/blinking effects (minor, but helps)
-3. Replace `backgroundColor: null` with:
-   - `backgroundColor: getComputedStyle(contentRef.current).backgroundColor`  
-   - If that’s transparent, fallback to `getComputedStyle(document.body).backgroundColor` or `hsl(var(--theme-bg))` equivalent.
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  ExportModal (usuario elige qué exportar)                      │
+│  - Cashflow / Snapshot / Ambos                                 │
+│  - Formato: PNG / PDF                                          │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  useExportRenderer (nuevo hook)                                │
+│  1. Monta <ExportCashflowDOM> o <ExportSnapshotDOM>            │
+│     en un contenedor oculto (position: absolute, left: -9999px)│
+│  2. await document.fonts.ready                                 │
+│  3. await delay(100ms) para layout estable                     │
+│  4. html2canvas con opciones simples (sin onclone hack)        │
+│  5. Devuelve canvas para PNG o PDF                             │
+│  6. Desmonta el contenedor                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-Proposed `onclone` CSS (in the clone only):
-- `* { animation: none !important; transition: none !important; }`
-- `*, *::before, *::after { caret-color: transparent !important; }`
-- If we go broad: `[style*="transform"] { transform: none !important; }`  
-  (We may keep this narrower if it risks layout changes—see “Risk control” below.)
-- Specifically target framer-motion elements if possible:
-  - Common patterns: `.framer-motion`, `[data-framer-name]` (depending on actual markup)
-  - If not present, we’ll do the computed-style approach by JS in onclone: iterate elements and remove transforms when `transform !== 'none'`.
+---
 
-### B) `src/index.css` (export-mode stability)
-Add export-mode rules (safe ones that won’t change layout, just freeze motion):
-- `body.export-mode *, body.export-mode *::before, body.export-mode *::after { animation: none !important; transition: none !important; }`
+## Cambios Técnicos
 
-(We will not globally remove transforms in the real DOM via CSS because that can reposition layout; we will do transform-neutralization in the cloned DOM via `onclone`.)
+### 1. Nuevos Componentes de Exportación
 
-## Risk control / avoiding regressions
-- We will not mutate the live UI beyond adding/removing `export-mode` (as currently).
-- Transform removal will happen in the **cloned DOM** only (via `onclone`), so even if we have to be aggressive, it won’t break the user’s screen.
-- If disabling transforms broadly in the clone changes layout too much (rare, but possible), we will narrow it to:
-  - only elements with `computedStyle.transform` matching `matrix(...)` AND containing text nodes,
-  - or only elements within known problematic sections (badges, payment info, chips).
+**Archivos nuevos:**
+- `src/components/roi/export/ExportCashflowDOM.tsx`
+- `src/components/roi/export/ExportSnapshotDOM.tsx`
+- `src/components/roi/export/ExportHeader.tsx`
+- `src/components/roi/export/ExportPaymentTable.tsx`
+- `src/components/roi/export/ExportExitCards.tsx`
+- `src/components/roi/export/ExportRentCard.tsx`
+- `src/components/roi/export/ExportMortgageCard.tsx`
+- `src/components/roi/export/ExportGrowthCurve.tsx` (SVG estático, sin animación)
+- `src/components/roi/export/ExportWealthTimeline.tsx`
+- `src/components/roi/export/index.ts`
 
-## How we’ll verify (quick acceptance tests)
-1) Export **Cashflow** view PNG:
-   - Confirm badge “bubble” and text align properly (no text drifting down).
-   - Confirm payment info divider lines are not clipped and text baseline matches.
-2) Export **Snapshot** view PNG:
-   - Confirm exit cards and any pill/badge components render correctly.
-3) Export PDF:
-   - Verify the same alignment (since PDF is built from the canvas image).
-4) Run exports in both:
-   - Tech Dark theme (most sensitive to gray/contrast artifacts)
-   - Consultant theme (ensures background is handled correctly)
+**Características:**
+- Ancho fijo `1587px`, alto automático (basado en contenido)
+- Todos los estilos inline o clases estáticas
+- Colores tema-aware usando CSS variables
+- Sin `useState`, sin `useEffect` con timers
+- Sin `motion.div`, sin `transition-*`, sin `animate-*`
+- Fuentes con `tabular-nums` para números alineados
 
-## If it still persists (backup plan)
-If after freezing animations + clone-transform neutralization it still shifts:
-- Switch capture method to “capture document and crop using bounding rect” (more complex but very robust for coordinate issues).
-- Or enable `foreignObjectRendering: true` selectively for the problematic view.
+### 2. Nuevo Hook de Exportación
 
-## Files involved
-- `src/hooks/useClientExport.ts` (main logic improvements: fonts ready, onclone freeze, background color)
-- `src/index.css` (export-mode: stop transitions/animations)
+**Archivo nuevo:** `src/hooks/useExportRenderer.ts`
 
-## Outcome
-Exports (PNG/PDF) where:
-- Text no longer shifts within badges/cards
-- Dividers and borders are not clipped
-- The exported image matches the on-screen layout pixel-perfectly, regardless of theme
+```text
+Responsabilidades:
+- Crear contenedor offscreen en el body
+- Renderizar el Export DOM dentro con ReactDOM.createRoot
+- Esperar fonts.ready + pequeño delay
+- Capturar con html2canvas (config simplificada)
+- Limpiar contenedor
+- Retornar canvas
+```
+
+### 3. Actualizar useClientExport.ts
+
+- Usar `useExportRenderer` en lugar de capturar el DOM visible
+- Mantener la lógica de descarga PNG/PDF existente
+- Simplificar la configuración de html2canvas (ya no necesita `onclone` con hacks de transforms)
+
+### 4. ExportModal Mejorado
+
+- El usuario selecciona qué exportar: "Vista actual" / "Cashflow" / "Snapshot" / "Ambos"
+- El usuario selecciona formato: PNG / PDF
+- Botón "Exportar" dispara `useExportRenderer`
+
+---
+
+## Flujo de Exportación
+
+```text
+1. Usuario hace clic en "Export" desde el modal
+2. Modal cierra y muestra toast "Preparando exportación..."
+3. Hook monta ExportDOM offscreen
+4. Espera fonts.ready
+5. Pequeño delay (100ms) para render completo
+6. html2canvas captura el elemento
+7. Si PNG: canvas.toBlob → descargar
+8. Si PDF: canvas.toDataURL → jsPDF → descargar
+9. Hook desmonta ExportDOM
+10. Toast "Exportación completada"
+```
+
+---
+
+## Diseño del Export DOM (A3 Horizontal)
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│  HEADER (logo + título + cliente + fecha)              │ 1587px ancho │
+├────────────────────────────────────────────────────────────────────────┤
+│  HERO CARD (imagen propiedad + datos clave)                            │
+├────────────────────────────────────────────────────────────────────────┤
+│  OVERVIEW CARDS (4-5 KPIs horizontales)                                │
+├─────────────────────────────────────┬──────────────────────────────────┤
+│  PAYMENT BREAKDOWN (tabla)         │  RENT + EXITS + MORTGAGE (stack) │
+│  + Value Differentiators           │                                  │
+├─────────────────────────────────────┴──────────────────────────────────┤
+│  WEALTH PROJECTION TIMELINE (ancho completo)                           │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Archivos a Crear
+
+| Archivo | Descripción |
+|---------|-------------|
+| `src/components/roi/export/ExportCashflowDOM.tsx` | Layout completo para Cashflow |
+| `src/components/roi/export/ExportSnapshotDOM.tsx` | Layout completo para Snapshot |
+| `src/components/roi/export/ExportHeader.tsx` | Cabecera con logo/título |
+| `src/components/roi/export/ExportPaymentTable.tsx` | Tabla de pagos sin animaciones |
+| `src/components/roi/export/ExportExitCards.tsx` | Cards de exit estáticos |
+| `src/components/roi/export/ExportRentCard.tsx` | Rent info estático |
+| `src/components/roi/export/ExportMortgageCard.tsx` | Mortgage info estático |
+| `src/components/roi/export/ExportGrowthCurve.tsx` | SVG curve sin animation |
+| `src/components/roi/export/ExportWealthTimeline.tsx` | Timeline sin animation |
+| `src/components/roi/export/ExportOverviewCards.tsx` | KPIs horizontales |
+| `src/components/roi/export/index.ts` | Barrel exports |
+| `src/hooks/useExportRenderer.ts` | Hook para render offscreen + captura |
+
+## Archivos a Modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/hooks/useClientExport.ts` | Usar `useExportRenderer` en lugar de captura directa |
+| `src/index.css` | Eliminar reglas export-mode que ya no se necesitan |
+
+---
+
+## Beneficios de Esta Solución
+
+1. **Aislamiento total**: El DOM de exportación nunca se ve afectado por estados de animación del DOM visible
+2. **Determinismo**: Sin `useEffect` timers, sin transiciones, sin hover - el render es idéntico siempre
+3. **Mantenibilidad**: Componentes de export separados, fáciles de actualizar independientemente
+4. **Calidad**: A3 horizontal a alta resolución, perfecto para presentaciones profesionales
+5. **Flexibilidad**: El modal permite al usuario elegir exactamente qué exportar
+
+---
+
+## Notas de Implementación
+
+- Los componentes de Export usarán los mismos cálculos (`useOICalculations`, `calculateExitScenario`, etc.) pero sin hooks de animación
+- Se reutilizarán las utilidades de formato (`formatCurrency`, etc.)
+- El tema se respetará via CSS variables (`hsl(var(--theme-*))`)
+- Se usará `pixelRatio: 2` en html2canvas para alta resolución
