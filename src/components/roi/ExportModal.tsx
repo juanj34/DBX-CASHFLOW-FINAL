@@ -8,12 +8,12 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useExportRenderer } from '@/hooks/useExportRenderer';
+import { downloadSnapshotPDF } from '@/lib/pdfGenerator';
 import { OIInputs, OICalculations } from './useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from './useMortgageCalculations';
 import { Currency } from './currencyUtils';
 import { ClientUnitData } from './ClientUnitInfo';
 
-type ViewType = 'snapshot' | 'cashflow' | 'both';
 type FormatType = 'png' | 'pdf';
 
 interface ExportModalProps {
@@ -52,13 +52,15 @@ export const ExportModal = ({
   rate = 1,
   language = 'en',
 }: ExportModalProps) => {
-  const [viewType, setViewType] = useState<ViewType>(activeView);
-  const [format, setFormat] = useState<FormatType>('png');
+  const [format, setFormat] = useState<FormatType>('pdf');
   const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
 
-  const { exporting, exportSnapshot } = useExportRenderer({
+  const { exporting: exportingPNG, exportSnapshot } = useExportRenderer({
     projectName,
   });
+
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const exporting = exportingPNG || exportingPDF;
 
   // Check if we have all required data for export
   const hasExportData = inputs && calculations && clientInfo && mortgageInputs && mortgageAnalysis;
@@ -66,7 +68,6 @@ export const ExportModal = ({
   // Reset to current active view when modal opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      setViewType(activeView);
       setProgress({ current: 0, total: 0, label: '' });
     }
     onOpenChange(isOpen);
@@ -94,10 +95,13 @@ export const ExportModal = ({
     });
 
     try {
-      setProgress({ current: 1, total: 1, label: `Generating ${viewType}...` });
+      setProgress({ current: 1, total: 1, label: `Generating snapshot...` });
 
-      const result = await exportSnapshot(
-        {
+      if (format === 'pdf') {
+        // Use new jsPDF generator for PDF
+        setExportingPDF(true);
+        
+        const result = await downloadSnapshotPDF({
           inputs: inputs!,
           calculations: calculations!,
           clientInfo: clientInfo!,
@@ -107,17 +111,44 @@ export const ExportModal = ({
           currency,
           rate,
           language,
-        },
-        format
-      );
-
-      if (result.success) {
-        toast({
-          title: 'Export complete',
-          description: `Your ${viewType} ${format.toUpperCase()} has been downloaded.`,
+          projectName: projectName || clientInfo?.projectName,
         });
+
+        setExportingPDF(false);
+
+        if (result.success) {
+          toast({
+            title: 'Export complete',
+            description: 'Your PDF has been downloaded.',
+          });
+        } else {
+          throw new Error(result.error || 'Export failed');
+        }
       } else {
-        throw new Error(result.error || 'Export failed');
+        // Use existing PNG exporter (html2canvas)
+        const result = await exportSnapshot(
+          {
+            inputs: inputs!,
+            calculations: calculations!,
+            clientInfo: clientInfo!,
+            mortgageInputs: mortgageInputs!,
+            mortgageAnalysis: mortgageAnalysis!,
+            exitScenarios,
+            currency,
+            rate,
+            language,
+          },
+          format
+        );
+
+        if (result.success) {
+          toast({
+            title: 'Export complete',
+            description: 'Your PNG has been downloaded.',
+          });
+        } else {
+          throw new Error(result.error || 'Export failed');
+        }
       }
     } catch (err) {
       console.error('Export error:', err);
@@ -126,20 +157,15 @@ export const ExportModal = ({
         description: 'Failed to generate the export. Please try again.',
         variant: 'destructive',
       });
+      setExportingPDF(false);
     } finally {
       setProgress({ current: 0, total: 0, label: '' });
     }
-  }, [hasExportData, viewType, format, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, exportSnapshot, onOpenChange]);
-
-  const viewOptions = [
-    { value: 'snapshot', label: 'Snapshot', description: 'Compact summary' },
-    // { value: 'cashflow', label: 'Cashflow', description: 'Full analysis' }, // TODO: Enable when ExportCashflowDOM is ready
-    // { value: 'both', label: 'Both', description: 'Export both views' },
-  ];
+  }, [hasExportData, format, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, exportSnapshot, onOpenChange, projectName]);
 
   const formatOptions = [
+    { value: 'pdf', label: 'PDF', icon: FileText, description: 'Professional document' },
     { value: 'png', label: 'PNG', icon: FileImage, description: 'Image file' },
-    { value: 'pdf', label: 'PDF', icon: FileText, description: 'Document file' },
   ];
 
   return (
@@ -148,47 +174,14 @@ export const ExportModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-theme-text">
             <Download className="w-5 h-5 text-theme-accent" />
-            Export Quote
+            Export Investment Snapshot
           </DialogTitle>
           <DialogDescription className="text-theme-text-muted">
-            Choose what to export and the file format.
+            Generate a professional PDF or image of your investment analysis.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* View Selection */}
-          <div className="space-y-3">
-            <Label className="text-theme-text font-medium">What to export</Label>
-            <RadioGroup
-              value={viewType}
-              onValueChange={(value) => setViewType(value as ViewType)}
-              className="grid grid-cols-1 gap-2"
-              disabled={exporting}
-            >
-              {viewOptions.map((option) => (
-                <Label
-                  key={option.value}
-                  htmlFor={`view-${option.value}`}
-                  className={cn(
-                    "flex flex-col items-center justify-center rounded-lg border-2 p-3 cursor-pointer transition-all",
-                    viewType === option.value
-                      ? "border-theme-accent bg-theme-accent/10 text-theme-accent"
-                      : "border-theme-border bg-theme-bg/50 text-theme-text-muted hover:border-theme-text-muted/50",
-                    exporting && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`view-${option.value}`}
-                    className="sr-only"
-                  />
-                  <span className="font-medium text-sm">{option.label}</span>
-                  <span className="text-[10px] opacity-70">{option.description}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-
           {/* Format Selection */}
           <div className="space-y-3">
             <Label className="text-theme-text font-medium">Format</Label>
@@ -203,7 +196,7 @@ export const ExportModal = ({
                   key={option.value}
                   htmlFor={`format-${option.value}`}
                   className={cn(
-                    "flex items-center justify-center gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all",
+                    "flex flex-col items-center justify-center gap-1 rounded-lg border-2 p-4 cursor-pointer transition-all",
                     format === option.value
                       ? "border-theme-accent bg-theme-accent/10 text-theme-accent"
                       : "border-theme-border bg-theme-bg/50 text-theme-text-muted hover:border-theme-text-muted/50",
@@ -215,8 +208,9 @@ export const ExportModal = ({
                     id={`format-${option.value}`}
                     className="sr-only"
                   />
-                  <option.icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{option.label}</span>
+                  <option.icon className="w-6 h-6" />
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-[10px] opacity-70">{option.description}</span>
                 </Label>
               ))}
             </RadioGroup>
@@ -242,7 +236,7 @@ export const ExportModal = ({
           <Button
             onClick={handleExport}
             disabled={exporting || !hasExportData}
-            className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-medium"
+            className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-medium h-12"
           >
             {exporting ? (
               <>
@@ -252,7 +246,7 @@ export const ExportModal = ({
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Export {viewType === 'both' ? 'Both' : viewType.charAt(0).toUpperCase() + viewType.slice(1)}
+                Download {format.toUpperCase()}
               </>
             )}
           </Button>
@@ -262,6 +256,14 @@ export const ExportModal = ({
               Export data not available
             </p>
           )}
+
+          {/* Info text */}
+          <p className="text-xs text-center text-theme-text-muted">
+            {format === 'pdf' 
+              ? 'Creates a professional A4 landscape document'
+              : 'Creates a high-resolution image for sharing'
+            }
+          </p>
         </div>
       </DialogContent>
     </Dialog>
