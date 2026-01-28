@@ -464,8 +464,8 @@ const ComparisonPreview = ({
             defaultOpen={true}
           >
             <div className="space-y-6">
-              <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
-              <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
+              <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
+              <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
             </div>
           </CollapsibleSection>
 
@@ -495,7 +495,7 @@ const ComparisonPreview = ({
             icon={<DoorOpen className="w-4 h-4 text-theme-accent" />}
             defaultOpen={true}
           >
-            <ExitComparison quotesWithCalcs={quotesWithCalcs} />
+            <ExitComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
           </CollapsibleSection>
         </div>
       )}
