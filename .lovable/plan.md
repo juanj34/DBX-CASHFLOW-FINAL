@@ -1,110 +1,101 @@
 
-# Plan: Fix Handover Quarter Highlighting + Show Total at Handover Inline
+# Plan: Auto-Shift Subsequent Installments When Changing Month
 
-## Issues Identified
+## Problem
+When editing the delivery month (triggerValue) of a payment installment in the configurator, only that specific payment updates. The user wants subsequent installments to automatically shift by the same amount.
 
-### Issue 1: Handover Quarter Months Not Highlighting in Cashflow
-Looking at `CompactPaymentTable.tsx`, the `isPaymentInHandoverQuarter()` function (lines 44-58) checks if a payment falls in the handover quarter by comparing the payment's calculated month/year to the handover quarter range. 
-
-**Potential cause:** The logic checks if `paymentYear === handoverYear` AND `paymentMonth` is within the quarter bounds. However, if payments are scheduled by month number relative to booking (e.g., Month 12, Month 15), the calculation may not correctly identify them as being in the handover quarter.
-
-The highlighting logic at lines 291-297 wraps the row with a green background when `isHandoverQuarter` is true - but the function may be returning false due to:
-- The payment month calculation not matching the expected handover quarter range
-- The handover quarter/year not being set correctly in inputs
-
-### Issue 2: Show Total Cash Until Handover Inline After Handover
-Currently, "Total Cash Until Handover" is shown at the **bottom** of the payment table as a summary card (lines 406-422). User wants this shown **inline right after the handover quarter** row, and smaller.
+**Example:**
+- Installment 40 is at month 15, installment 41 is at month 18 (3-month gap)
+- User changes installment 40 from month 15 → month 17 (shift of +2)
+- Expected: Installment 41 should auto-shift from month 18 → month 20, and all following installments should shift too
 
 ---
 
 ## Solution
 
-### Fix 1: Improve Handover Quarter Detection
-Update the `isPaymentInHandoverQuarter` function to be more robust by:
-1. Using the same date comparison logic as `PaymentBreakdown.tsx` (which works correctly)
-2. Adding a fallback check for payments that are very close to `totalMonths`
-
-### Fix 2: Show Total After Handover Row Inline
-After the "On Handover" section (or the last handover-quarter payment), insert a small inline cumulative total indicator that shows:
-- "Total to this point: AED X,XXX,XXX"
-- Styled subtly (smaller text, muted accent)
+Add a "cascade shift" behavior when editing a payment's month:
+1. Calculate the delta (new month - old month)
+2. Apply that delta to all subsequent payments in the list
+3. This preserves the relative spacing between payments
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
+### File: `src/components/roi/configurator/PaymentSection.tsx`
 
-**Change 1:** Fix `isPaymentInHandoverQuarter` function (lines 44-58)
+**Change 1:** Update `updateAdditionalPayment` function (lines 144-155)
 
-The current logic calculates the payment date correctly but may have edge cases. Add a secondary check for payments where `monthsFromBooking >= totalMonths - 3` (within ~3 months of handover):
+Add logic to detect when `triggerValue` changes and cascade the shift to subsequent payments:
 
 ```tsx
-const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
-  // Calculate actual payment date
-  const bookingDate = new Date(bookingYear, bookingMonth - 1);
-  const paymentDate = new Date(bookingDate);
-  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-  
-  const paymentYear = paymentDate.getFullYear();
-  const paymentMonth = paymentDate.getMonth() + 1;
-  const paymentQuarter = Math.ceil(paymentMonth / 3);
-  
-  return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
+const updateAdditionalPayment = (id: string, field: keyof PaymentMilestone, value: any) => {
+  setInputs(prev => {
+    // Find the index of the payment being updated
+    const paymentIndex = prev.additionalPayments.findIndex(m => m.id === id);
+    if (paymentIndex === -1) return prev;
+    
+    const oldPayment = prev.additionalPayments[paymentIndex];
+    
+    // If changing triggerValue (month), cascade shift to all subsequent payments
+    if (field === 'triggerValue' && oldPayment.type === 'time') {
+      const oldValue = oldPayment.triggerValue;
+      const newValue = value as number;
+      const delta = newValue - oldValue;
+      
+      // Only cascade if there's an actual change
+      if (delta !== 0) {
+        const updated = prev.additionalPayments.map((m, idx) => {
+          if (idx === paymentIndex) {
+            // Update the current payment
+            return { ...m, triggerValue: newValue };
+          } else if (idx > paymentIndex && m.type === 'time') {
+            // Shift all subsequent time-based payments
+            return { ...m, triggerValue: Math.max(1, m.triggerValue + delta) };
+          }
+          return m;
+        });
+        return { ...prev, additionalPayments: updated };
+      }
+    }
+    
+    // Standard single-field update for non-cascade cases
+    const updated = prev.additionalPayments.map(m =>
+      m.id === id ? { ...m, [field]: value } : m
+    );
+    
+    // Sort by triggerValue when month changes
+    if (field === 'triggerValue') {
+      return { ...prev, additionalPayments: updated.sort((a, b) => a.triggerValue - b.triggerValue) };
+    }
+    return { ...prev, additionalPayments: updated };
+  });
 };
 ```
 
-**Change 2:** Add inline cumulative total after "On Handover" section (after line 345)
+---
 
-Insert a small, compact indicator showing the running total after the handover payment:
+## How It Works
 
-```tsx
-{/* Inline Cumulative: Total to Handover */}
-{(!hasPostHandoverPlan || handoverPercent > 0) && (
-  <div className="mt-1 pt-1 border-t border-dashed border-theme-border/50">
-    <div className="flex items-center justify-between text-[10px]">
-      <span className="text-theme-text-muted flex items-center gap-1">
-        <Wallet className="w-2.5 h-2.5" />
-        Total to this point
-      </span>
-      <span className="font-mono text-theme-accent font-medium">
-        {getDualValue(totalUntilHandover).primary}
-      </span>
-    </div>
-  </div>
-)}
-```
-
-**Change 3:** Remove or simplify the bottom "Total Cash Until Handover" card
-
-Since we're showing it inline, we can either:
-- **Option A:** Remove the bottom card entirely
-- **Option B:** Keep it but make it very minimal (just the value, no description)
-
-I recommend **Option A** - remove lines 406-422 to avoid duplication.
+| Action | Before | After |
+|--------|--------|-------|
+| User changes installment 40 from month 15 to month 17 | Only installment 40 updates | Installment 40 moves to 17, installment 41+ all shift by +2 |
+| User adds a gap between 40 and 41 | Manual edit of each | Automatic cascade maintains relative spacing |
+| Construction-type payments | N/A | Not affected (only time-based cascade) |
 
 ---
 
-## Summary of Changes
+## Edge Cases Handled
 
-| Location | Change |
-|----------|--------|
-| `CompactPaymentTable.tsx` lines 44-58 | Update `isPaymentInHandoverQuarter` to use Date object comparison |
-| `CompactPaymentTable.tsx` after line 345 | Add inline "Total to this point" after handover section |
-| `CompactPaymentTable.tsx` lines 406-422 | Remove bottom summary card (now shown inline) |
+1. **Negative months:** Capped at minimum of 1 with `Math.max(1, ...)`
+2. **Construction milestones:** Only time-based payments cascade (construction milestones are percentage-based)
+3. **Single payment edit:** If only changing percentage, no cascade occurs
 
 ---
 
-## Expected Behavior After Fix
+## Expected Behavior
 
-1. **Handover Quarter Highlighting:** Payments that fall within the handover quarter (Q1/Q2/Q3/Q4 of the handover year) will be highlighted with green background and a 🔑 badge
-2. **Inline Total:** Right after the handover row, a small line shows "Total to this point: AED X,XXX,XXX" - compact and not intrusive
-3. **Cleaner UI:** No duplicate "Total Cash Until Handover" card at the bottom
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Fix handover detection, add inline total, remove bottom card |
+1. Edit installment 40's month from 15 → 17
+2. Installments 41, 42, 43... all automatically shift by +2 months
+3. The relative spacing between payments is preserved
+4. List remains sorted by month after the change
