@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Gem, Home, DoorOpen, CreditCard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -349,9 +349,11 @@ const QuoteCalculator = ({
   onCalculated: (quoteId: string, calc: any) => void;
 }) => {
   const calculations = useOICalculations(quote.inputs);
+  const hasCalledRef = useRef(false);
   
   useEffect(() => {
-    if (calculations) {
+    if (calculations && !hasCalledRef.current) {
+      hasCalledRef.current = true;
       onCalculated(quote.id, calculations);
     }
   }, [calculations, quote.id, onCalculated]);
@@ -375,9 +377,12 @@ const ComparisonPreview = ({
   const rate = propRate ?? defaultRate;
   const [calculationsMap, setCalculationsMap] = useState<Record<string, any>>({});
 
-  const handleCalculated = (quoteId: string, calc: any) => {
-    setCalculationsMap(prev => ({ ...prev, [quoteId]: calc }));
-  };
+  const handleCalculated = useCallback((quoteId: string, calc: any) => {
+    setCalculationsMap(prev => {
+      if (prev[quoteId]) return prev; // Already calculated
+      return { ...prev, [quoteId]: calc };
+    });
+  }, []);
 
   // Build quotesWithCalcs from comparisonData.quotes
   const quotesWithCalcs: QuoteWithCalculations[] = useMemo(() => {
@@ -457,7 +462,7 @@ const ComparisonPreview = ({
               icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
               defaultOpen={true}
             >
-              <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} />
+              <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} currency={currency} exchangeRate={rate} />
             </CollapsibleSection>
           )}
 
@@ -489,7 +494,7 @@ const ComparisonPreview = ({
               icon={<Home className="w-4 h-4 text-theme-accent" />}
               defaultOpen={true}
             >
-              <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
+              <MortgageComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
             </CollapsibleSection>
           )}
 
