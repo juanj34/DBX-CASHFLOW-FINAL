@@ -1,101 +1,106 @@
 
-# Plan: Auto-Shift Subsequent Installments When Changing Month
+# Plan: Fix Handover Quarter Highlighting for ALL Payment Plans
 
-## Problem
-When editing the delivery month (triggerValue) of a payment installment in the configurator, only that specific payment updates. The user wants subsequent installments to automatically shift by the same amount.
+## The Problem
 
-**Example:**
-- Installment 40 is at month 15, installment 41 is at month 18 (3-month gap)
-- User changes installment 40 from month 15 → month 17 (shift of +2)
-- Expected: Installment 41 should auto-shift from month 18 → month 20, and all following installments should shift too
+Currently:
+1. For post-handover plans, payments are filtered into "pre-handover" and "post-handover" based on whether they're before/after the handover quarter start
+2. This means NO pre-handover payment falls IN the handover quarter - they're all BEFORE it
+3. The "Total to this point" is hidden when `hasPostHandoverPlan=true` and `onHandoverPercent=0`
 
----
+## The Simple Fix
 
-## Solution
-
-Add a "cascade shift" behavior when editing a payment's month:
-1. Calculate the delta (new month - old month)
-2. Apply that delta to all subsequent payments in the list
-3. This preserves the relative spacing between payments
-
----
+**User's requirement:** If project hands over Q3 2027, highlight the 3 months of Q3 (Jul, Aug, Sep 2027). Period. After those highlighted payments, show "Total to this point".
 
 ## Technical Changes
 
-### File: `src/components/roi/configurator/PaymentSection.tsx`
+### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-**Change 1:** Update `updateAdditionalPayment` function (lines 144-155)
+**Change 1:** Fix the post-handover filtering logic (lines 111-123)
 
-Add logic to detect when `triggerValue` changes and cascade the shift to subsequent payments:
+Currently, payments in the handover quarter are being classified as "post-handover". Change to include handover quarter payments in pre-handover:
 
 ```tsx
-const updateAdditionalPayment = (id: string, field: keyof PaymentMilestone, value: any) => {
-  setInputs(prev => {
-    // Find the index of the payment being updated
-    const paymentIndex = prev.additionalPayments.findIndex(m => m.id === id);
-    if (paymentIndex === -1) return prev;
-    
-    const oldPayment = prev.additionalPayments[paymentIndex];
-    
-    // If changing triggerValue (month), cascade shift to all subsequent payments
-    if (field === 'triggerValue' && oldPayment.type === 'time') {
-      const oldValue = oldPayment.triggerValue;
-      const newValue = value as number;
-      const delta = newValue - oldValue;
-      
-      // Only cascade if there's an actual change
-      if (delta !== 0) {
-        const updated = prev.additionalPayments.map((m, idx) => {
-          if (idx === paymentIndex) {
-            // Update the current payment
-            return { ...m, triggerValue: newValue };
-          } else if (idx > paymentIndex && m.type === 'time') {
-            // Shift all subsequent time-based payments
-            return { ...m, triggerValue: Math.max(1, m.triggerValue + delta) };
-          }
-          return m;
-        });
-        return { ...prev, additionalPayments: updated };
-      }
-    }
-    
-    // Standard single-field update for non-cascade cases
-    const updated = prev.additionalPayments.map(m =>
-      m.id === id ? { ...m, [field]: value } : m
-    );
-    
-    // Sort by triggerValue when month changes
-    if (field === 'triggerValue') {
-      return { ...prev, additionalPayments: updated.sort((a, b) => a.triggerValue - b.triggerValue) };
-    }
-    return { ...prev, additionalPayments: updated };
-  });
+// Current: filters OUT handover quarter payments from pre-handover
+const preHandoverPayments = hasPostHandoverPlan
+  ? sortedPayments.filter(p => {
+      if (p.type !== 'time') return true;
+      return !isPaymentPostHandover(...); // This excludes handover quarter!
+    })
+  : sortedPayments;
+```
+
+Update `isPaymentPostHandover` check to be STRICTLY after handover quarter end (not start):
+
+```tsx
+// New: include handover quarter in pre-handover section
+const isPaymentAfterHandoverQuarter = (monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear) => {
+  // Calculate payment date
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
+  
+  // Handover quarter END = last month of quarter
+  const handoverQuarterEndMonth = handoverQuarter * 3; // Q3 = month 9 (Sep)
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1); // Last day of quarter
+  
+  return paymentDate > handoverQuarterEnd;
 };
 ```
 
----
+**Change 2:** Always show handover cumulative total (lines 327-358)
 
-## How It Works
+Remove the condition that hides handover section when `hasPostHandoverPlan && handoverPercent === 0`:
 
-| Action | Before | After |
-|--------|--------|-------|
-| User changes installment 40 from month 15 to month 17 | Only installment 40 updates | Installment 40 moves to 17, installment 41+ all shift by +2 |
-| User adds a gap between 40 and 41 | Manual edit of each | Automatic cascade maintains relative spacing |
-| Construction-type payments | N/A | Not affected (only time-based cascade) |
+```tsx
+// Current condition hides when hasPostHandover && handoverPercent=0
+{(!hasPostHandoverPlan || handoverPercent > 0) && (...)}
 
----
+// New: Show handover section header and cumulative total even when handoverPercent=0
+// For post-handover plans with 0% on-handover, just show the cumulative total
+```
 
-## Edge Cases Handled
+**Change 3:** Show cumulative total AFTER the last handover-quarter payment
 
-1. **Negative months:** Capped at minimum of 1 with `Math.max(1, ...)`
-2. **Construction milestones:** Only time-based payments cascade (construction milestones are percentage-based)
-3. **Single payment edit:** If only changing percentage, no cascade occurs
+Insert the "Total to this point" inline directly after the last payment that has `isHandoverQuarter = true`:
 
----
+```tsx
+{preHandoverPayments.map((payment, index) => {
+  const isHandoverQuarter = isPaymentInHandoverQuarter(...);
+  const isLastHandoverQuarterPayment = isHandoverQuarter && 
+    !preHandoverPayments.slice(index + 1).some(p => 
+      p.type === 'time' && isPaymentInHandoverQuarter(p.triggerValue, ...)
+    );
+  
+  return (
+    <>
+      <div className={cn(..., isHandoverQuarter && "bg-green-500/10 ...")}>
+        {/* payment row */}
+      </div>
+      
+      {/* Insert cumulative total after last handover-quarter payment */}
+      {isLastHandoverQuarterPayment && (
+        <div className="mt-1 pt-1 border-t border-dashed">
+          <span>Total to this point: {totalUntilHandover}</span>
+        </div>
+      )}
+    </>
+  );
+})}
+```
+
+## Summary of Changes
+
+| Line Range | Change |
+|------------|--------|
+| 58-69 | Update `isPaymentPostHandover` to check AFTER handover quarter end (not start) |
+| 111-123 | Use updated filter so handover quarter payments stay in pre-handover section |
+| 283-322 | Detect last handover-quarter payment and insert cumulative total inline |
+| 327-358 | Simplify or remove duplicate handover section (cumulative is now inline) |
 
 ## Expected Behavior
 
-1. Edit installment 40's month from 15 → 17
-2. Installments 41, 42, 43... all automatically shift by +2 months
-3. The relative spacing between payments is preserved
-4. List remains sorted by month after the change
+1. Project handover = Q3 2027
+2. Any payment in Jul/Aug/Sep 2027 gets green highlight with key badge
+3. After the LAST highlighted payment → show "Total to this point: AED X,XXX,XXX"
+4. Works for BOTH standard plans AND post-handover plans
