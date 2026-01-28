@@ -144,22 +144,36 @@ export const CompactPostHandoverCard = ({
           valueClassName="text-purple-400"
         />
         
-        {/* Separator - WHO PAYS WHAT */}
-        <div className="pt-2 mt-1 border-t border-dashed border-theme-border/50">
-          <div className="text-[9px] uppercase tracking-wide text-theme-text-muted mb-1.5 flex items-center gap-1">
-            <Wallet className="w-2.5 h-2.5" />
-            Who Pays What
-          </div>
-          
-          {/* Tenant Covers */}
+        {/* Monthly Cashflow Analysis */}
+        <div className="pt-2 mt-1 border-t border-dashed border-theme-border/50 space-y-1">
+          <DottedRow 
+            label="Monthly: Payment"
+            value={`${getDualValue(monthlyEquivalent).primary}/mo`}
+            secondaryValue={getDualValue(monthlyEquivalent).secondary}
+          />
+          <DottedRow 
+            label="Monthly: Rent"
+            value={`+${getDualValue(monthlyRent).primary}/mo`}
+            secondaryValue={getDualValue(monthlyRent).secondary}
+            valueClassName="text-cyan-400"
+          />
+          <DottedRow 
+            label={isFullyCovered ? "Monthly Surplus" : "Monthly Gap"}
+            value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/mo`}
+            secondaryValue={getDualValue(Math.abs(monthlyCashflow)).secondary}
+            bold
+            valueClassName={isFullyCovered ? "text-green-400" : "text-red-400"}
+          />
+        </div>
+        
+        {/* Simple Summary */}
+        <div className="pt-2 mt-1 border-t border-theme-border space-y-1">
           <DottedRow 
             label={`Tenant Covers (${actualDurationMonths}mo rent)`}
             value={`+${getDualValue(totalTenantContribution).primary}`}
             secondaryValue={getDualValue(totalTenantContribution).secondary}
             valueClassName="text-cyan-400"
           />
-          
-          {/* Your Investment (You Pay) */}
           <DottedRow 
             label="You Pay"
             value={getDualValue(netOutOfPocket).primary}
@@ -169,7 +183,7 @@ export const CompactPostHandoverCard = ({
           />
         </div>
         
-        {/* Summary Insight */}
+        {/* Status Badge */}
         <div className="pt-1.5 mt-1 border-t border-theme-border">
           <div className={cn(
             "p-2 rounded-lg text-center text-[11px]",
