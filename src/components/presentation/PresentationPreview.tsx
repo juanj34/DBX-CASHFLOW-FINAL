@@ -427,41 +427,6 @@ const ComparisonPreview = ({
             </div>
           </div>
 
-          {/* Property Cards */}
-          <div 
-            className="grid gap-4" 
-            style={{ gridTemplateColumns: `repeat(${Math.min(comparisonData.quotes.length, 4)}, minmax(200px, 1fr))` }}
-          >
-            {comparisonData.quotes.map((quote, index) => {
-              const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
-              const color = colors[index % colors.length];
-
-              return (
-                <div
-                  key={quote.id}
-                  className="bg-theme-card border border-theme-border rounded-xl p-4 relative"
-                  style={{ borderTopColor: color, borderTopWidth: '3px' }}
-                >
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-theme-text truncate">
-                      {quote.title || quote.project_name || 'Quote'}
-                    </h3>
-                    {quote.project_name && quote.title !== quote.project_name && (
-                      <p className="text-sm text-theme-text-muted truncate">
-                        {quote.project_name}
-                      </p>
-                    )}
-                    {quote.developer && (
-                      <p className="text-xs text-theme-text-muted">
-                        by {quote.developer}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
           {/* Key Metrics Table */}
           {metrics && (
             <CollapsibleSection

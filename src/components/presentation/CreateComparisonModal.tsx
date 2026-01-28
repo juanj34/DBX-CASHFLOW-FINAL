@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, GitCompare, Check, Building2, User, MapPin, Star } from "lucide-react";
 import {
   Dialog,
@@ -20,6 +20,11 @@ interface CreateComparisonModalProps {
   onClose: () => void;
   onCreateComparison: (title: string, quoteIds: string[]) => void;
   presentationQuoteIds?: string[]; // Quotes already in the presentation (show first)
+  // Edit mode props
+  isEditing?: boolean;
+  initialTitle?: string;
+  initialQuoteIds?: string[];
+  onUpdateComparison?: (title: string, quoteIds: string[]) => void;
 }
 
 export const CreateComparisonModal = ({
@@ -27,11 +32,24 @@ export const CreateComparisonModal = ({
   onClose,
   onCreateComparison,
   presentationQuoteIds = [],
+  isEditing = false,
+  initialTitle = "",
+  initialQuoteIds = [],
+  onUpdateComparison,
 }: CreateComparisonModalProps) => {
   const { quotes, loading } = useQuotesList();
   const [search, setSearch] = useState("");
-  const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
+  const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>(initialQuoteIds);
+  const [title, setTitle] = useState(initialTitle);
+
+  // Reset state when modal opens with initial values (for edit mode)
+  useEffect(() => {
+    if (open) {
+      setSelectedQuoteIds(initialQuoteIds);
+      setTitle(initialTitle);
+      setSearch("");
+    }
+  }, [open, initialQuoteIds, initialTitle]);
 
   const maxQuotes = 4;
   const minQuotes = 2;
@@ -70,12 +88,17 @@ export const CreateComparisonModal = ({
     });
   };
 
-  const handleCreate = () => {
+  const handleSubmit = () => {
     if (selectedQuoteIds.length < minQuotes) return;
     
     // Generate title if not provided
     const finalTitle = title.trim() || generateDefaultTitle();
-    onCreateComparison(finalTitle, selectedQuoteIds);
+    
+    if (isEditing && onUpdateComparison) {
+      onUpdateComparison(finalTitle, selectedQuoteIds);
+    } else {
+      onCreateComparison(finalTitle, selectedQuoteIds);
+    }
     handleClose();
   };
 
@@ -284,12 +307,12 @@ export const CreateComparisonModal = ({
             Cancel
           </Button>
           <Button
-            onClick={handleCreate}
+            onClick={handleSubmit}
             disabled={!isValid}
             className="bg-purple-500 text-white hover:bg-purple-600"
           >
             <GitCompare className="w-4 h-4 mr-2" />
-            Create Comparison
+            {isEditing ? "Update Comparison" : "Create Comparison"}
           </Button>
         </div>
       </DialogContent>

@@ -29,8 +29,6 @@ export interface ComparisonMetrics {
   handoverMonths: { value: number }[];
   preHandoverPercent: { value: number }[];
   rentalYieldY1: { value: number | null }[];
-  constructionAppreciation: { value: number }[];
-  growthAppreciation: { value: number }[];
   roiAt36Months: { value: number | null }[];
 }
 
@@ -184,10 +182,6 @@ export const computeComparisonMetrics = (
     return y1 ? q.calculations.holdAnalysis.rentalYieldOnInvestment : null;
   });
 
-  const constructionApps = quotesWithCalcs.map(q => q.quote.inputs.constructionAppreciation);
-
-  const growthApps = quotesWithCalcs.map(q => q.quote.inputs.growthAppreciation);
-
   const rois36 = quotesWithCalcs.map(q => {
     const scenario = q.calculations.scenarios.find(s => s.exitMonths === 36);
     return scenario?.annualizedROE ?? null;
@@ -200,8 +194,6 @@ export const computeComparisonMetrics = (
     handoverMonths: handoverMonthsList.map(v => ({ value: v })),
     preHandoverPercent: preHandoverPercents.map(v => ({ value: v })),
     rentalYieldY1: rentalYields.map(v => ({ value: v })),
-    constructionAppreciation: constructionApps.map(v => ({ value: v })),
-    growthAppreciation: growthApps.map(v => ({ value: v })),
     roiAt36Months: rois36.map(v => ({ value: v })),
   };
 };

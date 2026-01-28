@@ -261,6 +261,7 @@ const PresentationBuilder = () => {
   const [createComparisonModalOpen, setCreateComparisonModalOpen] = useState(false);
   const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const [editingComparisonItem, setEditingComparisonItem] = useState<PresentationItem | null>(null);
   
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
   
@@ -388,6 +389,25 @@ const PresentationBuilder = () => {
     };
     setItems(prev => [...prev, newItem]);
     toast.success("Comparison created");
+  };
+
+  // Update existing comparison
+  const handleUpdateComparison = (comparisonTitle: string, quoteIds: string[]) => {
+    if (!editingComparisonItem) return;
+    
+    setItems(prev => prev.map(item => {
+      if (item.id === editingComparisonItem.id && (item.type === 'comparison' || item.type === 'inline_comparison')) {
+        return {
+          ...item,
+          title: comparisonTitle,
+          quoteIds,
+        };
+      }
+      return item;
+    }));
+    
+    setEditingComparisonItem(null);
+    toast.success("Comparison updated");
   };
 
   const removeItem = (itemToRemove: PresentationItem) => {
@@ -528,7 +548,7 @@ const PresentationBuilder = () => {
           </Tooltip>
         )}
         
-        {/* Edit button - only for quotes */}
+        {/* Edit button - for quotes (opens in new tab) */}
         {item.type === 'quote' && (
           <button
             onClick={(e) => {
@@ -536,6 +556,19 @@ const PresentationBuilder = () => {
               window.open(`/cashflow/${item.id}`, '_blank');
             }}
             className="p-1 text-theme-text-muted hover:text-theme-accent opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
+        
+        {/* Edit button - for comparisons (opens edit modal) */}
+        {(item.type === 'comparison' || item.type === 'inline_comparison') && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingComparisonItem(item);
+            }}
+            className="p-1 text-theme-text-muted hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -1008,6 +1041,18 @@ const PresentationBuilder = () => {
           onClose={() => setCreateComparisonModalOpen(false)}
           onCreateComparison={handleCreateComparison}
           presentationQuoteIds={existingQuoteIds}
+        />
+
+        {/* Edit Comparison Modal */}
+        <CreateComparisonModal
+          open={!!editingComparisonItem}
+          onClose={() => setEditingComparisonItem(null)}
+          onCreateComparison={handleCreateComparison}
+          presentationQuoteIds={existingQuoteIds}
+          isEditing={true}
+          initialTitle={editingComparisonItem?.title || ''}
+          initialQuoteIds={editingComparisonItem?.quoteIds || []}
+          onUpdateComparison={handleUpdateComparison}
         />
 
         <PresentationAnalyticsModal
