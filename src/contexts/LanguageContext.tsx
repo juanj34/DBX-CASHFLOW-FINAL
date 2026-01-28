@@ -1447,6 +1447,33 @@ const translations: Translations = {
   totalCapitalRequired: { en: 'Total Capital Required', es: 'Capital Total Requerido' },
   propertyValueGrowth: { en: 'Property Value Growth', es: 'Crecimiento del Valor' },
   valueAtYear10: { en: 'Value at Year 10', es: 'Valor en Año 10' },
+  
+  // Wealth Projection
+  wealthProjection7Year: { en: '7-Year Wealth Projection', es: 'Proyección de Patrimonio a 7 Años' },
+  accumulatedRent: { en: 'Accumulated Rent', es: 'Renta Acumulada' },
+  totalWealth: { en: 'Total Wealth', es: 'Patrimonio Total' },
+  
+  // PDF Export
+  pdfGenerating: { en: 'Generating PDF...', es: 'Generando PDF...' },
+  pdfReady: { en: 'PDF Ready', es: 'PDF Listo' },
+  pdfDownloaded: { en: 'Your investment snapshot has been downloaded.', es: 'Tu resumen de inversión ha sido descargado.' },
+  pdfError: { en: 'Failed to generate PDF.', es: 'Error al generar PDF.' },
+  exportSnapshot: { en: 'Export Snapshot', es: 'Exportar Resumen' },
+  
+  // Payment Breakdown Additional (unique keys only)
+  onHandoverLabel: { en: 'On Handover', es: 'En Entrega' },
+  postHandoverLabel: { en: 'Post-Handover', es: 'Post-Entrega' },
+  totalToThisPoint: { en: 'Total to this point', es: 'Total hasta este punto' },
+  downpaymentBalanceLabel: { en: 'Downpayment Balance', es: 'Saldo del Enganche' },
+  subtotalLabel: { en: 'Subtotal', es: 'Subtotal' },
+  dldFeeLabel: { en: 'DLD Fee (4%)', es: 'DLD (4%)' },
+  oqoodAdminLabel: { en: 'Oqood/Admin', es: 'Oqood/Admin' },
+  totalEntryLabel: { en: 'Total Entry', es: 'Total Entrada' },
+  finalPaymentLabel: { en: 'Final Payment', es: 'Pago Final' },
+  handoverPaymentLabelAlt: { en: 'Handover Payment', es: 'Pago de Entrega' },
+  
+  // Total ROE
+  totalROELabel: { en: 'Total ROE', es: 'ROE Total' },
 };
 
 interface LanguageContextType {

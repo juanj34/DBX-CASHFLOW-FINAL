@@ -74,7 +74,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/view/:shareToken" element={<CashflowView />} />
+                <Route path="/view/:shareToken" element={<SnapshotView />} /> {/* Legacy: redirect to snapshot */}
                 <Route path="/snapshot/:shareToken" element={<SnapshotView />} />
                 <Route path="/snapshot/:shareToken/print" element={<SnapshotPrint />} />
                 <Route path="/cashflow/:shareToken/print" element={<CashflowPrint />} />

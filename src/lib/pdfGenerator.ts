@@ -8,7 +8,7 @@
 import { jsPDF } from 'jspdf';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
-import { Currency, formatCurrency, formatDualCurrency } from '@/components/roi/currencyUtils';
+import { Currency, formatCurrency } from '@/components/roi/currencyUtils';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { monthToConstruction, calculateExitScenario } from '@/components/roi/constructionProgress';
 
@@ -40,7 +40,7 @@ const COLORS = {
   red: '#f87171',
 };
 
-// Translations
+// Complete translations for PDF
 const TRANSLATIONS = {
   en: {
     investmentSnapshot: 'Investment Snapshot',
@@ -83,9 +83,13 @@ const TRANSLATIONS = {
     appreciation: 'Appreciation',
     generatedOn: 'Generated on',
     page: 'Page',
-    constructionPhase: 'Construction Phase',
-    growthPhase: 'Growth Phase',
-    maturePhase: 'Mature Phase',
+    constructionPhase: 'Construction',
+    growthPhase: 'Growth',
+    maturePhase: 'Mature',
+    eoiBookingFee: 'EOI / Booking Fee',
+    finalPayment: 'Final Payment',
+    month: 'Month',
+    onHandover: 'On Handover',
   },
   es: {
     investmentSnapshot: 'Resumen de Inversión',
@@ -128,16 +132,20 @@ const TRANSLATIONS = {
     appreciation: 'Apreciación',
     generatedOn: 'Generado el',
     page: 'Página',
-    constructionPhase: 'Fase de Construcción',
-    growthPhase: 'Fase de Crecimiento',
-    maturePhase: 'Fase Madura',
+    constructionPhase: 'Construcción',
+    growthPhase: 'Crecimiento',
+    maturePhase: 'Madura',
+    eoiBookingFee: 'EOI / Cuota de Reserva',
+    finalPayment: 'Pago Final',
+    month: 'Mes',
+    onHandover: 'En Entrega',
   },
 };
 
 type TranslationKey = keyof typeof TRANSLATIONS.en;
 
-// Helper to format currency for PDF
-const fmt = (value: number, currency: Currency, rate: number): string => {
+// Helper to format currency for PDF with dual currency support
+const formatDualCurrencyPDF = (value: number, currency: Currency, rate: number): string => {
   const aed = formatCurrency(value, 'AED', 1);
   if (currency === 'AED') return aed;
   const converted = formatCurrency(value, currency, rate);
@@ -145,18 +153,23 @@ const fmt = (value: number, currency: Currency, rate: number): string => {
 };
 
 // Helper to format short currency
-const fmtShort = (value: number): string => {
-  if (value >= 1000000) return `AED ${(value / 1000000).toFixed(2)}M`;
-  if (value >= 1000) return `AED ${(value / 1000).toFixed(0)}K`;
-  return `AED ${value.toFixed(0)}`;
+const formatShortCurrency = (value: number, currency: Currency, rate: number): string => {
+  const converted = currency === 'AED' ? value : value * rate;
+  const symbol = currency === 'AED' ? 'AED ' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'COP ';
+  
+  if (converted >= 1000000) return `${symbol}${(converted / 1000000).toFixed(2)}M`;
+  if (converted >= 1000) return `${symbol}${(converted / 1000).toFixed(0)}K`;
+  return `${symbol}${converted.toFixed(0)}`;
 };
 
-// Month to date string
-const monthToDateStr = (months: number, bookingMonth: number, bookingYear: number): string => {
+// Month to date string with language support
+const monthToDateStr = (months: number, bookingMonth: number, bookingYear: number, language: 'en' | 'es'): string => {
   const totalMonthsFromJan = bookingMonth + months;
   const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
   const month = ((totalMonthsFromJan - 1) % 12) + 1;
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = language === 'es'
+    ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${monthNames[month - 1]} ${bookingYear + yearOffset}`;
 };
 
@@ -246,13 +259,14 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
     drawText(`by ${clientInfo.developer}`, margin + 5, margin + 13, { color: COLORS.textMuted });
   }
 
-  // Price in header
+  // Price in header with dual currency
   setFont('bold', 14);
-  const priceText = fmt(basePrice, currency, rate);
+  const priceText = formatDualCurrencyPDF(basePrice, currency, rate);
   drawText(priceText, pageWidth - margin - 5, margin + 7, { align: 'right', color: COLORS.primary });
   
   setFont('normal', 8);
-  drawText(`${fmtShort(pricePerSqft)}/sqft • ${clientInfo.unitSizeSqf?.toLocaleString() || 0} sqft`, pageWidth - margin - 5, margin + 13, { align: 'right', color: COLORS.textMuted });
+  const pricePerSqftText = formatDualCurrencyPDF(pricePerSqft, currency, rate);
+  drawText(`${pricePerSqftText}/sqft • ${clientInfo.unitSizeSqf?.toLocaleString() || 0} sqft`, pageWidth - margin - 5, margin + 13, { align: 'right', color: COLORS.textMuted });
 
   // Client and date on right side of header
   if (clientInfo.clientName) {
@@ -288,14 +302,20 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
   drawText(t('theEntry').toUpperCase(), col1X + 4, col1Y, { color: COLORS.primary });
   col1Y += 5;
 
-  // Payment rows helper
+  // Payment rows helper with dual currency
   const drawPaymentRow = (label: string, value: number, y: number, options?: { bold?: boolean; color?: string }) => {
     setFont(options?.bold ? 'bold' : 'normal', 7);
     drawText(label, col1X + 4, y, { color: COLORS.textMuted });
-    drawText(fmt(value, currency, rate), col1X + colWidth - 4, y, { align: 'right', color: options?.color || COLORS.text });
+    const formattedValue = formatDualCurrencyPDF(value, currency, rate);
+    drawText(formattedValue, col1X + colWidth - 4, y, { align: 'right', color: options?.color || COLORS.text });
     return y + 5;
   };
 
+  // EOI if exists
+  if (inputs.eoiFee && inputs.eoiFee > 0) {
+    col1Y = drawPaymentRow(t('eoiBookingFee'), inputs.eoiFee, col1Y);
+  }
+  
   col1Y = drawPaymentRow(t('downpayment') + ` (${inputs.downpaymentPercent}%)`, downpaymentAmount, col1Y);
   col1Y = drawPaymentRow(t('dldFee'), dldFee, col1Y);
   col1Y = drawPaymentRow(t('oqoodAdmin'), inputs.oqoodFee, col1Y);
@@ -310,21 +330,21 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
   drawText(t('theJourney').toUpperCase() + ` (${calculations.totalMonths}mo)`, col1X + 4, col1Y, { color: COLORS.cyan });
   col1Y += 5;
 
-  // Show first few payments
+  // Show first few payments with dates
   const additionalPayments = inputs.additionalPayments || [];
   const displayPayments = additionalPayments.slice(0, 4);
   
   displayPayments.forEach((payment) => {
     const amount = basePrice * (payment.paymentPercent / 100);
     const label = payment.type === 'time' 
-      ? `Month ${payment.triggerValue}` 
-      : `${payment.triggerValue}% Built`;
+      ? `${t('month')} ${payment.triggerValue} (${monthToDateStr(payment.triggerValue, inputs.bookingMonth, inputs.bookingYear, language)})` 
+      : `${payment.triggerValue}% ${t('built')}`;
     col1Y = drawPaymentRow(label, amount, col1Y);
   });
 
   if (additionalPayments.length > 4) {
     setFont('normal', 6);
-    drawText(`+${additionalPayments.length - 4} more installments...`, col1X + 4, col1Y, { color: COLORS.textMuted });
+    drawText(`+${additionalPayments.length - 4} more...`, col1X + 4, col1Y, { color: COLORS.textMuted });
     col1Y += 5;
   }
 
@@ -337,9 +357,34 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
   
   if (handoverPercent > 0) {
     setFont('bold', 7);
-    drawText(`${t('handover').toUpperCase()} (${handoverPercent}%)`, col1X + 4, col1Y, { color: COLORS.green });
+    const handoverLabel = inputs.hasPostHandoverPlan ? t('onHandover') : t('handover');
+    drawText(`${handoverLabel.toUpperCase()} (${handoverPercent}%)`, col1X + 4, col1Y, { color: COLORS.green });
     col1Y += 5;
-    col1Y = drawPaymentRow('Final Payment', handoverAmount, col1Y, { color: COLORS.green });
+    col1Y = drawPaymentRow(t('finalPayment'), handoverAmount, col1Y, { color: COLORS.green });
+  }
+
+  // Post-Handover section if applicable
+  if (inputs.hasPostHandoverPlan) {
+    col1Y += 2;
+    const postHandoverPayments = additionalPayments.filter(p => {
+      if (p.type !== 'time') return false;
+      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      const paymentDate = new Date(bookingDate);
+      paymentDate.setMonth(paymentDate.getMonth() + p.triggerValue);
+      const handoverQuarterEndMonth = inputs.handoverQuarter * 3;
+      const handoverQuarterEnd = new Date(inputs.handoverYear, handoverQuarterEndMonth - 1, 28);
+      return paymentDate > handoverQuarterEnd;
+    });
+    
+    if (postHandoverPayments.length > 0) {
+      const postHandoverTotal = postHandoverPayments.reduce((sum, p) => sum + (basePrice * p.paymentPercent / 100), 0);
+      const postHandoverPercent = postHandoverPayments.reduce((sum, p) => sum + p.paymentPercent, 0);
+      
+      setFont('bold', 7);
+      drawText(`${t('postHandover').toUpperCase()} (${postHandoverPercent.toFixed(0)}%)`, col1X + 4, col1Y, { color: COLORS.purple });
+      col1Y += 5;
+      col1Y = drawPaymentRow(`${postHandoverPayments.length} ${language === 'es' ? 'pagos' : 'payments'}`, postHandoverTotal, col1Y, { color: COLORS.purple });
+    }
   }
 
   // ===== COLUMN 2: EXIT SCENARIOS =====
@@ -364,7 +409,7 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
       );
       
       const constructionPct = Math.min(100, monthToConstruction(exitMonths, calculations.totalMonths));
-      const dateStr = monthToDateStr(exitMonths, inputs.bookingMonth, inputs.bookingYear);
+      const dateStr = monthToDateStr(exitMonths, inputs.bookingMonth, inputs.bookingYear, language);
       
       // Scenario row
       drawRect(col2X + 3, col2Y - 3, colWidth - 6, 12, { fill: COLORS.background, radius: 2 });
@@ -380,10 +425,16 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
       // Construction %
       drawText(`${constructionPct.toFixed(0)}% ${t('built')}`, col2X + 45, col2Y + 1, { color: COLORS.orange });
       
+      // Capital invested with dual currency
+      const capitalText = formatShortCurrency(scenarioResult.totalCapital, currency, rate);
+      setFont('normal', 6);
+      drawText(capitalText, col2X + colWidth - 45, col2Y + 1, { color: COLORS.textMuted });
+      
       // Profit and ROE
       const profitColor = scenarioResult.trueProfit >= 0 ? COLORS.green : COLORS.red;
       setFont('bold', 7);
-      drawText(`${scenarioResult.trueProfit >= 0 ? '+' : ''}${fmtShort(scenarioResult.trueProfit)}`, col2X + colWidth - 25, col2Y + 1, { color: profitColor });
+      const profitText = formatShortCurrency(Math.abs(scenarioResult.trueProfit), currency, rate);
+      drawText(`${scenarioResult.trueProfit >= 0 ? '+' : '-'}${profitText}`, col2X + colWidth - 22, col2Y + 1, { color: profitColor });
       drawText(`${scenarioResult.trueROE?.toFixed(0) || 0}%`, col2X + colWidth - 5, col2Y + 1, { align: 'right', color: profitColor });
       
       col2Y += 14;
@@ -411,8 +462,8 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
     };
     
     col3Y = drawRentRow(t('grossYield'), `${inputs.rentalYieldPercent.toFixed(1)}%`, col3Y, { color: COLORS.green });
-    col3Y = drawRentRow(t('netAnnualRent'), fmt(netAnnualRent, currency, rate), col3Y);
-    col3Y = drawRentRow(t('monthlyRent'), fmt(monthlyRent, currency, rate), col3Y, { color: COLORS.green });
+    col3Y = drawRentRow(t('netAnnualRent'), formatDualCurrencyPDF(netAnnualRent, currency, rate), col3Y);
+    col3Y = drawRentRow(t('monthlyRent'), formatDualCurrencyPDF(monthlyRent, currency, rate), col3Y, { color: COLORS.green });
     
     col3Y += 8;
   }
@@ -434,10 +485,52 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
       return y + 5;
     };
     
-    col3Y = drawMortgageRow(t('loanAmount'), fmt(mortgageAnalysis.loanAmount, currency, rate), col3Y);
-    col3Y = drawMortgageRow(t('monthlyPayment'), fmt(mortgageAnalysis.monthlyPayment, currency, rate), col3Y, { color: COLORS.primary });
+    col3Y = drawMortgageRow(t('loanAmount'), formatDualCurrencyPDF(mortgageAnalysis.loanAmount, currency, rate), col3Y);
+    col3Y = drawMortgageRow(t('monthlyPayment'), formatDualCurrencyPDF(mortgageAnalysis.monthlyPayment, currency, rate), col3Y, { color: COLORS.primary });
     col3Y = drawMortgageRow(t('interestRate'), `${mortgageInputs.interestRate}%`, col3Y);
     col3Y = drawMortgageRow(t('loanTerm'), `${mortgageInputs.loanTermYears} ${t('years')}`, col3Y);
+    
+    col3Y += 8;
+  }
+
+  // Post-Handover Coverage Card
+  if (inputs.hasPostHandoverPlan && monthlyRent > 0) {
+    drawRect(col3X, col3Y, colWidth, 35, { fill: COLORS.card, radius: 3 });
+    
+    setFont('bold', 9);
+    drawText(t('postHandoverCoverage').toUpperCase(), col3X + 4, col3Y + 6, { color: COLORS.text });
+    drawLine(col3X, col3Y + 10, col3X + colWidth, col3Y + 10, COLORS.border);
+    
+    col3Y += 16;
+    
+    // Calculate post-handover payments
+    const postHandoverPayments = (inputs.additionalPayments || []).filter(p => {
+      if (p.type !== 'time') return false;
+      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      const paymentDate = new Date(bookingDate);
+      paymentDate.setMonth(paymentDate.getMonth() + p.triggerValue);
+      const handoverQuarterEndMonth = inputs.handoverQuarter * 3;
+      const handoverQuarterEnd = new Date(inputs.handoverYear, handoverQuarterEndMonth - 1, 28);
+      return paymentDate > handoverQuarterEnd;
+    });
+    
+    if (postHandoverPayments.length > 0) {
+      const postHandoverTotal = postHandoverPayments.reduce((sum, p) => sum + (basePrice * p.paymentPercent / 100), 0);
+      const paymentMonths = postHandoverPayments.map(p => p.triggerValue);
+      const durationMonths = Math.max(...paymentMonths) - Math.min(...paymentMonths) + 1;
+      const totalRentCollected = monthlyRent * durationMonths;
+      const investorPays = Math.max(0, postHandoverTotal - totalRentCollected);
+      
+      const drawCoverageRow = (label: string, value: string, y: number, options?: { color?: string }) => {
+        setFont('normal', 7);
+        drawText(label, col3X + 4, y, { color: COLORS.textMuted });
+        drawText(value, col3X + colWidth - 4, y, { align: 'right', color: options?.color || COLORS.text });
+        return y + 5;
+      };
+      
+      col3Y = drawCoverageRow(t('tenantCovers'), formatDualCurrencyPDF(totalRentCollected, currency, rate), col3Y, { color: COLORS.green });
+      col3Y = drawCoverageRow(t('youPay'), formatDualCurrencyPDF(investorPays, currency, rate), col3Y, { color: investorPays > 0 ? COLORS.orange : COLORS.green });
+    }
   }
 
   // ===== WEALTH PROJECTION (Bottom Section) =====
@@ -458,11 +551,12 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
   drawText(t('year'), margin + 4, projectionStartY, { color: COLORS.textMuted });
   
   // Calculate values for each year
+  const constructionYears = Math.ceil(calculations.totalMonths / 12);
+  
   for (let year = 1; year <= 7; year++) {
     const x = margin + yearWidth * year;
     
     // Determine phase and appreciation
-    const constructionYears = Math.ceil(calculations.totalMonths / 12);
     let cumulativeAppreciation = 0;
     
     for (let y = 1; y <= year; y++) {
@@ -481,24 +575,21 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
     setFont('bold', 7);
     drawText(`Y${year}`, x + 2, projectionStartY, { color: COLORS.text });
     
-    // Value
+    // Value with currency conversion
     setFont('normal', 6);
-    drawText(fmtShort(projectedValue), x + 2, projectionStartY + 6, { color: COLORS.green });
+    const valueText = formatShortCurrency(projectedValue, currency, rate);
+    drawText(valueText, x + 2, projectionStartY + 6, { color: COLORS.green });
     
     // Phase indicator
-    let phaseColor = COLORS.orange;
     let phaseLabel = '';
     if (year <= constructionYears) {
-      phaseColor = COLORS.orange;
       phaseLabel = '🏗️';
     } else if (year <= constructionYears + inputs.growthPeriodYears) {
-      phaseColor = COLORS.green;
       phaseLabel = '📈';
     } else {
-      phaseColor = COLORS.cyan;
       phaseLabel = '✨';
     }
-    drawText(phaseLabel, x + 2, projectionStartY + 12, { color: phaseColor });
+    drawText(phaseLabel, x + 2, projectionStartY + 12);
   }
 
   // Footer
