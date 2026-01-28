@@ -42,7 +42,7 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   constructionAppreciation: 12,
   growthAppreciation: 8,
   matureAppreciation: 4,
-  growthPeriodYears: 5,
+  growthPeriodYears: 3, // Matches balanced profile
   rentGrowthRate: 4,
   serviceChargePerSqft: 18,
   adrGrowthRate: 3,
@@ -82,7 +82,7 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.constructionAppreciation ??= 12;
     merged.growthAppreciation ??= 8;
     merged.matureAppreciation ??= 4;
-    merged.growthPeriodYears ??= 5;
+    merged.growthPeriodYears ??= 3; // Matches balanced profile
     merged.rentGrowthRate ??= 4;
     merged.serviceChargePerSqft ??= 18;
     merged.adrGrowthRate ??= 3;
