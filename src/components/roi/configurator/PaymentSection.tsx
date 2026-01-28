@@ -341,110 +341,116 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
         <div className="space-y-3 animate-fade-in">
           {/* Installments List */}
-          <Collapsible open={showInstallments} onOpenChange={setShowInstallments}>
-            <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
-              <CollapsibleTrigger asChild>
-                <div className="flex justify-between items-center cursor-pointer hover:opacity-80">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-300 font-medium">Installments</label>
-                    <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
-                    <Button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); addAdditionalPayment(); }}
-                      size="sm"
-                      className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
-                    >
-                      <Plus className="w-2.5 h-2.5 mr-0.5" /> Add
-                    </Button>
-                    {inputs.additionalPayments.length > 0 && (
-                      <Button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleResetPayments(); }}
-                        size="sm"
-                        variant="outline"
-                        className="h-5 px-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10 text-[9px]"
-                      >
-                        <Trash2 className="w-2.5 h-2.5" />
-                      </Button>
-                    )}
+          <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+            {/* Installments Header with Quick Fill */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-300 font-medium">Installments</label>
+                <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
+                <Button
+                  type="button"
+                  onClick={addAdditionalPayment}
+                  size="sm"
+                  className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
+                >
+                  <Plus className="w-2.5 h-2.5 mr-0.5" /> Add
+                </Button>
+                {inputs.additionalPayments.length > 0 && (
+                  <Button
+                    type="button"
+                    onClick={handleResetPayments}
+                    size="sm"
+                    variant="outline"
+                    className="h-5 px-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10 text-[9px]"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {hasPayments ? (
+                  <div className={`text-xs px-1.5 py-0.5 rounded ${
+                    remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' : 
+                    remainingToDistribute < -0.5 ? 'bg-red-500/20 text-red-400' : 
+                    'bg-green-500/20 text-green-400'
+                  }`}>
+                    {remainingToDistribute > 0.5 ? `${remainingToDistribute.toFixed(1)}% left` : 
+                    remainingToDistribute < -0.5 ? `${Math.abs(remainingToDistribute).toFixed(1)}% over` : 
+                    '✓'}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {hasPayments ? (
-                      <div className={`text-xs px-1.5 py-0.5 rounded ${
-                        remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' : 
-                        remainingToDistribute < -0.5 ? 'bg-red-500/20 text-red-400' : 
-                        'bg-green-500/20 text-green-400'
-                      }`}>
-                        {remainingToDistribute > 0.5 ? `${remainingToDistribute.toFixed(1)}% left` : 
-                        remainingToDistribute < -0.5 ? `${Math.abs(remainingToDistribute).toFixed(1)}% over` : 
-                        '✓'}
-                      </div>
-                    ) : (
-                      <div className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
-                        Add
-                      </div>
-                    )}
+                ) : (
+                  <div className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                    Add
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Fill Generator - Always visible */}
+            <Collapsible open={showGenerator} onOpenChange={setShowGenerator}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-7 text-xs border-dashed border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00]/10"
+                >
+                  <Zap className="w-3.5 h-3.5 mr-1.5" />
+                  Quick Fill Generator
+                  {showGenerator ? <ChevronUp className="w-3.5 h-3.5 ml-1.5" /> : <ChevronDown className="w-3.5 h-3.5 ml-1.5" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <div className="p-3 bg-[#0d1117] rounded-lg space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-400 block mb-1"># Payments</label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={numPayments}
+                        onChange={(e) => setNumPayments(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="h-8 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-400 block mb-1">Interval (months)</label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={paymentInterval}
+                        onChange={(e) => setPaymentInterval(Math.min(24, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="h-8 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400 text-center py-1 bg-[#1a1f2e] rounded">
+                    {numPayments} payments × {((hasPostHandoverPlan ? 100 - inputs.downpaymentPercent : inputs.preHandoverPercent - inputs.downpaymentPercent) / numPayments).toFixed(2)}% = {(hasPostHandoverPlan ? 100 - inputs.downpaymentPercent : inputs.preHandoverPercent - inputs.downpaymentPercent).toFixed(1)}% every {paymentInterval} month(s)
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleGeneratePayments}
+                    size="sm"
+                    className="w-full h-9 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-sm"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Generate {numPayments} Payments
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Installments List */}
+            {inputs.additionalPayments.length > 0 && (
+              <Collapsible open={showInstallments} onOpenChange={setShowInstallments}>
+                <CollapsibleTrigger asChild>
+                  <div className="flex justify-between items-center cursor-pointer hover:opacity-80 pt-2 border-t border-[#2a3142]">
+                    <span className="text-xs text-gray-400">View/Edit Installments</span>
                     {showInstallments ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                   </div>
-                </div>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                {/* Quick Fill Generator */}
-                <Collapsible open={showGenerator} onOpenChange={setShowGenerator} className="mt-2 mb-2">
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-6 text-[10px] border-dashed border-[#2a3142] text-gray-500 hover:bg-[#2a3142] hover:text-white"
-                    >
-                      <Zap className="w-3 h-3 mr-1" />
-                      Quick Fill
-                      {showGenerator ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-2">
-                    <div className="p-2 bg-[#0d1117] rounded-lg space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <label className="text-[10px] text-gray-500 block mb-0.5"># Payments</label>
-                          <Input
-                            type="text"
-                            inputMode="numeric"
-                            value={numPayments}
-                            onChange={(e) => setNumPayments(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
-                            className="h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="text-[10px] text-gray-500 block mb-0.5">Interval (mo)</label>
-                          <Input
-                            type="text"
-                            inputMode="numeric"
-                            value={paymentInterval}
-                            onChange={(e) => setPaymentInterval(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))}
-                            className="h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
-                          />
-                        </div>
-                      </div>
-                      <div className="text-[10px] text-gray-400 text-center">
-                        {numPayments} × {((hasPostHandoverPlan ? 100 - inputs.downpaymentPercent : inputs.preHandoverPercent - inputs.downpaymentPercent) / numPayments).toFixed(2)}% every {paymentInterval} month(s)
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={handleGeneratePayments}
-                        size="sm"
-                        className="w-full h-7 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs"
-                      >
-                        <Zap className="w-3 h-3 mr-1" />
-                        Generate {numPayments} Payments
-                      </Button>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-                
-                <div className="space-y-1 max-h-[50vh] overflow-y-auto pt-1.5 border-t border-[#2a3142]">
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-1 max-h-[50vh] overflow-y-auto pt-1.5">
                   {inputs.additionalPayments.map((payment, index) => {
                     const paymentDate = payment.type === 'time' 
                       ? getPaymentDate(payment.triggerValue, inputs.bookingMonth, inputs.bookingYear)
@@ -578,8 +584,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   Add
                 </Button>
               </CollapsibleContent>
-            </div>
-          </Collapsible>
+            </Collapsible>
+            )}
+          </div>
         </div>
       )}
 
