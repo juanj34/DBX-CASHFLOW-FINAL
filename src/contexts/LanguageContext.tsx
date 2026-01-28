@@ -1408,6 +1408,19 @@ const translations: Translations = {
   negativeLabel: { en: 'Negative', es: 'Negativo' },
   yearsShort: { en: 'yr', es: 'a' },
 
+  // Post-Handover Coverage Card
+  postHandoverCoverage: { en: 'Post-Handover Coverage', es: 'Cobertura Post-Entrega' },
+  postHandoverPayments: { en: 'Post-HO Payments', es: 'Pagos Post-Entrega' },
+  monthlyEquivalent: { en: 'Monthly Equivalent', es: 'Equivalente Mensual' },
+  monthlySurplus: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
+  fullCoverage: { en: 'Full', es: 'Completa' },
+  partialCoverage: { en: 'Partial', es: 'Parcial' },
+  noCoverage: { en: 'None', es: 'Ninguna' },
+  rentCovers: { en: 'Rent covers', es: 'La renta cubre' },
+  totalGapOver: { en: 'gap over', es: 'diferencia en' },
+  monthsShort: { en: 'mo', es: 'me' },
+  noRentalIncomeConfigured: { en: 'No rental income configured', es: 'Sin ingreso de renta configurado' },
+
   // Exit Card
   exitScenariosHeader: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },
   handoverLabel: { en: 'Handover', es: 'Entrega' },

@@ -11,5 +11,6 @@ export { ExportPaymentTable } from './ExportPaymentTable';
 export { ExportExitCards } from './ExportExitCards';
 export { ExportRentCard } from './ExportRentCard';
 export { ExportMortgageCard } from './ExportMortgageCard';
+export { ExportPostHandoverCard } from './ExportPostHandoverCard';
 export { ExportGrowthCurve } from './ExportGrowthCurve';
 export { ExportWealthTimeline } from './ExportWealthTimeline';

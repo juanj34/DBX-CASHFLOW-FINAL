@@ -8,6 +8,7 @@ import { ExportPaymentTable } from './ExportPaymentTable';
 import { ExportExitCards } from './ExportExitCards';
 import { ExportRentCard } from './ExportRentCard';
 import { ExportMortgageCard } from './ExportMortgageCard';
+import { ExportPostHandoverCard } from './ExportPostHandoverCard';
 import { ExportWealthTimeline } from './ExportWealthTimeline';
 
 export interface ExportSnapshotDOMProps {
@@ -127,6 +128,17 @@ export const ExportSnapshotDOM = ({
               inputs={inputs}
               calculations={calculations}
               exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+              language={language}
+            />
+          )}
+          
+          {/* Post-Handover Coverage Card */}
+          {inputs.hasPostHandoverPlan && (
+            <ExportPostHandoverCard
+              inputs={inputs}
+              monthlyRent={monthlyRent}
               currency={currency}
               rate={rate}
               language={language}
