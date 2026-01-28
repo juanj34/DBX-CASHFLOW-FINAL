@@ -357,32 +357,10 @@ export const CompactPaymentTable = ({
                   const dateStr = getPaymentDate(payment);
                   const label = `${getPaymentLabel(payment)} (${dateStr})`;
                   
-                  // Check if this post-handover payment still falls in the handover quarter
-                  const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
-                    payment.triggerValue,
-                    bookingMonth,
-                    bookingYear,
-                    handoverQuarter,
-                    handoverYear
-                  );
-                  
+                  // Post-handover payments don't get handover highlighting - they're already past handover
                   return (
-                    <div 
-                      key={index} 
-                      className={cn(
-                        "flex items-center justify-between gap-2",
-                        isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1 border-l-2 border-green-400"
-                      )}
-                    >
-                      <div className="flex items-center gap-1 min-w-0 flex-1">
-                        <span className="text-xs text-theme-text-muted truncate">{label}</span>
-                        {isHandoverQuarter && (
-                          <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
-                            <Key className="w-2.5 h-2.5" />
-                            Handover
-                          </span>
-                        )}
-                      </div>
+                    <div key={index} className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-theme-text-muted truncate">{label}</span>
                       <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
                         {getDualValue(amount).primary}
                         {currency !== 'AED' && (

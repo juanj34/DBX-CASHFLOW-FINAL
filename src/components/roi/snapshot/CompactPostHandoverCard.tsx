@@ -64,10 +64,13 @@ export const CompactPostHandoverCard = ({
   // Return null only if no post-handover payments found
   if (postHandoverPaymentsToUse.length === 0) return null;
   
-  // Calculate total post-handover payments
-  const postHandoverTotal = postHandoverPaymentsToUse.reduce(
-    (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
+  // Calculate post-handover percentage from actual payments
+  const postHandoverPercent = postHandoverPaymentsToUse.reduce(
+    (sum, p) => sum + p.paymentPercent, 0
   );
+  
+  // Calculate total post-handover payments
+  const postHandoverTotal = basePrice * (postHandoverPercent / 100);
 
   // Calculate duration in months (from handover to post-handover end)
   const handoverMonth = (inputs.handoverQuarter - 1) * 3 + 1;
@@ -152,7 +155,7 @@ export const CompactPostHandoverCard = ({
       <div className="p-3 space-y-1.5">
         {/* Post-HO Total */}
         <DottedRow 
-          label={`${t('postHandoverPayments')} (${inputs.postHandoverPercent || 0}%)`}
+          label={`${t('postHandoverPayments')} (${Math.round(postHandoverPercent)}%)`}
           value={getDualValue(postHandoverTotal).primary}
           secondaryValue={getDualValue(postHandoverTotal).secondary}
         />
@@ -161,6 +164,7 @@ export const CompactPostHandoverCard = ({
         <DottedRow 
           label={t('monthlyEquivalent')}
           value={`${getDualValue(monthlyEquivalent).primary}/mo`}
+          secondaryValue={currency !== 'AED' ? `${getDualValue(monthlyEquivalent).secondary}/mo` : null}
           bold
           valueClassName="text-purple-400"
         />
@@ -169,6 +173,7 @@ export const CompactPostHandoverCard = ({
         <DottedRow 
           label={t('rentalIncome')}
           value={`+${getDualValue(monthlyRent).primary}/mo`}
+          secondaryValue={currency !== 'AED' ? `+${getDualValue(monthlyRent).secondary}/mo` : null}
           valueClassName="text-cyan-400"
         />
         
@@ -177,6 +182,7 @@ export const CompactPostHandoverCard = ({
           <DottedRow 
             label={isFullyCovered ? t('monthlySurplus') : t('monthlyGap')}
             value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/mo`}
+            secondaryValue={currency !== 'AED' ? `${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).secondary}/mo` : null}
             bold
             valueClassName={isFullyCovered ? 'text-green-400' : 'text-red-400'}
           />
