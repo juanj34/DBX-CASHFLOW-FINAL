@@ -1,139 +1,148 @@
 
+# Plan: Move Gap Payment Warning to Bottom of Mortgage Section
 
-# Plan: Remove Generate Section from Payment Configurator
+## Problem
 
-## Understanding the Issue
-
-The "⚡ Generate" section (Step 3) shows:
-- **4** × **6** mo @ **2.5** %
-- A projection: "4×2.5% = 10.0% (need: 25.0%)"
-
-This is **unnecessary** because:
-1. Developers provide the payment plan structure (e.g., "40/60 with 10 installments at 2% each during construction")
-2. Users just need to **input the installments** they're given, not calculate them
-3. The formula creates confusion ("need: 25.0%") when the developer's plan is already defined
+When the "Gap Payment Required" warning appears, it's positioned immediately after the header toggle (line 105-125), pushing all the main controls (Financing, Term, Interest Rate sliders) down. This causes a jarring UI shift that feels disruptive.
 
 ---
 
 ## Solution
 
-Remove the "Generate" section entirely. Users will:
-1. Select the **Split** (e.g., 40/60)
-2. Set the **Downpayment** percentage
-3. **Add installments manually** using the "+" button in the Installments list
+Move the Gap Payment warning to the **bottom** of the section, just before the Reset button. This keeps the main controls (sliders) in a fixed position, providing a stable UI experience.
 
-The "Installments" section already has an "Add" button (`addAdditionalPayment`) that lets users add payments one-by-one, which is how real-world payment plans work.
+---
+
+## Current Layout Order:
+
+```
+1. Header + Toggle
+2. 🟡 Gap Warning (HERE - pushes everything down)
+3. Financing / Term sliders (2x2 grid)
+4. Interest Rate slider
+5. Monthly Payment Summary
+6. Advanced Settings (collapsible)
+7. Reset Button
+```
+
+## New Layout Order:
+
+```
+1. Header + Toggle
+2. Financing / Term sliders (2x2 grid)
+3. Interest Rate slider
+4. Monthly Payment Summary
+5. Advanced Settings (collapsible)
+6. 🟡 Gap Warning (MOVED HERE - no more UI shift)
+7. Reset Button
+```
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/configurator/PaymentSection.tsx`
+### File: `src/components/roi/configurator/MortgageSection.tsx`
 
-#### 1. Remove Generate Section (lines 338-409)
+Move the Gap Warning block (lines 104-125) from its current position to just before the Reset button (before line 311).
 
-Delete the entire Step 3 "Generate" block:
+**Before (current location - line 104):**
 ```tsx
-{/* Auto-Generate Card - Compact */}
-<div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
-  <div className="flex items-center gap-2">
-    <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 ...">3</div>
-    <Zap className="w-3.5 h-3.5 text-[#CCFF00]" />
-    <span className="text-sm font-medium text-[#CCFF00]">Generate</span>
-  </div>
-  
-  {/* Input fields for numPayments, interval, percent */}
-  ...
-  
-  {/* Projection summary */}
-  <div className="text-xs text-gray-500 ml-7 font-mono">
-    {numPayments}×{percentPerPayment}% = ...
-  </div>
-</div>
+{mortgageInputs.enabled && (
+  <>
+    {/* Gap Warning - Theme Style */}
+    {hasGap && (
+      <div className="p-3 bg-theme-card border border-amber-500/30 rounded-lg">
+        ...
+      </div>
+    )}
+
+    {/* Main Controls - Compact 2x2 Grid */}
+    <div className="grid grid-cols-2 gap-2">
 ```
 
-#### 2. Remove Related State Variables (lines 44-46)
-
-Remove these unused state variables:
-```typescript
-const [numPayments, setNumPayments] = useState(4);
-const [paymentInterval, setPaymentInterval] = useState(6);
-const [percentPerPayment, setPercentPerPayment] = useState(2.5);
-```
-
-#### 3. Remove `handleGeneratePayments` Function (lines 113-127)
-
-This function is no longer needed:
-```typescript
-const handleGeneratePayments = () => { ... };
-```
-
-#### 4. Add "Add Installment" Button to Installments Header
-
-Replace the existing Installments header with one that includes an add button:
+**After (moved to bottom):**
 ```tsx
-<div className="flex justify-between items-center cursor-pointer hover:opacity-80">
-  <div className="flex items-center gap-2">
-    <label className="text-sm text-gray-300 font-medium">Installments</label>
-    <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
-    <Button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); addAdditionalPayment(); }}
-      size="sm"
-      className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
-    >
-      <Plus className="w-2.5 h-2.5" /> Add
-    </Button>
-  </div>
-  {/* ... validation badge and chevron ... */}
-</div>
+{mortgageInputs.enabled && (
+  <>
+    {/* Main Controls - Compact 2x2 Grid */}
+    <div className="grid grid-cols-2 gap-2">
+      ...
+    </div>
+
+    {/* Monthly Payment Summary */}
+    ...
+
+    {/* Advanced Settings - Collapsible */}
+    ...
+
+    {/* Gap Warning - At bottom to avoid UI shift */}
+    {hasGap && (
+      <div className="p-3 bg-theme-card border border-amber-500/30 rounded-lg">
+        ...
+      </div>
+    )}
+
+    {/* Reset Button */}
+    <Button ... />
+  </>
+)}
 ```
 
 ---
 
 ## Visual Comparison
 
-### Before (3 Steps):
+### Before (Gap Warning at Top):
 ```
-┌──────────────────────────────────────────────┐
-│ ① Split        [30/70] [40/60] [45/55] ...  │
-├──────────────────────────────────────────────┤
-│ ② Down         [──────○──────] 20%          │
-├──────────────────────────────────────────────┤
-│ ③ ⚡ Generate   [4]×[6] mo @ [2.5] %  [Go]  │  ← REMOVED
-│    4×2.5% = 10.0% (need: 25.0%)             │
-├──────────────────────────────────────────────┤
-│ Installments (4)            [✓]       ▼     │
-│ ...                                          │
-└──────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│ 🏠 Mortgage Calculator          [ON]   │
+├─────────────────────────────────────────┤
+│ ⚠️ Gap Payment Required                 │  ← Appears here
+│ Your pre-handover (45%) don't cover...  │  ← Pushes sliders down
+│ [████████░░░░░░░░░░░░░░░░░░░░░]        │
+├─────────────────────────────────────────┤
+│ Financing 50%     │    Term 15y        │  ← Shifts position
+│ [──────●─────]    │  [────●──────]     │
+├─────────────────────────────────────────┤
+│ Interest Rate                    4.9%   │
 ```
 
-### After (2 Steps + Direct Add):
+### After (Gap Warning at Bottom):
 ```
-┌──────────────────────────────────────────────┐
-│ ① Split        [30/70] [40/60] [45/55] ...  │
-├──────────────────────────────────────────────┤
-│ ② Down         [──────○──────] 20%          │
-├──────────────────────────────────────────────┤
-│ Installments (4)  [+ Add]       [✓]    ▼    │  ← Direct add button
-│ ...                                          │
-└──────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│ 🏠 Mortgage Calculator          [ON]   │
+├─────────────────────────────────────────┤
+│ Financing 50%     │    Term 15y        │  ← Fixed position!
+│ [──────●─────]    │  [────●──────]     │
+├─────────────────────────────────────────┤
+│ Interest Rate                    4.9%   │
+│ [────●─────────────────────────]       │
+├─────────────────────────────────────────┤
+│ Monthly Payment: AED 12,345            │
+├─────────────────────────────────────────┤
+│ ▶ Advanced Settings                     │
+├─────────────────────────────────────────┤
+│ ⚠️ Gap Payment Required                 │  ← Appears here
+│ Your pre-handover (45%) don't cover...  │  ← No layout shift!
+│ [████████░░░░░░░░░░░░░░░░░░░░░]        │
+├─────────────────────────────────────────┤
+│ 🔄 Reset to Defaults                    │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/configurator/PaymentSection.tsx` | Remove Generate section, remove related state/functions, add "Add" button to Installments header |
+| File | Change |
+|------|--------|
+| `src/components/roi/configurator/MortgageSection.tsx` | Move Gap Warning block from line 104-125 to just before Reset button (line 311) |
 
 ---
 
 ## Benefits
 
-1. **Simpler UI** - Fewer inputs to understand
-2. **Matches real workflow** - Developers give you the plan, you just enter it
-3. **No confusing "need: X%" messages** - The validation badge already shows if you're over/under
-4. **More space** - One less section taking up room
-
+1. **Stable UI** - Sliders stay in place regardless of gap status
+2. **No jarring shifts** - Warning appears below, expanding downward
+3. **Better UX** - Users can adjust sliders without the UI jumping
+4. **Still visible** - Warning is still prominently displayed with amber styling
