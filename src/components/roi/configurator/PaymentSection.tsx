@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Clock, Building2, Zap, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar } from "lucide-react";
+import { Plus, Trash2, Clock, Building2, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -41,9 +41,6 @@ const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: num
 };
 
 export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
-  const [numPayments, setNumPayments] = useState(4);
-  const [paymentInterval, setPaymentInterval] = useState(6);
-  const [percentPerPayment, setPercentPerPayment] = useState(2.5);
   const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
   const [showCustomSplit, setShowCustomSplit] = useState(false);
   const [customPreHandover, setCustomPreHandover] = useState('');
@@ -103,27 +100,6 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       preHandoverPercent: preHandover,
       additionalPayments: []
     }));
-  };
-
-  const calculateAutoPercentage = () => {
-    const remaining = inputs.preHandoverPercent - inputs.downpaymentPercent;
-    return numPayments > 0 ? remaining / numPayments : 0;
-  };
-
-  const handleGeneratePayments = () => {
-    const newPayments: PaymentMilestone[] = [];
-    
-    for (let i = 0; i < numPayments; i++) {
-      newPayments.push({
-        id: `auto-${Date.now()}-${i}`,
-        type: 'time',
-        triggerValue: paymentInterval * (i + 1),
-        paymentPercent: percentPerPayment
-      });
-    }
-    
-    setInputs(prev => ({ ...prev, additionalPayments: newPayments }));
-    setShowInstallments(true);
   };
 
   const handleResetPayments = () => {
@@ -332,82 +308,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
-      {/* Step 3: Installments Section - Only show after downpayment is set */}
+      {/* Installments Section - Only show after downpayment is set */}
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
         <div className="space-y-3 animate-fade-in">
-          {/* Auto-Generate Card - Compact */}
-          <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">3</div>
-              <Zap className="w-3.5 h-3.5 text-[#CCFF00]" />
-              <span className="text-sm font-medium text-[#CCFF00]">Generate</span>
-            </div>
-            
-            <div className="flex items-center gap-2 ml-7 flex-wrap">
-              <div className="flex items-center gap-1">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={numPayments || ''}
-                  onChange={(e) => handleNumberInputChange(e.target.value, setNumPayments, 1, 60)}
-                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
-                />
-                <span className="text-xs text-gray-500">×</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={paymentInterval || ''}
-                  onChange={(e) => handleNumberInputChange(e.target.value, setPaymentInterval, 1, 24)}
-                  className="w-10 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
-                />
-                <span className="text-xs text-gray-500">mo @</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  value={percentPerPayment || ''}
-                  onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
-                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-center text-xs"
-                />
-                <span className="text-xs text-gray-500">%</span>
-              </div>
-              <div className="flex items-center gap-1.5 ml-auto">
-                <Button
-                  type="button"
-                  onClick={handleGeneratePayments}
-                  size="sm"
-                  className="h-7 px-3 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs"
-                >
-                  <Zap className="w-2.5 h-2.5 mr-0.5" />
-                  Go
-                </Button>
-                {inputs.additionalPayments.length > 0 && (
-                  <Button
-                    type="button"
-                    onClick={handleResetPayments}
-                    size="sm"
-                    variant="outline"
-                    className="h-6 px-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                  >
-                    <Trash2 className="w-2.5 h-2.5" />
-                  </Button>
-                )}
-              </div>
-            </div>
-            {/* Projection summary */}
-            <div className="text-xs text-gray-500 ml-7 font-mono">
-              {numPayments}×{percentPerPayment}% = {(numPayments * percentPerPayment).toFixed(1)}%
-              {Math.abs(numPayments * percentPerPayment - (inputs.preHandoverPercent - inputs.downpaymentPercent)) > 0.5 && (
-                <span className="text-amber-400 ml-1">
-                  (need: {(inputs.preHandoverPercent - inputs.downpaymentPercent).toFixed(1)}%)
-                </span>
-              )}
-            </div>
-          </div>
-
           {/* Installments List */}
           <Collapsible open={showInstallments} onOpenChange={setShowInstallments}>
             <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
@@ -416,6 +319,25 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   <div className="flex items-center gap-2">
                     <label className="text-sm text-gray-300 font-medium">Installments</label>
                     <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
+                    <Button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); addAdditionalPayment(); }}
+                      size="sm"
+                      className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
+                    >
+                      <Plus className="w-2.5 h-2.5 mr-0.5" /> Add
+                    </Button>
+                    {inputs.additionalPayments.length > 0 && (
+                      <Button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleResetPayments(); }}
+                        size="sm"
+                        variant="outline"
+                        className="h-5 px-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10 text-[9px]"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" />
+                      </Button>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {hasPayments ? (
