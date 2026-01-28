@@ -8,6 +8,7 @@ import { SnapshotOverviewCards } from './SnapshotOverviewCards';
 import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
+import { CompactPostHandoverCard } from './CompactPostHandoverCard';
 import { CompactAllExitsCard } from './CompactAllExitsCard';
 import { WealthProjectionModal } from './WealthProjectionModal';
 import { FloorPlanLightbox } from '@/components/roi/FloorPlanLightbox';
@@ -137,6 +138,16 @@ export const SnapshotContent = ({
                 currency={currency}
                 rate={rate}
                 onClick={() => setExitModalOpen(true)}
+              />
+            )}
+            
+            {/* Post-Handover Coverage Card - only show if hasPostHandoverPlan */}
+            {inputs.hasPostHandoverPlan && (
+              <CompactPostHandoverCard
+                inputs={inputs}
+                monthlyRent={monthlyRent}
+                currency={currency}
+                rate={rate}
               />
             )}
             
