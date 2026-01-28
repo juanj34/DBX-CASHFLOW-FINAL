@@ -225,8 +225,8 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
                   type="text"
                   inputMode="numeric"
                   value={numPostPayments || ''}
-                  onChange={(e) => handleNumberInputChange(e.target.value, setNumPostPayments, 1, 12)}
-                  className="w-12 h-7 bg-theme-input border-theme-border text-theme-text font-mono text-center text-xs"
+                  onChange={(e) => handleNumberInputChange(e.target.value, setNumPostPayments, 1, 60)}
+                  className="w-14 h-7 bg-theme-input border-theme-border text-theme-text font-mono text-center text-xs"
                 />
                 <span className="text-[10px] text-theme-text-muted">payments</span>
               </div>
