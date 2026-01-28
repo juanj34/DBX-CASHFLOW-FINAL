@@ -40,6 +40,20 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
     return `Q${q} ${y}`;
   };
 
+  // Calculate time to completion
+  const getTimeToCompletion = (quote: QuoteWithCalculations['quote']) => {
+    const now = new Date();
+    const handoverDate = new Date(quote.inputs.handoverYear, (quote.inputs.handoverQuarter - 1) * 3, 1);
+    const diffMonths = Math.max(0, (handoverDate.getFullYear() - now.getFullYear()) * 12 + 
+      (handoverDate.getMonth() - now.getMonth()));
+    const years = Math.floor(diffMonths / 12);
+    const months = diffMonths % 12;
+    if (years > 0 && months > 0) return `${years}y ${months}m`;
+    if (years > 0) return `${years}y`;
+    if (months > 0) return `${months}m`;
+    return 'Now';
+  };
+
   // Calculate monthly burn rate
   const getMonthlyBurn = (item: QuoteWithCalculations) => {
     const totalPreHandover = item.calculations.totalEntryCosts + 
@@ -87,10 +101,12 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           values={metrics.pricePerSqft}
           formatter={(v) => v !== null ? `AED ${Math.round(v).toLocaleString()}` : 'N/A'}
         />
-        {/* Handover Date */}
+        {/* Handover Date with time to completion */}
         <MetricRow
           label="Handover"
-          values={quotesWithCalcs.map(q => ({ value: formatHandoverDate(q.quote) }))}
+          values={quotesWithCalcs.map(q => ({ 
+            value: `${formatHandoverDate(q.quote)} (${getTimeToCompletion(q.quote)})` 
+          }))}
           formatter={(v) => v}
         />
         {/* Monthly Burn Rate */}
@@ -124,18 +140,16 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           })}
           formatter={(v) => formatCurrency(v, 'AED', 1)}
         />
-        {/* Post-Handover Amount (if any) */}
-        {quotesWithCalcs.some(q => q.quote.inputs.hasPostHandoverPlan) && (
-          <MetricRow
-            label="Post-Handover"
-            values={quotesWithCalcs.map(q => {
-              if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
-              const postPercent = 100 - q.quote.inputs.preHandoverPercent - (q.quote.inputs.onHandoverPercent || 0);
-              return { value: q.quote.inputs.basePrice * postPercent / 100 };
-            })}
-            formatter={(v) => v > 0 ? formatCurrency(v, 'AED', 1) : '-'}
-          />
-        )}
+        {/* Post-Handover Amount - always show */}
+        <MetricRow
+          label="Post-Handover"
+          values={quotesWithCalcs.map(q => {
+            if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
+            const postPercent = 100 - q.quote.inputs.preHandoverPercent - (q.quote.inputs.onHandoverPercent || 0);
+            return { value: q.quote.inputs.basePrice * postPercent / 100 };
+          })}
+          formatter={(v) => v > 0 ? formatCurrency(v, 'AED', 1) : '—'}
+        />
         {/* Y1 Rent Income */}
         <MetricRow
           label="Y1 Rent Income"
