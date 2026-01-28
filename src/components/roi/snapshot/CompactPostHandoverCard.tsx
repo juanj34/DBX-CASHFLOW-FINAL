@@ -11,24 +11,24 @@ interface CompactPostHandoverCardProps {
   rate: number;
 }
 
-// Check if a payment is post-handover (at or after handover quarter start)
-const isPaymentPostHandover = (
+// Check if a payment is AFTER the handover quarter (strictly after Q end, not start)
+// Must match the logic in CompactPaymentTable.tsx
+const isPaymentAfterHandoverQuarter = (
   monthsFromBooking: number,
   bookingMonth: number,
   bookingYear: number,
   handoverQuarter: number,
   handoverYear: number
 ): boolean => {
-  const totalMonthsFromStart = bookingMonth + monthsFromBooking;
-  const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
-  const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
-  const paymentYear = bookingYear + paymentYearOffset;
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
   
-  const handoverMonthStart = (handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(handoverYear, handoverMonthStart - 1);
-  const paymentDate = new Date(paymentYear, paymentMonth - 1);
+  // Handover quarter END = last month of quarter (Q3 = Sep = month 9)
+  const handoverQuarterEndMonth = handoverQuarter * 3;
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
   
-  return paymentDate >= handoverDate;
+  return paymentDate > handoverQuarterEnd;
 };
 
 export const CompactPostHandoverCard = ({
@@ -47,11 +47,11 @@ export const CompactPostHandoverCard = ({
   // First try dedicated postHandoverPayments array
   let postHandoverPaymentsToUse: PaymentMilestone[] = inputs.postHandoverPayments || [];
   
-  // If empty, derive from additionalPayments (time-based payments at/after handover)
+  // If empty, derive from additionalPayments (time-based payments AFTER handover quarter end)
   if (postHandoverPaymentsToUse.length === 0 && inputs.additionalPayments?.length > 0) {
     postHandoverPaymentsToUse = inputs.additionalPayments.filter(p => {
       if (p.type !== 'time') return false;
-      return isPaymentPostHandover(
+      return isPaymentAfterHandoverQuarter(
         p.triggerValue,
         inputs.bookingMonth,
         inputs.bookingYear,
