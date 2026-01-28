@@ -1,6 +1,7 @@
 import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
-import { Calendar, CreditCard, Home, Clock, Building2 } from "lucide-react";
+import { Calendar, CreditCard, Home, Clock, Building2, Key } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InfoTooltip } from "./InfoTooltip";
 import { ClientUnitData } from "./ClientUnitInfo";
@@ -40,6 +41,25 @@ const isPaymentAtOrAfterHandover = (
   const isPostHandover = paymentDate >= handoverQuarterEnd;
   
   return { isHandover, isPostHandover };
+};
+
+// Check if a payment falls within the handover quarter specifically (for strong highlighting)
+const isPaymentInHandoverQuarter = (
+  monthsFromBooking: number,
+  bookingMonth: number,
+  bookingYear: number,
+  handoverQuarter: number,
+  handoverYear: number
+): boolean => {
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
+  
+  const paymentYear = paymentDate.getFullYear();
+  const paymentMonth = paymentDate.getMonth() + 1;
+  const paymentQuarter = Math.ceil(paymentMonth / 3);
+  
+  return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
 };
 
 // Convert booking month/year to readable date string
@@ -248,8 +268,19 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                         monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
                       );
                       
+                      // Check if in handover quarter for strong highlighting
+                      const inHandoverQuarter = isPaymentInHandoverQuarter(
+                        monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
+                      );
+                      
                       return (
-                        <div key={payment.id} className="flex justify-between items-center gap-2">
+                        <div 
+                          key={payment.id} 
+                          className={cn(
+                            "flex justify-between items-center gap-2",
+                            inHandoverQuarter && "bg-green-500/10 rounded px-2 py-1 -mx-2 border-l-2 border-green-400"
+                          )}
+                        >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {isTimeBased ? (
                               <Clock className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
@@ -262,12 +293,13 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                             {dateStr && (
                               <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
                             )}
-                            {isHandover && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded border border-cyan-500/30 whitespace-nowrap">
-                                🔑 Handover
+                            {inHandoverQuarter && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
+                                <Key className="w-2.5 h-2.5" />
+                                Handover
                               </span>
                             )}
-                            {isPostHandover && (
+                            {isPostHandover && !inHandoverQuarter && (
                               <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30 whitespace-nowrap">
                                 Post-HO
                               </span>
