@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { 
   User, FileText, Presentation, Mail, MessageCircle, 
-  Building2, ExternalLink, Eye, Calendar, DollarSign
+  Building2, ExternalLink, Eye, Calendar, DollarSign, Download, Globe, Languages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,15 @@ import { useClients, Client } from "@/hooks/useClients";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { format } from "date-fns";
+import { Currency } from "@/components/roi/currencyUtils";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { ExportModal } from "@/components/roi/ExportModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface QuoteData {
   id: string;
@@ -51,6 +60,16 @@ const ClientPortal = () => {
   const [presentations, setPresentations] = useState<PresentationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Currency and language state
+  const [currency, setCurrency] = useState<Currency>('AED');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const { rate } = useExchangeRate(currency);
+
+  // Export modal state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportQuoteId, setExportQuoteId] = useState<string | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
 
   useDocumentTitle(client?.name ? `${client.name} - Portal` : "Client Portal");
 
@@ -138,6 +157,29 @@ const ClientPortal = () => {
     return null;
   };
 
+  const handleDownloadQuote = (quoteId: string) => {
+    setExportQuoteId(quoteId);
+    setExportModalOpen(true);
+  };
+
+  const handleDownloadAll = async () => {
+    setExportingAll(true);
+    for (const quote of quotes) {
+      setExportQuoteId(quote.id);
+      setExportModalOpen(true);
+      // Wait for user to close modal before continuing
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    setExportingAll(false);
+  };
+
+  const currencyOptions: { value: Currency; label: string }[] = [
+    { value: 'AED', label: 'AED' },
+    { value: 'USD', label: 'USD' },
+    { value: 'EUR', label: 'EUR' },
+    { value: 'GBP', label: 'GBP' },
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center">
@@ -158,12 +200,61 @@ const ClientPortal = () => {
     );
   }
 
+  // Get current export quote data
+  const exportQuote = quotes.find(q => q.id === exportQuoteId);
+
   return (
     <div className="min-h-screen bg-theme-bg">
       {/* Header */}
       <header className="bg-theme-card border-b border-theme-border">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <AppLogo size="md" />
+          
+          {/* Currency/Language selectors */}
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80">
+                  <Globe className="w-3.5 h-3.5 mr-1.5" />
+                  {currency}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-theme-card border-theme-border z-50">
+                {currencyOptions.map(opt => (
+                  <DropdownMenuItem
+                    key={opt.value}
+                    onClick={() => setCurrency(opt.value)}
+                    className={currency === opt.value ? 'bg-theme-accent/20 text-theme-accent' : 'text-theme-text'}
+                  >
+                    {opt.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80">
+                  <Languages className="w-3.5 h-3.5 mr-1.5" />
+                  {language.toUpperCase()}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-theme-card border-theme-border z-50">
+                <DropdownMenuItem
+                  onClick={() => setLanguage('en')}
+                  className={language === 'en' ? 'bg-theme-accent/20 text-theme-accent' : 'text-theme-text'}
+                >
+                  English
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setLanguage('es')}
+                  className={language === 'es' ? 'bg-theme-accent/20 text-theme-accent' : 'text-theme-text'}
+                >
+                  Español
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
@@ -227,10 +318,24 @@ const ClientPortal = () => {
         {/* Quotes Section */}
         {quotes.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-theme-text mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-theme-accent" />
-              Investment Opportunities ({quotes.length})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-theme-text flex items-center gap-2">
+                <FileText className="w-5 h-5 text-theme-accent" />
+                Investment Opportunities ({quotes.length})
+              </h2>
+              {quotes.length > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadAll}
+                  disabled={exportingAll}
+                  className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Download All
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {quotes.map(quote => (
                 <Card key={quote.id} className="bg-theme-card border-theme-border hover:border-theme-accent/30 transition-colors">
@@ -268,16 +373,26 @@ const ClientPortal = () => {
                       </div>
                     </div>
 
-                    {quote.share_token && (
+                    <div className="flex gap-2">
+                      {quote.share_token && (
+                        <Button
+                          size="sm"
+                          onClick={() => window.open(`/snapshot/${quote.share_token}?currency=${currency}&lang=${language}`, '_blank')}
+                          className="flex-1 bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1.5" />
+                          View
+                        </Button>
+                      )}
                       <Button
                         size="sm"
-                        onClick={() => window.open(`/snapshot/${quote.share_token}`, '_blank')}
-                        className="w-full bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+                        variant="outline"
+                        onClick={() => handleDownloadQuote(quote.id)}
+                        className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
                       >
-                        <Eye className="w-3.5 h-3.5 mr-1.5" />
-                        View Snapshot
+                        <Download className="w-3.5 h-3.5" />
                       </Button>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -346,6 +461,19 @@ const ClientPortal = () => {
           </div>
         )}
       </main>
+
+      {/* Export Modal */}
+      {exportQuote && (
+        <ExportModal
+          open={exportModalOpen}
+          onOpenChange={setExportModalOpen}
+          inputs={exportQuote.inputs}
+          projectName={exportQuote.project_name || 'Investment Property'}
+          currency={currency}
+          language={language}
+          rate={rate}
+        />
+      )}
     </div>
   );
 };
