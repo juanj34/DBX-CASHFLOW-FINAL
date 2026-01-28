@@ -1,73 +1,66 @@
 
-# Plan: Fix Post-Handover Amount Display in Metrics Table
+# Plan: Fix Selection Bug and Increase Limit to 6 in CreateComparisonModal
 
-## Problem
+## Problem Analysis
 
-The current calculation for post-handover amount uses:
-```typescript
-const postPercent = 100 - preHandoverPercent - (onHandoverPercent || 0);
-```
+Two issues identified in `CreateComparisonModal.tsx`:
 
-But the `OIInputs` interface actually stores `postHandoverPercent` directly (line 33). For projects like "skyline" and "weybridge" where `onHandoverPercent` is 0, the stored `postHandoverPercent` should be used to correctly show the amount being paid in the post-handover phase.
+1. **Selection Bug**: The `useEffect` on line 46-52 has `initialQuoteIds` as a dependency. Since the default value `initialQuoteIds = []` creates a new array reference on each render, the effect fires repeatedly and resets `selectedQuoteIds` to empty, preventing any selections.
+
+2. **Limit Issue**: `maxQuotes` is still set to 4 (line 54), should be 6.
 
 ---
 
 ## Solution
 
-**File: `src/components/roi/compare/MetricsTable.tsx`**
+**File: `src/components/presentation/CreateComparisonModal.tsx`**
 
-Update the Post-Handover row calculation (lines 175-179) to use the stored `postHandoverPercent` value when available:
-
+### Change 1: Increase maxQuotes (line 54)
 ```tsx
-{/* Post-Handover Amount - always show */}
-<MetricRow
-  label="Post-Handover"
-  values={quotesWithCalcs.map(q => {
-    if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
-    // Use stored postHandoverPercent if available, otherwise calculate
-    const postPercent = q.quote.inputs.postHandoverPercent ?? 
-      (100 - q.quote.inputs.preHandoverPercent - (q.quote.inputs.onHandoverPercent || 0));
-    return { value: q.quote.inputs.basePrice * postPercent / 100 };
-  })}
-  formatter={(v) => v > 0 ? formatCurrency(v, 'AED', 1) : '—'}
-/>
+// Before
+const maxQuotes = 4;
+
+// After
+const maxQuotes = 6;
 ```
 
-Also update the `getPaymentPlanLabel` helper (lines 57-76) to use the same logic for consistency:
+### Change 2: Fix useEffect to only reset on modal open transition (lines 45-52)
+
+Add a ref to track the previous open state and only reset when modal opens (transitions from closed to open):
 
 ```tsx
-const getPaymentPlanLabel = (quote: QuoteWithCalculations['quote']) => {
-  const hasPostHandover = quote.inputs.hasPostHandoverPlan;
-  const preHandoverTotal = quote.inputs.preHandoverPercent;
-  
-  if (hasPostHandover) {
-    const onHandover = quote.inputs.onHandoverPercent || 0;
-    // Use stored postHandoverPercent if available
-    const postHandover = quote.inputs.postHandoverPercent ?? 
-      (100 - preHandoverTotal - onHandover);
-    return {
-      type: 'post-handover',
-      label: `${Math.round(preHandoverTotal)}/${Math.round(onHandover)}/${Math.round(postHandover)}`
-    };
+import { useState, useMemo, useEffect, useRef } from "react";
+
+// Inside component:
+const prevOpenRef = useRef(false);
+
+useEffect(() => {
+  // Only reset when modal opens (transitions from closed to open)
+  if (open && !prevOpenRef.current) {
+    setSelectedQuoteIds(initialQuoteIds);
+    setTitle(initialTitle);
+    setSearch("");
   }
-  // ... rest unchanged
-};
+  prevOpenRef.current = open;
+}, [open, initialQuoteIds, initialTitle]);
 ```
+
+This ensures selections are only reset when the modal first opens, not on every parent re-render.
 
 ---
 
 ## Summary
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/compare/MetricsTable.tsx` | Use stored `postHandoverPercent` value instead of calculating from remaining percentage |
+| Location | Change |
+|----------|--------|
+| Line 1 | Add `useRef` to imports |
+| Line 45-52 | Add `prevOpenRef` and update useEffect logic to only reset on open transition |
+| Line 54 | Change `maxQuotes = 4` → `maxQuotes = 6` |
 
 ---
 
 ## Expected Result
 
-| Quote | On Handover | Post-Handover |
-|-------|-------------|---------------|
-| Skyline | — (or small amount) | AED X,XXX,XXX (the actual post-HO amount) |
-| Weybridge | — (or small amount) | AED X,XXX,XXX (the actual post-HO amount) |
-| Standard Plan | AED X,XXX,XXX | — |
+- Users can select up to 6 quotes for comparison
+- Selections persist while the modal is open (no more reset on every click)
+- Modal text updates to "Select 2-6 quotes to compare"
