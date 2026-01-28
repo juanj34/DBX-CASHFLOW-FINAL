@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Rocket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +11,9 @@ import { calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards'
 import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { SnapshotContent } from '@/components/roi/snapshot';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
-const SnapshotView = () => {
+const SnapshotViewContent = () => {
   useDocumentTitle("Investment Snapshot");
   const { shareToken } = useParams<{ shareToken: string }>();
   const [searchParams] = useSearchParams();
@@ -43,6 +44,11 @@ const SnapshotView = () => {
     name: null,
     avatarUrl: null,
   });
+  
+  // View tracking refs
+  const viewTrackedRef = useRef(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const viewStartTime = useRef(Date.now());
   
   const { rate } = useExchangeRate(currency);
 
@@ -142,6 +148,77 @@ const SnapshotView = () => {
     fetchQuote();
   }, [shareToken]);
 
+  // Track view on first load
+  useEffect(() => {
+    if (!shareToken || viewTrackedRef.current) return;
+    
+    // Check if already tracked in this session
+    const sessionKey = `quote_viewed_${shareToken}`;
+    const existingSessionId = sessionStorage.getItem(`quote_session_${shareToken}`);
+    
+    if (sessionStorage.getItem(sessionKey) && existingSessionId) {
+      viewTrackedRef.current = true;
+      sessionIdRef.current = existingSessionId;
+      return;
+    }
+    
+    const trackView = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('track-quote-view', {
+          body: { shareToken },
+        });
+        sessionStorage.setItem(sessionKey, 'true');
+        viewTrackedRef.current = true;
+        
+        if (data?.session_id) {
+          sessionIdRef.current = data.session_id;
+          sessionStorage.setItem(`quote_session_${shareToken}`, data.session_id);
+        }
+      } catch (error) {
+        console.error('Error tracking view:', error);
+      }
+    };
+    
+    trackView();
+  }, [shareToken]);
+
+  // Track time spent when user leaves the page
+  useEffect(() => {
+    const sendDuration = () => {
+      if (!sessionIdRef.current) return;
+      
+      const durationSeconds = (Date.now() - viewStartTime.current) / 1000;
+      
+      // Use sendBeacon for reliable tracking on page close
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-quote-view-duration`;
+      const payload = JSON.stringify({
+        sessionId: sessionIdRef.current,
+        durationSeconds,
+      });
+      
+      navigator.sendBeacon(url, payload);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        sendDuration();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      sendDuration();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      sendDuration();
+    };
+  }, []);
+
   const calculations = inputs ? useOICalculations(inputs) : null;
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs,
@@ -195,6 +272,15 @@ const SnapshotView = () => {
         rate={rate}
       />
     </div>
+  );
+};
+
+// Wrap in LanguageProvider so translations work correctly
+const SnapshotView = () => {
+  return (
+    <LanguageProvider>
+      <SnapshotViewContent />
+    </LanguageProvider>
   );
 };
 
