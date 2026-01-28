@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard, Building2 } from 'lucide-react';
+import { Rocket, TrendingUp, Home, Globe, Coins, Mail, MessageCircle, User, CreditCard, Building2, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +21,7 @@ import { CashflowErrorBoundary } from '@/components/roi/ErrorBoundary';
 import { ClientOnboardingModal, useClientOnboarding } from '@/components/roi/ClientOnboardingModal';
 import { decodeVisibility } from '@/components/roi/ViewVisibilityControls';
 import { MortgageBreakdown } from '@/components/roi/MortgageBreakdown';
+import { PostHandoverCoverageBreakdown } from '@/components/roi/PostHandoverCoverageBreakdown';
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from '@/components/roi/useMortgageCalculations';
 import { ValueDifferentiatorsDisplay } from '@/components/roi/ValueDifferentiatorsDisplay';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
@@ -510,6 +511,68 @@ const CashflowViewContent = () => {
                       rentGrowthRate={inputs.rentGrowthRate}
                       year5LongTermRent={year5LongTermRent}
                       year5AirbnbNet={year5AirbnbNet}
+                    />
+                  );
+                })()}
+              </CollapsibleSection>
+            )}
+
+            {/* Post-Handover Coverage Analysis - Collapsible */}
+            {inputs.hasPostHandoverPlan && calculations && (
+              <CollapsibleSection
+                title={t('postHandoverCoverage') || "Post-Handover Coverage"}
+                subtitle={t('postHandoverCoverageSubtitle') || "How rental income covers post-handover payments"}
+                icon={<RefreshCw className="w-5 h-5 text-theme-accent" />}
+                defaultOpen={false}
+              >
+                {(() => {
+                  // Calculate post-handover total
+                  const postHandoverTotal = (inputs.postHandoverPayments || []).reduce(
+                    (sum, p) => sum + (calculations.basePrice * p.paymentPercent / 100), 0
+                  );
+                  
+                  // Calculate duration in months
+                  const handoverMonth = (inputs.handoverQuarter - 1) * 3 + 1;
+                  const handoverDate = new Date(inputs.handoverYear, handoverMonth - 1);
+                  const endMonth = (inputs.postHandoverEndQuarter - 1) * 3 + 1;
+                  const endDate = new Date(inputs.postHandoverEndYear, endMonth - 1);
+                  const postHandoverMonths = Math.max(1, 
+                    (endDate.getFullYear() - handoverDate.getFullYear()) * 12 + 
+                    (endDate.getMonth() - handoverDate.getMonth())
+                  );
+                  
+                  // Monthly equivalent payment
+                  const monthlyEquivalent = postHandoverTotal / postHandoverMonths;
+                  
+                  // Monthly rent (net of service charges)
+                  const grossAnnualRent = calculations.basePrice * (inputs.rentalYieldPercent / 100);
+                  const annualServiceCharges = (clientInfo.unitSizeSqf || 0) * (inputs.serviceChargePerSqft || 18);
+                  const netAnnualRent = grossAnnualRent - annualServiceCharges;
+                  const monthlyRent = netAnnualRent / 12;
+                  
+                  // Cashflow calculation
+                  const monthlyCashflow = monthlyRent - monthlyEquivalent;
+                  const coveragePercent = monthlyEquivalent > 0 
+                    ? Math.round((monthlyRent / monthlyEquivalent) * 100) 
+                    : 0;
+                  const isFullyCovered = monthlyCashflow >= 0;
+                  const totalGap = Math.abs(monthlyCashflow) * postHandoverMonths;
+                  
+                  return (
+                    <PostHandoverCoverageBreakdown
+                      postHandoverTotal={postHandoverTotal}
+                      postHandoverMonths={postHandoverMonths}
+                      postHandoverPercent={inputs.postHandoverPercent || 0}
+                      monthlyEquivalent={monthlyEquivalent}
+                      monthlyRent={monthlyRent}
+                      monthlyCashflow={monthlyCashflow}
+                      coveragePercent={coveragePercent}
+                      isFullyCovered={isFullyCovered}
+                      totalGap={totalGap}
+                      endQuarter={inputs.postHandoverEndQuarter}
+                      endYear={inputs.postHandoverEndYear}
+                      currency={currency}
+                      rate={rate}
                     />
                   );
                 })()}
