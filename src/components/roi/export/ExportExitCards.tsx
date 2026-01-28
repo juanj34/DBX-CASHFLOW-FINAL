@@ -1,5 +1,5 @@
 import { OIInputs, OICalculations } from '../useOICalculations';
-import { Currency, formatCurrency } from '../currencyUtils';
+import { Currency, formatDualCurrency } from '../currencyUtils';
 import { monthToConstruction } from '../constructionProgress';
 
 interface ExportExitCardsProps {
@@ -10,6 +10,11 @@ interface ExportExitCardsProps {
   rate: number;
   language: 'en' | 'es';
 }
+
+const getDualValue = (value: number, currency: Currency, rate: number) => {
+  const dual = formatDualCurrency(value, currency, rate);
+  return { primary: dual.primary, secondary: dual.secondary };
+};
 
 const getDateFromMonths = (months: number, bookingMonth: number, bookingYear: number): string => {
   const totalMonthsFromJan = bookingMonth + months;
@@ -131,18 +136,32 @@ export const ExportExitCards = ({
             {/* Bottom Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ color: 'hsl(var(--theme-text))', fontFamily: 'monospace' }}>
-                  💰 {formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}
-                </span>
-                <span 
-                  style={{ 
-                    fontWeight: 500, 
-                    color: scenario.trueProfit >= 0 ? 'rgb(74, 222, 128)' : 'rgb(248, 113, 113)',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, 'AED', 1)}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span style={{ color: 'hsl(var(--theme-text))', fontFamily: 'monospace' }}>
+                    💰 {getDualValue(scenario.totalCapitalDeployed, currency, rate).primary}
+                  </span>
+                  {getDualValue(scenario.totalCapitalDeployed, currency, rate).secondary && (
+                    <span style={{ color: 'hsl(var(--theme-text-muted))', fontFamily: 'monospace', fontSize: '10px' }}>
+                      {getDualValue(scenario.totalCapitalDeployed, currency, rate).secondary}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span 
+                    style={{ 
+                      fontWeight: 500, 
+                      color: scenario.trueProfit >= 0 ? 'rgb(74, 222, 128)' : 'rgb(248, 113, 113)',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit, currency, rate).primary}
+                  </span>
+                  {getDualValue(scenario.trueProfit, currency, rate).secondary && (
+                    <span style={{ color: 'hsl(var(--theme-text-muted))', fontFamily: 'monospace', fontSize: '10px' }}>
+                      {scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit, currency, rate).secondary}
+                    </span>
+                  )}
+                </div>
               </div>
               <span 
                 style={{ 
