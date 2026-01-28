@@ -188,11 +188,20 @@ export const ConfiguratorLayout = ({
     // ALL sections must be visited first to be complete
     if (!visitedSections.has(section)) return false;
     
-    // Calculate payment validation
+    // Calculate payment validation - must match PaymentSection logic
     const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-    const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-    const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-    const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+    const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+
+    let totalPayment: number;
+    if (hasPostHandoverPlan) {
+      // Post-handover: downpayment + all installments = 100%
+      totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
+    } else {
+      // Standard: pre-handover + handover balance = 100%
+      const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+      totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+    }
+    const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (section) {
       case 'client':
@@ -272,11 +281,20 @@ export const ConfiguratorLayout = ({
 
   // Validation for current section
   const canProceedFromCurrentSection = useMemo(() => {
-    // Calculate payment validation
+    // Calculate payment validation - must match PaymentSection logic
     const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-    const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-    const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-    const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+    const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+
+    let totalPayment: number;
+    if (hasPostHandoverPlan) {
+      // Post-handover: downpayment + all installments = 100%
+      totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
+    } else {
+      // Standard: pre-handover + handover balance = 100%
+      const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+      totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+    }
+    const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (activeSection) {
       case 'client':
