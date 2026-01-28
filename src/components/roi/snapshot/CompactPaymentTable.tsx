@@ -41,20 +41,18 @@ const estimateDateFromMonths = (monthsFromBooking: number, bookingMonth: number,
   return monthToDateString(month, bookingYear + yearOffset, language);
 };
 
-// Check if payment falls in or after handover quarter
+// Check if payment falls in handover quarter
 const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
-  const totalMonthsFromStart = bookingMonth + monthsFromBooking;
-  const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
-  const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
-  const paymentYear = bookingYear + paymentYearOffset;
+  // Calculate actual payment date using Date object for accuracy
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
   
-  const handoverQuarterStart = (handoverQuarter - 1) * 3 + 1;
-  const handoverQuarterEnd = handoverQuarter * 3;
+  const paymentYear = paymentDate.getFullYear();
+  const paymentMonth = paymentDate.getMonth() + 1;
+  const paymentQuarter = Math.ceil(paymentMonth / 3);
   
-  if (paymentYear === handoverYear) {
-    return paymentMonth >= handoverQuarterStart && paymentMonth <= handoverQuarterEnd;
-  }
-  return false;
+  return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
 };
 
 const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
@@ -341,6 +339,21 @@ export const CompactPaymentTable = ({
                   valueClassName="text-green-400"
                 />
               </div>
+              {/* Inline Cumulative: Total to Handover */}
+              <div className="mt-2 pt-1.5 border-t border-dashed border-theme-border/50">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-theme-text-muted flex items-center gap-1">
+                    <Wallet className="w-2.5 h-2.5" />
+                    Total to this point
+                  </span>
+                  <span className="font-mono text-theme-accent font-medium">
+                    {getDualValue(totalUntilHandover).primary}
+                    {currency !== 'AED' && (
+                      <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -403,23 +416,6 @@ export const CompactPaymentTable = ({
             />
           </div>
 
-          {/* Total Cash Until Handover - Summary at Bottom */}
-          <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-2">
-            <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-1 flex items-center gap-1">
-              <Wallet className="w-3 h-3" />
-              Total Cash Until Handover
-            </div>
-            <DottedRow 
-              label="Entry + Journey + Handover"
-              value={getDualValue(totalUntilHandover).primary}
-              secondaryValue={getDualValue(totalUntilHandover).secondary}
-              bold
-              valueClassName="text-theme-accent"
-            />
-            <p className="text-[10px] text-theme-text-muted mt-1">
-              Cash required before rental income starts
-            </p>
-          </div>
 
           {/* Value Differentiators - AFTER Total Investment */}
           {valueDifferentiators.length > 0 && (
