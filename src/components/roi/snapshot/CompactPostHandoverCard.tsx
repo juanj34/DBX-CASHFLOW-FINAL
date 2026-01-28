@@ -45,6 +45,10 @@ export const CompactPostHandoverCard = ({
 
   const basePrice = inputs.basePrice;
   
+  // On-handover payment (what's due at handover, separate from post-HO installments)
+  const onHandoverPercent = inputs.onHandoverPercent || 0;
+  const onHandoverAmount = basePrice * (onHandoverPercent / 100);
+  
   // First try dedicated postHandoverPayments array
   let postHandoverPaymentsToUse: PaymentMilestone[] = inputs.postHandoverPayments || [];
   
@@ -168,6 +172,15 @@ export const CompactPostHandoverCard = ({
         
         {/* Simple Summary */}
         <div className="pt-2 mt-1 border-t border-theme-border space-y-1">
+          {/* On Handover Payment - what's due on handover day */}
+          {onHandoverAmount > 0 && (
+            <DottedRow 
+              label="On Handover"
+              value={getDualValue(onHandoverAmount).primary}
+              secondaryValue={getDualValue(onHandoverAmount).secondary}
+              valueClassName="text-yellow-400"
+            />
+          )}
           <DottedRow 
             label={`Tenant Covers (${actualDurationMonths}mo rent)`}
             value={`+${getDualValue(totalTenantContribution).primary}`}
