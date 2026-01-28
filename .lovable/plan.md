@@ -1,119 +1,160 @@
 
-# Plan: Payment Generator Enhancements
 
-## Summary of Changes
+# Plan: Fix Payment Footer + Compact UI
 
-Three improvements to the Payment Section configurator:
+## Two Problems to Fix
 
-1. **Add "% per payment" input** to the pre-handover installments generator
-2. **Move Post-Handover toggle** to the top of the Payment section
-3. **Add Reset button** to clear generated installments
+### Problem 1: Footer Shows Wrong "Handover" for Post-Handover Plans
+The footer calculates:
+```typescript
+const handoverPercent = 100 - inputs.preHandoverPercent;  // = 55% for 45/55 split
+const totalPayment = preHandoverTotal + handoverPercent;   // = 100% + 55% = 155% ❌
+```
+
+But for post-handover plans, there's NO lump sum at handover. The payments are:
+- **Pre-Handover**: Downpayment + installments before handover
+- **On Handover**: Small amount (0-5%) or nothing
+- **Post-Handover**: Installments after handover
+
+### Problem 2: UI is Too Cramped
+From previous discussion - the configurator needs more compact spacing.
 
 ---
 
-## 1. Add % Per Payment to Pre-Handover Generator
+## Solution
 
-Currently the pre-handover generator shows:
+### For Post-Handover Plans: New 4-Column Footer
+
+When `hasPostHandoverPlan` is enabled, show:
 ```
-[4] payments × [6] mo     [Generate]
+┌──────────────────────────────────────────────────────────────────────┐
+│  PRE-HO       ON-HAND       POST-HO        TOTAL                    │
+│   45%           1%           54%       =   100% ✓                   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-After change:
+When `hasPostHandoverPlan` is **disabled** (standard plan), keep current:
 ```
-[4] payments × [6] mo @ [2.5] %     [Generate]   [Reset]
+┌──────────────────────────────────────────────────────────────────────┐
+│  PRE-HANDOVER        HANDOVER          TOTAL                        │
+│      45%               55%          =  100% ✓                       │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Technical Changes
+---
 
-**File: `src/components/roi/configurator/PaymentSection.tsx`**
+## Technical Changes
 
-- Add new state for percent per payment (line ~48):
+### File: `src/components/roi/configurator/PaymentSection.tsx`
+
+#### 1. Fix Calculation Logic (lines 54-64)
+
 ```typescript
-const [percentPerPayment, setPercentPerPayment] = useState(2.5);
+// Calculate totals differently based on post-handover mode
+const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+
+// Pre-handover is always the same
+const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+
+// Handover and Post-handover depend on mode
+let handoverPercent: number;
+let postHandoverTotal: number = 0;
+let totalPayment: number;
+
+if (hasPostHandoverPlan) {
+  // Post-handover mode: specific on-handover + post installments
+  handoverPercent = inputs.onHandoverPercent || 0;
+  postHandoverTotal = (inputs.postHandoverPayments || []).reduce((sum, m) => sum + m.paymentPercent, 0);
+  totalPayment = preHandoverTotal + handoverPercent + postHandoverTotal;
+} else {
+  // Standard mode: remaining goes to handover
+  handoverPercent = 100 - inputs.preHandoverPercent;
+  totalPayment = preHandoverTotal + handoverPercent;
+}
+
+const isValidTotal = Math.abs(totalPayment - 100) < 0.5;
 ```
 
-- Update `handleGeneratePayments` to use the user-defined percentage:
-```typescript
-const handleGeneratePayments = () => {
-  const newPayments: PaymentMilestone[] = [];
-  
-  for (let i = 0; i < numPayments; i++) {
-    newPayments.push({
-      id: `auto-${Date.now()}-${i}`,
-      type: 'time',
-      triggerValue: paymentInterval * (i + 1),
-      paymentPercent: percentPerPayment  // Use exact user-defined percentage
-    });
-  }
-  
-  setInputs(prev => ({ ...prev, additionalPayments: newPayments }));
-  setShowInstallments(true);
-};
-```
+#### 2. Conditional Footer Rendering (lines 558-597)
 
-- Add the % input field to the generator UI (after the `mo` input):
+**Standard Plan Footer (current 3 columns):**
 ```tsx
-<span className="text-gray-600">@</span>
-<div className="flex items-center gap-1">
-  <Input
-    type="text"
-    inputMode="decimal"
-    value={percentPerPayment || ''}
-    onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
-    className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-center text-xs"
-  />
-  <span className="text-[10px] text-gray-500">%</span>
-</div>
-```
-
----
-
-## 2. Move Post-Handover Toggle to Top
-
-Currently the toggle is at the bottom (line 503-518). Move it right after the section title.
-
-### New Order:
-1. Title + description
-2. **Post-Handover Toggle** ← moved here
-3. Payment Split (Step 1)
-4. Downpayment (Step 2)
-5. Generate Installments (Step 3)
-6. Installments List
-7. Footer Summary
-
-### Technical Changes
-
-- Cut the toggle from lines 503-518 and insert after the title section (after line 182)
-
----
-
-## 3. Add Reset Button to Clear Payments
-
-Add a "Reset" button next to the Generate button that clears all installments.
-
-### Technical Changes
-
-- Add `handleResetPayments` function:
-```typescript
-const handleResetPayments = () => {
-  setInputs(prev => ({ ...prev, additionalPayments: [] }));
-  setShowInstallments(false);
-};
-```
-
-- Add Reset button next to Generate button:
-```tsx
-{inputs.additionalPayments.length > 0 && (
-  <Button
-    type="button"
-    onClick={handleResetPayments}
-    size="sm"
-    variant="outline"
-    className="h-7 px-2 border-red-500/30 text-red-400 hover:bg-red-500/10"
-  >
-    <Trash2 className="w-3 h-3" />
-  </Button>
+{!hasPostHandoverPlan && (
+  <div className="flex items-center gap-3">
+    {/* Pre-Handover | Handover | Total */}
+  </div>
 )}
+```
+
+**Post-Handover Plan Footer (new 4 columns):**
+```tsx
+{hasPostHandoverPlan && (
+  <div className="flex items-center gap-2">
+    {/* Pre-HO */}
+    <div className="flex-1 flex items-center gap-1.5 min-w-0">
+      <div className="w-2 h-2 rounded-full bg-[#CCFF00] shrink-0" />
+      <span className="text-[9px] text-gray-500 uppercase truncate">Pre-HO</span>
+      <span className="text-xs font-mono text-white ml-auto">{preHandoverTotal.toFixed(0)}%</span>
+    </div>
+    
+    <div className="h-5 w-px bg-[#2a3142]" />
+    
+    {/* On Handover */}
+    <div className="flex-1 flex items-center gap-1.5 min-w-0">
+      <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+      <span className="text-[9px] text-gray-500 uppercase truncate">On-HO</span>
+      <span className="text-xs font-mono text-white ml-auto">{handoverPercent}%</span>
+    </div>
+    
+    <div className="h-5 w-px bg-[#2a3142]" />
+    
+    {/* Post-Handover */}
+    <div className="flex-1 flex items-center gap-1.5 min-w-0">
+      <div className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+      <span className="text-[9px] text-gray-500 uppercase truncate">Post-HO</span>
+      <span className="text-xs font-mono text-purple-400 ml-auto">{postHandoverTotal.toFixed(0)}%</span>
+    </div>
+    
+    <div className="h-5 w-px bg-[#2a3142]" />
+    
+    {/* Total */}
+    <div className="flex-1 flex items-center gap-1.5 min-w-0">
+      {isValidTotal ? <CheckCircle2 className="w-3 h-3 text-green-400" /> : <AlertCircle className="w-3 h-3 text-red-400" />}
+      <span className="text-[9px] text-gray-500 uppercase">Total</span>
+      <span className={`text-xs font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
+        {totalPayment.toFixed(0)}%
+      </span>
+    </div>
+  </div>
+)}
+```
+
+#### 3. Compact UI Changes (throughout file)
+
+- Reduce container spacing: `space-y-4` → `space-y-2`
+- Reduce step block padding: `p-3` → `p-2`
+- Reduce step badges: `w-5 h-5` → `w-4 h-4`
+- Increase installments list height: `max-h-72` → `max-h-[50vh]`
+- Reduce row heights: `h-6` → `h-5`
+- Reduce font sizes in rows: `text-xs` → `text-[10px]`
+
+---
+
+## Result
+
+### Before (Post-Handover Plan):
+```
+PRE-HANDOVER  100%  |  HANDOVER  55%  |  TOTAL  155% ❌
+```
+
+### After (Post-Handover Plan):
+```
+PRE-HO  49%  |  ON-HO  0%  |  POST-HO  51%  |  TOTAL  100% ✓
+```
+
+### Standard Plan (unchanged):
+```
+PRE-HANDOVER  45%  |  HANDOVER  55%  |  TOTAL  100% ✓
 ```
 
 ---
@@ -122,46 +163,5 @@ const handleResetPayments = () => {
 
 | File | Change |
 |------|--------|
-| `src/components/roi/configurator/PaymentSection.tsx` | Add % per payment state, update generator logic, add reset function, move toggle, add UI inputs |
+| `src/components/roi/configurator/PaymentSection.tsx` | Fix footer calculation logic, add conditional 4-column footer for post-handover, compact UI throughout |
 
----
-
-## Visual Result
-
-### Generator After Changes:
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Payment Plan                                               │
-│  Configure your payment schedule and milestones             │
-├─────────────────────────────────────────────────────────────┤
-│  📅 Allow Payments Past Handover              [  Toggle  ]  │  ← MOVED TO TOP
-├─────────────────────────────────────────────────────────────┤
-│ ① Payment Split                                             │
-│     [30/70] [40/60] [50/50] [60/40] [Custom]               │
-├─────────────────────────────────────────────────────────────┤
-│ ② Downpayment                                               │
-│     [─────────○─────────] [20] %                           │
-├─────────────────────────────────────────────────────────────┤
-│ ③ ⚡ Generate Installments                                  │
-│                                                             │
-│    [4] payments × [6] mo @ [2.5] %    [⚡ Generate] [🗑]    │  ← NEW % INPUT + RESET
-│                                                             │
-│    4 × 2.5% = 10% (adjust if needed)                       │  ← NEW PROJECTION
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Additional UX Enhancement
-
-Add a projection summary similar to post-handover:
-```tsx
-<div className="text-[10px] text-gray-500 ml-7 mt-1 font-mono">
-  {numPayments} × {percentPerPayment}% = {(numPayments * percentPerPayment).toFixed(1)}%
-  {Math.abs(numPayments * percentPerPayment - (inputs.preHandoverPercent - inputs.downpaymentPercent)) > 0.5 && (
-    <span className="text-amber-400 ml-1">
-      (remaining: {(inputs.preHandoverPercent - inputs.downpaymentPercent).toFixed(1)}%)
-    </span>
-  )}
-</div>
-```
