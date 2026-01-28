@@ -1,21 +1,25 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { LayoutGrid, Sparkles, BarChart3, TrendingUp, Gem, DoorOpen, User, Mail, MessageCircle, Home, Percent } from 'lucide-react';
+import { LayoutGrid, Sparkles, BarChart3, User, Mail, MessageCircle, Home, Percent, Coins, Globe, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSavedComparisons, SavedComparison } from '@/hooks/useSavedComparisons';
 import { useQuotesComparison, computeComparisonMetrics, QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { useOICalculations } from '@/components/roi/useOICalculations';
 import { useRecommendationEngine, InvestmentFocus } from '@/hooks/useRecommendationEngine';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { MetricsTable } from '@/components/roi/compare/MetricsTable';
-import { PaymentComparison } from '@/components/roi/compare/PaymentComparison';
-import { GrowthComparisonChart } from '@/components/roi/compare/GrowthComparisonChart';
-import { ExitComparison } from '@/components/roi/compare/ExitComparison';
 import { MortgageComparison } from '@/components/roi/compare/MortgageComparison';
 import { RentalYieldComparison } from '@/components/roi/compare/RentalYieldComparison';
-import { DifferentiatorsComparison } from '@/components/roi/compare/DifferentiatorsComparison';
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
 import { RecommendationSummary } from '@/components/roi/compare/RecommendationSummary';
@@ -62,7 +66,10 @@ const CompareView = () => {
   const [calculationsMap, setCalculationsMap] = useState<Record<string, any>>({});
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedFocus, setSelectedFocus] = useState<InvestmentFocus | null>(null);
-
+  const [currency, setCurrency] = useState<Currency>('AED');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
+  
+  const { rate } = useExchangeRate(currency);
   const { getComparisonByShareToken } = useSavedComparisons();
 
   // Fetch comparison by share token
@@ -195,7 +202,55 @@ const CompareView = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Currency Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3 text-theme-text hover:bg-theme-card">
+                  <Coins className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">{CURRENCY_CONFIG[currency].flag}</span> {currency}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-theme-card border-theme-border z-50">
+                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                  <DropdownMenuItem 
+                    key={key} 
+                    onClick={() => setCurrency(key as Currency)}
+                    className="text-theme-text hover:bg-theme-card-alt"
+                  >
+                    {currency === key && <Check className="w-3 h-3 mr-2 text-theme-accent" />}
+                    {config.flag} {key} - {config.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Language Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3 text-theme-text hover:bg-theme-card">
+                  <Globe className="w-4 h-4 mr-1.5" />
+                  {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-theme-card border-theme-border z-50">
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('en')}
+                  className="text-theme-text hover:bg-theme-card-alt"
+                >
+                  {language === 'en' && <Check className="w-3 h-3 mr-2 text-theme-accent" />}
+                  🇬🇧 English
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('es')}
+                  className="text-theme-text hover:bg-theme-card-alt"
+                >
+                  {language === 'es' && <Check className="w-3 h-3 mr-2 text-theme-accent" />}
+                  🇪🇸 Español
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Recommendation Toggle */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-theme-card border border-theme-border">
               <Sparkles className={`w-4 h-4 ${showRecommendations ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
@@ -345,30 +400,9 @@ const CompareView = () => {
                 icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
                 defaultOpen={true}
               >
-                <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} />
+                <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} currency={currency} exchangeRate={rate} />
               </CollapsibleSection>
             )}
-
-            {/* Payment & Growth */}
-            <CollapsibleSection
-              title="Payment & Growth"
-              icon={<TrendingUp className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={true}
-            >
-              <div className="space-y-6">
-                <PaymentComparison quotesWithCalcs={quotesWithCalcs} />
-                <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} />
-              </div>
-            </CollapsibleSection>
-
-            {/* Value Differentiators */}
-            <CollapsibleSection
-              title="Value Differentiators"
-              icon={<Gem className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={true}
-            >
-              <DifferentiatorsComparison quotesWithCalcs={quotesWithCalcs} />
-            </CollapsibleSection>
 
             {/* Mortgage Comparison */}
             {quotesWithCalcs.some(q => (q.quote.inputs as any)?._mortgageInputs?.enabled) && (
@@ -377,7 +411,7 @@ const CompareView = () => {
                 icon={<Home className="w-4 h-4 text-theme-accent" />}
                 defaultOpen={true}
               >
-                <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
+                <MortgageComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
               </CollapsibleSection>
             )}
 
@@ -391,18 +425,7 @@ const CompareView = () => {
                 icon={<Percent className="w-4 h-4 text-theme-accent" />}
                 defaultOpen={true}
               >
-                <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} />
-              </CollapsibleSection>
-            )}
-
-            {/* Exit Scenarios */}
-            {quotesWithCalcs.some(q => (q.quote.inputs as any)?.enabledSections?.exitStrategy !== false) && (
-              <CollapsibleSection
-                title="Exit Scenarios"
-                icon={<DoorOpen className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={true}
-              >
-                <ExitComparison quotesWithCalcs={quotesWithCalcs} />
+                <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
               </CollapsibleSection>
             )}
           </div>
