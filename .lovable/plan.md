@@ -1,18 +1,22 @@
 
-# Plan: Corregir la Exportación para Respetar Moneda y Lenguaje
+# Plan: Corregir Exportación PDF - Sincronizar con Vista Original del Snapshot
 
-## Problema Identificado
+## Problema Principal
 
-La exportación (PNG/PDF) no muestra la moneda ni el idioma configurados porque:
+El snapshot exportado (PNG/PDF) se ve muy diferente al snapshot original porque:
 
-1. **`ExportExitCards.tsx`** tiene valores hardcodeados:
-   - Línea 135: `formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)` ❌
-   - Línea 144: `formatCurrency(scenario.trueProfit, 'AED', 1)` ❌
+1. **ExportExitCards.tsx** busca escenarios en `calculations.scenarios` pero no los encuentra (devuelve valores 0)
+   - El snapshot original usa `calculateExitScenario()` dinámicamente
+   - El export NO calcula dinámicamente, solo busca en un arreglo pre-calculado
 
-2. **`ExportWealthTimeline.tsx`** tiene valores hardcodeados:
-   - Línea 139: `formatCurrencyShort(proj.value, 'AED', 1)` ❌
+2. **ExportPostHandoverCard.tsx** tiene lógica incompleta:
+   - Solo verifica `inputs.postHandoverPayments?.length`
+   - El original también deriva pagos de `additionalPayments` si `postHandoverPayments` está vacío
+   - La lógica de duración usa campos que pueden no existir (`postHandoverEndQuarter`, `postHandoverEndYear`)
 
-3. Los componentes de exportación tienen sus propias traducciones inline (`t = { ... }`) que ya funcionan correctamente con el prop `language`
+3. **Falta de información visual**:
+   - El export usa un header simple (`ExportHeader`) en lugar del `PropertyHeroCard` completo
+   - El `WealthProjectionTimeline` ya existe pero podría verse diferente
 
 ---
 
@@ -20,96 +24,118 @@ La exportación (PNG/PDF) no muestra la moneda ni el idioma configurados porque:
 
 ### 1. `src/components/roi/export/ExportExitCards.tsx`
 
-**Cambiar hardcoded AED a usar currency/rate props:**
+**Problema:** Usa `calculations.scenarios.find()` que retorna undefined y muestra 0 en todo.
+
+**Solución:** Calcular los escenarios dinámicamente como hace `CompactAllExitsCard`:
 
 ```tsx
-// Línea 135: Cambiar de
-💰 {formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}
-// A
-💰 {formatCurrency(scenario.totalCapitalDeployed, currency, rate)}
+// Importar calculateExitScenario
+import { monthToConstruction, calculateExitScenario } from '../constructionProgress';
 
-// Línea 144: Cambiar de  
-{formatCurrency(scenario.trueProfit, 'AED', 1)}
-// A
-{formatCurrency(scenario.trueProfit, currency, rate)}
-```
+// En el componente, cambiar de:
+const preCalcScenario = calculations.scenarios.find(s => s.exitMonths === exitMonths);
 
-**Añadir formato dual para mostrar AED + moneda convertida:**
-```tsx
-// Añadir helper
-const getDualValue = (value: number) => {
-  const dual = formatDualCurrency(value, currency, rate);
-  return { primary: dual.primary, secondary: dual.secondary };
-};
+// A:
+const scenarioResult = calculateExitScenario(
+  exitMonths,
+  inputs.basePrice || calculations.basePrice,
+  calculations.totalMonths,
+  inputs,
+  calculations.totalEntryCosts
+);
 
-// Usar en capital y profit
-<span>💰 {getDualValue(scenario.totalCapitalDeployed).primary}</span>
-<span>{scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit).primary}</span>
-```
-
-### 2. `src/components/roi/export/ExportWealthTimeline.tsx`
-
-**Cambiar el valor primario de hardcoded AED a formato dual:**
-
-```tsx
-// Línea 139: Cambiar de
-{formatCurrencyShort(proj.value, 'AED', 1)}
-
-// A - mostrar AED primario siempre para consistencia, con conversión secundaria
-const aedValue = formatCurrencyShort(proj.value, 'AED', 1);
-const convertedValue = currency !== 'AED' ? formatCurrencyShort(proj.value, currency, rate) : null;
-
-// En el render
-<div>{aedValue}</div>
-{convertedValue && <div>{convertedValue}</div>}
-```
-
----
-
-## Cambios Detallados
-
-### ExportExitCards.tsx
-
-| Línea | Antes | Después |
-|-------|-------|---------|
-| 2 | `import { Currency, formatCurrency }` | `import { Currency, formatDualCurrency }` |
-| 135 | `formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)` | `getDualValue(scenario.totalCapitalDeployed).primary` |
-| 144 | `formatCurrency(scenario.trueProfit, 'AED', 1)` | `getDualValue(scenario.trueProfit).primary` |
-
-Añadir helper function:
-```tsx
-const getDualValue = (value: number) => {
-  const dual = formatDualCurrency(value, currency, rate);
-  return { primary: dual.primary, secondary: dual.secondary };
+return {
+  exitMonths,
+  exitPrice: scenarioResult.exitPrice,
+  totalCapitalDeployed: scenarioResult.totalCapital,
+  trueProfit: scenarioResult.trueProfit,
+  trueROE: scenarioResult.trueROE,
+  annualizedROE: scenarioResult.annualizedROE,
+  // ... resto igual
 };
 ```
 
-### ExportWealthTimeline.tsx
+### 2. `src/components/roi/export/ExportPostHandoverCard.tsx`
 
-| Línea | Antes | Después |
-|-------|-------|---------|
-| 139 | `formatCurrencyShort(proj.value, 'AED', 1)` | Usar el formato AED principal con conversión opcional (ya está en líneas 141-145) |
+**Problema:** La lógica no deriva pagos de `additionalPayments` cuando `postHandoverPayments` está vacío.
 
-La lógica ya existe en líneas 141-145 para mostrar conversión. Solo necesitamos verificar que el valor primario siempre muestre AED pero permitir que `formatCurrencyShort` use el currency correcto cuando se necesite.
+**Solución:** Sincronizar con la lógica de `CompactPostHandoverCard`:
+
+```tsx
+// Añadir helper para detectar pagos post-handover
+const isPaymentAfterHandoverQuarter = (
+  monthsFromBooking: number,
+  bookingMonth: number,
+  bookingYear: number,
+  handoverQuarter: number,
+  handoverYear: number
+): boolean => {
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
+  
+  const handoverQuarterEndMonth = handoverQuarter * 3;
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
+  
+  return paymentDate > handoverQuarterEnd;
+};
+
+// Derivar pagos post-handover
+let postHandoverPaymentsToUse = inputs.postHandoverPayments || [];
+if (postHandoverPaymentsToUse.length === 0 && inputs.additionalPayments?.length > 0) {
+  postHandoverPaymentsToUse = inputs.additionalPayments.filter(p => {
+    if (p.type !== 'time') return false;
+    return isPaymentAfterHandoverQuarter(
+      p.triggerValue, inputs.bookingMonth, inputs.bookingYear,
+      inputs.handoverQuarter, inputs.handoverYear
+    );
+  });
+}
+
+// Calcular duración desde los pagos reales, no desde campos opcionales
+const paymentMonths = postHandoverPaymentsToUse.map(p => p.triggerValue);
+const actualDurationMonths = Math.max(...paymentMonths) - Math.min(...paymentMonths) + 1;
+```
+
+### 3. `src/components/roi/export/ExportPaymentTable.tsx`
+
+**Problema:** No separa pre-handover de post-handover correctamente, sin resaltar handover.
+
+**Solución:** Sincronizar con la lógica de `CompactPaymentTable`:
+
+- Añadir lógica para detectar pagos en el trimestre de handover
+- Separar pre-handover de post-handover usando `isPaymentAfterHandoverQuarter`
+- Añadir sección visual "Post-Handover" cuando aplique
 
 ---
 
-## Resumen de Archivos
+## Resumen de Cambios Técnicos
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/roi/export/ExportExitCards.tsx` | Cambiar formatCurrency hardcoded a usar currency/rate props con formato dual |
-| `src/components/roi/export/ExportWealthTimeline.tsx` | Verificar que el formato dual funcione correctamente (el código ya existe parcialmente) |
+| Archivo | Cambio Principal |
+|---------|------------------|
+| `ExportExitCards.tsx` | Calcular escenarios con `calculateExitScenario()` en lugar de buscar en array |
+| `ExportPostHandoverCard.tsx` | Derivar pagos de `additionalPayments`, calcular duración desde pagos reales |
+| `ExportPaymentTable.tsx` | Separar pre/post-handover, mostrar handover highlights |
+
+---
+
+## Lógica de Visibilidad (ya funciona correctamente)
+
+El `ExportSnapshotDOM.tsx` ya tiene las condiciones correctas:
+- ✅ `inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0` para exits
+- ✅ `inputs.hasPostHandoverPlan` para post-handover
+- ✅ `mortgageInputs.enabled` para mortgage
+
+El problema es que los componentes hijos no calculan bien los datos.
 
 ---
 
 ## Resultado Esperado
 
-Después de estos cambios:
-
 | Antes | Después |
 |-------|---------|
-| Exportación siempre muestra AED | Exportación muestra la moneda seleccionada (USD, EUR, etc.) |
-| Idioma no afecta la exportación | Idioma se aplica a todos los labels en la exportación |
-| Exit cards solo muestran AED | Exit cards muestran formato dual (AED + conversión) |
-| Timeline solo muestra AED | Timeline muestra formato dual (AED + conversión) |
+| Exit cards muestran 0 en todo | Exit cards muestran valores calculados correctamente |
+| Post-handover card no aparece | Post-handover card aparece cuando hay plan post-entrega |
+| Moneda siempre en AED | Moneda respeta la configuración con formato dual |
+| Idioma ignorado en algunos labels | Todos los labels traducidos según idioma seleccionado |
+| El export se ve diferente al snapshot | El export se ve idéntico al snapshot original |
