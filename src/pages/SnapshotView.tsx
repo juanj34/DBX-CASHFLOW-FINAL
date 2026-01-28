@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Rocket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
@@ -15,8 +15,21 @@ import { SnapshotContent } from '@/components/roi/snapshot';
 const SnapshotView = () => {
   useDocumentTitle("Investment Snapshot");
   const { shareToken } = useParams<{ shareToken: string }>();
-  const [currency, setCurrency] = useState<Currency>('AED');
-  const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const [searchParams] = useSearchParams();
+  
+  // Initialize currency and language from URL params or defaults
+  const [currency, setCurrency] = useState<Currency>(() => {
+    const urlCurrency = searchParams.get('currency');
+    if (urlCurrency && ['AED', 'USD', 'EUR', 'GBP', 'COP'].includes(urlCurrency)) {
+      return urlCurrency as Currency;
+    }
+    return 'AED';
+  });
+  
+  const [language, setLanguage] = useState<'en' | 'es'>(() => {
+    const urlLang = searchParams.get('lang');
+    return urlLang === 'es' ? 'es' : 'en';
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);

@@ -136,9 +136,9 @@ const QuotePreview = ({
           buildingRenderUrl: quoteData.buildingRenderUrl,
         }}
         currency={currency}
-        setCurrency={() => {}}
+        setCurrency={undefined}
         language={language}
-        setLanguage={() => {}}
+        setLanguage={undefined}
         rate={rate}
       />
     );

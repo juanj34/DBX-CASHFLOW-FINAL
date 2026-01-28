@@ -27,9 +27,9 @@ interface SnapshotContentProps {
     buildingRenderUrl?: string | null;
   };
   currency: Currency;
-  setCurrency: (currency: Currency) => void;
+  setCurrency?: (currency: Currency) => void;
   language: 'en' | 'es';
-  setLanguage: (language: 'en' | 'es') => void;
+  setLanguage?: (language: 'en' | 'es') => void;
   rate: number;
 }
 
