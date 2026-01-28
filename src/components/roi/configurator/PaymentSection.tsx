@@ -82,7 +82,14 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     totalPayment = preHandoverTotal + handoverPercent;
   }
   
-  const remainingToDistribute = inputs.preHandoverPercent - inputs.downpaymentPercent - additionalPaymentsTotal;
+  // For post-handover: all installments + downpayment should equal 100%
+  // For standard: pre-handover installments + downpayment should equal preHandoverPercent
+  let remainingToDistribute: number;
+  if (hasPostHandoverPlan) {
+    remainingToDistribute = 100 - inputs.downpaymentPercent - additionalPaymentsTotal;
+  } else {
+    remainingToDistribute = inputs.preHandoverPercent - inputs.downpaymentPercent - additionalPaymentsTotal;
+  }
   const isValidTotal = Math.abs(totalPayment - 100) < 0.5;
   
   // Check if payments have been added
@@ -202,10 +209,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const formatWithCommas = (num: number) => num.toLocaleString();
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="pb-1">
-        <h3 className="text-base font-semibold text-white">Payment Plan</h3>
-        <p className="text-xs text-gray-500">Configure your payment schedule</p>
+        <h3 className="text-lg font-semibold text-white">Payment Plan</h3>
+        <p className="text-sm text-gray-500">Configure your payment schedule</p>
       </div>
 
       {/* Post-Handover Toggle - At the top for visibility */}
@@ -225,13 +232,13 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       </div>
 
       {/* Step 1: Preset Split Buttons */}
-      <div className="space-y-1.5 p-2 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-[8px] font-bold text-[#CCFF00]">1</div>
-          <label className="text-xs text-gray-300 font-medium">Split</label>
+      <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">1</div>
+          <label className="text-sm text-gray-300 font-medium">Split</label>
           <InfoTooltip translationKey="tooltipPreHandover" />
         </div>
-        <div className="flex flex-wrap gap-1 ml-5">
+        <div className="flex flex-wrap gap-1.5 ml-7">
           {presetSplits.map((split) => (
             <Button
               key={split}
@@ -239,7 +246,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               variant="outline"
               size="sm"
               onClick={() => applyPaymentSplit(split)}
-              className={`h-6 text-[10px] px-2 border-[#2a3142] ${
+              className={`h-7 text-xs px-2.5 border-[#2a3142] ${
                 inputs.preHandoverPercent === parseInt(split.split('/')[0])
                   ? 'bg-[#CCFF00]/20 border-[#CCFF00]/50 text-[#CCFF00]'
                   : 'text-gray-600 hover:bg-[#2a3142] hover:text-white'
@@ -287,14 +294,14 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
       {/* Step 2: Downpayment - Only show after split is selected */}
       {hasSplitSelected && (
-        <div className="space-y-1 p-2 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30 animate-fade-in">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-[8px] font-bold text-[#CCFF00]">2</div>
-            <span className="text-xs font-medium text-[#CCFF00]">Down</span>
-            <span className="text-[9px] text-gray-500">(EOI {formatCurrency(inputs.eoiFee, currency)})</span>
+        <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">2</div>
+            <span className="text-sm font-medium text-[#CCFF00]">Down</span>
+            <span className="text-xs text-gray-500">(EOI {formatCurrency(inputs.eoiFee, currency)})</span>
             <InfoTooltip translationKey="tooltipDownpayment" />
           </div>
-          <div className="flex items-center gap-2 ml-5">
+          <div className="flex items-center gap-2 ml-7">
             <Slider
               value={[inputs.downpaymentPercent]}
               onValueChange={([value]) => setInputs(prev => ({ ...prev, downpaymentPercent: value }))}
@@ -303,7 +310,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               step={1}
               className="flex-1 roi-slider-lime"
             />
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1">
               <Input
                 type="text"
                 inputMode="decimal"
@@ -314,11 +321,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   5,
                   inputs.preHandoverPercent
                 )}
-                className="w-12 h-6 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
+                className="w-14 h-7 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
               />
-              <span className="text-[10px] text-gray-400">%</span>
+              <span className="text-xs text-gray-400">%</span>
             </div>
-            <span className="text-[9px] text-gray-500 font-mono">
+            <span className="text-xs text-gray-500 font-mono">
               {formatCurrency(inputs.basePrice * inputs.downpaymentPercent / 100, currency)}
             </span>
           </div>
@@ -327,52 +334,52 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
       {/* Step 3: Installments Section - Only show after downpayment is set */}
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
-        <div className="space-y-2 animate-fade-in">
+        <div className="space-y-3 animate-fade-in">
           {/* Auto-Generate Card - Compact */}
-          <div className="space-y-1.5 p-2 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-[8px] font-bold text-[#CCFF00]">3</div>
-              <Zap className="w-3 h-3 text-[#CCFF00]" />
-              <span className="text-xs font-medium text-[#CCFF00]">Generate</span>
+          <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">3</div>
+              <Zap className="w-3.5 h-3.5 text-[#CCFF00]" />
+              <span className="text-sm font-medium text-[#CCFF00]">Generate</span>
             </div>
             
-            <div className="flex items-center gap-1.5 ml-5 flex-wrap">
-              <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-2 ml-7 flex-wrap">
+              <div className="flex items-center gap-1">
                 <Input
                   type="text"
                   inputMode="numeric"
                   value={numPayments || ''}
                   onChange={(e) => handleNumberInputChange(e.target.value, setNumPayments, 1, 60)}
-                  className="w-10 h-6 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-[10px]"
+                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
                 />
-                <span className="text-[9px] text-gray-500">×</span>
+                <span className="text-xs text-gray-500">×</span>
               </div>
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-1">
                 <Input
                   type="text"
                   inputMode="numeric"
                   value={paymentInterval || ''}
                   onChange={(e) => handleNumberInputChange(e.target.value, setPaymentInterval, 1, 24)}
-                  className="w-8 h-6 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-[10px]"
+                  className="w-10 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
                 />
-                <span className="text-[9px] text-gray-500">mo @</span>
+                <span className="text-xs text-gray-500">mo @</span>
               </div>
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-1">
                 <Input
                   type="text"
                   inputMode="decimal"
                   value={percentPerPayment || ''}
                   onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
-                  className="w-10 h-6 bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-center text-[10px]"
+                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-center text-xs"
                 />
-                <span className="text-[9px] text-gray-500">%</span>
+                <span className="text-xs text-gray-500">%</span>
               </div>
-              <div className="flex items-center gap-1 ml-auto">
+              <div className="flex items-center gap-1.5 ml-auto">
                 <Button
                   type="button"
                   onClick={handleGeneratePayments}
                   size="sm"
-                  className="h-6 px-2 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-[10px]"
+                  className="h-7 px-3 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs"
                 >
                   <Zap className="w-2.5 h-2.5 mr-0.5" />
                   Go
@@ -391,7 +398,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               </div>
             </div>
             {/* Projection summary */}
-            <div className="text-[9px] text-gray-500 ml-5 font-mono">
+            <div className="text-xs text-gray-500 ml-7 font-mono">
               {numPayments}×{percentPerPayment}% = {(numPayments * percentPerPayment).toFixed(1)}%
               {Math.abs(numPayments * percentPerPayment - (inputs.preHandoverPercent - inputs.downpaymentPercent)) > 0.5 && (
                 <span className="text-amber-400 ml-1">
@@ -403,16 +410,16 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
           {/* Installments List */}
           <Collapsible open={showInstallments} onOpenChange={setShowInstallments}>
-            <div className="space-y-1.5 p-2 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+            <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
               <CollapsibleTrigger asChild>
                 <div className="flex justify-between items-center cursor-pointer hover:opacity-80">
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-gray-300 font-medium">Installments</label>
-                    <span className="text-[9px] text-gray-500">({inputs.additionalPayments.length})</span>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-300 font-medium">Installments</label>
+                    <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {hasPayments ? (
-                      <div className={`text-[9px] px-1 py-0.5 rounded ${
+                      <div className={`text-xs px-1.5 py-0.5 rounded ${
                         remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' : 
                         remainingToDistribute < -0.5 ? 'bg-red-500/20 text-red-400' : 
                         'bg-green-500/20 text-green-400'
@@ -422,11 +429,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                         '✓'}
                       </div>
                     ) : (
-                      <div className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                      <div className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
                         Add
                       </div>
                     )}
-                    {showInstallments ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                    {showInstallments ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                   </div>
                 </div>
               </CollapsibleTrigger>
@@ -456,45 +463,45 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                       <div 
                         key={payment.id} 
                         className={cn(
-                          "flex items-center gap-1 p-1 rounded-lg",
+                          "flex items-center gap-1.5 p-1.5 rounded-lg",
                           isHandoverQuarter ? "bg-green-500/10 border border-green-500/30" :
                           isPostHO ? "bg-purple-500/10 border border-purple-500/30" : 
                           "bg-[#0d1117]"
                         )}
                       >
                         <div className={cn(
-                          "w-4 h-4 rounded-full flex items-center justify-center text-[8px] shrink-0",
+                          "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0",
                           isHandoverQuarter ? "bg-green-500/30 text-green-400" :
                           isPostHO ? "bg-purple-500/30 text-purple-400" :
                           "bg-[#2a3142] text-gray-400"
                         )}>
-                          {index + 2}
+                          {index + 1}
                         </div>
                         
                         <Select
                           value={payment.type}
                           onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
                         >
-                          <SelectTrigger className="w-[55px] h-5 text-[9px] bg-[#1a1f2e] border-[#2a3142] px-1">
+                          <SelectTrigger className="w-[60px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1.5">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
-                            <SelectItem value="time" className="text-white hover:bg-[#2a3142] text-[10px]">
-                              <div className="flex items-center gap-0.5">
-                                <Clock className="w-2.5 h-2.5" />
+                            <SelectItem value="time" className="text-white hover:bg-[#2a3142] text-xs">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
                                 <span>Time</span>
                               </div>
                             </SelectItem>
-                            <SelectItem value="construction" className="text-white hover:bg-[#2a3142] text-[10px]">
-                              <div className="flex items-center gap-0.5">
-                                <Building2 className="w-2.5 h-2.5" />
+                            <SelectItem value="construction" className="text-white hover:bg-[#2a3142] text-xs">
+                              <div className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
                                 <span>Build</span>
                               </div>
                             </SelectItem>
                           </SelectContent>
                         </Select>
 
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-1">
                           <Input
                             type="text"
                             inputMode="numeric"
@@ -503,31 +510,31 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                               const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                               updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
                             }}
-                            className="w-8 h-5 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[9px]"
+                            className="w-10 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[10px]"
                           />
-                          {payment.type === 'construction' && <span className="text-[8px] text-gray-500">%</span>}
+                          {payment.type === 'construction' && <span className="text-[10px] text-gray-500">%</span>}
                         </div>
 
                         {/* Show actual date for time-based payments */}
                         {paymentDate && (
-                          <div className="flex items-center gap-0.5">
-                            <span className="text-[8px] text-gray-400 font-mono">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-gray-400 font-mono">
                               {formatPaymentDate(paymentDate)}
                             </span>
                             {isHandoverQuarter && (
-                              <span className="text-[7px] px-0.5 py-0.5 bg-green-500/20 text-green-400 rounded flex items-center gap-0.5">
-                                <Key className="w-2 h-2" />
+                              <span className="text-[9px] px-1 py-0.5 bg-green-500/20 text-green-400 rounded flex items-center gap-0.5">
+                                <Key className="w-2.5 h-2.5" />
                               </span>
                             )}
                             {isPostHO && !isHandoverQuarter && (
-                              <span className="text-[7px] px-0.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                              <span className="text-[9px] px-1 py-0.5 bg-purple-500/20 text-purple-400 rounded">
                                 PH
                               </span>
                             )}
                           </div>
                         )}
 
-                        <div className="flex items-center gap-0.5 ml-auto">
+                        <div className="flex items-center gap-1 ml-auto">
                           <Input
                             type="text"
                             inputMode="decimal"
@@ -536,9 +543,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                               const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
                               updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, val)));
                             }}
-                            className="w-10 h-5 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-[9px]"
+                            className="w-12 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-[10px]"
                           />
-                          <span className="text-[8px] text-gray-400">%</span>
+                          <span className="text-[10px] text-gray-400">%</span>
                         </div>
 
                         <Button
@@ -560,9 +567,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   variant="outline"
                   size="sm"
                   onClick={addAdditionalPayment}
-                  className="w-full h-6 text-[9px] border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white mt-1.5"
+                  className="w-full h-7 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white mt-2"
                 >
-                  <Plus className="w-2.5 h-2.5 mr-0.5" />
+                  <Plus className="w-3 h-3 mr-1" />
                   Add
                 </Button>
               </CollapsibleContent>
@@ -572,29 +579,74 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       )}
 
 
-      {/* Fixed Footer - Total Summary */}
-      <div className="sticky bottom-0 bg-[#0d1117] pt-2 -mx-4 px-4 pb-1 border-t border-[#2a3142]">
+      {/* Footer - Total Summary (Static, not sticky) */}
+      <div className="mt-4 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
         {/* Standard 3-column layout for non-post-handover */}
         {!hasPostHandoverPlan && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Pre-Handover */}
-            <div className="flex-1 flex items-center gap-1.5 min-w-0">
-              <div className="w-2 h-2 rounded-full bg-[#CCFF00] shrink-0" />
-              <span className="text-[9px] text-gray-500 uppercase truncate">Pre-HO</span>
-              <span className="text-xs font-mono text-white font-semibold ml-auto">
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#CCFF00] shrink-0" />
+              <span className="text-[10px] text-gray-500 uppercase truncate">Pre-HO</span>
+              <span className="text-sm font-mono text-white font-semibold ml-auto">
                 {preHandoverTotal.toFixed(0)}%
               </span>
             </div>
             
-            <div className="h-5 w-px bg-[#2a3142]" />
+            <div className="h-6 w-px bg-[#2a3142]" />
             
             {/* Handover */}
-            <div className="flex-1 flex items-center gap-1.5 min-w-0">
-              <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-              <span className="text-[9px] text-gray-500 uppercase truncate">Handover</span>
-              <span className="text-xs font-mono text-white font-semibold ml-auto">
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0" />
+              <span className="text-[10px] text-gray-500 uppercase truncate">Handover</span>
+              <span className="text-sm font-mono text-white font-semibold ml-auto">
                 {handoverPercent}%
               </span>
+            </div>
+            
+            <div className="h-6 w-px bg-[#2a3142]" />
+            
+            {/* Total */}
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              {isValidTotal ? (
+                <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              )}
+              <span className="text-[10px] text-gray-500 uppercase truncate">Total</span>
+              <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
+                {totalPayment.toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 4-column layout for post-handover plan */}
+        {hasPostHandoverPlan && (
+          <div className="flex items-center gap-2">
+            {/* Pre-HO */}
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-[#CCFF00] shrink-0" />
+              <span className="text-[10px] text-gray-500 uppercase truncate">Pre</span>
+              <span className="text-xs font-mono text-white ml-auto">{preHandoverTotal.toFixed(0)}%</span>
+            </div>
+            
+            <div className="h-5 w-px bg-[#2a3142]" />
+            
+            {/* On Handover (always 0 in post-handover mode) */}
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+              <span className="text-[10px] text-gray-500 uppercase truncate">On-HO</span>
+              <span className="text-xs font-mono text-gray-400 ml-auto">0%</span>
+            </div>
+            
+            <div className="h-5 w-px bg-[#2a3142]" />
+            
+            {/* Post-Handover */}
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+              <span className="text-[10px] text-gray-500 uppercase truncate">Post</span>
+              <span className="text-xs font-mono text-purple-400 ml-auto">{postHandoverTotal.toFixed(0)}%</span>
             </div>
             
             <div className="h-5 w-px bg-[#2a3142]" />
@@ -606,53 +658,8 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               ) : (
                 <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
               )}
-              <span className="text-[9px] text-gray-500 uppercase truncate">Total</span>
+              <span className="text-[10px] text-gray-500 uppercase">Tot</span>
               <span className={`text-xs font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
-                {totalPayment.toFixed(0)}%
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* 4-column layout for post-handover plan */}
-        {hasPostHandoverPlan && (
-          <div className="flex items-center gap-1.5">
-            {/* Pre-HO */}
-            <div className="flex-1 flex items-center gap-1 min-w-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#CCFF00] shrink-0" />
-              <span className="text-[8px] text-gray-500 uppercase truncate">Pre</span>
-              <span className="text-[10px] font-mono text-white ml-auto">{preHandoverTotal.toFixed(0)}%</span>
-            </div>
-            
-            <div className="h-4 w-px bg-[#2a3142]" />
-            
-            {/* On Handover (always 0 in post-handover mode) */}
-            <div className="flex-1 flex items-center gap-1 min-w-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-              <span className="text-[8px] text-gray-500 uppercase truncate">On-HO</span>
-              <span className="text-[10px] font-mono text-gray-400 ml-auto">0%</span>
-            </div>
-            
-            <div className="h-4 w-px bg-[#2a3142]" />
-            
-            {/* Post-Handover */}
-            <div className="flex-1 flex items-center gap-1 min-w-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-              <span className="text-[8px] text-gray-500 uppercase truncate">Post</span>
-              <span className="text-[10px] font-mono text-purple-400 ml-auto">{postHandoverTotal.toFixed(0)}%</span>
-            </div>
-            
-            <div className="h-4 w-px bg-[#2a3142]" />
-            
-            {/* Total */}
-            <div className="flex-1 flex items-center gap-1 min-w-0">
-              {isValidTotal ? (
-                <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0" />
-              ) : (
-                <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />
-              )}
-              <span className="text-[8px] text-gray-500 uppercase">Tot</span>
-              <span className={`text-[10px] font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
                 {totalPayment.toFixed(0)}%
               </span>
             </div>

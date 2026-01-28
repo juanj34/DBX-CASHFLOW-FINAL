@@ -665,111 +665,89 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Footer Navigation with Step Progress */}
+      {/* Footer Navigation - Compact Single Row */}
       <div className="shrink-0 border-t border-theme-border bg-theme-bg-alt">
-        {/* Progress Steps */}
-        <div className="px-6 py-3 border-b border-theme-border/50">
-          <div className="flex items-start justify-between relative">
-            {/* Progress line behind steps */}
-            <div className="absolute top-3 left-0 right-0 h-0.5 bg-theme-border" />
-            <div 
-              className="absolute top-3 left-0 h-0.5 bg-gradient-to-r from-theme-accent to-green-400 transition-all duration-500 ease-out"
-              style={{ width: `${stepProgressPercent}%` }}
-            >
-              {/* Glowing end marker */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_2px_rgba(var(--accent-rgb),0.6)]" />
-            </div>
-            
-            {/* Step indicators */}
-            {SECTIONS.map((section, index) => {
-              const isComplete = isSectionComplete(section);
-              const isActive = section === activeSection;
-              const stepLabels: Record<ConfiguratorSection, string> = {
-                client: 'Client',
-                property: 'Property',
-                images: 'Media',
-                payment: 'Payment',
-                value: 'Value',
-                appreciation: 'Growth',
-                exits: 'Exits',
-                rent: 'Rent',
-                mortgage: 'Mortgage',
-              };
-              
-              return (
-                <button
-                  key={section}
-                  onClick={() => navigateToSection(section)}
-                  className="flex flex-col items-center gap-1.5 relative z-10 group"
-                >
-                  <div className={`
-                    w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
-                    ${isActive 
-                      ? 'bg-theme-accent text-theme-bg ring-4 ring-theme-accent/20 scale-110' 
-                      : isComplete 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-theme-card border-2 border-theme-border-alt text-theme-text-muted group-hover:border-theme-text-muted'
-                    }
-                  `}>
-                    {isComplete && !isActive ? (
-                      <Check className="w-3.5 h-3.5" />
-                    ) : (
-                      <span className="text-xs font-bold">{index + 1}</span>
-                    )}
-                  </div>
-                  <span className={`text-[10px] font-medium transition-colors ${
-                    isActive 
-                      ? 'text-theme-accent' 
-                      : isComplete 
-                        ? 'text-green-400' 
-                        : 'text-theme-text-muted group-hover:text-theme-text'
-                  }`}>
-                    {stepLabels[section]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        
-        {/* Navigation buttons */}
-        <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex items-center justify-between px-4 py-2.5">
+          {/* Previous button */}
           <Button
             variant="outline"
+            size="sm"
             onClick={goToPreviousSection}
             disabled={!canGoBack}
             className="border-theme-border !bg-transparent text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Previous
+            <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+            Back
           </Button>
 
-          <span className="text-xs font-medium text-theme-text-muted">
-            Step {currentIndex + 1} of {SECTIONS.length} • {progressPercent}% complete
-          </span>
+          {/* Center: Inline Step indicators */}
+          <div className="flex items-center gap-1">
+            {SECTIONS.map((section, index) => {
+              const isComplete = isSectionComplete(section);
+              const isActive = section === activeSection;
+              
+              return (
+                <Tooltip key={section}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => navigateToSection(section)}
+                      className="group"
+                    >
+                      <div className={`
+                        w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all duration-200
+                        ${isActive 
+                          ? 'bg-theme-accent text-theme-bg scale-110' 
+                          : isComplete 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-theme-card border border-theme-border text-theme-text-muted group-hover:border-theme-text'
+                        }
+                      `}>
+                        {isComplete && !isActive ? (
+                          <Check className="w-2.5 h-2.5" />
+                        ) : (
+                          index + 1
+                        )}
+                      </div>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {section.charAt(0).toUpperCase() + section.slice(1)}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
 
-          {isLastSection ? (
-            <Button
-              onClick={handleApplyAndClose}
-              className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
-            >
-              Apply & Close
-            </Button>
-          ) : (
-            <div className="flex flex-col items-end gap-1">
-              {!canProceedFromCurrentSection && activeSection === 'payment' && (
-                <span className="text-xs text-amber-400">Payment plan must equal 100%</span>
-              )}
+          {/* Right: Progress text + Next/Apply button */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-theme-text-muted hidden sm:block">
+              {currentIndex + 1}/{SECTIONS.length}
+            </span>
+            
+            {!canProceedFromCurrentSection && activeSection === 'payment' && (
+              <span className="text-xs text-amber-400 hidden md:block">Must equal 100%</span>
+            )}
+            
+            {isLastSection ? (
               <Button
+                size="sm"
+                onClick={handleApplyAndClose}
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
+              >
+                Apply & Close
+              </Button>
+            ) : (
+              <Button
+                size="sm"
                 onClick={goToNextSection}
                 disabled={!canGoForward}
                 className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Next
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
