@@ -53,15 +53,19 @@ export const DEFAULT_SHORT_TERM_RENTAL = {
   managementFeePercent: 15,
 };
 
+// Helper to get current date values
+const getCurrentMonth = () => new Date().getMonth() + 1;
+const getCurrentYear = () => new Date().getFullYear();
+
 // Demo defaults (used for template/sample scenarios)
 export const DEFAULT_OI_INPUTS: OIInputs = {
   basePrice: 800000,
   rentalYieldPercent: 8,
   appreciationRate: 10,
-  bookingMonth: 1,
-  bookingYear: 2025,
+  bookingMonth: getCurrentMonth(),
+  bookingYear: getCurrentYear(),
   handoverQuarter: 4,
-  handoverYear: 2027,
+  handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
   preHandoverPercent: 20,
   additionalPayments: [],
@@ -71,7 +75,7 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   postHandoverPercent: 0,
   postHandoverPayments: [],
   postHandoverEndQuarter: 4,
-  postHandoverEndYear: 2030,
+  postHandoverEndYear: getCurrentYear() + 4,
   // Entry costs
   eoiFee: 50000,
   oqoodFee: 5000,
@@ -136,10 +140,10 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   basePrice: 800000,
   rentalYieldPercent: 8,
   appreciationRate: 0,
-  bookingMonth: new Date().getMonth() + 1,
-  bookingYear: new Date().getFullYear(),
+  bookingMonth: getCurrentMonth(),
+  bookingYear: getCurrentYear(),
   handoverQuarter: 4,
-  handoverYear: new Date().getFullYear() + 2,
+  handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
   preHandoverPercent: 30,
   additionalPayments: [],
@@ -149,7 +153,7 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   postHandoverPercent: 0,
   postHandoverPayments: [],
   postHandoverEndQuarter: 4,
-  postHandoverEndYear: new Date().getFullYear() + 4,
+  postHandoverEndYear: getCurrentYear() + 4,
   // Entry costs
   eoiFee: 50000,
   oqoodFee: 5000,
