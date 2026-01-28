@@ -78,6 +78,9 @@ const OICalculatorContent = () => {
   
   // Ref for client-side export capture
   const mainContentRef = useRef<HTMLDivElement>(null);
+  
+  // Track if we just reset state (to prevent immediate auto-save after navigation to new quote)
+  const justResetRef = useRef(false);
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -191,7 +194,31 @@ const OICalculatorContent = () => {
     }
   }, [quoteId]);
 
-  useEffect(() => { setDataLoaded(false); }, [quoteId]);
+  // Reset ALL state when navigating to new quote (no quoteId)
+  // This prevents duplicating the previous quote's data
+  useEffect(() => {
+    if (!quoteId) {
+      // Reset all state for a fresh start
+      setInputs(NEW_QUOTE_OI_INPUTS);
+      setClientInfo(DEFAULT_CLIENT_INFO);
+      setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+      setQuoteImages({
+        floorPlanUrl: null,
+        buildingRenderUrl: null,
+        heroImageUrl: null,
+        showLogoOverlay: true,
+      });
+      setShareUrl(null);
+      setViewMode('cashflow');
+      setDataLoaded(true); // Ready immediately for new quotes
+      justResetRef.current = true;
+      // Clear the flag after a tick to allow normal auto-save operation
+      setTimeout(() => { justResetRef.current = false; }, 150);
+    } else {
+      // Will load from DB
+      setDataLoaded(false);
+    }
+  }, [quoteId, setQuoteImages]);
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile?.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
 
@@ -227,6 +254,8 @@ const OICalculatorContent = () => {
   useEffect(() => {
     if (!dataLoaded) return;
     if (quoteLoading) return;
+    // Skip auto-save immediately after resetting state for new quote
+    if (justResetRef.current) return;
 
     const canUpdateExisting = !!quoteId && quote?.id === quoteId;
     const allowAutoCreate = !quoteId && isQuoteConfigured;
