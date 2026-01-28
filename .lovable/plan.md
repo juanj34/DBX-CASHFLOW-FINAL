@@ -1,125 +1,209 @@
 
-# Plan: Fix Booking Date Default + Post-Handover Coverage Calculation
 
-## Issue 1: Booking Date Default
+# Plan: Add Post-Handover Total to Payment Breakdown + Tenant Contribution Analysis
 
-### Current State
-The `NEW_QUOTE_OI_INPUTS` in `types.ts` already correctly sets:
-```tsx
-bookingMonth: new Date().getMonth() + 1,
-bookingYear: new Date().getFullYear(),
-```
+## Problem Summary
 
-However, for **existing quotes** loaded from the database, the booking date comes from the saved data which may have old static values (like January 2026).
-
-### Solution
-This is working as designed - new quotes get current month/year by default. If the user is seeing January 2026, it's because that quote was **loaded from saved data**. No code change needed for this part.
-
----
-
-## Issue 2: Post-Handover Coverage Calculation Mismatch
-
-### Problem
-The Coverage Card calculates "Monthly Equivalent" by dividing total post-handover amount by **calendar months** between handover and end date:
-```tsx
-postHandoverMonths = (endDate - handoverDate) in months // e.g., 24 months
-monthlyEquivalent = postHandoverTotal / postHandoverMonths
-```
-
-But the **actual payment schedule** may not be monthly. In the user's case:
-- 45 installments of AED 11,967 each = AED 538,521 total
-- If paid over 24 calendar months, "monthly equivalent" = 22,438/mo
-- But each actual payment is only 11,967
-
-The user wants the card to show the **actual payment amount per installment**, not a theoretical average.
-
-### Solution
-Calculate the "Monthly Equivalent" based on the **actual payment schedule**:
-1. Count the number of post-handover installments
-2. Calculate the period over which they're spread
-3. Show **actual payment amount** (AED 11,967) instead of calendar average
-
-**Alternative approach** (simpler, more accurate):
-Show actual payment per installment + payment frequency instead of "monthly equivalent":
-- "Per Installment: AED 11,967"
-- "45 payments over 24 months"
+1. **Payment Breakdown Grand Total** - Currently shows the total including post-handover payments, but doesn't show a sub-total for just the post-handover portion in the footer summary
+2. **Post-Handover Coverage Card** - Shows per-installment and monthly equivalent, but doesn't show:
+   - Total tenant contribution (rent × months)
+   - Net out-of-pocket (what investor ACTUALLY pays after tenant covers portion)
+   - Clear breakdown: "You pay X, Tenant pays Y, Net cost Z"
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
+### File 1: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-**Change 1:** Calculate based on actual payments, not calendar division
+**Change: Add Post-Handover subtotal row in Grand Total section (lines 436-462)**
 
-Replace lines 81-87:
+Currently the footer shows:
+- Base Property Price
+- Transaction Fees
+- **Total Investment**
+
+For post-handover plans, add a subtotal breakdown showing:
+- Pre-Handover Total (entry + journey + on handover)
+- Post-Handover Total
+- **Grand Total**
+
 ```tsx
-// OLD: Calendar-based monthly equivalent
-const postHandoverMonths = (endDate - handoverDate) in months;
-const monthlyEquivalent = postHandoverTotal / postHandoverMonths;
-```
-
-With:
-```tsx
-// NEW: Calculate from actual payment schedule
-const numberOfPayments = postHandoverPaymentsToUse.length;
-
-// Calculate period using triggerValues (months from booking)
-// Find the last payment's month offset from handover
-const handoverMonthFromBooking = (inputs.handoverQuarter * 3) - 2 + 
-  ((inputs.handoverYear - inputs.bookingYear) * 12) - inputs.bookingMonth;
-
-// Get actual post-handover duration from payment schedule
-const paymentMonths = postHandoverPaymentsToUse.map(p => p.triggerValue);
-const lastPaymentMonth = Math.max(...paymentMonths);
-const firstPaymentMonth = Math.min(...paymentMonths);
-const actualDurationMonths = lastPaymentMonth - firstPaymentMonth + 1;
-
-// Average payment per installment (what user actually pays each time)
-const perInstallmentAmount = postHandoverTotal / numberOfPayments;
-
-// Monthly cashflow burn rate (spread over actual payment period)
-const monthlyEquivalent = postHandoverTotal / Math.max(1, actualDurationMonths);
-```
-
-**Change 2:** Update display to show clearer breakdown
-
-Update the DottedRow for monthly equivalent to include payment context:
-```tsx
-<DottedRow 
-  label={`${t('monthlyEquivalent')} (${numberOfPayments} payments)`}
-  value={`${getDualValue(monthlyEquivalent).primary}/mo`}
-  ...
-/>
-```
-
-**Change 3:** Add "Per Installment" row for clarity
-
-Add a new row showing the actual per-payment amount:
-```tsx
-{/* Per Installment Amount */}
-<DottedRow 
-  label={`Per Installment (${numberOfPayments}x)`}
-  value={getDualValue(perInstallmentAmount).primary}
-  secondaryValue={getDualValue(perInstallmentAmount).secondary}
-  valueClassName="text-purple-400"
-/>
+{/* Grand Total with Fee Breakdown */}
+<div className="pt-2 border-t border-theme-border space-y-1">
+  {/* Property Price */}
+  <DottedRow 
+    label={t('basePropertyPrice')}
+    value={getDualValue(basePrice).primary}
+    secondaryValue={getDualValue(basePrice).secondary}
+    className="text-xs"
+  />
+  {/* Transaction Fees */}
+  <DottedRow 
+    label={t('transactionFees')}
+    value={getDualValue(dldFee + oqoodFee).primary}
+    secondaryValue={getDualValue(dldFee + oqoodFee).secondary}
+    className="text-xs"
+    valueClassName="text-theme-text-muted"
+  />
+  
+  {/* NEW: Show subtotals for post-handover plans */}
+  {hasPostHandoverPlan && postHandoverTotal > 0 && (
+    <>
+      <div className="pt-1 mt-1 border-t border-dashed border-theme-border/50">
+        <DottedRow 
+          label="Paid Until Handover"
+          value={getDualValue(totalUntilHandover).primary}
+          secondaryValue={getDualValue(totalUntilHandover).secondary}
+          className="text-xs"
+          valueClassName="text-green-400"
+        />
+        <DottedRow 
+          label="Post-Handover Balance"
+          value={getDualValue(postHandoverTotal).primary}
+          secondaryValue={getDualValue(postHandoverTotal).secondary}
+          className="text-xs"
+          valueClassName="text-purple-400"
+        />
+      </div>
+    </>
+  )}
+  
+  {/* Total Investment */}
+  <DottedRow 
+    label={t('totalInvestmentLabel')}
+    value={getDualValue(grandTotal).primary}
+    secondaryValue={getDualValue(grandTotal).secondary}
+    bold
+    className="text-sm"
+    labelClassName="text-sm"
+    valueClassName="text-sm"
+  />
+</div>
 ```
 
 ---
 
-## Summary
+### File 2: `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
 
-| Issue | Fix |
-|-------|-----|
-| Booking date default | Already correct for NEW quotes. Old quotes keep their saved values. |
-| Monthly equivalent mismatch | Calculate from actual payment duration, not calendar months |
-| Clarity | Add "Per Installment" row showing actual payment amount |
+**Change: Add tenant contribution analysis (lines 156-197)**
+
+Add new calculations and display rows:
+1. **Total Tenant Contribution** = monthlyRent × actualDurationMonths
+2. **Your Net Payment** = postHandoverTotal - tenantContribution
+3. **Effective Property Cost** = grandTotal - tenantContribution (optional summary)
+
+```tsx
+// NEW CALCULATIONS (after line 99):
+// Total tenant contribution over the post-handover period
+const totalTenantContribution = monthlyRent * actualDurationMonths;
+
+// What investor actually pays out of pocket (after tenant covers portion)
+const netOutOfPocket = Math.max(0, postHandoverTotal - totalTenantContribution);
+
+// Coverage breakdown
+const tenantCoversPercent = postHandoverTotal > 0 
+  ? Math.min(100, Math.round((totalTenantContribution / postHandoverTotal) * 100))
+  : 0;
+```
+
+**Updated content section:**
+```tsx
+{/* Content */}
+<div className="p-3 space-y-1.5">
+  {/* Post-HO Total */}
+  <DottedRow 
+    label={`${t('postHandoverPayments')} (${Math.round(postHandoverPercent)}%)`}
+    value={getDualValue(postHandoverTotal).primary}
+    secondaryValue={getDualValue(postHandoverTotal).secondary}
+  />
+  
+  {/* Per Installment Amount */}
+  <DottedRow 
+    label={`Per Installment (${numberOfPayments}x)`}
+    value={getDualValue(perInstallmentAmount).primary}
+    secondaryValue={getDualValue(perInstallmentAmount).secondary}
+    valueClassName="text-purple-400"
+  />
+  
+  {/* Separator - WHO PAYS WHAT */}
+  <div className="pt-2 mt-1 border-t border-dashed border-theme-border/50">
+    <div className="text-[9px] uppercase tracking-wide text-theme-text-muted mb-1.5 flex items-center gap-1">
+      <Wallet className="w-2.5 h-2.5" />
+      Who Pays What
+    </div>
+    
+    {/* Your Investment (You Pay) */}
+    <DottedRow 
+      label="You Pay"
+      value={getDualValue(netOutOfPocket).primary}
+      secondaryValue={getDualValue(netOutOfPocket).secondary}
+      bold
+      valueClassName={netOutOfPocket > 0 ? "text-red-400" : "text-green-400"}
+    />
+    
+    {/* Tenant Covers */}
+    <DottedRow 
+      label={`Tenant Covers (${actualDurationMonths}mo rent)`}
+      value={`+${getDualValue(totalTenantContribution).primary}`}
+      secondaryValue={getDualValue(totalTenantContribution).secondary}
+      valueClassName="text-cyan-400"
+    />
+  </div>
+  
+  {/* Summary Insight */}
+  <div className="pt-1.5 mt-1 border-t border-theme-border">
+    <div className={cn(
+      "p-2 rounded-lg text-center text-[11px]",
+      tenantCoversPercent >= 100 
+        ? "bg-green-500/10 border border-green-500/30 text-green-400"
+        : "bg-yellow-500/10 border border-yellow-500/30 text-yellow-400"
+    )}>
+      {tenantCoversPercent >= 100 ? (
+        <>Tenant fully covers post-handover! You get +{getDualValue(totalTenantContribution - postHandoverTotal).primary} surplus</>
+      ) : (
+        <>Tenant covers {tenantCoversPercent}% • Your net: {getDualValue(netOutOfPocket).primary}</>
+      )}
+    </div>
+  </div>
+</div>
+```
 
 ---
 
-## Files to Modify
+## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Fix monthly equivalent calculation, add per-installment display |
+| File | Change |
+|------|--------|
+| `CompactPaymentTable.tsx` | Add "Paid Until Handover" + "Post-Handover Balance" subtotals in footer for post-handover plans |
+| `CompactPostHandoverCard.tsx` | Add "Who Pays What" section showing tenant contribution vs. investor out-of-pocket |
+
+---
+
+## Expected Result
+
+**Payment Breakdown Footer:**
+```
+Base Property Price         AED 1,196,713
+Transaction Fees            AED 52,856
+─────────────────────────────────────────
+Paid Until Handover         AED 710,048   (green)
+Post-Handover Balance       AED 538,521   (purple)
+─────────────────────────────────────────
+Total Investment            AED 1,249,569
+```
+
+**Post-Handover Coverage Card:**
+```
+Post-Handover (45%)         AED 538,521
+Per Installment (45x)       AED 11,967
+
+── Who Pays What ────────────────────────
+You Pay                     AED 342,521   (red)
+Tenant Covers (45mo rent)   +AED 196,000  (cyan)
+
+┌────────────────────────────────────────┐
+│ Tenant covers 36% • Your net: €78,200  │
+└────────────────────────────────────────┘
+```
+
