@@ -1,51 +1,113 @@
 
-# Plan: Fix Presentation Issues - COMPLETED
+# Plan: Add Currency Selection to CompareView & Hide Sections
 
-## Changes Made
+## Changes Required
 
-### 1. ✅ Exit Scenarios Showing AED 0 - FIXED
-**Files Modified:**
-- `src/components/roi/snapshot/CompactAllExitsCard.tsx` - Now calculates scenarios dynamically using `calculateExitScenario()` instead of looking up from pre-calculated list
-- `src/components/roi/compare/ExitComparison.tsx` - Same fix, calculates dynamically
+### 1. Add Currency Selection to CompareView Header
 
-**Result:** Exit scenarios now show correct values (profit, ROE, capital invested) regardless of exit month configuration.
+Add currency and language state with dropdown selectors in the header area (next to AI Insights toggle):
 
-### 2. ✅ Currency/Rate Passed to Comparison Components - FIXED
-**File Modified:** `src/components/presentation/PresentationPreview.tsx`
-- PaymentComparison now receives `currency` and `exchangeRate` props
-- GrowthComparisonChart now receives `currency` and `exchangeRate` props
-- ExitComparison now receives `currency` and `exchangeRate` props
+```tsx
+// Add imports
+import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { Coins, Globe, Check } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-### 3. ✅ Toggle View Button - CLARIFIED
-The presentation view already forces `viewMode="snapshot"` at line 684 of PresentationPreview.tsx.
-The currency and language selectors are NOT view toggles - they are legitimate controls for switching display preferences.
+// Add state (after line 64)
+const [currency, setCurrency] = useState<Currency>('AED');
+const [language, setLanguage] = useState<'en' | 'es'>('en');
+const { rate, isLive } = useExchangeRate(currency);
+```
 
-### 4. ✅ Export All Button - FIXED
-**File Modified:** `src/pages/PresentationView.tsx`
-- "Export All" now exports all quotes sequentially with 500ms delay between each
-- Button now shows for any number of quotes (not just >1)
+Add dropdown selectors in header (after AI Insights toggle):
 
-### 5. Download Button for Each Quote
-The NavItem component at lines 337-349 already includes a download button for each quote. If not visible, may need CSS adjustment or browser refresh.
+```tsx
+{/* Currency Selector */}
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="sm" className="...">
+      <Coins className="w-4 h-4 mr-1.5" />
+      {CURRENCY_CONFIG[currency].flag} {currency}
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
+    {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+      <DropdownMenuItem key={key} onClick={() => setCurrency(key as Currency)}>
+        {currency === key && <Check className="w-3 h-3 mr-2" />}
+        {config.flag} {key}
+      </DropdownMenuItem>
+    ))}
+  </DropdownMenuContent>
+</DropdownMenu>
+
+{/* Language Selector */}
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="sm">
+      <Globe className="w-4 h-4 mr-1.5" />
+      {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
+    <DropdownMenuItem onClick={() => setLanguage('en')}>🇬🇧 English</DropdownMenuItem>
+    <DropdownMenuItem onClick={() => setLanguage('es')}>🇪🇸 Español</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+### 2. Hide Sections (Remove from CompareView)
+
+Remove these CollapsibleSection blocks entirely:
+
+| Section | Lines to Remove |
+|---------|-----------------|
+| Payment & Growth | Lines 352-362 |
+| Value Differentiators | Lines 364-371 |
+| Exit Scenarios | Lines 398-407 |
+
+**Keep these sections:**
+- Key Metrics Comparison (lines 341-350)
+- Mortgage Comparison (lines 373-382)
+- Rental Yield (lines 384-396)
+
+### 3. Pass Currency/Rate to Components
+
+Pass currency and rate props to remaining components:
+
+```tsx
+<MetricsTable 
+  quotesWithCalcs={quotesWithCalcs} 
+  metrics={metrics} 
+  currency={currency}
+  rate={rate}
+/>
+<MortgageComparison quotesWithCalcs={quotesWithCalcs} currency={currency} rate={rate} />
+<RentalYieldComparison quotesWithCalcs={quotesWithCalcs} currency={currency} rate={rate} />
+```
 
 ---
 
-## Still TODO (User Requested)
+## Files to Modify
 
-### Drag/Reorder Cards in Comparison View
-- Add @dnd-kit for sortable comparison cards
-- Allow users to reorder properties in comparison view
-
-### Post-Handover Payment Plan Visualization Improvements
-- Better 4-part breakdown visualization
-- "Total to Handover" vs "Total Post-Handover" amounts
+| File | Changes |
+|------|---------|
+| `src/pages/CompareView.tsx` | Add currency/language state, dropdowns, hide 3 sections, pass props |
 
 ---
 
-## Technical Notes
+## Summary
 
-**Exit Scenario Calculation:**
-Using `calculateExitScenario()` from `constructionProgress.ts` ensures:
-- Correct exit price based on phased appreciation
-- Accurate total capital deployed at exit point
-- Proper ROE calculations with entry costs factored in
+| Before | After |
+|--------|-------|
+| No currency selection | Currency dropdown (AED, USD, EUR, GBP, COP) |
+| No language selection | Language dropdown (EN, ES) |
+| Shows Payment & Growth | Hidden |
+| Shows Exit Scenarios | Hidden |
+| Shows Value Differentiators | Hidden |
+| Shows Key Metrics, Mortgage, Rental Yield | Kept |
