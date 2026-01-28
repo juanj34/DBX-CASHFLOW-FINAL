@@ -143,9 +143,39 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
   const updateAdditionalPayment = (id: string, field: keyof PaymentMilestone, value: any) => {
     setInputs(prev => {
+      // Find the index of the payment being updated
+      const paymentIndex = prev.additionalPayments.findIndex(m => m.id === id);
+      if (paymentIndex === -1) return prev;
+      
+      const oldPayment = prev.additionalPayments[paymentIndex];
+      
+      // If changing triggerValue (month), cascade shift to all subsequent payments
+      if (field === 'triggerValue' && oldPayment.type === 'time') {
+        const oldValue = oldPayment.triggerValue;
+        const newValue = value as number;
+        const delta = newValue - oldValue;
+        
+        // Only cascade if there's an actual change
+        if (delta !== 0) {
+          const updated = prev.additionalPayments.map((m, idx) => {
+            if (idx === paymentIndex) {
+              // Update the current payment
+              return { ...m, triggerValue: newValue };
+            } else if (idx > paymentIndex && m.type === 'time') {
+              // Shift all subsequent time-based payments
+              return { ...m, triggerValue: Math.max(1, m.triggerValue + delta) };
+            }
+            return m;
+          });
+          return { ...prev, additionalPayments: updated };
+        }
+      }
+      
+      // Standard single-field update for non-cascade cases
       const updated = prev.additionalPayments.map(m =>
         m.id === id ? { ...m, [field]: value } : m
       );
+      
       // Sort by triggerValue when month changes
       if (field === 'triggerValue') {
         return { ...prev, additionalPayments: updated.sort((a, b) => a.triggerValue - b.triggerValue) };
