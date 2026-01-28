@@ -74,7 +74,6 @@ export const CompactAllExitsCard = ({
     <div 
       className={cn(
         "bg-theme-card border border-theme-border rounded-xl overflow-hidden flex flex-col",
-        "min-h-[280px]", // Match other column heights
         onClick && "cursor-pointer hover:border-primary/50 transition-colors"
       )}
       onClick={onClick}
