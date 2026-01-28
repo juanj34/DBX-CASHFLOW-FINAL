@@ -62,6 +62,15 @@ const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, 
   return paymentDate >= handoverDate;
 };
 
+// Calculate date from months after handover
+const getPostHandoverDate = (monthsAfterHandover: number, handoverQuarter: number, handoverYear: number, language: string): string => {
+  const handoverMonth = (handoverQuarter - 1) * 3 + 1;
+  const totalMonths = handoverMonth + monthsAfterHandover;
+  const yearOffset = Math.floor((totalMonths - 1) / 12);
+  const month = ((totalMonths - 1) % 12) + 1;
+  return monthToDateString(month, handoverYear + yearOffset, language);
+};
+
 export const CompactPaymentTable = ({
   inputs,
   clientInfo,
@@ -157,8 +166,16 @@ export const CompactPaymentTable = ({
     return a.type === 'time' ? -1 : 1;
   });
 
+  // For post-handover plans, filter out payments that fall after handover (they're in postHandoverPayments)
+  const preHandoverPayments = hasPostHandoverPlan
+    ? sortedPayments.filter(p => {
+        if (p.type !== 'time') return true; // construction-based = pre-handover
+        return !isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+      })
+    : sortedPayments;
+
   // Calculate journey total (pre-handover installments excluding downpayment)
-  const journeyTotal = sortedPayments.reduce(
+  const journeyTotal = preHandoverPayments.reduce(
     (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
   );
 
@@ -252,27 +269,20 @@ export const CompactPaymentTable = ({
             </div>
           </div>
 
-          {/* Section: The Journey */}
-          {sortedPayments.length > 0 && (
+          {/* Section: The Journey (Pre-Handover) */}
+          {preHandoverPayments.length > 0 && (
             <div>
               <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">
                 The Journey ({totalMonths}mo)
               </div>
               <div className="space-y-1">
-                {sortedPayments.map((payment, index) => {
+                {preHandoverPayments.map((payment, index) => {
                   const amount = basePrice * (payment.paymentPercent / 100);
                   const dateStr = getPaymentDate(payment);
                   const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
                   
                   // Check for handover indicators
                   const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
-                    payment.triggerValue,
-                    bookingMonth,
-                    bookingYear,
-                    handoverQuarter,
-                    handoverYear
-                  );
-                  const isPostHO = payment.type === 'time' && isPaymentPostHandover(
                     payment.triggerValue,
                     bookingMonth,
                     bookingYear,
@@ -294,11 +304,6 @@ export const CompactPaymentTable = ({
                           <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                             <Key className="w-2.5 h-2.5" />
                             Handover
-                          </span>
-                        )}
-                        {isPostHO && !isHandoverQuarter && (
-                          <span className="text-[8px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded-full border border-purple-500/30 whitespace-nowrap">
-                            Post-HO
                           </span>
                         )}
                       </div>
@@ -324,21 +329,61 @@ export const CompactPaymentTable = ({
             </div>
           )}
 
-          {/* Section: Handover */}
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
-              Handover ({handoverPercent}%)
+          {/* Section: Handover - only show for standard plans OR if onHandoverPercent > 0 */}
+          {(!hasPostHandoverPlan || handoverPercent > 0) && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
+                {hasPostHandoverPlan ? `On Handover (${handoverPercent}%)` : `Handover (${handoverPercent}%)`}
+              </div>
+              <div className="space-y-1">
+                <DottedRow 
+                  label={hasPostHandoverPlan ? "Handover Payment" : "Final Payment"}
+                  value={getDualValue(handoverAmount).primary}
+                  secondaryValue={getDualValue(handoverAmount).secondary}
+                  bold
+                  valueClassName="text-green-400"
+                />
+              </div>
             </div>
-            <div className="space-y-1">
-              <DottedRow 
-                label="Final Payment"
-                value={getDualValue(handoverAmount).primary}
-                secondaryValue={getDualValue(handoverAmount).secondary}
-                bold
-                valueClassName="text-green-400"
-              />
+          )}
+
+          {/* Section: Post-Handover Installments - only for post-handover plans */}
+          {hasPostHandoverPlan && (inputs.postHandoverPayments || []).length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-purple-400 font-semibold mb-2">
+                Post-Handover ({((inputs.postHandoverPayments || []).reduce((sum, p) => sum + p.paymentPercent, 0)).toFixed(0)}%)
+              </div>
+              <div className="space-y-1">
+                {(inputs.postHandoverPayments || []).map((payment, index) => {
+                  const amount = basePrice * (payment.paymentPercent / 100);
+                  const monthsAfterHandover = payment.triggerValue;
+                  const dateStr = getPostHandoverDate(monthsAfterHandover, handoverQuarter, handoverYear, language);
+                  const label = `Month +${monthsAfterHandover} (${dateStr})`;
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-theme-text-muted truncate">{label}</span>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xs font-mono text-theme-text">{getDualValue(amount).primary}</div>
+                        {currency !== 'AED' && (
+                          <div className="text-[10px] text-theme-text-muted">{getDualValue(amount).secondary}</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="pt-1 border-t border-theme-border mt-1">
+                  <DottedRow 
+                    label="Subtotal Post-Handover"
+                    value={getDualValue(postHandoverTotal).primary}
+                    secondaryValue={getDualValue(postHandoverTotal).secondary}
+                    bold
+                    valueClassName="text-purple-400"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Grand Total with Fee Breakdown */}
           <div className="pt-2 border-t border-theme-border space-y-1">
