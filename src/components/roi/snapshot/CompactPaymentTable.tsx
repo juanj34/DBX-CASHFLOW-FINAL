@@ -55,17 +55,17 @@ const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: num
   return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
 };
 
-const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
-  const totalMonthsFromStart = bookingMonth + monthsFromBooking;
-  const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
-  const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
-  const paymentYear = bookingYear + paymentYearOffset;
+// Check if payment is AFTER the handover quarter (strictly after Q end, not start)
+const isPaymentAfterHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
   
-  const handoverMonth = (handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(handoverYear, handoverMonth - 1);
-  const paymentDate = new Date(paymentYear, paymentMonth - 1);
+  // Handover quarter END = last month of quarter (Q3 = Sep = month 9)
+  const handoverQuarterEndMonth = handoverQuarter * 3;
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28); // End of last month in quarter
   
-  return paymentDate >= handoverDate;
+  return paymentDate > handoverQuarterEnd;
 };
 
 export const CompactPaymentTable = ({
@@ -108,17 +108,19 @@ export const CompactPaymentTable = ({
   });
 
   // Derive pre-handover and post-handover payments from additionalPayments by date
+  // Pre-handover includes payments UP TO AND INCLUDING the handover quarter
+  // Post-handover is STRICTLY AFTER the handover quarter ends
   const preHandoverPayments = hasPostHandoverPlan
     ? sortedPayments.filter(p => {
         if (p.type !== 'time') return true; // construction-based = pre-handover
-        return !isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+        return !isPaymentAfterHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
       })
     : sortedPayments;
 
   const derivedPostHandoverPayments = hasPostHandoverPlan
     ? sortedPayments.filter(p => {
         if (p.type !== 'time') return false;
-        return isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+        return isPaymentAfterHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
       })
     : [];
   
@@ -285,7 +287,7 @@ export const CompactPaymentTable = ({
                   const dateStr = getPaymentDate(payment);
                   const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
                   
-                  // Check for handover indicators
+                  // Check for handover indicators - highlight payments in handover quarter
                   const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
                     payment.triggerValue,
                     bookingMonth,
@@ -294,29 +296,54 @@ export const CompactPaymentTable = ({
                     handoverYear
                   );
                   
+                  // Check if this is the LAST payment in the handover quarter
+                  const isLastHandoverQuarterPayment = isHandoverQuarter && 
+                    !preHandoverPayments.slice(index + 1).some(p => 
+                      p.type === 'time' && isPaymentInHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear)
+                    );
+                  
                   return (
-                    <div 
-                      key={index}
-                      className={cn(
-                        "flex items-center justify-between gap-2",
-                        isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1 border-l-2 border-green-400"
-                      )}
-                    >
-                      <div className="flex items-center gap-1 min-w-0 flex-1">
-                        <span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
-                        {isHandoverQuarter && (
-                          <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
-                            <Key className="w-2.5 h-2.5" />
-                            Handover
-                          </span>
+                    <div key={index}>
+                      <div 
+                        className={cn(
+                          "flex items-center justify-between gap-2",
+                          isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1 border-l-2 border-green-400"
                         )}
+                      >
+                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                          <span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
+                          {isHandoverQuarter && (
+                            <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
+                              <Key className="w-2.5 h-2.5" />
+                              Handover
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                          {getDualValue(amount).primary}
+                          {currency !== 'AED' && (
+                            <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
+                          )}
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
-                        {getDualValue(amount).primary}
-                        {currency !== 'AED' && (
-                          <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
-                        )}
-                      </span>
+                      
+                      {/* Show cumulative total right after the last handover quarter payment */}
+                      {isLastHandoverQuarterPayment && (
+                        <div className="mt-2 pt-1.5 border-t border-dashed border-theme-border/50">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-theme-text-muted flex items-center gap-1">
+                              <Wallet className="w-2.5 h-2.5" />
+                              Total to this point
+                            </span>
+                            <span className="font-mono text-theme-accent font-medium">
+                              {getDualValue(totalUntilHandover).primary}
+                              {currency !== 'AED' && (
+                                <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -324,15 +351,16 @@ export const CompactPaymentTable = ({
             </div>
           )}
 
-          {/* Section: Handover - only show for standard plans OR if onHandoverPercent > 0 */}
-          {(!hasPostHandoverPlan || handoverPercent > 0) && (
+          {/* Section: Handover - show for standard plans OR post-handover plans with onHandoverPercent > 0 */}
+          {/* For post-handover plans with 0% on-handover, cumulative is shown inline after last handover quarter payment above */}
+          {!hasPostHandoverPlan && (
             <div>
               <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
-                {hasPostHandoverPlan ? `On Handover (${handoverPercent}%)` : `Handover (${handoverPercent}%)`}
+                Handover ({handoverPercent}%)
               </div>
               <div className="space-y-1">
                 <DottedRow 
-                  label={hasPostHandoverPlan ? "Handover Payment" : "Final Payment"}
+                  label="Final Payment"
                   value={getDualValue(handoverAmount).primary}
                   secondaryValue={getDualValue(handoverAmount).secondary}
                   bold
@@ -353,6 +381,24 @@ export const CompactPaymentTable = ({
                     )}
                   </span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* For post-handover plans with explicit on-handover payment */}
+          {hasPostHandoverPlan && handoverPercent > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
+                On Handover ({handoverPercent}%)
+              </div>
+              <div className="space-y-1">
+                <DottedRow 
+                  label="Handover Payment"
+                  value={getDualValue(handoverAmount).primary}
+                  secondaryValue={getDualValue(handoverAmount).secondary}
+                  bold
+                  valueClassName="text-green-400"
+                />
               </div>
             </div>
           )}
