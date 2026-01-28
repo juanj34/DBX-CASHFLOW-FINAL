@@ -15,6 +15,7 @@ import { PresentationPreview } from "@/components/presentation";
 import { format } from "date-fns";
 import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -562,15 +563,17 @@ const PresentationView = () => {
 
       {/* Main Content - Preview */}
       <main className="flex-1 overflow-auto">
-        <PresentationPreview
-          items={presentation.items}
-          selectedIndex={selectedIndex}
-          onSelectIndex={setSelectedIndex}
-          quotes={allQuotes}
-          currency={currency}
-          language={language}
-          rate={rate}
-        />
+        <LanguageProvider defaultLanguage={language}>
+          <PresentationPreview
+            items={presentation.items}
+            selectedIndex={selectedIndex}
+            onSelectIndex={setSelectedIndex}
+            quotes={allQuotes}
+            currency={currency}
+            language={language}
+            rate={rate}
+          />
+        </LanguageProvider>
       </main>
 
       {/* Keyboard Navigation */}

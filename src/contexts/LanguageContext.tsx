@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Language = 'en' | 'es';
 
@@ -1435,6 +1435,18 @@ const translations: Translations = {
   // Payment Table
   transactionFees: { en: 'Fees (DLD + Oqood)', es: 'Tarifas (DLD + Oqood)' },
   totalInvestmentLabel: { en: 'Total Investment', es: 'Inversión Total' },
+
+  // Comparison Components
+  metric: { en: 'Metric', es: 'Métrica' },
+  standard: { en: 'Standard', es: 'Estándar' },
+  installments: { en: 'installments', es: 'cuotas' },
+  y1RentIncome: { en: 'Y1 Rent Income', es: 'Ingreso Renta A1' },
+  monthlyBurn: { en: 'Monthly Burn', es: 'Quema Mensual' },
+  monthlyAvgConstruction: { en: 'Monthly avg (construction)', es: 'Promedio mensual (construcción)' },
+  entryCosts: { en: 'Entry Costs (DLD, etc.)', es: 'Costos de Entrada (DLD, etc.)' },
+  totalCapitalRequired: { en: 'Total Capital Required', es: 'Capital Total Requerido' },
+  propertyValueGrowth: { en: 'Property Value Growth', es: 'Crecimiento del Valor' },
+  valueAtYear10: { en: 'Value at Year 10', es: 'Valor en Año 10' },
 };
 
 interface LanguageContextType {
@@ -1445,8 +1457,19 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('en');
+export const LanguageProvider = ({ 
+  children,
+  defaultLanguage = 'en',
+}: { 
+  children: ReactNode;
+  defaultLanguage?: Language;
+}) => {
+  const [language, setLanguage] = useState<Language>(defaultLanguage);
+
+  // Sync with defaultLanguage prop when it changes
+  useEffect(() => {
+    setLanguage(defaultLanguage);
+  }, [defaultLanguage]);
 
   const t = (key: string): string => {
     const translation = translations[key];

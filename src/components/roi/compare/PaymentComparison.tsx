@@ -1,5 +1,6 @@
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PaymentComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -13,6 +14,7 @@ export const PaymentComparison = ({
   exchangeRate = 1,
 }: PaymentComparisonProps) => {
   const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-4">
@@ -141,7 +143,7 @@ export const PaymentComparison = ({
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-                    <span className="text-theme-text-muted">Downpayment</span>
+                    <span className="text-theme-text-muted">{t('downpayment')}</span>
                   </span>
                   <span className="text-white font-medium">
                     {formatCurrency(downpaymentAmount, currency, exchangeRate)}
@@ -151,7 +153,7 @@ export const PaymentComparison = ({
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded" style={{ backgroundColor: `${color}80` }} />
-                      <span className="text-theme-text-muted">Pre-Handover</span>
+                      <span className="text-theme-text-muted">{t('preHandover') || 'Pre-Handover'}</span>
                     </span>
                     <span className="text-white font-medium">
                       {formatCurrency(preHandoverInstallmentsAmount, currency, exchangeRate)}
@@ -161,7 +163,7 @@ export const PaymentComparison = ({
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded bg-[#0f172a] border border-[#2a3142]" />
-                    <span className="text-theme-text-muted">On Handover</span>
+                    <span className="text-theme-text-muted">{t('onHandover') || 'On Handover'}</span>
                   </span>
                   <span className="text-white font-medium">
                     {formatCurrency(onHandoverAmount, currency, exchangeRate)}
@@ -175,17 +177,17 @@ export const PaymentComparison = ({
                           className="w-3 h-3 rounded" 
                           style={{ background: `repeating-linear-gradient(45deg, ${color}40, ${color}40 2px, ${color}20 2px, ${color}20 4px)` }} 
                         />
-                        <span className="text-theme-text-muted">Post-Handover</span>
+                        <span className="text-theme-text-muted">{t('postHandover') || 'Post-Handover'}</span>
                       </span>
                       <span className="text-white font-medium">
                         {formatCurrency(postHandoverAmount, currency, exchangeRate)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-theme-text-muted">
-                      <span>Post-HO payments</span>
+                      <span>{t('postHandoverPayments') || 'Post-HO payments'}</span>
                       <span>
                         {((quote.inputs.additionalPayments || []).filter((p: any) => p.type === 'post-handover').length) + 
-                         ((quote.inputs.postHandoverPayments || []).length)} installments
+                         ((quote.inputs.postHandoverPayments || []).length)} {t('installments') || 'installments'}
                       </span>
                     </div>
                   </>
@@ -196,7 +198,7 @@ export const PaymentComparison = ({
               {avgMonthlyPayment > 0 && (
                 <div className="pt-2 border-t border-[#2a3142]">
                   <div className="flex justify-between text-xs">
-                    <span className="text-theme-text-muted">Monthly avg (construction)</span>
+                    <span className="text-theme-text-muted">{t('monthlyAvgConstruction') || 'Monthly avg (construction)'}</span>
                     <span className="text-theme-text-muted font-medium">
                       ~{formatCurrency(avgMonthlyPayment, currency, exchangeRate)}/mo
                     </span>
@@ -207,13 +209,13 @@ export const PaymentComparison = ({
               {/* Entry costs */}
               <div className="pt-3 border-t border-[#2a3142]">
                 <div className="flex justify-between text-xs">
-                  <span className="text-theme-text-muted">Entry Costs (DLD, etc.)</span>
+                  <span className="text-theme-text-muted">{t('entryCosts') || 'Entry Costs (DLD, etc.)'}</span>
                   <span className="text-theme-text-muted">
                     {formatCurrency(calculations.totalEntryCosts, currency, exchangeRate)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs mt-1">
-                  <span className="text-theme-text-muted">Total Capital Required</span>
+                  <span className="text-theme-text-muted">{t('totalCapitalRequired') || 'Total Capital Required'}</span>
                   <span className="text-white font-medium">
                     {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency, exchangeRate)}
                   </span>
