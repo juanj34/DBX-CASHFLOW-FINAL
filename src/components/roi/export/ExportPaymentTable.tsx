@@ -51,6 +51,18 @@ export const ExportPaymentTable = ({
   
   const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
   
+  // Helper to check if a payment is AFTER the handover quarter
+  const isPaymentAfterHandoverQuarter = (monthsFromBooking: number): boolean => {
+    const bookingDate = new Date(bookingYear, bookingMonth - 1);
+    const paymentDate = new Date(bookingDate);
+    paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
+    
+    const handoverQuarterEndMonth = handoverQuarter * 3;
+    const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
+    
+    return paymentDate > handoverQuarterEnd;
+  };
+  
   // Calculate amounts
   const downpaymentAmount = basePrice * (downpaymentPercent / 100);
   const remainingDownpayment = downpaymentAmount - eoiFee;
@@ -59,11 +71,30 @@ export const ExportPaymentTable = ({
   let handoverPercent: number;
   let handoverAmount: number;
   let postHandoverTotal = 0;
+  let postHandoverPaymentsToUse = inputs.postHandoverPayments || [];
+  
+  // Separate pre-handover and post-handover payments
+  let preHandoverPayments = [...(additionalPayments || [])];
   
   if (hasPostHandoverPlan) {
     handoverPercent = inputs.onHandoverPercent || 0;
     handoverAmount = basePrice * handoverPercent / 100;
-    postHandoverTotal = (inputs.postHandoverPayments || []).reduce(
+    
+    // If no dedicated postHandoverPayments, derive from additionalPayments
+    if (postHandoverPaymentsToUse.length === 0 && additionalPayments?.length > 0) {
+      postHandoverPaymentsToUse = additionalPayments.filter(p => {
+        if (p.type !== 'time') return false;
+        return isPaymentAfterHandoverQuarter(p.triggerValue);
+      });
+      
+      // Filter pre-handover payments (exclude post-handover ones)
+      preHandoverPayments = additionalPayments.filter(p => {
+        if (p.type !== 'time') return true; // construction-based stay in pre-handover
+        return !isPaymentAfterHandoverQuarter(p.triggerValue);
+      });
+    }
+    
+    postHandoverTotal = postHandoverPaymentsToUse.reduce(
       (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
     );
   } else {
@@ -79,7 +110,7 @@ export const ExportPaymentTable = ({
     return { primary: dual.primary, secondary: dual.secondary };
   };
 
-  const sortedPayments = [...(additionalPayments || [])].sort((a, b) => {
+  const sortedPayments = [...preHandoverPayments].sort((a, b) => {
     if (a.type === 'time' && b.type === 'time') return a.triggerValue - b.triggerValue;
     if (a.type === 'construction' && b.type === 'construction') return a.triggerValue - b.triggerValue;
     return a.type === 'time' ? -1 : 1;
@@ -242,13 +273,39 @@ export const ExportPaymentTable = ({
         )}
 
         {/* Handover */}
-        <div style={sectionStyle}>
-          <div style={{ ...sectionHeaderStyle, color: 'rgb(74, 222, 128)' }}>{t.handover} ({handoverPercent}%)</div>
-          <div style={rowStyle}>
-            <span style={{ ...labelStyle, fontWeight: 600 }}>{t.finalPayment}</span>
-            <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(74, 222, 128)' }}>{getDualValue(handoverAmount).primary}</span>
+        {handoverPercent > 0 && (
+          <div style={sectionStyle}>
+            <div style={{ ...sectionHeaderStyle, color: 'rgb(74, 222, 128)' }}>{t.handover} ({handoverPercent}%)</div>
+            <div style={rowStyle}>
+              <span style={{ ...labelStyle, fontWeight: 600 }}>{hasPostHandoverPlan ? (language === 'es' ? 'Pago en Entrega' : 'Handover Payment') : t.finalPayment}</span>
+              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(74, 222, 128)' }}>{getDualValue(handoverAmount).primary}</span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Post-Handover Section */}
+        {hasPostHandoverPlan && postHandoverPaymentsToUse.length > 0 && (
+          <div style={sectionStyle}>
+            <div style={{ ...sectionHeaderStyle, color: '#a855f7' }}>
+              {language === 'es' ? 'Post-Entrega' : 'Post-Handover'} ({Math.round(postHandoverPaymentsToUse.reduce((s, p) => s + p.paymentPercent, 0))}%)
+            </div>
+            {postHandoverPaymentsToUse.map((payment, index) => {
+              const amount = basePrice * (payment.paymentPercent / 100);
+              return (
+                <div key={index} style={rowStyle}>
+                  <span style={labelStyle}>
+                    {payment.label || `+${payment.triggerValue} ${language === 'es' ? 'meses' : 'months'}`}
+                  </span>
+                  <span style={valueStyle}>{getDualValue(amount).primary}</span>
+                </div>
+              );
+            })}
+            <div style={{ ...rowStyle, borderTop: '1px solid hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
+              <span style={{ ...labelStyle, fontWeight: 600 }}>{t.subtotal}</span>
+              <span style={{ ...valueStyle, fontWeight: 700, color: '#a855f7' }}>{getDualValue(postHandoverTotal).primary}</span>
+            </div>
+          </div>
+        )}
 
         {/* Grand Total */}
         <div style={{ borderTop: '1px solid hsl(var(--theme-border))', paddingTop: '8px' }}>

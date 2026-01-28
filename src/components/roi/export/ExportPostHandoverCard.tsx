@@ -1,4 +1,4 @@
-import { OIInputs } from '../useOICalculations';
+import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 
 interface ExportPostHandoverCardProps {
@@ -46,6 +46,29 @@ const translations = {
   rentCovers: { en: 'Rent covers', es: 'La renta cubre' },
   totalGapOver: { en: 'gap over', es: 'diferencia en' },
   mo: { en: 'mo', es: 'me' },
+  perInstallment: { en: 'Per Installment', es: 'Por Cuota' },
+  onHandover: { en: 'On Handover', es: 'En Entrega' },
+  tenantCovers: { en: 'Tenant Covers', es: 'Inquilino Cubre' },
+  youPay: { en: 'You Pay', es: 'Tu Pagas' },
+  payments: { en: 'payments', es: 'pagos' },
+};
+
+// Check if a payment is AFTER the handover quarter (strictly after Q end)
+const isPaymentAfterHandoverQuarter = (
+  monthsFromBooking: number,
+  bookingMonth: number,
+  bookingYear: number,
+  handoverQuarter: number,
+  handoverYear: number
+): boolean => {
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
+  
+  const handoverQuarterEndMonth = handoverQuarter * 3;
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
+  
+  return paymentDate > handoverQuarterEnd;
 };
 
 export const ExportPostHandoverCard = ({
@@ -59,47 +82,79 @@ export const ExportPostHandoverCard = ({
   
   // Only render if post-handover plan is enabled
   if (!inputs.hasPostHandoverPlan) return null;
-  if (!inputs.postHandoverPayments?.length) return null;
 
   const basePrice = inputs.basePrice;
   
-  // Calculate total post-handover payments
-  const postHandoverTotal = inputs.postHandoverPayments.reduce(
-    (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
-  );
-
-  // Calculate duration in months
-  const handoverMonth = (inputs.handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear, handoverMonth - 1);
-  const endMonth = (inputs.postHandoverEndQuarter - 1) * 3 + 1;
-  const endDate = new Date(inputs.postHandoverEndYear, endMonth - 1);
+  // On-handover payment
+  const onHandoverPercent = inputs.onHandoverPercent || 0;
+  const onHandoverAmount = basePrice * (onHandoverPercent / 100);
   
-  const postHandoverMonths = Math.max(1, 
-    (endDate.getFullYear() - handoverDate.getFullYear()) * 12 + 
-    (endDate.getMonth() - handoverDate.getMonth())
-  );
+  // First try dedicated postHandoverPayments array
+  let postHandoverPaymentsToUse: PaymentMilestone[] = inputs.postHandoverPayments || [];
+  
+  // If empty, derive from additionalPayments (time-based payments AFTER handover quarter end)
+  if (postHandoverPaymentsToUse.length === 0 && inputs.additionalPayments?.length > 0) {
+    postHandoverPaymentsToUse = inputs.additionalPayments.filter(p => {
+      if (p.type !== 'time') return false;
+      return isPaymentAfterHandoverQuarter(
+        p.triggerValue,
+        inputs.bookingMonth,
+        inputs.bookingYear,
+        inputs.handoverQuarter,
+        inputs.handoverYear
+      );
+    });
+  }
+  
+  // Return null only if no post-handover payments found
+  if (postHandoverPaymentsToUse.length === 0) return null;
 
-  // Monthly equivalent payment
-  const monthlyEquivalent = postHandoverTotal / postHandoverMonths;
+  // Calculate post-handover percentage from actual payments
+  const postHandoverPercent = postHandoverPaymentsToUse.reduce(
+    (sum, p) => sum + p.paymentPercent, 0
+  );
+  
+  // Calculate total post-handover payments
+  const postHandoverTotal = basePrice * (postHandoverPercent / 100);
+  
+  // Count actual number of payments
+  const numberOfPayments = postHandoverPaymentsToUse.length;
+
+  // Calculate duration from actual payment schedule
+  const paymentMonths = postHandoverPaymentsToUse.map(p => p.triggerValue);
+  const lastPaymentMonth = Math.max(...paymentMonths);
+  const firstPaymentMonth = Math.min(...paymentMonths);
+  const actualDurationMonths = Math.max(1, lastPaymentMonth - firstPaymentMonth + 1);
+
+  // Per installment amount
+  const perInstallmentAmount = postHandoverTotal / numberOfPayments;
+
+  // Monthly cashflow burn rate
+  const monthlyEquivalent = postHandoverTotal / actualDurationMonths;
 
   // Cashflow calculation
   const monthlyCashflow = monthlyRent - monthlyEquivalent;
-  const coveragePercent = monthlyEquivalent > 0 
-    ? Math.round((monthlyRent / monthlyEquivalent) * 100) 
-    : 0;
   const isFullyCovered = monthlyCashflow >= 0;
 
-  // Total gap over the period
-  const totalGap = Math.abs(monthlyCashflow) * postHandoverMonths;
+  // Total tenant contribution over the post-handover period
+  const totalTenantContribution = monthlyRent * actualDurationMonths;
+
+  // What investor actually pays out of pocket
+  const netOutOfPocket = Math.max(0, postHandoverTotal - totalTenantContribution);
+
+  // Coverage percentage
+  const tenantCoversPercent = postHandoverTotal > 0 
+    ? Math.min(100, Math.round((totalTenantContribution / postHandoverTotal) * 100))
+    : 0;
+
+  // Surplus if tenant pays more than post-HO
+  const surplus = totalTenantContribution - postHandoverTotal;
 
   // Dual currency helper
   const getDualValue = (value: number) => {
     const dual = formatDualCurrency(value, currency, rate);
     return { primary: dual.primary, secondary: dual.secondary };
   };
-
-  // Format end date for badge
-  const endDateStr = `Q${inputs.postHandoverEndQuarter} ${inputs.postHandoverEndYear}`;
 
   return (
     <div style={{
@@ -136,42 +191,52 @@ export const ExportPostHandoverCard = ({
           border: '1px solid rgba(168, 85, 247, 0.3)',
           color: '#a855f7',
         }}>
-          {postHandoverMonths}{t('mo')} @ {endDateStr}
+          {actualDurationMonths}{t('mo')} ({numberOfPayments} {t('payments')})
         </span>
       </div>
 
       {/* Content */}
       <div style={{ padding: '12px' }}>
-        {/* Rows */}
+        {/* Post-HO Total */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
-            {t('postHandoverPayments')} ({inputs.postHandoverPercent || 0}%)
+            {t('postHandoverPayments')} ({Math.round(postHandoverPercent)}%)
           </span>
           <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'hsl(var(--theme-text))' }}>
             {getDualValue(postHandoverTotal).primary}
           </span>
         </div>
-
+        
+        {/* Per Installment */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
-            {t('monthlyEquivalent')}
+            {t('perInstallment')} ({numberOfPayments}x)
           </span>
           <span style={{ fontSize: '11px', fontFamily: 'monospace', fontWeight: 600, color: '#a855f7' }}>
-            {getDualValue(monthlyEquivalent).primary}/{t('mo')}
+            {getDualValue(perInstallmentAmount).primary}
           </span>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
-            {t('rentalIncome')}
-          </span>
-          <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22d3ee' }}>
-            +{getDualValue(monthlyRent).primary}/{t('mo')}
-          </span>
-        </div>
+        {/* Monthly Cashflow Analysis */}
+        <div style={{ borderTop: '1px dashed hsl(var(--theme-border))', marginTop: '8px', paddingTop: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
+              {t('monthlyEquivalent')}
+            </span>
+            <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'hsl(var(--theme-text))' }}>
+              {getDualValue(monthlyEquivalent).primary}/{t('mo')}
+            </span>
+          </div>
 
-        {/* Divider */}
-        <div style={{ borderTop: '1px solid hsl(var(--border))', marginTop: '8px', paddingTop: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
+              {t('rentalIncome')}
+            </span>
+            <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22d3ee' }}>
+              +{getDualValue(monthlyRent).primary}/{t('mo')}
+            </span>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '11px', fontWeight: 600, color: 'hsl(var(--theme-text))' }}>
               {isFullyCovered ? t('monthlySurplus') : t('monthlyGap')}
@@ -187,35 +252,70 @@ export const ExportPostHandoverCard = ({
           </div>
         </div>
 
-        {/* Status badges */}
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-          <span style={{
-            fontSize: '9px',
-            padding: '2px 6px',
-            borderRadius: '4px',
+        {/* Simple Summary */}
+        <div style={{ borderTop: '1px solid hsl(var(--theme-border))', marginTop: '8px', paddingTop: '8px' }}>
+          {onHandoverAmount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
+                {t('onHandover')}
+              </span>
+              <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#facc15' }}>
+                {getDualValue(onHandoverAmount).primary}
+              </span>
+            </div>
+          )}
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', color: 'hsl(var(--theme-text-muted))' }}>
+              {t('tenantCovers')} ({actualDurationMonths}{t('mo')})
+            </span>
+            <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22d3ee' }}>
+              +{getDualValue(totalTenantContribution).primary}
+            </span>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'hsl(var(--theme-text))' }}>
+              {t('youPay')}
+            </span>
+            <span style={{ 
+              fontSize: '11px', 
+              fontFamily: 'monospace', 
+              fontWeight: 600, 
+              color: netOutOfPocket > 0 ? '#f87171' : '#4ade80' 
+            }}>
+              {getDualValue(netOutOfPocket).primary}
+            </span>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        <div style={{ marginTop: '8px' }}>
+          <div style={{
+            padding: '8px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            fontSize: '10px',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '4px',
-            backgroundColor: isFullyCovered ? 'rgba(74, 222, 128, 0.1)' : 'rgba(250, 204, 21, 0.1)',
-            border: `1px solid ${isFullyCovered ? 'rgba(74, 222, 128, 0.3)' : 'rgba(250, 204, 21, 0.3)'}`,
-            color: isFullyCovered ? '#4ade80' : '#facc15',
+            backgroundColor: tenantCoversPercent >= 100 ? 'rgba(74, 222, 128, 0.1)' : 'rgba(250, 204, 21, 0.1)',
+            border: `1px solid ${tenantCoversPercent >= 100 ? 'rgba(74, 222, 128, 0.3)' : 'rgba(250, 204, 21, 0.3)'}`,
+            color: tenantCoversPercent >= 100 ? '#4ade80' : '#facc15',
           }}>
-            {isFullyCovered ? <CheckCircleIcon /> : <AlertCircleIcon />}
-            {isFullyCovered ? t('fullCoverage') : t('partialCoverage')}
-          </span>
-          <span style={{
-            fontSize: '9px',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            backgroundColor: 'hsl(var(--muted))',
-            border: '1px solid hsl(var(--border))',
-            color: 'hsl(var(--muted-foreground))',
-          }}>
-            {isFullyCovered 
-              ? `${t('rentCovers')} ${coveragePercent}%+` 
-              : `${getDualValue(totalGap).primary} ${t('totalGapOver')} ${postHandoverMonths}${t('mo')}`
-            }
-          </span>
+            {tenantCoversPercent >= 100 ? (
+              <>
+                <CheckCircleIcon />
+                Tenant fully covers! +{getDualValue(surplus).primary} surplus
+              </>
+            ) : (
+              <>
+                <AlertCircleIcon />
+                Tenant covers {tenantCoversPercent}% • Net: {getDualValue(netOutOfPocket).primary}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

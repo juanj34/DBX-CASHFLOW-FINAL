@@ -1,6 +1,6 @@
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
-import { monthToConstruction } from '../constructionProgress';
+import { monthToConstruction, calculateExitScenario } from '../constructionProgress';
 
 interface ExportExitCardsProps {
   inputs: OIInputs;
@@ -32,35 +32,48 @@ export const ExportExitCards = ({
   rate,
   language,
 }: ExportExitCardsProps) => {
+  // Get basePrice from inputs with fallback to calculations
+  const basePrice = inputs.basePrice || calculations.basePrice || 0;
+  
+  // If no basePrice or no scenarios, don't render
+  if (basePrice <= 0 || exitScenarios.length === 0) {
+    return null;
+  }
+  
+  // Calculate scenarios dynamically using the canonical function (like CompactAllExitsCard does)
   const scenarios = exitScenarios.map((exitMonths, index) => {
-    const preCalcScenario = calculations.scenarios.find(s => s.exitMonths === exitMonths);
+    // Calculate scenario dynamically using the canonical function
+    const scenarioResult = calculateExitScenario(
+      exitMonths,
+      basePrice,
+      calculations.totalMonths,
+      inputs,
+      calculations.totalEntryCosts
+    );
+    
     const isHandover = exitMonths >= calculations.totalMonths;
     const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear);
     const constructionPct = Math.min(100, monthToConstruction(exitMonths, calculations.totalMonths));
     
-    if (preCalcScenario) {
-      return {
-        ...preCalcScenario,
-        isHandover,
-        dateStr,
-        constructionPct,
-        exitNumber: index + 1,
-      };
-    }
-    
     return {
       exitMonths,
-      exitPrice: 0,
-      totalCapitalDeployed: 0,
-      trueProfit: 0,
-      trueROE: 0,
-      annualizedROE: 0,
+      exitPrice: scenarioResult.exitPrice,
+      totalCapitalDeployed: scenarioResult.totalCapital,
+      trueProfit: scenarioResult.trueProfit,
+      trueROE: scenarioResult.trueROE,
+      annualizedROE: scenarioResult.annualizedROE,
       isHandover,
       dateStr,
       constructionPct,
       exitNumber: index + 1,
     };
   });
+  
+  // If all scenarios show 0 profit/capital, don't render the card
+  const hasValidScenarios = scenarios.some(s => s.totalCapitalDeployed > 0 && s.exitPrice > 0);
+  if (!hasValidScenarios) {
+    return null;
+  }
 
   const t = {
     exitScenarios: language === 'es' ? 'Escenarios de Salida' : 'Exit Scenarios',
