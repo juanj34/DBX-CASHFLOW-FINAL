@@ -10,6 +10,7 @@ import { PresentationItem } from "@/hooks/usePresentations";
 import { CashflowQuote } from "@/hooks/useCashflowQuote";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Currency } from "@/components/roi/currencyUtils";
 
 // Vertical view components
 import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
@@ -42,6 +43,10 @@ interface PresentationPreviewProps {
   selectedIndex: number;
   onSelectIndex: (index: number) => void;
   quotes: CashflowQuote[];
+  // Global settings from parent
+  currency?: Currency;
+  language?: 'en' | 'es';
+  rate?: number;
 }
 
 interface QuoteData {
@@ -75,12 +80,19 @@ interface ComparisonData {
 // Single quote preview component
 const QuotePreview = ({ 
   quoteData, 
-  viewMode 
+  viewMode,
+  currency = 'AED',
+  language = 'en',
+  rate: propRate,
 }: { 
   quoteData: QuoteData; 
   viewMode: 'snapshot' | 'vertical' | 'compact';
+  currency?: Currency;
+  language?: 'en' | 'es';
+  rate?: number;
 }) => {
-  const { rate } = useExchangeRate('AED');
+  const { rate: defaultRate } = useExchangeRate(currency);
+  const rate = propRate ?? defaultRate;
   const { t } = useLanguage();
   const calculations = useOICalculations(quoteData.inputs);
   const mortgageAnalysis = useMortgageCalculations({
@@ -123,9 +135,9 @@ const QuotePreview = ({
           floorPlanUrl: quoteData.floorPlanUrl,
           buildingRenderUrl: quoteData.buildingRenderUrl,
         }}
-        currency="AED"
+        currency={currency}
         setCurrency={() => {}}
-        language="en"
+        language={language}
         setLanguage={() => {}}
         rate={rate}
       />
@@ -345,11 +357,18 @@ const QuoteCalculator = ({
 
 // Full comparison preview component with all comparison sections
 const ComparisonPreview = ({ 
-  comparisonData 
+  comparisonData,
+  currency = 'AED',
+  language = 'en',
+  rate: propRate,
 }: { 
   comparisonData: ComparisonData;
+  currency?: Currency;
+  language?: 'en' | 'es';
+  rate?: number;
 }) => {
-  const { rate } = useExchangeRate('AED');
+  const { rate: defaultRate } = useExchangeRate(currency);
+  const rate = propRate ?? defaultRate;
   const [calculationsMap, setCalculationsMap] = useState<Record<string, any>>({});
 
   const handleCalculated = (quoteId: string, calc: any) => {
@@ -489,6 +508,9 @@ export const PresentationPreview = ({
   selectedIndex,
   onSelectIndex,
   quotes,
+  currency = 'AED',
+  language = 'en',
+  rate,
 }: PresentationPreviewProps) => {
   const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
@@ -660,10 +682,18 @@ export const PresentationPreview = ({
           <QuotePreview 
             quoteData={quoteData} 
             viewMode="snapshot"
+            currency={currency}
+            language={language}
+            rate={rate}
           />
         )}
         {(currentItem?.type === 'comparison' || currentItem?.type === 'inline_comparison') && comparisonData && (
-          <ComparisonPreview comparisonData={comparisonData} />
+          <ComparisonPreview 
+            comparisonData={comparisonData} 
+            currency={currency}
+            language={language}
+            rate={rate}
+          />
         )}
       </div>
 

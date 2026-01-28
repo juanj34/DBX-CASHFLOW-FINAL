@@ -1,66 +1,27 @@
 
-# Plan: Fix Selection Bug and Increase Limit to 6 in CreateComparisonModal
+# Completed: Presentation & Client View Enhancements
 
-## Problem Analysis
+## Changes Made
 
-Two issues identified in `CreateComparisonModal.tsx`:
+### PresentationView.tsx
+- Added global currency and language state at component level
+- Added Currency selector dropdown (AED, USD, EUR, GBP, COP)
+- Added Language selector dropdown (EN, ES)
+- Added Download button next to each quote in sidebar
+- Added ExportQuoteModal for individual quote exports
+- All settings propagate to child components (quotes + comparisons)
+- Main content has overflow-auto for vertical scrolling
 
-1. **Selection Bug**: The `useEffect` on line 46-52 has `initialQuoteIds` as a dependency. Since the default value `initialQuoteIds = []` creates a new array reference on each render, the effect fires repeatedly and resets `selectedQuoteIds` to empty, preventing any selections.
+### PresentationPreview.tsx
+- Added Currency import
+- Updated props to accept currency, language, rate
+- QuotePreview now accepts and uses currency/language/rate
+- ComparisonPreview now accepts and uses currency/language/rate
+- Props flow through to SnapshotContent
 
-2. **Limit Issue**: `maxQuotes` is still set to 4 (line 54), should be 6.
+### CreateComparisonModal.tsx (Previous fix)
+- Fixed selection bug with useRef to track modal open transition
+- Increased maxQuotes from 4 to 6
 
----
-
-## Solution
-
-**File: `src/components/presentation/CreateComparisonModal.tsx`**
-
-### Change 1: Increase maxQuotes (line 54)
-```tsx
-// Before
-const maxQuotes = 4;
-
-// After
-const maxQuotes = 6;
-```
-
-### Change 2: Fix useEffect to only reset on modal open transition (lines 45-52)
-
-Add a ref to track the previous open state and only reset when modal opens (transitions from closed to open):
-
-```tsx
-import { useState, useMemo, useEffect, useRef } from "react";
-
-// Inside component:
-const prevOpenRef = useRef(false);
-
-useEffect(() => {
-  // Only reset when modal opens (transitions from closed to open)
-  if (open && !prevOpenRef.current) {
-    setSelectedQuoteIds(initialQuoteIds);
-    setTitle(initialTitle);
-    setSearch("");
-  }
-  prevOpenRef.current = open;
-}, [open, initialQuoteIds, initialTitle]);
-```
-
-This ensures selections are only reset when the modal first opens, not on every parent re-render.
-
----
-
-## Summary
-
-| Location | Change |
-|----------|--------|
-| Line 1 | Add `useRef` to imports |
-| Line 45-52 | Add `prevOpenRef` and update useEffect logic to only reset on open transition |
-| Line 54 | Change `maxQuotes = 4` → `maxQuotes = 6` |
-
----
-
-## Expected Result
-
-- Users can select up to 6 quotes for comparison
-- Selections persist while the modal is open (no more reset on every click)
-- Modal text updates to "Select 2-6 quotes to compare"
+## Still TODO for Client Portal
+The ClientPortal.tsx should be updated similarly if needed - it currently shows quotes and presentations in a card grid format, not the same dashboard layout as PresentationView.
