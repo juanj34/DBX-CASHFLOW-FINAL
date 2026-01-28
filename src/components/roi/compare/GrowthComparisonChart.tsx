@@ -13,7 +13,7 @@ export const GrowthComparisonChart = ({
   currency = 'AED',
   exchangeRate = 1,
 }: GrowthComparisonChartProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
 
   // Build chart data combining all quotes
   const maxYears = 10;

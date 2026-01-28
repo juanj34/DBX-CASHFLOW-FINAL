@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Gem, Home, Percent, DoorOpen, CreditCard, Building2 } from "lucide-react";
+import { Loader2, FileText, GitCompare, ChevronLeft, ChevronRight, BarChart3, TrendingUp, Gem, Home, DoorOpen, CreditCard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { OIInputs, useOICalculations } from "@/components/roi/useOICalculations";
@@ -34,7 +34,6 @@ import { PaymentComparison } from "@/components/roi/compare/PaymentComparison";
 import { GrowthComparisonChart } from "@/components/roi/compare/GrowthComparisonChart";
 import { ExitComparison } from "@/components/roi/compare/ExitComparison";
 import { MortgageComparison } from "@/components/roi/compare/MortgageComparison";
-import { RentalYieldComparison } from "@/components/roi/compare/RentalYieldComparison";
 import { DifferentiatorsComparison } from "@/components/roi/compare/DifferentiatorsComparison";
 import { computeComparisonMetrics, QuoteWithCalculations, ComparisonQuote } from "@/hooks/useQuotesComparison";
 
@@ -390,13 +389,9 @@ const ComparisonPreview = ({
   const allCalculated = comparisonData.quotes.length > 0 && 
     comparisonData.quotes.every(q => calculationsMap[q.id]);
 
-  // Check for mortgage and rental data
+  // Check for mortgage data
   const hasMortgage = quotesWithCalcs.some(q => 
     (q.quote.inputs as any)?._mortgageInputs?.enabled
-  );
-  const hasRentalYield = quotesWithCalcs.some(q => 
-    (q.quote.inputs.rentalYieldPercent || 0) > 0 || 
-    (q.calculations.holdAnalysis?.netAnnualRent || 0) > 0
   );
 
   return (
@@ -438,7 +433,7 @@ const ComparisonPreview = ({
             style={{ gridTemplateColumns: `repeat(${Math.min(comparisonData.quotes.length, 4)}, minmax(200px, 1fr))` }}
           >
             {comparisonData.quotes.map((quote, index) => {
-              const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+              const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
               const color = colors[index % colors.length];
 
               return (
@@ -507,17 +502,6 @@ const ComparisonPreview = ({
               defaultOpen={true}
             >
               <MortgageComparison quotesWithCalcs={quotesWithCalcs} />
-            </CollapsibleSection>
-          )}
-
-          {/* Rental Yield Comparison */}
-          {hasRentalYield && (
-            <CollapsibleSection
-              title="Rental Yield"
-              icon={<Percent className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={true}
-            >
-              <RentalYieldComparison quotesWithCalcs={quotesWithCalcs} />
             </CollapsibleSection>
           )}
 
@@ -706,11 +690,11 @@ export const PresentationPreview = ({
   return (
     <div className="h-full flex flex-col">
       {/* Preview Content */}
-      <div className="flex-1 overflow-hidden bg-theme-bg">
+      <div className="flex-1 overflow-auto bg-theme-bg">
         {currentItem?.type === 'quote' && quoteData && (
           <QuotePreview 
             quoteData={quoteData} 
-            viewMode={currentItem.viewMode || 'vertical'} 
+            viewMode="snapshot"
           />
         )}
         {(currentItem?.type === 'comparison' || currentItem?.type === 'inline_comparison') && comparisonData && (

@@ -27,7 +27,7 @@ export const QuoteSelector = ({
   onClose,
   selectedIds,
   onSelect,
-  maxQuotes = 4,
+  maxQuotes = 6,
   onLoadComparison,
 }: QuoteSelectorProps) => {
   const { quotes, loading } = useQuotesList();
