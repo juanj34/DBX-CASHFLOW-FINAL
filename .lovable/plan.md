@@ -1,147 +1,118 @@
 
-# Plan: Fix Snapshot Payment Display for Post-Handover Plans
+# Plan: Payment Generator Enhancements
 
-## Problem Summary
+## Summary of Changes
 
-The Snapshot's `CompactPaymentTable` incorrectly displays post-handover payment plans. Looking at your screenshot:
+Three improvements to the Payment Section configurator:
 
-- Payments continue through and past handover (Month 18-51)
-- But the table still shows **"HANDOVER (55%)" with "Final Payment"**
-- This doesn't make sense - there IS no final payment when you have continuous installments
+1. **Add "% per payment" input** to the pre-handover installments generator
+2. **Move Post-Handover toggle** to the top of the Payment section
+3. **Add Reset button** to clear generated installments
 
-### Current (Wrong) Behavior:
+---
+
+## 1. Add % Per Payment to Pre-Handover Generator
+
+Currently the pre-handover generator shows:
 ```
-THE ENTRY      → Correct
-THE JOURNEY    → Shows payments including some after handover
-HANDOVER (55%) → Shows wrong! There's no 55% final payment
-─────────────────────
-Total Investment
+[4] payments × [6] mo     [Generate]
 ```
 
-### Expected (Correct) Behavior for Post-Handover Plans:
+After change:
 ```
-THE ENTRY           → Downpayment + fees
-THE JOURNEY (PRE)   → Installments BEFORE handover
-ON HANDOVER (0-1%)  → Only if onHandoverPercent > 0
-POST-HANDOVER       → Installments AFTER handover date
-─────────────────────
-Total Investment
+[4] payments × [6] mo @ [2.5] %     [Generate]   [Reset]
+```
+
+### Technical Changes
+
+**File: `src/components/roi/configurator/PaymentSection.tsx`**
+
+- Add new state for percent per payment (line ~48):
+```typescript
+const [percentPerPayment, setPercentPerPayment] = useState(2.5);
+```
+
+- Update `handleGeneratePayments` to use the user-defined percentage:
+```typescript
+const handleGeneratePayments = () => {
+  const newPayments: PaymentMilestone[] = [];
+  
+  for (let i = 0; i < numPayments; i++) {
+    newPayments.push({
+      id: `auto-${Date.now()}-${i}`,
+      type: 'time',
+      triggerValue: paymentInterval * (i + 1),
+      paymentPercent: percentPerPayment  // Use exact user-defined percentage
+    });
+  }
+  
+  setInputs(prev => ({ ...prev, additionalPayments: newPayments }));
+  setShowInstallments(true);
+};
+```
+
+- Add the % input field to the generator UI (after the `mo` input):
+```tsx
+<span className="text-gray-600">@</span>
+<div className="flex items-center gap-1">
+  <Input
+    type="text"
+    inputMode="decimal"
+    value={percentPerPayment || ''}
+    onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
+    className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-center text-xs"
+  />
+  <span className="text-[10px] text-gray-500">%</span>
+</div>
 ```
 
 ---
 
-## Technical Solution
+## 2. Move Post-Handover Toggle to Top
 
-### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
+Currently the toggle is at the bottom (line 503-518). Move it right after the section title.
 
-#### 1. Reorganize Payment Display Logic
+### New Order:
+1. Title + description
+2. **Post-Handover Toggle** ← moved here
+3. Payment Split (Step 1)
+4. Downpayment (Step 2)
+5. Generate Installments (Step 3)
+6. Installments List
+7. Footer Summary
 
-**Current logic (lines 98-115):**
+### Technical Changes
+
+- Cut the toggle from lines 503-518 and insert after the title section (after line 182)
+
+---
+
+## 3. Add Reset Button to Clear Payments
+
+Add a "Reset" button next to the Generate button that clears all installments.
+
+### Technical Changes
+
+- Add `handleResetPayments` function:
 ```typescript
-if (hasPostHandoverPlan) {
-  handoverPercent = inputs.onHandoverPercent || 0;
-  handoverAmount = basePrice * handoverPercent / 100;
-  postHandoverTotal = (inputs.postHandoverPayments || []).reduce(...);
-} else {
-  handoverPercent = 100 - inputs.preHandoverPercent;
-  handoverAmount = basePrice * handoverPercent / 100;
-}
+const handleResetPayments = () => {
+  setInputs(prev => ({ ...prev, additionalPayments: [] }));
+  setShowInstallments(false);
+};
 ```
 
-The calculation is fine, but the **UI sections** need to change.
-
-#### 2. Split "The Journey" into Pre and Post Sections
-
-When `hasPostHandoverPlan` is true:
-
-- **The Journey (Pre-Handover)**: Show only `additionalPayments` that fall BEFORE handover
-- **On Handover**: Show `onHandoverPercent` only if > 0
-- **Post-Handover Installments**: Show `postHandoverPayments` list
-
-#### 3. Detailed Changes
-
-**A. Filter pre-handover vs post-handover installments (around line 153):**
-
-```typescript
-// For standard plans, all additionalPayments are pre-handover
-// For post-handover plans, filter by date
-const preHandoverPayments = hasPostHandoverPlan 
-  ? sortedPayments.filter(p => {
-      if (p.type !== 'time') return true; // construction-based = pre-handover
-      return !isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
-    })
-  : sortedPayments;
-```
-
-**B. Conditionally render "Handover" section (lines 327-341):**
-
-Replace:
+- Add Reset button next to Generate button:
 ```tsx
-{/* Section: Handover */}
-<div>
-  <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
-    Handover ({handoverPercent}%)
-  </div>
-  <div className="space-y-1">
-    <DottedRow 
-      label="Final Payment"
-      value={getDualValue(handoverAmount).primary}
-      ...
-    />
-  </div>
-</div>
-```
-
-With conditional rendering:
-```tsx
-{/* Section: On Handover - only show for standard plans OR if onHandoverPercent > 0 */}
-{(!hasPostHandoverPlan || handoverPercent > 0) && (
-  <div>
-    <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
-      {hasPostHandoverPlan ? `On Handover (${handoverPercent}%)` : `Handover (${handoverPercent}%)`}
-    </div>
-    <div className="space-y-1">
-      <DottedRow 
-        label={hasPostHandoverPlan ? "Handover Payment" : "Final Payment"}
-        value={getDualValue(handoverAmount).primary}
-        ...
-      />
-    </div>
-  </div>
-)}
-
-{/* Section: Post-Handover Installments - only for post-handover plans */}
-{hasPostHandoverPlan && (inputs.postHandoverPayments || []).length > 0 && (
-  <div>
-    <div className="text-[10px] uppercase tracking-wide text-purple-400 font-semibold mb-2">
-      Post-Handover ({inputs.postHandoverPercent || 0}%)
-    </div>
-    <div className="space-y-1">
-      {(inputs.postHandoverPayments || []).map((payment, index) => {
-        const amount = basePrice * (payment.paymentPercent / 100);
-        const monthsAfterHandover = payment.triggerValue;
-        const label = `Month +${monthsAfterHandover}`;
-        // Calculate actual date
-        ...
-        return (
-          <DottedRow 
-            key={index}
-            label={`${label} (${dateStr})`}
-            value={getDualValue(amount).primary}
-            secondaryValue={getDualValue(amount).secondary}
-          />
-        );
-      })}
-      <div className="pt-1 border-t border-theme-border mt-1">
-        <DottedRow 
-          label="Subtotal Post-Handover"
-          value={getDualValue(postHandoverTotal).primary}
-          bold
-          valueClassName="text-purple-400"
-        />
-      </div>
-    </div>
-  </div>
+{inputs.additionalPayments.length > 0 && (
+  <Button
+    type="button"
+    onClick={handleResetPayments}
+    size="sm"
+    variant="outline"
+    className="h-7 px-2 border-red-500/30 text-red-400 hover:bg-red-500/10"
+  >
+    <Trash2 className="w-3 h-3" />
+  </Button>
 )}
 ```
 
@@ -151,40 +122,46 @@ With conditional rendering:
 
 | File | Change |
 |------|--------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add post-handover section, conditionally render handover section, filter journey payments |
+| `src/components/roi/configurator/PaymentSection.tsx` | Add % per payment state, update generator logic, add reset function, move toggle, add UI inputs |
 
 ---
 
-## Result
+## Visual Result
 
-After changes, for a post-handover plan (like your 51 monthly payments):
-
-```text
-┌─────────────────────────────────────────────┐
-│ ⬢ PAYMENT BREAKDOWN                         │
-├─────────────────────────────────────────────┤
-│ THE ENTRY                                   │
-│   Downpayment (20%) .............. AED XX   │
-│   DLD + Oqood .................... AED XX   │
-│   Total Entry .................... AED XX   │
-├─────────────────────────────────────────────┤
-│ THE JOURNEY (17mo)                          │
-│   Month 1 (Feb 2026) ............. AED 6,019│
-│   ...                                       │
-│   Month 17 (Jun 2027) 🔑 Handover. AED 6,019│
-│   Subtotal ....................... AED XX   │
-├─────────────────────────────────────────────┤
-│ POST-HANDOVER (51%)                         │
-│   Month +1 (Jul 2027) ............ AED 6,019│
-│   Month +2 (Aug 2027) ............ AED 6,019│
-│   ...                                       │
-│   Month +34 (Apr 2030) ........... AED 6,019│
-│   Subtotal Post-Handover ......... AED XX   │
-├─────────────────────────────────────────────┤
-│ Base Property Price .............. AED XX   │
-│ Transaction Fees ................. AED XX   │
-│ Total Investment ................. AED XX   │
-└─────────────────────────────────────────────┘
+### Generator After Changes:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Payment Plan                                               │
+│  Configure your payment schedule and milestones             │
+├─────────────────────────────────────────────────────────────┤
+│  📅 Allow Payments Past Handover              [  Toggle  ]  │  ← MOVED TO TOP
+├─────────────────────────────────────────────────────────────┤
+│ ① Payment Split                                             │
+│     [30/70] [40/60] [50/50] [60/40] [Custom]               │
+├─────────────────────────────────────────────────────────────┤
+│ ② Downpayment                                               │
+│     [─────────○─────────] [20] %                           │
+├─────────────────────────────────────────────────────────────┤
+│ ③ ⚡ Generate Installments                                  │
+│                                                             │
+│    [4] payments × [6] mo @ [2.5] %    [⚡ Generate] [🗑]    │  ← NEW % INPUT + RESET
+│                                                             │
+│    4 × 2.5% = 10% (adjust if needed)                       │  ← NEW PROJECTION
+└─────────────────────────────────────────────────────────────┘
 ```
 
-This accurately represents the post-handover payment structure without the misleading "Final Payment" section.
+---
+
+## Additional UX Enhancement
+
+Add a projection summary similar to post-handover:
+```tsx
+<div className="text-[10px] text-gray-500 ml-7 mt-1 font-mono">
+  {numPayments} × {percentPerPayment}% = {(numPayments * percentPerPayment).toFixed(1)}%
+  {Math.abs(numPayments * percentPerPayment - (inputs.preHandoverPercent - inputs.downpaymentPercent)) > 0.5 && (
+    <span className="text-amber-400 ml-1">
+      (remaining: {(inputs.preHandoverPercent - inputs.downpaymentPercent).toFixed(1)}%)
+    </span>
+  )}
+</div>
+```
