@@ -1,8 +1,9 @@
-import { RefreshCw, TrendingUp, TrendingDown, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, CheckCircle, AlertCircle, XCircle, Wallet } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { cn } from '@/lib/utils';
 
 interface CompactPostHandoverCardProps {
   inputs: OIInputs;
@@ -89,53 +90,27 @@ export const CompactPostHandoverCard = ({
 
   // Cashflow calculation
   const monthlyCashflow = monthlyRent - monthlyEquivalent;
-  const coveragePercent = monthlyEquivalent > 0 
-    ? Math.round((monthlyRent / monthlyEquivalent) * 100) 
-    : 0;
   const isFullyCovered = monthlyCashflow >= 0;
-  const isPartiallyCovered = monthlyRent > 0 && monthlyRent < monthlyEquivalent;
-  const isNotCovered = monthlyRent === 0;
 
-  // Total gap over the period
-  const totalGap = Math.abs(monthlyCashflow) * actualDurationMonths;
+  // Total tenant contribution over the post-handover period
+  const totalTenantContribution = monthlyRent * actualDurationMonths;
+
+  // What investor actually pays out of pocket (after tenant covers portion)
+  const netOutOfPocket = Math.max(0, postHandoverTotal - totalTenantContribution);
+
+  // Coverage percentage (how much of post-HO is covered by tenant)
+  const tenantCoversPercent = postHandoverTotal > 0 
+    ? Math.min(100, Math.round((totalTenantContribution / postHandoverTotal) * 100))
+    : 0;
+
+  // Surplus if tenant pays more than post-HO
+  const surplus = totalTenantContribution - postHandoverTotal;
 
   // Dual currency helper
   const getDualValue = (value: number) => {
     const dual = formatDualCurrency(value, currency, rate);
     return { primary: dual.primary, secondary: dual.secondary };
   };
-
-  // Format end date for badge
-  const endDateStr = `Q${inputs.postHandoverEndQuarter} ${inputs.postHandoverEndYear}`;
-
-  // Get coverage status
-  const getCoverageStatus = () => {
-    if (isNotCovered) {
-      return {
-        icon: XCircle,
-        label: t('noCoverage'),
-        className: 'bg-red-500/10 border-red-500/30 text-red-400',
-        description: t('noRentalIncomeConfigured')
-      };
-    }
-    if (isFullyCovered) {
-      return {
-        icon: CheckCircle,
-        label: t('fullCoverage'),
-        className: 'bg-green-500/10 border-green-500/30 text-green-400',
-        description: `${t('rentCovers')} ${coveragePercent}%+`
-      };
-    }
-    return {
-      icon: AlertCircle,
-      label: t('partialCoverage'),
-      className: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
-      description: `${t('rentCovers')} ${coveragePercent}%`
-    };
-  };
-
-  const status = getCoverageStatus();
-  const StatusIcon = status.icon;
 
   return (
     <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
@@ -166,55 +141,54 @@ export const CompactPostHandoverCard = ({
           label={`Per Installment (${numberOfPayments}x)`}
           value={getDualValue(perInstallmentAmount).primary}
           secondaryValue={getDualValue(perInstallmentAmount).secondary}
-          bold
           valueClassName="text-purple-400"
         />
         
-        {/* Monthly Equivalent (spread rate) */}
-        <DottedRow 
-          label={`${t('monthlyEquivalent')} (${actualDurationMonths}mo)`}
-          value={`${getDualValue(monthlyEquivalent).primary}/mo`}
-          secondaryValue={currency !== 'AED' ? `${getDualValue(monthlyEquivalent).secondary}/mo` : null}
-        />
-        
-        {/* Rental Income */}
-        <DottedRow 
-          label={t('rentalIncome')}
-          value={`+${getDualValue(monthlyRent).primary}/mo`}
-          secondaryValue={currency !== 'AED' ? `+${getDualValue(monthlyRent).secondary}/mo` : null}
-          valueClassName="text-cyan-400"
-        />
-        
-        {/* Monthly Gap/Surplus */}
-        <div className="pt-2 border-t border-border">
+        {/* Separator - WHO PAYS WHAT */}
+        <div className="pt-2 mt-1 border-t border-dashed border-theme-border/50">
+          <div className="text-[9px] uppercase tracking-wide text-theme-text-muted mb-1.5 flex items-center gap-1">
+            <Wallet className="w-2.5 h-2.5" />
+            Who Pays What
+          </div>
+          
+          {/* Tenant Covers */}
           <DottedRow 
-            label={isFullyCovered ? t('monthlySurplus') : t('monthlyGap')}
-            value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/mo`}
-            secondaryValue={currency !== 'AED' ? `${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).secondary}/mo` : null}
+            label={`Tenant Covers (${actualDurationMonths}mo rent)`}
+            value={`+${getDualValue(totalTenantContribution).primary}`}
+            secondaryValue={getDualValue(totalTenantContribution).secondary}
+            valueClassName="text-cyan-400"
+          />
+          
+          {/* Your Investment (You Pay) */}
+          <DottedRow 
+            label="You Pay"
+            value={getDualValue(netOutOfPocket).primary}
+            secondaryValue={getDualValue(netOutOfPocket).secondary}
             bold
-            valueClassName={isFullyCovered ? 'text-green-400' : 'text-red-400'}
+            valueClassName={netOutOfPocket > 0 ? "text-red-400" : "text-green-400"}
           />
         </div>
         
-        {/* Summary badges */}
-        <div className="flex items-center gap-2 pt-1 flex-wrap">
-          <span className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border ${status.className}`}>
-            <StatusIcon className="w-2.5 h-2.5" />
-            {status.label}
-          </span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground flex items-center gap-1">
-            {isFullyCovered ? (
-              <>
-                <TrendingUp className="w-2.5 h-2.5 text-green-400" />
-                {status.description}
-              </>
+        {/* Summary Insight */}
+        <div className="pt-1.5 mt-1 border-t border-theme-border">
+          <div className={cn(
+            "p-2 rounded-lg text-center text-[11px]",
+            tenantCoversPercent >= 100 
+              ? "bg-green-500/10 border border-green-500/30 text-green-400"
+              : "bg-yellow-500/10 border border-yellow-500/30 text-yellow-400"
+          )}>
+            {tenantCoversPercent >= 100 ? (
+              <span className="flex items-center justify-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Tenant fully covers post-handover! +{getDualValue(surplus).primary} surplus
+              </span>
             ) : (
-              <>
-                <TrendingDown className="w-2.5 h-2.5 text-red-400" />
-                {getDualValue(totalGap).primary} {t('totalGapOver')} {actualDurationMonths}{t('monthsShort')}
-              </>
+              <span className="flex items-center justify-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Tenant covers {tenantCoversPercent}% • Your net: {getDualValue(netOutOfPocket).primary}
+              </span>
             )}
-          </span>
+          </div>
         </div>
       </div>
     </div>
