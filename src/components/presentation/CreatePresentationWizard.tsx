@@ -111,15 +111,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
     });
   };
 
-  const toggleViewMode = (quoteId: string) => {
-    setSelectedQuotes(prev => 
-      prev.map(q => 
-        q.quoteId === quoteId 
-          ? { ...q, viewMode: q.viewMode === 'snapshot' ? 'vertical' : 'snapshot' }
-          : q
-      )
-    );
-  };
+  // Removed toggleViewMode - all quotes use snapshot view only
 
   const toggleComparisonQuote = (quoteId: string) => {
     setComparisonQuotes(prev => {
@@ -315,32 +307,12 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
                               <span className="text-xs font-medium text-theme-accent">{getQuotePrice(quote)}</span>
                             )}
                           </div>
-                          
-                          {/* View Mode Toggle (only when selected) */}
+                          {/* View Mode indicator (snapshot only) */}
                           {selected && (
                             <div className="mt-2 pl-8 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => toggleViewMode(quote.id)}
-                                className={cn(
-                                  "text-[10px] px-2 py-1 rounded transition-colors",
-                                  selected.viewMode === 'snapshot'
-                                    ? "bg-theme-accent/20 text-theme-accent"
-                                    : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
-                                )}
-                              >
+                              <span className="text-[10px] px-2 py-1 rounded bg-theme-accent/20 text-theme-accent">
                                 Snapshot
-                              </button>
-                              <button
-                                onClick={() => toggleViewMode(quote.id)}
-                                className={cn(
-                                  "text-[10px] px-2 py-1 rounded transition-colors",
-                                  selected.viewMode === 'vertical'
-                                    ? "bg-theme-accent/20 text-theme-accent"
-                                    : "bg-theme-border/50 text-theme-text-muted hover:bg-theme-accent/10"
-                                )}
-                              >
-                                Cashflow
-                              </button>
+                              </span>
                             </div>
                           )}
                         </div>

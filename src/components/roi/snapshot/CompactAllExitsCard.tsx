@@ -37,12 +37,20 @@ export const CompactAllExitsCard = ({
 }: CompactAllExitsCardProps) => {
   const { t } = useLanguage();
   
+  // Get basePrice from inputs with fallback to calculations
+  const basePrice = inputs.basePrice || calculations.basePrice || 0;
+  
+  // If no basePrice, don't render anything
+  if (basePrice <= 0) {
+    return null;
+  }
+  
   // Calculate scenarios dynamically instead of looking up from pre-calculated list
   const scenarios = exitScenarios.map((exitMonths, index) => {
     // Calculate scenario dynamically using the canonical function
     const scenarioResult = calculateExitScenario(
       exitMonths,
-      inputs.basePrice,
+      basePrice,
       calculations.totalMonths,
       inputs,
       calculations.totalEntryCosts
@@ -65,6 +73,12 @@ export const CompactAllExitsCard = ({
       exitNumber: index + 1,
     };
   });
+  
+  // If all scenarios show 0 profit/capital, don't render the card
+  const hasValidScenarios = scenarios.some(s => s.totalCapitalDeployed > 0 && s.exitPrice > 0);
+  if (!hasValidScenarios) {
+    return null;
+  }
 
   return (
     <div 

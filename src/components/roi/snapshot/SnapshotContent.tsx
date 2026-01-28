@@ -129,8 +129,8 @@ export const SnapshotContent = ({
               />
             )}
             
-            {/* All Exits Card - only show if exitStrategy is enabled */}
-            {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
+            {/* All Exits Card - only show if exitStrategy is enabled AND we have valid data */}
+            {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0 && (
               <CompactAllExitsCard
                 inputs={inputs}
                 calculations={calculations}
