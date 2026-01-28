@@ -133,12 +133,12 @@ export const ExportWealthTimeline = ({
               {proj.year}
             </div>
             
-            {/* Value */}
+            {/* Value - Always show AED primary with conversion below */}
             <div style={{ marginBottom: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: 'hsl(var(--theme-text))' }}>
                 {formatCurrencyShort(proj.value, 'AED', 1)}
               </div>
-              {currency !== 'AED' && (
+              {currency !== 'AED' && rate !== 1 && (
                 <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'hsl(var(--theme-text-muted))' }}>
                   {formatCurrencyShort(proj.value, currency, rate)}
                 </div>
