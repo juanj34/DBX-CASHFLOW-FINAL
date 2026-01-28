@@ -17,6 +17,7 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
   );
   const [numPostPayments, setNumPostPayments] = useState(4);
   const [postPaymentInterval, setPostPaymentInterval] = useState(6);
+  const [percentPerPayment, setPercentPerPayment] = useState(1);
 
   const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
   
@@ -83,8 +84,6 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
   };
 
   const handleGeneratePostPayments = () => {
-    const remaining = 100 - preHandoverTotal - (inputs.onHandoverPercent || 0);
-    const percentPerPayment = numPostPayments > 0 ? remaining / numPostPayments : 0;
     const newPayments: PaymentMilestone[] = [];
     
     for (let i = 0; i < numPostPayments; i++) {
@@ -92,7 +91,7 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
         id: `post-auto-${Date.now()}-${i}`,
         type: 'post-handover',
         triggerValue: postPaymentInterval * (i + 1), // months after handover
-        paymentPercent: parseFloat(percentPerPayment.toFixed(2))
+        paymentPercent: percentPerPayment // Use exact user-defined percentage
       });
     }
     
@@ -219,7 +218,7 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
               <span className="text-sm font-medium text-purple-400">Post-Handover Installments</span>
             </div>
             
-            <div className="flex items-center gap-2 ml-7">
+            <div className="flex items-center gap-2 ml-7 flex-wrap">
               <div className="flex items-center gap-1">
                 <Input
                   type="text"
@@ -228,7 +227,7 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
                   onChange={(e) => handleNumberInputChange(e.target.value, setNumPostPayments, 1, 100)}
                   className="w-14 h-7 bg-theme-input border-theme-border text-theme-text font-mono text-center text-xs"
                 />
-                <span className="text-[10px] text-theme-text-muted">payments</span>
+                <span className="text-[10px] text-theme-text-muted whitespace-nowrap">payments</span>
               </div>
               <span className="text-theme-text-muted">×</span>
               <div className="flex items-center gap-1">
@@ -241,6 +240,17 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
                 />
                 <span className="text-[10px] text-theme-text-muted">mo</span>
               </div>
+              <span className="text-theme-text-muted">@</span>
+              <div className="flex items-center gap-1">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={percentPerPayment || ''}
+                  onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
+                  className="w-12 h-7 bg-theme-input border-theme-border text-purple-400 font-mono text-center text-xs"
+                />
+                <span className="text-[10px] text-theme-text-muted">%</span>
+              </div>
               <Button
                 type="button"
                 onClick={handleGeneratePostPayments}
@@ -250,6 +260,15 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
                 <Zap className="w-3 h-3 mr-1" />
                 Generate
               </Button>
+            </div>
+            {/* Quick projection */}
+            <div className="text-[10px] text-theme-text-muted ml-7 mt-1 font-mono">
+              {numPostPayments} × {percentPerPayment}% = {(numPostPayments * percentPerPayment).toFixed(1)}%
+              {Math.abs(numPostPayments * percentPerPayment - 100) > 0.5 && (
+                <span className="text-amber-400 ml-1">
+                  (adjust one payment to reach 100%)
+                </span>
+              )}
             </div>
           </div>
 
