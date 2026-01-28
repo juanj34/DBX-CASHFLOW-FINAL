@@ -1,132 +1,139 @@
 
-# Plan: Fix Payment Validation for Post-Handover Plans
 
-## Root Cause
+# Plan: Remove Generate Section from Payment Configurator
 
-The "Next" button is disabled because **two validation functions** in `ConfiguratorLayout.tsx` use the old calculation that doesn't account for `hasPostHandoverPlan`:
+## Understanding the Issue
 
-### Location 1: `isSectionComplete` (lines 192-195)
-```typescript
-const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-// 20% + 51% + 55% = 126% → WRONG for post-handover
-```
+The "⚡ Generate" section (Step 3) shows:
+- **4** × **6** mo @ **2.5** %
+- A projection: "4×2.5% = 10.0% (need: 25.0%)"
 
-### Location 2: `canProceedFromCurrentSection` (lines 276-279)
-```typescript
-const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-// Same wrong calculation
-```
+This is **unnecessary** because:
+1. Developers provide the payment plan structure (e.g., "40/60 with 10 installments at 2% each during construction")
+2. Users just need to **input the installments** they're given, not calculate them
+3. The formula creates confusion ("need: 25.0%") when the developer's plan is already defined
 
-Both should match the **corrected logic** in `PaymentSection.tsx` (which was already fixed):
-```typescript
-if (hasPostHandoverPlan) {
-  // Post-handover: all installments + downpayment = 100%
-  totalPayment = downpayment + allInstallmentsTotal;
-} else {
-  // Standard: preHandoverTotal + handoverBalance = 100%
-  totalPayment = preHandoverTotal + (100 - preHandoverPercent);
-}
-```
+---
+
+## Solution
+
+Remove the "Generate" section entirely. Users will:
+1. Select the **Split** (e.g., 40/60)
+2. Set the **Downpayment** percentage
+3. **Add installments manually** using the "+" button in the Installments list
+
+The "Installments" section already has an "Add" button (`addAdditionalPayment`) that lets users add payments one-by-one, which is how real-world payment plans work.
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/configurator/ConfiguratorLayout.tsx`
+### File: `src/components/roi/configurator/PaymentSection.tsx`
 
-#### Change 1: Fix `isSectionComplete` (lines 191-196)
+#### 1. Remove Generate Section (lines 338-409)
 
-Replace:
-```typescript
-// Calculate payment validation
-const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+Delete the entire Step 3 "Generate" block:
+```tsx
+{/* Auto-Generate Card - Compact */}
+<div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
+  <div className="flex items-center gap-2">
+    <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 ...">3</div>
+    <Zap className="w-3.5 h-3.5 text-[#CCFF00]" />
+    <span className="text-sm font-medium text-[#CCFF00]">Generate</span>
+  </div>
+  
+  {/* Input fields for numPayments, interval, percent */}
+  ...
+  
+  {/* Projection summary */}
+  <div className="text-xs text-gray-500 ml-7 font-mono">
+    {numPayments}×{percentPerPayment}% = ...
+  </div>
+</div>
 ```
 
-With:
-```typescript
-// Calculate payment validation - must match PaymentSection logic
-const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+#### 2. Remove Related State Variables (lines 44-46)
 
-let totalPayment: number;
-if (hasPostHandoverPlan) {
-  // Post-handover: downpayment + all installments = 100%
-  totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
-} else {
-  // Standard: pre-handover + handover balance = 100%
-  const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-  totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-}
-const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
+Remove these unused state variables:
+```typescript
+const [numPayments, setNumPayments] = useState(4);
+const [paymentInterval, setPaymentInterval] = useState(6);
+const [percentPerPayment, setPercentPerPayment] = useState(2.5);
 ```
 
-#### Change 2: Fix `canProceedFromCurrentSection` (lines 275-280)
+#### 3. Remove `handleGeneratePayments` Function (lines 113-127)
 
-Replace:
+This function is no longer needed:
 ```typescript
-// Calculate payment validation
-const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+const handleGeneratePayments = () => { ... };
 ```
 
-With:
-```typescript
-// Calculate payment validation - must match PaymentSection logic
-const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+#### 4. Add "Add Installment" Button to Installments Header
 
-let totalPayment: number;
-if (hasPostHandoverPlan) {
-  // Post-handover: downpayment + all installments = 100%
-  totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
-} else {
-  // Standard: pre-handover + handover balance = 100%
-  const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-  totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-}
-const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
+Replace the existing Installments header with one that includes an add button:
+```tsx
+<div className="flex justify-between items-center cursor-pointer hover:opacity-80">
+  <div className="flex items-center gap-2">
+    <label className="text-sm text-gray-300 font-medium">Installments</label>
+    <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
+    <Button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); addAdditionalPayment(); }}
+      size="sm"
+      className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
+    >
+      <Plus className="w-2.5 h-2.5" /> Add
+    </Button>
+  </div>
+  {/* ... validation badge and chevron ... */}
+</div>
 ```
-
-Also update the tolerance from `0.01` to `0.5` to be consistent with `PaymentSection.tsx` (allows for minor rounding).
 
 ---
 
-## Result
+## Visual Comparison
 
-### Before (Post-Handover Plan with 20% down + 80% installments):
+### Before (3 Steps):
 ```
-Validation: 20% + 80% + 55% = 155% ❌
-Next button: DISABLED
-Footer badge: "Must equal 100%"
+┌──────────────────────────────────────────────┐
+│ ① Split        [30/70] [40/60] [45/55] ...  │
+├──────────────────────────────────────────────┤
+│ ② Down         [──────○──────] 20%          │
+├──────────────────────────────────────────────┤
+│ ③ ⚡ Generate   [4]×[6] mo @ [2.5] %  [Go]  │  ← REMOVED
+│    4×2.5% = 10.0% (need: 25.0%)             │
+├──────────────────────────────────────────────┤
+│ Installments (4)            [✓]       ▼     │
+│ ...                                          │
+└──────────────────────────────────────────────┘
 ```
 
-### After:
+### After (2 Steps + Direct Add):
 ```
-Validation: 20% + 80% = 100% ✓
-Next button: ENABLED
-Footer badge: (none)
+┌──────────────────────────────────────────────┐
+│ ① Split        [30/70] [40/60] [45/55] ...  │
+├──────────────────────────────────────────────┤
+│ ② Down         [──────○──────] 20%          │
+├──────────────────────────────────────────────┤
+│ Installments (4)  [+ Add]       [✓]    ▼    │  ← Direct add button
+│ ...                                          │
+└──────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Fix payment validation in both `isSectionComplete` and `canProceedFromCurrentSection` to handle `hasPostHandoverPlan` |
+| File | Changes |
+|------|---------|
+| `src/components/roi/configurator/PaymentSection.tsx` | Remove Generate section, remove related state/functions, add "Add" button to Installments header |
 
 ---
 
-## Note on Consistency
+## Benefits
 
-This aligns the validation logic in `ConfiguratorLayout.tsx` with the already-corrected logic in `PaymentSection.tsx`, ensuring:
+1. **Simpler UI** - Fewer inputs to understand
+2. **Matches real workflow** - Developers give you the plan, you just enter it
+3. **No confusing "need: X%" messages** - The validation badge already shows if you're over/under
+4. **More space** - One less section taking up room
 
-1. The footer badge in PaymentSection shows ✓ when valid
-2. The step indicator shows ✓ when valid  
-3. The "Next" button enables when valid
-4. All use the same formula: **post-handover mode = downpayment + installments = 100%**
