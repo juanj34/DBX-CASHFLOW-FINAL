@@ -367,21 +367,6 @@ export const CompactPaymentTable = ({
                   valueClassName="text-green-400"
                 />
               </div>
-              {/* Inline Cumulative: Total to Handover */}
-              <div className="mt-2 pt-1.5 border-t border-dashed border-theme-border/50">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-theme-text-muted flex items-center gap-1">
-                    <Wallet className="w-2.5 h-2.5" />
-                    Total to this point
-                  </span>
-                  <span className="font-mono text-theme-accent font-medium">
-                    {getDualValue(totalUntilHandover).primary}
-                    {currency !== 'AED' && (
-                      <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
-                    )}
-                  </span>
-                </div>
-              </div>
             </div>
           )}
 
