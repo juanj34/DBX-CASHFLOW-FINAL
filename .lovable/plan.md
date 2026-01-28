@@ -1,114 +1,93 @@
 
 
-# Plan: Simplify Post-Handover Coverage Card
+# Plan: Enhance Tenant Summary with Handover Payment + Total
 
-## User's Feedback
+## Current State
 
-The current card is too complex with nested sections. User wants:
-1. **Monthly gap comparison** - Show if there's a monthly shortfall they need to cover
-2. **Simple totals** - "Tenant pays X, You pay Y" - clean and done
-
-## Simplified Layout
-
+The "Simple Summary" section shows:
 ```
-┌─────────────────────────────────────────────────────┐
-│ ◐ POST-HANDOVER COVERAGE           [22mo (8 payments)]│
-├─────────────────────────────────────────────────────┤
-│ Post-HO Payments (55%)              AED 596,985     │
-│ Per Installment (8x)                AED 74,623      │
-│─────────────────────────────────────────────────────│
-│ Monthly: Payment                    AED 27,135/mo   │
-│ Monthly: Rent                      +AED 6,882/mo    │
-│ Monthly Gap                        -AED 20,253/mo   │ ← Shows shortfall
-│─────────────────────────────────────────────────────│
-│ Tenant Covers (22mo rent)          +AED 151,411     │
-│ You Pay                             AED 445,574     │
-├─────────────────────────────────────────────────────┤
-│  ⚠ Tenant covers 25% • Your net: AED 445,574       │
-└─────────────────────────────────────────────────────┘
+Tenant Covers (22mo rent)    +AED 151,411
+You Pay                       AED 445,574
 ```
+
+## Desired State
+
+Show the tenant's full picture:
+```
+On Handover (tenant pays)     AED 0         ← What's due on handover day
+Tenant Covers (22mo rent)    +AED 151,411   ← Rent collected over period
+You Pay                       AED 445,574   ← Your net out-of-pocket
+```
+
+**Note:** The "On Handover" row would show the on-handover installment amount (if any). This helps the user understand what cash is needed on day 1 vs. what gets covered by rent over time.
+
+---
 
 ## Technical Changes
 
 ### File: `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
 
-**Restructure content to show:**
+**Step 1: Calculate on-handover payment amount**
 
-1. **Header section** (keep as-is)
-2. **Post-HO totals** 
-   - Post-HO Payments total
-   - Per Installment amount
-3. **Monthly cashflow analysis** (NEW section)
-   - Monthly Payment (burn rate)
-   - Monthly Rent income
-   - Monthly Gap/Surplus
-4. **Simple summary**
-   - Tenant Covers (total)
-   - You Pay (total)
-5. **Status badge** (keep)
+Add logic to extract the on-handover payment from inputs:
 
-**Key Logic (already calculated, just need to display):**
 ```tsx
-// Monthly burn rate
-const monthlyEquivalent = postHandoverTotal / actualDurationMonths;
-
-// Monthly gap (negative = shortfall)
-const monthlyCashflow = monthlyRent - monthlyEquivalent;
-const monthlyGap = Math.abs(monthlyCashflow);
-const hasMonthlyShortfall = monthlyCashflow < 0;
+// On-handover payment (what's due at handover, separate from post-HO installments)
+const onHandoverPercent = inputs.onHandoverPercent || 0;
+const onHandoverAmount = basePrice * (onHandoverPercent / 100);
 ```
 
-**Simplified Content Section:**
+**Step 2: Update the Simple Summary section (lines 169-184)**
+
+Add the on-handover row before "Tenant Covers":
+
 ```tsx
-<div className="p-3 space-y-1.5">
-  {/* Post-HO Total */}
-  <DottedRow label="Post-HO Payments (55%)" value="AED 596,985" />
-  <DottedRow label="Per Installment (8x)" value="AED 74,623" valueClassName="text-purple-400" />
-  
-  {/* Monthly Cashflow - Only show if there's a gap */}
-  <div className="pt-2 mt-1 border-t border-dashed border-theme-border/50 space-y-1">
-    <DottedRow label="Monthly: Payment" value="AED 27,135/mo" />
-    <DottedRow label="Monthly: Rent" value="+AED 6,882/mo" valueClassName="text-cyan-400" />
+{/* Simple Summary */}
+<div className="pt-2 mt-1 border-t border-theme-border space-y-1">
+  {/* On Handover Payment - what's due on handover day */}
+  {onHandoverAmount > 0 && (
     <DottedRow 
-      label="Monthly Gap" 
-      value="-AED 20,253/mo" 
-      valueClassName="text-red-400"
-      bold 
+      label="On Handover"
+      value={getDualValue(onHandoverAmount).primary}
+      secondaryValue={getDualValue(onHandoverAmount).secondary}
+      valueClassName="text-yellow-400"
     />
-  </div>
+  )}
   
-  {/* Simple Summary - WHO PAYS WHAT */}
-  <div className="pt-2 mt-1 border-t border-theme-border space-y-1">
-    <DottedRow 
-      label="Tenant Covers (22mo rent)" 
-      value="+AED 151,411" 
-      valueClassName="text-cyan-400" 
-    />
-    <DottedRow 
-      label="You Pay" 
-      value="AED 445,574" 
-      bold 
-      valueClassName="text-red-400" 
-    />
-  </div>
+  {/* Tenant Covers */}
+  <DottedRow 
+    label={`Tenant Covers (${actualDurationMonths}mo rent)`}
+    value={`+${getDualValue(totalTenantContribution).primary}`}
+    secondaryValue={getDualValue(totalTenantContribution).secondary}
+    valueClassName="text-cyan-400"
+  />
   
-  {/* Status Badge */}
-  <div className="...status badge...">
-    Tenant covers 25% • Your net: AED 445,574
-  </div>
+  {/* You Pay */}
+  <DottedRow 
+    label="You Pay"
+    value={getDualValue(netOutOfPocket).primary}
+    secondaryValue={getDualValue(netOutOfPocket).secondary}
+    bold
+    valueClassName={netOutOfPocket > 0 ? "text-red-400" : "text-green-400"}
+  />
 </div>
 ```
 
+---
+
 ## Summary
 
-| What | Change |
-|------|--------|
-| Remove | "Who Pays What" header label (unnecessary) |
-| Add | Monthly cashflow section showing payment vs rent vs gap |
-| Keep | Simple "Tenant Covers" + "You Pay" totals |
-| Keep | Status badge at bottom |
+| Row | Description | Color |
+|-----|-------------|-------|
+| On Handover | Amount due at handover day (if > 0) | Yellow |
+| Tenant Covers | Total rent over post-HO period | Cyan |
+| You Pay | Net out-of-pocket after tenant covers | Red/Green |
 
-This gives the user:
-1. Month-to-month gap visibility (they can see they need to cover AED 20,253/mo)
-2. Clean totals showing exactly what tenant pays vs what they pay
+---
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Add on-handover payment row to the summary section |
 
