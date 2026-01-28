@@ -1,113 +1,173 @@
 
-# Plan: Add Currency Selection to CompareView & Hide Sections
+# Plan: Global Currency/Language Propagation in Presentation and Client Views
 
-## Changes Required
+## Issues Identified
 
-### 1. Add Currency Selection to CompareView Header
-
-Add currency and language state with dropdown selectors in the header area (next to AI Insights toggle):
-
+### Issue 1: PropertyHeroCard Shows Non-Functional Selectors
+In `PresentationPreview.tsx`, when passing to `SnapshotContent`:
 ```tsx
-// Add imports
-import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
-import { useExchangeRate } from '@/hooks/useExchangeRate';
-import { Coins, Globe, Check } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+setCurrency={() => {}}  // Empty function - truthy, so selectors show but don't work
+setLanguage={() => {}}
+```
+This causes PropertyHeroCard to display currency/language selectors that do nothing when clicked.
 
-// Add state (after line 64)
-const [currency, setCurrency] = useState<Currency>('AED');
-const [language, setLanguage] = useState<'en' | 'es'>('en');
-const { rate, isLive } = useExchangeRate(currency);
+### Issue 2: SnapshotView Ignores URL Parameters
+`ClientPortal.tsx` line 380 opens snapshots with URL params:
+```tsx
+window.open(`/snapshot/${quote.share_token}?currency=${currency}&lang=${language}`, '_blank')
+```
+But `SnapshotView.tsx` doesn't read these params - it just initializes with default `'AED'` and `'en'`.
+
+### Issue 3: Duplicate Control Points
+Both the sidebar (PresentationView) and the PropertyHeroCard have currency/language selectors, causing confusion about which one controls the display.
+
+---
+
+## Solution Architecture
+
+**Single Source of Truth**: Currency and language are controlled ONLY from:
+- **Presentation View**: Sidebar selectors (already implemented)
+- **Snapshot View**: PropertyHeroCard selectors (for direct snapshot links)
+- **Client Portal**: Header selectors (for the portal page itself)
+
+**Propagation Flow**:
+```
+PresentationView (sidebar)
+    │
+    └─► PresentationPreview
+            │
+            └─► SnapshotContent (receives values, NO selectors)
+                    │
+                    └─► PropertyHeroCard (NO selectors in presentation)
+                    └─► SnapshotOverviewCards (uses currency/rate)
+                    └─► CompactPaymentTable (uses currency/rate)
+                    └─► etc.
 ```
 
-Add dropdown selectors in header (after AI Insights toggle):
+---
 
+## File Changes
+
+### 1. `src/components/presentation/PresentationPreview.tsx`
+
+**Hide PropertyHeroCard selectors when embedded in presentation** (lines 124-144):
+
+Change:
 ```tsx
-{/* Currency Selector */}
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" size="sm" className="...">
-      <Coins className="w-4 h-4 mr-1.5" />
-      {CURRENCY_CONFIG[currency].flag} {currency}
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
-    {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-      <DropdownMenuItem key={key} onClick={() => setCurrency(key as Currency)}>
-        {currency === key && <Check className="w-3 h-3 mr-2" />}
-        {config.flag} {key}
-      </DropdownMenuItem>
-    ))}
-  </DropdownMenuContent>
-</DropdownMenu>
-
-{/* Language Selector */}
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" size="sm">
-      <Globe className="w-4 h-4 mr-1.5" />
-      {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
-    <DropdownMenuItem onClick={() => setLanguage('en')}>🇬🇧 English</DropdownMenuItem>
-    <DropdownMenuItem onClick={() => setLanguage('es')}>🇪🇸 Español</DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
-```
-
-### 2. Hide Sections (Remove from CompareView)
-
-Remove these CollapsibleSection blocks entirely:
-
-| Section | Lines to Remove |
-|---------|-----------------|
-| Payment & Growth | Lines 352-362 |
-| Value Differentiators | Lines 364-371 |
-| Exit Scenarios | Lines 398-407 |
-
-**Keep these sections:**
-- Key Metrics Comparison (lines 341-350)
-- Mortgage Comparison (lines 373-382)
-- Rental Yield (lines 384-396)
-
-### 3. Pass Currency/Rate to Components
-
-Pass currency and rate props to remaining components:
-
-```tsx
-<MetricsTable 
-  quotesWithCalcs={quotesWithCalcs} 
-  metrics={metrics} 
-  currency={currency}
-  rate={rate}
+<SnapshotContent
+  ...
+  setCurrency={() => {}}
+  setLanguage={() => {}}
+  ...
 />
-<MortgageComparison quotesWithCalcs={quotesWithCalcs} currency={currency} rate={rate} />
-<RentalYieldComparison quotesWithCalcs={quotesWithCalcs} currency={currency} rate={rate} />
 ```
 
+To:
+```tsx
+<SnapshotContent
+  ...
+  setCurrency={undefined}  // Pass undefined to hide selectors
+  setLanguage={undefined}
+  ...
+/>
+```
+
+This will cause PropertyHeroCard's condition `showPriceInfo && setCurrency && setLanguage` to be false, hiding the redundant selectors.
+
+### 2. `src/components/roi/snapshot/SnapshotContent.tsx`
+
+**Make setCurrency/setLanguage optional** - Update interface to allow undefined:
+
+```tsx
+interface SnapshotContentProps {
+  ...
+  setCurrency?: (currency: Currency) => void;  // Make optional
+  setLanguage?: (language: 'en' | 'es') => void;  // Make optional
+  ...
+}
+```
+
+Pass through to PropertyHeroCard only if defined:
+```tsx
+<PropertyHeroCard
+  ...
+  setCurrency={setCurrency}  // Will be undefined in presentation mode
+  setLanguage={setLanguage}
+  ...
+/>
+```
+
+### 3. `src/pages/SnapshotView.tsx`
+
+**Read currency/language from URL params**:
+
+```tsx
+import { useParams, useSearchParams } from 'react-router-dom';
+
+const SnapshotView = () => {
+  const { shareToken } = useParams<{ shareToken: string }>();
+  const [searchParams] = useSearchParams();
+  
+  // Initialize from URL params or defaults
+  const [currency, setCurrency] = useState<Currency>(() => {
+    const urlCurrency = searchParams.get('currency');
+    if (urlCurrency && ['AED', 'USD', 'EUR', 'GBP', 'COP'].includes(urlCurrency)) {
+      return urlCurrency as Currency;
+    }
+    return 'AED';
+  });
+  
+  const [language, setLanguage] = useState<'en' | 'es'>(() => {
+    const urlLang = searchParams.get('lang');
+    return urlLang === 'es' ? 'es' : 'en';
+  });
+  ...
+```
+
+### 4. Verify All Snapshot Sub-Components Use Currency Props
+
+The following components already receive `currency` and `rate` props - verify they're being used for formatting:
+
+| Component | Currency Prop Used? |
+|-----------|---------------------|
+| `SnapshotOverviewCards` | Yes - passed and used |
+| `CompactPaymentTable` | Yes - passed and used |
+| `CompactRentCard` | Yes - passed and used |
+| `CompactMortgageCard` | Yes - passed and used |
+| `CompactPostHandoverCard` | Yes - passed and used |
+| `CompactAllExitsCard` | Yes - passed and used |
+
 ---
 
-## Files to Modify
+## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `src/pages/CompareView.tsx` | Add currency/language state, dropdowns, hide 3 sections, pass props |
+| File | Change |
+|------|--------|
+| `src/components/presentation/PresentationPreview.tsx` | Pass `undefined` for setCurrency/setLanguage to hide PropertyHeroCard selectors |
+| `src/components/roi/snapshot/SnapshotContent.tsx` | Make setCurrency/setLanguage props optional |
+| `src/pages/SnapshotView.tsx` | Read currency/language from URL search params |
 
 ---
 
-## Summary
+## Expected Results
 
-| Before | After |
-|--------|-------|
-| No currency selection | Currency dropdown (AED, USD, EUR, GBP, COP) |
-| No language selection | Language dropdown (EN, ES) |
-| Shows Payment & Growth | Hidden |
-| Shows Exit Scenarios | Hidden |
-| Shows Value Differentiators | Hidden |
-| Shows Key Metrics, Mortgage, Rental Yield | Kept |
+| Scenario | Before | After |
+|----------|--------|-------|
+| Presentation sidebar currency change | Only sidebar shows selection, prices don't update | Prices update across all snapshots |
+| PropertyHeroCard in presentation | Shows non-functional selectors | Selectors hidden (sidebar controls only) |
+| ClientPortal "View" button | Opens snapshot with default AED/EN | Opens snapshot with selected currency/language |
+| Direct snapshot link | Always AED/EN | Can specify `?currency=USD&lang=es` |
+
+---
+
+## Technical Notes
+
+**Why pass `undefined` instead of empty functions?**
+- PropertyHeroCard condition: `showPriceInfo && setCurrency && setLanguage`
+- Empty function `() => {}` is truthy, so condition passes
+- `undefined` is falsy, so condition fails and selectors are hidden
+
+**URL param approach for ClientPortal**
+- ClientPortal opens quotes in new tabs via snapshot links
+- Passing state via URL params is the correct approach for cross-tab communication
+- SnapshotView just needs to read these params on load
