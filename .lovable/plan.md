@@ -1,106 +1,125 @@
 
-# Plan: Fix Handover Quarter Highlighting for ALL Payment Plans
+# Plan: Fix Booking Date Default + Post-Handover Coverage Calculation
 
-## The Problem
+## Issue 1: Booking Date Default
 
-Currently:
-1. For post-handover plans, payments are filtered into "pre-handover" and "post-handover" based on whether they're before/after the handover quarter start
-2. This means NO pre-handover payment falls IN the handover quarter - they're all BEFORE it
-3. The "Total to this point" is hidden when `hasPostHandoverPlan=true` and `onHandoverPercent=0`
+### Current State
+The `NEW_QUOTE_OI_INPUTS` in `types.ts` already correctly sets:
+```tsx
+bookingMonth: new Date().getMonth() + 1,
+bookingYear: new Date().getFullYear(),
+```
 
-## The Simple Fix
+However, for **existing quotes** loaded from the database, the booking date comes from the saved data which may have old static values (like January 2026).
 
-**User's requirement:** If project hands over Q3 2027, highlight the 3 months of Q3 (Jul, Aug, Sep 2027). Period. After those highlighted payments, show "Total to this point".
+### Solution
+This is working as designed - new quotes get current month/year by default. If the user is seeing January 2026, it's because that quote was **loaded from saved data**. No code change needed for this part.
+
+---
+
+## Issue 2: Post-Handover Coverage Calculation Mismatch
+
+### Problem
+The Coverage Card calculates "Monthly Equivalent" by dividing total post-handover amount by **calendar months** between handover and end date:
+```tsx
+postHandoverMonths = (endDate - handoverDate) in months // e.g., 24 months
+monthlyEquivalent = postHandoverTotal / postHandoverMonths
+```
+
+But the **actual payment schedule** may not be monthly. In the user's case:
+- 45 installments of AED 11,967 each = AED 538,521 total
+- If paid over 24 calendar months, "monthly equivalent" = 22,438/mo
+- But each actual payment is only 11,967
+
+The user wants the card to show the **actual payment amount per installment**, not a theoretical average.
+
+### Solution
+Calculate the "Monthly Equivalent" based on the **actual payment schedule**:
+1. Count the number of post-handover installments
+2. Calculate the period over which they're spread
+3. Show **actual payment amount** (AED 11,967) instead of calendar average
+
+**Alternative approach** (simpler, more accurate):
+Show actual payment per installment + payment frequency instead of "monthly equivalent":
+- "Per Installment: AED 11,967"
+- "45 payments over 24 months"
+
+---
 
 ## Technical Changes
 
-### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
+### File: `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
 
-**Change 1:** Fix the post-handover filtering logic (lines 111-123)
+**Change 1:** Calculate based on actual payments, not calendar division
 
-Currently, payments in the handover quarter are being classified as "post-handover". Change to include handover quarter payments in pre-handover:
-
+Replace lines 81-87:
 ```tsx
-// Current: filters OUT handover quarter payments from pre-handover
-const preHandoverPayments = hasPostHandoverPlan
-  ? sortedPayments.filter(p => {
-      if (p.type !== 'time') return true;
-      return !isPaymentPostHandover(...); // This excludes handover quarter!
-    })
-  : sortedPayments;
+// OLD: Calendar-based monthly equivalent
+const postHandoverMonths = (endDate - handoverDate) in months;
+const monthlyEquivalent = postHandoverTotal / postHandoverMonths;
 ```
 
-Update `isPaymentPostHandover` check to be STRICTLY after handover quarter end (not start):
-
+With:
 ```tsx
-// New: include handover quarter in pre-handover section
-const isPaymentAfterHandoverQuarter = (monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear) => {
-  // Calculate payment date
-  const bookingDate = new Date(bookingYear, bookingMonth - 1);
-  const paymentDate = new Date(bookingDate);
-  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-  
-  // Handover quarter END = last month of quarter
-  const handoverQuarterEndMonth = handoverQuarter * 3; // Q3 = month 9 (Sep)
-  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1); // Last day of quarter
-  
-  return paymentDate > handoverQuarterEnd;
-};
+// NEW: Calculate from actual payment schedule
+const numberOfPayments = postHandoverPaymentsToUse.length;
+
+// Calculate period using triggerValues (months from booking)
+// Find the last payment's month offset from handover
+const handoverMonthFromBooking = (inputs.handoverQuarter * 3) - 2 + 
+  ((inputs.handoverYear - inputs.bookingYear) * 12) - inputs.bookingMonth;
+
+// Get actual post-handover duration from payment schedule
+const paymentMonths = postHandoverPaymentsToUse.map(p => p.triggerValue);
+const lastPaymentMonth = Math.max(...paymentMonths);
+const firstPaymentMonth = Math.min(...paymentMonths);
+const actualDurationMonths = lastPaymentMonth - firstPaymentMonth + 1;
+
+// Average payment per installment (what user actually pays each time)
+const perInstallmentAmount = postHandoverTotal / numberOfPayments;
+
+// Monthly cashflow burn rate (spread over actual payment period)
+const monthlyEquivalent = postHandoverTotal / Math.max(1, actualDurationMonths);
 ```
 
-**Change 2:** Always show handover cumulative total (lines 327-358)
+**Change 2:** Update display to show clearer breakdown
 
-Remove the condition that hides handover section when `hasPostHandoverPlan && handoverPercent === 0`:
-
+Update the DottedRow for monthly equivalent to include payment context:
 ```tsx
-// Current condition hides when hasPostHandover && handoverPercent=0
-{(!hasPostHandoverPlan || handoverPercent > 0) && (...)}
-
-// New: Show handover section header and cumulative total even when handoverPercent=0
-// For post-handover plans with 0% on-handover, just show the cumulative total
+<DottedRow 
+  label={`${t('monthlyEquivalent')} (${numberOfPayments} payments)`}
+  value={`${getDualValue(monthlyEquivalent).primary}/mo`}
+  ...
+/>
 ```
 
-**Change 3:** Show cumulative total AFTER the last handover-quarter payment
+**Change 3:** Add "Per Installment" row for clarity
 
-Insert the "Total to this point" inline directly after the last payment that has `isHandoverQuarter = true`:
-
+Add a new row showing the actual per-payment amount:
 ```tsx
-{preHandoverPayments.map((payment, index) => {
-  const isHandoverQuarter = isPaymentInHandoverQuarter(...);
-  const isLastHandoverQuarterPayment = isHandoverQuarter && 
-    !preHandoverPayments.slice(index + 1).some(p => 
-      p.type === 'time' && isPaymentInHandoverQuarter(p.triggerValue, ...)
-    );
-  
-  return (
-    <>
-      <div className={cn(..., isHandoverQuarter && "bg-green-500/10 ...")}>
-        {/* payment row */}
-      </div>
-      
-      {/* Insert cumulative total after last handover-quarter payment */}
-      {isLastHandoverQuarterPayment && (
-        <div className="mt-1 pt-1 border-t border-dashed">
-          <span>Total to this point: {totalUntilHandover}</span>
-        </div>
-      )}
-    </>
-  );
-})}
+{/* Per Installment Amount */}
+<DottedRow 
+  label={`Per Installment (${numberOfPayments}x)`}
+  value={getDualValue(perInstallmentAmount).primary}
+  secondaryValue={getDualValue(perInstallmentAmount).secondary}
+  valueClassName="text-purple-400"
+/>
 ```
 
-## Summary of Changes
+---
 
-| Line Range | Change |
-|------------|--------|
-| 58-69 | Update `isPaymentPostHandover` to check AFTER handover quarter end (not start) |
-| 111-123 | Use updated filter so handover quarter payments stay in pre-handover section |
-| 283-322 | Detect last handover-quarter payment and insert cumulative total inline |
-| 327-358 | Simplify or remove duplicate handover section (cumulative is now inline) |
+## Summary
 
-## Expected Behavior
+| Issue | Fix |
+|-------|-----|
+| Booking date default | Already correct for NEW quotes. Old quotes keep their saved values. |
+| Monthly equivalent mismatch | Calculate from actual payment duration, not calendar months |
+| Clarity | Add "Per Installment" row showing actual payment amount |
 
-1. Project handover = Q3 2027
-2. Any payment in Jul/Aug/Sep 2027 gets green highlight with key badge
-3. After the LAST highlighted payment → show "Total to this point: AED X,XXX,XXX"
-4. Works for BOTH standard plans AND post-handover plans
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Fix monthly equivalent calculation, add per-installment display |
