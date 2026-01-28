@@ -1,161 +1,153 @@
 
-# Plan: Fix Handover Quarter Highlighting in Cashflow View + Debug Snapshot Card
+## What’s actually going wrong (root cause)
 
-## Issues Identified
+### 1) Snapshot: the “Post‑Handover Coverage” card is not showing
+`src/components/roi/snapshot/CompactPostHandoverCard.tsx` currently does this:
 
-### Issue 1: Cashflow View - No Strong Handover Quarter Highlighting
-The `PaymentBreakdown.tsx` component (used in Cashflow View) has handover badges but not the **strong green border highlighting** that was added to `CompactPaymentTable.tsx` (Snapshot View).
+- if `!inputs.hasPostHandoverPlan` → hide
+- if `!inputs.postHandoverPayments?.length` → hide
 
-**Current behavior in PaymentBreakdown.tsx:**
-- Small cyan badge "🔑 Handover" and purple "Post-HO" badge
-- No green background or left border
+But in your current quotes, **`postHandoverPayments` is empty** (as shown in the request payload), and post-handover installments are instead **embedded inside `additionalPayments`** (months that fall on/after handover). So the card always returns `null`, even though you do have post‑handover installments.
 
-**Expected (matching Snapshot):**
-- Green left border + green background for payments in handover quarter
-- Key icon + "Handover" badge
+### 2) Cashflow: you don’t see “handover quarter” emphasis (green) on “The Journey”
+We added highlighting in `PaymentBreakdown.tsx` (Cashflow uses this), but you’re expecting something more obvious and consistent:
 
-### Issue 2: Snapshot View - Post-Handover Card May Not Show
-The `CompactPostHandoverCard` has two conditions that must be true:
-1. `inputs.hasPostHandoverPlan === true`
-2. `inputs.postHandoverPayments.length > 0`
+- Strong emphasis on the **three months of the delivery quarter (e.g. Jul/Aug/Sep)**.
+- Visible not only as a tiny badge, but also **as a highlighted “zone” / band** in the timeline and/or clear emphasis in the list.
 
-If either is false, the card won't render.
+Also, the **PaymentHorizontalTimeline has a bug**:
+- It sets `isPostHandover` as `positionPercent > 100`, but it caps `positionPercent` to 100, so it effectively never becomes post-handover.
+- It does not explicitly highlight the *handover quarter range* (a 3‑month band).
 
----
-
-## Technical Changes
-
-### File 1: `src/components/roi/PaymentBreakdown.tsx`
-
-#### Change 1: Add `isPaymentInHandoverQuarter` function (after line 43)
-
-Add the same helper function used in CompactPaymentTable:
-
-```tsx
-// Check if a payment falls within the handover quarter specifically
-const isPaymentInHandoverQuarter = (
-  monthsFromBooking: number,
-  bookingMonth: number,
-  bookingYear: number,
-  handoverQuarter: number,
-  handoverYear: number
-): boolean => {
-  // Calculate payment's calendar date
-  const bookingDate = new Date(bookingYear, bookingMonth - 1);
-  const paymentDate = new Date(bookingDate);
-  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-  
-  const paymentYear = paymentDate.getFullYear();
-  const paymentMonth = paymentDate.getMonth() + 1;
-  const paymentQuarter = Math.ceil(paymentMonth / 3);
-  
-  return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
-};
-```
-
-#### Change 2: Add Key icon import (line 3)
-
-```tsx
-import { Calendar, CreditCard, Home, Clock, Building2, Key } from "lucide-react";
-```
-
-#### Change 3: Update payment row styling (lines 251-278)
-
-Replace the current row div with enhanced highlighting:
-
-```tsx
-// Check if in handover quarter (for strong visual)
-const inHandoverQuarter = isPaymentInHandoverQuarter(
-  monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
-);
-
-return (
-  <div 
-    key={payment.id} 
-    className={cn(
-      "flex justify-between items-center gap-2",
-      inHandoverQuarter && "bg-green-500/10 rounded px-2 py-1 -mx-2 border-l-2 border-green-400"
-    )}
-  >
-    <div className="flex items-center gap-2 min-w-0 flex-1">
-      {isTimeBased ? (
-        <Clock className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
-      ) : (
-        <Building2 className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
-      )}
-      <span className="text-sm text-theme-text-muted truncate">
-        {payment.paymentPercent}% @ {triggerLabel}
-      </span>
-      {dateStr && (
-        <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
-      )}
-      {inHandoverQuarter && (
-        <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
-          <Key className="w-2.5 h-2.5" />
-          Handover
-        </span>
-      )}
-      {isPostHandover && !inHandoverQuarter && (
-        <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30 whitespace-nowrap">
-          Post-HO
-        </span>
-      )}
-    </div>
-    <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">
-      {formatCurrency(amount, currency, rate)}
-    </span>
-  </div>
-);
-```
-
-#### Change 4: Add cn import (line 1)
-
-```tsx
-import { cn } from "@/lib/utils";
-```
+So even if the list row highlight exists, the most “visual” part (timeline) is not emphasizing delivery quarter.
 
 ---
 
-## Visual Result
-
-### Before (Cashflow View):
-```
-THE JOURNEY (51 months)
-2% @ Milestone M6 (Jul 2026)                 AED 50,800
-2% @ Milestone M12 (Jan 2027)                AED 50,800
-2% @ Milestone M17 (Jun 2027)  🔑 Handover   AED 50,800  ← Small badge only
-```
-
-### After (Cashflow View):
-```
-THE JOURNEY (51 months)
-2% @ Milestone M6 (Jul 2026)                 AED 50,800
-2% @ Milestone M12 (Jan 2027)                AED 50,800
-▌2% @ Milestone M17 (Jun 2027) 🔑 Handover   AED 50,800  ← Green bg + border + badge
-```
+## Goals (what you asked for)
+1) Cashflow: “show me with emphasis the months of the quarter the project is delivered on”
+- We will add **very visible delivery-quarter highlighting** in the cashflow payment timeline and ensure the list clearly marks those months.
+2) Snapshot: “I don’t see the card that tells me if rent covers post-handover payments”
+- We will make the Snapshot card work **like mortgage**: always compute from actual schedule data (fallback to deriving from `additionalPayments` if `postHandoverPayments` is empty).
 
 ---
 
-## Files to Modify
+## Implementation Plan (code changes)
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/PaymentBreakdown.tsx` | 1. Add `isPaymentInHandoverQuarter` helper<br>2. Add Key icon import<br>3. Add cn import<br>4. Enhance row styling with green border/background for handover quarter |
+### A) Fix Snapshot: Post‑Handover Coverage card should render and compute correctly
+**File:** `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
+
+**Change:**
+- Replace the strict dependency on `inputs.postHandoverPayments` with:
+  1) Prefer `inputs.postHandoverPayments` if present (backward compatible)
+  2) Else derive post-handover payments from `inputs.additionalPayments`:
+     - Take only `type === 'time'`
+     - Convert `triggerValue` → calendar date using booking month/year
+     - Include those that are `>=` handover quarter start month (same logic as Snapshot payment table uses via `isPaymentPostHandover`)
+- Only `return null` if the derived list is empty.
+
+**Outcome:**
+- The Snapshot sidebar will show the card whenever `hasPostHandoverPlan` is true and there are post-handover installments embedded in `additionalPayments`.
 
 ---
 
-## Benefits
+### B) Fix Snapshot: ensure handover-quarter highlighting appears even when post-handover plan is ON
+**File:** `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-1. **Consistent highlighting** - Cashflow View now matches Snapshot View with strong green indicators
-2. **Clear handover timing** - Users can easily see which payments fall in the handover quarter
-3. **Post-handover distinction** - Purple "Post-HO" badges still show for payments after handover quarter
+**Problem in current code:**
+- “The Journey” section already highlights `isHandoverQuarter`.
+- The “Post‑Handover Installments” section currently does **not** apply the same highlighting (it renders plain rows).
+
+**Change:**
+- In the `derivedPostHandoverPayments.map(...)` section:
+  - Compute `isHandoverQuarter` using the existing `isPaymentInHandoverQuarter(...)`
+  - Apply the same green background + left border + “Handover” badge.
+  - This makes delivery-quarter payments stand out regardless of section.
+
+**Outcome:**
+- With post-handover enabled, if months in the delivery quarter are categorized as post-handover, they still get the green emphasis.
 
 ---
 
-## Regarding Snapshot Post-Handover Card
+### C) Cashflow: add a strong “Delivery Quarter” emphasis in the horizontal timeline
+**File:** `src/components/roi/PaymentHorizontalTimeline.tsx`
 
-The `CompactPostHandoverCard` in `SnapshotContent.tsx` is correctly implemented. If it's not showing, it means:
-- `inputs.hasPostHandoverPlan` is `false`, OR
-- `inputs.postHandoverPayments` array is empty
+**Changes:**
 
-Please verify that the quote you're viewing has the Post-Handover Plan enabled and has post-handover payments configured.
+1) **Fix post-handover detection**
+- Replace:
+  - `const isPostHandover = positionPercent > 100;`
+- With:
+  - `const isPostHandover = monthsFromBooking > totalMonths;`
+- Keep `positionPercent` capped for placement, but preserve the post-handover classification for color/badge/tooltip.
+
+2) **Add a delivery-quarter band (high emphasis)**
+- Compute start/end of handover quarter in months-from-booking terms:
+  - Determine handover quarter start month index: `(handoverQuarter - 1) * 3 + 1` (month number in year)
+  - Convert that to a booking-relative month offset range:
+    - `handoverQuarterStartOffset` (first month of quarter relative to booking)
+    - `handoverQuarterEndOffset` (third month of quarter relative to booking)
+- Convert those offsets to % positions on timeline:
+  - `startPercent = (handoverQuarterStartOffset / totalMonths) * 100`
+  - `endPercent = (handoverQuarterEndOffset / totalMonths) * 100`
+- Render an absolute positioned “band” behind the track:
+  - A translucent green gradient region on the track for the delivery quarter.
+  - Label: “Delivery Quarter” / translated equivalent (optional), with “Qx YYYY”.
+
+3) **Add per-marker highlight when marker month falls inside delivery quarter**
+- Add `isInDeliveryQuarter` boolean to each payment marker based on its computed calendar month/quarter.
+- If true, give the marker:
+  - green ring / glow and/or green border override
+  - and a small “🔑 Delivery”/Key icon label in tooltip
+
+**Outcome:**
+- In Cashflow, the delivery quarter becomes unmistakable:
+  - Users see a highlighted band on the timeline plus highlighted markers that fall within that quarter.
+
+---
+
+### D) Cashflow: make sure “The Journey” list emphasis is unmistakable
+**File:** `src/components/roi/PaymentBreakdown.tsx`
+
+You already have per-row green highlight for `inHandoverQuarter`, but users still report not seeing it. We’ll make it more obvious and resilient:
+
+**Changes:**
+1) Increase visual contrast of highlight:
+- Stronger border + slightly stronger background (still premium/minimal):
+  - e.g. `bg-green-500/15` + `border-l-4` + subtle glow ring
+
+2) Add an explicit “Delivery Quarter” mini-divider inside The Journey list:
+- When iterating `sortedAdditionalPayments`, detect the first payment that falls within the delivery quarter and render a small divider label above it:
+  - “Delivery Quarter (Qx YYYY)”
+- This ensures even if the green background blends, the label makes it clear.
+
+**Outcome:**
+- The Journey section will clearly call out the delivery quarter months even at a glance.
+
+---
+
+## Verification checklist (what we’ll test after implementing)
+1) Cashflow route `/cashflow/:token`:
+- Timeline shows a green “Delivery Quarter” band at the correct location.
+- Payments in Jul/Aug/Sep of delivery year get emphasized markers.
+- The Journey list shows the same months with strong green highlight and “Handover” badge.
+
+2) Snapshot view:
+- Post-Handover Coverage card appears when:
+  - `hasPostHandoverPlan = true`
+  - post-handover installments exist either in `postHandoverPayments` OR derived from `additionalPayments`.
+- Post-Handover installment rows that fall in the delivery quarter show the same green emphasis.
+
+---
+
+## Files we will modify
+- `src/components/roi/snapshot/CompactPostHandoverCard.tsx` (derive payments fallback; stop hiding when postHandoverPayments is empty)
+- `src/components/roi/snapshot/CompactPaymentTable.tsx` (apply handover-quarter highlight in Post-HO section too)
+- `src/components/roi/PaymentHorizontalTimeline.tsx` (fix post-HO detection; add delivery-quarter band + marker emphasis)
+- `src/components/roi/PaymentBreakdown.tsx` (increase highlight emphasis + add delivery-quarter divider label)
+
+---
+
+## Notes / compatibility
+- No backend changes required.
+- Backward compatible with older quotes that do populate `postHandoverPayments`.
+- Keeps existing theme system and premium minimal UI style intact.
