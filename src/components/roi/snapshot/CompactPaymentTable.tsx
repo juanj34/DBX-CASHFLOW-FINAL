@@ -7,7 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DottedRow } from './DottedRow';
 import { PaymentSplitModal } from './PaymentSplitModal';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { cn } from '@/lib/utils';
 
 interface CompactPaymentTableProps {
@@ -274,50 +274,48 @@ export const CompactPaymentTable = ({
               <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">
                 The Journey ({totalMonths}mo)
               </div>
-              <ScrollArea className="max-h-[180px]">
-                <div className="space-y-1 pr-2">
-                  {preHandoverPayments.map((payment, index) => {
-                    const amount = basePrice * (payment.paymentPercent / 100);
-                    const dateStr = getPaymentDate(payment);
-                    const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
-                    
-                    // Check for handover indicators
-                    const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
-                      payment.triggerValue,
-                      bookingMonth,
-                      bookingYear,
-                      handoverQuarter,
-                      handoverYear
-                    );
-                    
-                    return (
-                      <div 
-                        key={index}
-                        className={cn(
-                          "flex items-center justify-between gap-2",
-                          isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1"
+              <div className="space-y-1">
+                {preHandoverPayments.map((payment, index) => {
+                  const amount = basePrice * (payment.paymentPercent / 100);
+                  const dateStr = getPaymentDate(payment);
+                  const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
+                  
+                  // Check for handover indicators
+                  const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
+                    payment.triggerValue,
+                    bookingMonth,
+                    bookingYear,
+                    handoverQuarter,
+                    handoverYear
+                  );
+                  
+                  return (
+                    <div 
+                      key={index}
+                      className={cn(
+                        "flex items-center justify-between gap-2",
+                        isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1"
+                      )}
+                    >
+                      <div className="flex items-center gap-1 min-w-0 flex-1">
+                        <span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
+                        {isHandoverQuarter && (
+                          <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
+                            <Key className="w-2.5 h-2.5" />
+                            Handover
+                          </span>
                         )}
-                      >
-                        <div className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
-                          {isHandoverQuarter && (
-                            <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
-                              <Key className="w-2.5 h-2.5" />
-                              Handover
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
-                          {getDualValue(amount).primary}
-                          {currency !== 'AED' && (
-                            <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
-                          )}
-                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+                      <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                        {getDualValue(amount).primary}
+                        {currency !== 'AED' && (
+                          <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -346,27 +344,25 @@ export const CompactPaymentTable = ({
               <div className="text-[10px] uppercase tracking-wide text-purple-400 font-semibold mb-2">
                 Post-Handover ({(derivedPostHandoverPayments.reduce((sum, p) => sum + p.paymentPercent, 0)).toFixed(0)}%)
               </div>
-              <ScrollArea className="max-h-[150px]">
-                <div className="space-y-1 pr-2">
-                  {derivedPostHandoverPayments.map((payment, index) => {
-                    const amount = basePrice * (payment.paymentPercent / 100);
-                    const dateStr = getPaymentDate(payment);
-                    const label = `${getPaymentLabel(payment)} (${dateStr})`;
-                    
-                    return (
-                      <div key={index} className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-theme-text-muted truncate">{label}</span>
-                        <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
-                          {getDualValue(amount).primary}
-                          {currency !== 'AED' && (
-                            <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
-                          )}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+              <div className="space-y-1">
+                {derivedPostHandoverPayments.map((payment, index) => {
+                  const amount = basePrice * (payment.paymentPercent / 100);
+                  const dateStr = getPaymentDate(payment);
+                  const label = `${getPaymentLabel(payment)} (${dateStr})`;
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-theme-text-muted truncate">{label}</span>
+                      <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                        {getDualValue(amount).primary}
+                        {currency !== 'AED' && (
+                          <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -399,18 +395,22 @@ export const CompactPaymentTable = ({
             />
           </div>
 
-          {/* Total Cash Until Handover - Compact Summary at Bottom */}
-          <div className="flex items-center justify-between bg-theme-accent/5 border border-theme-accent/20 rounded-md px-2 py-1.5">
-            <span className="text-[10px] text-theme-accent font-medium flex items-center gap-1">
+          {/* Total Cash Until Handover - Summary at Bottom */}
+          <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-2">
+            <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-1 flex items-center gap-1">
               <Wallet className="w-3 h-3" />
-              Cash Until Handover
-            </span>
-            <span className="text-xs font-mono font-semibold text-theme-accent">
-              {getDualValue(totalUntilHandover).primary}
-              {currency !== 'AED' && (
-                <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
-              )}
-            </span>
+              Total Cash Until Handover
+            </div>
+            <DottedRow 
+              label="Entry + Journey + Handover"
+              value={getDualValue(totalUntilHandover).primary}
+              secondaryValue={getDualValue(totalUntilHandover).secondary}
+              bold
+              valueClassName="text-theme-accent"
+            />
+            <p className="text-[10px] text-theme-text-muted mt-1">
+              Cash required before rental income starts
+            </p>
           </div>
 
           {/* Value Differentiators - AFTER Total Investment */}
