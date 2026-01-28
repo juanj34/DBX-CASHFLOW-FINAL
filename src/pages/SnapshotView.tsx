@@ -275,10 +275,14 @@ const SnapshotViewContent = () => {
   );
 };
 
-// Wrap in LanguageProvider so translations work correctly
+// Wrap in LanguageProvider with default language from URL params
 const SnapshotView = () => {
+  // Get language from URL on initial render
+  const urlParams = new URLSearchParams(window.location.search);
+  const defaultLang = urlParams.get('lang') === 'es' ? 'es' : 'en';
+  
   return (
-    <LanguageProvider>
+    <LanguageProvider defaultLanguage={defaultLang}>
       <SnapshotViewContent />
     </LanguageProvider>
   );

@@ -1,14 +1,11 @@
 import { useState, useCallback } from 'react';
-import { Share2, Copy, Mail, MessageCircle, Check, Eye, Loader2, Clock, MapPin, LayoutGrid, FileText } from 'lucide-react';
+import { Share2, Copy, Mail, MessageCircle, Check, Eye, Loader2, Clock, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuoteViews, formatDuration, getCountryFlag } from '@/hooks/useQuoteViews';
-import { cn } from '@/lib/utils';
-
-type ViewType = 'cashflow' | 'snapshot';
 
 interface ShareButtonProps {
   quoteId?: string;
@@ -46,10 +43,8 @@ export const ShareButton = ({
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [viewType, setViewType] = useState<ViewType>('cashflow');
-  const [shareUrl, setShareUrl] = useState<string | null>(
-    shareToken ? `${window.location.origin}/view/${shareToken}` : null
-  );
+  
+  // Always use snapshot URL now
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
     shareToken ? `${window.location.origin}/snapshot/${shareToken}` : null
   );
@@ -58,24 +53,23 @@ export const ShareButton = ({
   const { analytics, loading: loadingAnalytics } = useQuoteViews(quoteId);
 
   const generateUrl = useCallback(async () => {
-    const currentUrl = viewType === 'cashflow' ? shareUrl : snapshotUrl;
-    if (currentUrl) return currentUrl;
+    if (snapshotUrl) return snapshotUrl;
     
     setGenerating(true);
     try {
       const baseUrl = await onGenerateShareUrl();
       if (baseUrl) {
-        // Extract token from /view/ URL and create both URLs
-        const token = baseUrl.split('/view/')[1];
+        // Extract token and create snapshot URL
+        const token = baseUrl.split('/view/')[1] || baseUrl.split('/snapshot/')[1];
         if (token) {
-          const cashflowUrl = `${window.location.origin}/view/${token}`;
-          const snapUrl = `${window.location.origin}/snapshot/${token}`;
-          setShareUrl(cashflowUrl);
-          setSnapshotUrl(snapUrl);
-          return viewType === 'cashflow' ? cashflowUrl : snapUrl;
+          const url = `${window.location.origin}/snapshot/${token}`;
+          setSnapshotUrl(url);
+          return url;
         }
-        setShareUrl(baseUrl);
-        return baseUrl;
+        // Fallback: convert /view/ to /snapshot/
+        const snapshotVariant = baseUrl.replace('/view/', '/snapshot/');
+        setSnapshotUrl(snapshotVariant);
+        return snapshotVariant;
       }
     } catch (error) {
       console.error('Error generating share URL:', error);
@@ -87,11 +81,7 @@ export const ShareButton = ({
       setGenerating(false);
     }
     return null;
-  }, [shareUrl, snapshotUrl, viewType, onGenerateShareUrl, toast, t]);
-
-  const getCurrentUrl = useCallback(() => {
-    return viewType === 'cashflow' ? shareUrl : snapshotUrl;
-  }, [viewType, shareUrl, snapshotUrl]);
+  }, [snapshotUrl, onGenerateShareUrl, toast, t]);
 
   const handleCopyLink = async () => {
     const url = await generateUrl();
@@ -182,32 +172,10 @@ export const ShareButton = ({
         align="end"
       >
         <div className="space-y-3">
-          {/* View Type Selector */}
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            <button
-              onClick={() => setViewType('cashflow')}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors",
-                viewType === 'cashflow' 
-                  ? "bg-background text-foreground shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              Cashflow
-            </button>
-            <button
-              onClick={() => setViewType('snapshot')}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors",
-                viewType === 'snapshot' 
-                  ? "bg-background text-foreground shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              Snapshot
-            </button>
+          {/* Snapshot indicator */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-theme-bg/50 rounded-lg border border-theme-border">
+            <LayoutGrid className="w-4 h-4 text-theme-accent" />
+            <span className="text-sm font-medium text-theme-text">Snapshot View</span>
           </div>
 
           {/* Share Actions */}
