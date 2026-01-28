@@ -1,183 +1,190 @@
 
-# Plan: Modo de Generación Libre para Pagos Post-Handover
+# Plan: Fix Snapshot Payment Display for Post-Handover Plans
 
-## Problema Actual
+## Problem Summary
 
-El generador de pagos post-handover calcula automáticamente el porcentaje dividiendo lo que queda después del pre-handover:
+The Snapshot's `CompactPaymentTable` incorrectly displays post-handover payment plans. Looking at your screenshot:
 
-```typescript
-const remaining = 100 - preHandoverTotal - (inputs.onHandoverPercent || 0);
-const percentPerPayment = remaining / numPostPayments;  // ← Esto da 0.4% en vez de 1%
+- Payments continue through and past handover (Month 18-51)
+- But the table still shows **"HANDOVER (55%)" with "Final Payment"**
+- This doesn't make sense - there IS no final payment when you have continuous installments
+
+### Current (Wrong) Behavior:
+```
+THE ENTRY      → Correct
+THE JOURNEY    → Shows payments including some after handover
+HANDOVER (55%) → Shows wrong! There's no 55% final payment
+─────────────────────
+Total Investment
 ```
 
-Esto no funciona para planes donde **todos los pagos son post-handover** (ejemplo: 51 pagos de 1%).
+### Expected (Correct) Behavior for Post-Handover Plans:
+```
+THE ENTRY           → Downpayment + fees
+THE JOURNEY (PRE)   → Installments BEFORE handover
+ON HANDOVER (0-1%)  → Only if onHandoverPercent > 0
+POST-HANDOVER       → Installments AFTER handover date
+─────────────────────
+Total Investment
+```
 
 ---
 
-## Solución Propuesta
+## Technical Solution
 
-### 1. Agregar Campo "% Per Payment" al Generador
+### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-Agregar un nuevo input al generador que permite especificar el porcentaje **exacto** por pago:
+#### 1. Reorganize Payment Display Logic
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ⚡ Post-Handover Installments                              │
-│                                                             │
-│  [51] payments × [1] mo @ [1] % each      [⚡ Generate]    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 2. Modificar Lógica de Generación
-
-**Cambiar de:**
+**Current logic (lines 98-115):**
 ```typescript
-const remaining = 100 - preHandoverTotal - (inputs.onHandoverPercent || 0);
-const percentPerPayment = numPostPayments > 0 ? remaining / numPostPayments : 0;
+if (hasPostHandoverPlan) {
+  handoverPercent = inputs.onHandoverPercent || 0;
+  handoverAmount = basePrice * handoverPercent / 100;
+  postHandoverTotal = (inputs.postHandoverPayments || []).reduce(...);
+} else {
+  handoverPercent = 100 - inputs.preHandoverPercent;
+  handoverAmount = basePrice * handoverPercent / 100;
+}
 ```
 
-**A:**
+The calculation is fine, but the **UI sections** need to change.
+
+#### 2. Split "The Journey" into Pre and Post Sections
+
+When `hasPostHandoverPlan` is true:
+
+- **The Journey (Pre-Handover)**: Show only `additionalPayments` that fall BEFORE handover
+- **On Handover**: Show `onHandoverPercent` only if > 0
+- **Post-Handover Installments**: Show `postHandoverPayments` list
+
+#### 3. Detailed Changes
+
+**A. Filter pre-handover vs post-handover installments (around line 153):**
+
 ```typescript
-// percentPerPayment comes directly from user input (e.g., 1%)
-// No calculation based on remaining - user defines the exact percentage
+// For standard plans, all additionalPayments are pre-handover
+// For post-handover plans, filter by date
+const preHandoverPayments = hasPostHandoverPlan 
+  ? sortedPayments.filter(p => {
+      if (p.type !== 'time') return true; // construction-based = pre-handover
+      return !isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+    })
+  : sortedPayments;
 ```
 
-### 3. Hacer el Footer Informativo (No Restrictivo)
+**B. Conditionally render "Handover" section (lines 327-341):**
 
-El footer actual muestra PRE-HANDOVER / ON HANDOVER / POST / TOTAL. Mantenerlo pero hacerlo informativo:
-- Si total > 100%: Mostrar en **amarillo** con mensaje "X% over - adjust manually"
-- Si total < 100%: Mostrar en **amarillo** con mensaje "X% remaining"
-- Si total = 100%: Mostrar **verde** con checkmark
-
----
-
-## Cambios Técnicos
-
-### Archivo: `src/components/roi/configurator/PostHandoverSection.tsx`
-
-#### 1. Agregar estado para porcentaje por pago (línea ~19)
-```typescript
-const [percentPerPayment, setPercentPerPayment] = useState(1); // Default 1%
-```
-
-#### 2. Modificar generador (línea 85-101)
-```typescript
-const handleGeneratePostPayments = () => {
-  const newPayments: PaymentMilestone[] = [];
-  
-  for (let i = 0; i < numPostPayments; i++) {
-    newPayments.push({
-      id: `post-auto-${Date.now()}-${i}`,
-      type: 'post-handover',
-      triggerValue: postPaymentInterval * (i + 1),
-      paymentPercent: percentPerPayment  // ← Usar valor directo del input
-    });
-  }
-  
-  setInputs(prev => ({ ...prev, postHandoverPayments: newPayments }));
-  setShowPostHandoverInstallments(true);
-};
-```
-
-#### 3. Agregar input de "% per payment" en UI (línea ~233)
-Agregar un tercer input al generador:
-
+Replace:
 ```tsx
-<div className="flex items-center gap-2 ml-7">
-  <div className="flex items-center gap-1">
-    <Input
-      type="text"
-      inputMode="numeric"
-      value={numPostPayments || ''}
-      onChange={(e) => handleNumberInputChange(e.target.value, setNumPostPayments, 1, 100)}
-      className="w-14 h-7 bg-theme-input border-theme-border text-theme-text font-mono text-center text-xs"
-    />
-    <span className="text-[10px] text-theme-text-muted">payments</span>
+{/* Section: Handover */}
+<div>
+  <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
+    Handover ({handoverPercent}%)
   </div>
-  <span className="text-theme-text-muted">×</span>
-  <div className="flex items-center gap-1">
-    <Input
-      type="text"
-      inputMode="numeric"
-      value={postPaymentInterval || ''}
-      onChange={(e) => handleNumberInputChange(e.target.value, setPostPaymentInterval, 1, 24)}
-      className="w-10 h-7 bg-theme-input border-theme-border text-theme-text font-mono text-center text-xs"
+  <div className="space-y-1">
+    <DottedRow 
+      label="Final Payment"
+      value={getDualValue(handoverAmount).primary}
+      ...
     />
-    <span className="text-[10px] text-theme-text-muted">mo</span>
   </div>
-  {/* NEW: Percent per payment */}
-  <span className="text-theme-text-muted">@</span>
-  <div className="flex items-center gap-1">
-    <Input
-      type="text"
-      inputMode="decimal"
-      value={percentPerPayment || ''}
-      onChange={(e) => handleNumberInputChange(e.target.value, setPercentPerPayment, 0.1, 50)}
-      className="w-12 h-7 bg-theme-input border-theme-border text-purple-400 font-mono text-center text-xs"
-    />
-    <span className="text-[10px] text-theme-text-muted">%</span>
-  </div>
-  <Button ... >Generate</Button>
 </div>
 ```
 
-#### 4. Actualizar summary para mostrar proyección (línea ~347)
-Agregar info del total generado:
-
+With conditional rendering:
 ```tsx
-{/* Quick projection */}
-<div className="text-[10px] text-theme-text-muted ml-7 mt-1">
-  {numPostPayments} × {percentPerPayment}% = {(numPostPayments * percentPerPayment).toFixed(1)}% 
-  {numPostPayments * percentPerPayment !== 100 && (
-    <span className="text-amber-400 ml-1">
-      (adjust one payment to reach 100%)
-    </span>
-  )}
-</div>
+{/* Section: On Handover - only show for standard plans OR if onHandoverPercent > 0 */}
+{(!hasPostHandoverPlan || handoverPercent > 0) && (
+  <div>
+    <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
+      {hasPostHandoverPlan ? `On Handover (${handoverPercent}%)` : `Handover (${handoverPercent}%)`}
+    </div>
+    <div className="space-y-1">
+      <DottedRow 
+        label={hasPostHandoverPlan ? "Handover Payment" : "Final Payment"}
+        value={getDualValue(handoverAmount).primary}
+        ...
+      />
+    </div>
+  </div>
+)}
+
+{/* Section: Post-Handover Installments - only for post-handover plans */}
+{hasPostHandoverPlan && (inputs.postHandoverPayments || []).length > 0 && (
+  <div>
+    <div className="text-[10px] uppercase tracking-wide text-purple-400 font-semibold mb-2">
+      Post-Handover ({inputs.postHandoverPercent || 0}%)
+    </div>
+    <div className="space-y-1">
+      {(inputs.postHandoverPayments || []).map((payment, index) => {
+        const amount = basePrice * (payment.paymentPercent / 100);
+        const monthsAfterHandover = payment.triggerValue;
+        const label = `Month +${monthsAfterHandover}`;
+        // Calculate actual date
+        ...
+        return (
+          <DottedRow 
+            key={index}
+            label={`${label} (${dateStr})`}
+            value={getDualValue(amount).primary}
+            secondaryValue={getDualValue(amount).secondary}
+          />
+        );
+      })}
+      <div className="pt-1 border-t border-theme-border mt-1">
+        <DottedRow 
+          label="Subtotal Post-Handover"
+          value={getDualValue(postHandoverTotal).primary}
+          bold
+          valueClassName="text-purple-400"
+        />
+      </div>
+    </div>
+  </div>
+)}
 ```
 
 ---
 
-## Resultado Esperado
+## Files to Modify
 
-Con estos cambios:
-
-1. **Usuario escribe:** 51 payments × 1 mo @ 1% each
-2. **Hace clic en Generate**
-3. **Sistema crea:** 51 pagos de exactamente 1% cada uno (51% total)
-4. **Footer muestra:** "Post-Handover: 51% • Total: 51% (49% remaining)"
-5. **Usuario ajusta manualmente** uno de los pagos a 50% para llegar a 100%
+| File | Change |
+|------|--------|
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add post-handover section, conditionally render handover section, filter journey payments |
 
 ---
 
-## Archivos a Modificar
+## Result
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/roi/configurator/PostHandoverSection.tsx` | Agregar estado `percentPerPayment`, modificar `handleGeneratePostPayments`, agregar input UI, actualizar preview |
+After changes, for a post-handover plan (like your 51 monthly payments):
 
----
-
-## UX Preview
-
+```text
+┌─────────────────────────────────────────────┐
+│ ⬢ PAYMENT BREAKDOWN                         │
+├─────────────────────────────────────────────┤
+│ THE ENTRY                                   │
+│   Downpayment (20%) .............. AED XX   │
+│   DLD + Oqood .................... AED XX   │
+│   Total Entry .................... AED XX   │
+├─────────────────────────────────────────────┤
+│ THE JOURNEY (17mo)                          │
+│   Month 1 (Feb 2026) ............. AED 6,019│
+│   ...                                       │
+│   Month 17 (Jun 2027) 🔑 Handover. AED 6,019│
+│   Subtotal ....................... AED XX   │
+├─────────────────────────────────────────────┤
+│ POST-HANDOVER (51%)                         │
+│   Month +1 (Jul 2027) ............ AED 6,019│
+│   Month +2 (Aug 2027) ............ AED 6,019│
+│   ...                                       │
+│   Month +34 (Apr 2030) ........... AED 6,019│
+│   Subtotal Post-Handover ......... AED XX   │
+├─────────────────────────────────────────────┤
+│ Base Property Price .............. AED XX   │
+│ Transaction Fees ................. AED XX   │
+│ Total Investment ................. AED XX   │
+└─────────────────────────────────────────────┘
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  P ⚡ Post-Handover Installments                            │
-│                                                             │
-│  ┌────┐         ┌───┐        ┌────┐                        │
-│  │ 51 │payments × │ 1│ mo  @  │ 1 │ %      [⚡ Generate]   │
-│  └────┘         └───┘        └────┘                        │
-│                                                             │
-│  51 × 1% = 51% (adjust one payment to reach 100%)          │
-└─────────────────────────────────────────────────────────────┘
-```
 
-Después de generar:
-```
-┌────────────────────────────────────────────────────────────┐
-│  Pre-Handover  │  On Handover  │  Post-Handover  │  Total  │
-│      0%        │      0%       │      51%        │   51%   │
-│                                                  │ (49% ⚠) │
-└────────────────────────────────────────────────────────────┘
-```
+This accurately represents the post-handover payment structure without the misleading "Final Payment" section.
