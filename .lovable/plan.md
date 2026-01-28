@@ -1,173 +1,115 @@
 
-# Plan: Global Currency/Language Propagation in Presentation and Client Views
+# Plan: Corregir la Exportación para Respetar Moneda y Lenguaje
 
-## Issues Identified
+## Problema Identificado
 
-### Issue 1: PropertyHeroCard Shows Non-Functional Selectors
-In `PresentationPreview.tsx`, when passing to `SnapshotContent`:
-```tsx
-setCurrency={() => {}}  // Empty function - truthy, so selectors show but don't work
-setLanguage={() => {}}
-```
-This causes PropertyHeroCard to display currency/language selectors that do nothing when clicked.
+La exportación (PNG/PDF) no muestra la moneda ni el idioma configurados porque:
 
-### Issue 2: SnapshotView Ignores URL Parameters
-`ClientPortal.tsx` line 380 opens snapshots with URL params:
-```tsx
-window.open(`/snapshot/${quote.share_token}?currency=${currency}&lang=${language}`, '_blank')
-```
-But `SnapshotView.tsx` doesn't read these params - it just initializes with default `'AED'` and `'en'`.
+1. **`ExportExitCards.tsx`** tiene valores hardcodeados:
+   - Línea 135: `formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)` ❌
+   - Línea 144: `formatCurrency(scenario.trueProfit, 'AED', 1)` ❌
 
-### Issue 3: Duplicate Control Points
-Both the sidebar (PresentationView) and the PropertyHeroCard have currency/language selectors, causing confusion about which one controls the display.
+2. **`ExportWealthTimeline.tsx`** tiene valores hardcodeados:
+   - Línea 139: `formatCurrencyShort(proj.value, 'AED', 1)` ❌
+
+3. Los componentes de exportación tienen sus propias traducciones inline (`t = { ... }`) que ya funcionan correctamente con el prop `language`
 
 ---
 
-## Solution Architecture
+## Archivos a Modificar
 
-**Single Source of Truth**: Currency and language are controlled ONLY from:
-- **Presentation View**: Sidebar selectors (already implemented)
-- **Snapshot View**: PropertyHeroCard selectors (for direct snapshot links)
-- **Client Portal**: Header selectors (for the portal page itself)
+### 1. `src/components/roi/export/ExportExitCards.tsx`
 
-**Propagation Flow**:
+**Cambiar hardcoded AED a usar currency/rate props:**
+
+```tsx
+// Línea 135: Cambiar de
+💰 {formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)}
+// A
+💰 {formatCurrency(scenario.totalCapitalDeployed, currency, rate)}
+
+// Línea 144: Cambiar de  
+{formatCurrency(scenario.trueProfit, 'AED', 1)}
+// A
+{formatCurrency(scenario.trueProfit, currency, rate)}
 ```
-PresentationView (sidebar)
-    │
-    └─► PresentationPreview
-            │
-            └─► SnapshotContent (receives values, NO selectors)
-                    │
-                    └─► PropertyHeroCard (NO selectors in presentation)
-                    └─► SnapshotOverviewCards (uses currency/rate)
-                    └─► CompactPaymentTable (uses currency/rate)
-                    └─► etc.
+
+**Añadir formato dual para mostrar AED + moneda convertida:**
+```tsx
+// Añadir helper
+const getDualValue = (value: number) => {
+  const dual = formatDualCurrency(value, currency, rate);
+  return { primary: dual.primary, secondary: dual.secondary };
+};
+
+// Usar en capital y profit
+<span>💰 {getDualValue(scenario.totalCapitalDeployed).primary}</span>
+<span>{scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit).primary}</span>
+```
+
+### 2. `src/components/roi/export/ExportWealthTimeline.tsx`
+
+**Cambiar el valor primario de hardcoded AED a formato dual:**
+
+```tsx
+// Línea 139: Cambiar de
+{formatCurrencyShort(proj.value, 'AED', 1)}
+
+// A - mostrar AED primario siempre para consistencia, con conversión secundaria
+const aedValue = formatCurrencyShort(proj.value, 'AED', 1);
+const convertedValue = currency !== 'AED' ? formatCurrencyShort(proj.value, currency, rate) : null;
+
+// En el render
+<div>{aedValue}</div>
+{convertedValue && <div>{convertedValue}</div>}
 ```
 
 ---
 
-## File Changes
+## Cambios Detallados
 
-### 1. `src/components/presentation/PresentationPreview.tsx`
+### ExportExitCards.tsx
 
-**Hide PropertyHeroCard selectors when embedded in presentation** (lines 124-144):
+| Línea | Antes | Después |
+|-------|-------|---------|
+| 2 | `import { Currency, formatCurrency }` | `import { Currency, formatDualCurrency }` |
+| 135 | `formatCurrency(scenario.totalCapitalDeployed, 'AED', 1)` | `getDualValue(scenario.totalCapitalDeployed).primary` |
+| 144 | `formatCurrency(scenario.trueProfit, 'AED', 1)` | `getDualValue(scenario.trueProfit).primary` |
 
-Change:
+Añadir helper function:
 ```tsx
-<SnapshotContent
-  ...
-  setCurrency={() => {}}
-  setLanguage={() => {}}
-  ...
-/>
+const getDualValue = (value: number) => {
+  const dual = formatDualCurrency(value, currency, rate);
+  return { primary: dual.primary, secondary: dual.secondary };
+};
 ```
 
-To:
-```tsx
-<SnapshotContent
-  ...
-  setCurrency={undefined}  // Pass undefined to hide selectors
-  setLanguage={undefined}
-  ...
-/>
-```
+### ExportWealthTimeline.tsx
 
-This will cause PropertyHeroCard's condition `showPriceInfo && setCurrency && setLanguage` to be false, hiding the redundant selectors.
+| Línea | Antes | Después |
+|-------|-------|---------|
+| 139 | `formatCurrencyShort(proj.value, 'AED', 1)` | Usar el formato AED principal con conversión opcional (ya está en líneas 141-145) |
 
-### 2. `src/components/roi/snapshot/SnapshotContent.tsx`
-
-**Make setCurrency/setLanguage optional** - Update interface to allow undefined:
-
-```tsx
-interface SnapshotContentProps {
-  ...
-  setCurrency?: (currency: Currency) => void;  // Make optional
-  setLanguage?: (language: 'en' | 'es') => void;  // Make optional
-  ...
-}
-```
-
-Pass through to PropertyHeroCard only if defined:
-```tsx
-<PropertyHeroCard
-  ...
-  setCurrency={setCurrency}  // Will be undefined in presentation mode
-  setLanguage={setLanguage}
-  ...
-/>
-```
-
-### 3. `src/pages/SnapshotView.tsx`
-
-**Read currency/language from URL params**:
-
-```tsx
-import { useParams, useSearchParams } from 'react-router-dom';
-
-const SnapshotView = () => {
-  const { shareToken } = useParams<{ shareToken: string }>();
-  const [searchParams] = useSearchParams();
-  
-  // Initialize from URL params or defaults
-  const [currency, setCurrency] = useState<Currency>(() => {
-    const urlCurrency = searchParams.get('currency');
-    if (urlCurrency && ['AED', 'USD', 'EUR', 'GBP', 'COP'].includes(urlCurrency)) {
-      return urlCurrency as Currency;
-    }
-    return 'AED';
-  });
-  
-  const [language, setLanguage] = useState<'en' | 'es'>(() => {
-    const urlLang = searchParams.get('lang');
-    return urlLang === 'es' ? 'es' : 'en';
-  });
-  ...
-```
-
-### 4. Verify All Snapshot Sub-Components Use Currency Props
-
-The following components already receive `currency` and `rate` props - verify they're being used for formatting:
-
-| Component | Currency Prop Used? |
-|-----------|---------------------|
-| `SnapshotOverviewCards` | Yes - passed and used |
-| `CompactPaymentTable` | Yes - passed and used |
-| `CompactRentCard` | Yes - passed and used |
-| `CompactMortgageCard` | Yes - passed and used |
-| `CompactPostHandoverCard` | Yes - passed and used |
-| `CompactAllExitsCard` | Yes - passed and used |
+La lógica ya existe en líneas 141-145 para mostrar conversión. Solo necesitamos verificar que el valor primario siempre muestre AED pero permitir que `formatCurrencyShort` use el currency correcto cuando se necesite.
 
 ---
 
-## Summary of Changes
+## Resumen de Archivos
 
-| File | Change |
-|------|--------|
-| `src/components/presentation/PresentationPreview.tsx` | Pass `undefined` for setCurrency/setLanguage to hide PropertyHeroCard selectors |
-| `src/components/roi/snapshot/SnapshotContent.tsx` | Make setCurrency/setLanguage props optional |
-| `src/pages/SnapshotView.tsx` | Read currency/language from URL search params |
-
----
-
-## Expected Results
-
-| Scenario | Before | After |
-|----------|--------|-------|
-| Presentation sidebar currency change | Only sidebar shows selection, prices don't update | Prices update across all snapshots |
-| PropertyHeroCard in presentation | Shows non-functional selectors | Selectors hidden (sidebar controls only) |
-| ClientPortal "View" button | Opens snapshot with default AED/EN | Opens snapshot with selected currency/language |
-| Direct snapshot link | Always AED/EN | Can specify `?currency=USD&lang=es` |
+| Archivo | Cambio |
+|---------|--------|
+| `src/components/roi/export/ExportExitCards.tsx` | Cambiar formatCurrency hardcoded a usar currency/rate props con formato dual |
+| `src/components/roi/export/ExportWealthTimeline.tsx` | Verificar que el formato dual funcione correctamente (el código ya existe parcialmente) |
 
 ---
 
-## Technical Notes
+## Resultado Esperado
 
-**Why pass `undefined` instead of empty functions?**
-- PropertyHeroCard condition: `showPriceInfo && setCurrency && setLanguage`
-- Empty function `() => {}` is truthy, so condition passes
-- `undefined` is falsy, so condition fails and selectors are hidden
+Después de estos cambios:
 
-**URL param approach for ClientPortal**
-- ClientPortal opens quotes in new tabs via snapshot links
-- Passing state via URL params is the correct approach for cross-tab communication
-- SnapshotView just needs to read these params on load
+| Antes | Después |
+|-------|---------|
+| Exportación siempre muestra AED | Exportación muestra la moneda seleccionada (USD, EUR, etc.) |
+| Idioma no afecta la exportación | Idioma se aplica a todos los labels en la exportación |
+| Exit cards solo muestran AED | Exit cards muestran formato dual (AED + conversión) |
+| Timeline solo muestra AED | Timeline muestra formato dual (AED + conversión) |
