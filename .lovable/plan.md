@@ -1,194 +1,227 @@
 
-# Plan: Fix Quote Duplication When Creating New Quote
+# Plan: Fix Three Issues
 
-## Problem Summary
+## Issues to Fix
 
-When you're editing an existing quote and click "New Quote", the app navigates to `/cashflow-generator` but **does NOT reset the component state**. The React state (`inputs`, `clientInfo`, `mortgageInputs`) still contains data from the previous quote.
+### Issue 1: Property Price Input (Alt-Tab + Initial Character)
+**Problem:** 
+- Line 111 in PropertySection.tsx: `value={Number(basePriceInput.replace(/,/g, '')).toLocaleString() || basePriceInput}`
+- When `basePriceInput` is empty: `Number("").toLocaleString()` returns `"NaN"`, then fallback shows raw input
+- Alt-tab triggers `onBlur` → `handleBasePriceBlur()` → useEffect syncs state, causing visual "jump"
 
-Since `isQuoteConfigured` evaluates to `true` (because the state still has `clientInfo.developer`, `inputs.basePrice`, etc.), the auto-save logic thinks this is meaningful user input and **immediately creates a new quote with the old data** - causing the duplication.
+**Solution:**
+1. Simplify value prop to just use `basePriceInput`
+2. Add a `useRef` to track if user is actively editing (prevents useEffect from overwriting during typing)
+3. Improve `handleBasePriceBlur` to handle empty/invalid input gracefully
 
-## Root Cause
+### Issue 2: Payment Generator Missing
+**Problem:**
+- The "Generate" button that auto-creates installments based on (count × interval) is missing from `PaymentSection.tsx`
+- The feature exists in `OIInputModal.tsx` (lines 287-310) but was never ported to the new configurator UI
 
-- `useState(NEW_QUOTE_OI_INPUTS)` only sets the initial value on **first mount**
-- When navigating from `/cashflow/:id` to `/cashflow-generator`, the `OICalculatorContent` component **does not remount** - it just re-renders with the URL change
-- The stale state triggers auto-save, duplicating the quote
+**Solution:**
+Add the auto-generate functionality back to `PaymentSection.tsx`:
+- Add state for `numPayments` and `paymentInterval`
+- Add collapsible "Quick Fill" section with inputs and "Generate" button
+- Port the `handleGeneratePayments()` logic from OIInputModal
 
-## Solution
-
-**Reset ALL state explicitly when navigating to `/cashflow-generator` (no quoteId).**
-
-We need to detect when the route changes from having a `quoteId` to not having one, and **forcefully reset** all the component state to fresh defaults.
+---
 
 ## Technical Changes
 
-### File: `src/pages/OICalculator.tsx`
+### File 1: `src/components/roi/configurator/PropertySection.tsx`
 
-**Change 1:** Add a `useEffect` that resets state when `quoteId` becomes undefined (new quote mode)
-
+**Change 1:** Add editing ref (line ~14)
 ```tsx
-// Around line 194, where setDataLoaded(false) is triggered on quoteId change
+import { useState, useEffect, useRef } from "react";
+// ...
+const isEditingRef = useRef(false);
+```
 
-// Reset ALL state when starting a new quote (no quoteId)
+**Change 2:** Guard useEffect from overwriting during editing (line 34-40)
+```tsx
 useEffect(() => {
-  if (!quoteId) {
-    // Clear all state to fresh defaults for a brand new quote
-    setInputs(NEW_QUOTE_OI_INPUTS);
-    setClientInfo(DEFAULT_CLIENT_INFO);
-    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
-    setQuoteImages({
-      floorPlanUrl: null,
-      buildingRenderUrl: null,
-      heroImageUrl: null,
-      showLogoOverlay: true,
-    });
-    setViewMode('cashflow');
-    setShareUrl(null);
-    setDataLoaded(false);
-  }
-}, [quoteId]);
+  if (isEditingRef.current) return; // Don't overwrite while user is typing
+  setBasePriceInput(
+    currency === 'USD' 
+      ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
+      : inputs.basePrice.toLocaleString()
+  );
+}, [inputs.basePrice, currency]);
 ```
 
-**Change 2:** Update the existing `useEffect` that resets `dataLoaded` to be more comprehensive
-
-Current code (line 194):
+**Change 3:** Simplify value and add editing tracking (line 109-114)
 ```tsx
-useEffect(() => { setDataLoaded(false); }, [quoteId]);
+<Input
+  type="text"
+  value={basePriceInput}
+  onChange={(e) => {
+    isEditingRef.current = true;
+    setBasePriceInput(e.target.value.replace(/,/g, ''));
+  }}
+  onBlur={() => {
+    isEditingRef.current = false;
+    handleBasePriceBlur();
+  }}
+  className="w-44 h-10 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-lg pl-14"
+/>
 ```
 
-This will be replaced/merged with the new comprehensive reset effect above.
-
-**Change 3:** Add a guard to the auto-save effect to skip when state is being reset
-
-The auto-save effect (lines 227-244) currently triggers immediately when state appears "configured". We should add an additional condition:
-
+**Change 4:** Improve handleBasePriceBlur to handle empty input (line 60-72)
 ```tsx
-// Only allow auto-create after component has stabilized
-// (prevents duplicates during navigation/reset)
-const isStableForAutoCreate = !quoteId && isQuoteConfigured && dataLoaded === false;
-```
-
-Wait - actually the better solution is: **don't set `dataLoaded` to `true` for new quotes until user actually makes a change**. Let me reconsider:
-
-**Refined Solution:**
-
-The `dataLoaded` flag tracks whether we've loaded data from the database. For new quotes (no `quoteId`), this should immediately be `true` because there's nothing to load - but we need to ensure state is fresh first.
-
-The key fix: When `quoteId` becomes undefined, reset state AND **temporarily prevent auto-save** by not marking as configured until user actually interacts.
-
-## Final Approach
-
-**File: `src/pages/OICalculator.tsx`**
-
-1. Track previous quoteId to detect navigation from existing quote to new quote:
-
-```tsx
-const prevQuoteIdRef = useRef<string | undefined>(quoteId);
-
-useEffect(() => {
-  const wasExistingQuote = !!prevQuoteIdRef.current;
-  const isNowNewQuote = !quoteId;
+const handleBasePriceBlur = () => {
+  const cleanedValue = basePriceInput.replace(/[^0-9.-]/g, '');
+  const num = parseFloat(cleanedValue);
   
-  if (wasExistingQuote && isNowNewQuote) {
-    // User navigated from an existing quote to new quote mode
-    // Reset ALL state to fresh defaults
-    console.log('Resetting state for new quote');
-    setInputs(NEW_QUOTE_OI_INPUTS);
-    setClientInfo(DEFAULT_CLIENT_INFO);
-    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
-    setQuoteImages({
-      floorPlanUrl: null,
-      buildingRenderUrl: null,
-      heroImageUrl: null,
-      showLogoOverlay: true,
-    });
-    setViewMode('cashflow');
-    setShareUrl(null);
-    setDataLoaded(false);
+  if (!cleanedValue || isNaN(num) || num <= 0) {
+    // Reset to current stored value if invalid
+    setBasePriceInput(
+      currency === 'USD' 
+        ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
+        : inputs.basePrice.toLocaleString()
+    );
+    return;
   }
   
-  prevQuoteIdRef.current = quoteId;
-}, [quoteId]);
+  const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
+  const clamped = Math.min(Math.max(aedValue, 500000), 50000000);
+  setInputs(prev => ({ ...prev, basePrice: clamped }));
+  setBasePriceInput(
+    currency === 'USD' 
+      ? Math.round(clamped / DEFAULT_RATE).toLocaleString()
+      : clamped.toLocaleString()
+  );
+};
 ```
 
-2. Update `dataLoaded` reset to work correctly with new quotes:
+---
 
-For new quotes (no `quoteId`), set `dataLoaded` to `true` **after** the reset occurs, so that:
-- State is definitely fresh defaults
-- Auto-save only triggers when user actually configures something
+### File 2: `src/components/roi/configurator/PaymentSection.tsx`
 
+**Change 1:** Add state for generator (after line 46)
 ```tsx
-// After resetting state for new quote, mark as "loaded" so UI shows
-useEffect(() => {
-  if (!quoteId && !quoteLoading) {
-    // For new quotes with no data to load, immediately mark as ready
-    // BUT only if we've already reset the state (checked via inputs.basePrice being default)
-    if (inputs.basePrice === NEW_QUOTE_OI_INPUTS.basePrice && !clientInfo.developer) {
-      setDataLoaded(true);
-    }
-  }
-}, [quoteId, quoteLoading, inputs.basePrice, clientInfo.developer]);
+const [numPayments, setNumPayments] = useState(4);
+const [paymentInterval, setPaymentInterval] = useState(3);
+const [showGenerator, setShowGenerator] = useState(false);
 ```
 
-Actually, this is getting complex. Let me simplify:
-
-## Simplified Fix
-
-Just reset state when quoteId disappears, and ensure `dataLoaded` is managed correctly:
-
+**Change 2:** Add handleGeneratePayments function (after line 182)
 ```tsx
-// Track if we just reset state (to prevent immediate auto-save)
-const justResetRef = useRef(false);
-
-// Reset state when navigating to new quote
-useEffect(() => {
-  if (!quoteId) {
-    // Reset all state for fresh start
-    setInputs(NEW_QUOTE_OI_INPUTS);
-    setClientInfo(DEFAULT_CLIENT_INFO);
-    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
-    setQuoteImages({
-      floorPlanUrl: null,
-      buildingRenderUrl: null,
-      heroImageUrl: null,
-      showLogoOverlay: true,
+const handleGeneratePayments = () => {
+  // Calculate remaining percentage to distribute
+  const remaining = hasPostHandoverPlan 
+    ? 100 - inputs.downpaymentPercent
+    : inputs.preHandoverPercent - inputs.downpaymentPercent;
+  
+  const percentPerPayment = numPayments > 0 ? remaining / numPayments : 0;
+  const newPayments: PaymentMilestone[] = [];
+  
+  for (let i = 0; i < numPayments; i++) {
+    newPayments.push({
+      id: `auto-${Date.now()}-${i}`,
+      type: 'time',
+      triggerValue: paymentInterval * (i + 1),
+      paymentPercent: parseFloat(percentPerPayment.toFixed(2))
     });
-    setShareUrl(null);
-    setDataLoaded(true); // Ready immediately for new quotes
-    justResetRef.current = true;
-    // Clear the flag after a tick to allow normal operation
-    setTimeout(() => { justResetRef.current = false; }, 100);
-  } else {
-    setDataLoaded(false); // Will load from DB
   }
-}, [quoteId]);
-
-// In auto-save effect, add guard:
-useEffect(() => {
-  if (!dataLoaded) return;
-  if (quoteLoading) return;
-  if (justResetRef.current) return; // Skip auto-save immediately after reset
-  // ... rest of auto-save logic
+  
+  setInputs(prev => ({
+    ...prev,
+    additionalPayments: newPayments
+  }));
+  setShowInstallments(true);
+  setShowGenerator(false);
+};
 ```
 
-## Files to Modify
+**Change 3:** Add Quick Fill UI inside the Installments section (after line 329, inside CollapsibleContent)
+
+Add a "Quick Fill" collapsible with:
+- Number of payments input (1-50)
+- Interval input in months (1-12)
+- "Generate" button
+
+```tsx
+{/* Quick Fill Generator */}
+<Collapsible open={showGenerator} onOpenChange={setShowGenerator} className="mt-2">
+  <CollapsibleTrigger asChild>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="w-full h-6 text-[10px] border-dashed border-[#2a3142] text-gray-500 hover:bg-[#2a3142] hover:text-white"
+    >
+      <Zap className="w-3 h-3 mr-1" />
+      Quick Fill
+      {showGenerator ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+    </Button>
+  </CollapsibleTrigger>
+  <CollapsibleContent className="pt-2">
+    <div className="p-2 bg-[#0d1117] rounded-lg space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <label className="text-[10px] text-gray-500 block mb-0.5"># Payments</label>
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={numPayments}
+            onChange={(e) => setNumPayments(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+            className="h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="text-[10px] text-gray-500 block mb-0.5">Interval (mo)</label>
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={paymentInterval}
+            onChange={(e) => setPaymentInterval(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))}
+            className="h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+          />
+        </div>
+      </div>
+      <div className="text-[10px] text-gray-400 text-center">
+        {numPayments} × {((hasPostHandoverPlan ? 100 - inputs.downpaymentPercent : inputs.preHandoverPercent - inputs.downpaymentPercent) / numPayments).toFixed(2)}% every {paymentInterval} month(s)
+      </div>
+      <Button
+        type="button"
+        onClick={handleGeneratePayments}
+        size="sm"
+        className="w-full h-7 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs"
+      >
+        <Zap className="w-3 h-3 mr-1" />
+        Generate {numPayments} Payments
+      </Button>
+    </div>
+  </CollapsibleContent>
+</Collapsible>
+```
+
+**Change 4:** Import Zap icon (line 2)
+```tsx
+import { Plus, Trash2, Clock, Building2, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar, Zap } from "lucide-react";
+```
+
+---
+
+## Summary of Changes
 
 | File | Changes |
 |------|---------|
-| `src/pages/OICalculator.tsx` | Add state reset when `quoteId` becomes undefined; add guard to prevent auto-save immediately after reset |
+| `PropertySection.tsx` | Add editing ref, guard useEffect, simplify input value, improve blur handler |
+| `PaymentSection.tsx` | Add Quick Fill generator: state, handler function, collapsible UI with inputs |
+
+---
 
 ## Expected Behavior After Fix
 
-1. User is on `/cashflow/abc123` editing a quote
-2. User clicks "New Quote"
-3. App navigates to `/cashflow-generator`
-4. **New behavior:** State resets to `NEW_QUOTE_OI_INPUTS`, `DEFAULT_CLIENT_INFO`, etc.
-5. `isQuoteConfigured` evaluates to `false` (no developer, no projectName, basePrice is default but no quoteId)
-6. Auto-save does NOT trigger
-7. User sees a fresh, empty configurator
-8. When user enters data, auto-save creates a genuinely new quote
+### Property Price Input:
+- Typing works normally without characters appearing/disappearing
+- Alt-tab no longer randomly reformats the value while typing
+- Empty/invalid input resets to last valid value on blur
 
-## Verification
-
-- Navigate from existing quote to "New Quote" - should show fresh form
-- The old quote should NOT be duplicated
-- Auto-save should only create a new quote when user actually configures something
+### Payment Generator:
+- "Quick Fill" button appears below the installments header
+- User can set # of payments (e.g., 4) and interval (e.g., 3 months)
+- Clicking "Generate" creates evenly-distributed installments automatically
+- Works for both standard and post-handover plans
