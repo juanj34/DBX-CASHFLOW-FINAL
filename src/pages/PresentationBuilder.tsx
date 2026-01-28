@@ -7,6 +7,7 @@ import {
   ChevronLeft, ChevronRight, FolderOpen, Pencil, LayoutDashboard,
   LayoutGrid, Presentation, Sparkles, DollarSign, Globe
 } from "lucide-react";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -1051,15 +1052,17 @@ const PresentationBuilder = () => {
 
         {/* Main Content - Live Preview */}
         <main className="flex-1 overflow-hidden">
-          <PresentationPreview
-            items={items}
-            selectedIndex={selectedPreviewIndex}
-            onSelectIndex={setSelectedPreviewIndex}
-            quotes={quotes}
-            currency={currency}
-            language={language}
-            rate={rate}
-          />
+          <LanguageProvider defaultLanguage={language}>
+            <PresentationPreview
+              items={items}
+              selectedIndex={selectedPreviewIndex}
+              onSelectIndex={setSelectedPreviewIndex}
+              quotes={quotes}
+              currency={currency}
+              language={language}
+              rate={rate}
+            />
+          </LanguageProvider>
         </main>
 
         {/* Modals */}

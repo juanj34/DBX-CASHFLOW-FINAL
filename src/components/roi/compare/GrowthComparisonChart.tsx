@@ -1,6 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GrowthComparisonChartProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -14,6 +15,7 @@ export const GrowthComparisonChart = ({
   exchangeRate = 1,
 }: GrowthComparisonChartProps) => {
   const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+  const { t } = useLanguage();
 
   // Build chart data combining all quotes
   const maxYears = 10;
@@ -55,7 +57,7 @@ export const GrowthComparisonChart = ({
 
   return (
     <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-5">
-      <h3 className="text-lg font-semibold text-white mb-4">Property Value Growth</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">{t('propertyValueGrowth') || 'Property Value Growth'}</h3>
       
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -107,7 +109,7 @@ export const GrowthComparisonChart = ({
 
           return (
             <div key={item.quote.id} className="text-center">
-              <p className="text-xs text-gray-500">Value at Year 10</p>
+              <p className="text-xs text-gray-500">{t('valueAtYear10') || 'Value at Year 10'}</p>
               <p 
                 className="text-sm font-semibold"
                 style={{ color: colors[idx % colors.length] }}

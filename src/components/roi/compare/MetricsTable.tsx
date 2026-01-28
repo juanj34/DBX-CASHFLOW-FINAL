@@ -1,5 +1,6 @@
 import { QuoteWithCalculations, ComparisonMetrics } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MetricsTableProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -34,6 +35,7 @@ const MetricRow = ({
 
 export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', exchangeRate = 1 }: MetricsTableProps) => {
   const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+  const { t } = useLanguage();
   const fmt = (v: number) => formatCurrency(v, currency, exchangeRate);
 
   // Format handover date as "Q# YYYY"
@@ -97,7 +99,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
       {/* Header row with quote names */}
       <div className="grid border-b border-[#2a3142] pb-3 mb-2" 
         style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, minmax(120px, 1fr))` }}>
-        <span className="text-theme-text-muted text-sm">Metric</span>
+        <span className="text-theme-text-muted text-sm">{t('metric') || 'Metric'}</span>
         {quotesWithCalcs.map((q, idx) => (
           <span 
             key={q.quote.id} 
@@ -112,31 +114,31 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
       <div className="space-y-0">
         {/* Developer */}
         <MetricRow
-          label="Developer"
+          label={t('developer')}
           values={quotesWithCalcs.map(q => ({ value: q.quote.developer || 'N/A' }))}
           formatter={(v) => v}
         />
         {/* Payment Plan */}
         <MetricRow
-          label="Payment Plan"
+          label={t('paymentPlan')}
           values={quotesWithCalcs.map(q => ({ value: getPaymentPlanLabel(q.quote) }))}
           formatter={(v) => v.type === 'post-handover' 
             ? `Post-HO ${v.label}` 
-            : `Standard ${v.label}`}
+            : `${t('standard') || 'Standard'} ${v.label}`}
         />
         <MetricRow
-          label="Base Price"
+          label={t('basePropertyPrice') || 'Base Price'}
           values={metrics.basePrice}
           formatter={(v) => fmt(v)}
         />
         <MetricRow
-          label="Price / sqft"
+          label={t('pricePerSqft')}
           values={metrics.pricePerSqft}
           formatter={(v) => v !== null ? fmt(v) : 'N/A'}
         />
         {/* Handover Date with time to completion */}
         <MetricRow
-          label="Handover"
+          label={t('handoverDate') || 'Handover'}
           values={quotesWithCalcs.map(q => ({ 
             value: `${formatHandoverDate(q.quote)} (${getTimeToCompletion(q.quote)})` 
           }))}
@@ -144,18 +146,18 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         />
         {/* Monthly Burn Rate */}
         <MetricRow
-          label="Monthly Burn"
+          label={t('monthlyBurn') || 'Monthly Burn'}
           values={quotesWithCalcs.map(q => ({ value: getMonthlyBurn(q) }))}
           formatter={(v) => fmt(v)}
         />
         <MetricRow
-          label="Total Investment"
+          label={t('totalInvestmentLabel') || 'Total Investment'}
           values={metrics.totalInvestment}
           formatter={(v) => fmt(v)}
         />
         {/* Pre-Handover Amount */}
         <MetricRow
-          label="Pre-Handover"
+          label={t('preHandover') || 'Pre-Handover'}
           values={quotesWithCalcs.map(q => ({ 
             value: q.quote.inputs.basePrice * q.quote.inputs.preHandoverPercent / 100 
           }))}
@@ -163,7 +165,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         />
         {/* On Handover Amount */}
         <MetricRow
-          label="On Handover"
+          label={t('onHandover') || 'On Handover'}
           values={quotesWithCalcs.map(q => {
             const hasPostHandover = q.quote.inputs.hasPostHandoverPlan;
             const onHandoverPercent = hasPostHandover 
@@ -175,7 +177,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         />
         {/* Post-Handover Amount - always show */}
         <MetricRow
-          label="Post-Handover"
+          label={t('postHandover') || 'Post-Handover'}
           values={quotesWithCalcs.map(q => {
             if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
             // Use stored postHandoverPercent directly
@@ -186,7 +188,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         />
         {/* Post-Handover Payments Count */}
         <MetricRow
-          label="Post-HO Payments"
+          label={t('postHandoverPayments') || 'Post-HO Payments'}
           values={quotesWithCalcs.map(q => {
             if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
             const postPayments = (q.quote.inputs.additionalPayments || [])
@@ -194,16 +196,16 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
             const fromPostHandover = (q.quote.inputs.postHandoverPayments || []).length;
             return { value: postPayments + fromPostHandover };
           })}
-          formatter={(v) => v > 0 ? `${v} payments` : '—'}
+          formatter={(v) => v > 0 ? `${v} ${t('payments') || 'payments'}` : '—'}
         />
         {/* Y1 Rent Income */}
         <MetricRow
-          label="Y1 Rent Income"
+          label={t('y1RentIncome') || 'Y1 Rent Income'}
           values={quotesWithCalcs.map(q => ({ value: getY1RentIncome(q) }))}
           formatter={(v) => v > 0 ? fmt(v) : 'N/A'}
         />
         <MetricRow
-          label="Rental Yield"
+          label={t('rentalYield')}
           values={metrics.rentalYieldY1}
           formatter={(v) => v !== null ? `${v.toFixed(1)}%` : 'N/A'}
         />
