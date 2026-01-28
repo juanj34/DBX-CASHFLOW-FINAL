@@ -7,42 +7,61 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useClientExport } from '@/hooks/useClientExport';
+import { useExportRenderer } from '@/hooks/useExportRenderer';
+import { OIInputs, OICalculations } from './useOICalculations';
+import { MortgageInputs, MortgageAnalysis } from './useMortgageCalculations';
+import { Currency } from './currencyUtils';
+import { ClientUnitData } from './ClientUnitInfo';
 
-type ViewType = 'cashflow' | 'snapshot' | 'both';
+type ViewType = 'snapshot' | 'cashflow' | 'both';
 type FormatType = 'png' | 'pdf';
 
 interface ExportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  shareToken?: string | null;
-  quoteId?: string;
   projectName?: string;
   activeView?: 'cashflow' | 'snapshot';
-  generateShareToken?: (quoteId: string) => Promise<string | null>;
-  onTokenGenerated?: (token: string) => void;
-  // New props for client-side export
+  // Legacy props (for backward compatibility with OICalculator)
+  quoteId?: string;
   mainContentRef?: React.RefObject<HTMLDivElement>;
   onViewChange?: (view: 'cashflow' | 'snapshot') => void;
+  // Data for export DOM (new approach)
+  inputs?: OIInputs;
+  calculations?: OICalculations;
+  clientInfo?: ClientUnitData;
+  mortgageInputs?: MortgageInputs;
+  mortgageAnalysis?: MortgageAnalysis;
+  exitScenarios?: number[];
+  currency?: Currency;
+  rate?: number;
+  language?: 'en' | 'es';
 }
 
 export const ExportModal = ({
   open,
   onOpenChange,
-  quoteId,
   projectName,
-  activeView = 'cashflow',
-  mainContentRef,
-  onViewChange,
+  activeView = 'snapshot',
+  inputs,
+  calculations,
+  clientInfo,
+  mortgageInputs,
+  mortgageAnalysis,
+  exitScenarios = [],
+  currency = 'AED',
+  rate = 1,
+  language = 'en',
 }: ExportModalProps) => {
   const [viewType, setViewType] = useState<ViewType>(activeView);
   const [format, setFormat] = useState<FormatType>('png');
   const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
 
-  const { exporting, exportView, exportBothViews } = useClientExport({
-    contentRef: mainContentRef as React.RefObject<HTMLElement>,
+  const { exporting, exportSnapshot } = useExportRenderer({
     projectName,
   });
+
+  // Check if we have all required data for export
+  const hasExportData = inputs && calculations && clientInfo && mortgageInputs && mortgageAnalysis;
 
   // Reset to current active view when modal opens
   const handleOpenChange = (isOpen: boolean) => {
@@ -54,69 +73,51 @@ export const ExportModal = ({
   };
 
   const handleExport = useCallback(async () => {
-    if (!mainContentRef?.current) {
+    if (!hasExportData) {
       toast({
         title: 'Cannot export',
-        description: 'Export not available. Please try again.',
+        description: 'Export data not available. Please try again.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Close modal before capturing (so modal doesn't appear in export)
+    // Close modal before capturing
     onOpenChange(false);
     
     // Small delay to let modal close
     await new Promise(resolve => setTimeout(resolve, 200));
 
+    toast({
+      title: 'Preparing export...',
+      description: 'Generating your document. This may take a few seconds.',
+    });
+
     try {
-      if (viewType === 'both' && onViewChange) {
-        // Export both views
-        setProgress({ current: 1, total: 2, label: 'Generating first view...' });
-        
-        const results = await exportBothViews(format, activeView, onViewChange);
-        
-        if (results.cashflowSuccess && results.snapshotSuccess) {
-          toast({
-            title: 'Export complete',
-            description: `Both views have been downloaded as ${format.toUpperCase()}.`,
-          });
-        } else if (results.cashflowSuccess || results.snapshotSuccess) {
-          toast({
-            title: 'Partial export',
-            description: 'One of the exports failed. Please try again.',
-            variant: 'destructive',
-          });
-        } else {
-          throw new Error('Both exports failed');
-        }
+      setProgress({ current: 1, total: 1, label: `Generating ${viewType}...` });
+
+      const result = await exportSnapshot(
+        {
+          inputs: inputs!,
+          calculations: calculations!,
+          clientInfo: clientInfo!,
+          mortgageInputs: mortgageInputs!,
+          mortgageAnalysis: mortgageAnalysis!,
+          exitScenarios,
+          currency,
+          rate,
+          language,
+        },
+        format
+      );
+
+      if (result.success) {
+        toast({
+          title: 'Export complete',
+          description: `Your ${viewType} ${format.toUpperCase()} has been downloaded.`,
+        });
       } else {
-        // Export single view (current view or selected view)
-        const viewToExport = viewType === 'both' ? activeView : viewType;
-        
-        // If we need to switch views first
-        if (viewToExport !== activeView && onViewChange) {
-          onViewChange(viewToExport);
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        setProgress({ current: 1, total: 1, label: `Generating ${viewToExport}...` });
-        
-        const success = await exportView({ format, viewName: viewToExport });
-
-        // Switch back if we changed views
-        if (viewToExport !== activeView && onViewChange) {
-          onViewChange(activeView);
-        }
-
-        if (success) {
-          toast({
-            title: 'Export complete',
-            description: `Your ${viewToExport} ${format.toUpperCase()} has been downloaded.`,
-          });
-        } else {
-          throw new Error('Export failed');
-        }
+        throw new Error(result.error || 'Export failed');
       }
     } catch (err) {
       console.error('Export error:', err);
@@ -128,12 +129,12 @@ export const ExportModal = ({
     } finally {
       setProgress({ current: 0, total: 0, label: '' });
     }
-  }, [mainContentRef, viewType, format, activeView, onViewChange, exportView, exportBothViews, onOpenChange]);
+  }, [hasExportData, viewType, format, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, exportSnapshot, onOpenChange]);
 
   const viewOptions = [
-    { value: 'cashflow', label: 'Cashflow', description: 'Full analysis view' },
     { value: 'snapshot', label: 'Snapshot', description: 'Compact summary' },
-    { value: 'both', label: 'Both', description: 'Export both views' },
+    // { value: 'cashflow', label: 'Cashflow', description: 'Full analysis' }, // TODO: Enable when ExportCashflowDOM is ready
+    // { value: 'both', label: 'Both', description: 'Export both views' },
   ];
 
   const formatOptions = [
@@ -161,7 +162,7 @@ export const ExportModal = ({
             <RadioGroup
               value={viewType}
               onValueChange={(value) => setViewType(value as ViewType)}
-              className="grid grid-cols-3 gap-2"
+              className="grid grid-cols-1 gap-2"
               disabled={exporting}
             >
               {viewOptions.map((option) => (
@@ -240,7 +241,7 @@ export const ExportModal = ({
           {/* Export Button */}
           <Button
             onClick={handleExport}
-            disabled={exporting || !mainContentRef?.current}
+            disabled={exporting || !hasExportData}
             className="w-full bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-medium"
           >
             {exporting ? (
@@ -256,9 +257,9 @@ export const ExportModal = ({
             )}
           </Button>
 
-          {!mainContentRef?.current && (
+          {!hasExportData && (
             <p className="text-xs text-center text-amber-400">
-              Export not available
+              Export data not available
             </p>
           )}
         </div>
