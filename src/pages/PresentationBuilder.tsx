@@ -423,18 +423,7 @@ const PresentationBuilder = () => {
     }
   };
 
-  // Toggle view mode for a quote item
-  const toggleViewMode = useCallback((itemToToggle: PresentationItem) => {
-    setItems(prev => prev.map((item, i) => {
-      if (item.type === 'quote' && item.id === itemToToggle.id && item.viewMode === itemToToggle.viewMode) {
-        return { 
-          ...item, 
-          viewMode: item.viewMode === 'snapshot' ? 'vertical' : 'snapshot' 
-        };
-      }
-      return item;
-    }));
-  }, []);
+  // Removed toggleViewMode - all quotes use snapshot view only
 
   const getQuoteTitle = (quoteId: string) => {
     const quote = quotes.find(q => q.id === quoteId);
@@ -519,31 +508,16 @@ const PresentationBuilder = () => {
           )}
         </div>
 
-        {/* View mode toggle - compact icon button for quotes */}
+        {/* Snapshot indicator - icon only */}
         {item.type === 'quote' && !sidebarCollapsed && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleViewMode(item);
-                }}
-                className={cn(
-                  "p-1 rounded transition-colors",
-                  item.viewMode === 'snapshot' 
-                    ? "text-theme-accent bg-theme-accent/10" 
-                    : "text-theme-text-muted hover:text-theme-text"
-                )}
-              >
-                {item.viewMode === 'snapshot' ? (
-                  <FileText className="w-3.5 h-3.5" />
-                ) : (
-                  <BarChart3 className="w-3.5 h-3.5" />
-                )}
-              </button>
+              <span className="p-1 rounded text-theme-accent bg-theme-accent/10">
+                <FileText className="w-3.5 h-3.5" />
+              </span>
             </TooltipTrigger>
             <TooltipContent side="top">
-              {item.viewMode === 'snapshot' ? 'Snapshot mode' : 'Cashflow mode'} - Click to toggle
+              Snapshot View
             </TooltipContent>
           </Tooltip>
         )}
@@ -1025,7 +999,6 @@ const PresentationBuilder = () => {
             setTimeout(() => setCreateComparisonModalOpen(true), 150);
           }}
           onRemoveItem={removeItem}
-          onToggleViewMode={toggleViewMode}
           getQuoteTitle={getQuoteTitle}
         />
 

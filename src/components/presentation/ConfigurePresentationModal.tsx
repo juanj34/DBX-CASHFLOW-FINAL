@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, FileText, GitCompare, Plus, Trash2, Eye, Layers } from "lucide-react";
+import { Settings, FileText, GitCompare, Plus, Trash2, Layers } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,6 @@ interface ConfigurePresentationModalProps {
   onOpenAddQuotes: () => void;
   onOpenCreateComparison: () => void;
   onRemoveItem: (item: PresentationItem) => void;
-  onToggleViewMode: (item: PresentationItem) => void;
   getQuoteTitle: (quoteId: string) => string;
 }
 
@@ -40,7 +39,6 @@ export const ConfigurePresentationModal = ({
   onOpenAddQuotes,
   onOpenCreateComparison,
   onRemoveItem,
-  onToggleViewMode,
   getQuoteTitle,
 }: ConfigurePresentationModalProps) => {
   const [title, setTitle] = useState(initialTitle);
@@ -152,18 +150,9 @@ export const ConfigurePresentationModal = ({
                                 {item.title || getQuoteTitle(item.id)}
                               </span>
                               <span className="text-xs text-theme-text-muted">
-                                View: {item.viewMode === 'snapshot' ? 'Snapshot' : 'Cashflow'}
+                                Snapshot View
                               </span>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onToggleViewMode(item)}
-                              className="text-theme-text-muted hover:text-theme-accent h-8 px-2"
-                            >
-                              <Eye className="w-3.5 h-3.5 mr-1" />
-                              {item.viewMode === 'snapshot' ? 'Switch to Cashflow' : 'Switch to Snapshot'}
-                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
