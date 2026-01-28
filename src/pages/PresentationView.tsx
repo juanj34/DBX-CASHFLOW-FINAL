@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { 
   ChevronLeft, ChevronRight, FileText, GitCompare, User, Mail, MessageCircle, 
-  Eye, Clock, Calendar
+  Eye, Clock, Calendar, Download, Globe, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/AppLogo";
@@ -13,6 +13,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { PresentationPreview } from "@/components/presentation";
 import { format } from "date-fns";
+import { Currency } from "@/components/roi/currencyUtils";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { ExportModal } from "@/components/roi/ExportModal";
+import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
+import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from "@/components/roi/useMortgageCalculations";
+import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
 
 interface AdvisorProfile {
   full_name: string | null;
@@ -20,6 +33,14 @@ interface AdvisorProfile {
   business_email: string | null;
   whatsapp_number: string | null;
   whatsapp_country_code: string | null;
+}
+
+// Helper to get quote export data
+interface QuoteExportData {
+  inputs: OIInputs;
+  mortgageInputs: MortgageInputs;
+  clientInfo: ClientUnitData;
+  exitScenarios: number[];
 }
 
 const PresentationView = () => {
@@ -34,6 +55,15 @@ const PresentationView = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string>("");
   const [viewStartTime, setViewStartTime] = useState<number>(Date.now());
+  
+  // Global currency and language state
+  const [currency, setCurrency] = useState<Currency>('AED');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const { rate } = useExchangeRate(currency);
+  
+  // Export modal state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportQuoteId, setExportQuoteId] = useState<string | null>(null);
 
   useDocumentTitle(presentation?.title || "Presentation");
 
@@ -182,9 +212,77 @@ const PresentationView = () => {
     return quote.project_name || quote.client_name || "Quote";
   };
 
+  // Get export data for a quote
+  const getQuoteExportData = useCallback((quoteId: string): QuoteExportData | null => {
+    const quote = allQuotes.find(q => q.id === quoteId);
+    if (!quote) return null;
+
+    const savedMortgage = (quote.inputs as unknown as { _mortgageInputs?: Partial<MortgageInputs> })?._mortgageInputs;
+    const mortgageInputs: MortgageInputs = savedMortgage ? {
+      ...DEFAULT_MORTGAGE_INPUTS,
+      ...savedMortgage,
+    } : DEFAULT_MORTGAGE_INPUTS;
+
+    const inputsWithExtras = quote.inputs as unknown as { 
+      _clients?: Array<{ id: string; name: string; country: string; share?: number }>;
+      _clientInfo?: {
+        developer?: string;
+        projectName?: string;
+        unit?: string;
+        unitType?: string;
+        unitSizeSqf?: number;
+        unitSizeM2?: number;
+        brokerName?: string;
+        splitEnabled?: boolean;
+        clientShares?: Array<{ clientId: string; sharePercent: number }>;
+      };
+      _exitScenarios?: number[];
+    };
+
+    const savedClients = inputsWithExtras._clients;
+    const savedClientInfo = inputsWithExtras._clientInfo;
+    const clients = savedClients && savedClients.length > 0
+      ? savedClients
+      : quote.client_name 
+        ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }]
+        : [];
+
+    const clientInfo: ClientUnitData = {
+      developer: savedClientInfo?.developer || quote.developer || '',
+      clients,
+      brokerName: savedClientInfo?.brokerName || '',
+      projectName: savedClientInfo?.projectName || quote.project_name || '',
+      unit: savedClientInfo?.unit || quote.unit || '',
+      unitSizeSqf: savedClientInfo?.unitSizeSqf || quote.unit_size_sqf || 0,
+      unitSizeM2: savedClientInfo?.unitSizeM2 || quote.unit_size_m2 || 0,
+      unitType: savedClientInfo?.unitType || quote.unit_type || '',
+      splitEnabled: savedClientInfo?.splitEnabled || false,
+      clientShares: savedClientInfo?.clientShares || [],
+    };
+
+    return {
+      inputs: quote.inputs,
+      mortgageInputs,
+      clientInfo,
+      exitScenarios: inputsWithExtras._exitScenarios || [],
+    };
+  }, [allQuotes]);
+
+  // Handle download for a single quote
+  const handleDownloadQuote = (quoteId: string) => {
+    setExportQuoteId(quoteId);
+    setExportModalOpen(true);
+  };
+
   // Group items for sidebar display - snapshot only (no cashflow)
   const quoteItems = presentation?.items.filter(item => item.type === 'quote') || [];
   const comparisonItems = presentation?.items.filter(item => item.type === 'comparison' || item.type === 'inline_comparison') || [];
+
+  // Get current export quote data
+  const exportQuoteData = useMemo(() => {
+    if (!exportQuoteId) return null;
+    return getQuoteExportData(exportQuoteId);
+  }, [exportQuoteId, getQuoteExportData]);
 
   if (loading) {
     return (
@@ -214,28 +312,46 @@ const PresentationView = () => {
     const isComparison = item.type === 'comparison' || item.type === 'inline_comparison';
     
     return (
-      <button
-        onClick={() => setSelectedIndex(index)}
-        className={cn(
-          "w-full flex items-center gap-2 p-2 rounded-lg transition-all text-left",
-          isSelected
-            ? isComparison
-              ? "bg-purple-500/20 border border-purple-500/30"
-              : "bg-theme-accent/20 border border-theme-accent/30"
-            : "hover:bg-theme-bg/50 border border-transparent"
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setSelectedIndex(index)}
+          className={cn(
+            "flex-1 flex items-center gap-2 p-2 rounded-lg transition-all text-left",
+            isSelected
+              ? isComparison
+                ? "bg-purple-500/20 border border-purple-500/30"
+                : "bg-theme-accent/20 border border-theme-accent/30"
+              : "hover:bg-theme-bg/50 border border-transparent"
+          )}
+        >
+          {isComparison ? (
+            <GitCompare className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          ) : (
+            <FileText className="w-4 h-4 text-theme-accent flex-shrink-0" />
+          )}
+          <span className="text-sm text-theme-text truncate">
+            {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
+          </span>
+        </button>
+        {/* Download button for quotes */}
+        {item.type === 'quote' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-theme-text-muted hover:text-theme-accent shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadQuote(item.id);
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+          </Button>
         )}
-      >
-        {isComparison ? (
-          <GitCompare className="w-4 h-4 text-purple-400 flex-shrink-0" />
-        ) : (
-          <FileText className="w-4 h-4 text-theme-accent flex-shrink-0" />
-        )}
-        <span className="text-sm text-theme-text truncate">
-          {item.title || (item.type === 'quote' ? getQuoteTitle(item.id) : "Comparison")}
-        </span>
-      </button>
+      </div>
     );
   };
+
+  const currencyOptions: Currency[] = ['AED', 'USD', 'EUR', 'GBP', 'COP'];
 
   return (
     <div className="min-h-screen bg-theme-bg flex">
@@ -312,6 +428,73 @@ const PresentationView = () => {
           </div>
         </div>
 
+        {/* Currency & Language Selectors */}
+        <div className="p-4 border-b border-theme-border">
+          <div className="flex items-center gap-2">
+            {/* Currency Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
+                >
+                  <DollarSign className="w-3.5 h-3.5 mr-1.5" />
+                  {currency}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-theme-card border-theme-border">
+                {currencyOptions.map((c) => (
+                  <DropdownMenuItem 
+                    key={c}
+                    onClick={() => setCurrency(c)}
+                    className={cn(
+                      "text-theme-text hover:bg-theme-bg cursor-pointer",
+                      currency === c && "bg-theme-accent/10 text-theme-accent"
+                    )}
+                  >
+                    {c}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Language Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
+                >
+                  <Globe className="w-3.5 h-3.5 mr-1.5" />
+                  {language.toUpperCase()}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-theme-card border-theme-border">
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('en')}
+                  className={cn(
+                    "text-theme-text hover:bg-theme-bg cursor-pointer",
+                    language === 'en' && "bg-theme-accent/10 text-theme-accent"
+                  )}
+                >
+                  English
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('es')}
+                  className={cn(
+                    "text-theme-text hover:bg-theme-bg cursor-pointer",
+                    language === 'es' && "bg-theme-accent/10 text-theme-accent"
+                  )}
+                >
+                  Español
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
         {/* Navigation Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Properties - All Quotes (snapshot view only) */}
@@ -354,12 +537,15 @@ const PresentationView = () => {
       </aside>
 
       {/* Main Content - Preview */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-auto">
         <PresentationPreview
           items={presentation.items}
           selectedIndex={selectedIndex}
           onSelectIndex={setSelectedIndex}
           quotes={allQuotes}
+          currency={currency}
+          language={language}
+          rate={rate}
         />
       </main>
 
@@ -369,7 +555,76 @@ const PresentationView = () => {
         totalItems={presentation.items.length}
         onNavigate={setSelectedIndex}
       />
+
+      {/* Export Modal */}
+      {exportQuoteData && (
+        <ExportQuoteModal
+          open={exportModalOpen}
+          onOpenChange={setExportModalOpen}
+          exportData={exportQuoteData}
+          projectName={allQuotes.find(q => q.id === exportQuoteId)?.project_name || 'investment'}
+          currency={currency}
+          rate={rate}
+          language={language}
+        />
+      )}
     </div>
+  );
+};
+
+// Export modal wrapper that handles calculations
+const ExportQuoteModal = ({ 
+  open, 
+  onOpenChange, 
+  exportData,
+  projectName,
+  currency,
+  rate,
+  language,
+}: { 
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  exportData: QuoteExportData;
+  projectName: string;
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
+}) => {
+  const calculations = useOICalculations(exportData.inputs);
+  const mortgageAnalysis = useMortgageCalculations({
+    mortgageInputs: exportData.mortgageInputs,
+    basePrice: exportData.inputs.basePrice,
+    preHandoverPercent: exportData.inputs.preHandoverPercent,
+    monthlyRent: calculations?.holdAnalysis?.annualRent ? calculations.holdAnalysis.annualRent / 12 : 0,
+    monthlyServiceCharges: calculations?.holdAnalysis?.annualServiceCharges ? calculations.holdAnalysis.annualServiceCharges / 12 : 0,
+  });
+
+  const exitScenarios = useMemo(() => {
+    if (exportData.exitScenarios && exportData.exitScenarios.length > 0) {
+      return exportData.exitScenarios;
+    }
+    if (!calculations) return [12, 24, 36];
+    return calculateAutoExitScenarios(calculations.totalMonths);
+  }, [exportData.exitScenarios, calculations]);
+
+  if (!calculations) return null;
+
+  return (
+    <ExportModal
+      open={open}
+      onOpenChange={onOpenChange}
+      projectName={projectName}
+      activeView="snapshot"
+      inputs={exportData.inputs}
+      calculations={calculations}
+      clientInfo={exportData.clientInfo}
+      mortgageInputs={exportData.mortgageInputs}
+      mortgageAnalysis={mortgageAnalysis}
+      exitScenarios={exitScenarios}
+      currency={currency}
+      rate={rate}
+      language={language}
+    />
   );
 };
 
