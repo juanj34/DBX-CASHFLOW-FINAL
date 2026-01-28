@@ -675,11 +675,17 @@ const OICalculatorContent = () => {
         <ExportModal
           open={exportModalOpen}
           onOpenChange={setExportModalOpen}
-          quoteId={quote?.id}
           projectName={clientInfo.projectName}
           activeView={viewMode}
-          mainContentRef={mainContentRef}
-          onViewChange={setViewMode}
+          inputs={inputs}
+          calculations={calculations}
+          clientInfo={clientInfo}
+          mortgageInputs={mortgageInputs}
+          mortgageAnalysis={mortgageAnalysis}
+          exitScenarios={exitScenarios}
+          currency={currency}
+          rate={rate}
+          language={language as 'en' | 'es'}
         />
       </DashboardLayout>
     </CashflowErrorBoundary>
