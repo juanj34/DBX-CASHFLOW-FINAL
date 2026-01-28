@@ -1,169 +1,194 @@
 
-# Plan: Fix Handover Highlighting Logic + Post-Handover Card Bugs
+# Plan: Fix Quote Duplication When Creating New Quote
 
-## Issues Identified
+## Problem Summary
 
-### Issue 1: "Handover" badge shows on POST-HANDOVER items (INCORRECT)
-**Current behavior:** Month 18-20 (Jul-Sep 2027) show the green "Handover" badge even though they are in the POST-HANDOVER section.
+When you're editing an existing quote and click "New Quote", the app navigates to `/cashflow-generator` but **does NOT reset the component state**. The React state (`inputs`, `clientInfo`, `mortgageInputs`) still contains data from the previous quote.
 
-**Root cause:** The logic `isPaymentInHandoverQuarter()` returns `true` for payments in the handover quarter. But if a payment is already categorized as "post-handover" (meaning it's AT or AFTER handover start), it shouldn't display the "Handover" badge - that badge should only mark pre-handover payments that happen during the delivery quarter.
+Since `isQuoteConfigured` evaluates to `true` (because the state still has `clientInfo.developer`, `inputs.basePrice`, etc.), the auto-save logic thinks this is meaningful user input and **immediately creates a new quote with the old data** - causing the duplication.
 
-**The fix:** In the POST-HANDOVER section, we should NOT apply the handover highlighting at all. Payments in that section are already past/at handover - the "Handover" badge is redundant and confusing.
+## Root Cause
 
-### Issue 2: Post-Handover Coverage Card shows "Post-HO Payments (0%)"
-**Current behavior:** Line 155 in `CompactPostHandoverCard.tsx`:
-```tsx
-label={`${t('postHandoverPayments')} (${inputs.postHandoverPercent || 0}%)`}
-```
-This uses `inputs.postHandoverPercent` which is `undefined` for derived payments.
+- `useState(NEW_QUOTE_OI_INPUTS)` only sets the initial value on **first mount**
+- When navigating from `/cashflow/:id` to `/cashflow-generator`, the `OICalculatorContent` component **does not remount** - it just re-renders with the URL change
+- The stale state triggers auto-save, duplicating the quote
 
-**The fix:** Calculate the actual percentage from the derived payments:
-```tsx
-const postHandoverPercent = postHandoverPaymentsToUse.reduce((sum, p) => sum + p.paymentPercent, 0);
-// Then use postHandoverPercent in the label
-```
+## Solution
 
-### Issue 3: Missing EUR (secondary currency) in Post-Handover Coverage Card
-**Current behavior:** Some rows like "Monthly Equivalent" only show AED values, not the dual currency.
+**Reset ALL state explicitly when navigating to `/cashflow-generator` (no quoteId).**
 
-**The fix:** Add `secondaryValue` prop to all `DottedRow` components in the card.
-
----
+We need to detect when the route changes from having a `quoteId` to not having one, and **forcefully reset** all the component state to fresh defaults.
 
 ## Technical Changes
 
-### File 1: `src/components/roi/snapshot/CompactPaymentTable.tsx`
+### File: `src/pages/OICalculator.tsx`
 
-**Change:** Remove handover quarter highlighting from the POST-HANDOVER section (lines 355-394).
-
-The payments in the post-handover section are BY DEFINITION at or after handover, so the "Handover" badge is redundant. Only pre-handover payments that coincide with the delivery quarter should get the badge.
+**Change 1:** Add a `useEffect` that resets state when `quoteId` becomes undefined (new quote mode)
 
 ```tsx
-// REMOVE from post-handover section:
-// - isHandoverQuarter check and styling
-// - The green border/background highlighting
-// - The "Handover" badge
+// Around line 194, where setDataLoaded(false) is triggered on quoteId change
 
-// The post-handover section should render plain rows:
-{derivedPostHandoverPayments.map((payment, index) => {
-  const amount = basePrice * (payment.paymentPercent / 100);
-  const dateStr = getPaymentDate(payment);
-  const label = `${getPaymentLabel(payment)} (${dateStr})`;
+// Reset ALL state when starting a new quote (no quoteId)
+useEffect(() => {
+  if (!quoteId) {
+    // Clear all state to fresh defaults for a brand new quote
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setClientInfo(DEFAULT_CLIENT_INFO);
+    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+    setQuoteImages({
+      floorPlanUrl: null,
+      buildingRenderUrl: null,
+      heroImageUrl: null,
+      showLogoOverlay: true,
+    });
+    setViewMode('cashflow');
+    setShareUrl(null);
+    setDataLoaded(false);
+  }
+}, [quoteId]);
+```
+
+**Change 2:** Update the existing `useEffect` that resets `dataLoaded` to be more comprehensive
+
+Current code (line 194):
+```tsx
+useEffect(() => { setDataLoaded(false); }, [quoteId]);
+```
+
+This will be replaced/merged with the new comprehensive reset effect above.
+
+**Change 3:** Add a guard to the auto-save effect to skip when state is being reset
+
+The auto-save effect (lines 227-244) currently triggers immediately when state appears "configured". We should add an additional condition:
+
+```tsx
+// Only allow auto-create after component has stabilized
+// (prevents duplicates during navigation/reset)
+const isStableForAutoCreate = !quoteId && isQuoteConfigured && dataLoaded === false;
+```
+
+Wait - actually the better solution is: **don't set `dataLoaded` to `true` for new quotes until user actually makes a change**. Let me reconsider:
+
+**Refined Solution:**
+
+The `dataLoaded` flag tracks whether we've loaded data from the database. For new quotes (no `quoteId`), this should immediately be `true` because there's nothing to load - but we need to ensure state is fresh first.
+
+The key fix: When `quoteId` becomes undefined, reset state AND **temporarily prevent auto-save** by not marking as configured until user actually interacts.
+
+## Final Approach
+
+**File: `src/pages/OICalculator.tsx`**
+
+1. Track previous quoteId to detect navigation from existing quote to new quote:
+
+```tsx
+const prevQuoteIdRef = useRef<string | undefined>(quoteId);
+
+useEffect(() => {
+  const wasExistingQuote = !!prevQuoteIdRef.current;
+  const isNowNewQuote = !quoteId;
   
-  return (
-    <div key={index} className="flex items-center justify-between gap-2">
-      <span className="text-xs text-theme-text-muted truncate">{label}</span>
-      <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
-        {getDualValue(amount).primary}
-        {currency !== 'AED' && (
-          <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
-        )}
-      </span>
-    </div>
-  );
-})}
+  if (wasExistingQuote && isNowNewQuote) {
+    // User navigated from an existing quote to new quote mode
+    // Reset ALL state to fresh defaults
+    console.log('Resetting state for new quote');
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setClientInfo(DEFAULT_CLIENT_INFO);
+    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+    setQuoteImages({
+      floorPlanUrl: null,
+      buildingRenderUrl: null,
+      heroImageUrl: null,
+      showLogoOverlay: true,
+    });
+    setViewMode('cashflow');
+    setShareUrl(null);
+    setDataLoaded(false);
+  }
+  
+  prevQuoteIdRef.current = quoteId;
+}, [quoteId]);
 ```
 
----
+2. Update `dataLoaded` reset to work correctly with new quotes:
 
-### File 2: `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
-
-**Change 1:** Calculate percentage from derived payments (around line 67-70)
+For new quotes (no `quoteId`), set `dataLoaded` to `true` **after** the reset occurs, so that:
+- State is definitely fresh defaults
+- Auto-save only triggers when user actually configures something
 
 ```tsx
-// Calculate post-handover percentage from actual payments
-const postHandoverPercent = postHandoverPaymentsToUse.reduce(
-  (sum, p) => sum + p.paymentPercent, 0
-);
+// After resetting state for new quote, mark as "loaded" so UI shows
+useEffect(() => {
+  if (!quoteId && !quoteLoading) {
+    // For new quotes with no data to load, immediately mark as ready
+    // BUT only if we've already reset the state (checked via inputs.basePrice being default)
+    if (inputs.basePrice === NEW_QUOTE_OI_INPUTS.basePrice && !clientInfo.developer) {
+      setDataLoaded(true);
+    }
+  }
+}, [quoteId, quoteLoading, inputs.basePrice, clientInfo.developer]);
 ```
 
-**Change 2:** Use calculated percentage in label (line 155)
+Actually, this is getting complex. Let me simplify:
+
+## Simplified Fix
+
+Just reset state when quoteId disappears, and ensure `dataLoaded` is managed correctly:
 
 ```tsx
-<DottedRow 
-  label={`${t('postHandoverPayments')} (${Math.round(postHandoverPercent)}%)`}
-  value={getDualValue(postHandoverTotal).primary}
-  secondaryValue={getDualValue(postHandoverTotal).secondary}
-/>
+// Track if we just reset state (to prevent immediate auto-save)
+const justResetRef = useRef(false);
+
+// Reset state when navigating to new quote
+useEffect(() => {
+  if (!quoteId) {
+    // Reset all state for fresh start
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setClientInfo(DEFAULT_CLIENT_INFO);
+    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+    setQuoteImages({
+      floorPlanUrl: null,
+      buildingRenderUrl: null,
+      heroImageUrl: null,
+      showLogoOverlay: true,
+    });
+    setShareUrl(null);
+    setDataLoaded(true); // Ready immediately for new quotes
+    justResetRef.current = true;
+    // Clear the flag after a tick to allow normal operation
+    setTimeout(() => { justResetRef.current = false; }, 100);
+  } else {
+    setDataLoaded(false); // Will load from DB
+  }
+}, [quoteId]);
+
+// In auto-save effect, add guard:
+useEffect(() => {
+  if (!dataLoaded) return;
+  if (quoteLoading) return;
+  if (justResetRef.current) return; // Skip auto-save immediately after reset
+  // ... rest of auto-save logic
 ```
-
-**Change 3:** Add secondary currency to Monthly Equivalent row (line 163)
-
-```tsx
-<DottedRow 
-  label={t('monthlyEquivalent')}
-  value={`${getDualValue(monthlyEquivalent).primary}/mo`}
-  secondaryValue={currency !== 'AED' ? `${getDualValue(monthlyEquivalent).secondary}/mo` : null}
-  bold
-  valueClassName="text-purple-400"
-/>
-```
-
-**Change 4:** Add secondary currency to Rental Income row (line 171)
-
-```tsx
-<DottedRow 
-  label={t('rentalIncome')}
-  value={`+${getDualValue(monthlyRent).primary}/mo`}
-  secondaryValue={currency !== 'AED' ? `+${getDualValue(monthlyRent).secondary}/mo` : null}
-  valueClassName="text-cyan-400"
-/>
-```
-
-**Change 5:** Add secondary currency to Monthly Gap row (line 179)
-
-```tsx
-<DottedRow 
-  label={isFullyCovered ? t('monthlySurplus') : t('monthlyGap')}
-  value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/mo`}
-  secondaryValue={currency !== 'AED' ? `${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).secondary}/mo` : null}
-  bold
-  valueClassName={isFullyCovered ? 'text-green-400' : 'text-red-400'}
-/>
-```
-
----
-
-## Visual Result After Fix
-
-### Snapshot Payment Table - POST-HANDOVER Section:
-```
-POST-HANDOVER (34%)
-Month 18 (Jul 2027)              AED 12,284 (2.806 €)   ← NO handover badge
-Month 19 (Aug 2027)              AED 12,284 (2.806 €)   ← NO handover badge  
-Month 20 (Sep 2027)              AED 12,284 (2.806 €)   ← NO handover badge
-Month 21 (Oct 2027)              AED 12,284 (2.806 €)
-...
-```
-
-### Post-Handover Coverage Card:
-```
-POST-HANDOVER COVERAGE                     39mo @ Q4 2030
-─────────────────────────────────────────────────────────
-Post-HO Payments (34%)........AED 417,654 (95.399 €)
-Monthly Equivalent............AED 10,709/mo (2.447 €/mo)
-Rental Income.................+AED 7,511/mo (+1.716 €/mo)
-─────────────────────────────────────────────────────────
-Monthly Gap...................-AED 3,198/mo (-731 €/mo)
-
-◉ Partial   ↘ AED 124,720 gap over 39mo
-```
-
----
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Remove handover highlighting from POST-HANDOVER section |
-| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Calculate % from derived payments; add dual currency to all rows |
+| `src/pages/OICalculator.tsx` | Add state reset when `quoteId` becomes undefined; add guard to prevent auto-save immediately after reset |
 
----
+## Expected Behavior After Fix
 
-## Summary
+1. User is on `/cashflow/abc123` editing a quote
+2. User clicks "New Quote"
+3. App navigates to `/cashflow-generator`
+4. **New behavior:** State resets to `NEW_QUOTE_OI_INPUTS`, `DEFAULT_CLIENT_INFO`, etc.
+5. `isQuoteConfigured` evaluates to `false` (no developer, no projectName, basePrice is default but no quoteId)
+6. Auto-save does NOT trigger
+7. User sees a fresh, empty configurator
+8. When user enters data, auto-save creates a genuinely new quote
 
-1. **Handover badge removal from Post-HO section** - The badge should only appear on pre-handover payments that happen to fall in the delivery quarter. Post-handover payments are by definition at/after handover, so the badge is redundant.
+## Verification
 
-2. **Fix 0% label** - Calculate percentage from the actual derived payments instead of using `inputs.postHandoverPercent` which may be undefined.
-
-3. **Add EUR display** - Show secondary currency on all monetary values in the card.
+- Navigate from existing quote to "New Quote" - should show fresh form
+- The old quote should NOT be duplicated
+- Auto-save should only create a new quote when user actually configures something
