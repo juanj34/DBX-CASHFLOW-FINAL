@@ -54,6 +54,27 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
     return 'Now';
   };
 
+  // Get payment plan label (Standard vs Post-HO with percentage breakdown)
+  const getPaymentPlanLabel = (quote: QuoteWithCalculations['quote']) => {
+    const hasPostHandover = quote.inputs.hasPostHandoverPlan;
+    const preHandoverTotal = quote.inputs.preHandoverPercent;
+    
+    if (hasPostHandover) {
+      const onHandover = quote.inputs.onHandoverPercent || 0;
+      const postHandover = 100 - preHandoverTotal - onHandover;
+      return {
+        type: 'post-handover',
+        label: `${Math.round(preHandoverTotal)}/${Math.round(onHandover)}/${Math.round(postHandover)}`
+      };
+    } else {
+      const onHandover = 100 - preHandoverTotal;
+      return {
+        type: 'standard',
+        label: `${Math.round(preHandoverTotal)}/${Math.round(onHandover)}`
+      };
+    }
+  };
+
   // Calculate monthly burn rate
   const getMonthlyBurn = (item: QuoteWithCalculations) => {
     const totalPreHandover = item.calculations.totalEntryCosts + 
@@ -90,6 +111,14 @@ export const MetricsTable = ({ quotesWithCalcs, metrics }: MetricsTableProps) =>
           label="Developer"
           values={quotesWithCalcs.map(q => ({ value: q.quote.developer || 'N/A' }))}
           formatter={(v) => v}
+        />
+        {/* Payment Plan */}
+        <MetricRow
+          label="Payment Plan"
+          values={quotesWithCalcs.map(q => ({ value: getPaymentPlanLabel(q.quote) }))}
+          formatter={(v) => v.type === 'post-handover' 
+            ? `Post-HO ${v.label}` 
+            : `Standard ${v.label}`}
         />
         <MetricRow
           label="Base Price"
