@@ -528,6 +528,29 @@ const PresentationView = () => {
           )}
         </div>
 
+        {/* Export All Section */}
+        {quoteItems.length > 1 && (
+          <div className="p-4 border-t border-theme-border">
+            <p className="text-xs uppercase tracking-wider text-theme-text-muted font-semibold mb-2">
+              Downloads
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
+              onClick={() => {
+                // Export first quote, user can use individual buttons for others
+                if (quoteItems.length > 0) {
+                  handleDownloadQuote(quoteItems[0].id);
+                }
+              }}
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export All ({quoteItems.length})
+            </Button>
+          </div>
+        )}
+
         {/* Keyboard Nav Hint */}
         <div className="p-4 border-t border-theme-border">
           <p className="text-xs text-theme-text-muted text-center">

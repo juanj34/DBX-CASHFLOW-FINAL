@@ -34,7 +34,8 @@ export const PaymentComparison = ({
           
           if (hasPostHandover) {
             onHandover = quote.inputs.onHandoverPercent || 0;
-            postHandoverPercent = 100 - preHandoverTotal - onHandover;
+            // Use stored postHandoverPercent directly
+            postHandoverPercent = quote.inputs.postHandoverPercent || 0;
           } else {
             onHandover = 100 - preHandoverTotal;
             postHandoverPercent = 0;
@@ -167,18 +168,27 @@ export const PaymentComparison = ({
                   </span>
                 </div>
                 {hasPostHandover && postHandoverPercent > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-2">
-                      <span 
-                        className="w-3 h-3 rounded" 
-                        style={{ background: `repeating-linear-gradient(45deg, ${color}40, ${color}40 2px, ${color}20 2px, ${color}20 4px)` }} 
-                      />
-                      <span className="text-theme-text-muted">Post-Handover</span>
-                    </span>
-                    <span className="text-white font-medium">
-                      {formatCurrency(postHandoverAmount, currency, exchangeRate)}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-3 h-3 rounded" 
+                          style={{ background: `repeating-linear-gradient(45deg, ${color}40, ${color}40 2px, ${color}20 2px, ${color}20 4px)` }} 
+                        />
+                        <span className="text-theme-text-muted">Post-Handover</span>
+                      </span>
+                      <span className="text-white font-medium">
+                        {formatCurrency(postHandoverAmount, currency, exchangeRate)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-theme-text-muted">
+                      <span>Post-HO payments</span>
+                      <span>
+                        {((quote.inputs.additionalPayments || []).filter((p: any) => p.type === 'post-handover').length) + 
+                         ((quote.inputs.postHandoverPayments || []).length)} installments
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
 
