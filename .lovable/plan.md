@@ -1,14 +1,47 @@
 
 
-# Plan: Scrollable Payment List + "Cash Until Handover" Summary
+# Plan: Fix Cashflow View Layout & Payment Display Issues
 
-## Understanding the Requirements
+## Issues Identified
 
-1. **Scrollable payments list** - When there are many payments (like 51 in your case), make The Journey and Post-Handover sections scrollable in the snapshot view
-2. **Remove subtotals** - Remove the "Subtotal" rows from The Journey and Post-Handover sections
-3. **Add "Total Until Handover" summary** - Show the total cash needed until handover (Entry + Journey + On Handover) so clients know how much money they need before rental income starts
-4. **Show all payments** - Continue showing all individual payments including post-handover
-5. **Fix post-handover bug** - Derive post-handover payments from `additionalPayments` (where they're stored) instead of the empty `postHandoverPayments` array
+1. **Currency Display Below Instead of Right** - When converting to a secondary currency, the value appears below the primary currency, making the list very long vertically
+2. **Summary Card Too Large** - The "Total Cash Until Handover" summary card takes too much space
+3. **Scroll Not Working** - Users can't scroll to see all payments in the cashflow view
+4. **"Total Cash Until Handover" Position** - Should be at the bottom, not in the middle of the payment breakdown
+5. **Handover Quarter Highlighting** - Need to highlight payments that fall within the handover quarter months
+
+---
+
+## Solution Overview
+
+### 1. Currency Display: Side-by-Side Instead of Stacked
+
+**Current (stacked - takes too much vertical space):**
+```
+Month 1 (Feb'25)           AED 25,400
+                           $6,920
+```
+
+**New (inline - same row):**
+```
+Month 1 (Feb'25)           AED 25,400 ($6,920)
+```
+
+### 2. Summary Card: Make Compact
+
+Reduce the "Total Cash Until Handover" summary to a simpler single-line format that doesn't dominate the view.
+
+### 3. Fix Scroll: Ensure ScrollArea Works
+
+The ScrollArea components are there but may not be working due to container constraints. Need to ensure the parent container allows scrolling.
+
+### 4. Move Summary to Bottom
+
+Move the "Total Cash Until Handover" summary from its current position (after Handover section) to the very bottom of the payment breakdown.
+
+### 5. Highlight Handover Quarter
+
+Payments in the handover quarter are already highlighted with `bg-green-500/10`, but we should ensure only the specific months within the handover quarter are highlighted, not all months after.
 
 ---
 
@@ -16,108 +49,77 @@
 
 ### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-#### 1. Import ScrollArea Component
+#### Change 1: Inline Currency Display for Payment Rows (Lines 310-315, 376-380)
 
-```typescript
-import { ScrollArea } from '@/components/ui/scroll-area';
-```
-
-#### 2. Derive Post-Handover Payments from additionalPayments (Lines 107-125)
-
-Currently the component reads from `inputs.postHandoverPayments` which is always empty. Fix by filtering `additionalPayments`:
-
-```typescript
-// Derive post-handover payments from additionalPayments by date
-const derivedPostHandoverPayments = hasPostHandoverPlan
-  ? sortedPayments.filter(p => {
-      if (p.type !== 'time') return false;
-      return isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
-    })
-  : [];
-
-// Update preHandoverPayments to exclude post-handover ones
-const preHandoverPayments = hasPostHandoverPlan
-  ? sortedPayments.filter(p => {
-      if (p.type !== 'time') return true;
-      return !isPaymentPostHandover(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
-    })
-  : sortedPayments;
-
-// Calculate totals from derived arrays
-postHandoverTotal = derivedPostHandoverPayments.reduce(
-  (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
-);
-```
-
-#### 3. Calculate "Total Until Handover" (New)
-
-Add a new calculation for the total cash needed before rental income:
-
-```typescript
-// Total Cash Until Handover = Entry + Journey + On Handover
-const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
-```
-
-#### 4. Wrap Payment Lists in ScrollArea (The Journey Section)
-
-Make the payments scrollable with a max height:
-
+**Current:**
 ```tsx
-<div className="space-y-1">
-  <ScrollArea className="max-h-[200px]">
-    <div className="space-y-1 pr-2">
-      {preHandoverPayments.map((payment, index) => (
-        // ... payment rows
-      ))}
-    </div>
-  </ScrollArea>
-  {/* NO subtotal row here anymore */}
+<div className="text-right flex-shrink-0">
+  <div className="text-xs font-mono text-theme-text">{getDualValue(amount).primary}</div>
+  {currency !== 'AED' && (
+    <div className="text-[10px] text-theme-text-muted">{getDualValue(amount).secondary}</div>
+  )}
 </div>
 ```
 
-#### 5. Wrap Post-Handover Section in ScrollArea
-
-Same treatment for post-handover payments:
-
+**New:**
 ```tsx
-<ScrollArea className="max-h-[150px]">
-  <div className="space-y-1 pr-2">
-    {derivedPostHandoverPayments.map((payment, index) => (
-      // ... payment rows
-    ))}
-  </div>
-</ScrollArea>
-{/* NO subtotal row here anymore */}
+<span className="text-xs font-mono text-theme-text whitespace-nowrap">
+  {getDualValue(amount).primary}
+  {currency !== 'AED' && getDualValue(amount).secondary && (
+    <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
+  )}
+</span>
 ```
 
-#### 6. Remove Subtotal Rows
+#### Change 2: Compact Summary Card (Lines 342-358)
 
-Delete these blocks:
-- Lines 319-327: Journey subtotal
-- Lines 375-383: Post-handover subtotal
-
-#### 7. Add "Total Until Handover" Summary (After Handover Section)
-
-Add a prominent summary card showing the cash needed before rental starts:
-
+**Current (large card):**
 ```tsx
-{/* Cash Until Handover Summary - Key metric for clients */}
 <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-2">
-  <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-1">
+  <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-1 flex items-center gap-1">
+    <Wallet className="w-3 h-3" />
     Total Cash Until Handover
   </div>
-  <DottedRow 
-    label="Entry + Journey + Handover"
-    value={getDualValue(totalUntilHandover).primary}
-    secondaryValue={getDualValue(totalUntilHandover).secondary}
-    bold
-    valueClassName="text-theme-accent"
-  />
+  <DottedRow ... />
   <p className="text-[10px] text-theme-text-muted mt-1">
-    Cash required before rental income starts (1 month after handover)
+    Cash required before rental income starts
   </p>
 </div>
 ```
+
+**New (compact inline):**
+```tsx
+<div className="flex items-center justify-between bg-theme-accent/5 border border-theme-accent/20 rounded-md px-2 py-1.5">
+  <span className="text-[10px] text-theme-accent font-medium flex items-center gap-1">
+    <Wallet className="w-3 h-3" />
+    Cash Until Handover
+  </span>
+  <span className="text-xs font-mono font-semibold text-theme-accent">
+    {getDualValue(totalUntilHandover).primary}
+    {currency !== 'AED' && getDualValue(totalUntilHandover).secondary && (
+      <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
+    )}
+  </span>
+</div>
+```
+
+#### Change 3: Move Summary to Bottom
+
+Move the summary from after the Handover section (line 342) to after the Grand Total section (before Value Differentiators, around line 417).
+
+#### Change 4: Fix ScrollArea Height Constraints
+
+Ensure the ScrollArea components have proper height constraints that work within the card:
+
+```tsx
+<ScrollArea className="max-h-[200px] overflow-y-auto">
+```
+
+Also, the parent card should not restrict overflow. Remove `overflow-hidden` from the card container if present and ensure proper flex layout.
+
+#### Change 5: Ensure Only Handover Quarter Months are Highlighted
+
+The current `isPaymentInHandoverQuarter` function already checks for payments within the quarter. Verify it only highlights months 1-3 of the handover quarter, not post-handover payments.
 
 ---
 
@@ -126,71 +128,51 @@ Add a prominent summary card showing the cash needed before rental starts:
 ### Before:
 ```
 ┌─────────────────────────────────────────────────┐
-│ PAYMENT BREAKDOWN                               │
-├─────────────────────────────────────────────────┤
-│ THE ENTRY                                       │
-│ • Downpayment...              AED 508,000       │
-│ • DLD Fee...                  AED 101,600       │
-│ └ Total Entry                 AED 649,600       │
-├─────────────────────────────────────────────────┤
 │ THE JOURNEY (23mo)                              │
-│ • Month 1 (Feb'25)            AED 25,400        │
-│ • Month 2...                  AED 25,400        │  ← No scroll
-│ • ... (only pre-handover shown)                 │  ← Post-HO missing!
-│ └ Subtotal                    AED 558,800       │  ← Confusing subtotal
+│ • Month 1 (Feb'25)             AED 25,400       │
+│                                $6,920           │  ← Stacked = tall
+│ • Month 2 (Mar'25)             AED 25,400       │
+│                                $6,920           │
+│ ... (can't scroll to see more)                  │
+├─────────────────────────────────────────────────┤
+│ ON HANDOVER (0%)                                │
+├─────────────────────────────────────────────────┤
+│ ┌─ 💰 TOTAL CASH UNTIL HANDOVER ────────────┐   │  ← Big card, wrong position
+│ │ Entry + Journey + Handover  AED 1,208,400 │   │
+│ │ Cash required before rental income starts │   │
+│ └────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────┤
 │ POST-HANDOVER                                   │
-│ (nothing shown - empty array!)                  │  ← BUG
 └─────────────────────────────────────────────────┘
 ```
 
 ### After:
 ```
 ┌─────────────────────────────────────────────────┐
-│ PAYMENT BREAKDOWN                               │
-├─────────────────────────────────────────────────┤
-│ THE ENTRY                                       │
-│ • Downpayment...              AED 508,000       │
-│ • DLD Fee...                  AED 101,600       │
-│ └ Total Entry                 AED 649,600       │
-├─────────────────────────────────────────────────┤
 │ THE JOURNEY (23mo)                              │
 │ ┌─────────────────────────────────────────────┐ │
-│ │ • Month 1 (Feb'25)          AED 25,400      │ │
-│ │ • Month 2 (Mar'25)          AED 25,400      │▒│  ← Scrollable!
-│ │ • Month 3 (Apr'25)          AED 25,400      │▒│
-│ │ • ...more payments          ...             │▒│
+│ │ • Month 1 (Feb'25)    AED 25,400 ($6,920)   │ │  ← Inline = compact
+│ │ • Month 2 (Mar'25)    AED 25,400 ($6,920)   │▒│  ← Scrollable!
+│ │ • Month 3 (Apr'25)    AED 25,400 ($6,920)   │▒│
+│ │ • Month 22 🔑         AED 25,400 ($6,920)   │▒│  ← Handover Q highlighted
+│ │ • Month 23 🔑         AED 25,400 ($6,920)   │▒│
 │ └─────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────┤
 │ ON HANDOVER (0%)                                │
-│ • Handover Payment            AED 0             │
-├─────────────────────────────────────────────────┤
-│ ┌─ 💰 TOTAL CASH UNTIL HANDOVER ────────────┐   │  ← NEW!
-│ │ Entry + Journey + Handover  AED 1,208,400 │   │
-│ │ Cash required before rental income starts │   │
-│ └────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────┤
 │ POST-HANDOVER (29%)                             │
 │ ┌─────────────────────────────────────────────┐ │
-│ │ • Month 24 (Jan'27)         AED 25,400      │ │
-│ │ • Month 25 (Feb'27)         AED 25,400      │▒│  ← Shows now!
-│ │ • ...29 payments            ...             │▒│  ← Scrollable!
+│ │ • Month 24 (Jan'27)   AED 25,400 ($6,920)   │▒│
+│ │ ... (scrollable)                            │▒│
 │ └─────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────┤
-│ Base Property Price           AED 2,540,000     │
-│ Transaction Fees              AED 141,600       │
-│ TOTAL INVESTMENT              AED 2,681,600     │
+│ Base Price              AED 2,540,000           │
+│ Transaction Fees        AED 141,600             │
+│ TOTAL INVESTMENT        AED 2,681,600           │
+├─────────────────────────────────────────────────┤
+│ 💰 Cash Until Handover  AED 1,208,400 ($329K)   │  ← Compact, at bottom
 └─────────────────────────────────────────────────┘
 ```
-
----
-
-## PDF Export Consideration
-
-The ScrollArea will **not affect PDF export** because:
-1. The export uses `ExportSnapshotDOM.tsx` which has its own static layout
-2. The snapshot CSS already uses `data-export-layout` attributes for export mode
-3. We can add a CSS rule to override scroll in export mode if needed
 
 ---
 
@@ -198,15 +180,15 @@ The ScrollArea will **not affect PDF export** because:
 
 | File | Changes |
 |------|--------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | 1. Import ScrollArea<br>2. Fix post-handover payments derivation<br>3. Wrap payment lists in ScrollArea<br>4. Remove subtotals<br>5. Add "Total Until Handover" summary |
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | 1. Inline currency display for payment rows<br>2. Make summary card compact<br>3. Move summary to bottom<br>4. Ensure ScrollArea works properly |
 
 ---
 
 ## Benefits
 
-1. **Scrollable list** - Long payment plans don't overflow the card
-2. **Clear cash requirement** - Clients see exactly how much they need until handover
-3. **All payments visible** - Both pre and post-handover payments are shown
-4. **Cleaner layout** - No confusing subtotals
-5. **PDF unaffected** - Export uses separate static component
+1. **Compact vertical layout** - Currency values inline = less scrolling needed
+2. **Smaller summary** - Single line summary doesn't dominate
+3. **Working scroll** - All payments visible via scroll
+4. **Logical order** - Summary at bottom after all payments shown
+5. **Clear handover highlight** - Only handover quarter months highlighted
 
