@@ -301,8 +301,8 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   type="text"
                   inputMode="numeric"
                   value={numPayments || ''}
-                  onChange={(e) => handleNumberInputChange(e.target.value, setNumPayments, 1, 12)}
-                  className="w-12 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
+                  onChange={(e) => handleNumberInputChange(e.target.value, setNumPayments, 1, 60)}
+                  className="w-14 h-7 bg-[#0d1117] border-[#2a3142] text-white font-mono text-center text-xs"
                 />
                 <span className="text-[10px] text-gray-500">payments</span>
               </div>
