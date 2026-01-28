@@ -307,12 +307,12 @@ export const CompactPaymentTable = ({
                             </span>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-xs font-mono text-theme-text">{getDualValue(amount).primary}</div>
+                        <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                          {getDualValue(amount).primary}
                           {currency !== 'AED' && (
-                            <div className="text-[10px] text-theme-text-muted">{getDualValue(amount).secondary}</div>
+                            <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
                           )}
-                        </div>
+                        </span>
                       </div>
                     );
                   })}
@@ -339,23 +339,6 @@ export const CompactPaymentTable = ({
             </div>
           )}
 
-          {/* Total Cash Until Handover Summary */}
-          <div className="bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-2">
-            <div className="text-[10px] uppercase tracking-wide text-theme-accent font-semibold mb-1 flex items-center gap-1">
-              <Wallet className="w-3 h-3" />
-              Total Cash Until Handover
-            </div>
-            <DottedRow 
-              label="Entry + Journey + Handover"
-              value={getDualValue(totalUntilHandover).primary}
-              secondaryValue={getDualValue(totalUntilHandover).secondary}
-              bold
-              valueClassName="text-theme-accent"
-            />
-            <p className="text-[10px] text-theme-text-muted mt-1">
-              Cash required before rental income starts
-            </p>
-          </div>
 
           {/* Section: Post-Handover Installments - only for post-handover plans */}
           {hasPostHandoverPlan && derivedPostHandoverPayments.length > 0 && (
@@ -373,12 +356,12 @@ export const CompactPaymentTable = ({
                     return (
                       <div key={index} className="flex items-center justify-between gap-2">
                         <span className="text-xs text-theme-text-muted truncate">{label}</span>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-xs font-mono text-theme-text">{getDualValue(amount).primary}</div>
+                        <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                          {getDualValue(amount).primary}
                           {currency !== 'AED' && (
-                            <div className="text-[10px] text-theme-text-muted">{getDualValue(amount).secondary}</div>
+                            <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
                           )}
-                        </div>
+                        </span>
                       </div>
                     );
                   })}
@@ -414,6 +397,20 @@ export const CompactPaymentTable = ({
               labelClassName="text-sm"
               valueClassName="text-sm"
             />
+          </div>
+
+          {/* Total Cash Until Handover - Compact Summary at Bottom */}
+          <div className="flex items-center justify-between bg-theme-accent/5 border border-theme-accent/20 rounded-md px-2 py-1.5">
+            <span className="text-[10px] text-theme-accent font-medium flex items-center gap-1">
+              <Wallet className="w-3 h-3" />
+              Cash Until Handover
+            </span>
+            <span className="text-xs font-mono font-semibold text-theme-accent">
+              {getDualValue(totalUntilHandover).primary}
+              {currency !== 'AED' && (
+                <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
+              )}
+            </span>
           </div>
 
           {/* Value Differentiators - AFTER Total Investment */}
