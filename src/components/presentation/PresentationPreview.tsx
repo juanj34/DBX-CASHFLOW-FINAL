@@ -103,14 +103,18 @@ const QuotePreview = ({
     monthlyServiceCharges: calculations?.holdAnalysis?.annualServiceCharges ? calculations.holdAnalysis.annualServiceCharges / 12 : 0,
   });
 
-  // Use saved exit scenarios or auto-calculate
+  // Use saved exit scenarios or auto-calculate - but only if exits are enabled
   const exitScenarios = useMemo(() => {
+    // If exit strategy is explicitly disabled, return empty array
+    if (quoteData.inputs.enabledSections?.exitStrategy === false) {
+      return [];
+    }
     if (quoteData.exitScenarios && quoteData.exitScenarios.length > 0) {
       return quoteData.exitScenarios;
     }
     if (!calculations) return [12, 24, 36];
     return calculateAutoExitScenarios(calculations.totalMonths);
-  }, [quoteData.exitScenarios, calculations]);
+  }, [quoteData.exitScenarios, quoteData.inputs.enabledSections?.exitStrategy, calculations]);
 
   if (!calculations) {
     return (
