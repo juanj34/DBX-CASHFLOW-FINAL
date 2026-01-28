@@ -402,7 +402,7 @@ const QuotesCompare = () => {
               icon={<Wallet className="w-4 h-4 text-theme-accent" />}
               defaultOpen={allExpanded}
             >
-              <div className="grid lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
                 <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
               </div>
