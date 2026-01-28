@@ -27,6 +27,13 @@ const monthToDateString = (month: number, year: number, language: string): strin
   return `${monthNames[month - 1]} ${year}`;
 };
 
+const getQuarterMonths = (quarter: number, language: string): string => {
+  const quarterMonths = language === 'es'
+    ? ['Ene-Mar', 'Abr-Jun', 'Jul-Sep', 'Oct-Dic']
+    : ['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'];
+  return quarterMonths[quarter - 1];
+};
+
 const estimateDateFromMonths = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, language: string): string => {
   const totalMonths = bookingMonth + monthsFromBooking;
   const yearOffset = Math.floor((totalMonths - 1) / 12);
@@ -208,7 +215,7 @@ export const CompactPaymentTable = ({
             <div className="flex items-center gap-1.5 text-[10px] text-theme-text-muted">
               <span>{monthToDateString(bookingMonth, bookingYear, language)}</span>
               <ArrowRight className="w-3 h-3" />
-              <span>Q{handoverQuarter} {handoverYear}</span>
+              <span>Q{handoverQuarter} ({getQuarterMonths(handoverQuarter, language)}) {handoverYear}</span>
             </div>
           </div>
         </div>
@@ -294,7 +301,7 @@ export const CompactPaymentTable = ({
                       key={index}
                       className={cn(
                         "flex items-center justify-between gap-2",
-                        isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1"
+                        isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1 border-l-2 border-green-400"
                       )}
                     >
                       <div className="flex items-center gap-1 min-w-0 flex-1">
