@@ -450,6 +450,27 @@ export const CompactPaymentTable = ({
               className="text-xs"
               valueClassName="text-theme-text-muted"
             />
+            
+            {/* Show subtotals for post-handover plans */}
+            {hasPostHandoverPlan && postHandoverTotal > 0 && (
+              <div className="pt-1 mt-1 border-t border-dashed border-theme-border/50 space-y-1">
+                <DottedRow 
+                  label="Paid Until Handover"
+                  value={getDualValue(totalUntilHandover).primary}
+                  secondaryValue={getDualValue(totalUntilHandover).secondary}
+                  className="text-xs"
+                  valueClassName="text-green-400"
+                />
+                <DottedRow 
+                  label="Post-Handover Balance"
+                  value={getDualValue(postHandoverTotal).primary}
+                  secondaryValue={getDualValue(postHandoverTotal).secondary}
+                  className="text-xs"
+                  valueClassName="text-purple-400"
+                />
+              </div>
+            )}
+            
             {/* Total Investment */}
             <DottedRow 
               label={t('totalInvestmentLabel')}
