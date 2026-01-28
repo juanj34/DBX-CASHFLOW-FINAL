@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Clock, Building2, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar } from "lucide-react";
+import { Plus, Trash2, Clock, Building2, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -44,6 +44,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
   const [showCustomSplit, setShowCustomSplit] = useState(false);
   const [customPreHandover, setCustomPreHandover] = useState('');
+  const [numPayments, setNumPayments] = useState(4);
+  const [paymentInterval, setPaymentInterval] = useState(3);
+  const [showGenerator, setShowGenerator] = useState(false);
 
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -183,6 +186,32 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
   // Format number with commas
   const formatWithCommas = (num: number) => num.toLocaleString();
+
+  const handleGeneratePayments = () => {
+    // Calculate remaining percentage to distribute
+    const remaining = hasPostHandoverPlan 
+      ? 100 - inputs.downpaymentPercent
+      : inputs.preHandoverPercent - inputs.downpaymentPercent;
+    
+    const percentPerPayment = numPayments > 0 ? remaining / numPayments : 0;
+    const newPayments: PaymentMilestone[] = [];
+    
+    for (let i = 0; i < numPayments; i++) {
+      newPayments.push({
+        id: `auto-${Date.now()}-${i}`,
+        type: 'time',
+        triggerValue: paymentInterval * (i + 1),
+        paymentPercent: parseFloat(percentPerPayment.toFixed(2))
+      });
+    }
+    
+    setInputs(prev => ({
+      ...prev,
+      additionalPayments: newPayments
+    }));
+    setShowInstallments(true);
+    setShowGenerator(false);
+  };
 
   return (
     <div className="space-y-3">
@@ -361,6 +390,60 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               </CollapsibleTrigger>
 
               <CollapsibleContent>
+                {/* Quick Fill Generator */}
+                <Collapsible open={showGenerator} onOpenChange={setShowGenerator} className="mt-2 mb-2">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-6 text-[10px] border-dashed border-[#2a3142] text-gray-500 hover:bg-[#2a3142] hover:text-white"
+                    >
+                      <Zap className="w-3 h-3 mr-1" />
+                      Quick Fill
+                      {showGenerator ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="p-2 bg-[#0d1117] rounded-lg space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <label className="text-[10px] text-gray-500 block mb-0.5"># Payments</label>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            value={numPayments}
+                            onChange={(e) => setNumPayments(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                            className="h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-gray-500 block mb-0.5">Interval (mo)</label>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            value={paymentInterval}
+                            onChange={(e) => setPaymentInterval(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))}
+                            className="h-7 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-gray-400 text-center">
+                        {numPayments} × {((hasPostHandoverPlan ? 100 - inputs.downpaymentPercent : inputs.preHandoverPercent - inputs.downpaymentPercent) / numPayments).toFixed(2)}% every {paymentInterval} month(s)
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleGeneratePayments}
+                        size="sm"
+                        className="w-full h-7 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs"
+                      >
+                        <Zap className="w-3 h-3 mr-1" />
+                        Generate {numPayments} Payments
+                      </Button>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+                
                 <div className="space-y-1 max-h-[50vh] overflow-y-auto pt-1.5 border-t border-[#2a3142]">
                   {inputs.additionalPayments.map((payment, index) => {
                     const paymentDate = payment.type === 'time' 

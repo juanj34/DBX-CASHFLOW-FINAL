@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,8 @@ export const PropertySection = ({
   setInputs, 
   currency,
 }: ConfiguratorSectionProps) => {
+  const isEditingRef = useRef(false);
+  
   const [basePriceInput, setBasePriceInput] = useState(
     currency === 'USD' 
       ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
@@ -32,6 +34,9 @@ export const PropertySection = ({
   );
 
   useEffect(() => {
+    // Don't overwrite user input while they're actively editing
+    if (isEditingRef.current) return;
+    
     setBasePriceInput(
       currency === 'USD' 
         ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
@@ -58,17 +63,27 @@ export const PropertySection = ({
   }, [inputs.oqoodFee, currency]);
 
   const handleBasePriceBlur = () => {
-    const num = parseFloat(basePriceInput.replace(/[^0-9.-]/g, ''));
-    if (!isNaN(num) && num > 0) {
-      const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
-      const clamped = Math.min(Math.max(aedValue, 500000), 50000000);
-      setInputs(prev => ({ ...prev, basePrice: clamped }));
+    const cleanedValue = basePriceInput.replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleanedValue);
+    
+    if (!cleanedValue || isNaN(num) || num <= 0) {
+      // Reset to current stored value if invalid
       setBasePriceInput(
         currency === 'USD' 
-          ? Math.round(clamped / DEFAULT_RATE).toLocaleString()
-          : clamped.toLocaleString()
+          ? Math.round(inputs.basePrice / DEFAULT_RATE).toLocaleString()
+          : inputs.basePrice.toLocaleString()
       );
+      return;
     }
+    
+    const aedValue = currency === 'USD' ? num * DEFAULT_RATE : num;
+    const clamped = Math.min(Math.max(aedValue, 500000), 50000000);
+    setInputs(prev => ({ ...prev, basePrice: clamped }));
+    setBasePriceInput(
+      currency === 'USD' 
+        ? Math.round(clamped / DEFAULT_RATE).toLocaleString()
+        : clamped.toLocaleString()
+    );
   };
 
   const handleFixedFeeChange = (field: 'oqoodFee' | 'eoiFee', value: string) => {
@@ -108,9 +123,15 @@ export const PropertySection = ({
             </span>
             <Input
               type="text"
-              value={Number(basePriceInput.replace(/,/g, '')).toLocaleString() || basePriceInput}
-              onChange={(e) => setBasePriceInput(e.target.value.replace(/,/g, ''))}
-              onBlur={handleBasePriceBlur}
+              value={basePriceInput}
+              onChange={(e) => {
+                isEditingRef.current = true;
+                setBasePriceInput(e.target.value.replace(/,/g, ''));
+              }}
+              onBlur={() => {
+                isEditingRef.current = false;
+                handleBasePriceBlur();
+              }}
               className="w-44 h-10 text-right bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-lg pl-14"
             />
           </div>
