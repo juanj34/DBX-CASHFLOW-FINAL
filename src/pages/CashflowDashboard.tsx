@@ -1,18 +1,16 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Save, Sparkles, Rocket } from "lucide-react";
+import { Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
 import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
-import { ViewVisibility } from "@/components/roi/ViewVisibilityControls";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { VersionHistoryModal } from "@/components/roi/VersionHistoryModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary } from "@/components/roi/ErrorBoundary";
 import { MortgageModal } from "@/components/roi/MortgageModal";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
-import { AlertTriangle } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -24,7 +22,6 @@ import { useAdminRole } from "@/hooks/useAuth";
 import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent, PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
@@ -50,7 +47,6 @@ const CashflowDashboardContent = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('overview');
-  const [viewMode, setViewMode] = useState<'cashflow' | 'snapshot'>('cashflow');
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
@@ -229,24 +225,6 @@ const CashflowDashboardContent = () => {
     return null;
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
-  // View toggle handler
-  const handleCashflowView = useCallback(() => {
-    setViewMode('cashflow');
-  }, []);
-
-  const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
-    await exportCashflowPDF({
-      inputs,
-      clientInfo,
-      calculations,
-      exitScenarios,
-      advisorName: profile?.full_name || '',
-      currency,
-      rate,
-      visibility,
-    });
-  }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
-
   // Navigate to vertical view and save preference
   const handleSwitchToVertical = useCallback(() => {
     localStorage.setItem('cashflow_view_preference', 'vertical');
@@ -322,9 +300,6 @@ const CashflowDashboardContent = () => {
               toast.success("Share link copied to clipboard!");
             }
           }}
-          onPresent={() => setViewMode('cashflow')}
-          onSnapshot={() => setViewMode('snapshot')}
-          activeView={viewMode}
           viewCount={quote?.view_count ?? undefined}
           quoteId={quoteId}
           language={language}
