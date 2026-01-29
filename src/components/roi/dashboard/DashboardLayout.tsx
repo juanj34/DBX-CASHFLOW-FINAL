@@ -20,10 +20,7 @@ interface DashboardLayoutProps {
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
   onShare?: () => void;
-  onPresent?: () => void; // Switch to builder/config view
-  onSnapshot?: () => void; // Switch to cashflow view (client-ready)
   onNewQuote?: () => void; // Start a fresh new quote
-  activeView?: 'cashflow' | 'snapshot'; // 'cashflow' = builder, 'snapshot' = client view
   viewCount?: number;
   quoteId?: string;
   shareToken?: string; // Share token for export
@@ -51,10 +48,7 @@ export const DashboardLayout = ({
   onLoadQuote,
   onViewHistory,
   onShare,
-  onPresent,
-  onSnapshot,
   onNewQuote,
-  activeView,
   viewCount,
   quoteId,
   shareToken,
@@ -92,10 +86,7 @@ export const DashboardLayout = ({
     onLoadQuote,
     onViewHistory,
     onShare,
-    onPresent,
-    onSnapshot,
     onNewQuote,
-    activeView,
     viewCount,
     quoteId,
     shareToken,

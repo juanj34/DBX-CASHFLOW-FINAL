@@ -30,10 +30,7 @@ interface DashboardSidebarProps {
   onLoadQuote?: () => void;
   onViewHistory?: () => void;
   onShare?: () => void;
-  onPresent?: () => void; // Switch to builder/config view
-  onSnapshot?: () => void; // Switch to cashflow view (client-ready)
   onNewQuote?: () => void; // Start a fresh new quote
-  activeView?: 'cashflow' | 'snapshot'; // 'cashflow' = builder, 'snapshot' = client view
   viewCount?: number;
   firstViewedAt?: string | null;
   quoteId?: string;
@@ -192,10 +189,7 @@ export const DashboardSidebar = ({
   onLoadQuote,
   onViewHistory,
   onShare,
-  onPresent,
-  onSnapshot,
   onNewQuote,
-  activeView,
   viewCount,
   quoteId,
   shareToken,
@@ -380,27 +374,11 @@ export const DashboardSidebar = ({
           />
         </div>
 
-        {/* VIEW Section - View modes and share */}
-        {(activeView || onShare) && (
+        {/* VIEW Section - Share and Export only (Builder removed - now legacy) */}
+        {onShare && (
           <>
-            <SectionHeader label="View" collapsed={collapsed} />
+            <SectionHeader label="Share" collapsed={collapsed} />
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-              {/* Builder - detailed configuration view */}
-              <ActionButton 
-                icon={LayoutDashboard} 
-                label="Builder" 
-                onClick={onPresent} 
-                collapsed={collapsed}
-                variant={activeView === 'cashflow' ? 'active' : 'default'}
-              />
-              {/* Cashflow - compact client-ready view */}
-              <ActionButton 
-                icon={FileSpreadsheet} 
-                label="Cashflow" 
-                onClick={onSnapshot} 
-                collapsed={collapsed}
-                variant={activeView === 'snapshot' ? 'active' : 'default'}
-              />
               {onShare && (
                 quoteId ? (
                   <ActionButton 

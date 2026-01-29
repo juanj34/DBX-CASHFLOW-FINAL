@@ -1512,19 +1512,6 @@ const translations: Translations = {
   oqoodAdminLabel: { en: 'Oqood / Admin Fee', es: 'Oqood / Tarifa Admin' },
   totalEntryLabel: { en: 'Total Entry', es: 'Total Entrada' },
   handoverPaymentAlt: { en: 'Handover Payment', es: 'Pago en Entrega' },
-  
-  // Post-Handover Card Keys (CompactPostHandoverCard)
-  paymentsAlt: { en: 'payments', es: 'pagos' },
-  monthlyPaymentAlt: { en: 'Monthly Payment', es: 'Pago Mensual' },
-  monthlyRentAlt: { en: 'Monthly Rent', es: 'Renta Mensual' },
-  monthlyGapAlt: { en: 'Monthly Gap', es: 'Diferencia Mensual' },
-  monthlySurplusLabel: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
-  onHandoverPaymentAlt: { en: 'On Handover', es: 'En Entrega' },
-  youPayAlt: { en: 'You Pay', es: 'Tú Pagas' },
-  tenantCoversPercentAlt: { en: 'Tenant Covers', es: 'Inquilino Cubre' },
-  yourNetAlt: { en: 'Your Net', es: 'Tu Neto' },
-  surplusAlt: { en: 'surplus', es: 'excedente' },
-  perInstallmentLabel: { en: 'Per Installment', es: 'Por Cuota' },
 };
 
 interface LanguageContextType {

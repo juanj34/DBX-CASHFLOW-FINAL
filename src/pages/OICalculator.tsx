@@ -1,35 +1,19 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Home, TrendingUp, CreditCard, Building2, Sparkles, Rocket, X } from "lucide-react";
+import { Sparkles, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
-import { OIGrowthCurve } from "@/components/roi/OIGrowthCurve";
-import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
-import { PaymentBreakdown } from "@/components/roi/PaymentBreakdown";
-import { InvestmentSnapshot } from "@/components/roi/InvestmentSnapshot";
-import { InvestmentOverviewGrid } from "@/components/roi/InvestmentOverviewGrid";
-import { RentSnapshot } from "@/components/roi/RentSnapshot";
-import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
-import { PropertyHeroCard } from "@/components/roi/PropertyHeroCard";
 import { ClientUnitModal } from "@/components/roi/ClientUnitModal";
-import { CumulativeIncomeChart } from "@/components/roi/CumulativeIncomeChart";
-import { WealthSummaryCard } from "@/components/roi/WealthSummaryCard";
-import { ViewVisibility } from "@/components/roi/ViewVisibilityControls";
-import { CollapsibleSection } from "@/components/roi/CollapsibleSection";
-import { CashflowSummaryCard } from "@/components/roi/CashflowSummaryCard";
 import { LoadQuoteModal } from "@/components/roi/LoadQuoteModal";
 import { VersionHistoryModal } from "@/components/roi/VersionHistoryModal";
 import { CashflowSkeleton } from "@/components/roi/CashflowSkeleton";
 import { CashflowErrorBoundary } from "@/components/roi/ErrorBoundary";
 import { MortgageModal } from "@/components/roi/MortgageModal";
-import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { useMortgageCalculations, MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "@/components/roi/useMortgageCalculations";
-import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiatorsDisplay";
 import { DeveloperInfoModal } from "@/components/roi/DeveloperInfoModal";
 import { ProjectInfoModal } from "@/components/roi/ProjectInfoModal";
 import { FloorPlanLightbox } from "@/components/roi/FloorPlanLightbox";
-import { AlertTriangle, Save } from "lucide-react";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -40,11 +24,9 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
 import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { exportCashflowPDF } from "@/lib/pdfExport";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
-import { OverviewTabContent } from "@/components/roi/tabs/OverviewTabContent";
 import { SnapshotContent } from "@/components/roi/snapshot";
 import { ExportModal } from "@/components/roi/ExportModal";
 
@@ -73,8 +55,6 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  type ViewMode = 'cashflow' | 'snapshot';
-  const [viewMode, setViewMode] = useState<ViewMode>('cashflow');
   
   // Ref for client-side export capture
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -209,7 +189,6 @@ const OICalculatorContent = () => {
         showLogoOverlay: true,
       });
       setShareUrl(null);
-      setViewMode('cashflow');
       setDataLoaded(true); // Ready immediately for new quotes
       justResetRef.current = true;
       // Clear the flag after a tick to allow normal auto-save operation
@@ -323,45 +302,6 @@ const OICalculatorContent = () => {
     }
   }, [quote?.id, inputs, clientInfo, exitScenarios, mortgageInputs, saveQuote, generateShareToken, quoteImages]);
 
-  const handleExportPDF = useCallback(async (visibility: ViewVisibility) => {
-    await exportCashflowPDF({
-      inputs,
-      clientInfo,
-      calculations,
-      exitScenarios,
-      advisorName: profile?.full_name || '',
-      currency,
-      rate,
-      visibility,
-    });
-  }, [inputs, clientInfo, calculations, exitScenarios, profile?.full_name, currency, rate]);
-
-  // View toggle handlers - switch between cashflow and snapshot views in-page
-  const handleCashflowView = useCallback(() => {
-    setViewMode('cashflow');
-  }, []);
-
-  const handleSnapshotView = useCallback(() => {
-    setViewMode('snapshot');
-  }, []);
-
-  // Keyboard shortcut for view modes
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
-      // C key = Cashflow, N key = Snapshot
-      if ((e.key === 'c' || e.key === 'C') && isFullyConfigured) {
-        setViewMode('cashflow');
-      } else if ((e.key === 'n' || e.key === 'N') && isFullyConfigured) {
-        setViewMode('snapshot');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullyConfigured]);
 
   // Warn user before leaving with unsaved changes
   useEffect(() => {
@@ -397,10 +337,7 @@ const OICalculatorContent = () => {
         onLoadQuote={() => setLoadQuoteModalOpen(true)}
         onViewHistory={() => setVersionHistoryOpen(true)}
         onShare={handleShare}
-        onPresent={handleCashflowView}
-        onSnapshot={handleSnapshotView}
         onNewQuote={handleNewQuote}
-        activeView={viewMode}
         viewCount={quote?.view_count ?? undefined}
         quoteId={quoteId}
         shareToken={quote?.share_token ?? undefined}
@@ -458,8 +395,8 @@ const OICalculatorContent = () => {
               </div>
             </div>
           </div>
-        ) : viewMode === 'snapshot' ? (
-          /* Snapshot Mode - Full-width view matching app styling */
+        ) : (
+          /* Configured State - Show Cashflow View (formerly Snapshot) */
           <SnapshotContent
             inputs={inputs}
             calculations={calculations}
@@ -478,162 +415,6 @@ const OICalculatorContent = () => {
             setLanguage={setLanguage}
             rate={rate}
           />
-        ) : (
-          /* Configured State - All sections stacked vertically */
-          <div className="space-y-6 animate-fade-in" key="cashflow-view">
-            <PropertyHeroCard 
-              data={clientInfo} 
-              heroImageUrl={quoteImages.heroImageUrl}
-              buildingRenderUrl={quoteImages.buildingRenderUrl}
-              onEditClick={() => setClientModalOpen(true)} 
-            />
-
-            {/* Overview Section */}
-            <div id="overview-section" className="scroll-mt-20">
-              <InvestmentOverviewGrid
-                inputs={inputs}
-                calculations={calculations}
-                mortgageAnalysis={mortgageAnalysis}
-                mortgageEnabled={mortgageInputs.enabled}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-                developerId={clientInfo.developerId}
-                projectId={clientInfo.projectId}
-                floorPlanUrl={quoteImages.floorPlanUrl}
-                onViewDeveloper={() => clientInfo.developerId && setDeveloperModalOpen(true)}
-                onViewProject={() => clientInfo.projectId && setProjectModalOpen(true)}
-                onViewFloorPlan={() => quoteImages.floorPlanUrl && setFloorPlanLightboxOpen(true)}
-              />
-            </div>
-
-            {/* Property Section */}
-            <div id="property-section" className="scroll-mt-20">
-              <InvestmentSnapshot inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} totalEntryCosts={calculations.totalEntryCosts} rate={rate} holdAnalysis={calculations.holdAnalysis} unitSizeSqf={clientInfo.unitSizeSqf} />
-            </div>
-
-            {/* Payments Section */}
-            <div id="payments-section" className="scroll-mt-20">
-              <CollapsibleSection
-                title={t('paymentBreakdownTitle') || "Payment Breakdown"}
-                subtitle={`${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent} ${t('paymentStructure') || 'payment structure'}`}
-                icon={<CreditCard className="w-5 h-5 text-theme-accent" />}
-                defaultOpen={false}
-              >
-                <PaymentBreakdown inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} clientInfo={clientInfo} />
-              </CollapsibleSection>
-            </div>
-
-            {/* Value Differentiators */}
-            <ValueDifferentiatorsDisplay
-              selectedDifferentiators={inputs.valueDifferentiators || []}
-              customDifferentiators={customDifferentiators}
-              onEditClick={() => setModalOpen(true)}
-            />
-
-            {/* Hold Section */}
-            {(inputs.enabledSections?.longTermHold !== false) && (
-              <div id="hold-section" className="scroll-mt-20">
-                <CollapsibleSection
-                  title={t('holdStrategyAnalysis') || "Hold Strategy Analysis"}
-                  subtitle={t('holdStrategySubtitle') || "Long-term rental projections and wealth accumulation"}
-                  icon={<Home className="w-5 h-5 text-theme-accent" />}
-                  defaultOpen={false}
-                >
-                  <div className="space-y-4 sm:space-y-6">
-                    <RentSnapshot inputs={inputs} currency={currency} rate={rate} holdAnalysis={calculations.holdAnalysis} />
-                    <CumulativeIncomeChart projections={calculations.yearlyProjections} currency={currency} rate={rate} totalCapitalInvested={totalCapitalInvested} showAirbnbComparison={calculations.showAirbnbComparison} />
-                    <OIYearlyProjectionTable 
-                      projections={calculations.yearlyProjections} 
-                      currency={currency} 
-                      rate={rate} 
-                      showAirbnbComparison={calculations.showAirbnbComparison} 
-                      unitSizeSqf={clientInfo.unitSizeSqf}
-                    />
-                    <WealthSummaryCard propertyValueFinal={lastProjection.propertyValue} cumulativeRentIncome={lastProjection.cumulativeNetIncome} airbnbCumulativeIncome={calculations.showAirbnbComparison ? lastProjection.airbnbCumulativeNetIncome : undefined} initialInvestment={totalCapitalInvested} currency={currency} rate={rate} showAirbnbComparison={calculations.showAirbnbComparison} />
-                  </div>
-                </CollapsibleSection>
-              </div>
-            )}
-
-            {/* Exit Section */}
-            {(inputs.enabledSections?.exitStrategy === true || 
-              (inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0)) && (
-              <div id="exit-section" className="scroll-mt-20">
-                <CollapsibleSection
-                  title={t('exitStrategyAnalysis') || "Exit Strategy Analysis"}
-                  subtitle={t('whenToSell') || "When to sell for maximum returns"}
-                  icon={<TrendingUp className="w-5 h-5 text-theme-accent" />}
-                  defaultOpen={false}
-                >
-                  <div className="space-y-4 sm:space-y-6">
-                    <ExitScenariosCards inputs={inputs} currency={currency} totalMonths={calculations.totalMonths} basePrice={calculations.basePrice} totalEntryCosts={calculations.totalEntryCosts} exitScenarios={exitScenarios} setExitScenarios={setExitScenarios} rate={rate} unitSizeSqf={clientInfo.unitSizeSqf} />
-                    <OIGrowthCurve calculations={calculations} inputs={inputs} currency={currency} exitScenarios={exitScenarios} rate={rate} />
-                  </div>
-                </CollapsibleSection>
-              </div>
-            )}
-
-            {/* Mortgage Section */}
-            {mortgageInputs.enabled && (
-              <div id="mortgage-section" className="scroll-mt-20">
-                <CollapsibleSection
-                  title={t('mortgageAnalysis') || "Mortgage Analysis"}
-                  subtitle={t('mortgageAnalysisSubtitle') || "Loan structure, fees, and impact on cashflow"}
-                  icon={<Building2 className="w-5 h-5 text-theme-accent" />}
-                  defaultOpen={false}
-                >
-                  {(() => {
-                    const firstFullRentalYear = calculations.yearlyProjections.find(p => 
-                      !p.isConstruction && !p.isHandover && p.annualRent !== null && p.annualRent > 0
-                    );
-                    const fullAnnualRent = firstFullRentalYear?.annualRent || (inputs.basePrice * inputs.rentalYieldPercent / 100);
-                    const monthlyLongTermRent = fullAnnualRent / 12;
-                    const monthlyServiceCharges = (firstFullRentalYear?.serviceCharges || 0) / 12;
-                    const fullAnnualAirbnbNet = firstFullRentalYear?.airbnbNetIncome || 0;
-                    const monthlyAirbnbNet = fullAnnualAirbnbNet / 12;
-                    const year5RentalYear = (firstFullRentalYear?.year || 0) + 4;
-                    const year5Projection = calculations.yearlyProjections.find(p => p.year === year5RentalYear);
-                    const year5LongTermRent = year5Projection?.annualRent ? (year5Projection.annualRent / 12) : undefined;
-                    const year5AirbnbNet = year5Projection?.airbnbNetIncome ? (year5Projection.airbnbNetIncome / 12) : undefined;
-                    
-                    return (
-                      <MortgageBreakdown
-                        mortgageInputs={mortgageInputs}
-                        mortgageAnalysis={mortgageAnalysis}
-                        basePrice={calculations.basePrice}
-                        currency={currency}
-                        rate={rate}
-                        preHandoverPercent={inputs.preHandoverPercent}
-                        monthlyLongTermRent={monthlyLongTermRent}
-                        monthlyServiceCharges={monthlyServiceCharges}
-                        monthlyAirbnbNet={monthlyAirbnbNet}
-                        showAirbnbComparison={calculations.showAirbnbComparison}
-                        year5LongTermRent={year5LongTermRent}
-                        year5AirbnbNet={year5AirbnbNet}
-                        rentGrowthRate={inputs.rentGrowthRate}
-                      />
-                    );
-                  })()}
-                </CollapsibleSection>
-              </div>
-            )}
-
-            {/* Summary Section */}
-            <div id="summary-section" className="scroll-mt-20">
-              <CashflowSummaryCard
-                inputs={inputs}
-                clientInfo={clientInfo}
-                calculations={calculations}
-                mortgageAnalysis={mortgageAnalysis}
-                mortgageInputs={mortgageInputs}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-                defaultOpen={false}
-              />
-            </div>
-          </div>
         )}
 
         {/* Modals */}
@@ -705,7 +486,7 @@ const OICalculatorContent = () => {
           open={exportModalOpen}
           onOpenChange={setExportModalOpen}
           projectName={clientInfo.projectName}
-          activeView={viewMode}
+          activeView="snapshot"
           inputs={inputs}
           calculations={calculations}
           clientInfo={clientInfo}
