@@ -73,7 +73,7 @@ export const useExportRenderer = ({ projectName }: UseExportRendererProps) => {
       await new Promise<void>((resolve) => {
         root.render(<ExportSnapshotDOM {...props} />);
         // Allow React to render
-        setTimeout(resolve, 50);
+        setTimeout(resolve, 100);
       });
 
       // Wait for fonts to be fully loaded
@@ -82,7 +82,7 @@ export const useExportRenderer = ({ projectName }: UseExportRendererProps) => {
       }
 
       // Wait for layout to stabilize (extra time for complex layouts)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Force a reflow
       void container.offsetHeight;
@@ -112,6 +112,9 @@ export const useExportRenderer = ({ projectName }: UseExportRendererProps) => {
         windowWidth: exportElement.scrollWidth,
         windowHeight: exportElement.scrollHeight,
       });
+
+      // Cleanup React root before generating output
+      root.unmount();
 
       // Generate output based on format
       if (format === 'png') {
@@ -160,9 +163,8 @@ export const useExportRenderer = ({ projectName }: UseExportRendererProps) => {
         error: error instanceof Error ? error.message : 'Unknown error' 
       };
     } finally {
-      // Cleanup: unmount React and remove container
+      // Cleanup container
       try {
-        // Small delay to ensure React has finished
         await new Promise(resolve => setTimeout(resolve, 50));
         container.remove();
       } catch (e) {

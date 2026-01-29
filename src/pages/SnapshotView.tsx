@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Rocket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,8 +10,19 @@ import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { SnapshotContent } from '@/components/roi/snapshot';
+import { SnapshotContent, SnapshotViewSidebar } from '@/components/roi/snapshot';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { useExportRenderer } from '@/hooks/useExportRenderer';
+import { downloadSnapshotPDF } from '@/lib/pdfGenerator';
+import { toast } from '@/hooks/use-toast';
+
+interface BrokerProfile {
+  fullName: string | null;
+  avatarUrl: string | null;
+  businessEmail: string | null;
+  whatsappNumber: string | null;
+  whatsappCountryCode: string | null;
+}
 
 const SnapshotViewContent = () => {
   useDocumentTitle("Investment Snapshot");
@@ -40,10 +51,25 @@ const SnapshotViewContent = () => {
     heroImageUrl: null,
     floorPlanUrl: null,
   });
-  const [brokerInfo, setBrokerInfo] = useState<{ name: string | null; avatarUrl: string | null }>({
-    name: null,
+  const [brokerProfile, setBrokerProfile] = useState<BrokerProfile>({
+    fullName: null,
     avatarUrl: null,
+    businessEmail: null,
+    whatsappNumber: null,
+    whatsappCountryCode: null,
   });
+  const [quoteInfo, setQuoteInfo] = useState<{
+    projectName: string | null;
+    createdAt: string | null;
+    viewCount: number;
+  }>({
+    projectName: null,
+    createdAt: null,
+    viewCount: 0,
+  });
+  
+  // Export state
+  const [exporting, setExporting] = useState(false);
   
   // View tracking refs
   const viewTrackedRef = useRef(false);
@@ -51,6 +77,10 @@ const SnapshotViewContent = () => {
   const viewStartTime = useRef(Date.now());
   
   const { rate } = useExchangeRate(currency);
+  
+  const { exportSnapshot } = useExportRenderer({
+    projectName: quoteInfo.projectName || undefined,
+  });
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -65,8 +95,8 @@ const SnapshotViewContent = () => {
         .select(`
           id, broker_id, share_token, client_name, client_country, client_email,
           project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
-          inputs,
-          profiles:broker_id (full_name, avatar_url)
+          inputs, created_at, view_count,
+          profiles:broker_id (full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code)
         `)
         .eq('share_token', shareToken)
         .single();
@@ -122,9 +152,21 @@ const SnapshotViewContent = () => {
         setMortgageInputs(savedInputs._mortgageInputs);
       }
       
-      setBrokerInfo({
-        name: (data.profiles as any)?.full_name || null,
-        avatarUrl: (data.profiles as any)?.avatar_url || null,
+      // Set broker profile with contact info
+      const profile = data.profiles as any;
+      setBrokerProfile({
+        fullName: profile?.full_name || null,
+        avatarUrl: profile?.avatar_url || null,
+        businessEmail: profile?.business_email || null,
+        whatsappNumber: profile?.whatsapp_number || null,
+        whatsappCountryCode: profile?.whatsapp_country_code || null,
+      });
+      
+      // Set quote info
+      setQuoteInfo({
+        projectName: data.project_name || null,
+        createdAt: data.created_at || null,
+        viewCount: data.view_count || 0,
       });
       
       // Fetch images
@@ -237,6 +279,109 @@ const SnapshotViewContent = () => {
     return calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36];
   }, [inputs, calculations?.totalMonths]);
 
+  // Export handlers
+  const handleExportPDF = useCallback(async () => {
+    if (!inputs || !calculations || !clientInfo || !mortgageInputs || !mortgageAnalysis) {
+      toast({
+        title: 'Cannot export',
+        description: 'Export data not available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setExporting(true);
+    toast({
+      title: 'Preparing PDF...',
+      description: 'Generating your document.',
+    });
+
+    try {
+      const result = await downloadSnapshotPDF({
+        inputs,
+        calculations,
+        clientInfo,
+        mortgageInputs,
+        mortgageAnalysis,
+        exitScenarios,
+        currency,
+        rate,
+        language,
+        projectName: quoteInfo.projectName || clientInfo.projectName,
+      });
+
+      if (result.success) {
+        toast({
+          title: 'Export complete',
+          description: 'Your PDF has been downloaded.',
+        });
+      } else {
+        throw new Error(result.error || 'Export failed');
+      }
+    } catch (err) {
+      console.error('PDF export error:', err);
+      toast({
+        title: 'Export failed',
+        description: 'Failed to generate PDF.',
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
+  }, [inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, quoteInfo.projectName]);
+
+  const handleExportPNG = useCallback(async () => {
+    if (!inputs || !calculations || !clientInfo || !mortgageInputs || !mortgageAnalysis) {
+      toast({
+        title: 'Cannot export',
+        description: 'Export data not available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setExporting(true);
+    toast({
+      title: 'Preparing PNG...',
+      description: 'Generating your image.',
+    });
+
+    try {
+      const result = await exportSnapshot(
+        {
+          inputs,
+          calculations,
+          clientInfo,
+          mortgageInputs,
+          mortgageAnalysis,
+          exitScenarios,
+          currency,
+          rate,
+          language,
+        },
+        'png'
+      );
+
+      if (result.success) {
+        toast({
+          title: 'Export complete',
+          description: 'Your PNG has been downloaded.',
+        });
+      } else {
+        throw new Error(result.error || 'Export failed');
+      }
+    } catch (err) {
+      console.error('PNG export error:', err);
+      toast({
+        title: 'Export failed',
+        description: 'Failed to generate PNG.',
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
+  }, [inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, exportSnapshot]);
+
   if (loading) {
     return <CashflowSkeleton />;
   }
@@ -256,21 +401,37 @@ const SnapshotViewContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-theme-bg">
-      <SnapshotContent
-        inputs={inputs}
-        calculations={calculations}
-        clientInfo={clientInfo}
-        mortgageInputs={mortgageInputs}
-        mortgageAnalysis={mortgageAnalysis}
-        exitScenarios={exitScenarios}
-        quoteImages={quoteImages}
+    <div className="min-h-screen bg-theme-bg flex">
+      {/* Sidebar */}
+      <SnapshotViewSidebar
+        brokerProfile={brokerProfile}
+        quoteInfo={quoteInfo}
         currency={currency}
         setCurrency={setCurrency}
         language={language}
         setLanguage={setLanguage}
-        rate={rate}
+        onExportPDF={handleExportPDF}
+        onExportPNG={handleExportPNG}
+        exporting={exporting}
       />
+      
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">
+        <SnapshotContent
+          inputs={inputs}
+          calculations={calculations}
+          clientInfo={clientInfo}
+          mortgageInputs={mortgageInputs}
+          mortgageAnalysis={mortgageAnalysis}
+          exitScenarios={exitScenarios}
+          quoteImages={quoteImages}
+          currency={currency}
+          setCurrency={undefined} // Moved to sidebar
+          language={language}
+          setLanguage={undefined} // Moved to sidebar
+          rate={rate}
+        />
+      </main>
     </div>
   );
 };
