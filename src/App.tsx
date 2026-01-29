@@ -74,7 +74,10 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/view/:shareToken" element={<SnapshotView />} /> {/* Legacy: redirect to snapshot */}
+                {/* Main shared view route - Cashflow View */}
+                <Route path="/view/:shareToken" element={<SnapshotView />} />
+                <Route path="/view/:shareToken/print" element={<SnapshotPrint />} />
+                {/* Legacy routes - kept for backward compatibility */}
                 <Route path="/snapshot/:shareToken" element={<SnapshotView />} />
                 <Route path="/snapshot/:shareToken/print" element={<SnapshotPrint />} />
                 <Route path="/cashflow/:shareToken/print" element={<CashflowPrint />} />

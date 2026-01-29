@@ -102,7 +102,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
       if (exists) {
         return prev.filter(q => q.quoteId !== quote.id);
       }
-      // Default to snapshot view
+      // Default to cashflow view (snapshot mode)
       return [...prev, { 
         quoteId: quote.id, 
         viewMode: 'snapshot' as PresentationViewMode,
@@ -111,7 +111,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
     });
   };
 
-  // Removed toggleViewMode - all quotes use snapshot view only
+  // All quotes use cashflow view only (snapshot mode)
 
   const toggleComparisonQuote = (quoteId: string) => {
     setComparisonQuotes(prev => {

@@ -377,7 +377,7 @@ const ClientPortal = () => {
                       {quote.share_token && (
                         <Button
                           size="sm"
-                          onClick={() => window.open(`/snapshot/${quote.share_token}?currency=${currency}&lang=${language}`, '_blank')}
+                          onClick={() => window.open(`/view/${quote.share_token}?currency=${currency}&lang=${language}`, '_blank')}
                           className="flex-1 bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
                         >
                           <Eye className="w-3.5 h-3.5 mr-1.5" />
