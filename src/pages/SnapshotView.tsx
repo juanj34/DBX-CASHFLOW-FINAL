@@ -13,7 +13,6 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { SnapshotContent, SnapshotViewSidebar } from '@/components/roi/snapshot';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { useExportRenderer } from '@/hooks/useExportRenderer';
-import { downloadSnapshotPDF } from '@/lib/pdfGenerator';
 import { toast } from '@/hooks/use-toast';
 
 interface BrokerProfile {
@@ -286,7 +285,7 @@ const SnapshotViewContent = () => {
     return calculations ? calculateAutoExitScenarios(calculations.totalMonths) : [12, 24, 36];
   }, [inputs, calculations?.totalMonths]);
 
-  // Export handlers
+  // Export handlers - use the DOM-based renderer for both PNG and PDF
   const handleExportPDF = useCallback(async () => {
     if (!inputs || !calculations || !clientInfo || !mortgageInputs || !mortgageAnalysis) {
       toast({
@@ -304,18 +303,21 @@ const SnapshotViewContent = () => {
     });
 
     try {
-      const result = await downloadSnapshotPDF({
-        inputs,
-        calculations,
-        clientInfo,
-        mortgageInputs,
-        mortgageAnalysis,
-        exitScenarios,
-        currency,
-        rate,
-        language,
-        projectName: quoteInfo.projectName || clientInfo.projectName,
-      });
+      // Use the same DOM-based export renderer as PNG for consistent output
+      const result = await exportSnapshot(
+        {
+          inputs,
+          calculations,
+          clientInfo,
+          mortgageInputs,
+          mortgageAnalysis,
+          exitScenarios,
+          currency,
+          rate,
+          language,
+        },
+        'pdf'
+      );
 
       if (result.success) {
         toast({
@@ -335,7 +337,7 @@ const SnapshotViewContent = () => {
     } finally {
       setExporting(false);
     }
-  }, [inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, quoteInfo.projectName]);
+  }, [inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, exportSnapshot]);
 
   const handleExportPNG = useCallback(async () => {
     if (!inputs || !calculations || !clientInfo || !mortgageInputs || !mortgageAnalysis) {
