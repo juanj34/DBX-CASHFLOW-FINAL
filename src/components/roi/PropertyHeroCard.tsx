@@ -228,7 +228,7 @@ export const PropertyHeroCard = ({
                 project && "cursor-pointer hover:text-[#CCFF00]"
               )}
             >
-              {data.projectName || 'Unnamed Project'}
+              {data.projectName || t('unnamedProject')}
             </h1>
             
             <div className="flex items-center gap-3">
@@ -250,7 +250,7 @@ export const PropertyHeroCard = ({
                       className="h-7 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
                     >
                       <LayoutGrid className="w-3.5 h-3.5 mr-1" />
-                      Project
+                      {t('viewProjectButton')}
                     </Button>
                   )}
                   {floorPlanUrl && onViewFloorPlan && (
@@ -261,7 +261,7 @@ export const PropertyHeroCard = ({
                       className="h-7 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
                     >
                       <FileImage className="w-3.5 h-3.5 mr-1" />
-                      Floor Plan
+                      {t('floorPlanLabel')}
                     </Button>
                   )}
                 </div>

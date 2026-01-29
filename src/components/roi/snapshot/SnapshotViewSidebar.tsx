@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/AppLogo';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Select,
   SelectContent,
@@ -56,6 +57,7 @@ const SidebarContent = ({
   exporting = false,
   showLogo = true,
 }: SnapshotViewSidebarProps & { showLogo?: boolean }) => {
+  const { t } = useLanguage();
   const whatsappLink = brokerProfile.whatsappNumber
     ? `https://wa.me/${brokerProfile.whatsappCountryCode?.replace('+', '')}${brokerProfile.whatsappNumber}`
     : null;
@@ -91,10 +93,10 @@ const SidebarContent = ({
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-theme-text truncate">
-              {brokerProfile.fullName || 'Investment Advisor'}
+              {brokerProfile.fullName || t('investmentAdvisor')}
             </p>
             <p className="text-xs text-theme-text-muted">
-              {language === 'es' ? 'Asesor de Inversiones' : 'Investment Advisor'}
+              {t('investmentAdvisor')}
             </p>
           </div>
         </div>
@@ -133,7 +135,7 @@ const SidebarContent = ({
       {/* Quote Info */}
       <div className="p-4 border-b border-theme-border">
         <h3 className="text-xs font-medium text-theme-text-muted uppercase tracking-wider mb-3">
-          {language === 'es' ? 'Información de la Cotización' : 'Quote Information'}
+          {t('quoteInformation')}
         </h3>
         <div className="space-y-2 text-sm">
           {quoteInfo.projectName && (
@@ -149,7 +151,7 @@ const SidebarContent = ({
           )}
           <div className="flex items-center gap-2 text-theme-text-muted">
             <Eye className="w-3.5 h-3.5" />
-            <span>{quoteInfo.viewCount} {quoteInfo.viewCount === 1 ? 'view' : 'views'}</span>
+            <span>{quoteInfo.viewCount} {quoteInfo.viewCount === 1 ? t('viewLabel') : t('viewsLabel')}</span>
           </div>
         </div>
       </div>
@@ -157,12 +159,12 @@ const SidebarContent = ({
       {/* Currency & Language */}
       <div className="p-4 border-b border-theme-border">
         <h3 className="text-xs font-medium text-theme-text-muted uppercase tracking-wider mb-3">
-          {language === 'es' ? 'Preferencias' : 'Preferences'}
+          {t('preferencesLabel')}
         </h3>
         <div className="space-y-3">
           <div>
             <label className="text-xs text-theme-text-muted mb-1.5 block">
-              {language === 'es' ? 'Moneda de Referencia' : 'Reference Currency'}
+              {t('referenceCurrency')}
             </label>
             <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
               <SelectTrigger className="w-full h-9 bg-theme-card-alt border-theme-border text-theme-text">
@@ -181,7 +183,7 @@ const SidebarContent = ({
           </div>
           <div>
             <label className="text-xs text-theme-text-muted mb-1.5 block">
-              {language === 'es' ? 'Idioma' : 'Language'}
+              {t('language')}
             </label>
             <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
               <SelectTrigger className="w-full h-9 bg-theme-card-alt border-theme-border text-theme-text">
@@ -201,7 +203,7 @@ const SidebarContent = ({
       {/* Export Buttons */}
       <div className="p-4 border-b border-theme-border">
         <h3 className="text-xs font-medium text-theme-text-muted uppercase tracking-wider mb-3">
-          {language === 'es' ? 'Descargar' : 'Download'}
+          {t('downloadLabel')}
         </h3>
         <div className="space-y-2">
           <Button
@@ -212,7 +214,7 @@ const SidebarContent = ({
             className="w-full h-9 justify-start border-theme-border hover:bg-theme-bg"
           >
             <FileText className="w-4 h-4 mr-2 text-red-400" />
-            {language === 'es' ? 'Descargar PDF' : 'Download PDF'}
+            {t('downloadPDF')}
           </Button>
           <Button
             variant="outline"
@@ -222,7 +224,7 @@ const SidebarContent = ({
             className="w-full h-9 justify-start border-theme-border hover:bg-theme-bg"
           >
             <FileImage className="w-4 h-4 mr-2 text-blue-400" />
-            {language === 'es' ? 'Descargar PNG' : 'Download PNG'}
+            {t('downloadPNG')}
           </Button>
         </div>
       </div>
@@ -233,7 +235,7 @@ const SidebarContent = ({
       {/* Footer */}
       <div className="p-4 border-t border-theme-border">
         <p className="text-xs text-theme-text-muted text-center">
-          Powered by <span className="text-theme-accent font-medium">DBX Prime</span>
+          {t('poweredBy')} <span className="text-theme-accent font-medium">DBX Prime</span>
         </p>
       </div>
     </div>

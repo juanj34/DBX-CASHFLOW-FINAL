@@ -10,6 +10,92 @@ interface Translations {
 }
 
 const translations: Translations = {
+  // Snapshot View Core Labels (unique naming to avoid conflicts)
+  viewProjectButton: { en: 'Project', es: 'Proyecto' },
+  floorPlanLabel: { en: 'Floor Plan', es: 'Plano' },
+  viewLabel: { en: 'view', es: 'vista' },
+  viewsLabel: { en: 'views', es: 'vistas' },
+  quoteInformation: { en: 'Quote Information', es: 'Información de la Cotización' },
+  preferencesLabel: { en: 'Preferences', es: 'Preferencias' },
+  referenceCurrency: { en: 'Reference Currency', es: 'Moneda de Referencia' },
+  downloadLabel: { en: 'Download', es: 'Descargar' },
+  downloadPDF: { en: 'Download PDF', es: 'Descargar PDF' },
+  downloadPNG: { en: 'Download PNG', es: 'Descargar PNG' },
+  investmentAdvisor: { en: 'Investment Advisor', es: 'Asesor de Inversiones' },
+  poweredBy: { en: 'Powered by', es: 'Desarrollado por' },
+  quoteNotFoundTitle: { en: 'Quote Not Found', es: 'Cotización No Encontrada' },
+  quoteNotFoundMessage: { en: 'This quote may have been deleted.', es: 'Esta cotización pudo haber sido eliminada.' },
+  
+  // Snapshot Overview Cards
+  cashToStartLabel: { en: 'Cash to Start', es: 'Efectivo para Comenzar' },
+  breakevenLabel: { en: 'Breakeven', es: 'Punto de Equilibrio' },
+  yearsLabelLowercase: { en: 'years', es: 'años' },
+  fromRentalIncomeLabel: { en: 'From rental income', es: 'Por ingresos de alquiler' },
+  monthlyBurnLabel: { en: 'Monthly Burn', es: 'Gasto Mensual' },
+  untilHandoverLabel: { en: 'Until handover', es: 'Hasta la entrega' },
+  moShort: { en: 'mo', es: 'mes' },
+  yearShort: { en: 'yr', es: 'año' },
+  
+  // Compact Payment Table
+  paymentBreakdownHeader: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
+  theEntryLabel: { en: 'The Entry', es: 'La Entrada' },
+  eoiBookingLabel: { en: 'EOI / Booking Fee', es: 'EOI / Cuota de Reserva' },
+  downpaymentBalanceLabel: { en: 'Downpayment Balance', es: 'Saldo de Enganche' },
+  transactionFeesLabel: { en: 'Transaction Fees', es: 'Tarifas de Transacción' },
+  theJourneyLabel: { en: 'The Journey', es: 'El Camino' },
+  installmentLabel: { en: 'Installment', es: 'Cuota' },
+  onHandoverLabel: { en: 'On Handover', es: 'En Entrega' },
+  postHandoverLabel: { en: 'Post-Handover', es: 'Post-Entrega' },
+  handoverBadge: { en: 'Handover', es: 'Entrega' },
+  totalToThisPointLabel: { en: 'Total to this point', es: 'Total hasta este punto' },
+  totalInvestmentLabel: { en: 'Total Investment', es: 'Inversión Total' },
+  basePropertyPriceLabel: { en: 'Base Property Price', es: 'Precio Base de Propiedad' },
+  dldOqoodFeesLabel: { en: 'DLD + Oqood', es: 'DLD + Oqood' },
+  viewSplitLabel: { en: 'View Split', es: 'Ver División' },
+  valueAddsHeader: { en: 'Value Adds', es: 'Valor Agregado' },
+  totalBonusLabel: { en: 'Total Bonus', es: 'Bonus Total' },
+  
+  // Compact Rent Card
+  longTermLabel: { en: 'Long-Term', es: 'Largo Plazo' },
+  shortTermLabel: { en: 'Short-Term', es: 'Corto Plazo' },
+  grossLabel: { en: 'Gross', es: 'Bruto' },
+  serviceLabel: { en: 'Service', es: 'Servicio' },
+  netYearLabel: { en: 'Net/Year', es: 'Neto/Año' },
+  monthlyLabel: { en: 'Monthly', es: 'Mensual' },
+  netLabel: { en: 'Net', es: 'Neto' },
+  sevenYearTable: { en: '7-Year Table', es: 'Tabla 7 Años' },
+  
+  // Compact All Exits Card
+  exitScenariosHeader: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },
+  builtLabel: { en: 'built', es: 'construido' },
+  exitAtLabel: { en: 'Exit at', es: 'Salida en' },
+  completeLabel: { en: 'complete', es: 'completo' },
+  cashInvestedLabel: { en: 'Cash Invested', es: 'Efectivo Invertido' },
+  totalROELabel: { en: 'Total ROE', es: 'ROE Total' },
+  clickForDetailsLong: { en: 'Click for detailed exit analysis', es: 'Clic para análisis detallado de salida' },
+  
+  // Compact Mortgage Card
+  mortgageHeader: { en: 'Mortgage Analysis', es: 'Análisis Hipotecario' },
+  yearsShort: { en: 'Y', es: 'A' },
+  loanAmountLabel: { en: 'Loan Amount', es: 'Monto del Préstamo' },
+  monthlyPaymentLabel: { en: 'Monthly Payment', es: 'Pago Mensual' },
+  monthlyCashFlowLabel: { en: 'Monthly Cash Flow', es: 'Flujo Mensual' },
+  interestLabel: { en: 'Interest', es: 'Interés' },
+  positiveLabel: { en: 'Positive', es: 'Positivo' },
+  negativeLabel: { en: 'Negative', es: 'Negativo' },
+  
+  // Compact Post-Handover Card  
+  postHandoverHeader: { en: 'Post-Handover Coverage', es: 'Cobertura Post-Entrega' },
+  rentCoversInstallmentsLabel: { en: 'Rent Covers Installments', es: 'Alquiler Cubre Cuotas' },
+  tenantCoversAlt: { en: 'Tenant Covers', es: 'El Inquilino Cubre' },
+  tenantFullyCoversAlt: { en: 'Tenant Fully Covers', es: 'El Inquilino Cubre Totalmente' },
+  outOfPocketMonthlyLabel: { en: 'Out of Pocket Monthly', es: 'Gasto de Bolsillo Mensual' },
+  netPositiveLabel: { en: 'Net Positive', es: 'Neto Positivo' },
+  monthlyInstallmentLabel: { en: 'Monthly Installment', es: 'Cuota Mensual' },
+  monthlyNetRentLabel: { en: 'Monthly Net Rent', es: 'Alquiler Neto Mensual' },
+  rentCoverageLabel: { en: 'Rent Coverage', es: 'Cobertura de Alquiler' },
+  gapToPayLabel: { en: 'Gap to Pay', es: 'Diferencia a Pagar' },
+  
   // New keys for Investment Story Dashboard
   yourIncome: { en: 'Your Income', es: 'Tus Ingresos' },
   rentalPerformance: { en: 'Rental performance & sustainability', es: 'Rendimiento de alquiler y sostenibilidad' },
@@ -1378,65 +1464,7 @@ const translations: Translations = {
   advancedProjections: { en: 'Advanced Projections', es: 'Proyecciones Avanzadas' },
   advancedProjectionsDesc: { en: '10-year simulation for analysis purposes', es: 'Simulación a 10 años para propósitos de análisis' },
 
-  // Snapshot Overview Cards
-  cashToStartLabel: { en: 'Cash to Start', es: 'Efectivo Inicial' },
-  monthlyBurnLabel: { en: 'Monthly Burn', es: 'Gasto Mensual' },
-  breakevenLabel: { en: 'Breakeven', es: 'Punto de Equilibrio' },
-  untilHandoverLabel: { en: 'Until handover', es: 'Hasta entrega' },
-  fromRentalIncomeLabel: { en: 'From rental income', es: 'Por ingreso de alquiler' },
-  yearsLabelLowercase: { en: 'years', es: 'años' },
-  moShort: { en: 'mo', es: 'mes' },
-  yearShort: { en: 'year', es: 'año' },
-
-  // Rent Card
-  longTermLabel: { en: 'Long-Term', es: 'Largo Plazo' },
-  shortTermLabel: { en: 'Short-Term', es: 'Corto Plazo' },
-  grossLabel: { en: 'Gross', es: 'Bruto' },
-  serviceLabel: { en: 'Service', es: 'Servicio' },
-  netYearLabel: { en: 'Net/year', es: 'Neto/año' },
-  monthlyLabel: { en: 'Monthly', es: 'Mensual' },
-  netLabel: { en: 'Net', es: 'Neto' },
-  sevenYearTable: { en: '7-Year Table', es: 'Tabla 7 Años' },
-
-  // Mortgage Card
-  mortgageHeader: { en: 'Mortgage', es: 'Hipoteca' },
-  loanAmountLabel: { en: 'Loan Amount', es: 'Monto del Préstamo' },
-  monthlyPaymentLabel: { en: 'Monthly Payment', es: 'Pago Mensual' },
-  monthlyCashFlowLabel: { en: 'Monthly Cash Flow', es: 'Flujo Mensual' },
-  interestLabel: { en: 'Interest', es: 'Interés' },
-  positiveLabel: { en: 'Positive', es: 'Positivo' },
-  negativeLabel: { en: 'Negative', es: 'Negativo' },
-  yearsShort: { en: 'yr', es: 'a' },
-
-  // Post-Handover Coverage Card
-  postHandoverCoverage: { en: 'Post-Handover Coverage', es: 'Cobertura Post-Entrega' },
-  postHandoverPayments: { en: 'Post-HO Payments', es: 'Pagos Post-Entrega' },
-  monthlyEquivalent: { en: 'Monthly Equivalent', es: 'Equivalente Mensual' },
-  monthlySurplus: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
-  fullCoverage: { en: 'Full', es: 'Completa' },
-  partialCoverage: { en: 'Partial', es: 'Parcial' },
-  noCoverage: { en: 'None', es: 'Ninguna' },
-  rentCovers: { en: 'Rent covers', es: 'La renta cubre' },
-  totalGapOver: { en: 'gap over', es: 'diferencia en' },
-  monthsShort: { en: 'mo', es: 'me' },
-  noRentalIncomeConfigured: { en: 'No rental income configured', es: 'Sin ingreso de renta configurado' },
-
-  // Exit Card
-  exitScenariosHeader: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },
-  handoverLabel: { en: 'Handover', es: 'Entrega' },
-  investedLabel: { en: 'invested', es: 'invertido' },
-  builtLabel: { en: 'built', es: 'construido' },
-  clickForDetailsLong: { en: 'Click for detailed breakdown', es: 'Clic para desglose detallado' },
-  exitAtLabel: { en: 'Exit at', es: 'Salida en' },
-  completeLabel: { en: 'complete', es: 'completo' },
-  cashInvestedLabel: { en: 'Cash Invested', es: 'Efectivo Invertido' },
-  annualizedROELabel: { en: 'Annualized ROE', es: 'ROE Anualizado' },
-
-  // Payment Table
-  transactionFees: { en: 'Fees (DLD + Oqood)', es: 'Tarifas (DLD + Oqood)' },
-  totalInvestmentLabel: { en: 'Total Investment', es: 'Inversión Total' },
-
-  // Comparison Components
+  // Comparison Components (unique keys)
   metric: { en: 'Metric', es: 'Métrica' },
   standard: { en: 'Standard', es: 'Estándar' },
   installments: { en: 'installments', es: 'cuotas' },
@@ -1460,58 +1488,22 @@ const translations: Translations = {
   pdfError: { en: 'Failed to generate PDF.', es: 'Error al generar PDF.' },
   exportSnapshot: { en: 'Export Snapshot', es: 'Exportar Resumen' },
   
-  // Payment Breakdown Additional (unique keys only)
-  onHandoverLabel: { en: 'On Handover', es: 'En Entrega' },
-  postHandoverLabel: { en: 'Post-Handover', es: 'Post-Entrega' },
-  totalToThisPoint: { en: 'Total to this point', es: 'Total hasta este punto' },
-  downpaymentBalanceLabel: { en: 'Downpayment Balance', es: 'Saldo del Enganche' },
-  subtotalLabel: { en: 'Subtotal', es: 'Subtotal' },
-  dldFeeLabel: { en: 'DLD Fee (4%)', es: 'DLD (4%)' },
-  oqoodAdminLabel: { en: 'Oqood/Admin', es: 'Oqood/Admin' },
-  totalEntryLabel: { en: 'Total Entry', es: 'Total Entrada' },
-  finalPaymentLabel: { en: 'Final Payment', es: 'Pago Final' },
-  handoverPaymentLabelAlt: { en: 'Handover Payment', es: 'Pago de Entrega' },
-  
-  // Total ROE
-  totalROELabel: { en: 'Total ROE', es: 'ROE Total' },
-  
-  // Snapshot Payment Breakdown - Additional unique translations
-  paymentBreakdownHeader: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
-  theEntryLabel: { en: 'The Entry', es: 'La Entrada' },
-  theJourneyLabel: { en: 'The Journey', es: 'El Camino' },
-  viewSplitLabel: { en: 'View Split', es: 'Ver División' },
-  eoiBookingFeeLabel: { en: 'EOI / Booking Fee', es: 'EOI / Reserva' },
-  downpaymentPercentLabel: { en: 'Downpayment', es: 'Enganche' },
-  valueAddsLabel: { en: 'Value Adds', es: 'Valor Agregado' },
-  appreciationBonusLabelAlt: { en: 'Appreciation Bonus', es: 'Bonus de Apreciación' },
-  grandTotalLabel: { en: 'Grand Total', es: 'Total General' },
-  serviceChargeLabel: { en: 'Service', es: 'Servicio' },
-  netPerYearLabel: { en: 'Net/Year', es: 'Neto/Año' },
-  
-  // Snapshot Post-Handover unique
-  perInstallmentLabel: { en: 'Per Installment', es: 'Por Cuota' },
-  monthlyPaymentAlt: { en: 'Monthly: Payment', es: 'Mensual: Pago' },
-  monthlyRentAlt: { en: 'Monthly: Rent', es: 'Mensual: Renta' },
-  monthlySurplusLabel: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
-  monthlyGapAlt: { en: 'Monthly Gap', es: 'Brecha Mensual' },
-  onHandoverPaymentAlt: { en: 'On Handover', es: 'En Entrega' },
-  tenantCoversAlt: { en: 'Tenant Covers', es: 'El Inquilino Cubre' },
-  moRentAlt: { en: 'mo rent', es: 'meses renta' },
-  youPayAlt: { en: 'You Pay', es: 'Usted Paga' },
-  tenantFullyCoversAlt: { en: 'Tenant fully covers post-handover!', es: '¡El inquilino cubre completamente el post-entrega!' },
-  surplusAlt: { en: 'surplus', es: 'excedente' },
-  tenantCoversPercentAlt: { en: 'Tenant covers', es: 'El inquilino cubre' },
-  yourNetAlt: { en: 'Your net', es: 'Su neto' },
-  paymentsAlt: { en: 'payments', es: 'pagos' },
-  
-  // PropertyHeroCard unique
-  floorPlanAlt: { en: 'Floor Plan', es: 'Plano' },
-  unnamedProjectAlt: { en: 'Unnamed Project', es: 'Proyecto Sin Nombre' },
-  noPropertyInfoAlt: { en: 'No property information', es: 'Sin información de propiedad' },
-  
-  // Sidebar unique
-  downloadPDFAlt: { en: 'Download PDF', es: 'Descargar PDF' },
-  downloadPNGAlt: { en: 'Download PNG', es: 'Descargar PNG' },
+  // Post-handover coverage
+  postHandoverCoverage: { en: 'Post-Handover Coverage', es: 'Cobertura Post-Entrega' },
+  postHandoverPayments: { en: 'Post-HO Payments', es: 'Pagos Post-Entrega' },
+  monthlyEquivalent: { en: 'Monthly Equivalent', es: 'Equivalente Mensual' },
+  monthlySurplus: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
+  fullCoverage: { en: 'Full', es: 'Completa' },
+  partialCoverage: { en: 'Partial', es: 'Parcial' },
+  noCoverage: { en: 'None', es: 'Ninguna' },
+  rentCovers: { en: 'Rent covers', es: 'La renta cubre' },
+  totalGapOver: { en: 'gap over', es: 'diferencia en' },
+  monthsShort: { en: 'mo', es: 'me' },
+  noRentalIncomeConfigured: { en: 'No rental income configured', es: 'Sin ingreso de renta configurado' },
+  handoverLabelAlt: { en: 'Handover', es: 'Entrega' },
+  investedLabel: { en: 'invested', es: 'invertido' },
+  annualizedROELabel: { en: 'Annualized ROE', es: 'ROE Anualizado' },
+  transactionFees: { en: 'Fees (DLD + Oqood)', es: 'Tarifas (DLD + Oqood)' },
 };
 
 interface LanguageContextType {
