@@ -1474,6 +1474,44 @@ const translations: Translations = {
   
   // Total ROE
   totalROELabel: { en: 'Total ROE', es: 'ROE Total' },
+  
+  // Snapshot Payment Breakdown - Additional unique translations
+  paymentBreakdownHeader: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
+  theEntryLabel: { en: 'The Entry', es: 'La Entrada' },
+  theJourneyLabel: { en: 'The Journey', es: 'El Camino' },
+  viewSplitLabel: { en: 'View Split', es: 'Ver División' },
+  eoiBookingFeeLabel: { en: 'EOI / Booking Fee', es: 'EOI / Reserva' },
+  downpaymentPercentLabel: { en: 'Downpayment', es: 'Enganche' },
+  valueAddsLabel: { en: 'Value Adds', es: 'Valor Agregado' },
+  appreciationBonusLabelAlt: { en: 'Appreciation Bonus', es: 'Bonus de Apreciación' },
+  grandTotalLabel: { en: 'Grand Total', es: 'Total General' },
+  serviceChargeLabel: { en: 'Service', es: 'Servicio' },
+  netPerYearLabel: { en: 'Net/Year', es: 'Neto/Año' },
+  
+  // Snapshot Post-Handover unique
+  perInstallmentLabel: { en: 'Per Installment', es: 'Por Cuota' },
+  monthlyPaymentAlt: { en: 'Monthly: Payment', es: 'Mensual: Pago' },
+  monthlyRentAlt: { en: 'Monthly: Rent', es: 'Mensual: Renta' },
+  monthlySurplusLabel: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
+  monthlyGapAlt: { en: 'Monthly Gap', es: 'Brecha Mensual' },
+  onHandoverPaymentAlt: { en: 'On Handover', es: 'En Entrega' },
+  tenantCoversAlt: { en: 'Tenant Covers', es: 'El Inquilino Cubre' },
+  moRentAlt: { en: 'mo rent', es: 'meses renta' },
+  youPayAlt: { en: 'You Pay', es: 'Usted Paga' },
+  tenantFullyCoversAlt: { en: 'Tenant fully covers post-handover!', es: '¡El inquilino cubre completamente el post-entrega!' },
+  surplusAlt: { en: 'surplus', es: 'excedente' },
+  tenantCoversPercentAlt: { en: 'Tenant covers', es: 'El inquilino cubre' },
+  yourNetAlt: { en: 'Your net', es: 'Su neto' },
+  paymentsAlt: { en: 'payments', es: 'pagos' },
+  
+  // PropertyHeroCard unique
+  floorPlanAlt: { en: 'Floor Plan', es: 'Plano' },
+  unnamedProjectAlt: { en: 'Unnamed Project', es: 'Proyecto Sin Nombre' },
+  noPropertyInfoAlt: { en: 'No property information', es: 'Sin información de propiedad' },
+  
+  // Sidebar unique
+  downloadPDFAlt: { en: 'Download PDF', es: 'Descargar PDF' },
+  downloadPNGAlt: { en: 'Download PNG', es: 'Descargar PNG' },
 };
 
 interface LanguageContextType {
