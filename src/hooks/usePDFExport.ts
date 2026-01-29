@@ -1,12 +1,13 @@
 /**
- * usePDFExport - Hook for generating professional PDF snapshots
+ * usePDFExport - Hook for generating PDF snapshots using DOM capture
  * 
- * Uses the new jsPDF-based generator for clean, professional output.
+ * Uses the ExportSnapshotDOM component rendered off-screen and captured
+ * with html2canvas for pixel-perfect output matching the live view.
  */
 
 import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { downloadSnapshotPDF, PDFExportData } from '@/lib/pdfGenerator';
+import { useExportRenderer } from '@/hooks/useExportRenderer';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
@@ -30,6 +31,10 @@ interface ExportData {
 
 export const usePDFExport = ({ projectName }: UsePDFExportProps = {}) => {
   const [exporting, setExporting] = useState(false);
+  
+  const { exportSnapshot } = useExportRenderer({
+    projectName,
+  });
 
   const exportPDF = useCallback(async (data: ExportData): Promise<{ success: boolean; error?: string }> => {
     setExporting(true);
@@ -40,10 +45,21 @@ export const usePDFExport = ({ projectName }: UsePDFExportProps = {}) => {
     });
 
     try {
-      const result = await downloadSnapshotPDF({
-        ...data,
-        projectName: projectName || data.clientInfo?.projectName,
-      });
+      // Use the DOM-based export renderer for consistent output
+      const result = await exportSnapshot(
+        {
+          inputs: data.inputs,
+          calculations: data.calculations,
+          clientInfo: data.clientInfo,
+          mortgageInputs: data.mortgageInputs,
+          mortgageAnalysis: data.mortgageAnalysis,
+          exitScenarios: data.exitScenarios,
+          currency: data.currency,
+          rate: data.rate,
+          language: data.language,
+        },
+        'pdf'
+      );
 
       if (result.success) {
         toast({
@@ -73,7 +89,7 @@ export const usePDFExport = ({ projectName }: UsePDFExportProps = {}) => {
     } finally {
       setExporting(false);
     }
-  }, [projectName]);
+  }, [exportSnapshot]);
 
   return {
     exporting,
