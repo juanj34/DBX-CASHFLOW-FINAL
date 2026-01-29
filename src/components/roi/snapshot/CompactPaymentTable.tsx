@@ -231,7 +231,7 @@ export const CompactPaymentTable = ({
               {/* EOI / Booking Fee */}
               {eoiFee > 0 && (
                 <DottedRow 
-                  label={t('eoiBookingFeeLabel')}
+                  label={t('eoiBookingLabel')}
                   value={getDualValue(eoiFee).primary}
                   secondaryValue={getDualValue(eoiFee).secondary}
                 />
@@ -315,7 +315,7 @@ export const CompactPaymentTable = ({
                       {isHandoverQuarter && (
                             <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                               <Key className="w-2.5 h-2.5" />
-                              {t('handoverLabel')}
+                              {t('handoverBadge')}
                             </span>
                           )}
                         </div>
@@ -333,7 +333,7 @@ export const CompactPaymentTable = ({
                           <div className="flex items-center justify-between text-[10px]">
                             <span className="text-theme-text-muted flex items-center gap-1">
                               <Wallet className="w-2.5 h-2.5" />
-                              {t('totalToThisPoint')}
+                              {t('totalToThisPointLabel')}
                             </span>
                             <span className="font-mono text-theme-accent font-medium">
                               {getDualValue(totalUntilHandover).primary}
@@ -356,11 +356,11 @@ export const CompactPaymentTable = ({
           {!hasPostHandoverPlan && (
             <div>
               <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
-                {t('handoverLabel')} ({handoverPercent}%)
+                {t('handoverBadge')} ({handoverPercent}%)
               </div>
               <div className="space-y-1">
                 <DottedRow 
-                  label={t('finalPaymentLabel')}
+                  label={t('finalPayment')}
                   value={getDualValue(handoverAmount).primary}
                   secondaryValue={getDualValue(handoverAmount).secondary}
                   bold
@@ -378,7 +378,7 @@ export const CompactPaymentTable = ({
               </div>
               <div className="space-y-1">
                 <DottedRow 
-                  label={t('handoverPaymentLabelAlt')}
+                  label={t('handoverPaymentAlt')}
                   value={getDualValue(handoverAmount).primary}
                   secondaryValue={getDualValue(handoverAmount).secondary}
                   bold
