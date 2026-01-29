@@ -150,7 +150,7 @@ export const ConfigurePresentationModal = ({
                                 {item.title || getQuoteTitle(item.id)}
                               </span>
                               <span className="text-xs text-theme-text-muted">
-                                Snapshot View
+                                Cashflow View
                               </span>
                             </div>
                             <Button

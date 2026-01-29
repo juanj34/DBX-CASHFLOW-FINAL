@@ -24,7 +24,7 @@ interface BrokerProfile {
 }
 
 const SnapshotViewContent = () => {
-  useDocumentTitle("Investment Snapshot");
+  useDocumentTitle("Investment Cashflow");
   const { shareToken } = useParams<{ shareToken: string }>();
   const [searchParams] = useSearchParams();
   const { language: contextLanguage, setLanguage: setContextLanguage } = useLanguage();

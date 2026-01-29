@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
-// Updated ViewMode: 'snapshot' (default) or 'vertical' (cashflow)
+// ViewMode: 'snapshot' (cashflow view) or 'vertical' (legacy full view)
 export type PresentationViewMode = 'snapshot' | 'vertical';
 
 export interface PresentationItem {

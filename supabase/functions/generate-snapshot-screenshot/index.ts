@@ -8,7 +8,7 @@ const corsHeaders = {
 interface RequestBody {
   shareToken: string;
   format: 'png' | 'pdf';
-  view?: 'snapshot' | 'cashflow';
+  view?: 'cashflow' | 'legacy'; // cashflow = main view (snapshot), legacy = old vertical
 }
 
 Deno.serve(async (req) => {
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: RequestBody = await req.json();
-    const { shareToken, format = 'png', view = 'snapshot' } = body;
+    const { shareToken, format = 'png', view = 'cashflow' } = body;
 
     if (!shareToken) {
       return new Response(
@@ -68,12 +68,14 @@ Deno.serve(async (req) => {
     console.log(`Generating ${format} for ${view} view with shareToken: ${shareToken}`);
 
     // Build the URL to screenshot based on view type
-    const targetUrl = view === 'cashflow'
+    // 'cashflow' is now the main view using the /view/ route (formerly snapshot)
+    // 'legacy' uses the old /cashflow/ route for backward compatibility
+    const targetUrl = view === 'legacy'
       ? `https://dbxprime.lovable.app/cashflow/${shareToken}/print`
-      : `https://dbxprime.lovable.app/snapshot/${shareToken}/print`;
+      : `https://dbxprime.lovable.app/view/${shareToken}/print`;
     
     // Selector to wait for based on view type
-    const waitSelector = view === 'cashflow' ? '.cashflow-print-content' : '.snapshot-print-content';
+    const waitSelector = view === 'legacy' ? '.cashflow-print-content' : '.snapshot-print-content';
 
     // Browserless API endpoint
     const browserlessUrl = format === 'pdf' 

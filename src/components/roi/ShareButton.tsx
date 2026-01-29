@@ -44,32 +44,31 @@ export const ShareButton = ({
   const [generating, setGenerating] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   
-  // Always use snapshot URL now
-  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(
-    shareToken ? `${window.location.origin}/snapshot/${shareToken}` : null
+  // Always use view URL now (unified cashflow view)
+  const [shareUrl, setShareUrl] = useState<string | null>(
+    shareToken ? `${window.location.origin}/view/${shareToken}` : null
   );
   
   // Fetch detailed view analytics
   const { analytics, loading: loadingAnalytics } = useQuoteViews(quoteId);
 
   const generateUrl = useCallback(async () => {
-    if (snapshotUrl) return snapshotUrl;
+    if (shareUrl) return shareUrl;
     
     setGenerating(true);
     try {
       const baseUrl = await onGenerateShareUrl();
       if (baseUrl) {
-        // Extract token and create snapshot URL
+        // Extract token and create view URL
         const token = baseUrl.split('/view/')[1] || baseUrl.split('/snapshot/')[1];
         if (token) {
-          const url = `${window.location.origin}/snapshot/${token}`;
-          setSnapshotUrl(url);
+          const url = `${window.location.origin}/view/${token}`;
+          setShareUrl(url);
           return url;
         }
-        // Fallback: convert /view/ to /snapshot/
-        const snapshotVariant = baseUrl.replace('/view/', '/snapshot/');
-        setSnapshotUrl(snapshotVariant);
-        return snapshotVariant;
+        // Already in correct format
+        setShareUrl(baseUrl);
+        return baseUrl;
       }
     } catch (error) {
       console.error('Error generating share URL:', error);
@@ -81,7 +80,7 @@ export const ShareButton = ({
       setGenerating(false);
     }
     return null;
-  }, [snapshotUrl, onGenerateShareUrl, toast, t]);
+  }, [shareUrl, onGenerateShareUrl, toast, t]);
 
   const handleCopyLink = async () => {
     const url = await generateUrl();
@@ -172,10 +171,10 @@ export const ShareButton = ({
         align="end"
       >
         <div className="space-y-3">
-          {/* Snapshot indicator */}
+          {/* Cashflow indicator */}
           <div className="flex items-center gap-2 px-3 py-2 bg-theme-bg/50 rounded-lg border border-theme-border">
             <LayoutGrid className="w-4 h-4 text-theme-accent" />
-            <span className="text-sm font-medium text-theme-text">Snapshot View</span>
+            <span className="text-sm font-medium text-theme-text">{t('cashflowView') || 'Cashflow View'}</span>
           </div>
 
           {/* Share Actions */}

@@ -437,7 +437,7 @@ const PresentationBuilder = () => {
     }
   };
 
-  // Removed toggleViewMode - all quotes use snapshot view only
+  // All quotes use cashflow view only (snapshot mode)
 
   const getQuoteTitle = (quoteId: string) => {
     const quote = quotes.find(q => q.id === quoteId);
@@ -522,7 +522,7 @@ const PresentationBuilder = () => {
           )}
         </div>
 
-        {/* Snapshot indicator - icon only */}
+        {/* Cashflow indicator - icon only */}
         {item.type === 'quote' && !sidebarCollapsed && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -531,7 +531,7 @@ const PresentationBuilder = () => {
               </span>
             </TooltipTrigger>
             <TooltipContent side="top">
-              Snapshot View
+              Cashflow View
             </TooltipContent>
           </Tooltip>
         )}
