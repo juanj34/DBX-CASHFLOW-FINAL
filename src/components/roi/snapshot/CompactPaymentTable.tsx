@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { CreditCard, ArrowRight, Users, Sparkles, Key, Wallet } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { ClientUnitData } from '../ClientUnitInfo';
@@ -6,6 +6,7 @@ import { Currency, formatDualCurrency } from '../currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DottedRow } from './DottedRow';
 import { PaymentSplitModal } from './PaymentSplitModal';
+import { PaymentSelectionBar } from './PaymentSelectionBar';
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
@@ -79,6 +80,37 @@ export const CompactPaymentTable = ({
 }: CompactPaymentTableProps) => {
   const { language, t } = useLanguage();
   const [splitModalOpen, setSplitModalOpen] = useState(false);
+  const [selectedPayments, setSelectedPayments] = useState<Map<string, number>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Clear selection when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setSelectedPayments(new Map());
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  
+  // Toggle payment selection
+  const togglePaymentSelection = useCallback((id: string, amount: number) => {
+    setSelectedPayments(prev => {
+      const next = new Map(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.set(id, amount);
+      }
+      return next;
+    });
+  }, []);
+  
+  const clearSelection = useCallback(() => {
+    setSelectedPayments(new Map());
+  }, []);
   
   const { 
     basePrice, 
@@ -192,7 +224,7 @@ export const CompactPaymentTable = ({
 
   return (
     <>
-      <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden h-fit">
+      <div ref={containerRef} className="bg-theme-card border border-theme-border rounded-xl overflow-hidden h-fit">
         {/* Header */}
         <div className="p-3 border-b border-theme-border flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -230,18 +262,34 @@ export const CompactPaymentTable = ({
             <div className="space-y-1">
               {/* EOI / Booking Fee */}
               {eoiFee > 0 && (
-                <DottedRow 
-                  label={t('eoiBookingLabel')}
-                  value={getDualValue(eoiFee).primary}
-                  secondaryValue={getDualValue(eoiFee).secondary}
-                />
+                <div
+                  onClick={() => togglePaymentSelection('eoi', eoiFee)}
+                  className={cn(
+                    "cursor-pointer rounded transition-colors",
+                    selectedPayments.has('eoi') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                  )}
+                >
+                  <DottedRow 
+                    label={t('eoiBookingLabel')}
+                    value={getDualValue(eoiFee).primary}
+                    secondaryValue={getDualValue(eoiFee).secondary}
+                  />
+                </div>
               )}
               {/* Remaining Downpayment (or full if no EOI) */}
-              <DottedRow 
-                label={eoiFee > 0 ? t('downpaymentBalanceLabel') : `${t('downpaymentPercentLabel')} (${downpaymentPercent}%)`}
-                value={getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).primary}
-                secondaryValue={getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).secondary}
-              />
+              <div
+                onClick={() => togglePaymentSelection('downpayment', eoiFee > 0 ? remainingDownpayment : downpaymentAmount)}
+                className={cn(
+                  "cursor-pointer rounded transition-colors",
+                  selectedPayments.has('downpayment') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                )}
+              >
+                <DottedRow 
+                  label={eoiFee > 0 ? t('downpaymentBalanceLabel') : `${t('downpaymentPercentLabel')} (${downpaymentPercent}%)`}
+                  value={getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).primary}
+                  secondaryValue={getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).secondary}
+                />
+              </div>
               {/* Subtotal Pre-Handover (if EOI exists) */}
               {eoiFee > 0 && (
                 <div className="pt-1 border-t border-dashed border-theme-border/50 mt-1">
@@ -253,16 +301,32 @@ export const CompactPaymentTable = ({
                   />
                 </div>
               )}
-              <DottedRow 
-                label={t('dldFeeLabel')}
-                value={getDualValue(dldFee).primary}
-                secondaryValue={getDualValue(dldFee).secondary}
-              />
-              <DottedRow 
-                label={t('oqoodAdminLabel')}
-                value={getDualValue(oqoodFee).primary}
-                secondaryValue={getDualValue(oqoodFee).secondary}
-              />
+              <div
+                onClick={() => togglePaymentSelection('dld', dldFee)}
+                className={cn(
+                  "cursor-pointer rounded transition-colors",
+                  selectedPayments.has('dld') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                )}
+              >
+                <DottedRow 
+                  label={t('dldFeeLabel')}
+                  value={getDualValue(dldFee).primary}
+                  secondaryValue={getDualValue(dldFee).secondary}
+                />
+              </div>
+              <div
+                onClick={() => togglePaymentSelection('oqood', oqoodFee)}
+                className={cn(
+                  "cursor-pointer rounded transition-colors",
+                  selectedPayments.has('oqood') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                )}
+              >
+                <DottedRow 
+                  label={t('oqoodAdminLabel')}
+                  value={getDualValue(oqoodFee).primary}
+                  secondaryValue={getDualValue(oqoodFee).secondary}
+                />
+              </div>
               <div className="pt-1 border-t border-theme-border mt-1">
                 <DottedRow 
                   label={t('totalEntryLabel')}
@@ -302,12 +366,17 @@ export const CompactPaymentTable = ({
                       p.type === 'time' && isPaymentInHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear)
                     );
                   
+                  const paymentId = `journey-${index}`;
+                  const isSelected = selectedPayments.has(paymentId);
+                  
                   return (
                     <div key={index}>
                       <div 
+                        onClick={() => togglePaymentSelection(paymentId, amount)}
                         className={cn(
-                          "flex items-center justify-between gap-2",
-                          isHandoverQuarter && "bg-green-500/10 rounded px-1 py-0.5 -mx-1 border-l-2 border-green-400"
+                          "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors",
+                          isHandoverQuarter && "bg-green-500/10 px-1 py-0.5 -mx-1 border-l-2 border-green-400",
+                          isSelected && "ring-1 ring-theme-accent/40 bg-theme-accent/20"
                         )}
                       >
                         <div className="flex items-center gap-1 min-w-0 flex-1">
@@ -359,31 +428,46 @@ export const CompactPaymentTable = ({
                 {t('handoverBadge')} ({handoverPercent}%)
               </div>
               <div className="space-y-1">
-                <DottedRow 
-                  label={t('finalPayment')}
-                  value={getDualValue(handoverAmount).primary}
-                  secondaryValue={getDualValue(handoverAmount).secondary}
-                  bold
-                  valueClassName="text-green-400"
-                />
+                <div
+                  onClick={() => togglePaymentSelection('handover', handoverAmount)}
+                  className={cn(
+                    "cursor-pointer rounded transition-colors",
+                    selectedPayments.has('handover') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                  )}
+                >
+                  <DottedRow 
+                    label={t('finalPayment')}
+                    value={getDualValue(handoverAmount).primary}
+                    secondaryValue={getDualValue(handoverAmount).secondary}
+                    bold
+                    valueClassName="text-green-400"
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          {/* For post-handover plans with explicit on-handover payment */}
           {hasPostHandoverPlan && handoverPercent > 0 && (
             <div>
               <div className="text-[10px] uppercase tracking-wide text-green-400 font-semibold mb-2">
                 {t('onHandoverLabel')} ({handoverPercent}%)
               </div>
               <div className="space-y-1">
-                <DottedRow 
-                  label={t('handoverPaymentAlt')}
-                  value={getDualValue(handoverAmount).primary}
-                  secondaryValue={getDualValue(handoverAmount).secondary}
-                  bold
-                  valueClassName="text-green-400"
-                />
+                <div
+                  onClick={() => togglePaymentSelection('onhandover', handoverAmount)}
+                  className={cn(
+                    "cursor-pointer rounded transition-colors",
+                    selectedPayments.has('onhandover') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                  )}
+                >
+                  <DottedRow 
+                    label={t('handoverPaymentAlt')}
+                    value={getDualValue(handoverAmount).primary}
+                    secondaryValue={getDualValue(handoverAmount).secondary}
+                    bold
+                    valueClassName="text-green-400"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -399,10 +483,19 @@ export const CompactPaymentTable = ({
                   const amount = basePrice * (payment.paymentPercent / 100);
                   const dateStr = getPaymentDate(payment);
                   const label = `${getPaymentLabel(payment)} (${dateStr})`;
+                  const paymentId = `posthandover-${index}`;
+                  const isSelected = selectedPayments.has(paymentId);
                   
                   // Post-handover payments don't get handover highlighting - they're already past handover
                   return (
-                    <div key={index} className="flex items-center justify-between gap-2">
+                    <div 
+                      key={index} 
+                      onClick={() => togglePaymentSelection(paymentId, amount)}
+                      className={cn(
+                        "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors",
+                        isSelected && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
+                      )}
+                    >
                       <span className="text-xs text-theme-text-muted truncate">{label}</span>
                       <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
                         {getDualValue(amount).primary}
@@ -507,6 +600,14 @@ export const CompactPaymentTable = ({
           totalMonths={totalMonths}
         />
       )}
+      
+      {/* Selection Bar - Excel-like sum/average display */}
+      <PaymentSelectionBar
+        selectedAmounts={Array.from(selectedPayments.values())}
+        currency={currency}
+        rate={rate}
+        onClear={clearSelection}
+      />
     </>
   );
 };
