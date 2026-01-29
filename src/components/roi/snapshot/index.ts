@@ -23,3 +23,4 @@ export { WealthProjectionTable } from './WealthProjectionTable';
 export { WealthProjectionTimeline } from './WealthProjectionTimeline';
 export { WealthProjectionModal } from './WealthProjectionModal';
 export { PaymentSplitModal } from './PaymentSplitModal';
+export { SnapshotViewSidebar } from './SnapshotViewSidebar';

@@ -5,6 +5,9 @@
 export { ExportSnapshotDOM } from './ExportSnapshotDOM';
 export type { ExportSnapshotDOMProps } from './ExportSnapshotDOM';
 
+export { ExportSnapshotLayout } from './ExportSnapshotLayout';
+export type { ExportSnapshotLayoutProps } from './ExportSnapshotLayout';
+
 export { ExportHeader } from './ExportHeader';
 export { ExportOverviewCards } from './ExportOverviewCards';
 export { ExportPaymentTable } from './ExportPaymentTable';
@@ -14,3 +17,6 @@ export { ExportMortgageCard } from './ExportMortgageCard';
 export { ExportPostHandoverCard } from './ExportPostHandoverCard';
 export { ExportGrowthCurve } from './ExportGrowthCurve';
 export { ExportWealthTimeline } from './ExportWealthTimeline';
+export { ExportBrokerHeader } from './ExportBrokerHeader';
+export { ExportPropertyHero } from './ExportPropertyHero';
+export { ExportFooter } from './ExportFooter';

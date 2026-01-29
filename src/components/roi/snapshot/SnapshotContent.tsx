@@ -70,7 +70,7 @@ export const SnapshotContent = ({
   const handoverYear = inputs.bookingYear + constructionYears;
 
   return (
-    <div className="min-h-full flex flex-col bg-theme-bg">
+    <div className="min-h-full flex flex-col bg-theme-bg max-w-[1600px] mx-auto w-full">
       {/* Hero - fixed height */}
       <div className="flex-shrink-0 p-4 pb-0">
         <PropertyHeroCard
