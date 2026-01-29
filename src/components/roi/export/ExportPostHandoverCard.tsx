@@ -51,6 +51,9 @@ const translations = {
   tenantCovers: { en: 'Tenant Covers', es: 'Inquilino Cubre' },
   youPay: { en: 'You Pay', es: 'Tu Pagas' },
   payments: { en: 'payments', es: 'pagos' },
+  tenantFullyCovers: { en: 'Tenant fully covers!', es: '¡Inquilino cubre totalmente!' },
+  surplus: { en: 'surplus', es: 'excedente' },
+  net: { en: 'Net', es: 'Neto' },
 };
 
 // Check if a payment is AFTER the handover quarter (strictly after Q end)
@@ -307,12 +310,12 @@ export const ExportPostHandoverCard = ({
             {tenantCoversPercent >= 100 ? (
               <>
                 <CheckCircleIcon />
-                Tenant fully covers! +{getDualValue(surplus).primary} surplus
+                {t('tenantFullyCovers')} +{getDualValue(surplus).primary} {t('surplus')}
               </>
             ) : (
               <>
                 <AlertCircleIcon />
-                Tenant covers {tenantCoversPercent}% • Net: {getDualValue(netOutOfPocket).primary}
+                {t('tenantCovers')} {tenantCoversPercent}% • {t('net')}: {getDualValue(netOutOfPocket).primary}
               </>
             )}
           </div>
