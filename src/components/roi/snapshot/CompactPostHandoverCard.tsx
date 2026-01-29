@@ -1,4 +1,4 @@
-import { RefreshCw, TrendingUp, TrendingDown, CheckCircle, AlertCircle, XCircle, Wallet } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
@@ -11,6 +11,25 @@ interface CompactPostHandoverCardProps {
   currency: Currency;
   rate: number;
 }
+
+// Local translations for post-handover card (inline to avoid context issues)
+const translations = {
+  postHandoverCoverage: { en: 'Post-Handover Coverage', es: 'Cobertura Post-Entrega' },
+  postHandoverPayments: { en: 'Post-HO Payments', es: 'Pagos Post-Entrega' },
+  perInstallment: { en: 'Per Installment', es: 'Por Cuota' },
+  monthlyPayment: { en: 'Monthly Payment', es: 'Pago Mensual' },
+  monthlyRentLabel: { en: 'Monthly Rent', es: 'Renta Mensual' },
+  monthlyGap: { en: 'Monthly Gap', es: 'Diferencia Mensual' },
+  monthlySurplus: { en: 'Monthly Surplus', es: 'Excedente Mensual' },
+  onHandover: { en: 'On Handover', es: 'En Entrega' },
+  tenantCovers: { en: 'Tenant Covers', es: 'El Inquilino Cubre' },
+  youPay: { en: 'You Pay', es: 'Tú Pagas' },
+  tenantFullyCovers: { en: 'Tenant fully covers!', es: '¡El inquilino cubre totalmente!' },
+  surplus: { en: 'surplus', es: 'excedente' },
+  net: { en: 'Net', es: 'Neto' },
+  payments: { en: 'payments', es: 'pagos' },
+  mo: { en: 'mo', es: 'mes' },
+};
 
 // Check if a payment is AFTER the handover quarter (strictly after Q end, not start)
 // Must match the logic in CompactPaymentTable.tsx
@@ -38,7 +57,10 @@ export const CompactPostHandoverCard = ({
   currency,
   rate,
 }: CompactPostHandoverCardProps) => {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  
+  // Local translation function using inline translations
+  const t = (key: keyof typeof translations) => translations[key][language];
   
   // Only show if post-handover plan is enabled
   if (!inputs.hasPostHandoverPlan) return null;
@@ -127,7 +149,7 @@ export const CompactPostHandoverCard = ({
           </span>
         </div>
         <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-400">
-          {actualDurationMonths}{t('moShort')} ({numberOfPayments} {t('paymentsAlt')})
+          {actualDurationMonths}{t('mo')} ({numberOfPayments} {t('payments')})
         </span>
       </div>
 
@@ -142,7 +164,7 @@ export const CompactPostHandoverCard = ({
         
         {/* Per Installment Amount */}
         <DottedRow 
-          label={`${t('perInstallmentLabel')} (${numberOfPayments}x)`}
+          label={`${t('perInstallment')} (${numberOfPayments}x)`}
           value={getDualValue(perInstallmentAmount).primary}
           secondaryValue={getDualValue(perInstallmentAmount).secondary}
           valueClassName="text-purple-400"
@@ -151,19 +173,19 @@ export const CompactPostHandoverCard = ({
         {/* Monthly Cashflow Analysis */}
         <div className="pt-2 mt-1 border-t border-dashed border-theme-border/50 space-y-1">
           <DottedRow 
-            label={t('monthlyPaymentAlt')}
-            value={`${getDualValue(monthlyEquivalent).primary}/${t('moShort')}`}
+            label={t('monthlyPayment')}
+            value={`${getDualValue(monthlyEquivalent).primary}/${t('mo')}`}
             secondaryValue={getDualValue(monthlyEquivalent).secondary}
           />
           <DottedRow 
-            label={t('monthlyRentAlt')}
-            value={`+${getDualValue(monthlyRent).primary}/${t('moShort')}`}
+            label={t('monthlyRentLabel')}
+            value={`+${getDualValue(monthlyRent).primary}/${t('mo')}`}
             secondaryValue={getDualValue(monthlyRent).secondary}
             valueClassName="text-cyan-400"
           />
           <DottedRow 
-            label={isFullyCovered ? t('monthlySurplusLabel') : t('monthlyGapAlt')}
-            value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/${t('moShort')}`}
+            label={isFullyCovered ? t('monthlySurplus') : t('monthlyGap')}
+            value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/${t('mo')}`}
             secondaryValue={getDualValue(Math.abs(monthlyCashflow)).secondary}
             bold
             valueClassName={isFullyCovered ? "text-green-400" : "text-red-400"}
@@ -175,20 +197,20 @@ export const CompactPostHandoverCard = ({
           {/* On Handover Payment - what's due on handover day */}
           {onHandoverAmount > 0 && (
             <DottedRow 
-              label={t('onHandoverPaymentAlt')}
+              label={t('onHandover')}
               value={getDualValue(onHandoverAmount).primary}
               secondaryValue={getDualValue(onHandoverAmount).secondary}
               valueClassName="text-yellow-400"
             />
           )}
           <DottedRow 
-            label={`${t('tenantCoversAlt')} (${actualDurationMonths}${t('moShort')})`}
+            label={`${t('tenantCovers')} (${actualDurationMonths}${t('mo')})`}
             value={`+${getDualValue(totalTenantContribution).primary}`}
             secondaryValue={getDualValue(totalTenantContribution).secondary}
             valueClassName="text-cyan-400"
           />
           <DottedRow 
-            label={t('youPayAlt')}
+            label={t('youPay')}
             value={getDualValue(netOutOfPocket).primary}
             secondaryValue={getDualValue(netOutOfPocket).secondary}
             bold
@@ -207,12 +229,12 @@ export const CompactPostHandoverCard = ({
             {tenantCoversPercent >= 100 ? (
               <span className="flex items-center justify-center gap-1">
                 <CheckCircle className="w-3 h-3" />
-                {t('tenantFullyCoversAlt')} +{getDualValue(surplus).primary} {t('surplusAlt')}
+                {t('tenantFullyCovers')} +{getDualValue(surplus).primary} {t('surplus')}
               </span>
             ) : (
               <span className="flex items-center justify-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                {t('tenantCoversPercentAlt')} {tenantCoversPercent}% • {t('yourNetAlt')}: {getDualValue(netOutOfPocket).primary}
+                {t('tenantCovers')} {tenantCoversPercent}% • {t('net')}: {getDualValue(netOutOfPocket).primary}
               </span>
             )}
           </div>
