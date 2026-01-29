@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { 
   User, FileText, Presentation, Mail, MessageCircle, 
@@ -15,6 +15,11 @@ import { format } from "date-fns";
 import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { ExportModal } from "@/components/roi/ExportModal";
+import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
+import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from "@/components/roi/useMortgageCalculations";
+import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
+import { migrateInputs } from "@/components/roi/inputMigration";
+import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +36,9 @@ interface QuoteData {
   share_token: string | null;
   inputs: any;
   updated_at: string;
+  client_name?: string | null;
+  client_country?: string | null;
+  unit_size_sqf?: number | null;
 }
 
 interface PresentationData {
@@ -103,10 +111,10 @@ const ClientPortal = () => {
           setAdvisor(advisorData);
         }
 
-        // Fetch quotes for this client
+        // Fetch quotes for this client (include fields needed for export)
         const { data: quotesData } = await supabase
           .from('cashflow_quotes')
-          .select('id, project_name, developer, unit, unit_type, share_token, inputs, updated_at')
+          .select('id, project_name, developer, unit, unit_type, share_token, inputs, updated_at, client_name, client_country, unit_size_sqf')
           .eq('client_id', clientData.id)
           .order('updated_at', { ascending: false });
 
@@ -200,8 +208,64 @@ const ClientPortal = () => {
     );
   }
 
-  // Get current export quote data
+  // Get current export quote data and compute derived values
   const exportQuote = quotes.find(q => q.id === exportQuoteId);
+  
+  // Migrate and prepare inputs for export
+  const exportInputs: OIInputs | null = useMemo(() => {
+    if (!exportQuote?.inputs) return null;
+    return migrateInputs(exportQuote.inputs);
+  }, [exportQuote?.inputs]);
+  
+  // Compute calculations for export
+  const exportCalculations = useOICalculations(exportInputs || NEW_QUOTE_OI_INPUTS);
+  
+  // Prepare clientInfo for export
+  const exportClientInfo: ClientUnitData = useMemo(() => {
+    if (!exportQuote) return { developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' };
+    return {
+      developer: exportQuote.developer || '',
+      projectName: exportQuote.project_name || '',
+      clients: exportQuote.client_name ? [{ id: '1', name: exportQuote.client_name, country: exportQuote.client_country || '' }] : [],
+      brokerName: '',
+      unit: exportQuote.unit || '',
+      unitSizeSqf: exportQuote.unit_size_sqf || 0,
+      unitSizeM2: Math.round((exportQuote.unit_size_sqf || 0) * 0.0929),
+      unitType: exportQuote.unit_type || '',
+    };
+  }, [exportQuote]);
+  
+  // Prepare mortgage inputs for export
+  const exportMortgageInputs: MortgageInputs = useMemo(() => {
+    if (!exportInputs) return DEFAULT_MORTGAGE_INPUTS;
+    return (exportInputs as any).mortgageInputs || DEFAULT_MORTGAGE_INPUTS;
+  }, [exportInputs]);
+  
+  // Compute mortgage analysis for export
+  const exportMortgageAnalysis = useMortgageCalculations({
+    mortgageInputs: exportMortgageInputs,
+    basePrice: exportCalculations.basePrice,
+    preHandoverPercent: exportInputs?.preHandoverPercent || 100,
+    monthlyRent: exportCalculations.holdAnalysis?.annualRent ? exportCalculations.holdAnalysis.annualRent / 12 : 0,
+    monthlyServiceCharges: exportCalculations.holdAnalysis?.annualServiceCharges ? exportCalculations.holdAnalysis.annualServiceCharges / 12 : 0,
+  });
+  
+  // Get exit scenarios
+  const exportExitScenarios: number[] = useMemo(() => {
+    if (!exportInputs) return [];
+    return ((exportInputs as any).exitScenarios || []).map((e: any) => typeof e === 'number' ? e : e.months);
+  }, [exportInputs]);
+  
+  // Get quote images (if available in inputs)
+  const exportQuoteImages = useMemo(() => {
+    if (!exportInputs) return undefined;
+    const inputs = exportInputs as any;
+    return {
+      heroImageUrl: inputs.heroImageUrl || null,
+      floorPlanUrl: inputs.floorPlanUrl || null,
+      buildingRenderUrl: inputs.buildingRenderUrl || null,
+    };
+  }, [exportInputs]);
 
   return (
     <div className="min-h-screen bg-theme-bg">
@@ -463,15 +527,21 @@ const ClientPortal = () => {
       </main>
 
       {/* Export Modal */}
-      {exportQuote && (
+      {exportQuote && exportInputs && (
         <ExportModal
           open={exportModalOpen}
           onOpenChange={setExportModalOpen}
-          inputs={exportQuote.inputs}
+          inputs={exportInputs}
+          calculations={exportCalculations}
+          clientInfo={exportClientInfo}
+          mortgageInputs={exportMortgageInputs}
+          mortgageAnalysis={exportMortgageAnalysis}
+          exitScenarios={exportExitScenarios}
           projectName={exportQuote.project_name || 'Investment Property'}
           currency={currency}
           language={language}
           rate={rate}
+          quoteImages={exportQuoteImages}
         />
       )}
     </div>

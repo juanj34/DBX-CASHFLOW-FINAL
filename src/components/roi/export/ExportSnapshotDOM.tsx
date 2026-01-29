@@ -2,7 +2,7 @@ import { OIInputs, OICalculations } from '../useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '../useMortgageCalculations';
 import { Currency } from '../currencyUtils';
 import { ClientUnitData } from '../ClientUnitInfo';
-import { ExportHeader } from './ExportHeader';
+import { ExportPropertyHero } from './ExportPropertyHero';
 import { ExportOverviewCards } from './ExportOverviewCards';
 import { ExportPaymentTable } from './ExportPaymentTable';
 import { ExportExitCards } from './ExportExitCards';
@@ -21,6 +21,11 @@ export interface ExportSnapshotDOMProps {
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
+  quoteImages?: {
+    heroImageUrl: string | null;
+    floorPlanUrl: string | null;
+    buildingRenderUrl?: string | null;
+  };
 }
 
 /**
@@ -33,6 +38,8 @@ export interface ExportSnapshotDOMProps {
  * - No hover effects or interactivity
  * - All styles are inline or static classes
  * - Uses CSS variables for theme consistency
+ * 
+ * IMPORTANT: This mirrors the live SnapshotContent.tsx layout exactly!
  */
 export const ExportSnapshotDOM = ({
   inputs,
@@ -44,6 +51,7 @@ export const ExportSnapshotDOM = ({
   currency,
   rate,
   language,
+  quoteImages,
 }: ExportSnapshotDOMProps) => {
   const basePrice = calculations.basePrice;
   const pricePerSqft = clientInfo.unitSizeSqf > 0 ? basePrice / clientInfo.unitSizeSqf : 0;
@@ -58,8 +66,8 @@ export const ExportSnapshotDOM = ({
   const valueDifferentiators = (inputs as any).valueDifferentiators || [];
   const appreciationBonus = (inputs as any).appreciationBonus || 0;
 
-  // Determine construction years for handover
-  const constructionYears = Math.ceil(calculations.totalMonths / 12);
+  // Get hero image URL
+  const heroImageUrl = quoteImages?.heroImageUrl || quoteImages?.buildingRenderUrl || null;
 
   return (
     <div 
@@ -73,9 +81,10 @@ export const ExportSnapshotDOM = ({
         boxSizing: 'border-box',
       }}
     >
-      {/* Header */}
-      <ExportHeader
+      {/* Hero Section - Matches PropertyHeroCard */}
+      <ExportPropertyHero
         clientInfo={clientInfo}
+        heroImageUrl={heroImageUrl}
         basePrice={basePrice}
         pricePerSqft={pricePerSqft}
         currency={currency}
@@ -83,7 +92,7 @@ export const ExportSnapshotDOM = ({
         language={language}
       />
 
-      {/* Overview Cards */}
+      {/* Overview Cards - Matches SnapshotOverviewCards */}
       <div style={{ marginBottom: '16px' }}>
         <ExportOverviewCards
           inputs={inputs}
@@ -94,9 +103,9 @@ export const ExportSnapshotDOM = ({
         />
       </div>
 
-      {/* Main Content - 2 Column Layout */}
+      {/* Main Content - 2 Column Layout (matches SnapshotContent grid) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-        {/* Left Column: Payment */}
+        {/* Left Column: Payment (with Value Differentiators) */}
         <div>
           <ExportPaymentTable
             inputs={inputs}
@@ -110,9 +119,9 @@ export const ExportSnapshotDOM = ({
           />
         </div>
 
-        {/* Right Column: Rent + Exits + Mortgage */}
+        {/* Right Column: Rent + Exits + Post-Handover + Mortgage */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Rent Card */}
+          {/* Rent Card - only show if rentalYieldPercent > 0 */}
           {inputs.rentalYieldPercent > 0 && (
             <ExportRentCard
               inputs={inputs}
@@ -122,8 +131,8 @@ export const ExportSnapshotDOM = ({
             />
           )}
           
-          {/* Exit Scenarios */}
-          {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
+          {/* Exit Scenarios - only show if enabled AND we have valid data */}
+          {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0 && (
             <ExportExitCards
               inputs={inputs}
               calculations={calculations}
@@ -134,7 +143,7 @@ export const ExportSnapshotDOM = ({
             />
           )}
           
-          {/* Post-Handover Coverage Card */}
+          {/* Post-Handover Coverage Card - only show if hasPostHandoverPlan */}
           {inputs.hasPostHandoverPlan && (
             <ExportPostHandoverCard
               inputs={inputs}
@@ -145,7 +154,7 @@ export const ExportSnapshotDOM = ({
             />
           )}
           
-          {/* Mortgage Card */}
+          {/* Mortgage Card - only show if enabled */}
           {mortgageInputs.enabled && (
             <ExportMortgageCard
               mortgageInputs={mortgageInputs}
@@ -159,7 +168,7 @@ export const ExportSnapshotDOM = ({
         </div>
       </div>
 
-      {/* Wealth Projection Timeline - Full Width */}
+      {/* Wealth Projection Timeline - Full Width (matches WealthProjectionTimeline) */}
       <ExportWealthTimeline
         basePrice={basePrice}
         constructionMonths={calculations.totalMonths}
