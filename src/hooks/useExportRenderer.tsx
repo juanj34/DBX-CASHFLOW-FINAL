@@ -73,7 +73,7 @@ export const useExportRenderer = ({ projectName }: UseExportRendererProps) => {
       await new Promise<void>((resolve) => {
         root.render(<ExportSnapshotDOM {...props} />);
         // Allow React to render
-        setTimeout(resolve, 100);
+        setTimeout(resolve, 150);
       });
 
       // Wait for fonts to be fully loaded
@@ -81,8 +81,24 @@ export const useExportRenderer = ({ projectName }: UseExportRendererProps) => {
         await document.fonts.ready;
       }
 
-      // Wait for layout to stabilize (extra time for complex layouts)
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait for all images to load (important for hero image)
+      const images = container.querySelectorAll('img');
+      if (images.length > 0) {
+        await Promise.all(
+          Array.from(images).map((img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve(); // Don't block on failed images
+              // Timeout fallback after 3 seconds
+              setTimeout(resolve, 3000);
+            });
+          })
+        );
+      }
+
+      // Wait for layout to stabilize (extra time for complex layouts + images)
+      await new Promise(resolve => setTimeout(resolve, 400));
 
       // Force a reflow
       void container.offsetHeight;

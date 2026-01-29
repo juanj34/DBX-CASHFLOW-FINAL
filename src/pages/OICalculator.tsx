@@ -496,6 +496,7 @@ const OICalculatorContent = () => {
           currency={currency}
           rate={rate}
           language={language as 'en' | 'es'}
+          quoteImages={quoteImages}
         />
       </DashboardLayout>
     </CashflowErrorBoundary>

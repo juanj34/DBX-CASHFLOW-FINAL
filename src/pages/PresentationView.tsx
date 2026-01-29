@@ -42,6 +42,11 @@ interface QuoteExportData {
   mortgageInputs: MortgageInputs;
   clientInfo: ClientUnitData;
   exitScenarios: number[];
+  quoteImages?: {
+    heroImageUrl: string | null;
+    floorPlanUrl: string | null;
+    buildingRenderUrl?: string | null;
+  };
 }
 
 const PresentationView = () => {
@@ -238,6 +243,9 @@ const PresentationView = () => {
         clientShares?: Array<{ clientId: string; sharePercent: number }>;
       };
       _exitScenarios?: number[];
+      heroImageUrl?: string;
+      floorPlanUrl?: string;
+      buildingRenderUrl?: string;
     };
 
     const savedClients = inputsWithExtras._clients;
@@ -266,6 +274,11 @@ const PresentationView = () => {
       mortgageInputs,
       clientInfo,
       exitScenarios: inputsWithExtras._exitScenarios || [],
+      quoteImages: {
+        heroImageUrl: inputsWithExtras.heroImageUrl || null,
+        floorPlanUrl: inputsWithExtras.floorPlanUrl || null,
+        buildingRenderUrl: inputsWithExtras.buildingRenderUrl || null,
+      },
     };
   }, [allQuotes]);
 
@@ -651,6 +664,7 @@ const ExportQuoteModal = ({
       currency={currency}
       rate={rate}
       language={language}
+      quoteImages={exportData.quoteImages}
     />
   );
 };

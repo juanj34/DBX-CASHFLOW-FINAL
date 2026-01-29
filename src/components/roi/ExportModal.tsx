@@ -8,7 +8,6 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useExportRenderer } from '@/hooks/useExportRenderer';
-import { downloadSnapshotPDF } from '@/lib/pdfGenerator';
 import { OIInputs, OICalculations } from './useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from './useMortgageCalculations';
 import { Currency } from './currencyUtils';
@@ -35,6 +34,12 @@ interface ExportModalProps {
   currency?: Currency;
   rate?: number;
   language?: 'en' | 'es';
+  // Quote images for hero section
+  quoteImages?: {
+    heroImageUrl: string | null;
+    floorPlanUrl: string | null;
+    buildingRenderUrl?: string | null;
+  };
 }
 
 export const ExportModal = ({
@@ -51,16 +56,14 @@ export const ExportModal = ({
   currency = 'AED',
   rate = 1,
   language = 'en',
+  quoteImages,
 }: ExportModalProps) => {
   const [format, setFormat] = useState<FormatType>('pdf');
   const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
 
-  const { exporting: exportingPNG, exportSnapshot } = useExportRenderer({
+  const { exporting, exportSnapshot } = useExportRenderer({
     projectName,
   });
-
-  const [exportingPDF, setExportingPDF] = useState(false);
-  const exporting = exportingPNG || exportingPDF;
 
   // Check if we have all required data for export
   const hasExportData = inputs && calculations && clientInfo && mortgageInputs && mortgageAnalysis;
@@ -97,11 +100,9 @@ export const ExportModal = ({
     try {
       setProgress({ current: 1, total: 1, label: `Generating snapshot...` });
 
-      if (format === 'pdf') {
-        // Use new jsPDF generator for PDF
-        setExportingPDF(true);
-        
-        const result = await downloadSnapshotPDF({
+      // Use unified DOM-based export for BOTH PNG and PDF
+      const result = await exportSnapshot(
+        {
           inputs: inputs!,
           calculations: calculations!,
           clientInfo: clientInfo!,
@@ -111,44 +112,18 @@ export const ExportModal = ({
           currency,
           rate,
           language,
-          projectName: projectName || clientInfo?.projectName,
+          quoteImages,
+        },
+        format
+      );
+
+      if (result.success) {
+        toast({
+          title: 'Export complete',
+          description: `Your ${format.toUpperCase()} has been downloaded.`,
         });
-
-        setExportingPDF(false);
-
-        if (result.success) {
-          toast({
-            title: 'Export complete',
-            description: 'Your PDF has been downloaded.',
-          });
-        } else {
-          throw new Error(result.error || 'Export failed');
-        }
       } else {
-        // Use existing PNG exporter (html2canvas)
-        const result = await exportSnapshot(
-          {
-            inputs: inputs!,
-            calculations: calculations!,
-            clientInfo: clientInfo!,
-            mortgageInputs: mortgageInputs!,
-            mortgageAnalysis: mortgageAnalysis!,
-            exitScenarios,
-            currency,
-            rate,
-            language,
-          },
-          format
-        );
-
-        if (result.success) {
-          toast({
-            title: 'Export complete',
-            description: 'Your PNG has been downloaded.',
-          });
-        } else {
-          throw new Error(result.error || 'Export failed');
-        }
+        throw new Error(result.error || 'Export failed');
       }
     } catch (err) {
       console.error('Export error:', err);
@@ -157,11 +132,10 @@ export const ExportModal = ({
         description: 'Failed to generate the export. Please try again.',
         variant: 'destructive',
       });
-      setExportingPDF(false);
     } finally {
       setProgress({ current: 0, total: 0, label: '' });
     }
-  }, [hasExportData, format, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, exportSnapshot, onOpenChange, projectName]);
+  }, [hasExportData, format, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, quoteImages, exportSnapshot, onOpenChange]);
 
   const formatOptions = [
     { value: 'pdf', label: 'PDF', icon: FileText, description: 'Professional document' },
