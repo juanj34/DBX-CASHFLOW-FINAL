@@ -24,6 +24,13 @@ export const ExportHeader = ({
     day: 'numeric',
   });
 
+  const t = {
+    investmentAnalysis: language === 'es' ? 'Análisis de Inversión' : 'Investment Analysis',
+    by: language === 'es' ? 'por' : 'by',
+    unit: language === 'es' ? 'Unidad' : 'Unit',
+    client: language === 'es' ? 'Cliente' : 'Client',
+  };
+
   const formatValue = (value: number) => {
     const aed = formatCurrency(value, 'AED', 1);
     if (currency === 'AED') return aed;
@@ -45,14 +52,14 @@ export const ExportHeader = ({
             fontFamily: 'Inter, system-ui, sans-serif'
           }}
         >
-          {clientInfo.projectName || 'Investment Analysis'}
+          {clientInfo.projectName || t.investmentAnalysis}
         </h1>
         <div 
           className="flex items-center gap-3 text-sm"
           style={{ color: 'hsl(var(--theme-text-muted))' }}
         >
           {clientInfo.developer && (
-            <span>by {clientInfo.developer}</span>
+            <span>{t.by} {clientInfo.developer}</span>
           )}
           {clientInfo.unitType && (
             <>
@@ -63,7 +70,7 @@ export const ExportHeader = ({
           {clientInfo.unit && (
             <>
               <span>•</span>
-              <span>Unit {clientInfo.unit}</span>
+              <span>{t.unit} {clientInfo.unit}</span>
             </>
           )}
         </div>
@@ -96,7 +103,7 @@ export const ExportHeader = ({
             className="text-sm font-medium"
             style={{ color: 'hsl(var(--theme-text))' }}
           >
-            {language === 'es' ? 'Cliente' : 'Client'}: {clientInfo.clientName}
+            {t.client}: {clientInfo.clientName}
           </span>
         )}
         <span 

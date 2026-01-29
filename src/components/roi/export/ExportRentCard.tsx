@@ -65,6 +65,7 @@ export const ExportRentCard = ({
     net: language === 'es' ? 'Neto' : 'Net',
     expenses: language === 'es' ? 'Gastos' : 'Expenses',
     vsLongTerm: language === 'es' ? 'vs Largo Plazo' : 'vs Long-Term',
+    ltStBadge: language === 'es' ? 'LP + CP' : 'LT + ST',
   };
 
   const rowStyle = {
@@ -105,7 +106,7 @@ export const ExportRentCard = ({
         </span>
         {showAirbnbComparison && (
           <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(251, 146, 60, 0.1)', border: '1px solid rgba(251, 146, 60, 0.3)', color: 'rgb(251, 146, 60)' }}>
-            LT + ST
+            {t.ltStBadge}
           </span>
         )}
       </div>

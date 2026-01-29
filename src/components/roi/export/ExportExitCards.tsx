@@ -16,11 +16,13 @@ const getDualValue = (value: number, currency: Currency, rate: number) => {
   return { primary: dual.primary, secondary: dual.secondary };
 };
 
-const getDateFromMonths = (months: number, bookingMonth: number, bookingYear: number): string => {
+const getDateFromMonths = (months: number, bookingMonth: number, bookingYear: number, language: 'en' | 'es'): string => {
   const totalMonthsFromJan = bookingMonth + months;
   const yearOffset = Math.floor((totalMonthsFromJan - 1) / 12);
   const month = ((totalMonthsFromJan - 1) % 12) + 1;
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = language === 'es'
+    ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${monthNames[month - 1]}'${(bookingYear + yearOffset).toString().slice(-2)}`;
 };
 
@@ -52,7 +54,7 @@ export const ExportExitCards = ({
     );
     
     const isHandover = exitMonths >= calculations.totalMonths;
-    const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear);
+    const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear, language);
     const constructionPct = Math.min(100, monthToConstruction(exitMonths, calculations.totalMonths));
     
     return {

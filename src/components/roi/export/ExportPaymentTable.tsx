@@ -125,9 +125,9 @@ export const ExportPaymentTable = ({
     : entryTotal + journeyTotal + handoverAmount;
 
   const getPaymentLabel = (payment: PaymentMilestone): string => {
-    if (payment.type === 'time') return `Month ${payment.triggerValue}`;
-    if (payment.type === 'construction') return `${payment.triggerValue}% Built`;
-    return payment.label || 'Payment';
+    if (payment.type === 'time') return `${language === 'es' ? 'Mes' : 'Month'} ${payment.triggerValue}`;
+    if (payment.type === 'construction') return `${payment.triggerValue}% ${language === 'es' ? 'Construido' : 'Built'}`;
+    return payment.label || (language === 'es' ? 'Pago' : 'Payment');
   };
   
   const getPaymentDate = (payment: PaymentMilestone): string => {
@@ -154,6 +154,14 @@ export const ExportPaymentTable = ({
     totalInvestment: language === 'es' ? 'Inversión Total' : 'Total Investment',
     valueAdds: language === 'es' ? 'Valor Agregado' : 'Value Adds',
     bonus: language === 'es' ? 'bono' : 'bonus',
+    eoiBookingFee: language === 'es' ? 'EOI / Cuota de Reserva' : 'EOI / Booking Fee',
+    downpaymentBalance: language === 'es' ? 'Saldo de Enganche' : 'Downpayment Balance',
+    downpayment: language === 'es' ? 'Enganche' : 'Downpayment',
+    dldFee: language === 'es' ? 'Tarifa DLD (4%)' : 'DLD Fee (4%)',
+    oqoodAdmin: language === 'es' ? 'Oqood/Admin' : 'Oqood/Admin',
+    handoverPayment: language === 'es' ? 'Pago en Entrega' : 'Handover Payment',
+    postHandover: language === 'es' ? 'Post-Entrega' : 'Post-Handover',
+    months: language === 'es' ? 'meses' : 'months',
   };
 
   const sectionStyle = { marginBottom: '12px' };
@@ -214,30 +222,30 @@ export const ExportPaymentTable = ({
           
           {eoiFee > 0 && (
             <div style={rowStyle}>
-              <span style={labelStyle}>EOI / Booking Fee</span>
+              <span style={labelStyle}>{t.eoiBookingFee}</span>
               <span style={valueStyle}>{getDualValue(eoiFee).primary}</span>
             </div>
           )}
           
           <div style={rowStyle}>
-            <span style={labelStyle}>{eoiFee > 0 ? 'Downpayment Balance' : `Downpayment (${downpaymentPercent}%)`}</span>
+            <span style={labelStyle}>{eoiFee > 0 ? t.downpaymentBalance : `${t.downpayment} (${downpaymentPercent}%)`}</span>
             <span style={valueStyle}>{getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).primary}</span>
           </div>
           
           {eoiFee > 0 && (
             <div style={{ ...rowStyle, borderTop: '1px dashed hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
-              <span style={{ ...labelStyle, fontSize: '11px' }}>Subtotal ({downpaymentPercent}%)</span>
+              <span style={{ ...labelStyle, fontSize: '11px' }}>{t.subtotal} ({downpaymentPercent}%)</span>
               <span style={{ ...valueStyle, fontSize: '11px' }}>{getDualValue(entrySubtotal).primary}</span>
             </div>
           )}
           
           <div style={rowStyle}>
-            <span style={labelStyle}>DLD Fee (4%)</span>
+            <span style={labelStyle}>{t.dldFee}</span>
             <span style={valueStyle}>{getDualValue(dldFee).primary}</span>
           </div>
           
           <div style={rowStyle}>
-            <span style={labelStyle}>Oqood/Admin</span>
+            <span style={labelStyle}>{t.oqoodAdmin}</span>
             <span style={valueStyle}>{getDualValue(oqoodFee).primary}</span>
           </div>
           
@@ -277,7 +285,7 @@ export const ExportPaymentTable = ({
           <div style={sectionStyle}>
             <div style={{ ...sectionHeaderStyle, color: 'rgb(74, 222, 128)' }}>{t.handover} ({handoverPercent}%)</div>
             <div style={rowStyle}>
-              <span style={{ ...labelStyle, fontWeight: 600 }}>{hasPostHandoverPlan ? (language === 'es' ? 'Pago en Entrega' : 'Handover Payment') : t.finalPayment}</span>
+              <span style={{ ...labelStyle, fontWeight: 600 }}>{hasPostHandoverPlan ? t.handoverPayment : t.finalPayment}</span>
               <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(74, 222, 128)' }}>{getDualValue(handoverAmount).primary}</span>
             </div>
           </div>
@@ -287,14 +295,14 @@ export const ExportPaymentTable = ({
         {hasPostHandoverPlan && postHandoverPaymentsToUse.length > 0 && (
           <div style={sectionStyle}>
             <div style={{ ...sectionHeaderStyle, color: '#a855f7' }}>
-              {language === 'es' ? 'Post-Entrega' : 'Post-Handover'} ({Math.round(postHandoverPaymentsToUse.reduce((s, p) => s + p.paymentPercent, 0))}%)
+              {t.postHandover} ({Math.round(postHandoverPaymentsToUse.reduce((s, p) => s + p.paymentPercent, 0))}%)
             </div>
             {postHandoverPaymentsToUse.map((payment, index) => {
               const amount = basePrice * (payment.paymentPercent / 100);
               return (
                 <div key={index} style={rowStyle}>
                   <span style={labelStyle}>
-                    {payment.label || `+${payment.triggerValue} ${language === 'es' ? 'meses' : 'months'}`}
+                    {payment.label || `+${payment.triggerValue} ${t.months}`}
                   </span>
                   <span style={valueStyle}>{getDualValue(amount).primary}</span>
                 </div>
