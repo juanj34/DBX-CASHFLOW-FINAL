@@ -420,6 +420,7 @@ const SnapshotViewContent = () => {
         onExportPDF={handleExportPDF}
         onExportPNG={handleExportPNG}
         exporting={exporting}
+        hideViewCount={true}
       />
       
       {/* Main Content - add top padding on mobile for fixed header */}

@@ -42,6 +42,7 @@ interface SnapshotViewSidebarProps {
   onExportPDF: () => void;
   onExportPNG: () => void;
   exporting?: boolean;
+  hideViewCount?: boolean;
 }
 
 // Shared sidebar content component
@@ -56,7 +57,8 @@ const SidebarContent = ({
   onExportPNG,
   exporting = false,
   showLogo = true,
-}: SnapshotViewSidebarProps & { showLogo?: boolean }) => {
+  hideViewCount = false,
+}: SnapshotViewSidebarProps & { showLogo?: boolean; hideViewCount?: boolean }) => {
   const { t } = useLanguage();
   const whatsappLink = brokerProfile.whatsappNumber
     ? `https://wa.me/${brokerProfile.whatsappCountryCode?.replace('+', '')}${brokerProfile.whatsappNumber}`
@@ -149,10 +151,12 @@ const SidebarContent = ({
               <span>{format(new Date(quoteInfo.createdAt), 'MMM d, yyyy')}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-theme-text-muted">
-            <Eye className="w-3.5 h-3.5" />
-            <span>{quoteInfo.viewCount} {quoteInfo.viewCount === 1 ? t('viewLabel') : t('viewsLabel')}</span>
-          </div>
+          {!hideViewCount && (
+            <div className="flex items-center gap-2 text-theme-text-muted">
+              <Eye className="w-3.5 h-3.5" />
+              <span>{quoteInfo.viewCount} {quoteInfo.viewCount === 1 ? t('viewLabel') : t('viewsLabel')}</span>
+            </div>
+          )}
         </div>
       </div>
 
