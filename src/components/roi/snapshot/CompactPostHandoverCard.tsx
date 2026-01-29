@@ -142,7 +142,7 @@ export const CompactPostHandoverCard = ({
         
         {/* Per Installment Amount */}
         <DottedRow 
-          label={`Per Installment (${numberOfPayments}x)`}
+          label={`${t('perInstallmentLabel')} (${numberOfPayments}x)`}
           value={getDualValue(perInstallmentAmount).primary}
           secondaryValue={getDualValue(perInstallmentAmount).secondary}
           valueClassName="text-purple-400"
