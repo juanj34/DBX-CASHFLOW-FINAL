@@ -11,7 +11,7 @@ import { calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards'
 import { CashflowSkeleton } from '@/components/roi/CashflowSkeleton';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { SnapshotContent, SnapshotViewSidebar } from '@/components/roi/snapshot';
-import { LanguageProvider } from '@/contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { useExportRenderer } from '@/hooks/useExportRenderer';
 import { downloadSnapshotPDF } from '@/lib/pdfGenerator';
 import { toast } from '@/hooks/use-toast';
@@ -28,6 +28,7 @@ const SnapshotViewContent = () => {
   useDocumentTitle("Investment Snapshot");
   const { shareToken } = useParams<{ shareToken: string }>();
   const [searchParams] = useSearchParams();
+  const { language: contextLanguage, setLanguage: setContextLanguage } = useLanguage();
   
   // Initialize currency and language from URL params or defaults
   const [currency, setCurrency] = useState<Currency>(() => {
@@ -38,10 +39,16 @@ const SnapshotViewContent = () => {
     return 'AED';
   });
   
-  const [language, setLanguage] = useState<'en' | 'es'>(() => {
+  const [language, setLanguageLocal] = useState<'en' | 'es'>(() => {
     const urlLang = searchParams.get('lang');
     return urlLang === 'es' ? 'es' : 'en';
   });
+  
+  // Sync language with context
+  const setLanguage = useCallback((lang: 'en' | 'es') => {
+    setLanguageLocal(lang);
+    setContextLanguage(lang);
+  }, [setContextLanguage]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inputs, setInputs] = useState<OIInputs | null>(null);
@@ -401,7 +408,7 @@ const SnapshotViewContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-theme-bg flex">
+    <div className="min-h-screen bg-theme-bg flex flex-col lg:flex-row">
       {/* Sidebar */}
       <SnapshotViewSidebar
         brokerProfile={brokerProfile}
@@ -415,8 +422,8 @@ const SnapshotViewContent = () => {
         exporting={exporting}
       />
       
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      {/* Main Content - add top padding on mobile for fixed header */}
+      <main className="flex-1 overflow-auto pt-14 lg:pt-0">
         <SnapshotContent
           inputs={inputs}
           calculations={calculations}
