@@ -17,10 +17,10 @@ export const LandmarkInfoCard = ({ landmark, onClose }: LandmarkInfoCardProps) =
       onClick={onClose}
       data-info-card
     >
-      <div 
-        className="relative max-w-4xl w-[calc(100vw-2rem)] sm:w-[90vw] max-h-[85vh] bg-[#1a1f2e] border border-[#2a3142] rounded-xl shadow-2xl overflow-hidden mx-4 sm:mx-0"
-        onClick={(e) => e.stopPropagation()}
-      >
+        <div 
+          className="relative max-w-4xl w-[calc(100vw-2rem)] sm:w-[90vw] max-h-[85vh] bg-theme-card border border-theme-border rounded-xl shadow-2xl overflow-hidden mx-4 sm:mx-0"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Close button */}
         <Button
           variant="ghost"
@@ -42,9 +42,9 @@ export const LandmarkInfoCard = ({ landmark, onClose }: LandmarkInfoCardProps) =
 
         {/* Content */}
         <div className="p-6 space-y-2">
-          <h2 className="text-2xl font-bold text-white">{landmark.title}</h2>
+          <h2 className="text-2xl font-bold text-theme-text">{landmark.title}</h2>
           {landmark.description && (
-            <p className="text-gray-400">{landmark.description}</p>
+            <p className="text-theme-text-muted">{landmark.description}</p>
           )}
         </div>
       </div>
