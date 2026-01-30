@@ -137,6 +137,7 @@ export const SnapshotPrintContent = ({
                 mortgageInputs={mortgageInputs}
                 mortgageAnalysis={mortgageAnalysis}
                 monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
                 currency={currency}
                 rate={rate}
               />

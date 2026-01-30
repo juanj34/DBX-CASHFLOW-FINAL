@@ -1,13 +1,14 @@
 import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
-import { Currency, formatDualCurrency } from '../currencyUtils';
+import { Currency, formatDualCurrency, calculateAverageMonthlyRent } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 interface CompactPostHandoverCardProps {
   inputs: OIInputs;
-  monthlyRent: number;
+  monthlyRent: number; // Year 1 rent
+  rentGrowthRate: number; // Annual growth rate %
   currency: Currency;
   rate: number;
 }
@@ -29,6 +30,9 @@ const translations = {
   net: { en: 'Net', es: 'Neto' },
   payments: { en: 'payments', es: 'pagos' },
   mo: { en: 'mo', es: 'mes' },
+  avgShort: { en: 'Avg', es: 'Prom' },
+  year1: { en: 'Y1', es: 'A1' },
+  yearsShort: { en: 'yr', es: 'año' },
 };
 
 // Check if a payment is AFTER the handover quarter (strictly after Q end, not start)
@@ -54,6 +58,7 @@ const isPaymentAfterHandoverQuarter = (
 export const CompactPostHandoverCard = ({
   inputs,
   monthlyRent,
+  rentGrowthRate,
   currency,
   rate,
 }: CompactPostHandoverCardProps) => {
@@ -107,6 +112,10 @@ export const CompactPostHandoverCard = ({
   const lastPaymentMonth = Math.max(...paymentMonths);
   const firstPaymentMonth = Math.min(...paymentMonths);
   const actualDurationMonths = Math.max(1, lastPaymentMonth - firstPaymentMonth + 1);
+  const actualDurationYears = actualDurationMonths / 12;
+
+  // Calculate average rent over the post-handover period for accurate coverage
+  const averageMonthlyRent = calculateAverageMonthlyRent(monthlyRent, rentGrowthRate, Math.ceil(actualDurationYears));
 
   // Per installment amount (what user actually pays each time)
   const perInstallmentAmount = postHandoverTotal / numberOfPayments;
@@ -114,12 +123,12 @@ export const CompactPostHandoverCard = ({
   // Monthly cashflow burn rate (spread over actual payment period)
   const monthlyEquivalent = postHandoverTotal / actualDurationMonths;
 
-  // Cashflow calculation
-  const monthlyCashflow = monthlyRent - monthlyEquivalent;
+  // Cashflow calculation using average rent
+  const monthlyCashflow = averageMonthlyRent - monthlyEquivalent;
   const isFullyCovered = monthlyCashflow >= 0;
 
-  // Total tenant contribution over the post-handover period
-  const totalTenantContribution = monthlyRent * actualDurationMonths;
+  // Total tenant contribution over the post-handover period (using average rent)
+  const totalTenantContribution = averageMonthlyRent * actualDurationMonths;
 
   // What investor actually pays out of pocket (after tenant covers portion)
   const netOutOfPocket = Math.max(0, postHandoverTotal - totalTenantContribution);
@@ -178,11 +187,15 @@ export const CompactPostHandoverCard = ({
             secondaryValue={getDualValue(monthlyEquivalent).secondary}
           />
           <DottedRow 
-            label={t('monthlyRentLabel')}
-            value={`+${getDualValue(monthlyRent).primary}/${t('mo')}`}
-            secondaryValue={getDualValue(monthlyRent).secondary}
+            label={`${t('monthlyRentLabel')} (${t('avgShort')})`}
+            value={`+${getDualValue(averageMonthlyRent).primary}/${t('mo')}`}
+            secondaryValue={getDualValue(averageMonthlyRent).secondary}
             valueClassName="text-cyan-400"
           />
+          {/* Year 1 reference */}
+          <div className="text-[9px] text-theme-text-muted text-right -mt-1">
+            {t('year1')}: {getDualValue(monthlyRent).primary} → {rentGrowthRate}%/{t('yearsShort')}
+          </div>
           <DottedRow 
             label={isFullyCovered ? t('monthlySurplus') : t('monthlyGap')}
             value={`${isFullyCovered ? '+' : '-'}${getDualValue(Math.abs(monthlyCashflow)).primary}/${t('mo')}`}
@@ -204,7 +217,7 @@ export const CompactPostHandoverCard = ({
             />
           )}
           <DottedRow 
-            label={`${t('tenantCovers')} (${actualDurationMonths}${t('mo')})`}
+            label={`${t('tenantCovers')} (${actualDurationMonths}${t('mo')} ${t('avgShort')})`}
             value={`+${getDualValue(totalTenantContribution).primary}`}
             secondaryValue={getDualValue(totalTenantContribution).secondary}
             valueClassName="text-cyan-400"

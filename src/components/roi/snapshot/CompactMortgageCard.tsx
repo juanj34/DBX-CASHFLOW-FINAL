@@ -1,13 +1,14 @@
 import { Landmark, TrendingUp, TrendingDown } from 'lucide-react';
 import { MortgageInputs, MortgageAnalysis } from '../useMortgageCalculations';
-import { Currency, formatDualCurrency } from '../currencyUtils';
+import { Currency, formatDualCurrency, calculateAverageMonthlyRent } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompactMortgageCardProps {
   mortgageInputs: MortgageInputs;
   mortgageAnalysis: MortgageAnalysis;
-  monthlyRent: number;
+  monthlyRent: number; // Year 1 rent
+  rentGrowthRate: number; // Annual growth rate %
   currency: Currency;
   rate: number;
 }
@@ -16,6 +17,7 @@ export const CompactMortgageCard = ({
   mortgageInputs,
   mortgageAnalysis,
   monthlyRent,
+  rentGrowthRate,
   currency,
   rate,
 }: CompactMortgageCardProps) => {
@@ -25,8 +27,12 @@ export const CompactMortgageCard = ({
 
   const { loanAmount, monthlyPayment, totalInterest, equityRequiredPercent } = mortgageAnalysis;
   
-  // Cash flow calculation
-  const monthlyCashflow = monthlyRent - monthlyPayment;
+  // Calculate average rent over the mortgage term for more accurate coverage analysis
+  const loanTermYears = mortgageInputs.loanTermYears;
+  const averageMonthlyRent = calculateAverageMonthlyRent(monthlyRent, rentGrowthRate, loanTermYears);
+  
+  // Cash flow calculation using average rent
+  const monthlyCashflow = averageMonthlyRent - monthlyPayment;
   const isPositive = monthlyCashflow >= 0;
 
   // Dual currency helper
@@ -66,12 +72,17 @@ export const CompactMortgageCard = ({
           valueClassName="text-purple-400"
         />
         
-        {/* Rental Income */}
+        {/* Rental Income - Average over mortgage term */}
         <DottedRow 
-          label={t('rentalIncome')}
-          value={`+${getDualValue(monthlyRent).primary}`}
+          label={`${t('rentalIncome')} (${t('avgShort')} ${loanTermYears}${t('yearsShort')})`}
+          value={`+${getDualValue(averageMonthlyRent).primary}`}
           valueClassName="text-cyan-400"
         />
+        
+        {/* Year 1 reference */}
+        <div className="text-[9px] text-theme-text-muted text-right -mt-1">
+          {t('year1')}: {getDualValue(monthlyRent).primary} → {rentGrowthRate}%/{t('yearsShort')}
+        </div>
         
         {/* Cash Flow */}
         <div className="pt-2 border-t border-border">
@@ -84,8 +95,8 @@ export const CompactMortgageCard = ({
         </div>
         
         {/* Summary badges */}
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+        <div className="flex items-center gap-2 pt-1 flex-wrap">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-theme-card-alt border border-theme-border text-theme-text-muted">
             {t('interestLabel')}: {getDualValue(totalInterest).primary}
           </span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${isPositive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
