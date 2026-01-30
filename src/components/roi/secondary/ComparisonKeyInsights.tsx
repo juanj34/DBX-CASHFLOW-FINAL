@@ -12,11 +12,9 @@ interface ComparisonKeyInsightsProps {
   rate: number;
   language: 'en' | 'es';
   appreciationDuringConstruction: number;
-  // New props for Monthly Cashflow card
-  secondaryMonthlyCashflow: number;
-  secondaryMonthlyRent: number;
-  secondaryMonthlyMortgage: number;
-  mortgageEnabled: boolean;
+  // New props for Income During Build card
+  constructionMonths: number;
+  secondaryTotalIncomeAtHandover: number;
 }
 
 export const ComparisonKeyInsights = ({
@@ -27,10 +25,8 @@ export const ComparisonKeyInsights = ({
   rate,
   language,
   appreciationDuringConstruction,
-  secondaryMonthlyCashflow,
-  secondaryMonthlyRent,
-  secondaryMonthlyMortgage,
-  mortgageEnabled,
+  constructionMonths,
+  secondaryTotalIncomeAtHandover,
 }: ComparisonKeyInsightsProps) => {
   const isAirbnb = rentalMode === 'airbnb';
 
@@ -54,13 +50,12 @@ export const ComparisonKeyInsights = ({
   const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
     ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
     : 0;
-  
-  // Coverage badge for monthly cashflow
-  const coverageLabel = mortgageEnabled
-    ? (secondaryMonthlyCashflow >= 0 ? '100% Covered' : 'Partial')
-    : null;
 
   const formatValue = (value: number): string => {
+    // Handle NaN and invalid values
+    if (isNaN(value) || !isFinite(value)) {
+      return 'N/A';
+    }
     const dual = formatDualCurrencyCompact(value, currency, rate);
     if (dual.secondary) {
       return `${dual.primary} (${dual.secondary})`;
@@ -73,8 +68,8 @@ export const ComparisonKeyInsights = ({
     entryTicketTooltip: 'Compromiso total requerido. Off-plan = precio + fees. Secundaria = precio + costos de cierre.',
     moneyMultiplier: 'Multiplicador',
     moneyMultiplierSubtitle: 'Crecimiento 10 años',
-    monthlyCashflow: 'Cashflow Mensual',
-    monthlyCashflowSubtitle: 'Durante construcción',
+    incomeDuringBuild: 'Ingresos Durante Obra',
+    incomeDuringBuildSubtitle: 'Renta acumulada',
     constructionBonus: 'Bonus Construcción',
     constructionDescription: 'Apreciación "gratis" durante obra',
     save: 'Ahorro',
@@ -84,15 +79,16 @@ export const ComparisonKeyInsights = ({
     freeEquity: '¡Equity gratis!',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
-    perMonth: '/mes',
     noIncome: 'Sin ingresos',
+    months: 'meses',
+    total: 'Total',
   } : {
     entryTicket: 'Entry Ticket',
     entryTicketTooltip: 'Total commitment required. Off-plan = price + fees. Secondary = price + closing costs.',
     moneyMultiplier: 'Multiplier',
     moneyMultiplierSubtitle: '10-Year Growth',
-    monthlyCashflow: 'Monthly Cashflow',
-    monthlyCashflowSubtitle: 'During construction',
+    incomeDuringBuild: 'Income During Build',
+    incomeDuringBuildSubtitle: 'Cumulative rent earned',
     constructionBonus: 'Construction Bonus',
     constructionDescription: '"Free" appreciation during build',
     save: 'Save',
@@ -102,8 +98,9 @@ export const ComparisonKeyInsights = ({
     freeEquity: 'Free equity!',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
-    perMonth: '/mo',
     noIncome: 'No income',
+    months: 'months',
+    total: 'Total',
   };
 
   const cards = [
@@ -131,15 +128,15 @@ export const ComparisonKeyInsights = ({
       winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
     },
     {
-      key: 'cashflow',
-      title: t.monthlyCashflow,
-      subtitle: t.monthlyCashflowSubtitle,
+      key: 'income',
+      title: t.incomeDuringBuild,
+      subtitle: t.incomeDuringBuildSubtitle,
       icon: Coins,
       showComparison: true,
       offPlanValue: t.noIncome,
-      secondaryValue: `${secondaryMonthlyCashflow >= 0 ? '+' : ''}${formatValue(secondaryMonthlyCashflow)}${t.perMonth}`,
-      badge: coverageLabel,
-      badgeColor: secondaryMonthlyCashflow >= 0 ? 'cyan' : 'amber',
+      secondaryValue: `+${formatValue(secondaryTotalIncomeAtHandover)}`,
+      badge: `${constructionMonths} ${t.months}`,
+      badgeColor: 'cyan',
       winner: 'secondary', // Secondary always wins during construction
     },
     {
@@ -234,13 +231,15 @@ export const ComparisonKeyInsights = ({
                   </span>
                 </div>
                 
-                {/* Savings Badge */}
+                {/* Badge */}
                 {card.badge && (
                   <div className="pt-1">
                     <Badge className={`text-[10px] w-full justify-center ${
                       card.badgeColor === 'emerald'
                         ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'
-                        : 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30'
+                        : card.badgeColor === 'cyan'
+                        ? 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30'
+                        : 'bg-amber-500/20 text-amber-500 border-amber-500/30'
                     }`}>
                       ✨ {card.badge}
                     </Badge>
