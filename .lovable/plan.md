@@ -1,307 +1,227 @@
 
+# Plan: Fix Secondary Multiplier Calculation
 
-# Comprehensive Plan: Fix Bugs + Revamp Comparison Metrics
+## The Problem
 
-## Overview
+The secondary multiplier shows **1.1x** for 10-year growth, which is clearly wrong. A property appreciating at 3%/year for 10 years should show much higher growth.
 
-This plan addresses all identified issues and revamps the comparison view to be more persuasive for off-plan investments.
+### Root Cause
+
+There's a mismatch between how wealth is calculated and what capital is used for the multiplier:
+
+| Step | Formula | Value Used |
+|------|---------|------------|
+| Wealth calculation | `equityBuildup + cumulativeRent - totalCapitalDay1` | **920K** (mortgage-adjusted) |
+| Multiplier division | `wealthYear10 / secondaryCapitalDay1` | **2.12M** (full price) |
+
+The wealth formula already subtracts the 920K capital, creating a "net profit" figure. Then we divide by 2.12M which is larger, artificially shrinking the multiplier.
+
+### Example Math (2M property, 60% mortgage):
+- Property Value Year 10: ~2.68M
+- Cumulative Rent 10Y: ~1.4M
+- Mortgage Balance Year 10: ~1.0M
+- Wealth10 = (2.68M - 1.0M) + 1.4M - 920K = **~2.18M** (net wealth)
+- Multiplier = 2.18M / 2.12M = **1.03x** (wrong!)
 
 ---
 
-## Part 1: Fix Secondary Capital Bug (920K → 2.12M)
+## Solution: Calculate Gross Wealth for Multiplier
 
-### Problem
-The comparison shows "Secondary Day 1 Capital" as AED 920K instead of AED 2.12M because it uses the mortgage-adjusted figure (down payment + closing costs) instead of the total property commitment.
+The multiplier should answer: **"Your total portfolio grew to X times your initial investment."**
 
-### Solution
-Update the metrics calculation to use **Total Capital = Purchase Price + Closing Costs** for a fair apples-to-apples comparison.
-
-### File: `src/pages/OffPlanVsSecondary.tsx` (line 316)
-
-```typescript
-// BEFORE:
-secondaryCapitalDay1: secondaryCalcs.totalCapitalDay1,
-
-// AFTER:
-// For fair comparison, use total property cost (not mortgage-adjusted)
-// Secondary buyer commits to full price + fees, just like off-plan buyer
-secondaryCapitalDay1: secondaryInputs.purchasePrice + secondaryCalcs.closingCosts,
+**Correct Formula:**
+```
+Multiplier = (Wealth10 + Capital) / Capital
+           = (Net Profit + Capital) / Capital
+           = Total Value / Capital
 ```
 
-**Result:** Secondary capital shows AED 2.12M (2M + 120K), not 920K.
+Or equivalently:
+```
+grossWealth = wealthYear10 + secondaryCalcs.totalCapitalDay1
+Multiplier = grossWealth / metrics.secondaryCapitalDay1
+```
+
+Wait, this still mixes the two capital values. Let me think more carefully...
 
 ---
 
-## Part 2: Revamp Key Insights Cards (The Persuasion Engine)
+## Deeper Analysis
 
-### Current State (Ineffective)
-The current `ComparisonKeyInsights` shows:
-- Initial Capital (raw numbers)
-- Wealth Year 10 (raw numbers)
-- Annualized ROE (percentage)
+The issue is that `secondaryCalcs.wealthYear10LT` subtracts `totalCapitalDay1` (920K), but we changed `metrics.secondaryCapitalDay1` to be 2.12M.
 
-**Problem:** These are abstract metrics that don't tell a compelling "story."
+**Two consistent options:**
 
-### New Design: 4 High-Impact Cards
+### Option A: Keep capital consistent at 2.12M everywhere
+- Recalculate wealth: `equityBuildup + cumulativeRent - fullPurchasePrice - closingCosts`
+- This would show negative wealth for leveraged properties (since you'd subtract the full 2M price when you only put in 920K)
+- **Not ideal**
 
-Replace the current 3 generic cards with 4 emotionally impactful cards:
+### Option B: Compute multiplier correctly using gross values
+- Multiplier = (Equity at Year 10 + Cumulative Rent) / Initial Capital
+- This shows the true return on investment
 
-| Card | Metric | Purpose |
-|------|--------|---------|
-| **Entry Ticket** | Capital + "Save X%" | Shows how much LESS cash is needed |
-| **Money Multiplier** | X.Xx | "Your money grows X times" |
-| **Crossover Point** | Year N | When off-plan permanently wins |
-| **Construction Bonus** | +AED XXK | "Free" appreciation during build |
+**Recommended: Option B**
 
-### File: `src/components/roi/secondary/ComparisonKeyInsights.tsx` (Complete Revamp)
+In `ComparisonKeyInsights.tsx`, instead of using `wealthYear10` (which is already net of capital), calculate the multiplier from the underlying components:
 
 ```typescript
-// New props needed
-interface ComparisonKeyInsightsProps {
-  metrics: ComparisonMetrics;
-  rentalMode: 'long-term' | 'airbnb';
-  offPlanLabel: string;
-  currency: Currency;
-  rate: number;
-  language: 'en' | 'es';
-  appreciationDuringConstruction: number; // NEW
+// For secondary: 
+// Year 10 Property Value = propertyValue from projections
+// Year 10 Mortgage Balance = mortgageBalance from projections
+// Cumulative Rent = cumulativeRentLT from projections
+// Equity = propertyValue - mortgageBalance
+
+const secYear10 = secondaryProjections[9];
+const secGrossWealth = secYear10.equityBuildup + secYear10.cumulativeRentLT;
+const secondaryMultiplier = secGrossWealth / totalCapitalDay1; // Use 920K
+```
+
+But wait - we want to compare apples-to-apples. The off-plan multiplier uses `offPlanWealthYear10 / offPlanCapitalDay1`. Let me check that calculation...
+
+---
+
+## The Real Fix
+
+Looking at it more carefully, the issue is:
+
+1. **Off-Plan Multiplier**: `offPlanWealthYear10 / offPlanCapitalDay1` where wealth = propertyValue + rent - capital ✓
+2. **Secondary Multiplier**: `secondaryWealthYear10 / secondaryCapitalDay1` where wealth = equity + rent - capital ✓
+
+But we changed `secondaryCapitalDay1` to 2.12M while the wealth still subtracts 920K!
+
+### Correct Fix
+
+In `ComparisonKeyInsights.tsx`, we need to add back the **difference** between the two capitals to get apples-to-apples:
+
+```typescript
+// The wealth was calculated subtracting 920K (mortgage capital)
+// But secondaryCapitalDay1 is now 2.12M (full price)
+// So we need to adjust:
+const capitalDifference = metrics.secondaryCapitalDay1 - secondaryCalcs.totalCapitalDay1;
+const adjustedSecondaryWealth = secondaryWealth10 + capitalDifference;
+const secondaryMultiplier = adjustedSecondaryWealth / metrics.secondaryCapitalDay1;
+```
+
+**But this requires passing `secondaryCalcs` to ComparisonKeyInsights...**
+
+### Simpler Solution: Pass the correct wealth value from the parent
+
+In `OffPlanVsSecondary.tsx`, calculate the wealth using consistent capital:
+
+```typescript
+// For secondary, use consistent capital (full price + closing)
+const secondaryFullCapital = secondaryInputs.purchasePrice + secondaryCalcs.closingCosts;
+const secondaryGrossWealth10LT = secondaryCalcs.yearlyProjections[9]?.equityBuildup 
+  + secondaryCalcs.yearlyProjections[9]?.cumulativeRentLT 
+  - secondaryFullCapital;
+```
+
+Wait, that would give the same result (subtracting 2.12M gives lower wealth).
+
+---
+
+## Final Correct Approach
+
+For a **Money Multiplier**, we should show:
+
+**"Your AED X investment became AED Y"** → Multiplier = Y / X
+
+Where:
+- X = Initial capital invested
+- Y = Total value at Year 10 (property equity + cumulative income)
+
+For leveraged secondary with mortgage:
+- X = 920K (what you actually put in)
+- Y = Equity(2.68M - 1.0M) + Rent(1.4M) = 3.08M
+- **Multiplier = 3.08M / 920K = 3.3x** ✓
+
+For non-leveraged comparison using full price:
+- X = 2.12M (full commitment)
+- Y = Property(2.68M) + Rent(1.4M) = 4.08M
+- **Multiplier = 4.08M / 2.12M = 1.9x** ✓
+
+### The Problem We Created
+
+We changed `secondaryCapitalDay1` to 2.12M for the "Entry Ticket" card, but the multiplier should use the **mortgage-adjusted capital (920K)** because that's what the investor actually puts in.
+
+### The Fix
+
+Pass **both** capital values to `ComparisonKeyInsights`:
+- `secondaryCapitalDay1` (2.12M) for "Entry Ticket"
+- `secondaryCashCapital` (920K) for "Multiplier"
+
+---
+
+## Implementation Plan
+
+### File: `src/components/roi/secondary/types.ts`
+
+Add new field to `ComparisonMetrics`:
+```typescript
+export interface ComparisonMetrics {
+  // ... existing fields
+  secondaryCashCapital: number; // 920K - what you actually put in (for multiplier)
 }
-
-// New computed metrics:
-const entrySavings = ((metrics.secondaryCapitalDay1 - metrics.offPlanCapitalDay1) / metrics.secondaryCapitalDay1) * 100;
-
-const offPlanMultiplier = metrics.offPlanWealthYear10 / metrics.offPlanCapitalDay1;
-const secondaryMultiplier = secondaryWealth10 / metrics.secondaryCapitalDay1;
-
-const crossoverYear = metrics.crossoverYearLT || metrics.crossoverYearST;
-
-// New 4-card layout:
-const insights = [
-  {
-    title: 'Entry Ticket',
-    icon: Wallet,
-    offPlanValue: formatValue(metrics.offPlanCapitalDay1),
-    secondaryValue: formatValue(metrics.secondaryCapitalDay1),
-    badge: `Save ${entrySavings.toFixed(0)}%`, // Highlight the savings
-    badgeColor: entrySavings > 0 ? 'emerald' : 'cyan',
-    winner: metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'offplan' : 'secondary',
-  },
-  {
-    title: 'Money Multiplier',
-    subtitle: '10-Year Growth',
-    icon: TrendingUp,
-    offPlanValue: `${offPlanMultiplier.toFixed(1)}x`,
-    secondaryValue: `${secondaryMultiplier.toFixed(1)}x`,
-    winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
-  },
-  {
-    title: 'Crossover Point',
-    icon: Target,
-    value: crossoverYear ? `Year ${crossoverYear}` : 'N/A',
-    description: 'When Off-Plan wealth exceeds Secondary',
-    isPositive: crossoverYear && crossoverYear <= 5,
-  },
-  {
-    title: 'Construction Bonus',
-    icon: Building2,
-    value: formatValue(appreciationDuringConstruction),
-    description: '"Free" appreciation during build',
-    isPositive: appreciationDuringConstruction > 0,
-  },
-];
 ```
 
-### Visual Design:
-```text
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  ENTRY TICKET   │ │ MONEY MULTIPLIER│ │ CROSSOVER POINT │ │CONSTRUCTION     │
-│  ────────────── │ │ ──────────────  │ │ ──────────────  │ │    BONUS        │
-│  OP: AED 520K   │ │  OP:  3.5x  🏆  │ │                 │ │                 │
-│  SEC: AED 2.1M  │ │  SEC: 1.8x      │ │   YEAR 3        │ │  +AED 180K      │
-│  ────────────── │ │                 │ │   🎯            │ │  ────────────   │
-│  [Save 75%] 🏆  │ │                 │ │  Off-Plan leads │ │  Free equity!   │
-└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
-```
+### File: `src/pages/OffPlanVsSecondary.tsx` (~line 318)
 
----
-
-## Part 3: Update HeadToHeadTable
-
-### Changes:
-1. **Rename "Day 1 Capital" to "Total Capital"** for clarity
-2. **Add tooltip** explaining this is full property commitment
-3. **Ensure consistent dual currency formatting**
-
-### File: `src/components/roi/secondary/HeadToHeadTable.tsx`
-
+Pass both capital values:
 ```typescript
-// Update translations (line 59)
-day1Capital: 'Total Capital', // Was: 'Day 1 Capital'
-totalCapitalTooltip: 'Full property commitment including purchase price and closing costs',
-
-// Update formatMoney to always include AED prefix
-const formatMoney = (value: number): string => {
-  const aed = Math.abs(value) >= 1000000 
-    ? `AED ${(value / 1000000).toFixed(2)}M`
-    : `AED ${(value / 1000).toFixed(0)}K`;
-  
-  if (currency === 'AED') return aed;
-  
-  const converted = value * rate;
-  const secondary = Math.abs(converted) >= 1000000 
-    ? `${(converted / 1000000).toFixed(2)}M`
-    : `${(converted / 1000).toFixed(0)}K`;
-  
-  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
-  return `${aed} (${symbol}${secondary})`;
+return {
+  // ... existing fields
+  secondaryCapitalDay1: secondaryInputs.purchasePrice + secondaryCalcs.closingCosts, // 2.12M for "Entry Ticket"
+  secondaryCashCapital: secondaryCalcs.totalCapitalDay1, // 920K for "Multiplier"
 };
 ```
 
----
+### File: `src/components/roi/secondary/ComparisonKeyInsights.tsx` (~line 41)
 
-## Part 4: Fix ComparisonVerdict Secondary Capital Reference
-
-The verdict currently uses the incorrect `secondaryCapitalDay1` value. After Part 1, this will automatically show the correct value.
-
-### File: `src/components/roi/secondary/ComparisonVerdict.tsx` (line 118)
-
+Use cash capital for multiplier, add back capital to get gross wealth:
 ```typescript
-// This will now show correct value after Part 1 fix
-{ icon: DollarSign, text: `AED ${(metrics.secondaryCapitalDay1 / 1000000).toFixed(2)}M ${t.capitalRequired}` },
+// For multiplier: use actual cash invested (920K) and gross wealth (not net)
+// Gross wealth = net wealth + cash capital (add back what was subtracted)
+const secondaryGrossWealth = secondaryWealth10 + metrics.secondaryCashCapital;
+const secondaryMultiplier = metrics.secondaryCashCapital > 0
+  ? secondaryGrossWealth / metrics.secondaryCashCapital
+  : 0;
 ```
 
----
-
-## Part 5: Fix Configurator Navigation Bug
-
-### Problem
-When navigating to `/offplan-vs-secondary/:quoteId`, the modal opens at Step 2 but `selectedQuote` is null, disabling the "Next" button.
-
-### File: `src/components/roi/secondary/ComparisonConfiguratorModal.tsx`
-
-```typescript
-// Add import
-import { useCashflowQuote } from '@/hooks/useCashflowQuote';
-
-// Inside component, after state declarations:
-const { quote: initialQuote, loading: initialQuoteLoading } = useCashflowQuote(initialQuoteId);
-
-// Add effect to load quote when initialQuoteId is provided
-useEffect(() => {
-  if (initialQuote && !selectedQuote && initialQuoteId) {
-    setSelectedQuote(initialQuote);
-  }
-}, [initialQuote, selectedQuote, initialQuoteId]);
-
-// Update button disabled state
-<Button
-  onClick={handleNext}
-  disabled={step === 2 ? (!selectedQuote && !initialQuoteLoading && !initialQuoteId) : false}
->
-```
+This gives:
+- Gross Wealth = 2.18M + 920K = 3.08M
+- Multiplier = 3.08M / 920K = **3.3x** ✓
 
 ---
 
-## Part 6: Add Property Name to Secondary Configurator
+## Updated Entry Ticket Card
 
-### File: `src/components/roi/secondary/SecondaryPropertyStep.tsx`
+The "Entry Ticket" card should clarify what we're comparing:
 
-```typescript
-// Add state for property name
-const [propertyName, setPropertyName] = useState(initialInputs?.propertyName || 'Secondary Property');
+| Entry Ticket | Off-Plan | Secondary |
+|--------------|----------|-----------|
+| Total Commitment | AED 520K | AED 2.12M |
+| Cash Required | - | AED 920K |
 
-// Add to form (at top of form fields):
-<div className="space-y-1.5">
-  <Label>{t.propertyName || 'Property Name'}</Label>
-  <Input
-    value={propertyName}
-    onChange={(e) => setPropertyName(e.target.value)}
-    placeholder="e.g., Marina View 2BR"
-    className="bg-theme-bg"
-  />
-</div>
-```
+Or better yet, compare cash-to-cash:
+- Off-Plan: Total you pay = AED 520K (or full contract over time)
+- Secondary: Cash required = AED 920K + mortgage obligation
+
+For simplicity, keep Entry Ticket as "Total Commitment" (2.12M) but add a tooltip explaining the mortgage.
 
 ---
 
-## Part 7: Format Purchase Price Input
+## Summary
 
-### File: `src/components/roi/secondary/SecondaryPropertyStep.tsx`
+| Change | File | Description |
+|--------|------|-------------|
+| Add `secondaryCashCapital` | `types.ts` | New field for mortgage-adjusted capital |
+| Pass both capitals | `OffPlanVsSecondary.tsx` | 2.12M for Entry Ticket, 920K for Multiplier |
+| Fix multiplier formula | `ComparisonKeyInsights.tsx` | Use gross wealth / cash capital |
 
-```typescript
-// Replace purchase price input:
-<div className="space-y-1.5">
-  <Label>{t.purchasePrice}</Label>
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm font-medium">
-      AED
-    </span>
-    <Input
-      type="text"
-      inputMode="numeric"
-      value={inputs.purchasePrice.toLocaleString()}
-      onChange={(e) => {
-        const cleaned = e.target.value.replace(/[^0-9]/g, '');
-        updateInput('purchasePrice', Number(cleaned) || 0);
-      }}
-      className="pl-14 font-mono"
-    />
-  </div>
-</div>
-```
+### Expected Result After Fix:
 
----
-
-## Part 8: Update OffPlanVsSecondary to Pass New Props
-
-### File: `src/pages/OffPlanVsSecondary.tsx`
-
-```typescript
-// Pass appreciationDuringConstruction to ComparisonKeyInsights (line 523):
-<ComparisonKeyInsights
-  metrics={comparisonMetrics}
-  rentalMode={rentalMode}
-  offPlanLabel={projectName}
-  currency={currency}
-  rate={rate}
-  language={language}
-  appreciationDuringConstruction={appreciationDuringConstruction} // NEW
-/>
-```
-
----
-
-## Summary of All Changes
-
-| File | Changes |
-|------|---------|
-| `OffPlanVsSecondary.tsx` | Fix secondaryCapitalDay1 calculation, pass new props |
-| `ComparisonKeyInsights.tsx` | Complete revamp with 4 persuasive cards |
-| `HeadToHeadTable.tsx` | Rename label, improve formatting |
-| `ComparisonVerdict.tsx` | Update format for larger capital values |
-| `ComparisonConfiguratorModal.tsx` | Fix navigation, load initial quote |
-| `SecondaryPropertyStep.tsx` | Add property name, format purchase price |
-
----
-
-## Expected Results After All Fixes
-
-### Top Cards (New Design):
-| Entry Ticket | Money Multiplier | Crossover | Construction Bonus |
-|--------------|------------------|-----------|-------------------|
-| OP: AED 520K | OP: **3.5x** 🏆 | **Year 3** | **+AED 180K** |
-| SEC: AED 2.1M | SEC: 1.8x | Off-Plan leads | Free equity during build |
-| **Save 75%** 🏆 | | | |
-
-### HeadToHead Table:
-| Metric | Off-Plan | Secondary |
-|--------|----------|-----------|
-| **Total Capital** | AED 520K | **AED 2.12M** |
-| Wealth Year 10 | AED 3.5M | AED 2.8M |
-| ROE | 22.4% | 8.1% |
-
-### Configurator:
-- Property name field visible at top
-- Purchase price formatted: `AED 2,000,000`
-- Navigation works when arriving via URL
-
+| Card | Off-Plan | Secondary |
+|------|----------|-----------|
+| Entry Ticket | AED 520K | AED 2.12M |
+| Multiplier | 10.5x | **3.3x** (was 1.1x) |
