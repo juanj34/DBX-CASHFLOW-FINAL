@@ -80,23 +80,24 @@ export const YearByYearWealthTable = ({
       opCumulativeRent += opAnnualRent;
       secCumulativeRent += secAnnualRent;
       
-      // Wealth = Property Value + Cumulative Net Rent
-      const opWealth = (opProj?.propertyValue || 0) + opCumulativeRent;
-      const secWealth = (secProj?.propertyValue || 0) + secCumulativeRent;
-      const delta = opWealth - secWealth;
+      // USE THE SAME VALUE for display AND wealth calculation
+      // This ensures Value + Cumulative Rent = Wealth (consistent)
+      const offPlanValue = opProj?.propertyValue || offPlanBasePrice;
+      const secondaryValue = secProj?.propertyValue || secondaryPurchasePrice;
       
-      // For Year 1, show purchase prices (entry point), not appreciated values
-      const displayOffPlanValue = year === 1 ? offPlanBasePrice : (opProj?.propertyValue || 0);
-      const displaySecondaryValue = year === 1 ? secondaryPurchasePrice : (secProj?.propertyValue || 0);
+      // Wealth = Property Value + Cumulative Net Rent (now uses displayed value)
+      const opWealth = offPlanValue + opCumulativeRent;
+      const secWealth = secondaryValue + secCumulativeRent;
+      const delta = opWealth - secWealth;
       
       data.push({
         year,
         calendarYear: opProj?.calendarYear || new Date().getFullYear() + year,
-        offPlanValue: displayOffPlanValue,
+        offPlanValue,
         offPlanRent: opAnnualRent,
         offPlanCumulativeRent: opCumulativeRent,
         offPlanWealth: opWealth,
-        secondaryValue: displaySecondaryValue,
+        secondaryValue,
         secondaryRent: secAnnualRent,
         secondaryCumulativeRent: secCumulativeRent,
         secondaryWealth: secWealth,
@@ -136,6 +137,8 @@ export const YearByYearWealthTable = ({
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
     noRent: '—',
+    cumulativeRent: 'Renta Acumulada',
+    propertyValue: 'Valor Propiedad',
   } : {
     title: 'Year-by-Year Wealth Progression',
     tooltip: 'Wealth = Property Value + Cumulative Net Rent (after service charges). Shows how each investment builds wealth over time.',
@@ -151,6 +154,8 @@ export const YearByYearWealthTable = ({
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
     noRent: '—',
+    cumulativeRent: 'Cumulative Rent',
+    propertyValue: 'Property Value',
   };
 
   return (
@@ -242,13 +247,33 @@ export const YearByYearWealthTable = ({
                         <span className="text-theme-text">{formatSmallValue(row.offPlanRent)}</span>
                       )}
                     </TableCell>
-                    {/* Off-Plan Wealth */}
+                    {/* Off-Plan Wealth with hover tooltip */}
                     <TableCell className="text-right">
-                      <span className={`text-sm font-medium ${
-                        row.delta > 0 ? 'text-emerald-500' : 'text-theme-text'
-                      }`}>
-                        {formatSmallValue(row.offPlanWealth)}
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className={`text-sm font-medium cursor-help ${
+                            row.delta > 0 ? 'text-emerald-500' : 'text-theme-text'
+                          }`}>
+                            {formatSmallValue(row.offPlanWealth)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="p-2">
+                          <div className="text-xs space-y-1">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-theme-text-muted">{t.propertyValue}:</span>
+                              <span className="font-mono">{formatSmallValue(row.offPlanValue)}</span>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                              <span className="text-theme-text-muted">+ {t.cumulativeRent}:</span>
+                              <span className="font-mono">{formatSmallValue(row.offPlanCumulativeRent)}</span>
+                            </div>
+                            <div className="border-t border-theme-border pt-1 flex justify-between gap-4 font-semibold">
+                              <span>= {t.wealth}:</span>
+                              <span className="font-mono">{formatSmallValue(row.offPlanWealth)}</span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     {/* Secondary Value */}
                     <TableCell className="text-right text-xs text-theme-text">
@@ -258,13 +283,33 @@ export const YearByYearWealthTable = ({
                     <TableCell className="text-right text-xs text-theme-text">
                       {formatSmallValue(row.secondaryRent)}
                     </TableCell>
-                    {/* Secondary Wealth */}
+                    {/* Secondary Wealth with hover tooltip */}
                     <TableCell className="text-right">
-                      <span className={`text-sm font-medium ${
-                        row.delta < 0 ? 'text-cyan-500' : 'text-theme-text'
-                      }`}>
-                        {formatSmallValue(row.secondaryWealth)}
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className={`text-sm font-medium cursor-help ${
+                            row.delta < 0 ? 'text-cyan-500' : 'text-theme-text'
+                          }`}>
+                            {formatSmallValue(row.secondaryWealth)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="p-2">
+                          <div className="text-xs space-y-1">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-theme-text-muted">{t.propertyValue}:</span>
+                              <span className="font-mono">{formatSmallValue(row.secondaryValue)}</span>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                              <span className="text-theme-text-muted">+ {t.cumulativeRent}:</span>
+                              <span className="font-mono">{formatSmallValue(row.secondaryCumulativeRent)}</span>
+                            </div>
+                            <div className="border-t border-theme-border pt-1 flex justify-between gap-4 font-semibold">
+                              <span>= {t.wealth}:</span>
+                              <span className="font-mono">{formatSmallValue(row.secondaryWealth)}</span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     {/* Delta */}
                     <TableCell className="text-right">

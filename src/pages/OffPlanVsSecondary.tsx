@@ -56,9 +56,6 @@ const OffPlanVsSecondary = () => {
   const [secondaryInputs, setSecondaryInputs] = useState<SecondaryInputs>(DEFAULT_SECONDARY_INPUTS);
   const [rentalMode, setRentalMode] = useState<'long-term' | 'airbnb'>('long-term');
   
-  // Track if secondary inputs have been initialized (prevent overwriting user changes)
-  const [hasInitializedSecondaryFromQuote, setHasInitializedSecondaryFromQuote] = useState(false);
-  
   // Language from context, Currency is per-view
   const { language } = useLanguage();
   const [currency, setCurrency] = useState<Currency>('AED');
@@ -87,26 +84,6 @@ const OffPlanVsSecondary = () => {
     }
   }, [quoteId, hasConfigured]);
 
-  // Initialize secondary inputs from quote ONLY ONCE on first load
-  // This should NOT run when the user has already configured secondary inputs
-  useEffect(() => {
-    if (quote?.inputs && !hasInitializedSecondaryFromQuote && !hasConfigured) {
-      const inputs = quote.inputs as OIInputs;
-      setSecondaryInputs(prev => ({
-        ...prev,
-        purchasePrice: inputs.basePrice || prev.purchasePrice,
-        unitSizeSqf: inputs.unitSizeSqf || prev.unitSizeSqf,
-        showAirbnbComparison: inputs.showAirbnbComparison ?? true,
-        averageDailyRate: inputs.shortTermRental?.averageDailyRate || prev.averageDailyRate,
-        occupancyPercent: inputs.shortTermRental?.occupancyPercent || prev.occupancyPercent,
-        operatingExpensePercent: inputs.shortTermRental?.operatingExpensePercent || prev.operatingExpensePercent,
-        managementFeePercent: inputs.shortTermRental?.managementFeePercent || prev.managementFeePercent,
-      }));
-      setHasInitializedSecondaryFromQuote(true);
-      setHasConfigured(true);
-    }
-  }, [quote?.inputs, hasInitializedSecondaryFromQuote, hasConfigured]);
-
   // Handle compare from modal - this REPLACES secondary inputs with modal values
   const handleCompare = (newQuoteId: string, newSecondaryInputs: SecondaryInputs, newExitMonths?: number[]) => {
     setSelectedQuoteId(newQuoteId);
@@ -115,7 +92,6 @@ const OffPlanVsSecondary = () => {
       setExitMonths(newExitMonths);
     }
     setHasConfigured(true);
-    setHasInitializedSecondaryFromQuote(true); // Mark as initialized to prevent overwrite
     setCurrentComparisonId(null); // Reset since this is a new comparison
     setCurrentComparisonTitle('');
     // Update URL
@@ -131,7 +107,6 @@ const OffPlanVsSecondary = () => {
     setCurrentComparisonId(comparison.id);
     setCurrentComparisonTitle(comparison.title);
     setHasConfigured(true);
-    setHasInitializedSecondaryFromQuote(true); // Mark as initialized to prevent overwrite
     if (comparison.quote_id) {
       navigate(`/offplan-vs-secondary/${comparison.quote_id}`, { replace: true });
     }
