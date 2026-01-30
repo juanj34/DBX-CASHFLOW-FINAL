@@ -223,35 +223,65 @@ export const ExportPaymentTable = ({
           {eoiFee > 0 && (
             <div style={rowStyle}>
               <span style={labelStyle}>{t.eoiBookingFee}</span>
-              <span style={valueStyle}>{getDualValue(eoiFee).primary}</span>
+              <span style={valueStyle}>
+                {getDualValue(eoiFee).primary}
+                {getDualValue(eoiFee).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(eoiFee).secondary})</span>
+                )}
+              </span>
             </div>
           )}
           
           <div style={rowStyle}>
             <span style={labelStyle}>{eoiFee > 0 ? t.downpaymentBalance : `${t.downpayment} (${downpaymentPercent}%)`}</span>
-            <span style={valueStyle}>{getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).primary}</span>
+            <span style={valueStyle}>
+              {getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).primary}
+              {getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(eoiFee > 0 ? remainingDownpayment : downpaymentAmount).secondary})</span>
+              )}
+            </span>
           </div>
           
           {eoiFee > 0 && (
             <div style={{ ...rowStyle, borderTop: '1px dashed hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
               <span style={{ ...labelStyle, fontSize: '11px' }}>{t.subtotal} ({downpaymentPercent}%)</span>
-              <span style={{ ...valueStyle, fontSize: '11px' }}>{getDualValue(entrySubtotal).primary}</span>
+              <span style={{ ...valueStyle, fontSize: '11px' }}>
+                {getDualValue(entrySubtotal).primary}
+                {getDualValue(entrySubtotal).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(entrySubtotal).secondary})</span>
+                )}
+              </span>
             </div>
           )}
           
           <div style={rowStyle}>
             <span style={labelStyle}>{t.dldFee}</span>
-            <span style={valueStyle}>{getDualValue(dldFee).primary}</span>
+            <span style={valueStyle}>
+              {getDualValue(dldFee).primary}
+              {getDualValue(dldFee).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(dldFee).secondary})</span>
+              )}
+            </span>
           </div>
           
           <div style={rowStyle}>
             <span style={labelStyle}>{t.oqoodAdmin}</span>
-            <span style={valueStyle}>{getDualValue(oqoodFee).primary}</span>
+            <span style={valueStyle}>
+              {getDualValue(oqoodFee).primary}
+              {getDualValue(oqoodFee).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(oqoodFee).secondary})</span>
+              )}
+            </span>
           </div>
           
           <div style={{ ...rowStyle, borderTop: '1px solid hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
             <span style={{ ...labelStyle, fontWeight: 600 }}>{t.totalEntry}</span>
-            <span style={{ ...valueStyle, fontWeight: 700, color: 'hsl(var(--primary))' }}>{getDualValue(entryTotal).primary}</span>
+            <span style={{ ...valueStyle, fontWeight: 700, color: 'hsl(var(--primary))' }}>
+              {getDualValue(entryTotal).primary}
+              {getDualValue(entryTotal).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(entryTotal).secondary})</span>
+              )}
+            </span>
           </div>
         </div>
 
@@ -268,14 +298,24 @@ export const ExportPaymentTable = ({
               return (
                 <div key={index} style={rowStyle}>
                   <span style={labelStyle}>{labelWithDate}</span>
-                  <span style={valueStyle}>{getDualValue(amount).primary}</span>
+                  <span style={valueStyle}>
+                    {getDualValue(amount).primary}
+                    {getDualValue(amount).secondary && (
+                      <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(amount).secondary})</span>
+                    )}
+                  </span>
                 </div>
               );
             })}
             
             <div style={{ ...rowStyle, borderTop: '1px solid hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
               <span style={{ ...labelStyle, fontWeight: 600 }}>{t.subtotal}</span>
-              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(34, 211, 238)' }}>{getDualValue(journeyTotal).primary}</span>
+              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(34, 211, 238)' }}>
+                {getDualValue(journeyTotal).primary}
+                {getDualValue(journeyTotal).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(journeyTotal).secondary})</span>
+                )}
+              </span>
             </div>
           </div>
         )}
@@ -286,7 +326,12 @@ export const ExportPaymentTable = ({
             <div style={{ ...sectionHeaderStyle, color: 'rgb(74, 222, 128)' }}>{t.handover} ({handoverPercent}%)</div>
             <div style={rowStyle}>
               <span style={{ ...labelStyle, fontWeight: 600 }}>{hasPostHandoverPlan ? t.handoverPayment : t.finalPayment}</span>
-              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(74, 222, 128)' }}>{getDualValue(handoverAmount).primary}</span>
+              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(74, 222, 128)' }}>
+                {getDualValue(handoverAmount).primary}
+                {getDualValue(handoverAmount).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(handoverAmount).secondary})</span>
+                )}
+              </span>
             </div>
           </div>
         )}
@@ -304,13 +349,23 @@ export const ExportPaymentTable = ({
                   <span style={labelStyle}>
                     {payment.label || `+${payment.triggerValue} ${t.months}`}
                   </span>
-                  <span style={valueStyle}>{getDualValue(amount).primary}</span>
+                  <span style={valueStyle}>
+                    {getDualValue(amount).primary}
+                    {getDualValue(amount).secondary && (
+                      <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(amount).secondary})</span>
+                    )}
+                  </span>
                 </div>
               );
             })}
             <div style={{ ...rowStyle, borderTop: '1px solid hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
               <span style={{ ...labelStyle, fontWeight: 600 }}>{t.subtotal}</span>
-              <span style={{ ...valueStyle, fontWeight: 700, color: '#a855f7' }}>{getDualValue(postHandoverTotal).primary}</span>
+              <span style={{ ...valueStyle, fontWeight: 700, color: '#a855f7' }}>
+                {getDualValue(postHandoverTotal).primary}
+                {getDualValue(postHandoverTotal).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(postHandoverTotal).secondary})</span>
+                )}
+              </span>
             </div>
           </div>
         )}
@@ -319,15 +374,30 @@ export const ExportPaymentTable = ({
         <div style={{ borderTop: '1px solid hsl(var(--theme-border))', paddingTop: '8px' }}>
           <div style={rowStyle}>
             <span style={labelStyle}>{t.basePropertyPrice}</span>
-            <span style={valueStyle}>{getDualValue(basePrice).primary}</span>
+            <span style={valueStyle}>
+              {getDualValue(basePrice).primary}
+              {getDualValue(basePrice).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(basePrice).secondary})</span>
+              )}
+            </span>
           </div>
           <div style={rowStyle}>
             <span style={labelStyle}>{t.transactionFees}</span>
-            <span style={{ ...valueStyle, color: 'hsl(var(--theme-text-muted))' }}>{getDualValue(dldFee + oqoodFee).primary}</span>
+            <span style={{ ...valueStyle, color: 'hsl(var(--theme-text-muted))' }}>
+              {getDualValue(dldFee + oqoodFee).primary}
+              {getDualValue(dldFee + oqoodFee).secondary && (
+                <span style={{ marginLeft: '4px' }}>({getDualValue(dldFee + oqoodFee).secondary})</span>
+              )}
+            </span>
           </div>
           <div style={{ ...rowStyle, fontSize: '14px' }}>
             <span style={{ ...labelStyle, fontWeight: 600, fontSize: '14px' }}>{t.totalInvestment}</span>
-            <span style={{ ...valueStyle, fontWeight: 700, fontSize: '14px' }}>{getDualValue(grandTotal).primary}</span>
+            <span style={{ ...valueStyle, fontWeight: 700, fontSize: '14px' }}>
+              {getDualValue(grandTotal).primary}
+              {getDualValue(grandTotal).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400, fontSize: '12px' }}>({getDualValue(grandTotal).secondary})</span>
+              )}
+            </span>
           </div>
         </div>
 

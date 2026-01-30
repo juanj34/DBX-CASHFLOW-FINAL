@@ -121,24 +121,44 @@ export const ExportRentCard = ({
           
           <div style={rowStyle}>
             <span style={labelStyle}>{t.gross}</span>
-            <span style={valueStyle}>{getDualValue(grossAnnualRent).primary}</span>
+            <span style={valueStyle}>
+              {getDualValue(grossAnnualRent).primary}
+              {getDualValue(grossAnnualRent).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(grossAnnualRent).secondary})</span>
+              )}
+            </span>
           </div>
           
           {unitSizeSqf > 0 && (
             <div style={rowStyle}>
               <span style={labelStyle}>− {t.service}</span>
-              <span style={{ ...valueStyle, color: 'rgb(248, 113, 113)' }}>-{getDualValue(annualServiceCharges).primary}</span>
+              <span style={{ ...valueStyle, color: 'rgb(248, 113, 113)' }}>
+                -{getDualValue(annualServiceCharges).primary}
+                {getDualValue(annualServiceCharges).secondary && (
+                  <span style={{ marginLeft: '4px' }}>({getDualValue(annualServiceCharges).secondary})</span>
+                )}
+              </span>
             </div>
           )}
           
           <div style={{ ...rowStyle, borderTop: '1px solid hsl(var(--theme-border))', marginTop: '4px', paddingTop: '8px' }}>
             <span style={{ ...labelStyle, fontWeight: 600 }}>= {t.netYear}</span>
-            <span style={{ ...valueStyle, fontWeight: 700, color: 'hsl(var(--primary))' }}>{getDualValue(netAnnualRent).primary}</span>
+            <span style={{ ...valueStyle, fontWeight: 700, color: 'hsl(var(--primary))' }}>
+              {getDualValue(netAnnualRent).primary}
+              {getDualValue(netAnnualRent).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(netAnnualRent).secondary})</span>
+              )}
+            </span>
           </div>
           
           <div style={rowStyle}>
             <span style={labelStyle}>{t.monthly}</span>
-            <span style={{ ...valueStyle, color: 'rgb(34, 211, 238)' }}>{getDualValue(monthlyRent).primary}</span>
+            <span style={{ ...valueStyle, color: 'rgb(34, 211, 238)' }}>
+              {getDualValue(monthlyRent).primary}
+              {getDualValue(monthlyRent).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(monthlyRent).secondary})</span>
+              )}
+            </span>
           </div>
           
           <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
@@ -160,22 +180,42 @@ export const ExportRentCard = ({
             
             <div style={rowStyle}>
               <span style={labelStyle}>ADR × {occupancyPercent}%</span>
-              <span style={valueStyle}>{getDualValue(grossAirbnbAnnual).primary}</span>
+              <span style={valueStyle}>
+                {getDualValue(grossAirbnbAnnual).primary}
+                {getDualValue(grossAirbnbAnnual).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(grossAirbnbAnnual).secondary})</span>
+                )}
+              </span>
             </div>
             
             <div style={rowStyle}>
               <span style={labelStyle}>− {t.expenses}</span>
-              <span style={{ ...valueStyle, color: 'rgb(248, 113, 113)' }}>-{getDualValue(airbnbOperatingExpenses + annualServiceCharges).primary}</span>
+              <span style={{ ...valueStyle, color: 'rgb(248, 113, 113)' }}>
+                -{getDualValue(airbnbOperatingExpenses + annualServiceCharges).primary}
+                {getDualValue(airbnbOperatingExpenses + annualServiceCharges).secondary && (
+                  <span style={{ marginLeft: '4px' }}>({getDualValue(airbnbOperatingExpenses + annualServiceCharges).secondary})</span>
+                )}
+              </span>
             </div>
             
             <div style={{ ...rowStyle, borderTop: '1px solid rgba(251, 146, 60, 0.2)', marginTop: '4px', paddingTop: '8px' }}>
               <span style={{ ...labelStyle, fontWeight: 600 }}>= {t.netYear}</span>
-              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(251, 146, 60)' }}>{getDualValue(netAirbnbAnnual).primary}</span>
+              <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(251, 146, 60)' }}>
+                {getDualValue(netAirbnbAnnual).primary}
+                {getDualValue(netAirbnbAnnual).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(netAirbnbAnnual).secondary})</span>
+                )}
+              </span>
             </div>
             
             <div style={rowStyle}>
               <span style={labelStyle}>{t.monthly}</span>
-              <span style={{ ...valueStyle, color: 'rgb(251, 146, 60)' }}>{getDualValue(monthlyAirbnb).primary}</span>
+              <span style={{ ...valueStyle, color: 'rgb(251, 146, 60)' }}>
+                {getDualValue(monthlyAirbnb).primary}
+                {getDualValue(monthlyAirbnb).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(monthlyAirbnb).secondary})</span>
+                )}
+              </span>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>

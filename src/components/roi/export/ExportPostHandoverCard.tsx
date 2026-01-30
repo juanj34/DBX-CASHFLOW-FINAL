@@ -207,6 +207,9 @@ export const ExportPostHandoverCard = ({
           </span>
           <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'hsl(var(--theme-text))' }}>
             {getDualValue(postHandoverTotal).primary}
+            {getDualValue(postHandoverTotal).secondary && (
+              <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(postHandoverTotal).secondary})</span>
+            )}
           </span>
         </div>
         
@@ -217,6 +220,9 @@ export const ExportPostHandoverCard = ({
           </span>
           <span style={{ fontSize: '11px', fontFamily: 'monospace', fontWeight: 600, color: '#a855f7' }}>
             {getDualValue(perInstallmentAmount).primary}
+            {getDualValue(perInstallmentAmount).secondary && (
+              <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(perInstallmentAmount).secondary})</span>
+            )}
           </span>
         </div>
 
@@ -228,6 +234,9 @@ export const ExportPostHandoverCard = ({
             </span>
             <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'hsl(var(--theme-text))' }}>
               {getDualValue(monthlyEquivalent).primary}/{t('mo')}
+              {getDualValue(monthlyEquivalent).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(monthlyEquivalent).secondary})</span>
+              )}
             </span>
           </div>
 
@@ -237,6 +246,9 @@ export const ExportPostHandoverCard = ({
             </span>
             <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22d3ee' }}>
               +{getDualValue(monthlyRent).primary}/{t('mo')}
+              {getDualValue(monthlyRent).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(monthlyRent).secondary})</span>
+              )}
             </span>
           </div>
 
@@ -251,6 +263,9 @@ export const ExportPostHandoverCard = ({
               color: isFullyCovered ? '#4ade80' : '#f87171' 
             }}>
               {isFullyCovered ? '+' : '-'}{getDualValue(Math.abs(monthlyCashflow)).primary}/{t('mo')}
+              {getDualValue(Math.abs(monthlyCashflow)).secondary && (
+                <span style={{ marginLeft: '4px', fontWeight: 400 }}>({getDualValue(Math.abs(monthlyCashflow)).secondary})</span>
+              )}
             </span>
           </div>
         </div>
@@ -264,6 +279,9 @@ export const ExportPostHandoverCard = ({
               </span>
               <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#facc15' }}>
                 {getDualValue(onHandoverAmount).primary}
+                {getDualValue(onHandoverAmount).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(onHandoverAmount).secondary})</span>
+                )}
               </span>
             </div>
           )}
@@ -274,6 +292,9 @@ export const ExportPostHandoverCard = ({
             </span>
             <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22d3ee' }}>
               +{getDualValue(totalTenantContribution).primary}
+              {getDualValue(totalTenantContribution).secondary && (
+                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(totalTenantContribution).secondary})</span>
+              )}
             </span>
           </div>
           
@@ -288,6 +309,9 @@ export const ExportPostHandoverCard = ({
               color: netOutOfPocket > 0 ? '#f87171' : '#4ade80' 
             }}>
               {getDualValue(netOutOfPocket).primary}
+              {getDualValue(netOutOfPocket).secondary && (
+                <span style={{ marginLeft: '4px', fontWeight: 400 }}>({getDualValue(netOutOfPocket).secondary})</span>
+              )}
             </span>
           </div>
         </div>

@@ -82,6 +82,7 @@ export const CompactPaymentTable = ({
   const [splitModalOpen, setSplitModalOpen] = useState(false);
   const [selectedPayments, setSelectedPayments] = useState<Map<string, number>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
   
   // Clear selection when clicking outside
   useEffect(() => {
@@ -95,7 +96,35 @@ export const CompactPaymentTable = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  // Toggle payment selection
+  // Handle mouse up to stop dragging
+  useEffect(() => {
+    const handleMouseUp = () => {
+      isDragging.current = false;
+    };
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+  
+  // Start drag selection on mousedown
+  const handleMouseDown = useCallback((e: React.MouseEvent, id: string, amount: number) => {
+    e.preventDefault(); // Prevent text selection
+    isDragging.current = true;
+    // Start fresh selection with this row
+    setSelectedPayments(new Map([[id, amount]]));
+  }, []);
+  
+  // Add to selection on mouseenter while dragging
+  const handleMouseEnter = useCallback((id: string, amount: number) => {
+    if (isDragging.current) {
+      setSelectedPayments(prev => {
+        const next = new Map(prev);
+        next.set(id, amount);
+        return next;
+      });
+    }
+  }, []);
+  
+  // Toggle payment selection (for single click without drag)
   const togglePaymentSelection = useCallback((id: string, amount: number) => {
     setSelectedPayments(prev => {
       const next = new Map(prev);
@@ -263,9 +292,10 @@ export const CompactPaymentTable = ({
               {/* EOI / Booking Fee */}
               {eoiFee > 0 && (
                 <div
-                  onClick={() => togglePaymentSelection('eoi', eoiFee)}
+                  onMouseDown={(e) => handleMouseDown(e, 'eoi', eoiFee)}
+                  onMouseEnter={() => handleMouseEnter('eoi', eoiFee)}
                   className={cn(
-                    "cursor-pointer rounded transition-colors",
+                    "cursor-pointer rounded transition-colors select-none",
                     selectedPayments.has('eoi') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                   )}
                 >
@@ -278,9 +308,10 @@ export const CompactPaymentTable = ({
               )}
               {/* Remaining Downpayment (or full if no EOI) */}
               <div
-                onClick={() => togglePaymentSelection('downpayment', eoiFee > 0 ? remainingDownpayment : downpaymentAmount)}
+                onMouseDown={(e) => handleMouseDown(e, 'downpayment', eoiFee > 0 ? remainingDownpayment : downpaymentAmount)}
+                onMouseEnter={() => handleMouseEnter('downpayment', eoiFee > 0 ? remainingDownpayment : downpaymentAmount)}
                 className={cn(
-                  "cursor-pointer rounded transition-colors",
+                  "cursor-pointer rounded transition-colors select-none",
                   selectedPayments.has('downpayment') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                 )}
               >
@@ -302,9 +333,10 @@ export const CompactPaymentTable = ({
                 </div>
               )}
               <div
-                onClick={() => togglePaymentSelection('dld', dldFee)}
+                onMouseDown={(e) => handleMouseDown(e, 'dld', dldFee)}
+                onMouseEnter={() => handleMouseEnter('dld', dldFee)}
                 className={cn(
-                  "cursor-pointer rounded transition-colors",
+                  "cursor-pointer rounded transition-colors select-none",
                   selectedPayments.has('dld') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                 )}
               >
@@ -315,9 +347,10 @@ export const CompactPaymentTable = ({
                 />
               </div>
               <div
-                onClick={() => togglePaymentSelection('oqood', oqoodFee)}
+                onMouseDown={(e) => handleMouseDown(e, 'oqood', oqoodFee)}
+                onMouseEnter={() => handleMouseEnter('oqood', oqoodFee)}
                 className={cn(
-                  "cursor-pointer rounded transition-colors",
+                  "cursor-pointer rounded transition-colors select-none",
                   selectedPayments.has('oqood') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                 )}
               >
@@ -372,9 +405,10 @@ export const CompactPaymentTable = ({
                   return (
                     <div key={index}>
                       <div 
-                        onClick={() => togglePaymentSelection(paymentId, amount)}
+                        onMouseDown={(e) => handleMouseDown(e, paymentId, amount)}
+                        onMouseEnter={() => handleMouseEnter(paymentId, amount)}
                         className={cn(
-                          "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors",
+                          "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors select-none",
                           isHandoverQuarter && "bg-green-500/10 px-1 py-0.5 -mx-1 border-l-2 border-green-400",
                           isSelected && "ring-1 ring-theme-accent/40 bg-theme-accent/20"
                         )}
@@ -429,9 +463,10 @@ export const CompactPaymentTable = ({
               </div>
               <div className="space-y-1">
                 <div
-                  onClick={() => togglePaymentSelection('handover', handoverAmount)}
+                  onMouseDown={(e) => handleMouseDown(e, 'handover', handoverAmount)}
+                  onMouseEnter={() => handleMouseEnter('handover', handoverAmount)}
                   className={cn(
-                    "cursor-pointer rounded transition-colors",
+                    "cursor-pointer rounded transition-colors select-none",
                     selectedPayments.has('handover') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                   )}
                 >
@@ -454,9 +489,10 @@ export const CompactPaymentTable = ({
               </div>
               <div className="space-y-1">
                 <div
-                  onClick={() => togglePaymentSelection('onhandover', handoverAmount)}
+                  onMouseDown={(e) => handleMouseDown(e, 'onhandover', handoverAmount)}
+                  onMouseEnter={() => handleMouseEnter('onhandover', handoverAmount)}
                   className={cn(
-                    "cursor-pointer rounded transition-colors",
+                    "cursor-pointer rounded transition-colors select-none",
                     selectedPayments.has('onhandover') && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                   )}
                 >
@@ -490,9 +526,10 @@ export const CompactPaymentTable = ({
                   return (
                     <div 
                       key={index} 
-                      onClick={() => togglePaymentSelection(paymentId, amount)}
+                      onMouseDown={(e) => handleMouseDown(e, paymentId, amount)}
+                      onMouseEnter={() => handleMouseEnter(paymentId, amount)}
                       className={cn(
-                        "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors",
+                        "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors select-none",
                         isSelected && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                       )}
                     >
