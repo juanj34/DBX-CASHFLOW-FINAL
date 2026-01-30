@@ -526,25 +526,80 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                             </SelectContent>
                           </Select>
 
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              value={payment.triggerValue || ''}
-                              onChange={(e) => {
-                                const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
-                                updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
-                              }}
-                              className="w-10 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[10px]"
-                            />
-                            {payment.type === 'construction' && <span className="text-[10px] text-gray-500">%</span>}
-                          </div>
-
-                          {/* Show actual date for time-based payments */}
-                          {paymentDate && (
+                          {payment.type === 'time' ? (
+                            // Date-based input for time payments
                             <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-gray-400 font-mono">
-                                {formatPaymentDate(paymentDate)}
+                              <Select
+                                value={paymentDate ? String(paymentDate.getMonth() + 1) : '1'}
+                                onValueChange={(monthStr) => {
+                                  const newMonth = parseInt(monthStr);
+                                  const currentYear = paymentDate ? paymentDate.getFullYear() : inputs.bookingYear;
+                                  // Calculate months from booking
+                                  const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+                                  const targetDate = new Date(currentYear, newMonth - 1);
+                                  const monthsDiff = (targetDate.getFullYear() - bookingDate.getFullYear()) * 12 
+                                    + (targetDate.getMonth() - bookingDate.getMonth());
+                                  updateAdditionalPayment(payment.id, 'triggerValue', Math.max(1, monthsDiff));
+                                }}
+                              >
+                                <SelectTrigger className="w-[52px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50 max-h-[200px]">
+                                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                                    <SelectItem key={i} value={String(i + 1)} className="text-white hover:bg-[#2a3142] text-xs">
+                                      {m}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select
+                                value={paymentDate ? String(paymentDate.getFullYear()) : String(inputs.bookingYear)}
+                                onValueChange={(yearStr) => {
+                                  const newYear = parseInt(yearStr);
+                                  const currentMonth = paymentDate ? paymentDate.getMonth() + 1 : 1;
+                                  // Calculate months from booking
+                                  const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+                                  const targetDate = new Date(newYear, currentMonth - 1);
+                                  const monthsDiff = (targetDate.getFullYear() - bookingDate.getFullYear()) * 12 
+                                    + (targetDate.getMonth() - bookingDate.getMonth());
+                                  updateAdditionalPayment(payment.id, 'triggerValue', Math.max(1, monthsDiff));
+                                }}
+                              >
+                                <SelectTrigger className="w-[58px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50 max-h-[200px]">
+                                  {Array.from({ length: 12 }, (_, i) => inputs.bookingYear + i).map((year) => (
+                                    <SelectItem key={year} value={String(year)} className="text-white hover:bg-[#2a3142] text-xs">
+                                      {year}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            // Construction percentage input
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                value={payment.triggerValue || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
+                                  updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
+                                }}
+                                className="w-10 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[10px]"
+                              />
+                              <span className="text-[10px] text-gray-500">%</span>
+                            </div>
+                          )}
+
+                          {/* Show month count and status badges for time-based payments */}
+                          {payment.type === 'time' && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-gray-500 font-mono">
+                                M{payment.triggerValue}
                               </span>
                               {isHandoverQuarter && (
                                 <span className="text-[9px] px-1 py-0.5 bg-green-500/20 text-green-400 rounded flex items-center gap-0.5">
