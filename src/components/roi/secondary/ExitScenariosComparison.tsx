@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, TrendingUp, Wallet, Target, Info } from 'lucide-react';
+import { Trophy, TrendingUp, Target, Wallet, Info } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -17,17 +17,25 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Currency, formatCurrency, formatDualCurrencyCompact } from '@/components/roi/currencyUtils';
-import { OIYearlyProjection } from '@/components/roi/useOICalculations';
-import { SecondaryYearlyProjection, ExitComparisonPoint } from './types';
+import { OIInputs } from '@/components/roi/useOICalculations';
+import { ExitComparisonPoint } from './types';
+import { 
+  calculateEquityAtExitWithDetails, 
+  calculateExitPrice 
+} from '@/components/roi/constructionProgress';
 
 interface ExitScenariosComparisonProps {
   exitMonths: number[];
-  offPlanProjections: OIYearlyProjection[];
-  secondaryProjections: SecondaryYearlyProjection[];
-  offPlanCapitalInvested: number;
+  // Off-Plan data (using canonical calculations)
+  offPlanInputs: OIInputs;
+  offPlanBasePrice: number;
+  offPlanTotalMonths: number;
+  offPlanEntryCosts: number;
+  // Secondary data
+  secondaryPurchasePrice: number;
   secondaryCapitalInvested: number;
-  handoverYearIndex: number;
-  rentalMode: 'long-term' | 'airbnb';
+  secondaryAppreciationRate: number;
+  // Display
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
@@ -35,93 +43,111 @@ interface ExitScenariosComparisonProps {
 
 export const ExitScenariosComparison = ({
   exitMonths,
-  offPlanProjections,
-  secondaryProjections,
-  offPlanCapitalInvested,
+  offPlanInputs,
+  offPlanBasePrice,
+  offPlanTotalMonths,
+  offPlanEntryCosts,
+  secondaryPurchasePrice,
   secondaryCapitalInvested,
-  handoverYearIndex,
-  rentalMode,
+  secondaryAppreciationRate,
   currency,
   rate,
   language,
 }: ExitScenariosComparisonProps) => {
-  const isAirbnb = rentalMode === 'airbnb';
   const t = language === 'es' ? {
-    title: 'Comparación de Salidas',
-    subtitle: '¿Qué pasa si vendes ambas propiedades al mismo tiempo?',
+    title: 'Escenarios de Salida',
+    subtitle: 'ROE basado en apreciación pura (sin renta) y capital invertido real',
     exit: 'Salida',
     value: 'Valor',
+    capital: 'Capital',
     profit: 'Ganancia',
     roe: 'ROE',
     roePY: '/año',
     winner: 'Ganador',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
-    insight: 'La apreciación off-plan durante construcción crea una ventaja significativa que se amplifica con el tiempo.',
+    insight: 'Las salidas muestran solo apreciación pura. Off-Plan usa capital del plan de pagos; Secundaria usa capital día 1.',
+    pureAppreciation: 'Apreciación pura',
+    capitalAtExit: 'Capital en salida',
   } : {
-    title: 'Exit Scenarios Comparison',
-    subtitle: 'What if you sell both properties at the same time?',
+    title: 'Exit Scenarios',
+    subtitle: 'ROE based on pure appreciation (no rent) and actual capital invested',
     exit: 'Exit',
     value: 'Value',
+    capital: 'Capital',
     profit: 'Profit',
     roe: 'ROE',
     roePY: '/yr',
     winner: 'Winner',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
-    insight: 'Off-plan appreciation during construction creates a significant advantage that compounds over time.',
+    insight: 'Exits show pure appreciation only. Off-Plan uses payment plan capital; Secondary uses day 1 capital.',
+    pureAppreciation: 'Pure appreciation',
+    capitalAtExit: 'Capital at exit',
   };
 
   const exitData = useMemo((): ExitComparisonPoint[] => {
     return exitMonths.map((months) => {
-      const yearIndex = Math.ceil(months / 12) - 1;
       const years = months / 12;
       
-      // Off-Plan calculations
-      const opProj = offPlanProjections[yearIndex];
-      const opPropertyValue = opProj?.propertyValue || 0;
+      // === OFF-PLAN: Use canonical functions ===
+      // Capital from payment plan at exit month (NOT day 1)
+      const equityResult = calculateEquityAtExitWithDetails(
+        months, 
+        offPlanInputs, 
+        offPlanTotalMonths, 
+        offPlanBasePrice
+      );
+      const opCapitalAtExit = equityResult.finalEquity + offPlanEntryCosts;
       
-      // Calculate cumulative rent up to this point
-      let opCumulativeRent = 0;
-      for (let i = 0; i <= yearIndex && i < offPlanProjections.length; i++) {
-        if (i >= handoverYearIndex - 1) {
-          opCumulativeRent += offPlanProjections[i]?.netIncome || 0;
-        }
-      }
+      // Exit price using phased appreciation
+      const opExitPrice = calculateExitPrice(
+        months, 
+        offPlanBasePrice, 
+        offPlanTotalMonths, 
+        offPlanInputs
+      );
+      const opAppreciation = opExitPrice - offPlanBasePrice;
       
-      const opExitCosts = opPropertyValue * 0.02; // 2% exit costs
-      const opProfit = opPropertyValue + opCumulativeRent - offPlanCapitalInvested - opExitCosts;
-      const opTotalROE = offPlanCapitalInvested > 0 ? (opProfit / offPlanCapitalInvested) * 100 : 0;
-      const opAnnualizedROE = years > 0 ? opTotalROE / years : 0;
-
-      // Secondary calculations
-      const secProj = secondaryProjections[yearIndex];
-      const secPropertyValue = secProj?.propertyValue || 0;
-      const secCumulativeRent = isAirbnb ? (secProj?.cumulativeRentST || 0) : (secProj?.cumulativeRentLT || 0);
-      const secExitCosts = secPropertyValue * 0.02;
-      const secProfit = secPropertyValue + secCumulativeRent - secondaryCapitalInvested - secExitCosts;
-      const secTotalROE = secondaryCapitalInvested > 0 ? (secProfit / secondaryCapitalInvested) * 100 : 0;
-      const secAnnualizedROE = years > 0 ? secTotalROE / years : 0;
-
+      // Pure ROE = Appreciation / Capital at exit
+      const opROE = opCapitalAtExit > 0 ? (opAppreciation / opCapitalAtExit) * 100 : 0;
+      const opAnnualizedROE = years > 0 ? opROE / years : 0;
+      
+      // === SECONDARY: All capital paid day 1 ===
+      const secExitPrice = secondaryPurchasePrice * Math.pow(1 + secondaryAppreciationRate / 100, years);
+      const secAppreciation = secExitPrice - secondaryPurchasePrice;
+      
+      const secROE = secondaryCapitalInvested > 0 ? (secAppreciation / secondaryCapitalInvested) * 100 : 0;
+      const secAnnualizedROE = years > 0 ? secROE / years : 0;
+      
       return {
         months,
         offPlan: {
-          propertyValue: opPropertyValue,
-          capitalInvested: offPlanCapitalInvested,
-          profit: opProfit,
-          totalROE: opTotalROE,
+          propertyValue: opExitPrice,
+          capitalInvested: opCapitalAtExit,  // Actual capital at exit!
+          profit: opAppreciation,            // Pure appreciation
+          totalROE: opROE,
           annualizedROE: opAnnualizedROE,
         },
         secondary: {
-          propertyValue: secPropertyValue,
+          propertyValue: secExitPrice,
           capitalInvested: secondaryCapitalInvested,
-          profit: secProfit,
-          totalROE: secTotalROE,
+          profit: secAppreciation,           // Pure appreciation
+          totalROE: secROE,
           annualizedROE: secAnnualizedROE,
         },
       };
     });
-  }, [exitMonths, offPlanProjections, secondaryProjections, offPlanCapitalInvested, secondaryCapitalInvested, handoverYearIndex, isAirbnb]);
+  }, [
+    exitMonths, 
+    offPlanInputs, 
+    offPlanBasePrice, 
+    offPlanTotalMonths, 
+    offPlanEntryCosts, 
+    secondaryPurchasePrice, 
+    secondaryCapitalInvested, 
+    secondaryAppreciationRate
+  ]);
 
   const formatValue = (value: number) => {
     const dual = formatDualCurrencyCompact(value, currency, rate);
@@ -156,9 +182,22 @@ export const ExitScenariosComparison = ({
               <p className="text-xs text-theme-text-muted">{t.subtitle}</p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs">
-            {exitMonths.length} {language === 'es' ? 'escenarios' : 'scenarios'}
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge variant="outline" className="text-xs gap-1">
+                <Info className="w-3 h-3" />
+                {t.pureAppreciation}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">
+                {language === 'es' 
+                  ? 'Ganancia = Precio Salida - Precio Base (sin incluir renta). Capital = Lo que has pagado según el plan de pagos.'
+                  : 'Profit = Exit Price - Base Price (no rent included). Capital = What you\'ve paid according to payment plan.'
+                }
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="overflow-x-auto">
@@ -166,24 +205,26 @@ export const ExitScenariosComparison = ({
             <TableHeader>
               <TableRow className="border-theme-border hover:bg-transparent">
                 <TableHead className="text-theme-text-muted text-xs w-20">{t.exit}</TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={3}>
+                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={4}>
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
                     🏗️ {t.offPlan}
                   </Badge>
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={3}>
+                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={4}>
                   <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/30">
                     🏠 {t.secondary}
                   </Badge>
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-center w-24">{t.winner}</TableHead>
+                <TableHead className="text-theme-text-muted text-xs text-center w-20">{t.winner}</TableHead>
               </TableRow>
               <TableRow className="border-theme-border hover:bg-transparent">
                 <TableHead className="text-theme-text-muted text-[10px]"></TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.value}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-center">{t.capital}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.profit}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.roe}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.value}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-center">{t.capital}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.profit}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.roe}</TableHead>
                 <TableHead></TableHead>
@@ -191,8 +232,8 @@ export const ExitScenariosComparison = ({
             </TableHeader>
             <TableBody>
               {exitData.map((exit) => {
-                const winner = exit.offPlan.profit > exit.secondary.profit ? 'offplan' : 'secondary';
-                const profitDiff = Math.abs(exit.offPlan.profit - exit.secondary.profit);
+                const winner = exit.offPlan.annualizedROE > exit.secondary.annualizedROE ? 'offplan' : 'secondary';
+                const roeDiff = Math.abs(exit.offPlan.annualizedROE - exit.secondary.annualizedROE);
                 
                 return (
                   <TableRow key={exit.months} className="border-theme-border">
@@ -202,9 +243,21 @@ export const ExitScenariosComparison = ({
                     
                     {/* Off-Plan */}
                     <TableCell className="text-center">
-                      <span className={`text-xs ${winner === 'offplan' ? 'text-emerald-500 font-medium' : 'text-theme-text'}`}>
+                      <span className="text-xs text-theme-text">
                         {formatValue(exit.offPlan.propertyValue)}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className="text-xs text-theme-text-muted">
+                            {formatValue(exit.offPlan.capitalInvested)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{t.capitalAtExit}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     <TableCell className="text-center">
                       <span className={`text-xs ${winner === 'offplan' ? 'text-emerald-500 font-semibold' : 'text-theme-text'}`}>
@@ -224,9 +277,21 @@ export const ExitScenariosComparison = ({
                     
                     {/* Secondary */}
                     <TableCell className="text-center">
-                      <span className={`text-xs ${winner === 'secondary' ? 'text-cyan-500 font-medium' : 'text-theme-text'}`}>
+                      <span className="text-xs text-theme-text">
                         {formatValue(exit.secondary.propertyValue)}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className="text-xs text-theme-text-muted">
+                            {formatValue(exit.secondary.capitalInvested)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{language === 'es' ? 'Capital día 1' : 'Day 1 capital'}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     <TableCell className="text-center">
                       <span className={`text-xs ${winner === 'secondary' ? 'text-cyan-500 font-semibold' : 'text-theme-text'}`}>
@@ -259,7 +324,7 @@ export const ExitScenariosComparison = ({
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="text-xs">
-                            +{formatCurrency(profitDiff, 'AED', 1)} {language === 'es' ? 'más ganancia' : 'more profit'}
+                            +{roeDiff.toFixed(1)}%{t.roePY} {language === 'es' ? 'mejor' : 'better'}
                           </p>
                         </TooltipContent>
                       </Tooltip>

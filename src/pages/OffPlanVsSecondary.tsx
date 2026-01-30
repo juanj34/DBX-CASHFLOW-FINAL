@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopNavbar } from '@/components/layout/TopNavbar';
-import { TrendingUp, Settings2, Home, Palmtree, Coins, Globe } from 'lucide-react';
+import { TrendingUp, Settings2, Home, Palmtree, Coins, Globe, Save, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -27,12 +27,14 @@ import {
   ComparisonKeyInsights,
   YearByYearWealthTable,
   WealthTrajectoryDualChart,
-  DSCRExplanationCard,
   OutOfPocketCard,
   HeadToHeadTable,
   ComparisonVerdict,
   ExitScenariosComparison,
+  SaveSecondaryComparisonModal,
+  LoadSecondaryComparisonModal,
 } from '@/components/roi/secondary';
+import { useSecondaryComparisons, SecondaryComparison } from '@/hooks/useSecondaryComparisons';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const OffPlanVsSecondary = () => {
@@ -41,7 +43,11 @@ const OffPlanVsSecondary = () => {
   
   // Modal state
   const [configuratorOpen, setConfiguratorOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
+  const [currentComparisonId, setCurrentComparisonId] = useState<string | null>(null);
+  const [currentComparisonTitle, setCurrentComparisonTitle] = useState<string>('');
   
   // Selected quote and secondary inputs
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(quoteId);
@@ -55,6 +61,16 @@ const OffPlanVsSecondary = () => {
   
   // Exit scenarios
   const [exitMonths, setExitMonths] = useState<number[]>([36, 60, 120]);
+
+  // Persistence hook
+  const { 
+    comparisons, 
+    loading: comparisonsLoading, 
+    saveComparison, 
+    updateComparison,
+    deleteComparison,
+    loadComparison 
+  } = useSecondaryComparisons();
 
   // Load quote data
   const { quote, loading: quoteLoading } = useCashflowQuote(selectedQuoteId);
@@ -92,8 +108,51 @@ const OffPlanVsSecondary = () => {
       setExitMonths(newExitMonths);
     }
     setHasConfigured(true);
+    setCurrentComparisonId(null); // Reset since this is a new comparison
+    setCurrentComparisonTitle('');
     // Update URL
     navigate(`/offplan-vs-secondary/${newQuoteId}`, { replace: true });
+  };
+
+  // Handle loading a saved comparison
+  const handleLoadComparison = (comparison: SecondaryComparison) => {
+    setSelectedQuoteId(comparison.quote_id || undefined);
+    setSecondaryInputs(comparison.secondary_inputs);
+    setExitMonths(comparison.exit_months);
+    setRentalMode(comparison.rental_mode);
+    setCurrentComparisonId(comparison.id);
+    setCurrentComparisonTitle(comparison.title);
+    setHasConfigured(true);
+    if (comparison.quote_id) {
+      navigate(`/offplan-vs-secondary/${comparison.quote_id}`, { replace: true });
+    }
+  };
+
+  // Handle saving comparison
+  const handleSaveComparison = async (title: string) => {
+    if (currentComparisonId) {
+      // Update existing
+      await updateComparison(currentComparisonId, {
+        title,
+        secondary_inputs: secondaryInputs,
+        exit_months: exitMonths,
+        rental_mode: rentalMode,
+      });
+      setCurrentComparisonTitle(title);
+    } else {
+      // Create new
+      const newComparison = await saveComparison(
+        title,
+        selectedQuoteId || null,
+        secondaryInputs,
+        exitMonths,
+        rentalMode
+      );
+      if (newComparison) {
+        setCurrentComparisonId(newComparison.id);
+        setCurrentComparisonTitle(newComparison.title);
+      }
+    }
   };
 
   // Off-Plan calculations - create safe default inputs
@@ -291,6 +350,9 @@ const OffPlanVsSecondary = () => {
     reconfigure: 'Reconfigurar',
     vs: 'vs',
     secondaryLabel: 'Secundaria',
+    save: 'Guardar',
+    update: 'Actualizar',
+    load: 'Cargar',
   } : {
     title: 'Off-Plan vs Secondary',
     subtitle: 'Compare your off-plan investment against a ready secondary property to see which strategy builds more wealth over 10 years.',
@@ -300,6 +362,9 @@ const OffPlanVsSecondary = () => {
     reconfigure: 'Reconfigure',
     vs: 'vs',
     secondaryLabel: 'Secondary',
+    save: 'Save',
+    update: 'Update',
+    load: 'Load',
   };
 
   // Initial state - show CTA to open configurator
@@ -432,6 +497,26 @@ const OffPlanVsSecondary = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setLoadModalOpen(true)}
+              className="border-theme-border text-theme-text"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              {t.load}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSaveModalOpen(true)}
+              className="border-theme-accent/50 text-theme-accent hover:bg-theme-accent/10"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {currentComparisonId ? t.update : t.save}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setConfiguratorOpen(true)}
               className="border-theme-border text-theme-text"
             >
@@ -490,38 +575,30 @@ const OffPlanVsSecondary = () => {
           {exitMonths.length > 0 && (
             <ExitScenariosComparison
               exitMonths={exitMonths}
-              offPlanProjections={offPlanCalcs.yearlyProjections}
-              secondaryProjections={secondaryCalcs.yearlyProjections}
-              offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
+              offPlanInputs={safeOffPlanInputs}
+              offPlanBasePrice={safeOffPlanInputs.basePrice}
+              offPlanTotalMonths={offPlanCalcs.totalMonths}
+              offPlanEntryCosts={offPlanCalcs.totalEntryCosts}
+              secondaryPurchasePrice={secondaryInputs.purchasePrice}
               secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
-              handoverYearIndex={handoverYearIndex}
-              rentalMode={rentalMode}
+              secondaryAppreciationRate={secondaryInputs.appreciationRate}
               currency={currency}
               rate={rate}
               language={language}
             />
           )}
 
-          {/* 6. Two-column: DSCR Explanation + Out of Pocket */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <DSCRExplanationCard
-              offPlanDSCR={rentalMode === 'airbnb' ? comparisonMetrics.offPlanDSCRST : comparisonMetrics.offPlanDSCRLT}
-              secondaryDSCR={rentalMode === 'airbnb' ? comparisonMetrics.secondaryDSCRST : comparisonMetrics.secondaryDSCRLT}
-              rentalMode={rentalMode}
-              language={language}
-            />
-            
-            <OutOfPocketCard
-              offPlanCapitalDuringConstruction={offPlanTotalCapitalAtHandover}
-              monthsWithoutIncome={handoverYearIndex * 12}
-              appreciationDuringConstruction={appreciationDuringConstruction}
-              secondaryCapitalDay1={secondaryCalcs.totalCapitalDay1}
-              secondaryIncomeMonths={handoverYearIndex * 12}
-              currency={currency}
-              rate={rate}
-              language={language}
-            />
-          </div>
+          {/* 6. Out of Pocket Analysis */}
+          <OutOfPocketCard
+            offPlanCapitalDuringConstruction={offPlanTotalCapitalAtHandover}
+            monthsWithoutIncome={handoverYearIndex * 12}
+            appreciationDuringConstruction={appreciationDuringConstruction}
+            secondaryCapitalDay1={secondaryCalcs.totalCapitalDay1}
+            secondaryIncomeMonths={handoverYearIndex * 12}
+            currency={currency}
+            rate={rate}
+            language={language}
+          />
 
           {/* 7. Verdict */}
           <ComparisonVerdict
@@ -543,6 +620,27 @@ const OffPlanVsSecondary = () => {
         handoverMonths={handoverMonths}
         currency={currency}
         rate={rate}
+        language={language}
+      />
+
+      {/* Save Modal */}
+      <SaveSecondaryComparisonModal
+        open={saveModalOpen}
+        onOpenChange={setSaveModalOpen}
+        onSave={handleSaveComparison}
+        isUpdating={!!currentComparisonId}
+        currentTitle={currentComparisonTitle}
+        language={language}
+      />
+
+      {/* Load Modal */}
+      <LoadSecondaryComparisonModal
+        open={loadModalOpen}
+        onOpenChange={setLoadModalOpen}
+        comparisons={comparisons}
+        loading={comparisonsLoading}
+        onLoad={handleLoadComparison}
+        onDelete={deleteComparison}
         language={language}
       />
     </div>

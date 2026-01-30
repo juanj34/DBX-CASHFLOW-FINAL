@@ -1056,6 +1056,56 @@ export type Database = {
         }
         Relationships: []
       }
+      secondary_comparisons: {
+        Row: {
+          broker_id: string
+          created_at: string | null
+          exit_months: Json
+          id: string
+          is_public: boolean | null
+          quote_id: string | null
+          rental_mode: string | null
+          secondary_inputs: Json
+          share_token: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string | null
+          exit_months?: Json
+          id?: string
+          is_public?: boolean | null
+          quote_id?: string | null
+          rental_mode?: string | null
+          secondary_inputs?: Json
+          share_token?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string | null
+          exit_months?: Json
+          id?: string
+          is_public?: boolean | null
+          quote_id?: string | null
+          rental_mode?: string | null
+          secondary_inputs?: Json
+          share_token?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secondary_comparisons_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       secondary_properties: {
         Row: {
           airbnb_adr: number | null
