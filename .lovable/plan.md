@@ -1,224 +1,300 @@
 
-# Plan: Add Fixed Loan Amount Option + Complete Language Support
+# Plan: Fix Exit Scenarios + Remove DSCR + Add Persistence
 
 ## Summary
 
-Two requirements:
-1. **Fixed Loan Amount Option**: Allow users to input a specific approved loan amount (e.g., AED 5,000,000) instead of only a financing percentage
-2. **Complete Language Support**: Ensure ALL text in the configurator and comparison tool translates when toggling 🇬🇧/🇪🇸
+Three requirements to address:
+1. **Fix Exit ROE** - Use actual payment plan capital for off-plan, not Day 1 capital
+2. **Remove DSCR** - Remove DSCR components from the comparison view  
+3. **Add Persistence** - Save/load comparisons so users can return to previous analyses
 
 ---
 
-## 1. Fixed Loan Amount for Secondary Mortgage
+## 1. Exit Scenarios ROE Fix
 
-### Current Behavior
-```
-Mortgage Section:
-├── Financing % (e.g., 60%)
-├── Interest Rate % (e.g., 4.5%)
-└── Term (years) (e.g., 25)
+### Current (Buggy) Code in ExitScenariosComparison.tsx
+
+```typescript
+// Lines 84-95 - WRONG!
+const opProfit = opPropertyValue + opCumulativeRent - offPlanCapitalInvested - opExitCosts;
+const opTotalROE = offPlanCapitalInvested > 0 ? (opProfit / offPlanCapitalInvested) * 100 : 0;
 ```
 
-### New Behavior
+**Problems:**
+1. Uses `offPlanCapitalInvested` = Day 1 capital (~280K) instead of capital at exit month
+2. Includes `opCumulativeRent` in exit profit (exit = sell, not hold)
+3. Results in 469% ROE which is impossible
+
+### Correct Logic
+
+**Off-Plan Exit:**
+- Use `calculateEquityAtExitWithDetails()` from `constructionProgress.ts` to get capital paid according to payment schedule
+- Profit = Exit Price - Base Price (pure appreciation)
+- ROE = Profit / Capital at Exit Month
+
+**Secondary Exit:**
+- Capital = `totalCapitalDay1` (always, since all paid upfront)
+- Profit = Exit Price - Purchase Price (pure appreciation)
+- ROE = Profit / Capital
+
+### New Props for ExitScenariosComparison
+
+```typescript
+interface ExitScenariosComparisonProps {
+  exitMonths: number[];
+  // Off-Plan data
+  offPlanInputs: OIInputs;            // NEW: Full inputs for payment plan
+  offPlanBasePrice: number;           // NEW: Base purchase price
+  offPlanTotalMonths: number;         // NEW: Construction duration
+  offPlanEntryCosts: number;          // NEW: Entry costs
+  // Secondary data  
+  secondaryPurchasePrice: number;     // NEW: Purchase price
+  secondaryCapitalInvested: number;   // Total capital day 1
+  secondaryAppreciationRate: number;  // NEW: Annual appreciation rate
+  // Display
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
+}
 ```
-Mortgage Section:
-├── Financing Mode Toggle: [% | Fixed Amount]
-├── IF %: Financing % (e.g., 60%)
-├── IF Fixed: Loan Amount (e.g., 5,000,000)
-├── Interest Rate %
-└── Term (years)
+
+### Updated Calculation Logic
+
+```typescript
+import { calculateEquityAtExitWithDetails, calculateExitPrice } from '@/components/roi/constructionProgress';
+
+const exitData = useMemo((): ExitComparisonPoint[] => {
+  return exitMonths.map((months) => {
+    const years = months / 12;
+    
+    // === OFF-PLAN: Use canonical functions ===
+    // Capital from payment plan (NOT day 1)
+    const equityResult = calculateEquityAtExitWithDetails(
+      months, 
+      offPlanInputs, 
+      offPlanTotalMonths, 
+      offPlanBasePrice
+    );
+    const opCapitalAtExit = equityResult.finalEquity + offPlanEntryCosts;
+    
+    // Exit price using phased appreciation
+    const opExitPrice = calculateExitPrice(months, offPlanBasePrice, offPlanTotalMonths, offPlanInputs);
+    const opAppreciation = opExitPrice - offPlanBasePrice;
+    
+    // Pure ROE = Appreciation / Capital at exit
+    const opROE = opCapitalAtExit > 0 ? (opAppreciation / opCapitalAtExit) * 100 : 0;
+    const opAnnualizedROE = years > 0 ? opROE / years : 0;
+    
+    // === SECONDARY: All capital paid day 1 ===
+    const secExitPrice = secondaryPurchasePrice * Math.pow(1 + secondaryAppreciationRate / 100, years);
+    const secAppreciation = secExitPrice - secondaryPurchasePrice;
+    
+    const secROE = secondaryCapitalInvested > 0 ? (secAppreciation / secondaryCapitalInvested) * 100 : 0;
+    const secAnnualizedROE = years > 0 ? secROE / years : 0;
+    
+    return {
+      months,
+      offPlan: {
+        propertyValue: opExitPrice,
+        capitalInvested: opCapitalAtExit,  // Actual capital at exit!
+        profit: opAppreciation,            // Pure appreciation
+        totalROE: opROE,
+        annualizedROE: opAnnualizedROE,
+      },
+      secondary: {
+        propertyValue: secExitPrice,
+        capitalInvested: secondaryCapitalInvested,
+        profit: secAppreciation,           // Pure appreciation
+        totalROE: secROE,
+        annualizedROE: secAnnualizedROE,
+      },
+    };
+  });
+}, [exitMonths, offPlanInputs, offPlanBasePrice, offPlanTotalMonths, offPlanEntryCosts, 
+    secondaryPurchasePrice, secondaryCapitalInvested, secondaryAppreciationRate]);
 ```
+
+---
+
+## 2. Remove DSCR Components
 
 ### Files to Modify
 
-#### `src/components/roi/secondary/types.ts`
-Add new fields to `SecondaryInputs`:
-```typescript
-// Mortgage (Optional)
-useMortgage: boolean;
-mortgageMode: 'percent' | 'fixed';        // NEW
-mortgageFinancingPercent: number;         
-mortgageFixedAmount: number;              // NEW: e.g., 5000000
-mortgageInterestRate: number;
-mortgageLoanTermYears: number;
-```
+| File | Action |
+|------|--------|
+| `src/pages/OffPlanVsSecondary.tsx` | Remove DSCRExplanationCard import and JSX |
+| `src/components/roi/secondary/HeadToHeadTable.tsx` | Remove MORTGAGE/HIPOTECA category rows |
 
-Update `DEFAULT_SECONDARY_INPUTS`:
-```typescript
-mortgageMode: 'percent',
-mortgageFixedAmount: 0,
-```
+### Specific Changes in OffPlanVsSecondary.tsx
 
-#### `src/components/roi/secondary/useSecondaryCalculations.ts`
-Update loan amount calculation:
-```typescript
-// === CAPITAL CALCULATIONS ===
-const loanAmount = useMortgage 
-  ? (mortgageMode === 'fixed' 
-      ? mortgageFixedAmount 
-      : purchasePrice * mortgageFinancingPercent / 100)
-  : 0;
-```
-
-#### `src/components/roi/secondary/SecondaryPropertyStep.tsx`
-Add UI toggle for mortgage mode:
-```typescript
-// In translations:
-mortgageMode: 'Modo de Financiamiento',
-percentMode: 'Porcentaje',
-fixedMode: 'Monto Fijo',
-loanAmount: 'Monto del Préstamo',
-approvedAmount: 'Monto Aprobado (AED)',
-
-// New UI:
-<div className="flex items-center gap-2 mb-3">
-  <Button 
-    variant={inputs.mortgageMode === 'percent' ? 'default' : 'outline'}
-    size="sm"
-    onClick={() => updateInput('mortgageMode', 'percent')}
-  >
-    {t.percentMode}
-  </Button>
-  <Button 
-    variant={inputs.mortgageMode === 'fixed' ? 'default' : 'outline'}
-    size="sm"
-    onClick={() => updateInput('mortgageMode', 'fixed')}
-  >
-    {t.fixedMode}
-  </Button>
+Remove lines 505-512:
+```tsx
+// REMOVE THIS ENTIRE BLOCK
+<div className="grid lg:grid-cols-2 gap-6">
+  <DSCRExplanationCard ... />
+  <OutOfPocketCard ... />
 </div>
-
-{inputs.mortgageMode === 'percent' ? (
-  // Show percentage input
-) : (
-  // Show fixed amount input
-)}
 ```
+
+Replace with:
+```tsx
+{/* Out of Pocket - Full Width */}
+<OutOfPocketCard ... />
+```
+
+### Rows to Remove from HeadToHeadTable
+
+The HIPOTECA/MORTGAGE category with:
+- DSCR Largo Plazo / DSCR Long-Term
+- DSCR Airbnb
+- Any DSCR-related metrics
 
 ---
 
-## 2. Complete Language Support Verification
+## 3. Add Persistence (Database Table + Hook + Modals)
 
-### Components Already Supporting Language ✅
-- `ComparisonConfiguratorModal.tsx` - Passes language to all child steps ✅
-- `QuoteSelectionStep.tsx` - Has language prop ✅
-- `SecondaryPropertyStep.tsx` - Has language prop ✅
-- `ExitScenariosStep.tsx` - Has language prop ✅
-- `HeadToHeadTable.tsx` - Has language prop ✅
-- `WealthTrajectoryDualChart.tsx` - Has language prop ✅
-- `MortgageCoverageMatrix.tsx` - Has language prop ✅
-- `ComparisonKeyInsights.tsx` - Has language prop ✅
-- `YearByYearWealthTable.tsx` - Has language prop ✅
-- `DSCRExplanationCard.tsx` - Has language prop ✅
-- `ComparisonVerdict.tsx` - Has language prop ✅
-- `OutOfPocketCard.tsx` - Has language prop ✅
-- `ExitScenariosComparison.tsx` - Has language prop ✅
+### New Database Table: `secondary_comparisons`
 
-### Missing Translations to Add
+```sql
+CREATE TABLE public.secondary_comparisons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  broker_id UUID NOT NULL REFERENCES auth.users(id),
+  title TEXT NOT NULL,
+  quote_id UUID REFERENCES cashflow_quotes(id),
+  secondary_inputs JSONB NOT NULL DEFAULT '{}'::jsonb,
+  exit_months JSONB NOT NULL DEFAULT '[]'::jsonb,
+  rental_mode TEXT DEFAULT 'long-term',
+  share_token TEXT,
+  is_public BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
-#### `SecondaryPropertyStep.tsx`
-Add new translations for mortgage mode:
+-- RLS Policies
+ALTER TABLE public.secondary_comparisons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own comparisons"
+ON public.secondary_comparisons FOR ALL
+USING (auth.uid() = broker_id)
+WITH CHECK (auth.uid() = broker_id);
+
+CREATE POLICY "Public can view shared comparisons"
+ON public.secondary_comparisons FOR SELECT
+USING (is_public = true AND share_token IS NOT NULL);
+```
+
+### New Hook: `src/hooks/useSecondaryComparisons.ts`
+
 ```typescript
-const t = language === 'es' ? {
-  // ... existing
-  mortgageMode: 'Modo de Financiamiento',
-  percentMode: '% del Valor',
-  fixedMode: 'Monto Fijo',
-  approvedAmount: 'Monto Aprobado (AED)',
-  loanAmountLabel: 'Monto del Préstamo',
-} : {
-  // ... existing
-  mortgageMode: 'Financing Mode',
-  percentMode: '% of Value',
-  fixedMode: 'Fixed Amount',
-  approvedAmount: 'Approved Amount (AED)',
-  loanAmountLabel: 'Loan Amount',
+export interface SecondaryComparison {
+  id: string;
+  broker_id: string;
+  title: string;
+  quote_id: string | null;
+  secondary_inputs: SecondaryInputs;
+  exit_months: number[];
+  rental_mode: 'long-term' | 'airbnb';
+  share_token: string | null;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export const useSecondaryComparisons = () => {
+  const [comparisons, setComparisons] = useState<SecondaryComparison[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch all user's comparisons
+  // Save new comparison
+  // Update existing comparison
+  // Delete comparison
+  // Generate share token
+  
+  return {
+    comparisons,
+    loading,
+    saveComparison,
+    updateComparison,
+    deleteComparison,
+    generateShareToken,
+  };
 };
 ```
 
----
+### New Components
 
-## Updated UI Design: Mortgage Section
+1. **`SaveSecondaryComparisonModal.tsx`** - Save dialog with title input
+2. **`LoadSecondaryComparisonModal.tsx`** - List and load saved comparisons
 
-```
+### Updated UI Flow in OffPlanVsSecondary.tsx
+
+**Initial View (no comparison loaded):**
+```text
 ┌─────────────────────────────────────────────────────────────────┐
-│ 💰 Mortgage                                            [Toggle] │
-├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  Financing Mode:                                                 │
-│  ┌──────────────┐  ┌──────────────┐                             │
-│  │ % del Valor  │  │ Monto Fijo  │   ← Toggle buttons           │
-│  └──────────────┘  └──────────────┘                             │
+│     🏗️ Off-Plan vs Secondary                                   │
 │                                                                  │
-│  IF % Mode:                                                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │ Financing % │  │ Interest %  │  │ Term (yrs)  │              │
-│  │     60      │  │    4.5      │  │     25      │              │
-│  └─────────────┘  └─────────────┘  └─────────────┘              │
+│  ┌──────────────────────┐  ┌──────────────────────┐            │
+│  │  📂 Load Saved       │  │  ✨ Create New       │            │
+│  └──────────────────────┘  └──────────────────────┘            │
 │                                                                  │
-│  IF Fixed Mode:                                                  │
-│  ┌────────────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │ Approved Amount    │  │ Interest %  │  │ Term (yrs)  │       │
-│  │   5,000,000        │  │    4.5      │  │     25      │       │
-│  └────────────────────┘  └─────────────┘  └─────────────┘       │
-│                                                                  │
-│  Calculated Loan: AED 5,000,000 (41.7% of property value)       │
+│  📋 Recent Comparisons (last 5)                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Marina Heights vs Secondary 1.5M          2 days ago    │   │
+│  └─────────────────────────────────────────────────────────┘   │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Header with Save Button (when comparison loaded):**
+```tsx
+<Button onClick={() => setSaveModalOpen(true)}>
+  <Save className="w-4 h-4 mr-2" />
+  {currentComparisonId ? t.update : t.save}
+</Button>
+```
+
 ---
 
-## Files to Modify
+## Expected Exit ROE After Fix
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/secondary/types.ts` | Add `mortgageMode` and `mortgageFixedAmount` fields |
-| `src/components/roi/secondary/useSecondaryCalculations.ts` | Handle both financing modes |
-| `src/components/roi/secondary/SecondaryPropertyStep.tsx` | Add mortgage mode toggle UI + new translations |
-| `src/hooks/useSecondaryProperties.ts` | Add new fields to saved properties (optional) |
+**Year 3 Exit (Month 36):**
+
+| Metric | Off-Plan | Secondary |
+|--------|----------|-----------|
+| Base Price | AED 1,300,000 | AED 1,200,000 |
+| Exit Price | AED 1,500,000 | AED 1,315,000 |
+| Appreciation | +AED 200,000 (15.4%) | +AED 115,000 (9.6%) |
+| Capital at Exit | AED 470,000 (from payment plan) | AED 520,000 (all day 1) |
+| ROE | 42.5% total (14.2%/yr) | 22.1% total (7.4%/yr) |
+
+These numbers are realistic because they use:
+- **Actual capital deployed** at the exit point
+- **Pure appreciation** without rental income
+
+---
+
+## Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `supabase migration` | CREATE TABLE secondary_comparisons |
+| `src/hooks/useSecondaryComparisons.ts` | NEW: CRUD hook |
+| `src/components/roi/secondary/SaveSecondaryComparisonModal.tsx` | NEW |
+| `src/components/roi/secondary/LoadSecondaryComparisonModal.tsx` | NEW |
+| `src/components/roi/secondary/ExitScenariosComparison.tsx` | FIX: Use payment plan capital |
+| `src/components/roi/secondary/HeadToHeadTable.tsx` | Remove DSCR rows |
+| `src/components/roi/secondary/index.ts` | Add new exports |
+| `src/pages/OffPlanVsSecondary.tsx` | Remove DSCR, add save/load, pass new props |
 
 ---
 
 ## Implementation Order
 
-1. **Update `types.ts`** - Add new type fields with defaults
-2. **Update `useSecondaryCalculations.ts`** - Handle fixed amount calculation
-3. **Update `SecondaryPropertyStep.tsx`** - Add UI toggle and translations
-4. **Test** - Verify language toggle works everywhere
-
----
-
-## Technical Details
-
-### Loan Calculation Logic
-
-```typescript
-// In useSecondaryCalculations.ts
-const {
-  mortgageMode,
-  mortgageFinancingPercent,
-  mortgageFixedAmount,
-  // ...
-} = inputs;
-
-// Calculate loan amount based on mode
-const loanAmount = useMortgage 
-  ? (mortgageMode === 'fixed' 
-      ? Math.min(mortgageFixedAmount, purchasePrice * 0.80) // Cap at 80% LTV
-      : purchasePrice * mortgageFinancingPercent / 100)
-  : 0;
-
-// Calculate effective financing percentage for display
-const effectiveFinancingPercent = purchasePrice > 0 
-  ? (loanAmount / purchasePrice) * 100 
-  : 0;
-```
-
-### Show Calculated Percentage in Fixed Mode
-
-When in fixed mode, display the calculated percentage:
-```
-Monto Aprobado: AED 5,000,000
-= 41.7% del valor de la propiedad (AED 12,000,000)
-```
+1. **Database**: Create `secondary_comparisons` table
+2. **Hook**: Create `useSecondaryComparisons.ts`
+3. **Fix Exit Calculation**: Update `ExitScenariosComparison.tsx` with correct capital logic
+4. **Remove DSCR**: Clean up HeadToHeadTable and OffPlanVsSecondary page
+5. **Add Modals**: Create save/load modals
+6. **Update Page**: Add save/load buttons and picker screen
+7. **Translations**: Ensure all new text has EN/ES versions
