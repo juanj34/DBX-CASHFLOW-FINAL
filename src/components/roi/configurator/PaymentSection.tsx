@@ -239,15 +239,15 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   return (
     <div className="space-y-3">
       <div className="pb-1">
-        <h3 className="text-lg font-semibold text-white">Payment Plan</h3>
-        <p className="text-sm text-gray-500">Configure your payment schedule</p>
+        <h3 className="text-lg font-semibold text-theme-text">Payment Plan</h3>
+        <p className="text-sm text-theme-text-muted">Configure your payment schedule</p>
       </div>
 
       {/* Post-Handover Toggle - At the top for visibility */}
-      <div className="flex items-center justify-between p-2 bg-[#1a1f2e] rounded-lg border border-purple-500/30">
+      <div className="flex items-center justify-between p-2 bg-theme-card rounded-lg border border-purple-500/30">
         <div className="flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-purple-400" />
-          <span className="text-xs text-gray-300">Allow Payments Past Handover</span>
+          <span className="text-xs text-theme-text">Allow Payments Past Handover</span>
           <InfoTooltip translationKey="tooltipAllowPastHandover" />
         </div>
         <Switch 
@@ -260,10 +260,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       </div>
 
       {/* Step 1: Preset Split Buttons */}
-      <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+      <div className="space-y-2 p-3 bg-theme-card rounded-lg border border-theme-border">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">1</div>
-          <label className="text-sm text-gray-300 font-medium">Split</label>
+          <div className="w-5 h-5 rounded-full bg-theme-accent/20 flex items-center justify-center text-xs font-bold text-theme-accent">1</div>
+          <label className="text-sm text-theme-text font-medium">Split</label>
           <InfoTooltip translationKey="tooltipPreHandover" />
         </div>
         <div className="flex flex-wrap gap-1.5 ml-7">
@@ -274,10 +274,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               variant="outline"
               size="sm"
               onClick={() => applyPaymentSplit(split)}
-              className={`h-7 text-xs px-2.5 border-[#2a3142] ${
+              className={`h-7 text-xs px-2.5 border-theme-border ${
                 inputs.preHandoverPercent === parseInt(split.split('/')[0])
-                  ? 'bg-[#CCFF00]/20 border-[#CCFF00]/50 text-[#CCFF00]'
-                  : 'text-gray-600 hover:bg-[#2a3142] hover:text-white'
+                  ? 'bg-theme-accent/20 border-theme-accent/50 text-theme-accent'
+                  : 'text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text'
               }`}
             >
               {split}
@@ -289,7 +289,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               variant="outline"
               size="sm"
               onClick={() => setShowCustomSplit(true)}
-              className="h-6 text-[10px] px-2 border-dashed border-[#2a3142] text-gray-500 hover:bg-[#2a3142] hover:text-white"
+              className="h-6 text-[10px] px-2 border-dashed border-theme-border text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text"
             >
               Custom
             </Button>
@@ -301,17 +301,17 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                 value={customPreHandover}
                 onChange={(e) => setCustomPreHandover(e.target.value)}
                 placeholder="35"
-                className="w-10 h-6 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-[10px]"
+                className="w-10 h-6 text-center bg-theme-bg-alt border-theme-border text-theme-text font-mono text-[10px]"
                 autoFocus
               />
-              <span className="text-[9px] text-gray-500">/</span>
-              <span className="text-[9px] text-gray-400 w-5">{100 - (parseInt(customPreHandover) || 0)}</span>
+              <span className="text-[9px] text-theme-text-muted">/</span>
+              <span className="text-[9px] text-theme-text-muted w-5">{100 - (parseInt(customPreHandover) || 0)}</span>
               <Button
                 type="button"
                 size="sm"
                 onClick={applyCustomSplit}
                 disabled={!customPreHandover || parseInt(customPreHandover) < 10 || parseInt(customPreHandover) > 90}
-                className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
+                className="h-5 px-1.5 bg-theme-accent text-black hover:bg-theme-accent/90 text-[9px]"
               >
                 OK
               </Button>
@@ -322,11 +322,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
       {/* Step 2: Downpayment - Only show after split is selected */}
       {hasSplitSelected && (
-        <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30 animate-fade-in">
+        <div className="space-y-2 p-3 bg-theme-card rounded-lg border border-theme-accent/30 animate-fade-in">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-xs font-bold text-[#CCFF00]">2</div>
-            <span className="text-sm font-medium text-[#CCFF00]">Down</span>
-            <span className="text-xs text-gray-500">(EOI {formatCurrency(inputs.eoiFee, currency)})</span>
+            <div className="w-5 h-5 rounded-full bg-theme-accent/20 flex items-center justify-center text-xs font-bold text-theme-accent">2</div>
+            <span className="text-sm font-medium text-theme-accent">Down</span>
+            <span className="text-xs text-theme-text-muted">(EOI {formatCurrency(inputs.eoiFee, currency)})</span>
             <InfoTooltip translationKey="tooltipDownpayment" />
           </div>
           <div className="flex items-center gap-2 ml-7">
@@ -349,11 +349,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   5,
                   inputs.preHandoverPercent
                 )}
-                className="w-14 h-7 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-sm"
+                className="w-14 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-sm"
               />
-              <span className="text-xs text-gray-400">%</span>
+              <span className="text-xs text-theme-text-muted">%</span>
             </div>
-            <span className="text-xs text-gray-500 font-mono">
+            <span className="text-xs text-theme-text-muted font-mono">
               {formatCurrency(inputs.basePrice * inputs.downpaymentPercent / 100, currency)}
             </span>
           </div>
@@ -364,9 +364,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
         <div className="space-y-3 animate-fade-in">
           {/* Generator - Single row */}
-          <div className="p-2 bg-[#1a1f2e] rounded-lg border border-[#CCFF00]/30">
+          <div className="p-2 bg-theme-card rounded-lg border border-theme-accent/30">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-[#CCFF00]/20 flex items-center justify-center text-[10px] font-bold text-[#CCFF00] shrink-0">3</div>
+              <div className="w-5 h-5 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent shrink-0">3</div>
               
               <div className="flex items-center gap-1">
                 <Input
@@ -374,20 +374,20 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   inputMode="numeric"
                   value={numPayments}
                   onChange={(e) => setNumPayments(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="w-10 h-7 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
+                  className="w-10 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-text font-mono text-xs"
                 />
-                <span className="text-[10px] text-gray-500">×</span>
+                <span className="text-[10px] text-theme-text-muted">×</span>
                 <Input
                   type="text"
                   inputMode="decimal"
                   value={paymentPercent}
                   onChange={(e) => setPaymentPercent(Math.min(50, Math.max(0.5, parseFloat(e.target.value) || 0.5)))}
-                  className="w-12 h-7 text-center bg-[#0d1117] border-[#2a3142] text-[#CCFF00] font-mono text-xs"
+                  className="w-12 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-xs"
                 />
-                <span className="text-[10px] text-gray-500">%</span>
+                <span className="text-[10px] text-theme-text-muted">%</span>
               </div>
               
-              <span className="text-[10px] text-gray-500">every</span>
+              <span className="text-[10px] text-theme-text-muted">every</span>
               
               <div className="flex items-center gap-1">
                 <Input
@@ -395,19 +395,19 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   inputMode="numeric"
                   value={paymentInterval}
                   onChange={(e) => setPaymentInterval(Math.min(24, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="w-10 h-7 text-center bg-[#0d1117] border-[#2a3142] text-white font-mono text-xs"
+                  className="w-10 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-text font-mono text-xs"
                 />
-                <span className="text-[10px] text-gray-500">mo</span>
+                <span className="text-[10px] text-theme-text-muted">mo</span>
               </div>
               
-              <span className="text-[10px] text-gray-400">=</span>
-              <span className="text-xs text-[#CCFF00] font-mono font-medium">{(numPayments * paymentPercent).toFixed(0)}%</span>
+              <span className="text-[10px] text-theme-text-muted">=</span>
+              <span className="text-xs text-theme-accent font-mono font-medium">{(numPayments * paymentPercent).toFixed(0)}%</span>
               
               <Button
                 type="button"
                 onClick={handleGeneratePayments}
                 size="sm"
-                className="h-7 px-3 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold text-xs ml-auto"
+                className="h-7 px-3 bg-theme-accent text-black hover:bg-theme-accent/90 font-semibold text-xs ml-auto"
               >
                 <Zap className="w-3 h-3 mr-1" />
                 Generate

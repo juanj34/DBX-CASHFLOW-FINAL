@@ -53,6 +53,8 @@ const OffPlanVsSecondary = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isCreatingRef = useRef(false);
+  const isInitialLoadRef = useRef(false);
+  const lastSavedDataRef = useRef<string>('');
   
   // Selected quote and secondary inputs
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(quoteId);
@@ -126,6 +128,17 @@ const OffPlanVsSecondary = () => {
 
   // Handle loading a saved comparison - REPLACES all state with saved values
   const handleLoadComparison = (comparison: SecondaryComparison) => {
+    // Mark as initial load to prevent auto-save from triggering
+    isInitialLoadRef.current = true;
+    
+    // Store the loaded data fingerprint
+    lastSavedDataRef.current = JSON.stringify({
+      secondary_inputs: comparison.secondary_inputs,
+      exit_months: comparison.exit_months,
+      rental_mode: comparison.rental_mode,
+      quote_id: comparison.quote_id,
+    });
+    
     setSelectedQuoteId(comparison.quote_id || undefined);
     setSecondaryInputs(comparison.secondary_inputs);
     setExitMonths(comparison.exit_months);
@@ -133,6 +146,8 @@ const OffPlanVsSecondary = () => {
     setCurrentComparisonId(comparison.id);
     setCurrentComparisonTitle(comparison.title);
     setHasConfigured(true);
+    setSaveStatus('idle');
+    
     if (comparison.quote_id) {
       navigate(`/offplan-vs-secondary/${comparison.quote_id}`, { replace: true });
     }
@@ -143,6 +158,25 @@ const OffPlanVsSecondary = () => {
     // Only auto-save if we have a comparison ID and are configured
     if (!currentComparisonId || !hasConfigured) return;
     
+    // Skip initial load to prevent immediate save after loading
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    
+    // Create data fingerprint
+    const currentData = JSON.stringify({
+      secondary_inputs: secondaryInputs,
+      exit_months: exitMonths,
+      rental_mode: rentalMode,
+      quote_id: selectedQuoteId || null,
+    });
+    
+    // Skip if no actual change from last saved state
+    if (currentData === lastSavedDataRef.current) {
+      return;
+    }
+    
     // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -152,7 +186,7 @@ const OffPlanVsSecondary = () => {
     
     // Debounce update (1.5s delay)
     saveTimeoutRef.current = setTimeout(async () => {
-      await updateComparison(
+      const success = await updateComparison(
         currentComparisonId,
         {
           secondary_inputs: secondaryInputs,
@@ -162,8 +196,14 @@ const OffPlanVsSecondary = () => {
         },
         true // silent
       );
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
+      
+      if (success) {
+        lastSavedDataRef.current = currentData;
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('idle'); // Reset on failure
+      }
     }, 1500);
     
     return () => {

@@ -31,20 +31,20 @@ export const LayerToggle = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-[#1a1f2e]/95 border border-[#2a3142] backdrop-blur-xl rounded-lg overflow-hidden w-48">
+    <div className="bg-theme-card/95 border border-theme-border backdrop-blur-xl rounded-lg overflow-hidden w-48">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-[#2a3142]/50 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-theme-card-alt/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-gray-400" />
-          <span className="text-sm font-medium text-white">Map Layers</span>
+          <Layers className="w-4 h-4 text-theme-text-muted" />
+          <span className="text-sm font-medium text-theme-text">Map Layers</span>
         </div>
         {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-theme-text-muted" />
         ) : (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
+          <ChevronUp className="w-4 h-4 text-theme-text-muted" />
         )}
       </button>
 
@@ -57,8 +57,8 @@ export const LayerToggle = ({
         <div className="px-4 pb-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MapIcon className="w-4 h-4 text-gray-500" />
-              <Label htmlFor="zones-toggle" className="text-sm text-gray-300">Zones</Label>
+              <MapIcon className="w-4 h-4 text-theme-text-muted" />
+              <Label htmlFor="zones-toggle" className="text-sm text-theme-text">Zones</Label>
             </div>
             <Switch
               id="zones-toggle"
@@ -70,8 +70,8 @@ export const LayerToggle = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Train className="w-4 h-4 text-gray-500" />
-                <Label htmlFor="metro-toggle" className="text-sm text-gray-300">Metro Lines</Label>
+                <Train className="w-4 h-4 text-theme-text-muted" />
+                <Label htmlFor="metro-toggle" className="text-sm text-theme-text">Metro Lines</Label>
               </div>
               <Switch
                 id="metro-toggle"
@@ -81,22 +81,22 @@ export const LayerToggle = ({
             </div>
             {/* Metro Lines Legend */}
             {metroLinesVisible && (
-              <div className="ml-6 space-y-1 text-xs">
+                <div className="ml-6 space-y-1 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-0.5 bg-[#EF4444]" />
-                  <span className="text-gray-500">Red</span>
+                  <span className="text-theme-text-muted">Red</span>
                   <div className="w-6 h-0.5 bg-[#22C55E]" />
-                  <span className="text-gray-500">Green</span>
+                  <span className="text-theme-text-muted">Green</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-0.5 bg-[#3B82F6]" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #3B82F6 0px, #3B82F6 4px, transparent 4px, transparent 6px)' }} />
-                  <span className="text-gray-500">Blue (2029)</span>
+                  <span className="text-theme-text-muted">Blue (2029)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-0.5 bg-[#F59E0B]" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #F59E0B 0px, #F59E0B 2px, transparent 2px, transparent 4px)' }} />
-                  <span className="text-gray-500">Gold</span>
+                  <span className="text-theme-text-muted">Gold</span>
                   <div className="w-6 h-0.5 bg-[#8B5CF6]" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6 0px, #8B5CF6 2px, transparent 2px, transparent 4px)' }} />
-                  <span className="text-gray-500">Purple</span>
+                  <span className="text-theme-text-muted">Purple</span>
                 </div>
               </div>
             )}
@@ -104,8 +104,8 @@ export const LayerToggle = ({
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              <Label htmlFor="hotspots-toggle" className="text-sm text-gray-300">Hotspots</Label>
+              <MapPin className="w-4 h-4 text-theme-text-muted" />
+              <Label htmlFor="hotspots-toggle" className="text-sm text-theme-text">Hotspots</Label>
             </div>
             <Switch
               id="hotspots-toggle"
@@ -116,8 +116,8 @@ export const LayerToggle = ({
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-gray-500" />
-              <Label htmlFor="projects-toggle" className="text-sm text-gray-300">Projects</Label>
+              <Building2 className="w-4 h-4 text-theme-text-muted" />
+              <Label htmlFor="projects-toggle" className="text-sm text-theme-text">Projects</Label>
             </div>
             <Switch
               id="projects-toggle"
@@ -129,8 +129,8 @@ export const LayerToggle = ({
           {onLandmarksToggle && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-gray-500" />
-                <Label htmlFor="landmarks-toggle" className="text-sm text-gray-300">Landmarks</Label>
+                <Camera className="w-4 h-4 text-theme-text-muted" />
+                <Label htmlFor="landmarks-toggle" className="text-sm text-theme-text">Landmarks</Label>
               </div>
               <Switch
                 id="landmarks-toggle"

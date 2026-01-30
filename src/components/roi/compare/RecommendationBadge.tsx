@@ -63,11 +63,11 @@ export const ScoreDisplay = ({ scores, focus }: ScoreDisplayProps) => {
           <div 
             key={id}
             className={`text-center p-2 rounded-lg ${
-              isHighlighted ? 'bg-[#CCFF00]/10 ring-1 ring-[#CCFF00]/30' : 'bg-[#0f172a]'
+              isHighlighted ? 'bg-theme-accent/10 ring-1 ring-theme-accent/30' : 'bg-theme-bg-alt'
             }`}
           >
             <Icon className={`w-3.5 h-3.5 mx-auto mb-1 ${color}`} />
-            <div className={`text-sm font-bold ${isHighlighted ? 'text-[#CCFF00]' : 'text-white'}`}>
+            <div className={`text-sm font-bold ${isHighlighted ? 'text-theme-accent' : 'text-theme-text'}`}>
               {score}
             </div>
             <div className="text-[10px] text-theme-text-muted">{label}</div>
