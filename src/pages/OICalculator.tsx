@@ -217,8 +217,8 @@ const OICalculatorContent = () => {
     localStorage.removeItem('cashflow-configurator-state');
     localStorage.removeItem('cashflow_configurator_open');
     
-    // Navigate to generator without a quoteId
-    navigate('/cashflow-generator', { replace: true });
+    // Navigate to generator without a quoteId, opening configurator immediately
+    navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
   }, [navigate]);
 
   // Keep configurator open when navigating to new quote (via navigation state)

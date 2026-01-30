@@ -19,7 +19,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
     <div className="h-full flex flex-col items-center py-4 gap-4">
       <button
         onClick={onToggleCollapse}
-        className="p-1.5 rounded-md hover:bg-[#2a3142] transition-colors text-gray-400 hover:text-white"
+        className="p-1.5 rounded-md hover:bg-theme-border transition-colors text-theme-text-muted hover:text-theme-text"
         title="Expand preview (P)"
       >
         <ChevronLeft className="w-4 h-4" />
@@ -62,7 +62,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
         <div className="flex flex-col items-center gap-1" title={`Appreciation +${appreciationBonus.toFixed(1)}%`}>
           <TrendingUp className="w-4 h-4 text-orange-400" />
           {appreciationBonus > 0 && (
-            <span className="text-[10px] text-[#CCFF00] font-mono">
+            <span className="text-[10px] text-theme-accent font-mono">
               +{appreciationBonus.toFixed(0)}
             </span>
           )}
@@ -71,8 +71,8 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
       
       {/* Differentiators count */}
       {(inputs.valueDifferentiators?.length || 0) > 0 && (
-        <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 flex items-center justify-center">
-          <span className="text-[10px] text-[#CCFF00] font-bold">
+        <div className="w-6 h-6 rounded-full bg-theme-accent/20 flex items-center justify-center">
+          <span className="text-[10px] text-theme-accent font-bold">
             {inputs.valueDifferentiators?.length}
           </span>
         </div>
@@ -110,13 +110,13 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
     <div className="space-y-4">
       {/* Header with collapse button */}
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-gray-400 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
+        <div className="text-sm font-medium text-theme-text-muted flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-theme-accent animate-pulse" />
           Live Preview
         </div>
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-md hover:bg-[#2a3142] transition-colors text-gray-400 hover:text-white"
+          className="p-1.5 rounded-md hover:bg-theme-border transition-colors text-theme-text-muted hover:text-theme-text"
           title="Collapse preview (P)"
         >
           <ChevronRight className="w-4 h-4" />
@@ -199,18 +199,18 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
 
       {/* Value Differentiators Count */}
       {(inputs.valueDifferentiators?.length || 0) > 0 && (
-        <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-3">
+        <div className="bg-theme-bg rounded-lg border border-theme-border p-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-[#CCFF00]">✨ {inputs.valueDifferentiators?.length} differentiators</span>
-            <span className="text-[#CCFF00] font-mono">+{appreciationBonus.toFixed(1)}%</span>
+            <span className="text-theme-accent">✨ {inputs.valueDifferentiators?.length} differentiators</span>
+            <span className="text-theme-accent font-mono">+{appreciationBonus.toFixed(1)}%</span>
           </div>
         </div>
       )}
 
       {/* Entry Costs Summary */}
-      <div className="bg-[#0d1117] rounded-lg border border-[#2a3142] p-3 space-y-2">
+      <div className="bg-theme-bg rounded-lg border border-theme-border p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400">Total Entry Costs</span>
+          <span className="text-xs text-theme-text-muted">Total Entry Costs</span>
           <span className="text-sm font-mono text-red-400 font-bold">
             {formatCurrency(totalEntryCosts, currency)}
           </span>
@@ -220,10 +220,10 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
         </div>
         
         {/* Downpayment Breakdown */}
-        <div className="pt-2 border-t border-[#2a3142] space-y-1.5">
+        <div className="pt-2 border-t border-theme-border space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">Downpayment ({inputs.downpaymentPercent}%)</span>
-            <span className="text-sm font-mono text-white font-medium">
+            <span className="text-xs text-theme-text-muted">Downpayment ({inputs.downpaymentPercent}%)</span>
+            <span className="text-sm font-mono text-theme-text font-medium">
               {formatCurrency(downpaymentAmount, currency)}
             </span>
           </div>

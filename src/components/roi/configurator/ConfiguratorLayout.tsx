@@ -643,7 +643,7 @@ export const ConfiguratorLayout = ({
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="text-gray-400 hover:text-white hover:bg-[#2a3142]"
+            className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
           >
             <RotateCcw className="w-4 h-4 mr-1" />
             Clear
@@ -657,7 +657,7 @@ export const ConfiguratorLayout = ({
         <div 
           ref={contentScrollRef} 
           className={`flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth transition-all duration-300 ${
-            showSampleFlash ? 'bg-[#CCFF00]/5 ring-2 ring-[#CCFF00]/30 ring-inset' : ''
+            showSampleFlash ? 'bg-theme-accent/5 ring-2 ring-theme-accent/30 ring-inset' : ''
           }`}
         >
           <div 
@@ -670,7 +670,7 @@ export const ConfiguratorLayout = ({
 
         {/* Preview Panel - Collapsible, own scroll */}
         <div 
-          className={`shrink-0 border-l border-[#2a3142] bg-[#0d1117] overflow-y-auto transition-all duration-300 ease-in-out ${
+          className={`shrink-0 border-l border-theme-border bg-theme-bg overflow-y-auto transition-all duration-300 ease-in-out ${
             isPreviewCollapsed ? 'w-14 p-2' : 'w-64 p-4'
           }`}
         >
