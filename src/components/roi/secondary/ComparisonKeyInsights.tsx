@@ -12,9 +12,8 @@ interface ComparisonKeyInsightsProps {
   rate: number;
   language: 'en' | 'es';
   appreciationDuringConstruction: number;
-  // Props for Income During Build card
-  constructionMonths: number;
-  secondaryTotalIncomeAtHandover: number;
+  // Props for Monthly Cashflow card
+  secondaryMonthlyCashflow: number;
   // NEW: Property values at Year 10
   offPlanPropertyValue10Y: number;
   secondaryPropertyValue10Y: number;
@@ -28,8 +27,7 @@ export const ComparisonKeyInsights = ({
   rate,
   language,
   appreciationDuringConstruction,
-  constructionMonths,
-  secondaryTotalIncomeAtHandover,
+  secondaryMonthlyCashflow,
   offPlanPropertyValue10Y,
   secondaryPropertyValue10Y,
 }: ComparisonKeyInsightsProps) => {
@@ -80,32 +78,32 @@ export const ComparisonKeyInsights = ({
     totalWealthSubtitle: 'Valor + Renta 10 años',
     moneyMultiplier: 'Multiplicador de Valor',
     moneyMultiplierSubtitle: 'Crecimiento del Inmueble (10 años)',
-    incomeDuringBuild: 'Ingresos Durante Obra',
-    incomeDuringBuildSubtitle: 'Renta acumulada',
+    monthlyCashflow: 'Cashflow Mensual',
+    monthlyCashflowSubtitle: 'Durante construcción',
     constructionBonus: 'Bonus Construcción',
     constructionDescription: 'Apreciación "gratis" durante obra',
     noData: 'N/A',
     freeEquity: '¡Equity gratis!',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
-    noIncome: 'Sin ingresos',
-    months: 'meses',
+    positive: 'Positivo',
+    negative: 'Negativo',
     propertyValue: 'Valor propiedad',
   } : {
     totalWealth: 'Total Wealth',
     totalWealthSubtitle: 'Value + Rent at 10Y',
     moneyMultiplier: 'Value Multiplier',
     moneyMultiplierSubtitle: 'Property Value Growth (10Y)',
-    incomeDuringBuild: 'Income During Build',
-    incomeDuringBuildSubtitle: 'Cumulative rent earned',
+    monthlyCashflow: 'Monthly Cashflow',
+    monthlyCashflowSubtitle: 'During construction',
     constructionBonus: 'Construction Bonus',
     constructionDescription: '"Free" appreciation during build',
     noData: 'N/A',
     freeEquity: 'Free equity!',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
-    noIncome: 'No income',
-    months: 'months',
+    positive: 'Positive',
+    negative: 'Negative',
     propertyValue: 'Property value',
   };
 
@@ -137,15 +135,15 @@ export const ComparisonKeyInsights = ({
       winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
     },
     {
-      key: 'income',
-      title: t.incomeDuringBuild,
-      subtitle: t.incomeDuringBuildSubtitle,
+      key: 'cashflow',
+      title: t.monthlyCashflow,
+      subtitle: t.monthlyCashflowSubtitle,
       icon: Coins,
       showComparison: true,
-      offPlanValue: t.noIncome,
-      secondaryValue: `+${formatValue(secondaryTotalIncomeAtHandover)}`,
-      badge: `${constructionMonths} ${t.months}`,
-      badgeColor: 'cyan',
+      offPlanValue: 'AED 0',
+      secondaryValue: formatValue(secondaryMonthlyCashflow),
+      badge: secondaryMonthlyCashflow > 0 ? t.positive : t.negative,
+      badgeColor: secondaryMonthlyCashflow > 0 ? 'emerald' : 'amber',
       winner: 'secondary', // Secondary always wins during construction
     },
     {
