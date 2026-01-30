@@ -702,6 +702,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          language_preference: string | null
           market_dubai_yield: number | null
           market_mortgage_rate: number | null
           market_top_area: string | null
@@ -735,6 +736,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          language_preference?: string | null
           market_dubai_yield?: number | null
           market_mortgage_rate?: number | null
           market_top_area?: string | null
@@ -768,6 +770,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          language_preference?: string | null
           market_dubai_yield?: number | null
           market_mortgage_rate?: number | null
           market_top_area?: string | null

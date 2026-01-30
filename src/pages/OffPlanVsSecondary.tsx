@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopNavbar } from '@/components/layout/TopNavbar';
-import { TrendingUp, Settings2, Home, Palmtree, Coins, Globe, Save, FolderOpen } from 'lucide-react';
+import { TrendingUp, Settings2, Home, Palmtree, Coins, Save, FolderOpen } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -54,8 +55,8 @@ const OffPlanVsSecondary = () => {
   const [secondaryInputs, setSecondaryInputs] = useState<SecondaryInputs>(DEFAULT_SECONDARY_INPUTS);
   const [rentalMode, setRentalMode] = useState<'long-term' | 'airbnb'>('long-term');
   
-  // Language and Currency state
-  const [language, setLanguage] = useState<'en' | 'es'>('es');
+  // Language from context, Currency is per-view
+  const { language } = useLanguage();
   const [currency, setCurrency] = useState<Currency>('AED');
   const { rate } = useExchangeRate(currency);
   
@@ -468,16 +469,6 @@ const OffPlanVsSecondary = () => {
               />
               <Palmtree className={`w-4 h-4 ${rentalMode === 'airbnb' ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
             </div>
-
-            {/* Language Toggle */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-              className="border-theme-border text-theme-text h-9 w-9"
-            >
-              {language === 'en' ? '🇬🇧' : '🇪🇸'}
-            </Button>
 
             {/* Currency Dropdown */}
             <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>

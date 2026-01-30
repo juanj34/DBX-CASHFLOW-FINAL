@@ -24,6 +24,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NavItem {
   label: string;
@@ -44,22 +45,19 @@ const navItems: NavItem[] = [
 
 interface TopNavbarProps {
   showNewQuote?: boolean;
-  language?: 'en' | 'es';
-  setLanguage?: (lang: 'en' | 'es') => void;
   currency?: Currency;
   setCurrency?: (currency: Currency) => void;
 }
 
 export const TopNavbar = ({ 
   showNewQuote = true,
-  language,
-  setLanguage,
   currency,
   setCurrency,
 }: TopNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const { language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -129,18 +127,16 @@ export const TopNavbar = ({
 
           {/* Right side - Controls + Avatar */}
           <div className="flex items-center gap-2">
-            {/* Language Toggle */}
-            {setLanguage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-                title={language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
-              >
-                <span className="text-base">{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
-              </Button>
-            )}
+            {/* Language Toggle - Always visible */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+              title={language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
+            >
+              <span className="text-base">{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
+            </Button>
 
             {/* Currency Selector */}
             {setCurrency && currency && (

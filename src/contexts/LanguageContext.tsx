@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 type Language = 'en' | 'es';
 
@@ -1522,25 +1523,86 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+interface LanguageProviderProps {
+  children: ReactNode;
+  /** Override language for public views (e.g., from URL params). When set, this takes precedence and setLanguage becomes a local state setter. */
+  overrideLanguage?: Language;
+}
+
 export const LanguageProvider = ({ 
   children,
-  defaultLanguage = 'en',
-}: { 
-  children: ReactNode;
-  defaultLanguage?: Language;
-}) => {
-  const [language, setLanguage] = useState<Language>(defaultLanguage);
+  overrideLanguage,
+}: LanguageProviderProps) => {
+  // Initialize from localStorage for instant load, or use override if provided
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (overrideLanguage) return overrideLanguage;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('app_language');
+      return (saved === 'en' || saved === 'es') ? saved : 'en';
+    }
+    return 'en';
+  });
 
-  // Sync with defaultLanguage prop when it changes
+  // Sync with override prop when it changes
   useEffect(() => {
-    setLanguage(defaultLanguage);
-  }, [defaultLanguage]);
+    if (overrideLanguage) {
+      setLanguageState(overrideLanguage);
+    }
+  }, [overrideLanguage]);
 
-  const t = (key: string): string => {
+  // Sync with profile when authenticated (only if no override)
+  useEffect(() => {
+    if (overrideLanguage) return; // Don't sync with DB when using override
+
+    const loadFromProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('language_preference')
+        .eq('id', user.id)
+        .single();
+      
+      if (data?.language_preference) {
+        const lang = data.language_preference as Language;
+        setLanguageState(lang);
+        localStorage.setItem('app_language', lang);
+      }
+    };
+
+    loadFromProfile();
+
+    // Also sync on auth state change
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      loadFromProfile();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [overrideLanguage]);
+
+  // Persist to both localStorage and database (only if no override)
+  const setLanguage = useCallback(async (lang: Language) => {
+    setLanguageState(lang);
+    
+    if (overrideLanguage) return; // Don't persist when using override
+    
+    localStorage.setItem('app_language', lang);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ language_preference: lang })
+        .eq('id', user.id);
+    }
+  }, [overrideLanguage]);
+
+  const t = useCallback((key: string): string => {
     const translation = translations[key];
     if (!translation) return key;
     return translation[language] || key;
-  };
+  }, [language]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
