@@ -53,9 +53,48 @@ const OffPlanVsSecondary = () => {
     }
   }, [quote?.inputs]);
 
-  // Off-Plan calculations
+  // Off-Plan calculations - create safe default inputs to prevent hook errors
   const offPlanInputs = quote?.inputs as OIInputs | undefined;
-  const offPlanCalcs = useOICalculations(offPlanInputs || {} as OIInputs);
+  
+  // Create a safe fallback with required arrays to prevent forEach errors
+  const safeOffPlanInputs = useMemo((): OIInputs => {
+    if (offPlanInputs) return offPlanInputs;
+    // Return minimal valid inputs when no quote is loaded
+    return {
+      basePrice: 0,
+      rentalYieldPercent: 0,
+      appreciationRate: 0,
+      bookingMonth: 1,
+      bookingYear: new Date().getFullYear(),
+      handoverQuarter: 4,
+      handoverYear: new Date().getFullYear() + 2,
+      downpaymentPercent: 20,
+      preHandoverPercent: 30,
+      additionalPayments: [], // Required to prevent forEach error
+      hasPostHandoverPlan: false,
+      onHandoverPercent: 0,
+      postHandoverPercent: 0,
+      postHandoverPayments: [], // Required to prevent forEach error
+      postHandoverEndQuarter: 4,
+      postHandoverEndYear: new Date().getFullYear() + 4,
+      eoiFee: 50000,
+      oqoodFee: 5250,
+      minimumExitThreshold: 30,
+      exitAgentCommissionEnabled: true,
+      exitNocFee: 5000,
+      zoneMaturityLevel: 50,
+      useZoneDefaults: false,
+      constructionAppreciation: 12,
+      growthAppreciation: 8,
+      matureAppreciation: 4,
+      growthPeriodYears: 5,
+      rentGrowthRate: 4,
+      serviceChargePerSqft: 18,
+      adrGrowthRate: 3,
+    };
+  }, [offPlanInputs]);
+  
+  const offPlanCalcs = useOICalculations(safeOffPlanInputs);
   
   // Off-Plan mortgage
   const offPlanMortgageInputs: MortgageInputs = useMemo(() => {
@@ -65,8 +104,8 @@ const OffPlanVsSecondary = () => {
   
   const offPlanMortgage = useMortgageCalculations({
     mortgageInputs: offPlanMortgageInputs,
-    basePrice: offPlanInputs?.basePrice || 0,
-    preHandoverPercent: offPlanInputs?.preHandoverPercent || 0,
+    basePrice: safeOffPlanInputs.basePrice,
+    preHandoverPercent: safeOffPlanInputs.preHandoverPercent,
     monthlyRent: offPlanCalcs.holdAnalysis?.netAnnualRent / 12 || 0,
   });
 
