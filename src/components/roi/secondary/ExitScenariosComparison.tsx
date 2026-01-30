@@ -204,12 +204,12 @@ export const ExitScenariosComparison = ({
             <TableHeader>
               <TableRow className="border-theme-border hover:bg-transparent">
                 <TableHead className="text-theme-text-muted text-xs w-20">{t.exit}</TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={4}>
+                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={3}>
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
                     🏗️ {t.offPlan}
                   </Badge>
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={4}>
+                <TableHead className="text-theme-text-muted text-xs text-center" colSpan={3}>
                   <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/30">
                     🏠 {t.secondary}
                   </Badge>
@@ -219,11 +219,9 @@ export const ExitScenariosComparison = ({
               <TableRow className="border-theme-border hover:bg-transparent">
                 <TableHead className="text-theme-text-muted text-[10px]"></TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.value}</TableHead>
-                <TableHead className="text-theme-text-muted text-[10px] text-center">{t.capital}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.profit}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.roe}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.value}</TableHead>
-                <TableHead className="text-theme-text-muted text-[10px] text-center">{t.capital}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.profit}</TableHead>
                 <TableHead className="text-theme-text-muted text-[10px] text-center">{t.roe}</TableHead>
                 <TableHead></TableHead>
@@ -247,18 +245,6 @@ export const ExitScenariosComparison = ({
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <span className="text-xs text-theme-text-muted">
-                            {formatValue(exit.offPlan.capitalInvested)}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{t.capitalAtExit}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell className="text-center">
                       <span className={`text-xs ${winner === 'offplan' ? 'text-emerald-500 font-semibold' : 'text-theme-text'}`}>
                         +{formatValue(exit.offPlan.profit)}
                       </span>
@@ -279,18 +265,6 @@ export const ExitScenariosComparison = ({
                       <span className="text-xs text-theme-text">
                         {formatValue(exit.secondary.propertyValue)}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Tooltip>
-                        <TooltipTrigger>
-                      <span className="text-xs text-theme-text-muted">
-                            {formatValue(exit.secondary.capitalInvested)}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{language === 'es' ? 'Precio de compra total' : 'Total purchase price'}</p>
-                        </TooltipContent>
-                      </Tooltip>
                     </TableCell>
                     <TableCell className="text-center">
                       <span className={`text-xs ${winner === 'secondary' ? 'text-cyan-500 font-semibold' : 'text-theme-text'}`}>
