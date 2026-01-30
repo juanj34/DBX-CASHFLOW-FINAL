@@ -1,188 +1,267 @@
 
-# Plan: Move Currency Selector to In-App Controls and Add Dual Currency in Configurator
+# Plan: Fix Wealth Calculations, Enhanced Tables, Full Language Support & Net Rent Display
 
-## Problem Summary
+## Summary of Changes
 
-1. **Symbol clarification**: The 🌴 (palm tree) icon represents "Airbnb/Short-term rental" mode in the toggle (🏠 = Long-term, 🌴 = Airbnb)
+### Identified Issues & Fixes:
 
-2. **Currency in wrong place**: Currently in the TopNavbar, but user wants it inside the page (like CashflowView does)
+1. **CRITICAL BUG: Wealth Year 5 = 0**
+   - Location: `OffPlanVsSecondary.tsx` line 249
+   - `offPlanWealthYear5: 0` is hardcoded instead of calculated
+   - Must calculate using same formula as Year 10
 
-3. **Missing dual currency in configurator**: When currency changes, all monetary values in the configurator modal should show dual format (AED + converted value)
+2. **Language not applied everywhere**
+   - `DSCRExplanationCard.tsx` - All Spanish, no language prop
+   - `ComparisonVerdict.tsx` - All Spanish, no language prop
+   - `HeadToHeadTable.tsx` - All Spanish, no language prop
+
+3. **Useless metrics to remove:**
+   - "Meses Sin Ingreso" - Not actionable
+   - "Cashflow Año 1" - Confusing without context
+   - "Punto de Cruce" card and row
+
+4. **Enhanced YearByYearWealthTable needed:**
+   - Currently shows only Wealth columns
+   - Need to show: Property Value + Rental Income + Wealth per side
+
+5. **Service Charges & Net Rent:**
+   - Already implemented correctly in `useSecondaryCalculations.ts`:
+     ```typescript
+     const serviceCharges = unitSizeSqf * serviceChargePerSqft;
+     const netAnnualRentLT = grossAnnualRentLT - serviceCharges;
+     ```
+   - Already has input fields in configurator for Service Charge and Yield
+   - Need to display the deduction clearly in the configurator
 
 ---
 
-## Solution Overview
-
-### 1. Move Currency & Language Controls to Page Header
-
-Remove currency/language props from TopNavbar calls and add a dedicated controls bar in the OffPlanVsSecondary page header (similar to CashflowView pattern at lines 330-346):
+## Wealth Calculation Formula (Correct)
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Header: "Off-Plan vs Secundaria"                               │
-│  [← Reconfigurar]  [🏠/🌴 Toggle]  [🇬🇧 EN] [🇦🇪 AED ▼]           │
-└─────────────────────────────────────────────────────────────────┘
+Wealth = Property Value + Cumulative Rent - Capital Invested
 ```
 
-### 2. Update Configurator Modal with Dual Currency
-
-Pass `currency` and `rate` to the `ComparisonConfiguratorModal` and then to `SecondaryPropertyStep` so all monetary inputs show dual values.
-
-### 3. Add Dual Currency Display to SecondaryPropertyStep
-
-When displaying prices in the configurator:
-- Show main AED value in input
-- Show converted value below each monetary field (like CashflowView does)
-- Update labels to show both currencies
-
----
-
-## Technical Implementation
-
-### A. OffPlanVsSecondary.tsx Changes
-
-1. **Remove language/currency props from TopNavbar** - Use TopNavbar without these props
-2. **Add in-page header controls** - Create a control bar below navbar with:
-   - Reconfigure button
-   - Rental mode toggle (with clear labels: "Renta Larga" / "Airbnb")
-   - Language button (🇬🇧/🇪🇸)
-   - Currency dropdown (🇦🇪 AED, 🇺🇸 USD, etc.)
-
-### B. ComparisonConfiguratorModal.tsx Changes
-
-Add new props:
+### Off-Plan Year 5 Fix:
 ```typescript
-interface ComparisonConfiguratorModalProps {
-  // ... existing props
-  currency?: Currency;
-  rate?: number;
-  language?: 'en' | 'es';
+// Calculate off-plan cumulative rent up to year 5
+let offPlanCumulativeRent5 = 0;
+for (let i = 0; i < 5; i++) {
+  const proj = offPlanCalcs.yearlyProjections[i];
+  if (proj && i >= handoverYearIndex - 1 && proj.netIncome) {
+    offPlanCumulativeRent5 += proj.netIncome;
+  }
 }
+const offPlanYear5 = offPlanCalcs.yearlyProjections[4];
+const offPlanWealth5 = (offPlanYear5?.propertyValue || 0) + offPlanCumulativeRent5 - offPlanCapitalDay1;
 ```
-
-Pass to `SecondaryPropertyStep`.
-
-### C. SecondaryPropertyStep.tsx Changes
-
-1. Add `currency` and `rate` props
-2. For each monetary input field, show dual currency helper text:
-   ```tsx
-   <div className="space-y-1.5">
-     <Label>Precio de Compra (AED)</Label>
-     <Input value={inputs.purchasePrice} ... />
-     {currency !== 'AED' && (
-       <p className="text-[10px] text-theme-text-muted">
-         ≈ {formatCurrency(inputs.purchasePrice, currency, rate)}
-       </p>
-     )}
-   </div>
-   ```
-
-3. Update the saved properties display to show dual currency
-
-### D. HeadToHeadTable.tsx Changes
-
-Add `currency` and `rate` props to display dual currency in the comparison table.
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/pages/OffPlanVsSecondary.tsx` | Remove navbar currency/lang props, add in-page header controls |
-| `src/components/roi/secondary/ComparisonConfiguratorModal.tsx` | Add currency/rate/language props, pass to children |
-| `src/components/roi/secondary/SecondaryPropertyStep.tsx` | Add dual currency display for all monetary fields |
-| `src/components/roi/secondary/HeadToHeadTable.tsx` | Add currency/rate props, dual currency formatting |
+### 1. `src/pages/OffPlanVsSecondary.tsx`
+- **Line 249**: Fix `offPlanWealthYear5: 0` to calculate actual value
+- **Line 255**: Add Year 1 cashflow calculation for off-plan
+
+### 2. `src/components/roi/secondary/ComparisonKeyInsights.tsx`
+- Remove Crossover Point card (4th card)
+- Update grid to `grid-cols-3`
+
+### 3. `src/components/roi/secondary/HeadToHeadTable.tsx`
+- Add `language` prop
+- Remove rows: "Meses Sin Ingreso", "Cashflow Año 1", "Punto de Cruce"
+- Add translations for all labels
+
+### 4. `src/components/roi/secondary/YearByYearWealthTable.tsx`
+Expand columns to show:
+| Year | OP Value | OP Rent | OP Wealth | SEC Value | SEC Rent | SEC Wealth | Delta |
+
+### 5. `src/components/roi/secondary/DSCRExplanationCard.tsx`
+- Add `language` prop
+- Translate all text (threshold explanations, labels, etc.)
+
+### 6. `src/components/roi/secondary/ComparisonVerdict.tsx`
+- Add `language` prop
+- Translate all recommendations and advantage texts
+
+### 7. `src/components/roi/secondary/SecondaryPropertyStep.tsx`
+- Add visual display showing net rent calculation:
+  ```text
+  Renta Bruta: AED 84,000
+  - Service Charges: AED 14,300
+  = Renta Neta: AED 69,700 ✓
+  ```
 
 ---
 
-## UI Changes
+## Updated YearByYearWealthTable Design
 
-### Before (Current)
 ```text
-[TopNavbar with currency/language toggles]
-│
-├── Header with toggle only
-│
-└── Content
+┌─────┬─────────────────────────────────────────┬─────────────────────────────────────────┬──────────┐
+│     │           OFF-PLAN 🏗️                   │           SECONDARY 🏠                  │          │
+│ Año │ Valor       │ Renta     │ Riqueza       │ Valor       │ Renta     │ Riqueza       │ Delta    │
+├─────┼─────────────┼───────────┼───────────────┼─────────────┼───────────┼───────────────┼──────────┤
+│ 1   │ AED 1.53M   │ —         │ AED 180K      │ AED 1.24M   │ AED 70K   │ AED 95K       │ +85K 🟢  │
+│ 2   │ AED 1.61M   │ —         │ AED 360K      │ AED 1.28M   │ AED 144K  │ AED 195K      │ +165K 🟢 │
+│ 3🔑 │ AED 1.70M   │ AED 84K   │ AED 540K      │ AED 1.31M   │ AED 221K  │ AED 300K      │ +240K 🟢 │
+│ 4   │ AED 1.79M   │ AED 175K  │ AED 730K      │ AED 1.35M   │ AED 302K  │ AED 410K      │ +320K 🟢 │
+│ 5   │ AED 1.88M   │ AED 272K  │ AED 935K      │ AED 1.39M   │ AED 387K  │ AED 525K      │ +410K 🟢 │
+│ ... │ ...         │ ...       │ ...           │ ...         │ ...       │ ...           │ ...      │
+│ 10  │ AED 2.15M   │ AED 756K  │ AED 1.68M     │ AED 1.55M   │ AED 810K  │ AED 1.08M     │ +600K 🟢 │
+└─────┴─────────────┴───────────┴───────────────┴─────────────┴───────────┴───────────────┴──────────┘
+
+Legend: 🔑 = Handover Year   "—" = Under construction (no rent)
 ```
 
-### After (Proposed)
+---
+
+## Updated Key Insights (3 Cards)
+
 ```text
-[TopNavbar - no currency/language]
-│
-├── Page Header with ALL controls:
-│   ┌────────────────────────────────────────────────────────────┐
-│   │ [Off-Plan] vs [Secundaria]                                 │
-│   │                                                            │
-│   │ [⚙️ Reconfigurar]  [🏠 Renta Larga | 🌴 Airbnb]            │
-│   │                    [🇪🇸 ES]  [🇦🇪 AED ▼]                   │
-│   └────────────────────────────────────────────────────────────┘
-│
-└── Content with dual currency everywhere
+┌────────────────┐  ┌────────────────┐  ┌────────────────┐
+│ Capital Inicial│  │ Riqueza Año 10 │  │ ROE Anualizado │
+│                │  │                │  │                │
+│ Off-Plan       │  │ Off-Plan       │  │ Off-Plan       │
+│ AED 350K       │  │ AED 1.68M      │  │ 12.5%          │
+│                │  │                │  │                │
+│ Secundaria     │  │ Secundaria     │  │ Secundaria     │
+│ AED 520K       │  │ AED 1.08M      │  │ 8.2%           │
+│                │  │                │  │                │
+│ 🏆 Off-Plan    │  │ 🏆 Off-Plan    │  │ 🏆 Off-Plan    │
+└────────────────┘  └────────────────┘  └────────────────┘
 ```
 
-### Configurator Modal - Dual Currency Display
+---
+
+## Updated HeadToHeadTable Rows
+
+**Keep:**
+- Capital Día 1
+- Capital Total (Handover)
+- DSCR Largo Plazo / DSCR Airbnb
+- Riqueza Año 5 (LT/ST)
+- Riqueza Año 10 (LT/ST)
+- ROE Anualizado
+
+**Remove:**
+- Meses Sin Ingreso ❌
+- Cashflow Año 1 ❌
+- Punto de Cruce ❌
+
+---
+
+## Net Rent Display in Configurator
+
+Add a summary card showing the calculation:
+
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│  Detalles de Propiedad                                          │
+│  📊 Resumen de Renta Neta                                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  Precio de Compra (AED)                                         │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1,200,000                                                 │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│  ≈ $326,700 USD                                                 │
-│  Off-Plan: AED 1,450,000 ($395,100)                             │
+│  Renta Bruta Anual:           AED 84,000                        │
+│  - Service Charges (650 sqft × 22):   - AED 14,300              │
+│  ─────────────────────────────────────────────                  │
+│  = Renta Neta Anual:          AED 69,700 ✓                      │
 │                                                                  │
-│  Área (sqft)                                                     │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 750                                                       │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  Yield Neto:                  5.81% (vs 7% bruto)               │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Translation Structure
+
+### DSCRExplanationCard Translations:
+```typescript
+const t = language === 'es' ? {
+  title: '¿Qué es DSCR?',
+  subtitle: 'Debt Service Coverage Ratio',
+  explanation: 'El DSCR mide si tu ingreso de renta cubre el pago de la hipoteca:',
+  formula: 'DSCR = Ingreso Mensual Neto / Pago Mensual Hipoteca',
+  excellent: 'Excelente',
+  tight: 'Ajustado',
+  deficit: 'Déficit',
+  noMortgage: 'Sin Hipoteca',
+  coversWithMargin: 'La renta cubre hipoteca con margen',
+  barelyCovers: 'La renta apenas cubre',
+  outOfPocket: 'Necesitas aportar de bolsillo',
+  longTerm: 'Renta Larga',
+  airbnb: 'Airbnb',
+} : {
+  title: 'What is DSCR?',
+  subtitle: 'Debt Service Coverage Ratio',
+  explanation: 'DSCR measures if your rental income covers the mortgage payment:',
+  formula: 'DSCR = Net Monthly Income / Monthly Mortgage Payment',
+  excellent: 'Excellent',
+  tight: 'Tight',
+  deficit: 'Deficit',
+  noMortgage: 'No Mortgage',
+  coversWithMargin: 'Rent covers mortgage with margin',
+  barelyCovers: 'Rent barely covers',
+  outOfPocket: 'Need to contribute out of pocket',
+  longTerm: 'Long-Term',
+  airbnb: 'Airbnb',
+};
+```
+
+### ComparisonVerdict Translations:
+```typescript
+const t = language === 'es' ? {
+  recommendation: 'RECOMENDACIÓN',
+  offPlanWinner: 'Off-Plan es la mejor opción para construcción de riqueza',
+  secondaryWinner: 'Secundaria es mejor si necesitas cashflow inmediato',
+  advantages: 'Ventajas',
+  tradeoffs: 'Trade-offs',
+  disadvantages: 'Desventajas',
+  lessCapital: 'menos capital inicial',
+  moreWealth: 'más riqueza en 10 años',
+  moreROE: 'más ROE anualizado',
+  surpassesYear: 'Supera secundaria en Año',
+  monthsNoIncome: 'meses sin ingresos',
+  constructionRisk: 'Riesgo de construcción',
+  incomeFromDay1: 'Ingresos desde día 1',
+  coversHipoteca: 'cubre hipoteca',
+  readyProperty: 'Propiedad lista, sin espera',
+  capitalRequired: 'capital requerido',
+  appreciationOnly: 'apreciación anual',
+  lowROE: '(bajo)',
+  tip: 'Recomendación',
+  recommended: 'Recomendado',
+} : {
+  recommendation: 'RECOMMENDATION',
+  offPlanWinner: 'Off-Plan is the best option for wealth building',
+  secondaryWinner: 'Secondary is better if you need immediate cashflow',
+  advantages: 'Advantages',
+  tradeoffs: 'Trade-offs',
+  disadvantages: 'Disadvantages',
+  lessCapital: 'less initial capital',
+  moreWealth: 'more wealth in 10 years',
+  moreROE: 'more annualized ROE',
+  surpassesYear: 'Surpasses secondary in Year',
+  monthsNoIncome: 'months without income',
+  constructionRisk: 'Construction risk',
+  incomeFromDay1: 'Income from day 1',
+  coversHipoteca: 'covers mortgage',
+  readyProperty: 'Ready property, no wait',
+  capitalRequired: 'capital required',
+  appreciationOnly: 'annual appreciation',
+  lowROE: '(low)',
+  tip: 'Recommendation',
+  recommended: 'Recommended',
+};
 ```
 
 ---
 
 ## Implementation Order
 
-1. **Update OffPlanVsSecondary.tsx** - Remove navbar props, add in-page controls
-2. **Update ComparisonConfiguratorModal.tsx** - Add and pass currency/rate/language props
-3. **Update SecondaryPropertyStep.tsx** - Add dual currency display to all monetary fields
-4. **Update HeadToHeadTable.tsx** - Add dual currency support
-
----
-
-## Technical Notes
-
-### Rental Mode Toggle Icons Explanation
-The toggle uses:
-- `Home` icon (🏠) = Long-term rental
-- `Palmtree` icon (🌴) = Airbnb/Short-term rental (palm tree represents vacation/holiday rentals)
-
-### Currency Formatting Pattern
-Follow the same pattern as CashflowView (lines 336-346):
-```tsx
-<Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
-  <SelectTrigger className="w-[140px] border-theme-border bg-theme-card text-theme-text">
-    <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent className="bg-theme-card border-theme-border">
-    {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
-      <SelectItem key={key} value={key}>{config.flag} {key}</SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-```
-
-### Dual Currency Helper Text Pattern
-```tsx
-{currency !== 'AED' && rate && (
-  <p className="text-[10px] text-theme-text-muted">
-    ≈ {formatCurrency(value, currency, rate)}
-  </p>
-)}
-```
+1. **Fix OffPlanVsSecondary.tsx** - Calculate offPlanWealthYear5 correctly
+2. **Update ComparisonKeyInsights.tsx** - Remove crossover card, grid-cols-3
+3. **Update HeadToHeadTable.tsx** - Add language prop, remove useless rows
+4. **Enhance YearByYearWealthTable.tsx** - Add Value + Rent columns
+5. **Update DSCRExplanationCard.tsx** - Add language prop + translations
+6. **Update ComparisonVerdict.tsx** - Add language prop + translations
+7. **Update SecondaryPropertyStep.tsx** - Add net rent summary display
+8. **Update OffPlanVsSecondary.tsx** - Pass language to all components
