@@ -499,14 +499,15 @@ const OffPlanVsSecondary = () => {
     );
   }
 
-  // Loading state
-  if (quoteLoading) {
+  // Loading state - also show loading when quote is not ready yet
+  if (quoteLoading || !quote) {
     return (
       <div className="min-h-screen bg-theme-bg">
         <TopNavbar />
         <div className="container mx-auto px-4 py-6 space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-32 w-full bg-theme-border" />
+          <Skeleton className="h-64 w-full bg-theme-border" />
+          <Skeleton className="h-48 w-full bg-theme-border" />
         </div>
       </div>
     );
