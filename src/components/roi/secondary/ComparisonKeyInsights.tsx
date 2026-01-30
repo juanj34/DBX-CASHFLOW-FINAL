@@ -78,8 +78,8 @@ export const ComparisonKeyInsights = ({
   const t = language === 'es' ? {
     totalWealth: 'Riqueza Total',
     totalWealthSubtitle: 'Valor + Renta 10 años',
-    moneyMultiplier: 'Multiplicador',
-    moneyMultiplierSubtitle: 'Crecimiento 10 años',
+    moneyMultiplier: 'Multiplicador de Valor',
+    moneyMultiplierSubtitle: 'Crecimiento del Inmueble (10 años)',
     incomeDuringBuild: 'Ingresos Durante Obra',
     incomeDuringBuildSubtitle: 'Renta acumulada',
     constructionBonus: 'Bonus Construcción',
@@ -94,8 +94,8 @@ export const ComparisonKeyInsights = ({
   } : {
     totalWealth: 'Total Wealth',
     totalWealthSubtitle: 'Value + Rent at 10Y',
-    moneyMultiplier: 'Multiplier',
-    moneyMultiplierSubtitle: '10-Year Growth',
+    moneyMultiplier: 'Value Multiplier',
+    moneyMultiplierSubtitle: 'Property Value Growth (10Y)',
     incomeDuringBuild: 'Income During Build',
     incomeDuringBuildSubtitle: 'Cumulative rent earned',
     constructionBonus: 'Construction Bonus',
