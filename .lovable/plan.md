@@ -1,300 +1,216 @@
 
-# Plan: Fix Exit Scenarios + Remove DSCR + Add Persistence
+# Plan: Global Language Setting in TopNavbar
 
 ## Summary
 
-Three requirements to address:
-1. **Fix Exit ROE** - Use actual payment plan capital for off-plan, not Day 1 capital
-2. **Remove DSCR** - Remove DSCR components from the comparison view  
-3. **Add Persistence** - Save/load comparisons so users can return to previous analyses
+Move language from a per-page/per-view setting to a **global app-wide setting** accessible from the TopNavbar. The language should:
+1. Be persisted in the user's profile (database) and localStorage (for immediate access)
+2. Be accessible via a toggle in the TopNavbar on ALL pages
+3. Translate EVERYTHING across the app (all components, pages, modals)
+4. Currency remains per-exercise/view (no change needed)
 
 ---
 
-## 1. Exit Scenarios ROE Fix
+## Current State
 
-### Current (Buggy) Code in ExitScenariosComparison.tsx
-
-```typescript
-// Lines 84-95 - WRONG!
-const opProfit = opPropertyValue + opCumulativeRent - offPlanCapitalInvested - opExitCosts;
-const opTotalROE = offPlanCapitalInvested > 0 ? (opProfit / offPlanCapitalInvested) * 100 : 0;
-```
-
-**Problems:**
-1. Uses `offPlanCapitalInvested` = Day 1 capital (~280K) instead of capital at exit month
-2. Includes `opCumulativeRent` in exit profit (exit = sell, not hold)
-3. Results in 469% ROE which is impossible
-
-### Correct Logic
-
-**Off-Plan Exit:**
-- Use `calculateEquityAtExitWithDetails()` from `constructionProgress.ts` to get capital paid according to payment schedule
-- Profit = Exit Price - Base Price (pure appreciation)
-- ROE = Profit / Capital at Exit Month
-
-**Secondary Exit:**
-- Capital = `totalCapitalDay1` (always, since all paid upfront)
-- Profit = Exit Price - Purchase Price (pure appreciation)
-- ROE = Profit / Capital
-
-### New Props for ExitScenariosComparison
-
-```typescript
-interface ExitScenariosComparisonProps {
-  exitMonths: number[];
-  // Off-Plan data
-  offPlanInputs: OIInputs;            // NEW: Full inputs for payment plan
-  offPlanBasePrice: number;           // NEW: Base purchase price
-  offPlanTotalMonths: number;         // NEW: Construction duration
-  offPlanEntryCosts: number;          // NEW: Entry costs
-  // Secondary data  
-  secondaryPurchasePrice: number;     // NEW: Purchase price
-  secondaryCapitalInvested: number;   // Total capital day 1
-  secondaryAppreciationRate: number;  // NEW: Annual appreciation rate
-  // Display
-  currency: Currency;
-  rate: number;
-  language: 'en' | 'es';
-}
-```
-
-### Updated Calculation Logic
-
-```typescript
-import { calculateEquityAtExitWithDetails, calculateExitPrice } from '@/components/roi/constructionProgress';
-
-const exitData = useMemo((): ExitComparisonPoint[] => {
-  return exitMonths.map((months) => {
-    const years = months / 12;
-    
-    // === OFF-PLAN: Use canonical functions ===
-    // Capital from payment plan (NOT day 1)
-    const equityResult = calculateEquityAtExitWithDetails(
-      months, 
-      offPlanInputs, 
-      offPlanTotalMonths, 
-      offPlanBasePrice
-    );
-    const opCapitalAtExit = equityResult.finalEquity + offPlanEntryCosts;
-    
-    // Exit price using phased appreciation
-    const opExitPrice = calculateExitPrice(months, offPlanBasePrice, offPlanTotalMonths, offPlanInputs);
-    const opAppreciation = opExitPrice - offPlanBasePrice;
-    
-    // Pure ROE = Appreciation / Capital at exit
-    const opROE = opCapitalAtExit > 0 ? (opAppreciation / opCapitalAtExit) * 100 : 0;
-    const opAnnualizedROE = years > 0 ? opROE / years : 0;
-    
-    // === SECONDARY: All capital paid day 1 ===
-    const secExitPrice = secondaryPurchasePrice * Math.pow(1 + secondaryAppreciationRate / 100, years);
-    const secAppreciation = secExitPrice - secondaryPurchasePrice;
-    
-    const secROE = secondaryCapitalInvested > 0 ? (secAppreciation / secondaryCapitalInvested) * 100 : 0;
-    const secAnnualizedROE = years > 0 ? secROE / years : 0;
-    
-    return {
-      months,
-      offPlan: {
-        propertyValue: opExitPrice,
-        capitalInvested: opCapitalAtExit,  // Actual capital at exit!
-        profit: opAppreciation,            // Pure appreciation
-        totalROE: opROE,
-        annualizedROE: opAnnualizedROE,
-      },
-      secondary: {
-        propertyValue: secExitPrice,
-        capitalInvested: secondaryCapitalInvested,
-        profit: secAppreciation,           // Pure appreciation
-        totalROE: secROE,
-        annualizedROE: secAnnualizedROE,
-      },
-    };
-  });
-}, [exitMonths, offPlanInputs, offPlanBasePrice, offPlanTotalMonths, offPlanEntryCosts, 
-    secondaryPurchasePrice, secondaryCapitalInvested, secondaryAppreciationRate]);
-```
+| Aspect | Current Behavior |
+|--------|------------------|
+| LanguageContext | Exists, provides `language`, `setLanguage`, `t()` |
+| Persistence | Not persisted - resets on page reload |
+| TopNavbar | Language toggle only appears when `setLanguage` prop is passed |
+| OffPlanVsSecondary | Has local `useState` for language (not using context) |
+| Profile table | Has `theme_preference` but NO `language_preference` |
 
 ---
 
-## 2. Remove DSCR Components
+## Architecture Changes
 
-### Files to Modify
-
-| File | Action |
-|------|--------|
-| `src/pages/OffPlanVsSecondary.tsx` | Remove DSCRExplanationCard import and JSX |
-| `src/components/roi/secondary/HeadToHeadTable.tsx` | Remove MORTGAGE/HIPOTECA category rows |
-
-### Specific Changes in OffPlanVsSecondary.tsx
-
-Remove lines 505-512:
-```tsx
-// REMOVE THIS ENTIRE BLOCK
-<div className="grid lg:grid-cols-2 gap-6">
-  <DSCRExplanationCard ... />
-  <OutOfPocketCard ... />
-</div>
-```
-
-Replace with:
-```tsx
-{/* Out of Pocket - Full Width */}
-<OutOfPocketCard ... />
-```
-
-### Rows to Remove from HeadToHeadTable
-
-The HIPOTECA/MORTGAGE category with:
-- DSCR Largo Plazo / DSCR Long-Term
-- DSCR Airbnb
-- Any DSCR-related metrics
-
----
-
-## 3. Add Persistence (Database Table + Hook + Modals)
-
-### New Database Table: `secondary_comparisons`
+### 1. Database: Add `language_preference` column to `profiles`
 
 ```sql
-CREATE TABLE public.secondary_comparisons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  broker_id UUID NOT NULL REFERENCES auth.users(id),
-  title TEXT NOT NULL,
-  quote_id UUID REFERENCES cashflow_quotes(id),
-  secondary_inputs JSONB NOT NULL DEFAULT '{}'::jsonb,
-  exit_months JSONB NOT NULL DEFAULT '[]'::jsonb,
-  rental_mode TEXT DEFAULT 'long-term',
-  share_token TEXT,
-  is_public BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS Policies
-ALTER TABLE public.secondary_comparisons ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage own comparisons"
-ON public.secondary_comparisons FOR ALL
-USING (auth.uid() = broker_id)
-WITH CHECK (auth.uid() = broker_id);
-
-CREATE POLICY "Public can view shared comparisons"
-ON public.secondary_comparisons FOR SELECT
-USING (is_public = true AND share_token IS NOT NULL);
+ALTER TABLE public.profiles 
+ADD COLUMN language_preference TEXT DEFAULT 'en';
 ```
 
-### New Hook: `src/hooks/useSecondaryComparisons.ts`
+### 2. Update LanguageContext to Persist Language
+
+The context will:
+- Load from localStorage first (instant UI)
+- Sync with profile from database when available
+- Save to both localStorage and database when changed
 
 ```typescript
-export interface SecondaryComparison {
-  id: string;
-  broker_id: string;
-  title: string;
-  quote_id: string | null;
-  secondary_inputs: SecondaryInputs;
-  exit_months: number[];
-  rental_mode: 'long-term' | 'airbnb';
-  share_token: string | null;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// src/contexts/LanguageContext.tsx
+export const LanguageProvider = ({ children }: { children: ReactNode }) => {
+  // Initialize from localStorage for instant load
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('app_language');
+    return (saved === 'en' || saved === 'es') ? saved : 'en';
+  });
 
-export const useSecondaryComparisons = () => {
-  const [comparisons, setComparisons] = useState<SecondaryComparison[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Sync with profile when it loads
+  useEffect(() => {
+    const loadFromProfile = async () => {
+      const { data } = await supabase.from('profiles')
+        .select('language_preference')
+        .eq('id', userId)
+        .single();
+      if (data?.language_preference) {
+        setLanguageState(data.language_preference as Language);
+        localStorage.setItem('app_language', data.language_preference);
+      }
+    };
+    loadFromProfile();
+  }, []);
 
-  // Fetch all user's comparisons
-  // Save new comparison
-  // Update existing comparison
-  // Delete comparison
-  // Generate share token
-  
-  return {
-    comparisons,
-    loading,
-    saveComparison,
-    updateComparison,
-    deleteComparison,
-    generateShareToken,
+  // Persist to both localStorage and database
+  const setLanguage = async (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('app_language', lang);
+    await supabase.from('profiles')
+      .update({ language_preference: lang })
+      .eq('id', userId);
   };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
 };
 ```
 
-### New Components
+### 3. Update TopNavbar to Always Show Language Toggle
 
-1. **`SaveSecondaryComparisonModal.tsx`** - Save dialog with title input
-2. **`LoadSecondaryComparisonModal.tsx`** - List and load saved comparisons
+Remove the conditional prop-based language toggle. The TopNavbar will always show the language toggle by consuming the context directly:
 
-### Updated UI Flow in OffPlanVsSecondary.tsx
+```typescript
+// src/components/layout/TopNavbar.tsx
+import { useLanguage } from '@/contexts/LanguageContext';
 
-**Initial View (no comparison loaded):**
+export const TopNavbar = ({ 
+  showNewQuote = true,
+  // REMOVE: language, setLanguage props (no longer needed)
+  currency,
+  setCurrency,
+}: TopNavbarProps) => {
+  const { language, setLanguage } = useLanguage(); // Always from context
+  
+  // ...
+
+  {/* Language Toggle - Always visible */}
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-8 w-8"
+    onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+    title={language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
+  >
+    <span className="text-base">{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
+  </Button>
+```
+
+### 4. Update Pages to Use Global Language
+
+Remove local language state from pages like `OffPlanVsSecondary`:
+
+```typescript
+// src/pages/OffPlanVsSecondary.tsx
+
+// REMOVE these local states:
+// const [language, setLanguage] = useState<'en' | 'es'>('es');
+
+// USE context instead:
+const { language, t } = useLanguage();
+
+// Update TopNavbar call - no language/setLanguage props needed:
+<TopNavbar currency={currency} setCurrency={setCurrency} />
+```
+
+### 5. Update Profile Interface and Hook
+
+```typescript
+// src/hooks/useProfile.ts
+export interface Profile {
+  // ... existing fields
+  language_preference: string | null; // NEW
+}
+
+// Add to select query and updateProfile
+```
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `supabase/migrations/xxx_add_language_preference.sql` | Add column to profiles |
+| `src/contexts/LanguageContext.tsx` | Add persistence (localStorage + DB) |
+| `src/hooks/useProfile.ts` | Add `language_preference` field |
+| `src/components/layout/TopNavbar.tsx` | Remove language props, use context directly |
+| `src/pages/OffPlanVsSecondary.tsx` | Remove local language state, use context |
+| `src/pages/CashflowDashboard.tsx` | Remove language props from TopNavbar |
+| `src/pages/OICalculator.tsx` | Remove language props from TopNavbar |
+| Other pages calling TopNavbar with language props | Remove props |
+
+---
+
+## Implementation Flow
+
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                  │
-│     🏗️ Off-Plan vs Secondary                                   │
-│                                                                  │
-│  ┌──────────────────────┐  ┌──────────────────────┐            │
-│  │  📂 Load Saved       │  │  ✨ Create New       │            │
-│  └──────────────────────┘  └──────────────────────┘            │
-│                                                                  │
-│  📋 Recent Comparisons (last 5)                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Marina Heights vs Secondary 1.5M          2 days ago    │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                        App.tsx                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │               LanguageProvider                            │  │
+│  │  • Loads from localStorage (instant)                      │  │
+│  │  • Syncs with profiles.language_preference               │  │
+│  │  • Provides: language, setLanguage, t()                  │  │
+│  │                                                           │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │                   TopNavbar                         │  │  │
+│  │  │  • Always shows 🇬🇧/🇪🇸 toggle                      │  │  │
+│  │  │  • Uses useLanguage() from context                 │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │              All Pages & Components                 │  │  │
+│  │  │  • Use useLanguage() → get t() function            │  │  │
+│  │  │  • All text translated via t('key')                │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-**Header with Save Button (when comparison loaded):**
-```tsx
-<Button onClick={() => setSaveModalOpen(true)}>
-  <Save className="w-4 h-4 mr-2" />
-  {currentComparisonId ? t.update : t.save}
-</Button>
-```
+---
+
+## Translation Coverage
+
+The existing `translations` object in `LanguageContext.tsx` already has ~500+ translation keys covering:
+- Navigation labels
+- Dashboard metrics
+- Quote/calculation terminology
+- Modal and form labels
+- Status badges
+- Error messages
+- All ROI calculator sections
+
+Any hardcoded English strings in components will need to be migrated to use `t('key')`.
 
 ---
 
-## Expected Exit ROE After Fix
+## Currency Behavior (No Changes Needed)
 
-**Year 3 Exit (Month 36):**
-
-| Metric | Off-Plan | Secondary |
-|--------|----------|-----------|
-| Base Price | AED 1,300,000 | AED 1,200,000 |
-| Exit Price | AED 1,500,000 | AED 1,315,000 |
-| Appreciation | +AED 200,000 (15.4%) | +AED 115,000 (9.6%) |
-| Capital at Exit | AED 470,000 (from payment plan) | AED 520,000 (all day 1) |
-| ROE | 42.5% total (14.2%/yr) | 22.1% total (7.4%/yr) |
-
-These numbers are realistic because they use:
-- **Actual capital deployed** at the exit point
-- **Pure appreciation** without rental income
+Currency remains a **per-exercise setting** because:
+- Different quotes may be presented to clients from different countries
+- Currency conversion is specific to the financial analysis context
+- The `setCurrency` prop pattern works well for this use case
 
 ---
 
-## Files to Create/Modify
+## Technical Considerations
 
-| File | Action |
-|------|--------|
-| `supabase migration` | CREATE TABLE secondary_comparisons |
-| `src/hooks/useSecondaryComparisons.ts` | NEW: CRUD hook |
-| `src/components/roi/secondary/SaveSecondaryComparisonModal.tsx` | NEW |
-| `src/components/roi/secondary/LoadSecondaryComparisonModal.tsx` | NEW |
-| `src/components/roi/secondary/ExitScenariosComparison.tsx` | FIX: Use payment plan capital |
-| `src/components/roi/secondary/HeadToHeadTable.tsx` | Remove DSCR rows |
-| `src/components/roi/secondary/index.ts` | Add new exports |
-| `src/pages/OffPlanVsSecondary.tsx` | Remove DSCR, add save/load, pass new props |
-
----
-
-## Implementation Order
-
-1. **Database**: Create `secondary_comparisons` table
-2. **Hook**: Create `useSecondaryComparisons.ts`
-3. **Fix Exit Calculation**: Update `ExitScenariosComparison.tsx` with correct capital logic
-4. **Remove DSCR**: Clean up HeadToHeadTable and OffPlanVsSecondary page
-5. **Add Modals**: Create save/load modals
-6. **Update Page**: Add save/load buttons and picker screen
-7. **Translations**: Ensure all new text has EN/ES versions
+1. **Instant Load**: Use localStorage as primary source for immediate language display
+2. **Database Sync**: Background sync with profile for persistence across devices
+3. **No Breaking Changes**: Public views (SnapshotView, PresentationView) can continue to use URL params or their own language handling for client-facing content
+4. **Fallback**: Default to 'en' if no preference is set
