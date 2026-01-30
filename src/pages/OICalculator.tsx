@@ -94,7 +94,8 @@ const OICalculatorContent = () => {
   }, [inputs.basePrice, quoteId]);
 
   // When loading an existing quote with data, show content even if some fields are empty
-  const isFullyConfigured = (hasClientDetails && hasPropertyConfigured) || (!!quoteId && dataLoaded && inputs.basePrice > 0);
+  // Check if we have a loaded quote (dataLoaded=true means data has been populated from the database)
+  const isFullyConfigured = (hasClientDetails && hasPropertyConfigured) || (!!quoteId && dataLoaded && !!quote);
 
   // Keep isQuoteConfigured for autosave logic (less strict)
   const isQuoteConfigured = useMemo(() => {
