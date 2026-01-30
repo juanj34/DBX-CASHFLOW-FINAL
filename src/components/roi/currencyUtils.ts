@@ -69,3 +69,31 @@ export const formatDualCurrencyCompact = (
   const converted = formatCurrencyShort(value, currency, rate);
   return { primary: aed, secondary: converted };
 };
+
+/**
+ * Calculate average monthly rent over a period with annual compounding growth.
+ * Used for mortgage and post-handover coverage analysis to show realistic 
+ * average coverage rather than just Year 1 rent.
+ * 
+ * @param initialMonthlyRent - Starting monthly rent (Year 1)
+ * @param rentGrowthRate - Annual growth rate as percentage (e.g., 4 for 4%)
+ * @param periodYears - Number of years to calculate average over
+ * @returns Average monthly rent over the period
+ */
+export const calculateAverageMonthlyRent = (
+  initialMonthlyRent: number,
+  rentGrowthRate: number,
+  periodYears: number
+): number => {
+  if (periodYears <= 0 || initialMonthlyRent <= 0) return initialMonthlyRent;
+  
+  let totalRent = 0;
+  let currentAnnualRent = initialMonthlyRent * 12;
+  
+  for (let year = 1; year <= periodYears; year++) {
+    totalRent += currentAnnualRent;
+    currentAnnualRent = currentAnnualRent * (1 + rentGrowthRate / 100);
+  }
+  
+  return totalRent / (periodYears * 12);
+};

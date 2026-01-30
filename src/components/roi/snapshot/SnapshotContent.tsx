@@ -146,6 +146,7 @@ export const SnapshotContent = ({
               <CompactPostHandoverCard
                 inputs={inputs}
                 monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
                 currency={currency}
                 rate={rate}
               />
@@ -157,6 +158,7 @@ export const SnapshotContent = ({
                 mortgageInputs={mortgageInputs}
                 mortgageAnalysis={mortgageAnalysis}
                 monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
                 currency={currency}
                 rate={rate}
               />
