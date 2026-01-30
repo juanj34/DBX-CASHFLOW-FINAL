@@ -41,7 +41,8 @@ export const HeadToHeadTable = ({
     wealth: 'Riqueza',
     returnLabel: 'Retorno',
     airbnb: 'Airbnb',
-    day1Capital: 'Capital Día 1',
+    totalCapital: 'Capital Total',
+    totalCapitalTooltip: 'Compromiso total de la propiedad incluyendo precio de compra y costos de cierre',
     totalCapitalHandover: 'Capital Total (Handover)',
     wealthYear5LT: 'Riqueza Año 5',
     wealthYear10LT: 'Riqueza Año 10',
@@ -56,7 +57,8 @@ export const HeadToHeadTable = ({
     wealth: 'Wealth',
     returnLabel: 'Return',
     airbnb: 'Airbnb',
-    day1Capital: 'Day 1 Capital',
+    totalCapital: 'Total Capital',
+    totalCapitalTooltip: 'Full property commitment including purchase price and closing costs',
     totalCapitalHandover: 'Total Capital (Handover)',
     wealthYear5LT: 'Wealth Year 5',
     wealthYear10LT: 'Wealth Year 10',
@@ -94,7 +96,7 @@ export const HeadToHeadTable = ({
     // Capital
     {
       category: 'CAPITAL',
-      metric: t.day1Capital,
+      metric: t.totalCapital,
       offPlanValue: formatMoney(metrics.offPlanCapitalDay1),
       secondaryValue: formatMoney(metrics.secondaryCapitalDay1),
       winner: metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'off-plan' : 'secondary',

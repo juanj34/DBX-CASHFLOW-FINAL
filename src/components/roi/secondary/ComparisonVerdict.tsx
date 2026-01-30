@@ -114,8 +114,16 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName, language = 'es'
     { icon: TrendingUp, text: t.readyProperty },
   ];
   
+  // Format secondary capital appropriately (could be millions now)
+  const formatSecondaryCapital = (value: number) => {
+    if (value >= 1000000) {
+      return `AED ${(value / 1000000).toFixed(2)}M`;
+    }
+    return `AED ${(value / 1000).toFixed(0)}K`;
+  };
+
   const secondaryCons = [
-    { icon: DollarSign, text: `AED ${(metrics.secondaryCapitalDay1 / 1000).toFixed(0)}K ${t.capitalRequired}` },
+    { icon: DollarSign, text: `${formatSecondaryCapital(metrics.secondaryCapitalDay1)} ${t.capitalRequired}` },
     { icon: TrendingUp, text: `3% ${t.appreciationOnly}` },
     { icon: Award, text: `ROE ${metrics.secondaryROEYear10LT.toFixed(1)}% ${t.lowROE}` },
   ];
