@@ -1,141 +1,246 @@
 
-# Plan: Fix Off-Plan vs Secondary 404 Error and Add Quote Selector
+# Plan: Off-Plan vs Secondary Comparison Tool Redesign
 
-## Problem
+## Overview
 
-The route `/offplan-vs-secondary/:quoteId` requires a `quoteId` parameter, but all navigation links point to `/offplan-vs-secondary` (without the parameter), causing a 404 error.
+Redesign the comparison tool to follow the same pattern as the Cashflow Generator:
+1. **Modal-first configurator** using Dialog component
+2. **Two-step wizard**: Select off-plan quote, then configure/select secondary property
+3. **Results view** after configuration is complete
 
-## Solution
+---
 
-### 1. Add Optional Route in App.tsx
+## User Flow
 
-Add a second route that handles the case when no quoteId is provided:
-
-```typescript
-// Add BEFORE the route with quoteId
-<Route path="/offplan-vs-secondary" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
-<Route path="/offplan-vs-secondary/:quoteId" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
-```
-
-### 2. Update OffPlanVsSecondary.tsx Page
-
-When no `quoteId` is provided, show a quote selector interface instead of the error message:
-
-**Changes needed:**
-- Add a state for showing the quote selector modal
-- When `quoteId` is undefined, show a full-page quote selection UI
-- When user selects a quote, navigate to `/offplan-vs-secondary/{selectedQuoteId}`
-- Reuse the existing `useQuotesList` hook to fetch available quotes
-
-**New Quote Selection UI (when no quoteId):**
 ```text
+/offplan-vs-secondary
+         │
+         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Off-Plan vs Secondary Comparison                               │
+│  INITIAL STATE (No comparison configured)                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  Select an Off-Plan Quote to Compare                            │
-│  ─────────────────────────────────────────────                  │
+│     [Icon: TrendingUp]                                          │
 │                                                                  │
-│  [Search quotes...]                                              │
+│     "Off-Plan vs Secondary Comparison"                          │
 │                                                                  │
+│     Compare your off-plan investment against a                  │
+│     ready secondary property to see which                       │
+│     strategy builds more wealth over 10 years.                  │
+│                                                                  │
+│              [Start Comparison]  ← Opens modal                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+         │ Click "Start Comparison"
+         ▼
+
+┌─────────────────────────────────────────────────────────────────┐
+│  CONFIGURATOR MODAL (Similar to OIInputModal)                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  STEP 1: SELECT OFF-PLAN QUOTE                                  │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ 🏢 Marina Shores Tower - Unit 1204                      │   │
-│  │    Emaar • AED 1,450,000 • Created: Jan 25              │   │
-│  │    Client: John Smith                                    │   │
-│  │                                          [Compare →]     │   │
+│  │ Search quotes...                                         │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                  │
+│  ┌───────────────────────────────────────────────────────┐     │
+│  │ Marina Shores - Unit 1204                              │     │
+│  │ Emaar • AED 1,450,000 • Handover: Q4 2026              │     │
+│  └───────────────────────────────────────────────────────┘     │
+│                                                                  │
+│  [← Back]                                          [Next →]     │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  STEP 2: CONFIGURE SECONDARY PROPERTY                           │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ 🏢 Downtown Views - Unit 3405                           │   │
-│  │    Binghatti • AED 980,000 • Created: Jan 22            │   │
-│  │    Client: Sarah Johnson                                 │   │
-│  │                                          [Compare →]     │   │
+│  │ [+ Create New] [Load Saved ▼]                            │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                  │
+│  Property Details:                                               │
+│  - Purchase Price, Size, Closing Costs                          │
+│  - Rental Yield, Appreciation Rate                              │
+│  - Mortgage options (optional)                                  │
+│  - Airbnb comparison (optional)                                 │
+│                                                                  │
+│  [Save Property for Later]                                      │
+│                                                                  │
+│  [← Back]                                     [Compare Now →]   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+         │ Click "Compare Now"
+         ▼
+
+┌─────────────────────────────────────────────────────────────────┐
+│  RESULTS VIEW (Full page comparison)                            │
+│  [Reconfigure] button in header to reopen modal                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
+## Database Changes
+
+### New Table: `secondary_properties`
+
+Stores reusable secondary property configurations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| broker_id | uuid | Owner (FK to auth.users) |
+| name | text | Property name/label |
+| purchase_price | numeric | AED price |
+| unit_size_sqf | numeric | Size in sqft |
+| closing_costs_percent | numeric | Default 6% |
+| rental_yield_percent | numeric | Default 7% |
+| rent_growth_rate | numeric | Default 3% |
+| appreciation_rate | numeric | Default 3% |
+| service_charge_per_sqft | numeric | Default 22 |
+| use_mortgage | boolean | Default true |
+| mortgage_financing_percent | numeric | Default 60% |
+| mortgage_interest_rate | numeric | Default 4.5% |
+| mortgage_term_years | integer | Default 25 |
+| show_airbnb | boolean | Default false |
+| airbnb_adr | numeric | Average daily rate |
+| airbnb_occupancy | numeric | Occupancy % |
+| airbnb_operating_expense | numeric | Operating expense % |
+| airbnb_management_fee | numeric | Management fee % |
+| created_at | timestamptz | Timestamp |
+| updated_at | timestamptz | Timestamp |
+
+**RLS Policy**: Users can only manage their own properties.
+
+---
+
+## New Components
+
+### 1. `ComparisonConfiguratorModal.tsx`
+The main modal component (like OIInputModal) containing:
+- Step indicator (1/2)
+- Step 1: Quote selector with search
+- Step 2: Secondary property form with save/load functionality
+- Navigation buttons (Back, Next, Compare Now)
+
+### 2. `QuoteSelectionStep.tsx`
+- Searchable list of off-plan quotes
+- Shows: Project, Developer, Price, Handover, Client
+- Click to select
+
+### 3. `SecondaryPropertyStep.tsx`
+- Form for secondary property inputs
+- "Save for Later" button to persist to database
+- "Load Saved" dropdown to select existing properties
+- All fields from SecondaryInputs type
+
+### 4. `ComparisonKeyInsights.tsx`
+4 key insight cards at top of results:
+- **Capital Inicial**: Day 1 investment for each
+- **Riqueza Año 10**: Total wealth at year 10
+- **ROE Anualizado**: Annualized ROE over 10 years
+- **Punto de Cruce**: Year when off-plan surpasses secondary
+
+### 5. `YearByYearWealthTable.tsx`
+Critical table showing wealth progression:
+
+| Year | Off-Plan Wealth | Secondary Wealth | Delta |
+|------|-----------------|------------------|-------|
+| 1    | 150K            | 130K             | +20K  |
+| 2    | 320K            | 260K             | +60K  |
+| ...  | ...             | ...              | ...   |
+| 10   | 1.8M            | 1.1M             | +700K |
+
+### 6. `DSCRExplanationCard.tsx`
+Explains DSCR in simple terms:
+- What it measures
+- Color-coded thresholds (green/yellow/red)
+- Why it matters
+
+### 7. `OutOfPocketCard.tsx`
+Simplified replacement for OutOfPocketTimeline:
+- Total capital during construction
+- Months without rental income
+- Appreciation gained while waiting
+
+---
+
+## Files to Create
+
+| File | Description |
+|------|-------------|
+| `src/components/roi/secondary/ComparisonConfiguratorModal.tsx` | Main modal component |
+| `src/components/roi/secondary/QuoteSelectionStep.tsx` | Step 1: Quote picker |
+| `src/components/roi/secondary/SecondaryPropertyStep.tsx` | Step 2: Secondary config |
+| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | 4 insight cards |
+| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Wealth progression table |
+| `src/components/roi/secondary/DSCRExplanationCard.tsx` | DSCR explanation |
+| `src/components/roi/secondary/OutOfPocketCard.tsx` | Simplified OOP display |
+| `src/hooks/useSecondaryProperties.ts` | CRUD for saved properties |
+
+---
+
 ## Files to Modify
 
-### 1. `src/App.tsx`
-- Add a new route for `/offplan-vs-secondary` (without quoteId)
-- Keep existing route for `/offplan-vs-secondary/:quoteId`
-
-### 2. `src/pages/OffPlanVsSecondary.tsx`
-- Check if `quoteId` is undefined
-- If undefined, show quote selection UI instead of error
-- Use `useQuotesList` hook to fetch quotes
-- Add search/filter functionality
-- When quote is selected, navigate to the full URL with quoteId
+| File | Changes |
+|------|---------|
+| `src/pages/OffPlanVsSecondary.tsx` | Complete rewrite with modal-first flow |
+| `src/components/roi/secondary/WealthTrajectoryDualChart.tsx` | Fix overflow, improve formatting |
+| `src/components/roi/secondary/index.ts` | Export new components |
 
 ---
 
-## Technical Implementation
+## Rental Mode Toggle
 
-### App.tsx Change (lines 99-100)
-```typescript
-// Before:
-<Route path="/offplan-vs-secondary/:quoteId" element={...} />
+Add a prominent toggle between:
+- **Renta Larga** (Long-term rental) - default
+- **Airbnb** (Short-term rental)
 
-// After:
-<Route path="/offplan-vs-secondary" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
-<Route path="/offplan-vs-secondary/:quoteId" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
-```
-
-### OffPlanVsSecondary.tsx Changes
-
-Add new imports:
-```typescript
-import { useQuotesList } from '@/hooks/useCashflowQuote';
-import { Input } from '@/components/ui/input';
-import { Search, ArrowRight } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-```
-
-Add quote selection UI when no quoteId:
-```typescript
-// If no quoteId, show quote selector
-if (!quoteId) {
-  return (
-    <div className="min-h-screen bg-theme-bg">
-      <PageHeader
-        title="Off-Plan vs Secondary"
-        subtitle="Select an off-plan quote to compare against a secondary property"
-        icon={<Building2 className="w-5 h-5" />}
-        backLink="/home"
-      />
-      <div className="container mx-auto px-4 py-6">
-        {/* Search input */}
-        {/* List of quotes with click-to-select */}
-        {/* Navigate to /offplan-vs-secondary/{quoteId} on selection */}
-      </div>
-    </div>
-  );
-}
-```
+This toggle affects:
+- Wealth Year 10 calculations
+- ROE calculations  
+- Year-by-year table values
+- DSCR coverage display
 
 ---
 
-## Quote Card Design
+## Key Metrics Explanations
 
-Each quote card in the selector will show:
-- Project name + Unit (if available)
-- Developer name
-- Purchase price (formatted)
-- Client name (if available)
-- Creation date
-- "Compare" button that navigates to full comparison
+### DSCR (Debt Service Coverage Ratio)
+"Mide si la renta cubre la hipoteca. DSCR de 120% = la renta es 20% mayor que el pago mensual."
+
+### Riqueza Total
+"Valor de propiedad + Rentas acumuladas - Capital invertido = Lo que realmente tienes."
+
+### Punto de Cruce
+"El año cuando off-plan supera a secundaria en riqueza total."
+
+### ROE Anualizado
+"Retorno anualizado sobre tu capital invertido durante 10 años."
 
 ---
 
-## Testing Checklist
+## UI Improvements
 
-- [ ] Clicking "Off-Plan vs Resale" in Home.tsx navigates correctly (no 404)
-- [ ] Quote selection page shows list of available quotes
-- [ ] Search filters quotes correctly
-- [ ] Clicking a quote navigates to `/offplan-vs-secondary/{quoteId}`
-- [ ] Full comparison page loads with selected quote
-- [ ] Back button returns to quote selection
-- [ ] Links from sidebar and PageHeader work correctly
+1. **No number overflow**: All charts and tables use proper formatting (K for thousands, M for millions)
+2. **Theme-aware colors**: All components use theme tokens
+3. **Clear hierarchy**: 4 key cards → Detailed table → Charts → Explanations → Verdict
+4. **Better spacing**: Proper gaps between sections
+5. **Tooltips**: Every metric has an explanation tooltip
+
+---
+
+## Implementation Order
+
+1. Create database migration for `secondary_properties` table
+2. Create `useSecondaryProperties` hook for CRUD operations
+3. Build `ComparisonConfiguratorModal` with two steps
+4. Build `QuoteSelectionStep` component
+5. Build `SecondaryPropertyStep` component with save/load
+6. Rewrite `OffPlanVsSecondary.tsx` with modal-first approach
+7. Create `ComparisonKeyInsights` (4 cards)
+8. Create `YearByYearWealthTable`
+9. Create `DSCRExplanationCard` and `OutOfPocketCard`
+10. Fix `WealthTrajectoryDualChart` overflow issues
+11. Update exports and test flow
