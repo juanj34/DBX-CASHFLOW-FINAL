@@ -86,10 +86,11 @@ export const useSecondaryComparisons = () => {
     quoteId: string | null,
     secondaryInputs: SecondaryInputs,
     exitMonths: number[],
-    rentalMode: 'long-term' | 'airbnb'
+    rentalMode: 'long-term' | 'airbnb',
+    silent: boolean = false
   ): Promise<SecondaryComparison | null> => {
     if (!user?.id) {
-      toast.error('Must be logged in to save');
+      if (!silent) toast.error('Must be logged in to save');
       return null;
     }
 
@@ -111,11 +112,11 @@ export const useSecondaryComparisons = () => {
 
       const newComparison = parseDbRecord(data);
       setComparisons(prev => [newComparison, ...prev]);
-      toast.success('Comparison saved');
+      if (!silent) toast.success('Comparison saved');
       return newComparison;
     } catch (error) {
       console.error('Error saving comparison:', error);
-      toast.error('Error saving comparison');
+      if (!silent) toast.error('Error saving comparison');
       return null;
     }
   };
@@ -123,7 +124,8 @@ export const useSecondaryComparisons = () => {
   // Update existing comparison
   const updateComparison = async (
     id: string,
-    updates: Partial<Pick<SecondaryComparison, 'title' | 'secondary_inputs' | 'exit_months' | 'rental_mode'>>
+    updates: Partial<Pick<SecondaryComparison, 'title' | 'secondary_inputs' | 'exit_months' | 'rental_mode' | 'quote_id'>>,
+    silent: boolean = false
   ): Promise<boolean> => {
     try {
       const dbUpdates: Record<string, unknown> = {};
@@ -131,6 +133,7 @@ export const useSecondaryComparisons = () => {
       if (updates.secondary_inputs !== undefined) dbUpdates.secondary_inputs = updates.secondary_inputs;
       if (updates.exit_months !== undefined) dbUpdates.exit_months = updates.exit_months;
       if (updates.rental_mode !== undefined) dbUpdates.rental_mode = updates.rental_mode;
+      if (updates.quote_id !== undefined) dbUpdates.quote_id = updates.quote_id;
 
       const { error } = await (supabase
         .from('secondary_comparisons') as any)
@@ -142,11 +145,11 @@ export const useSecondaryComparisons = () => {
       setComparisons(prev => prev.map(c => 
         c.id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
       ));
-      toast.success('Comparison updated');
+      if (!silent) toast.success('Comparison updated');
       return true;
     } catch (error) {
       console.error('Error updating comparison:', error);
-      toast.error('Error updating comparison');
+      if (!silent) toast.error('Error updating comparison');
       return false;
     }
   };
