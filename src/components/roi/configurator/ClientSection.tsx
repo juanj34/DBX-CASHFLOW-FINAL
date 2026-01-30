@@ -206,8 +206,8 @@ export const ClientSection = ({
     <div className="space-y-6">
       {/* Property Details Section */}
       <div>
-        <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <Building className="w-4 h-4 text-[#CCFF00]" />
+        <h3 className="text-sm font-semibold text-theme-text mb-3 flex items-center gap-2">
+          <Building className="w-4 h-4 text-theme-accent" />
           Property Details
         </h3>
         
@@ -216,7 +216,7 @@ export const ClientSection = ({
           {manualDeveloper ? (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">{t('developer')}</label>
+                <label className="text-xs text-theme-text-muted">{t('developer')}</label>
                 {isAdmin && (
                   <TooltipProvider>
                     <Tooltip>
@@ -224,7 +224,7 @@ export const ClientSection = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
                           onClick={() => window.open('/map-config?tab=developers', '_blank')}
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -241,13 +241,13 @@ export const ClientSection = ({
                 value={clientInfo.developer}
                 onChange={(e) => handleChange('developer', e.target.value)}
                 placeholder="e.g. Emaar"
-                className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                className="bg-theme-bg border-theme-border text-theme-text h-9"
               />
             </div>
           ) : (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">{t('developer')}</label>
+                <label className="text-xs text-theme-text-muted">{t('developer')}</label>
                 {isAdmin && (
                   <TooltipProvider>
                     <Tooltip>
@@ -255,7 +255,7 @@ export const ClientSection = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
                           onClick={() => window.open('/map-config?tab=developers', '_blank')}
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -281,7 +281,7 @@ export const ClientSection = ({
           {manualProject ? (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">{t('projectName')}</label>
+                <label className="text-xs text-theme-text-muted">{t('projectName')}</label>
                 {isAdmin && (
                   <TooltipProvider>
                     <Tooltip>
@@ -289,7 +289,7 @@ export const ClientSection = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
                           onClick={() => window.open('/map-config?tab=projects', '_blank')}
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -306,13 +306,13 @@ export const ClientSection = ({
                 value={clientInfo.projectName || ''}
                 onChange={(e) => handleChange('projectName', e.target.value)}
                 placeholder="e.g. The Valley"
-                className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                className="bg-theme-bg border-theme-border text-theme-text h-9"
               />
             </div>
           ) : (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">{t('projectName')}</label>
+                <label className="text-xs text-theme-text-muted">{t('projectName')}</label>
                 {isAdmin && (
                   <TooltipProvider>
                     <Tooltip>
@@ -320,7 +320,7 @@ export const ClientSection = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5 text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10"
+                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
                           onClick={() => window.open('/map-config?tab=projects', '_blank')}
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -347,28 +347,28 @@ export const ClientSection = ({
           <div className="grid grid-cols-2 gap-3">
             {/* Unit */}
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('unit')}</label>
+              <label className="text-xs text-theme-text-muted">{t('unit')}</label>
               <Input
                 value={clientInfo.unit}
                 onChange={(e) => handleChange('unit', e.target.value)}
                 placeholder="e.g. 3011"
-                className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                className="bg-theme-bg border-theme-border text-theme-text h-9"
               />
             </div>
 
             {/* Unit Type */}
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('unitType')}</label>
+              <label className="text-xs text-theme-text-muted">{t('unitType')}</label>
               <Select value={clientInfo.unitType} onValueChange={(v) => handleChange('unitType', v)}>
-                <SelectTrigger className="bg-[#0d1117] border-[#2a3142] text-white h-9">
+                <SelectTrigger className="bg-theme-bg border-theme-border text-theme-text h-9">
                   <SelectValue placeholder={t('selectType')} />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                <SelectContent className="bg-theme-card border-theme-border">
                   {UNIT_TYPES.map((type) => (
                     <SelectItem 
                       key={type.value} 
                       value={type.value}
-                      className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]"
+                      className="text-theme-text hover:bg-theme-border focus:bg-theme-border"
                     >
                       {language === 'es' ? type.labelEs : type.labelEn}
                     </SelectItem>
@@ -380,20 +380,20 @@ export const ClientSection = ({
             {/* Bedroom Count - only for villa/townhouse */}
             {(clientInfo.unitType === 'villa' || clientInfo.unitType === 'townhouse') && (
               <div className="space-y-1.5 col-span-2">
-                <label className="text-xs text-gray-400">{language === 'es' ? 'Habitaciones' : 'Bedrooms'}</label>
+                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Habitaciones' : 'Bedrooms'}</label>
                 <Select 
                   value={clientInfo.bedrooms?.toString() || ''} 
                   onValueChange={(v) => handleChange('bedrooms', parseInt(v) || 0)}
                 >
-                  <SelectTrigger className="bg-[#0d1117] border-[#2a3142] text-white h-9">
+                  <SelectTrigger className="bg-theme-bg border-theme-border text-theme-text h-9">
                     <SelectValue placeholder={language === 'es' ? 'Seleccionar' : 'Select'} />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a1f2e] border-[#2a3142]">
+                  <SelectContent className="bg-theme-card border-theme-border">
                     {[2, 3, 4, 5, 6, 7, 8].map((num) => (
                       <SelectItem 
                         key={num} 
                         value={num.toString()}
-                        className="text-gray-300 hover:bg-[#2a3142] focus:bg-[#2a3142]"
+                        className="text-theme-text hover:bg-theme-border focus:bg-theme-border"
                       >
                         {num} {language === 'es' ? 'Habitaciones' : 'Bedrooms'}
                       </SelectItem>
@@ -405,25 +405,25 @@ export const ClientSection = ({
 
             {/* Unit Size sqf */}
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('unitSizeSqf')}</label>
+              <label className="text-xs text-theme-text-muted">{t('unitSizeSqf')}</label>
               <Input
                 type="number"
                 value={clientInfo.unitSizeSqf || ''}
                 onChange={(e) => handleChange('unitSizeSqf', parseFloat(e.target.value) || 0)}
                 placeholder="sqf"
-                className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                className="bg-theme-bg border-theme-border text-theme-text h-9"
               />
             </div>
 
             {/* Unit Size m2 */}
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400">{t('unitSizeM2')}</label>
+              <label className="text-xs text-theme-text-muted">{t('unitSizeM2')}</label>
               <Input
                 type="number"
                 value={clientInfo.unitSizeM2 || ''}
                 onChange={(e) => handleChange('unitSizeM2', parseFloat(e.target.value) || 0)}
                 placeholder="m²"
-                className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                className="bg-theme-bg border-theme-border text-theme-text h-9"
               />
             </div>
 
@@ -431,7 +431,7 @@ export const ClientSection = ({
             {(clientInfo.unitType === 'villa' || clientInfo.unitType === 'townhouse') && (
               <>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400">{language === 'es' ? 'Terreno (sqf)' : 'Plot Size (sqf)'}</label>
+                  <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Terreno (sqf)' : 'Plot Size (sqf)'}</label>
                   <Input
                     type="number"
                     value={clientInfo.plotSizeSqf || ''}
@@ -441,11 +441,11 @@ export const ClientSection = ({
                       onClientInfoChange({ ...clientInfo, plotSizeSqf: sqf, plotSizeM2: m2 });
                     }}
                     placeholder="sqf"
-                    className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                    className="bg-theme-bg border-theme-border text-theme-text h-9"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400">{language === 'es' ? 'Terreno (m²)' : 'Plot Size (m²)'}</label>
+                  <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Terreno (m²)' : 'Plot Size (m²)'}</label>
                   <Input
                     type="number"
                     value={clientInfo.plotSizeM2 || ''}
@@ -455,7 +455,7 @@ export const ClientSection = ({
                       onClientInfoChange({ ...clientInfo, plotSizeSqf: sqf, plotSizeM2: m2 });
                     }}
                     placeholder="m²"
-                    className="bg-[#0d1117] border-[#2a3142] text-white h-9"
+                    className="bg-theme-bg border-theme-border text-theme-text h-9"
                   />
                 </div>
               </>
@@ -465,8 +465,8 @@ export const ClientSection = ({
           {/* Zone Selection */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-cyan-400" />
-              <label className="text-xs text-gray-400">{t('zone')}</label>
+              <MapPin className="w-4 h-4 text-theme-accent-secondary" />
+              <label className="text-xs text-theme-text-muted">{t('zone')}</label>
             </div>
             <ZoneSelect
               value={clientInfo.zoneId || ''}
@@ -486,15 +486,15 @@ export const ClientSection = ({
       {/* Client Information Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Users className="w-4 h-4 text-[#00EAFF]" />
+          <h3 className="text-sm font-semibold text-theme-text flex items-center gap-2">
+            <Users className="w-4 h-4 text-theme-accent-secondary" />
             {t('clients')}
           </h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleAddClient}
-            className="text-[#CCFF00] hover:text-[#CCFF00]/80 hover:bg-[#CCFF00]/10 h-7 gap-1"
+            className="text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10 h-7 gap-1"
           >
             <Plus className="w-3 h-3" />
             {t('addClient')}
@@ -502,10 +502,10 @@ export const ClientSection = ({
         </div>
 
         {/* Client Selector from Database */}
-        <div className="mb-4 p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+        <div className="mb-4 p-3 bg-theme-bg rounded-lg border border-theme-border">
           <div className="flex items-center gap-2 mb-2">
-            <UserPlus className="w-4 h-4 text-[#CCFF00]" />
-            <span className="text-xs text-gray-400">Link to existing client</span>
+            <UserPlus className="w-4 h-4 text-theme-accent" />
+            <span className="text-xs text-theme-text-muted">Link to existing client</span>
           </div>
           <ClientSelector
             value={selectedDbClientId}
@@ -524,19 +524,19 @@ export const ClientSection = ({
           {clients.map((client) => {
             const clientShare = clientShares.find(s => s.clientId === client.id)?.sharePercent || 0;
             return (
-              <div key={client.id} className="flex items-center gap-2 p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+              <div key={client.id} className="flex items-center gap-2 p-3 bg-theme-bg rounded-lg border border-theme-border">
                 <div className={`flex-1 grid gap-2 ${clientInfo.splitEnabled ? 'grid-cols-3' : 'grid-cols-2'}`}>
                   <Input
                     value={client.name}
                     onChange={(e) => handleClientChange(client.id, 'name', e.target.value)}
                     placeholder={t('clientName')}
-                    className="bg-[#1a1f2e] border-[#2a3142] text-white h-9"
+                    className="bg-theme-card border-theme-border text-theme-text h-9"
                   />
                   <CountrySelect
                     value={client.country}
                     onValueChange={(v) => handleClientChange(client.id, 'country', v)}
                     placeholder={t('selectCountry')}
-                    className="bg-[#1a1f2e] border-[#2a3142] h-9 w-full"
+                    className="bg-theme-card border-theme-border h-9 w-full"
                   />
                   {clientInfo.splitEnabled && (
                     <div className="relative">
@@ -548,9 +548,9 @@ export const ClientSection = ({
                         value={clientShare || ''}
                         onChange={(e) => handleShareChange(client.id, parseFloat(e.target.value) || 0)}
                         placeholder="%"
-                        className="bg-[#1a1f2e] border-[#2a3142] text-white h-9 pr-8"
+                        className="bg-theme-card border-theme-border text-theme-text h-9 pr-8"
                       />
-                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
                     </div>
                   )}
                 </div>
@@ -559,7 +559,7 @@ export const ClientSection = ({
                   size="icon"
                   onClick={() => handleRemoveClient(client.id)}
                   disabled={clients.length <= 1}
-                  className="text-gray-500 hover:text-red-400 hover:bg-red-400/10 h-9 w-9 disabled:opacity-30"
+                  className="text-theme-text-muted hover:text-red-400 hover:bg-red-400/10 h-9 w-9 disabled:opacity-30"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -570,15 +570,15 @@ export const ClientSection = ({
 
         {/* Payment Split Toggle */}
         {clients.length >= 2 && (
-          <div className="mt-3 p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+          <div className="mt-3 p-3 bg-theme-bg rounded-lg border border-theme-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Percent className="w-4 h-4 text-[#CCFF00]" />
+                <Percent className="w-4 h-4 text-theme-accent" />
                 <div>
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-theme-text">
                     {t('splitPaymentsBetweenClients')}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-theme-text-muted">
                     {t('assignContributionPercentage')}
                   </p>
                 </div>
@@ -586,12 +586,12 @@ export const ClientSection = ({
               <Switch
                 checked={clientInfo.splitEnabled || false}
                 onCheckedChange={handleToggleSplit}
-                className="data-[state=checked]:bg-[#CCFF00]"
+                className="data-[state=checked]:bg-theme-accent"
               />
             </div>
 
             {clientInfo.splitEnabled && (
-              <div className="mt-3 pt-3 border-t border-[#2a3142]">
+              <div className="mt-3 pt-3 border-t border-theme-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-medium ${isShareValid ? 'text-green-400' : 'text-red-400'}`}>
@@ -608,7 +608,7 @@ export const ClientSection = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleDistributeEqually}
-                    className="text-[#00EAFF] hover:text-[#00EAFF]/80 hover:bg-[#00EAFF]/10 h-7 text-xs"
+                    className="text-theme-accent-secondary hover:text-theme-accent-secondary/80 hover:bg-theme-accent-secondary/10 h-7 text-xs"
                   >
                     {t('distributeEqually')}
                   </Button>

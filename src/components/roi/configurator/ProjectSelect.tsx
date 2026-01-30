@@ -113,9 +113,9 @@ export const ProjectSelect = ({
             role="combobox"
             aria-expanded={open}
             className={cn(
-              "w-full justify-between bg-[#0d1117] border-[#2a3142] text-white hover:bg-[#1a1f2e] hover:text-white",
-              !displayValue && "text-gray-500",
-              isManualEntry && "border-[#CCFF00]/30",
+              "w-full justify-between bg-theme-bg border-theme-border text-theme-text hover:bg-theme-card hover:text-theme-text",
+              !displayValue && "text-theme-text-muted",
+              isManualEntry && "border-theme-accent/30",
               className
             )}
           >
@@ -127,13 +127,13 @@ export const ProjectSelect = ({
                   className="w-5 h-5 rounded object-cover"
                 />
               ) : (
-                <Building2 className="w-4 h-4 text-gray-500" />
+                <Building2 className="w-4 h-4 text-theme-text-muted" />
               )}
               <span className="truncate">
                 {displayValue || "Select project..."}
               </span>
               {isManualEntry && (
-                <span className="text-[10px] text-[#CCFF00] bg-[#CCFF00]/10 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
                   Manual
                 </span>
               )}
@@ -141,16 +141,16 @@ export const ProjectSelect = ({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0 bg-[#1a1f2e] border-[#2a3142]">
+        <PopoverContent className="w-[300px] p-0 bg-theme-card border-theme-border">
           <Command className="bg-transparent">
             <CommandInput 
               placeholder="Search or type new..." 
-              className="text-white" 
+              className="text-theme-text" 
               value={searchValue}
               onValueChange={setSearchValue}
             />
             <CommandList>
-              <CommandEmpty className="text-gray-400 py-3 text-center">
+              <CommandEmpty className="text-theme-text-muted py-3 text-center">
                 {loading ? "Loading..." : (
                   <div className="flex flex-col items-center gap-2">
                     <span className="text-sm">
@@ -160,7 +160,7 @@ export const ProjectSelect = ({
                       <Button 
                         size="sm" 
                         onClick={handleCreateNew}
-                        className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+                        className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
                       >
                         <Plus className="w-3 h-3 mr-1" />
                         Create "{searchValue}"
@@ -179,7 +179,7 @@ export const ProjectSelect = ({
                       setOpen(false);
                       setSearchValue('');
                     }}
-                    className="text-gray-300 hover:bg-[#2a3142] cursor-pointer"
+                    className="text-theme-text hover:bg-theme-border cursor-pointer"
                   >
                     <div className="flex items-center gap-2 flex-1">
                       {project.logo_url ? (
@@ -189,21 +189,21 @@ export const ProjectSelect = ({
                           className="w-6 h-6 rounded object-cover"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded bg-[#2a3142] flex items-center justify-center">
-                          <Building2 className="w-3 h-3 text-gray-500" />
+                        <div className="w-6 h-6 rounded bg-theme-border flex items-center justify-center">
+                          <Building2 className="w-3 h-3 text-theme-text-muted" />
                         </div>
                       )}
                       <div className="flex flex-col">
                         <span>{project.name}</span>
                         {project.zones?.name && (
-                          <span className="text-xs text-gray-500">{project.zones.name}</span>
+                          <span className="text-xs text-theme-text-muted">{project.zones.name}</span>
                         )}
                       </div>
                     </div>
                     <Check
                       className={cn(
                         "ml-auto h-4 w-4",
-                        value === project.id ? "opacity-100 text-[#CCFF00]" : "opacity-0"
+                        value === project.id ? "opacity-100 text-theme-accent" : "opacity-0"
                       )}
                     />
                   </CommandItem>
@@ -212,11 +212,11 @@ export const ProjectSelect = ({
               {/* Show create option when typing something not in list */}
               {searchValue.trim() && !hasExactMatch && (
                 <>
-                  <CommandSeparator className="bg-[#2a3142]" />
+                  <CommandSeparator className="bg-theme-border" />
                   <CommandGroup>
                     <CommandItem
                       onSelect={handleCreateNew}
-                      className="text-[#CCFF00] hover:bg-[#2a3142] cursor-pointer"
+                      className="text-theme-accent hover:bg-theme-border cursor-pointer"
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Create "{searchValue}"
@@ -234,7 +234,7 @@ export const ProjectSelect = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 shrink-0 text-gray-400 hover:text-white hover:bg-[#2a3142]"
+          className="h-9 w-9 shrink-0 text-theme-text-muted hover:text-theme-text hover:bg-theme-border"
           onClick={handleClear}
         >
           <X className="h-4 w-4" />

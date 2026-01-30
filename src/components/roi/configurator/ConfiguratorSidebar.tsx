@@ -100,7 +100,7 @@ export const ConfiguratorSidebar = ({
   ];
 
   return (
-    <div className="w-48 shrink-0 h-full border-r border-[#2a3142] bg-[#0d1117] p-4 flex flex-col">
+    <div className="w-48 shrink-0 h-full border-r border-theme-border bg-theme-bg p-4 flex flex-col">
       <div className="space-y-1">
         {sections.map((section, index) => {
           const Icon = section.icon;
@@ -126,7 +126,7 @@ export const ConfiguratorSidebar = ({
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                 isActive 
                   ? "bg-theme-accent/20 text-theme-accent border border-theme-accent/30" 
-                  : "text-theme-text-muted hover:bg-theme-card hover:text-white"
+                  : "text-theme-text-muted hover:bg-theme-card hover:text-theme-text"
               )}
             >
               <div className={cn(
@@ -150,7 +150,7 @@ export const ConfiguratorSidebar = ({
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-medium truncate">{section.label}</span>
                 {section.id === 'value' && appreciationBonus > 0 && isVisited && (
-                  <span className="text-[10px] text-[#CCFF00]">+{appreciationBonus.toFixed(1)}% bonus</span>
+                  <span className="text-[10px] text-theme-accent">+{appreciationBonus.toFixed(1)}% bonus</span>
                 )}
               </div>
             </button>
@@ -159,7 +159,7 @@ export const ConfiguratorSidebar = ({
       </div>
       
       {/* Keyboard hint */}
-      <div className="mt-auto pt-4 border-t border-[#2a3142]">
+      <div className="mt-auto pt-4 border-t border-theme-border">
         <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
