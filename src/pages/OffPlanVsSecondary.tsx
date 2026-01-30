@@ -77,12 +77,7 @@ const OffPlanVsSecondary = () => {
   // Load quote data
   const { quote, loading: quoteLoading } = useCashflowQuote(selectedQuoteId);
 
-  // Open configurator on mount if no quoteId
-  useEffect(() => {
-    if (!quoteId && !hasConfigured) {
-      setConfiguratorOpen(true);
-    }
-  }, [quoteId, hasConfigured]);
+  // Don't auto-open configurator - let user choose to create new or load existing
 
   // Handle compare from modal - this REPLACES secondary inputs with modal values
   const handleCompare = (newQuoteId: string, newSecondaryInputs: SecondaryInputs, newExitMonths?: number[]) => {
