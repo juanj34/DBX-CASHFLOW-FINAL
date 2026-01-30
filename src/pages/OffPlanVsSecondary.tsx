@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopNavbar } from '@/components/layout/TopNavbar';
-import { TrendingUp, Settings2, Home, Palmtree, Coins, Save, FolderOpen } from 'lucide-react';
+import { TrendingUp, Settings2, Home, Palmtree, Coins, FolderOpen, Check, Loader2, Cloud } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,6 @@ import {
   OutOfPocketCard,
   ComparisonVerdict,
   ExitScenariosComparison,
-  SaveSecondaryComparisonModal,
   LoadSecondaryComparisonModal,
   MortgageCoverageCard,
   RentalComparisonAtHandover,
@@ -45,11 +44,15 @@ const OffPlanVsSecondary = () => {
   
   // Modal state
   const [configuratorOpen, setConfiguratorOpen] = useState(false);
-  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
   const [currentComparisonId, setCurrentComparisonId] = useState<string | null>(null);
   const [currentComparisonTitle, setCurrentComparisonTitle] = useState<string>('');
+  
+  // Auto-save state
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isCreatingRef = useRef(false);
   
   // Selected quote and secondary inputs
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(quoteId);
@@ -78,19 +81,47 @@ const OffPlanVsSecondary = () => {
   const { quote, loading: quoteLoading } = useCashflowQuote(selectedQuoteId);
 
   // Don't auto-open configurator - let user choose to create new or load existing
+  
+  // Generate title based on quote + secondary price
+  const generateTitle = useCallback((qId: string | undefined, secInputs: SecondaryInputs) => {
+    const secPrice = formatCurrency(secInputs.purchasePrice, 'AED', 1);
+    return `Comparison - ${secPrice} Secondary`;
+  }, []);
 
-  // Handle compare from modal - this REPLACES secondary inputs with modal values
-  const handleCompare = (newQuoteId: string, newSecondaryInputs: SecondaryInputs, newExitMonths?: number[]) => {
+  // Handle compare from modal - creates draft immediately
+  const handleCompare = async (newQuoteId: string, newSecondaryInputs: SecondaryInputs, newExitMonths?: number[]) => {
+    if (isCreatingRef.current) return;
+    isCreatingRef.current = true;
+    
+    const finalExitMonths = newExitMonths && newExitMonths.length > 0 ? newExitMonths : exitMonths;
+    const title = generateTitle(newQuoteId, newSecondaryInputs);
+    
+    // Create draft immediately
+    setSaveStatus('saving');
+    const newComparison = await saveComparison(
+      title,
+      newQuoteId,
+      newSecondaryInputs,
+      finalExitMonths,
+      rentalMode,
+      true // silent
+    );
+    
+    if (newComparison) {
+      setCurrentComparisonId(newComparison.id);
+      setCurrentComparisonTitle(title);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }
+    
     setSelectedQuoteId(newQuoteId);
     setSecondaryInputs(newSecondaryInputs);
-    if (newExitMonths && newExitMonths.length > 0) {
-      setExitMonths(newExitMonths);
-    }
+    setExitMonths(finalExitMonths);
     setHasConfigured(true);
-    setCurrentComparisonId(null); // Reset since this is a new comparison
-    setCurrentComparisonTitle('');
+    
     // Update URL
     navigate(`/offplan-vs-secondary/${newQuoteId}`, { replace: true });
+    isCreatingRef.current = false;
   };
 
   // Handle loading a saved comparison - REPLACES all state with saved values
@@ -107,32 +138,40 @@ const OffPlanVsSecondary = () => {
     }
   };
 
-  // Handle saving comparison
-  const handleSaveComparison = async (title: string) => {
-    if (currentComparisonId) {
-      // Update existing
-      await updateComparison(currentComparisonId, {
-        title,
-        secondary_inputs: secondaryInputs,
-        exit_months: exitMonths,
-        rental_mode: rentalMode,
-      });
-      setCurrentComparisonTitle(title);
-    } else {
-      // Create new
-      const newComparison = await saveComparison(
-        title,
-        selectedQuoteId || null,
-        secondaryInputs,
-        exitMonths,
-        rentalMode
-      );
-      if (newComparison) {
-        setCurrentComparisonId(newComparison.id);
-        setCurrentComparisonTitle(newComparison.title);
-      }
+  // Auto-save effect - debounced updates when inputs change
+  useEffect(() => {
+    // Only auto-save if we have a comparison ID and are configured
+    if (!currentComparisonId || !hasConfigured) return;
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-  };
+    
+    setSaveStatus('saving');
+    
+    // Debounce update (1.5s delay)
+    saveTimeoutRef.current = setTimeout(async () => {
+      await updateComparison(
+        currentComparisonId,
+        {
+          secondary_inputs: secondaryInputs,
+          exit_months: exitMonths,
+          rental_mode: rentalMode,
+          quote_id: selectedQuoteId || null,
+        },
+        true // silent
+      );
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 1500);
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [secondaryInputs, exitMonths, rentalMode, currentComparisonId, hasConfigured, selectedQuoteId, updateComparison]);
 
   // Off-Plan calculations - create safe default inputs
   const offPlanInputs = quote?.inputs as OIInputs | undefined;
@@ -370,8 +409,6 @@ const OffPlanVsSecondary = () => {
     reconfigure: 'Reconfigurar',
     vs: 'vs',
     secondaryLabel: 'Secundaria',
-    save: 'Guardar',
-    update: 'Actualizar',
     load: 'Cargar',
     loadRecent: 'Cargar Reciente',
     recentComparisons: 'Comparaciones Recientes',
@@ -384,8 +421,6 @@ const OffPlanVsSecondary = () => {
     reconfigure: 'Reconfigure',
     vs: 'vs',
     secondaryLabel: 'Secondary',
-    save: 'Save',
-    update: 'Update',
     load: 'Load',
     loadRecent: 'Load Recent',
     recentComparisons: 'Recent Comparisons',
@@ -588,15 +623,27 @@ const OffPlanVsSecondary = () => {
               {t.load}
             </Button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSaveModalOpen(true)}
-              className="border-theme-accent/50 text-theme-accent hover:bg-theme-accent/10"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {currentComparisonId ? t.update : t.save}
-            </Button>
+            {/* Auto-save status indicator */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-card border border-theme-border text-xs">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin text-theme-accent" />
+                  <span className="text-theme-text-muted">Saving...</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="w-3 h-3 text-green-500" />
+                  <span className="text-green-500">Saved</span>
+                </>
+              )}
+              {saveStatus === 'idle' && (
+                <>
+                  <Cloud className="w-3 h-3 text-theme-text-muted" />
+                  <span className="text-theme-text-muted">Auto-save</span>
+                </>
+              )}
+            </div>
             
             <Button
               variant="outline"
@@ -740,16 +787,6 @@ const OffPlanVsSecondary = () => {
         handoverMonths={handoverMonths}
         currency={currency}
         rate={rate}
-        language={language}
-      />
-
-      {/* Save Modal */}
-      <SaveSecondaryComparisonModal
-        open={saveModalOpen}
-        onOpenChange={setSaveModalOpen}
-        onSave={handleSaveComparison}
-        isUpdating={!!currentComparisonId}
-        currentTitle={currentComparisonTitle}
         language={language}
       />
 
