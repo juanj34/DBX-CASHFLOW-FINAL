@@ -18,3 +18,4 @@ export * from './ExitScenariosStep';
 export * from './ExitScenariosComparison';
 export * from './SaveSecondaryComparisonModal';
 export * from './LoadSecondaryComparisonModal';
+export * from './MortgageCoverageCard';

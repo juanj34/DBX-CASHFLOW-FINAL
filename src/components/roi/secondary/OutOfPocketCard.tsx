@@ -15,6 +15,7 @@ interface OutOfPocketCardProps {
   appreciationDuringConstruction: number;
   secondaryCapitalDay1: number;
   secondaryIncomeMonths: number;
+  secondaryPurchasePrice: number; // NEW: Full property price for accurate rent calculation
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
@@ -26,12 +27,13 @@ export const OutOfPocketCard = ({
   appreciationDuringConstruction,
   secondaryCapitalDay1,
   secondaryIncomeMonths,
+  secondaryPurchasePrice,
   currency,
   rate,
   language,
 }: OutOfPocketCardProps) => {
-  // Calculate opportunity cost (secondary rent that could have been earned)
-  const avgMonthlyRent = secondaryCapitalDay1 * 0.07 / 12; // Assume 7% yield
+  // Calculate opportunity cost using PROPERTY PRICE (not cash equity) for accurate yield
+  const avgMonthlyRent = secondaryPurchasePrice * 0.07 / 12; // 7% yield on property value
   const opportunityCost = avgMonthlyRent * monthsWithoutIncome;
 
   const formatValue = (value: number): string => {

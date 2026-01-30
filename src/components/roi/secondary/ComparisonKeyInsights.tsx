@@ -1,4 +1,4 @@
-import { TrendingUp, Wallet, Target, Building2 } from 'lucide-react';
+import { TrendingUp, Wallet, Coins, Building2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Currency, formatDualCurrencyCompact } from '@/components/roi/currencyUtils';
@@ -12,6 +12,11 @@ interface ComparisonKeyInsightsProps {
   rate: number;
   language: 'en' | 'es';
   appreciationDuringConstruction: number;
+  // New props for Monthly Cashflow card
+  secondaryMonthlyCashflow: number;
+  secondaryMonthlyRent: number;
+  secondaryMonthlyMortgage: number;
+  mortgageEnabled: boolean;
 }
 
 export const ComparisonKeyInsights = ({
@@ -22,6 +27,10 @@ export const ComparisonKeyInsights = ({
   rate,
   language,
   appreciationDuringConstruction,
+  secondaryMonthlyCashflow,
+  secondaryMonthlyRent,
+  secondaryMonthlyMortgage,
+  mortgageEnabled,
 }: ComparisonKeyInsightsProps) => {
   const isAirbnb = rentalMode === 'airbnb';
 
@@ -46,7 +55,10 @@ export const ComparisonKeyInsights = ({
     ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
     : 0;
   
-  const crossoverYear = isAirbnb ? metrics.crossoverYearST : metrics.crossoverYearLT;
+  // Coverage badge for monthly cashflow
+  const coverageLabel = mortgageEnabled
+    ? (secondaryMonthlyCashflow >= 0 ? '100% Covered' : 'Partial')
+    : null;
 
   const formatValue = (value: number): string => {
     const dual = formatDualCurrencyCompact(value, currency, rate);
@@ -61,8 +73,8 @@ export const ComparisonKeyInsights = ({
     entryTicketTooltip: 'Compromiso total requerido. Off-plan = precio + fees. Secundaria = precio + costos de cierre.',
     moneyMultiplier: 'Multiplicador',
     moneyMultiplierSubtitle: 'Crecimiento 10 años',
-    crossoverPoint: 'Punto de Cruce',
-    crossoverDescription: 'Año en que Off-Plan supera a Secundaria',
+    monthlyCashflow: 'Cashflow Mensual',
+    monthlyCashflowSubtitle: 'Durante construcción',
     constructionBonus: 'Bonus Construcción',
     constructionDescription: 'Apreciación "gratis" durante obra',
     save: 'Ahorro',
@@ -72,13 +84,15 @@ export const ComparisonKeyInsights = ({
     freeEquity: '¡Equity gratis!',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
+    perMonth: '/mes',
+    noIncome: 'Sin ingresos',
   } : {
     entryTicket: 'Entry Ticket',
     entryTicketTooltip: 'Total commitment required. Off-plan = price + fees. Secondary = price + closing costs.',
     moneyMultiplier: 'Multiplier',
     moneyMultiplierSubtitle: '10-Year Growth',
-    crossoverPoint: 'Crossover Point',
-    crossoverDescription: 'Year when Off-Plan beats Secondary',
+    monthlyCashflow: 'Monthly Cashflow',
+    monthlyCashflowSubtitle: 'During construction',
     constructionBonus: 'Construction Bonus',
     constructionDescription: '"Free" appreciation during build',
     save: 'Save',
@@ -88,6 +102,8 @@ export const ComparisonKeyInsights = ({
     freeEquity: 'Free equity!',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
+    perMonth: '/mo',
+    noIncome: 'No income',
   };
 
   const cards = [
@@ -115,13 +131,16 @@ export const ComparisonKeyInsights = ({
       winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
     },
     {
-      key: 'crossover',
-      title: t.crossoverPoint,
-      icon: Target,
-      showComparison: false,
-      singleValue: crossoverYear ? `${t.year} ${crossoverYear}` : t.noData,
-      description: t.crossoverDescription,
-      isPositive: crossoverYear !== null && crossoverYear <= 5,
+      key: 'cashflow',
+      title: t.monthlyCashflow,
+      subtitle: t.monthlyCashflowSubtitle,
+      icon: Coins,
+      showComparison: true,
+      offPlanValue: t.noIncome,
+      secondaryValue: `${secondaryMonthlyCashflow >= 0 ? '+' : ''}${formatValue(secondaryMonthlyCashflow)}${t.perMonth}`,
+      badge: coverageLabel,
+      badgeColor: secondaryMonthlyCashflow >= 0 ? 'cyan' : 'amber',
+      winner: 'secondary', // Secondary always wins during construction
     },
     {
       key: 'bonus',
