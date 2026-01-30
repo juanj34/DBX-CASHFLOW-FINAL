@@ -176,3 +176,22 @@ export const DEFAULT_SECONDARY_INPUTS: SecondaryInputs = {
   
   serviceChargePerSqft: 22,
 };
+
+// Exit comparison types
+export interface ExitComparisonPoint {
+  months: number;
+  offPlan: {
+    propertyValue: number;
+    capitalInvested: number;
+    profit: number;
+    totalROE: number;
+    annualizedROE: number;
+  };
+  secondary: {
+    propertyValue: number;
+    capitalInvested: number;
+    profit: number;
+    totalROE: number;
+    annualizedROE: number;
+  };
+}

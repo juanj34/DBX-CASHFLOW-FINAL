@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tooltip';
 import { SecondaryYearlyProjection } from './types';
 import { OIYearlyProjection } from '@/components/roi/useOICalculations';
+import { Currency, formatDualCurrencyCompact } from '@/components/roi/currencyUtils';
 
 interface YearByYearWealthTableProps {
   offPlanProjections: OIYearlyProjection[];
@@ -25,6 +26,9 @@ interface YearByYearWealthTableProps {
   offPlanCapitalInvested: number;
   handoverYearIndex: number;
   rentalMode: 'long-term' | 'airbnb';
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
 }
 
 const formatCompact = (value: number): string => {
@@ -43,6 +47,9 @@ export const YearByYearWealthTable = ({
   offPlanCapitalInvested,
   handoverYearIndex,
   rentalMode,
+  currency,
+  rate,
+  language,
 }: YearByYearWealthTableProps) => {
   const isAirbnb = rentalMode === 'airbnb';
 
@@ -81,26 +88,59 @@ export const YearByYearWealthTable = ({
     });
   }, [offPlanProjections, secondaryProjections, offPlanCapitalInvested, handoverYearIndex, isAirbnb]);
 
+  const formatValue = (value: number): string => {
+    const dual = formatDualCurrencyCompact(value, currency, rate);
+    if (dual.secondary) {
+      return `${dual.primary} (${dual.secondary})`;
+    }
+    return dual.primary;
+  };
+
+  const t = language === 'es' ? {
+    title: 'Progresión de Riqueza Año a Año',
+    tooltip: 'Riqueza = Valor de Propiedad + Rentas Acumuladas - Capital Invertido. Muestra cómo cada inversión construye riqueza a lo largo del tiempo.',
+    year: 'Año',
+    offPlanWealth: 'Off-Plan Riqueza',
+    secondaryWealth: 'Secundaria Riqueza',
+    delta: 'Delta',
+    longTerm: 'Renta Larga',
+    airbnb: 'Airbnb',
+    underConstruction: 'En construcción',
+    handover: 'Handover',
+    offPlan: 'Off-Plan',
+    secondary: 'Secundaria',
+  } : {
+    title: 'Year-by-Year Wealth Progression',
+    tooltip: 'Wealth = Property Value + Cumulative Rent - Capital Invested. Shows how each investment builds wealth over time.',
+    year: 'Year',
+    offPlanWealth: 'Off-Plan Wealth',
+    secondaryWealth: 'Secondary Wealth',
+    delta: 'Delta',
+    longTerm: 'Long-Term',
+    airbnb: 'Airbnb',
+    underConstruction: 'Under construction',
+    handover: 'Handover',
+    offPlan: 'Off-Plan',
+    secondary: 'Secondary',
+  };
+
   return (
     <TooltipProvider>
       <Card className="p-4 bg-theme-card border-theme-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-theme-text">Progresión de Riqueza Año a Año</h3>
+            <h3 className="font-semibold text-theme-text">{t.title}</h3>
             <Tooltip>
               <TooltipTrigger>
                 <Info className="w-4 h-4 text-theme-text-muted" />
               </TooltipTrigger>
               <TooltipContent className="max-w-[250px]">
-                <p className="text-xs">
-                  Riqueza = Valor de Propiedad + Rentas Acumuladas - Capital Invertido. 
-                  Muestra cómo cada inversión construye riqueza a lo largo del tiempo.
-                </p>
+                <p className="text-xs">{t.tooltip}</p>
               </TooltipContent>
             </Tooltip>
           </div>
           <Badge variant="outline" className="text-xs">
-            {isAirbnb ? 'Airbnb' : 'Renta Larga'}
+            {isAirbnb ? t.airbnb : t.longTerm}
           </Badge>
         </div>
 
@@ -108,19 +148,19 @@ export const YearByYearWealthTable = ({
           <Table>
             <TableHeader>
               <TableRow className="border-theme-border hover:bg-transparent">
-                <TableHead className="text-theme-text-muted text-xs w-16">Año</TableHead>
+                <TableHead className="text-theme-text-muted text-xs w-16">{t.year}</TableHead>
                 <TableHead className="text-theme-text-muted text-xs text-right">
-                  <span className="text-emerald-500">Off-Plan</span> Riqueza
+                  <span className="text-emerald-500">{t.offPlan}</span> {language === 'es' ? 'Riqueza' : 'Wealth'}
                 </TableHead>
                 <TableHead className="text-theme-text-muted text-xs text-right">
-                  <span className="text-cyan-500">Secundaria</span> Riqueza
+                  <span className="text-cyan-500">{t.secondary}</span> {language === 'es' ? 'Riqueza' : 'Wealth'}
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-right w-28">Delta</TableHead>
+                <TableHead className="text-theme-text-muted text-xs text-right w-28">{t.delta}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tableData.map((row) => {
-                const deltaIcon = row.delta > 0 
+                const deltaIcon = row.delta > 0
                   ? <TrendingUp className="w-3 h-3 text-emerald-500" />
                   : row.delta < 0 
                   ? <TrendingDown className="w-3 h-3 text-red-500" />
@@ -148,10 +188,10 @@ export const YearByYearWealthTable = ({
                         <span className={`text-sm font-medium ${
                           row.delta > 0 ? 'text-emerald-500' : 'text-theme-text'
                         }`}>
-                          {formatCompact(row.offPlanWealth)}
+                          {formatValue(row.offPlanWealth)}
                         </span>
                         {row.isBeforeHandover && (
-                          <span className="text-[10px] text-theme-text-muted">En construcción</span>
+                          <span className="text-[10px] text-theme-text-muted">{t.underConstruction}</span>
                         )}
                       </div>
                     </TableCell>
@@ -159,7 +199,7 @@ export const YearByYearWealthTable = ({
                       <span className={`text-sm font-medium ${
                         row.delta < 0 ? 'text-cyan-500' : 'text-theme-text'
                       }`}>
-                        {formatCompact(row.secondaryWealth)}
+                        {formatValue(row.secondaryWealth)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -183,15 +223,15 @@ export const YearByYearWealthTable = ({
         <div className="flex items-center gap-4 mt-4 pt-3 border-t border-theme-border text-xs text-theme-text-muted">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500" />
-            <span>Off-Plan</span>
+            <span>{t.offPlan}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full bg-cyan-500/20 border border-cyan-500" />
-            <span>Secundaria</span>
+            <span>{t.secondary}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Badge className="bg-emerald-500/20 text-emerald-500 text-[10px] px-1 py-0 border-0">🔑</Badge>
-            <span>Handover</span>
+            <span>{t.handover}</span>
           </div>
         </div>
       </Card>

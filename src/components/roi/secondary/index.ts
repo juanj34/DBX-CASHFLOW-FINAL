@@ -14,3 +14,5 @@ export * from './ComparisonKeyInsights';
 export * from './YearByYearWealthTable';
 export * from './DSCRExplanationCard';
 export * from './OutOfPocketCard';
+export * from './ExitScenariosStep';
+export * from './ExitScenariosComparison';
