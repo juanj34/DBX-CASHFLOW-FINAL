@@ -79,6 +79,7 @@ const OICalculatorContent = () => {
   
 
   // Stricter validation: needs both client details AND property configured
+  // But if we have a quoteId and data is loaded, show content even with partial data
   const hasClientDetails = useMemo(() => {
     return !!(
       clientInfo.developer &&
@@ -92,7 +93,8 @@ const OICalculatorContent = () => {
     return inputs.basePrice > 0 || !!quoteId;
   }, [inputs.basePrice, quoteId]);
 
-  const isFullyConfigured = hasClientDetails && hasPropertyConfigured;
+  // When loading an existing quote with data, show content even if some fields are empty
+  const isFullyConfigured = (hasClientDetails && hasPropertyConfigured) || (!!quoteId && dataLoaded && inputs.basePrice > 0);
 
   // Keep isQuoteConfigured for autosave logic (less strict)
   const isQuoteConfigured = useMemo(() => {
