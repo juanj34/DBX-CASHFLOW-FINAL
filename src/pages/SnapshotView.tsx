@@ -440,6 +440,7 @@ const SnapshotViewContent = () => {
           language={language}
           setLanguage={undefined} // Moved to sidebar
           rate={rate}
+          snapshotTitle={(inputs as any).snapshotTitle || null}
         />
       </main>
     </div>

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Building, Building2, Home, Ruler, Users, Pencil, Plus, MapPin, LayoutGrid, FileImage } from "lucide-react";
+import { Building, Building2, Home, Ruler, Users, Pencil, Plus, MapPin, LayoutGrid, FileImage, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UNIT_TYPES } from "./ClientUnitModal";
 import { getCountryByCode } from "@/data/countries";
@@ -38,6 +39,9 @@ interface PropertyHeroCardProps {
   // New props for View Project and Floor Plans buttons
   floorPlanUrl?: string | null;
   onViewFloorPlan?: () => void;
+  // Snapshot title (editable headline)
+  snapshotTitle?: string | null;
+  onSnapshotTitleChange?: (title: string) => void;
 }
 
 export const PropertyHeroCard = ({ 
@@ -56,12 +60,54 @@ export const PropertyHeroCard = ({
   rate = 1,
   floorPlanUrl,
   onViewFloorPlan,
+  snapshotTitle,
+  onSnapshotTitleChange,
 }: PropertyHeroCardProps) => {
   const { language: contextLanguage, t } = useLanguage();
   // Use prop language if provided for snapshot view, otherwise use context
   const displayLanguage = showPriceInfo ? language : contextLanguage;
   const [developerModalOpen, setDeveloperModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(snapshotTitle || '');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Update editedTitle when snapshotTitle changes
+  useEffect(() => {
+    setEditedTitle(snapshotTitle || '');
+  }, [snapshotTitle]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleTitleSave = () => {
+    if (onSnapshotTitleChange) {
+      onSnapshotTitleChange(editedTitle.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleCancel = () => {
+    setEditedTitle(snapshotTitle || '');
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      handleTitleCancel();
+    }
+  };
+
+  // Get default title based on language
+  const defaultTitle = displayLanguage === 'es' ? 'Estado de Flujo de Caja Mensual' : 'Monthly Cashflow Statement';
+  const displayTitle = snapshotTitle || defaultTitle;
 
   const unitType = UNIT_TYPES.find(u => u.value === data.unitType);
 
@@ -220,6 +266,55 @@ export const PropertyHeroCard = ({
           )}
 
           
+          {/* Snapshot Title (editable headline) - Only in Snapshot view */}
+          {showPriceInfo && (
+            <div className="mb-2">
+              {!readOnly && onSnapshotTitleChange && isEditingTitle ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={titleInputRef}
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onKeyDown={handleTitleKeyDown}
+                    onBlur={handleTitleSave}
+                    className="text-xs uppercase tracking-wider bg-white/10 border-white/30 text-white placeholder:text-white/50 h-7 w-auto min-w-[200px]"
+                    placeholder={defaultTitle}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleTitleSave}
+                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleTitleCancel}
+                    className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <p 
+                  onClick={() => !readOnly && onSnapshotTitleChange && setIsEditingTitle(true)}
+                  className={cn(
+                    "text-xs uppercase tracking-wider",
+                    backgroundImage ? "text-white/60" : "text-theme-text-muted",
+                    !readOnly && onSnapshotTitleChange && "cursor-pointer hover:text-theme-accent transition-colors group"
+                  )}
+                >
+                  {displayTitle}
+                  {!readOnly && onSnapshotTitleChange && (
+                    <Pencil className="w-3 h-3 inline ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Row 1: Project + Zone */}
           <div className="flex items-center justify-between mb-3">
             <h1 

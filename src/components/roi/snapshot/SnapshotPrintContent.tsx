@@ -25,6 +25,7 @@ interface SnapshotPrintContentProps {
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
+  snapshotTitle?: string | null;
 }
 
 /**
@@ -42,6 +43,7 @@ export const SnapshotPrintContent = ({
   currency,
   rate,
   language,
+  snapshotTitle,
 }: SnapshotPrintContentProps) => {
   const basePrice = calculations.basePrice;
   const pricePerSqft = clientInfo.unitSizeSqf > 0 ? basePrice / clientInfo.unitSizeSqf : 0;

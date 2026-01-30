@@ -26,6 +26,7 @@ export interface ExportSnapshotDOMProps {
     floorPlanUrl: string | null;
     buildingRenderUrl?: string | null;
   };
+  snapshotTitle?: string | null;
 }
 
 /**
@@ -52,6 +53,7 @@ export const ExportSnapshotDOM = ({
   rate,
   language,
   quoteImages,
+  snapshotTitle,
 }: ExportSnapshotDOMProps) => {
   const basePrice = calculations.basePrice;
   const pricePerSqft = clientInfo.unitSizeSqf > 0 ? basePrice / clientInfo.unitSizeSqf : 0;
@@ -90,6 +92,7 @@ export const ExportSnapshotDOM = ({
         currency={currency}
         rate={rate}
         language={language}
+        snapshotTitle={snapshotTitle}
       />
 
       {/* Overview Cards - Matches SnapshotOverviewCards */}

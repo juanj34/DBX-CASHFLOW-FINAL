@@ -10,6 +10,7 @@ interface ExportPropertyHeroProps {
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
+  snapshotTitle?: string | null;
 }
 
 /**
@@ -31,8 +32,13 @@ export const ExportPropertyHero = ({
   currency,
   rate,
   language,
+  snapshotTitle,
 }: ExportPropertyHeroProps) => {
   const unitType = UNIT_TYPES.find(u => u.value === clientInfo.unitType);
+  
+  // Get default title based on language
+  const defaultTitle = language === 'es' ? 'Estado de Flujo de Caja Mensual' : 'Monthly Cashflow Statement';
+  const displayTitle = snapshotTitle || defaultTitle;
   const unitTypeLabel = unitType 
     ? (language === 'es' ? unitType.labelEs : unitType.labelEn)
     : '';
@@ -106,6 +112,18 @@ export const ExportPropertyHero = ({
           justifyContent: 'flex-end',
         }}
       >
+        {/* Snapshot Title - Above project name */}
+        <p 
+          style={{
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'rgba(255, 255, 255, 0.6)',
+            marginBottom: '8px',
+          }}
+        >
+          {displayTitle}
+        </p>
         {/* Row 1: Project Name + Zone */}
         <div 
           style={{
