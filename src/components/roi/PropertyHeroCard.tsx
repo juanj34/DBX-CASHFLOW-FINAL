@@ -171,11 +171,12 @@ export const PropertyHeroCard = ({
                 animate={{ scale: 1 }}
                 transition={{ duration: 8, ease: "easeOut" }}
               />
-              {/* Softer gradient to show more image */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117]/90 via-[#0d1117]/50 to-[#0d1117]/30" />
+              {/* Gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
             </>
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1a1f2e] via-[#0d1117] to-[#1a1f2e]" />
+            /* Theme-aware fallback gradient when no image */
+            <div className="absolute inset-0 bg-gradient-to-r from-theme-card via-theme-bg to-theme-card" />
           )}
         </div>
 
@@ -224,8 +225,9 @@ export const PropertyHeroCard = ({
             <h1 
               onClick={() => project && setProjectModalOpen(true)}
               className={cn(
-                "text-2xl md:text-3xl font-bold text-white transition-colors",
-                project && "cursor-pointer hover:text-[#CCFF00]"
+                "text-2xl md:text-3xl font-bold transition-colors",
+                backgroundImage ? "text-white" : "text-theme-text",
+                project && "cursor-pointer hover:text-theme-accent"
               )}
             >
               {data.projectName || t('unnamedProject')}
@@ -233,8 +235,11 @@ export const PropertyHeroCard = ({
             
             <div className="flex items-center gap-3">
               {data.zoneName && (
-                <span className="flex items-center gap-1.5 text-white/80 text-sm">
-                  <MapPin className="w-4 h-4 text-[#CCFF00]" />
+                <span className={cn(
+                  "flex items-center gap-1.5 text-sm",
+                  backgroundImage ? "text-white/80" : "text-theme-text-muted"
+                )}>
+                  <MapPin className="w-4 h-4 text-theme-accent" />
                   {data.zoneName}
                 </span>
               )}
@@ -247,7 +252,12 @@ export const PropertyHeroCard = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => setProjectModalOpen(true)}
-                      className="h-7 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
+                      className={cn(
+                        "h-7 px-2 text-xs border",
+                        backgroundImage 
+                          ? "text-white/70 hover:text-white hover:bg-white/10 border-white/20"
+                          : "text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt border-theme-border"
+                      )}
                     >
                       <LayoutGrid className="w-3.5 h-3.5 mr-1" />
                       {t('viewProjectButton')}
@@ -258,7 +268,12 @@ export const PropertyHeroCard = ({
                       variant="ghost"
                       size="sm"
                       onClick={onViewFloorPlan}
-                      className="h-7 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
+                      className={cn(
+                        "h-7 px-2 text-xs border",
+                        backgroundImage 
+                          ? "text-white/70 hover:text-white hover:bg-white/10 border-white/20"
+                          : "text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt border-theme-border"
+                      )}
                     >
                       <FileImage className="w-3.5 h-3.5 mr-1" />
                       {t('floorPlanLabel')}
@@ -270,7 +285,10 @@ export const PropertyHeroCard = ({
           </div>
 
           {/* Row 2: Developer • Unit • Type • Size • Client */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/80">
+          <div className={cn(
+            "flex flex-wrap items-center gap-x-4 gap-y-2 text-sm",
+            backgroundImage ? "text-white/80" : "text-theme-text-muted"
+          )}>
             
             {/* Developer */}
             {data.developer && (
@@ -279,21 +297,26 @@ export const PropertyHeroCard = ({
                   onClick={() => developer && setDeveloperModalOpen(true)}
                   className={cn(
                     "flex items-center gap-2",
-                    developer && "cursor-pointer hover:text-[#CCFF00] transition-colors"
+                    developer && "cursor-pointer hover:text-theme-accent transition-colors"
                   )}
                 >
                   {developer?.logo_url ? (
                     <img 
                       src={developer.logo_url} 
                       alt={data.developer}
-                      className="w-5 h-5 rounded object-contain bg-white/10" 
+                      className={cn(
+                        "w-5 h-5 rounded object-contain",
+                        backgroundImage ? "bg-white/10" : "bg-theme-card-alt"
+                      )}
                     />
                   ) : (
                     <Building className="w-4 h-4 text-primary" />
                   )}
-                  <span className="font-medium text-white">{data.developer}</span>
+                  <span className={cn("font-medium", backgroundImage ? "text-white" : "text-theme-text")}>
+                    {data.developer}
+                  </span>
                 </span>
-                <span className="text-white/30 hidden sm:inline">•</span>
+                <span className={cn("hidden sm:inline", backgroundImage ? "text-white/30" : "text-theme-text-muted/50")}>•</span>
               </>
             )}
             
@@ -301,10 +324,10 @@ export const PropertyHeroCard = ({
             {data.unit && (
               <>
                 <span className="flex items-center gap-1.5">
-                  <Home className="w-4 h-4 text-[#CCFF00]" />
-                  <span className="text-white">{data.unit}</span>
+                  <Home className="w-4 h-4 text-theme-accent" />
+                  <span className={cn(backgroundImage ? "text-white" : "text-theme-text")}>{data.unit}</span>
                 </span>
-                <span className="text-white/30 hidden sm:inline">•</span>
+                <span className={cn("hidden sm:inline", backgroundImage ? "text-white/30" : "text-theme-text-muted/50")}>•</span>
               </>
             )}
             
@@ -313,12 +336,12 @@ export const PropertyHeroCard = ({
               <>
                 <span className="flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-cyan-400" />
-                  <span className="text-white">
+                  <span className={cn(backgroundImage ? "text-white" : "text-theme-text")}>
                     {displayLanguage === 'es' ? unitType.labelEs : unitType.labelEn}
                     {data.bedrooms && ` ${data.bedrooms}BR`}
                   </span>
                 </span>
-                <span className="text-white/30 hidden sm:inline">•</span>
+                <span className={cn("hidden sm:inline", backgroundImage ? "text-white/30" : "text-theme-text-muted/50")}>•</span>
               </>
             )}
             
@@ -327,28 +350,28 @@ export const PropertyHeroCard = ({
               <>
                 <span className="flex items-center gap-1.5">
                   <Ruler className="w-4 h-4 text-purple-400" />
-                  <span className="text-white">{data.unitSizeSqf.toLocaleString()} sqf</span>
+                  <span className={cn(backgroundImage ? "text-white" : "text-theme-text")}>{data.unitSizeSqf.toLocaleString()} sqf</span>
                 </span>
-                <span className="text-white/30 hidden sm:inline">•</span>
+                <span className={cn("hidden sm:inline", backgroundImage ? "text-white/30" : "text-theme-text-muted/50")}>•</span>
               </>
             )}
             
             {/* Clients */}
             {clients.length > 0 && (
               <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-[#00EAFF]" />
+                <Users className="w-4 h-4 text-theme-accent-secondary" />
                 {clients.slice(0, 2).map((client, i) => {
                   const country = getCountryByCode(client.country);
                   return (
                     <span key={client.id} className="flex items-center gap-1">
-                      <span className="text-white">{client.name}</span>
+                      <span className={cn(backgroundImage ? "text-white" : "text-theme-text")}>{client.name}</span>
                       {country && <span className="text-xs">{country.flag}</span>}
-                      {i < Math.min(clients.length, 2) - 1 && <span className="text-white/30">,</span>}
+                      {i < Math.min(clients.length, 2) - 1 && <span className={cn(backgroundImage ? "text-white/30" : "text-theme-text-muted/50")}>,</span>}
                     </span>
                   );
                 })}
                 {clients.length > 2 && (
-                  <span className="text-white/50 text-xs">+{clients.length - 2}</span>
+                  <span className={cn("text-xs", backgroundImage ? "text-white/50" : "text-theme-text-muted")}>+{clients.length - 2}</span>
                 )}
               </span>
             )}
@@ -356,21 +379,24 @@ export const PropertyHeroCard = ({
 
           {/* Price Info Row - Only in Snapshot view */}
           {showPriceInfo && basePrice > 0 && (
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/10">
+            <div className={cn(
+              "flex items-center gap-4 mt-3 pt-3 border-t",
+              backgroundImage ? "border-white/10" : "border-theme-border"
+            )}>
               <div className="flex items-center gap-2">
-                <span className="text-white font-semibold">
+                <span className={cn("font-semibold", backgroundImage ? "text-white" : "text-theme-text")}>
                   {formatDualCurrency(basePrice, currency, rate).primary}
                 </span>
                 {formatDualCurrency(basePrice, currency, rate).secondary && (
-                  <span className="text-white/60 text-sm">
+                  <span className={cn("text-sm", backgroundImage ? "text-white/60" : "text-theme-text-muted")}>
                     ({formatDualCurrency(basePrice, currency, rate).secondary})
                   </span>
                 )}
               </div>
               {pricePerSqft > 0 && (
                 <>
-                  <span className="text-white/30">•</span>
-                  <span className="text-white/80 text-sm">
+                  <span className={cn(backgroundImage ? "text-white/30" : "text-theme-text-muted/50")}>•</span>
+                  <span className={cn("text-sm", backgroundImage ? "text-white/80" : "text-theme-text-muted")}>
                     {formatDualCurrency(pricePerSqft, currency, rate).primary}/sqft
                   </span>
                 </>
@@ -388,7 +414,12 @@ export const PropertyHeroCard = ({
               e.stopPropagation();
               onEditClick();
             }}
-            className="absolute top-3 right-3 h-8 w-8 text-white/50 hover:text-white hover:bg-white/10"
+            className={cn(
+              "absolute top-3 right-3 h-8 w-8",
+              backgroundImage 
+                ? "text-white/50 hover:text-white hover:bg-white/10"
+                : "text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt"
+            )}
           >
             <Pencil className="w-4 h-4" />
           </Button>
