@@ -12,6 +12,7 @@ interface HeadToHeadTableProps {
   showAirbnb?: boolean;
   currency?: Currency;
   rate?: number;
+  language?: 'en' | 'es';
 }
 
 interface MetricRow {
@@ -29,7 +30,62 @@ export const HeadToHeadTable = ({
   showAirbnb = true,
   currency = 'AED',
   rate = 1,
+  language = 'es',
 }: HeadToHeadTableProps) => {
+  const t = language === 'es' ? {
+    detailedComparison: 'Comparación Detallada',
+    secondary: 'Secundaria',
+    winner: 'Ganador',
+    metric: 'Métrica',
+    capital: 'Capital',
+    cashflow: 'Cashflow',
+    mortgage: 'Hipoteca',
+    wealth: 'Riqueza',
+    returnLabel: 'Retorno',
+    airbnb: 'Airbnb',
+    strategy: 'Estrategia',
+    day1Capital: 'Capital Día 1',
+    totalCapitalHandover: 'Capital Total (Handover)',
+    dscrLongTerm: 'DSCR Largo Plazo',
+    wealthYear5LT: 'Riqueza Año 5 (LT)',
+    wealthYear10LT: 'Riqueza Año 10 (LT)',
+    annualizedROE: 'ROE Anualizado (10Y)',
+    cashflowYear1ST: 'Cashflow Año 1 (ST)',
+    dscrAirbnb: 'DSCR Airbnb',
+    wealthYear10ST: 'Riqueza Año 10 (ST)',
+  } : {
+    detailedComparison: 'Detailed Comparison',
+    secondary: 'Secondary',
+    winner: 'Winner',
+    metric: 'Metric',
+    capital: 'Capital',
+    cashflow: 'Cashflow',
+    mortgage: 'Mortgage',
+    wealth: 'Wealth',
+    returnLabel: 'Return',
+    airbnb: 'Airbnb',
+    strategy: 'Strategy',
+    day1Capital: 'Day 1 Capital',
+    totalCapitalHandover: 'Total Capital (Handover)',
+    dscrLongTerm: 'DSCR Long-Term',
+    wealthYear5LT: 'Wealth Year 5 (LT)',
+    wealthYear10LT: 'Wealth Year 10 (LT)',
+    annualizedROE: 'Annualized ROE (10Y)',
+    cashflowYear1ST: 'Cashflow Year 1 (ST)',
+    dscrAirbnb: 'DSCR Airbnb',
+    wealthYear10ST: 'Wealth Year 10 (ST)',
+  };
+
+  const categoryLabels: Record<string, string> = {
+    CAPITAL: t.capital,
+    CASHFLOW: t.cashflow,
+    HIPOTECA: t.mortgage,
+    RIQUEZA: t.wealth,
+    RETORNO: t.returnLabel,
+    AIRBNB: t.airbnb,
+    ESTRATEGIA: t.strategy,
+  };
+
   // Format currency with dual display
   const formatMoney = (value: number): string => {
     const aed = Math.abs(value) >= 1000000 
@@ -53,7 +109,7 @@ export const HeadToHeadTable = ({
     // Capital
     {
       category: 'CAPITAL',
-      metric: 'Capital Día 1',
+      metric: t.day1Capital,
       offPlanValue: formatMoney(metrics.offPlanCapitalDay1),
       secondaryValue: formatMoney(metrics.secondaryCapitalDay1),
       winner: metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'off-plan' : 'secondary',
@@ -61,30 +117,15 @@ export const HeadToHeadTable = ({
     },
     {
       category: 'CAPITAL',
-      metric: 'Capital Total (Handover)',
+      metric: t.totalCapitalHandover,
       offPlanValue: formatMoney(metrics.offPlanTotalCapitalAtHandover),
       secondaryValue: formatMoney(metrics.secondaryCapitalDay1),
       winner: metrics.offPlanTotalCapitalAtHandover < metrics.secondaryCapitalDay1 ? 'off-plan' : 'secondary',
     },
-    {
-      category: 'CAPITAL',
-      metric: 'Meses Sin Ingreso',
-      offPlanValue: `${metrics.offPlanMonthsNoIncome} meses`,
-      secondaryValue: '0 meses',
-      winner: 'secondary',
-    },
-    // Cashflow
-    {
-      category: 'CASHFLOW',
-      metric: 'Cashflow Año 1 (LT)',
-      offPlanValue: metrics.offPlanCashflowYear1 === 0 ? 'En construcción' : formatMoney(metrics.offPlanCashflowYear1),
-      secondaryValue: formatMoney(metrics.secondaryCashflowYear1LT),
-      winner: metrics.offPlanCashflowYear1 > metrics.secondaryCashflowYear1LT ? 'off-plan' : 'secondary',
-    },
     // Mortgage Coverage
     {
       category: 'HIPOTECA',
-      metric: 'DSCR Largo Plazo',
+      metric: t.dscrLongTerm,
       offPlanValue: metrics.offPlanDSCRLT === Infinity ? '∞' : formatPercent(metrics.offPlanDSCRLT * 100),
       secondaryValue: metrics.secondaryDSCRLT === Infinity ? '∞' : formatPercent(metrics.secondaryDSCRLT * 100),
       winner: metrics.offPlanDSCRLT > metrics.secondaryDSCRLT ? 'off-plan' : 
@@ -93,14 +134,14 @@ export const HeadToHeadTable = ({
     // Wealth
     {
       category: 'RIQUEZA',
-      metric: 'Riqueza Año 5 (LT)',
+      metric: t.wealthYear5LT,
       offPlanValue: formatMoney(metrics.offPlanWealthYear5),
       secondaryValue: formatMoney(metrics.secondaryWealthYear5LT),
       winner: metrics.offPlanWealthYear5 > metrics.secondaryWealthYear5LT ? 'off-plan' : 'secondary',
     },
     {
       category: 'RIQUEZA',
-      metric: 'Riqueza Año 10 (LT)',
+      metric: t.wealthYear10LT,
       offPlanValue: formatMoney(metrics.offPlanWealthYear10),
       secondaryValue: formatMoney(metrics.secondaryWealthYear10LT),
       winner: metrics.offPlanWealthYear10 > metrics.secondaryWealthYear10LT ? 'off-plan' : 'secondary',
@@ -109,7 +150,7 @@ export const HeadToHeadTable = ({
     // ROE
     {
       category: 'RETORNO',
-      metric: 'ROE Anualizado (10Y)',
+      metric: t.annualizedROE,
       offPlanValue: formatPercent(metrics.offPlanROEYear10),
       secondaryValue: formatPercent(metrics.secondaryROEYear10LT),
       winner: metrics.offPlanROEYear10 > metrics.secondaryROEYear10LT ? 'off-plan' : 'secondary',
@@ -122,37 +163,19 @@ export const HeadToHeadTable = ({
     rows.push(
       {
         category: 'AIRBNB',
-        metric: 'Cashflow Año 1 (ST)',
-        offPlanValue: metrics.offPlanCashflowYear1 === 0 ? 'En construcción' : formatMoney(metrics.offPlanCashflowYear1 * 1.3), // Estimate
-        secondaryValue: formatMoney(metrics.secondaryCashflowYear1ST),
-        winner: 'secondary',
-      },
-      {
-        category: 'AIRBNB',
-        metric: 'DSCR Airbnb',
+        metric: t.dscrAirbnb,
         offPlanValue: metrics.offPlanDSCRST === Infinity ? '∞' : formatPercent(metrics.offPlanDSCRST * 100),
         secondaryValue: metrics.secondaryDSCRST === Infinity ? '∞' : formatPercent(metrics.secondaryDSCRST * 100),
         winner: metrics.offPlanDSCRST > metrics.secondaryDSCRST ? 'off-plan' : 'secondary',
       },
       {
         category: 'AIRBNB',
-        metric: 'Riqueza Año 10 (ST)',
+        metric: t.wealthYear10ST,
         offPlanValue: formatMoney(metrics.offPlanWealthYear10),
         secondaryValue: formatMoney(metrics.secondaryWealthYear10ST),
         winner: metrics.offPlanWealthYear10 > metrics.secondaryWealthYear10ST ? 'off-plan' : 'secondary',
       }
     );
-  }
-
-  // Crossover
-  if (metrics.crossoverYearLT) {
-    rows.push({
-      category: 'ESTRATEGIA',
-      metric: 'Punto de Cruce',
-      offPlanValue: `Año ${metrics.crossoverYearLT}`,
-      secondaryValue: '—',
-      winner: 'off-plan',
-    });
   }
 
   // Count wins
@@ -168,7 +191,7 @@ export const HeadToHeadTable = ({
         <CardTitle className="text-base font-semibold text-theme-text flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-theme-accent" />
-            Comparación Detallada
+            {t.detailedComparison}
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500 text-xs">
@@ -177,7 +200,7 @@ export const HeadToHeadTable = ({
             </Badge>
             <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500 text-xs">
               <Trophy className="w-3 h-3 mr-1" />
-              Secundaria: {secondaryWins}
+              {t.secondary}: {secondaryWins}
             </Badge>
           </div>
         </CardTitle>
@@ -187,7 +210,7 @@ export const HeadToHeadTable = ({
           <Table>
             <TableHeader>
               <TableRow className="border-theme-border hover:bg-transparent">
-                <TableHead className="text-theme-text-muted text-xs w-[180px]">Métrica</TableHead>
+                <TableHead className="text-theme-text-muted text-xs w-[180px]">{t.metric}</TableHead>
                 <TableHead className="text-theme-text-muted text-xs text-center">
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500">
                     {offPlanLabel}
@@ -195,10 +218,10 @@ export const HeadToHeadTable = ({
                 </TableHead>
                 <TableHead className="text-theme-text-muted text-xs text-center">
                   <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500">
-                    Secundaria
+                    {t.secondary}
                   </Badge>
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-center w-[100px]">Ganador</TableHead>
+                <TableHead className="text-theme-text-muted text-xs text-center w-[100px]">{t.winner}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -208,7 +231,7 @@ export const HeadToHeadTable = ({
                   <TableRow key={`cat-${category}`} className="border-theme-border bg-theme-bg/30">
                     <TableCell colSpan={4} className="py-2">
                       <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wider">
-                        {category}
+                        {categoryLabels[category] || category}
                       </span>
                     </TableCell>
                   </TableRow>

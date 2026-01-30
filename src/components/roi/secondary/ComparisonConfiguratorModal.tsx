@@ -25,6 +25,7 @@ interface ComparisonConfiguratorModalProps {
   handoverMonths?: number;
   currency?: Currency;
   rate?: number;
+  language?: 'en' | 'es';
 }
 
 export const ComparisonConfiguratorModal = ({
@@ -37,6 +38,7 @@ export const ComparisonConfiguratorModal = ({
   handoverMonths = 24,
   currency = 'AED',
   rate = 1,
+  language = 'es',
 }: ComparisonConfiguratorModalProps) => {
   const [step, setStep] = useState<1 | 2 | 3>(initialQuoteId ? 2 : 1);
   const [selectedQuote, setSelectedQuote] = useState<CashflowQuote | null>(null);
@@ -44,6 +46,28 @@ export const ComparisonConfiguratorModal = ({
     initialSecondaryInputs || DEFAULT_SECONDARY_INPUTS
   );
   const [exitMonths, setExitMonths] = useState<number[]>(initialExitMonths);
+
+  const t = language === 'es' ? {
+    title: 'Off-Plan vs Secundaria',
+    selectQuote: 'Seleccionar Quote',
+    configureSecondary: 'Configurar Secundaria',
+    exitPoints: 'Puntos de Salida',
+    cancel: 'Cancelar',
+    back: 'Atrás',
+    next: 'Siguiente',
+    compareNow: 'Comparar Ahora',
+  } : {
+    title: 'Off-Plan vs Secondary',
+    selectQuote: 'Select Quote',
+    configureSecondary: 'Configure Secondary',
+    exitPoints: 'Exit Points',
+    cancel: 'Cancel',
+    back: 'Back',
+    next: 'Next',
+    compareNow: 'Compare Now',
+  };
+
+  const stepLabels = [t.selectQuote, t.configureSecondary, t.exitPoints];
 
   // Reset when modal opens/closes
   useEffect(() => {
@@ -82,8 +106,6 @@ export const ComparisonConfiguratorModal = ({
     }
   };
 
-  const stepLabels = ['Seleccionar Quote', 'Configurar Secundaria', 'Puntos de Salida'];
-
   const handleNext = () => {
     if (step === 2) {
       setStep(3);
@@ -108,7 +130,7 @@ export const ComparisonConfiguratorModal = ({
         <DialogHeader className="pb-4 border-b border-theme-border">
           <DialogTitle className="flex items-center gap-2 text-theme-text">
             <Sparkles className="w-5 h-5 text-theme-accent" />
-            Off-Plan vs Secundaria
+            {t.title}
           </DialogTitle>
           
           {/* Step Indicator */}
@@ -141,6 +163,7 @@ export const ComparisonConfiguratorModal = ({
             <QuoteSelectionStep
               selectedQuoteId={selectedQuote?.id}
               onSelect={handleQuoteSelect}
+              language={language}
             />
           )}
           {step === 2 && (
@@ -150,6 +173,7 @@ export const ComparisonConfiguratorModal = ({
               offPlanPrice={selectedQuote?.inputs?.basePrice}
               currency={currency}
               rate={rate}
+              language={language}
             />
           )}
           {step === 3 && (
@@ -157,6 +181,7 @@ export const ComparisonConfiguratorModal = ({
               exitMonths={exitMonths}
               onChange={setExitMonths}
               handoverMonths={handoverMonths}
+              language={language}
             />
           )}
         </div>
@@ -169,7 +194,7 @@ export const ComparisonConfiguratorModal = ({
             className="text-theme-text-muted"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {step === 1 ? 'Cancelar' : 'Atrás'}
+            {step === 1 ? t.cancel : t.back}
           </Button>
 
           {step >= 2 && (
@@ -178,7 +203,7 @@ export const ComparisonConfiguratorModal = ({
               disabled={!selectedQuote}
               className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
             >
-              {step === 3 ? 'Comparar Ahora' : 'Siguiente'}
+              {step === 3 ? t.compareNow : t.next}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
