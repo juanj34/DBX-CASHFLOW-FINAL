@@ -2,6 +2,7 @@
 
 export interface SecondaryInputs {
   // Property
+  propertyName?: string; // Optional name for saving/display
   purchasePrice: number;
   unitSizeSqf: number;
   closingCostsPercent: number; // Default 6% (DLD 4% + Agent 2%)

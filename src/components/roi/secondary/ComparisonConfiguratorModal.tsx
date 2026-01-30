@@ -47,6 +47,14 @@ export const ComparisonConfiguratorModal = ({
   );
   const [exitMonths, setExitMonths] = useState<number[]>(initialExitMonths);
   
+  // Track if we've initialized from quote (to prevent overwriting user changes)
+  const [hasInitializedFromQuote, setHasInitializedFromQuote] = useState(false);
+  
+  // Property name managed here to persist across modal opens
+  const [propertyName, setPropertyName] = useState<string>(
+    initialSecondaryInputs?.propertyName || ''
+  );
+  
   // Load initial quote when initialQuoteId is provided
   const { quote: initialQuote } = useCashflowQuote(initialQuoteId);
   
@@ -79,17 +87,39 @@ export const ComparisonConfiguratorModal = ({
 
   const stepLabels = [t.selectQuote, t.configureSecondary, t.exitPoints];
 
-  // Reset when modal opens/closes
+  // Reset when modal opens - but respect initial values
   useEffect(() => {
-    if (open && !initialQuoteId) {
-      setStep(1);
-      setSelectedQuote(null);
+    if (open) {
+      // Only reset if no initial data is provided
+      if (!initialQuoteId && !initialSecondaryInputs) {
+        setStep(1);
+        setSelectedQuote(null);
+        setSecondaryInputs(DEFAULT_SECONDARY_INPUTS);
+        setPropertyName('');
+        setHasInitializedFromQuote(false);
+      } else {
+        // Respect provided initial inputs
+        if (initialSecondaryInputs) {
+          setSecondaryInputs(initialSecondaryInputs);
+          setPropertyName(initialSecondaryInputs.propertyName || '');
+        }
+        if (initialExitMonths && initialExitMonths.length > 0) {
+          setExitMonths(initialExitMonths);
+        }
+      }
     }
-  }, [open, initialQuoteId]);
+  }, [open, initialQuoteId, initialSecondaryInputs, initialExitMonths]);
 
-  // Initialize secondary inputs when quote is selected
+  // Reset initialization flag when modal closes
   useEffect(() => {
-    if (selectedQuote?.inputs) {
+    if (!open) {
+      setHasInitializedFromQuote(false);
+    }
+  }, [open]);
+
+  // Initialize secondary inputs when quote is selected - only on first selection
+  useEffect(() => {
+    if (selectedQuote?.inputs && !hasInitializedFromQuote && !initialSecondaryInputs) {
       const inputs = selectedQuote.inputs as OIInputs;
       setSecondaryInputs(prev => ({
         ...prev,
@@ -101,17 +131,24 @@ export const ComparisonConfiguratorModal = ({
         operatingExpensePercent: inputs.shortTermRental?.operatingExpensePercent || prev.operatingExpensePercent,
         managementFeePercent: inputs.shortTermRental?.managementFeePercent || prev.managementFeePercent,
       }));
+      setHasInitializedFromQuote(true);
     }
-  }, [selectedQuote]);
+  }, [selectedQuote, hasInitializedFromQuote, initialSecondaryInputs]);
 
   const handleQuoteSelect = (quote: CashflowQuote) => {
     setSelectedQuote(quote);
+    setHasInitializedFromQuote(false); // Allow initialization for new quote selection
     setStep(2);
   };
 
   const handleCompare = () => {
     if (selectedQuote) {
-      onCompare(selectedQuote.id, secondaryInputs, exitMonths);
+      // Include property name in secondary inputs
+      const finalInputs: SecondaryInputs = {
+        ...secondaryInputs,
+        propertyName: propertyName,
+      };
+      onCompare(selectedQuote.id, finalInputs, exitMonths);
       onOpenChange(false);
     }
   };
@@ -136,7 +173,11 @@ export const ComparisonConfiguratorModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent 
+        className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        onPointerDownOutside={() => onOpenChange(false)}
+        onEscapeKeyDown={() => onOpenChange(false)}
+      >
         <DialogHeader className="pb-4 border-b border-theme-border">
           <DialogTitle className="flex items-center gap-2 text-theme-text">
             <Sparkles className="w-5 h-5 text-theme-accent" />
@@ -180,6 +221,8 @@ export const ComparisonConfiguratorModal = ({
             <SecondaryPropertyStep
               inputs={secondaryInputs}
               onChange={setSecondaryInputs}
+              propertyName={propertyName}
+              onPropertyNameChange={setPropertyName}
               offPlanPrice={selectedQuote?.inputs?.basePrice}
               currency={currency}
               rate={rate}
