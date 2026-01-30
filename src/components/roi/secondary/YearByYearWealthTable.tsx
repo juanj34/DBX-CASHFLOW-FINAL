@@ -29,6 +29,8 @@ interface YearByYearWealthTableProps {
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
+  offPlanBasePrice: number;      // Purchase price for Year 1 display
+  secondaryPurchasePrice: number; // Purchase price for Year 1 display
 }
 
 const formatCompact = (value: number | undefined | null): string => {
@@ -51,6 +53,8 @@ export const YearByYearWealthTable = ({
   currency,
   rate,
   language,
+  offPlanBasePrice,
+  secondaryPurchasePrice,
 }: YearByYearWealthTableProps) => {
   const isAirbnb = rentalMode === 'airbnb';
 
@@ -81,14 +85,18 @@ export const YearByYearWealthTable = ({
       const secWealth = (secProj?.propertyValue || 0) + secCumulativeRent;
       const delta = opWealth - secWealth;
       
+      // For Year 1, show purchase prices (entry point), not appreciated values
+      const displayOffPlanValue = year === 1 ? offPlanBasePrice : (opProj?.propertyValue || 0);
+      const displaySecondaryValue = year === 1 ? secondaryPurchasePrice : (secProj?.propertyValue || 0);
+      
       data.push({
         year,
         calendarYear: opProj?.calendarYear || new Date().getFullYear() + year,
-        offPlanValue: opProj?.propertyValue || 0,
+        offPlanValue: displayOffPlanValue,
         offPlanRent: opAnnualRent,
         offPlanCumulativeRent: opCumulativeRent,
         offPlanWealth: opWealth,
-        secondaryValue: secProj?.propertyValue || 0,
+        secondaryValue: displaySecondaryValue,
         secondaryRent: secAnnualRent,
         secondaryCumulativeRent: secCumulativeRent,
         secondaryWealth: secWealth,
@@ -99,7 +107,7 @@ export const YearByYearWealthTable = ({
     }
     
     return data;
-  }, [offPlanProjections, secondaryProjections, handoverYearIndex, isAirbnb]);
+  }, [offPlanProjections, secondaryProjections, handoverYearIndex, isAirbnb, offPlanBasePrice, secondaryPurchasePrice]);
 
   const formatValue = (value: number): string => {
     const dual = formatDualCurrencyCompact(value, currency, rate);

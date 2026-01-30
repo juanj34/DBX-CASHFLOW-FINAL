@@ -33,6 +33,7 @@ import {
   ExitScenariosComparison,
   SaveSecondaryComparisonModal,
   LoadSecondaryComparisonModal,
+  MortgageCoverageCard,
 } from '@/components/roi/secondary';
 import { useSecondaryComparisons, SecondaryComparison } from '@/hooks/useSecondaryComparisons';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -605,6 +606,18 @@ const OffPlanVsSecondary = () => {
             rate={rate}
             language={language}
             appreciationDuringConstruction={appreciationDuringConstruction}
+            secondaryMonthlyCashflow={
+              rentalMode === 'long-term' 
+                ? secondaryCalcs.monthlyCashflowLT 
+                : secondaryCalcs.monthlyCashflowST
+            }
+            secondaryMonthlyRent={
+              rentalMode === 'long-term'
+                ? secondaryCalcs.monthlyRentLT
+                : secondaryCalcs.monthlyRentST
+            }
+            secondaryMonthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
+            mortgageEnabled={secondaryInputs.useMortgage}
           />
 
           {/* 2. Year-by-Year Wealth Table */}
@@ -617,6 +630,8 @@ const OffPlanVsSecondary = () => {
             currency={currency}
             rate={rate}
             language={language}
+            offPlanBasePrice={safeOffPlanInputs.basePrice}
+            secondaryPurchasePrice={secondaryInputs.purchasePrice}
           />
 
           {/* 4. Wealth Trajectory Chart */}
@@ -653,10 +668,39 @@ const OffPlanVsSecondary = () => {
             appreciationDuringConstruction={appreciationDuringConstruction}
             secondaryCapitalDay1={secondaryCalcs.totalCapitalDay1}
             secondaryIncomeMonths={handoverYearIndex * 12}
+            secondaryPurchasePrice={secondaryInputs.purchasePrice}
             currency={currency}
             rate={rate}
             language={language}
           />
+
+          {/* 6b. Mortgage Coverage Card (when mortgage enabled) */}
+          {secondaryInputs.useMortgage && secondaryCalcs.monthlyMortgagePayment > 0 && (
+            <MortgageCoverageCard
+              monthlyRent={
+                rentalMode === 'long-term' 
+                  ? secondaryCalcs.monthlyRentLT 
+                  : secondaryCalcs.monthlyRentST
+              }
+              monthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
+              netCashflow={
+                rentalMode === 'long-term'
+                  ? secondaryCalcs.monthlyCashflowLT
+                  : secondaryCalcs.monthlyCashflowST
+              }
+              coveragePercent={
+                secondaryCalcs.monthlyMortgagePayment > 0
+                  ? ((rentalMode === 'long-term' 
+                      ? secondaryCalcs.monthlyRentLT 
+                      : secondaryCalcs.monthlyRentST) / secondaryCalcs.monthlyMortgagePayment) * 100
+                  : 100
+              }
+              currency={currency}
+              rate={rate}
+              language={language}
+            />
+          )}
+
 
           {/* 7. Verdict */}
           <ComparisonVerdict
