@@ -23,7 +23,9 @@ export interface SecondaryInputs {
   
   // Mortgage (Optional)
   useMortgage: boolean;
+  mortgageMode: 'percent' | 'fixed'; // NEW: percent or fixed amount
   mortgageFinancingPercent: number; // Default 60%
+  mortgageFixedAmount: number; // NEW: Fixed loan amount (e.g., 5000000)
   mortgageInterestRate: number; // Default 4.5%
   mortgageLoanTermYears: number; // Default 25
   
@@ -170,7 +172,9 @@ export const DEFAULT_SECONDARY_INPUTS: SecondaryInputs = {
   appreciationRate: 3,
   
   useMortgage: true,
+  mortgageMode: 'percent',
   mortgageFinancingPercent: 60,
+  mortgageFixedAmount: 0,
   mortgageInterestRate: 4.5,
   mortgageLoanTermYears: 25,
   

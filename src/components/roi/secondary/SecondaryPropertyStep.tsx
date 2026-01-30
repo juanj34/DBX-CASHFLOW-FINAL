@@ -68,6 +68,12 @@ export const SecondaryPropertyStep = ({
     netAnnualRent: 'Renta Neta Anual',
     netYield: 'Yield Neto',
     vsGross: 'vs bruto',
+    // Mortgage mode translations
+    financingMode: 'Modo de Financiamiento',
+    percentMode: '% del Valor',
+    fixedMode: 'Monto Fijo',
+    approvedAmount: 'Monto Aprobado (AED)',
+    calculatedPercent: 'del valor de la propiedad',
   } : {
     savedProperties: 'Saved Properties',
     propertyDetails: 'Property Details',
@@ -97,6 +103,12 @@ export const SecondaryPropertyStep = ({
     netAnnualRent: 'Net Annual Rent',
     netYield: 'Net Yield',
     vsGross: 'vs gross',
+    // Mortgage mode translations
+    financingMode: 'Financing Mode',
+    percentMode: '% of Value',
+    fixedMode: 'Fixed Amount',
+    approvedAmount: 'Approved Amount (AED)',
+    calculatedPercent: 'of property value',
   };
 
   // Calculate net rent values
@@ -134,7 +146,9 @@ export const SecondaryPropertyStep = ({
       appreciationRate: property.appreciation_rate,
       serviceChargePerSqft: property.service_charge_per_sqft,
       useMortgage: property.use_mortgage,
+      mortgageMode: DEFAULT_SECONDARY_INPUTS.mortgageMode, // Default to percent
       mortgageFinancingPercent: property.mortgage_financing_percent,
+      mortgageFixedAmount: DEFAULT_SECONDARY_INPUTS.mortgageFixedAmount,
       mortgageInterestRate: property.mortgage_interest_rate,
       mortgageLoanTermYears: property.mortgage_term_years,
       showAirbnbComparison: property.show_airbnb,
@@ -370,16 +384,62 @@ export const SecondaryPropertyStep = ({
             </CollapsibleTrigger>
             
             <CollapsibleContent className="pt-4 space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">{t.financing}</Label>
-                  <Input
-                    type="number"
-                    value={inputs.mortgageFinancingPercent}
-                    onChange={(e) => updateInput('mortgageFinancingPercent', Number(e.target.value))}
-                    className="bg-theme-card border-theme-border text-theme-text"
-                  />
+              {/* Financing Mode Toggle */}
+              <div className="space-y-2">
+                <Label className="text-xs text-theme-text-muted">{t.financingMode}</Label>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button"
+                    variant={inputs.mortgageMode === 'percent' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateInput('mortgageMode', 'percent')}
+                    className={inputs.mortgageMode === 'percent' 
+                      ? 'bg-theme-accent text-theme-accent-foreground' 
+                      : 'border-theme-border text-theme-text-muted hover:text-theme-text'}
+                  >
+                    {t.percentMode}
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant={inputs.mortgageMode === 'fixed' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateInput('mortgageMode', 'fixed')}
+                    className={inputs.mortgageMode === 'fixed' 
+                      ? 'bg-theme-accent text-theme-accent-foreground' 
+                      : 'border-theme-border text-theme-text-muted hover:text-theme-text'}
+                  >
+                    {t.fixedMode}
+                  </Button>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {inputs.mortgageMode === 'percent' ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-theme-text-muted">{t.financing}</Label>
+                    <Input
+                      type="number"
+                      value={inputs.mortgageFinancingPercent}
+                      onChange={(e) => updateInput('mortgageFinancingPercent', Number(e.target.value))}
+                      className="bg-theme-card border-theme-border text-theme-text"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-theme-text-muted">{t.approvedAmount}</Label>
+                    <Input
+                      type="number"
+                      value={inputs.mortgageFixedAmount}
+                      onChange={(e) => updateInput('mortgageFixedAmount', Number(e.target.value))}
+                      className="bg-theme-card border-theme-border text-theme-text"
+                    />
+                    {inputs.purchasePrice > 0 && inputs.mortgageFixedAmount > 0 && (
+                      <p className="text-[10px] text-theme-text-muted">
+                        = {((inputs.mortgageFixedAmount / inputs.purchasePrice) * 100).toFixed(1)}% {t.calculatedPercent}
+                      </p>
+                    )}
+                  </div>
+                )}
                 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-theme-text-muted">{t.interestRate}</Label>

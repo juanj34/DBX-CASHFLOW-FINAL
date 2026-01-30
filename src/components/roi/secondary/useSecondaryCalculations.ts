@@ -31,7 +31,9 @@ export const useSecondaryCalculations = (inputs: SecondaryInputs): SecondaryCalc
       adrGrowthRate,
       appreciationRate,
       useMortgage,
+      mortgageMode,
       mortgageFinancingPercent,
+      mortgageFixedAmount,
       mortgageInterestRate,
       mortgageLoanTermYears,
       serviceChargePerSqft,
@@ -39,7 +41,13 @@ export const useSecondaryCalculations = (inputs: SecondaryInputs): SecondaryCalc
 
     // === CAPITAL CALCULATIONS ===
     const closingCosts = purchasePrice * closingCostsPercent / 100;
-    const loanAmount = useMortgage ? purchasePrice * mortgageFinancingPercent / 100 : 0;
+    // Handle both percentage and fixed amount modes
+    const loanAmount = useMortgage 
+      ? (mortgageMode === 'fixed' 
+          ? Math.min(mortgageFixedAmount, purchasePrice * 0.80) // Cap at 80% LTV for fixed
+          : purchasePrice * mortgageFinancingPercent / 100)
+      : 0;
+    const effectiveFinancingPercent = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0;
     const equityRequired = purchasePrice - loanAmount;
     const totalCapitalDay1 = equityRequired + closingCosts;
 
