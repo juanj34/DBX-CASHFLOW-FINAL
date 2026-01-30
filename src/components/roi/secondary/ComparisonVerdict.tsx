@@ -7,9 +7,80 @@ import { ComparisonMetrics } from './types';
 interface ComparisonVerdictProps {
   metrics: ComparisonMetrics;
   offPlanProjectName?: string;
+  language?: 'en' | 'es';
 }
 
-export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVerdictProps) => {
+export const ComparisonVerdict = ({ metrics, offPlanProjectName, language = 'es' }: ComparisonVerdictProps) => {
+  const t = language === 'es' ? {
+    recommendation: 'RECOMENDACIÓN',
+    offPlanWinner: 'es la mejor opción para construcción de riqueza',
+    secondaryWinner: 'Secundaria es mejor si necesitas cashflow inmediato',
+    advantages: 'Ventajas',
+    tradeoffs: 'Trade-offs',
+    disadvantages: 'Desventajas',
+    lessCapital: 'menos capital inicial',
+    moreWealth: 'más riqueza en 10 años',
+    moreROE: 'más ROE anualizado',
+    surpassesYear: 'Supera secundaria en Año',
+    monthsNoIncome: 'meses sin ingresos',
+    constructionRisk: 'Riesgo de construcción',
+    incomeFromDay1: 'Ingresos desde día 1',
+    dscrCovers: 'cubre hipoteca',
+    readyProperty: 'Propiedad lista, sin espera',
+    capitalRequired: 'capital requerido',
+    appreciationOnly: 'apreciación anual',
+    lowROE: '(bajo)',
+    tipLabel: 'Recomendación',
+    recommended: 'Recomendado',
+    offPlan: 'OFF-PLAN',
+    secondary: 'SECUNDARIA',
+    ifYouCan: 'Si puedes cubrir los',
+    monthsConstruction: 'meses de construcción sin depender de ingresos de renta,',
+    offPlanOffers: 'off-plan ofrece retornos significativamente superiores',
+    withMore: 'con',
+    moreWealthAnd: 'más riqueza y',
+    moreROEAnnualized: 'más ROE anualizado.',
+    ifYouNeed: 'Si necesitas',
+    immediateCashflow: 'cashflow inmediato',
+    toCoverExpenses: 'para cubrir gastos o la hipoteca, secundaria proporciona ingresos desde el día 1 con DSCR de',
+    howeverConsider: '. Sin embargo, considera que off-plan genera',
+    moreWealthLongTerm: 'más riqueza a largo plazo.',
+  } : {
+    recommendation: 'RECOMMENDATION',
+    offPlanWinner: 'is the best option for wealth building',
+    secondaryWinner: 'Secondary is better if you need immediate cashflow',
+    advantages: 'Advantages',
+    tradeoffs: 'Trade-offs',
+    disadvantages: 'Disadvantages',
+    lessCapital: 'less initial capital',
+    moreWealth: 'more wealth in 10 years',
+    moreROE: 'more annualized ROE',
+    surpassesYear: 'Surpasses secondary in Year',
+    monthsNoIncome: 'months without income',
+    constructionRisk: 'Construction risk',
+    incomeFromDay1: 'Income from day 1',
+    dscrCovers: 'covers mortgage',
+    readyProperty: 'Ready property, no wait',
+    capitalRequired: 'capital required',
+    appreciationOnly: 'annual appreciation',
+    lowROE: '(low)',
+    tipLabel: 'Recommendation',
+    recommended: 'Recommended',
+    offPlan: 'OFF-PLAN',
+    secondary: 'SECONDARY',
+    ifYouCan: 'If you can cover the',
+    monthsConstruction: 'months of construction without relying on rental income,',
+    offPlanOffers: 'off-plan offers significantly superior returns',
+    withMore: 'with',
+    moreWealthAnd: 'more wealth and',
+    moreROEAnnualized: 'more annualized ROE.',
+    ifYouNeed: 'If you need',
+    immediateCashflow: 'immediate cashflow',
+    toCoverExpenses: 'to cover expenses or mortgage, secondary provides income from day 1 with DSCR of',
+    howeverConsider: '. However, consider that off-plan generates',
+    moreWealthLongTerm: 'more wealth long-term.',
+  };
+
   // Calculate key advantages
   const capitalAdvantage = ((metrics.secondaryCapitalDay1 - metrics.offPlanCapitalDay1) / metrics.secondaryCapitalDay1 * 100);
   const wealthAdvantage = ((metrics.offPlanWealthYear10 - metrics.secondaryWealthYear10LT) / metrics.secondaryWealthYear10LT * 100);
@@ -26,27 +97,27 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
   
   // Key points for each scenario
   const offPlanPros = [
-    { icon: DollarSign, text: `${capitalAdvantage.toFixed(0)}% menos capital inicial`, highlight: capitalAdvantage > 30 },
-    { icon: TrendingUp, text: `${wealthAdvantage.toFixed(0)}% más riqueza en 10 años`, highlight: wealthAdvantage > 50 },
-    { icon: Award, text: `${roeAdvantage.toFixed(1)}% más ROE anualizado`, highlight: roeAdvantage > 15 },
-    metrics.crossoverYearLT && { icon: CheckCircle, text: `Supera secundaria en Año ${metrics.crossoverYearLT}`, highlight: true },
+    { icon: DollarSign, text: `${capitalAdvantage.toFixed(0)}% ${t.lessCapital}`, highlight: capitalAdvantage > 30 },
+    { icon: TrendingUp, text: `${wealthAdvantage.toFixed(0)}% ${t.moreWealth}`, highlight: wealthAdvantage > 50 },
+    { icon: Award, text: `${roeAdvantage.toFixed(1)}% ${t.moreROE}`, highlight: roeAdvantage > 15 },
+    metrics.crossoverYearLT && { icon: CheckCircle, text: `${t.surpassesYear} ${metrics.crossoverYearLT}`, highlight: true },
   ].filter(Boolean) as { icon: any; text: string; highlight: boolean }[];
   
   const offPlanCons = [
-    { icon: Clock, text: `${metrics.offPlanMonthsNoIncome} meses sin ingresos` },
-    { icon: AlertTriangle, text: 'Riesgo de construcción' },
+    { icon: Clock, text: `${metrics.offPlanMonthsNoIncome} ${t.monthsNoIncome}` },
+    { icon: AlertTriangle, text: t.constructionRisk },
   ];
   
   const secondaryPros = [
-    { icon: DollarSign, text: 'Ingresos desde día 1' },
-    { icon: CheckCircle, text: `DSCR ${(metrics.secondaryDSCRLT * 100).toFixed(0)}% (cubre hipoteca)` },
-    { icon: TrendingUp, text: 'Propiedad lista, sin espera' },
+    { icon: DollarSign, text: t.incomeFromDay1 },
+    { icon: CheckCircle, text: `DSCR ${(metrics.secondaryDSCRLT * 100).toFixed(0)}% (${t.dscrCovers})` },
+    { icon: TrendingUp, text: t.readyProperty },
   ];
   
   const secondaryCons = [
-    { icon: DollarSign, text: `AED ${(metrics.secondaryCapitalDay1 / 1000).toFixed(0)}K capital requerido` },
-    { icon: TrendingUp, text: 'Solo 3% apreciación anual' },
-    { icon: Award, text: `ROE ${metrics.secondaryROEYear10LT.toFixed(1)}% (bajo)` },
+    { icon: DollarSign, text: `AED ${(metrics.secondaryCapitalDay1 / 1000).toFixed(0)}K ${t.capitalRequired}` },
+    { icon: TrendingUp, text: `3% ${t.appreciationOnly}` },
+    { icon: Award, text: `ROE ${metrics.secondaryROEYear10LT.toFixed(1)}% ${t.lowROE}` },
   ];
 
   return (
@@ -75,12 +146,12 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
                 ? "bg-emerald-500 text-white" 
                 : "bg-cyan-500 text-white"
             )}>
-              🏆 RECOMENDACIÓN
+              🏆 {t.recommendation}
             </Badge>
             <h3 className="text-xl font-bold text-theme-text">
               {isOffPlanWinner 
-                ? `${offPlanProjectName || 'Off-Plan'} es la mejor opción para construcción de riqueza`
-                : 'Secundaria es mejor si necesitas cashflow inmediato'
+                ? `${offPlanProjectName || 'Off-Plan'} ${t.offPlanWinner}`
+                : t.secondaryWinner
               }
             </h3>
           </div>
@@ -93,18 +164,18 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500">
-                OFF-PLAN
+                {t.offPlan}
               </Badge>
               {isOffPlanWinner && (
                 <Badge className="bg-emerald-500 text-white text-xs">
-                  Recomendado
+                  {t.recommended}
                 </Badge>
               )}
             </div>
             
             {/* Pros */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-emerald-500 uppercase tracking-wider">Ventajas</p>
+              <p className="text-xs font-medium text-emerald-500 uppercase tracking-wider">{t.advantages}</p>
               {offPlanPros.map((pro, idx) => (
                 <div 
                   key={idx}
@@ -131,7 +202,7 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
             
             {/* Cons */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-amber-500 uppercase tracking-wider">Trade-offs</p>
+              <p className="text-xs font-medium text-amber-500 uppercase tracking-wider">{t.tradeoffs}</p>
               {offPlanCons.map((con, idx) => (
                 <div 
                   key={idx}
@@ -148,18 +219,18 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500">
-                SECUNDARIA
+                {t.secondary}
               </Badge>
               {!isOffPlanWinner && (
                 <Badge className="bg-cyan-500 text-white text-xs">
-                  Recomendado
+                  {t.recommended}
                 </Badge>
               )}
             </div>
             
             {/* Pros */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-cyan-500 uppercase tracking-wider">Ventajas</p>
+              <p className="text-xs font-medium text-cyan-500 uppercase tracking-wider">{t.advantages}</p>
               {secondaryPros.map((pro, idx) => (
                 <div 
                   key={idx}
@@ -173,7 +244,7 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
             
             {/* Cons */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-red-500 uppercase tracking-wider">Desventajas</p>
+              <p className="text-xs font-medium text-red-500 uppercase tracking-wider">{t.disadvantages}</p>
               {secondaryCons.map((con, idx) => (
                 <div 
                   key={idx}
@@ -190,18 +261,18 @@ export const ComparisonVerdict = ({ metrics, offPlanProjectName }: ComparisonVer
         {/* Final Recommendation */}
         <div className="mt-6 p-4 rounded-xl bg-theme-accent/5 border border-theme-accent/20">
           <p className="text-sm text-theme-text leading-relaxed">
-            <span className="font-semibold text-theme-accent">💡 Recomendación:</span>{' '}
+            <span className="font-semibold text-theme-accent">💡 {t.tipLabel}:</span>{' '}
             {isOffPlanWinner ? (
               <>
-                Si puedes cubrir los {metrics.offPlanMonthsNoIncome} meses de construcción sin depender de ingresos 
-                de renta, <span className="font-medium text-emerald-500">off-plan ofrece retornos significativamente 
-                superiores</span> con {wealthAdvantage.toFixed(0)}% más riqueza y {roeAdvantage.toFixed(1)}% más ROE anualizado.
+                {t.ifYouCan} {metrics.offPlanMonthsNoIncome} {t.monthsConstruction}{' '}
+                <span className="font-medium text-emerald-500">{t.offPlanOffers}</span> {t.withMore}{' '}
+                {wealthAdvantage.toFixed(0)}% {t.moreWealthAnd} {roeAdvantage.toFixed(1)}% {t.moreROEAnnualized}
               </>
             ) : (
               <>
-                Si necesitas <span className="font-medium text-cyan-500">cashflow inmediato</span> para cubrir 
-                gastos o la hipoteca, secundaria proporciona ingresos desde el día 1 con DSCR de {(metrics.secondaryDSCRLT * 100).toFixed(0)}%.
-                Sin embargo, considera que off-plan genera {wealthAdvantage.toFixed(0)}% más riqueza a largo plazo.
+                {t.ifYouNeed} <span className="font-medium text-cyan-500">{t.immediateCashflow}</span>{' '}
+                {t.toCoverExpenses} {(metrics.secondaryDSCRLT * 100).toFixed(0)}%{t.howeverConsider}{' '}
+                {wealthAdvantage.toFixed(0)}% {t.moreWealthLongTerm}
               </>
             )}
           </p>

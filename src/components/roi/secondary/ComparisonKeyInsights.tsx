@@ -1,4 +1,4 @@
-import { TrendingUp, Wallet, Target, Calendar, Trophy, Info } from 'lucide-react';
+import { TrendingUp, Wallet, Target, Trophy, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,10 +36,6 @@ export const ComparisonKeyInsights = ({
   const secondaryROE = isAirbnb 
     ? metrics.secondaryROEYear10ST 
     : metrics.secondaryROEYear10LT;
-  
-  const crossoverYear = isAirbnb 
-    ? metrics.crossoverYearST 
-    : metrics.crossoverYearLT;
 
   const capitalWinner = metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'offplan' : 'secondary';
   const wealthWinner = metrics.offPlanWealthYear10 > secondaryWealth10 ? 'offplan' : 'secondary';
@@ -60,11 +56,6 @@ export const ComparisonKeyInsights = ({
     wealthYear10Tooltip: 'Riqueza total acumulada: Valor de propiedad + Rentas acumuladas - Capital invertido.',
     annualizedROE: 'ROE Anualizado',
     annualizedROETooltip: 'Retorno anualizado sobre tu capital durante 10 años. (Ganancia Total / Capital) / 10.',
-    crossoverPoint: 'Punto de Cruce',
-    crossoverPointTooltip: 'El año cuando off-plan supera a secundaria en riqueza total acumulada.',
-    year: 'Año',
-    offPlanWins: 'Off-Plan gana',
-    secondaryLeads: 'Secundaria lidera',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
   } : {
@@ -74,11 +65,6 @@ export const ComparisonKeyInsights = ({
     wealthYear10Tooltip: 'Total accumulated wealth: Property Value + Cumulative Rent - Capital Invested.',
     annualizedROE: 'Annualized ROE',
     annualizedROETooltip: 'Annualized return on your capital over 10 years. (Total Gain / Capital) / 10.',
-    crossoverPoint: 'Crossover Point',
-    crossoverPointTooltip: 'The year when off-plan surpasses secondary in total accumulated wealth.',
-    year: 'Year',
-    offPlanWins: 'Off-Plan wins',
-    secondaryLeads: 'Secondary leads',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
   };
@@ -111,21 +97,11 @@ export const ComparisonKeyInsights = ({
       winner: roeWinner,
       lowerIsBetter: false,
     },
-    {
-      title: t.crossoverPoint,
-      tooltip: t.crossoverPointTooltip,
-      icon: Calendar,
-      offPlanValue: crossoverYear ? `${t.year} ${crossoverYear}` : 'N/A',
-      secondaryValue: crossoverYear ? t.offPlanWins : t.secondaryLeads,
-      winner: crossoverYear ? 'offplan' : 'secondary',
-      lowerIsBetter: true,
-      isCrossover: true,
-    },
   ];
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {insights.map((insight, idx) => {
           const Icon = insight.icon;
           const isOffPlanWinner = insight.winner === 'offplan';
@@ -136,16 +112,14 @@ export const ComparisonKeyInsights = ({
               className="p-4 bg-theme-card border-theme-border relative overflow-hidden"
             >
               {/* Winner ribbon */}
-              {!insight.isCrossover && (
-                <div className={`absolute top-0 right-0 px-2 py-0.5 text-[10px] font-medium rounded-bl-lg ${
-                  isOffPlanWinner 
-                    ? 'bg-emerald-500/20 text-emerald-500' 
-                    : 'bg-cyan-500/20 text-cyan-500'
-                }`}>
-                  <Trophy className="w-3 h-3 inline mr-1" />
-                  {isOffPlanWinner ? 'Off-Plan' : 'Secundaria'}
-                </div>
-              )}
+              <div className={`absolute top-0 right-0 px-2 py-0.5 text-[10px] font-medium rounded-bl-lg ${
+                isOffPlanWinner 
+                  ? 'bg-emerald-500/20 text-emerald-500' 
+                  : 'bg-cyan-500/20 text-cyan-500'
+              }`}>
+                <Trophy className="w-3 h-3 inline mr-1" />
+                {isOffPlanWinner ? t.offPlan : t.secondary}
+              </div>
 
               {/* Header */}
               <div className="flex items-center gap-2 mb-3">
@@ -164,43 +138,32 @@ export const ComparisonKeyInsights = ({
               </div>
 
               {/* Values */}
-              {insight.isCrossover ? (
-                <div className="space-y-1">
-                  <p className={`text-lg font-bold ${
-                    crossoverYear ? 'text-emerald-500' : 'text-cyan-500'
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className={`text-[10px] ${
+                    isOffPlanWinner ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : ''
+                  }`}>
+                    {t.offPlan}
+                  </Badge>
+                  <span className={`text-sm font-semibold ${
+                    isOffPlanWinner ? 'text-emerald-500' : 'text-theme-text'
                   }`}>
                     {insight.offPlanValue}
-                  </p>
-                  <p className="text-xs text-theme-text-muted">{insight.secondaryValue}</p>
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className={`text-[10px] ${
-                      isOffPlanWinner ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : ''
-                    }`}>
-                      Off-Plan
-                    </Badge>
-                    <span className={`text-sm font-semibold ${
-                      isOffPlanWinner ? 'text-emerald-500' : 'text-theme-text'
-                    }`}>
-                      {insight.offPlanValue}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className={`text-[10px] ${
-                      !isOffPlanWinner ? 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30' : ''
-                    }`}>
-                      Secundaria
-                    </Badge>
-                    <span className={`text-sm font-semibold ${
-                      !isOffPlanWinner ? 'text-cyan-500' : 'text-theme-text'
-                    }`}>
-                      {insight.secondaryValue}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className={`text-[10px] ${
+                    !isOffPlanWinner ? 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30' : ''
+                  }`}>
+                    {t.secondary}
+                  </Badge>
+                  <span className={`text-sm font-semibold ${
+                    !isOffPlanWinner ? 'text-cyan-500' : 'text-theme-text'
+                  }`}>
+                    {insight.secondaryValue}
+                  </span>
                 </div>
-              )}
+              </div>
             </Card>
           );
         })}

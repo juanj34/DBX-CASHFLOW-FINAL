@@ -240,13 +240,24 @@ const OffPlanVsSecondary = () => {
       }
     }
 
+    // Calculate off-plan cumulative rent up to year 5
+    let offPlanCumulativeRent5 = 0;
+    for (let i = 0; i < 5; i++) {
+      const proj = offPlanCalcs.yearlyProjections[i];
+      if (proj && i >= handoverYearIndex - 1 && proj.netIncome) {
+        offPlanCumulativeRent5 += proj.netIncome;
+      }
+    }
+    const offPlanYear5 = offPlanCalcs.yearlyProjections[4];
+    const offPlanWealth5 = (offPlanYear5?.propertyValue || 0) + offPlanCumulativeRent5 - offPlanCapitalDay1;
+
     return {
       offPlanCapitalDay1,
       secondaryCapitalDay1: secondaryCalcs.totalCapitalDay1,
       offPlanTotalCapitalAtHandover,
       offPlanOutOfPocket,
       offPlanMonthsNoIncome,
-      offPlanWealthYear5: 0,
+      offPlanWealthYear5: offPlanWealth5,
       secondaryWealthYear5LT: secondaryCalcs.wealthYear5LT,
       secondaryWealthYear5ST: secondaryCalcs.wealthYear5ST,
       offPlanWealthYear10: offPlanWealth10,
@@ -495,6 +506,7 @@ const OffPlanVsSecondary = () => {
               offPlanDSCR={rentalMode === 'airbnb' ? comparisonMetrics.offPlanDSCRST : comparisonMetrics.offPlanDSCRLT}
               secondaryDSCR={rentalMode === 'airbnb' ? comparisonMetrics.secondaryDSCRST : comparisonMetrics.secondaryDSCRLT}
               rentalMode={rentalMode}
+              language={language}
             />
             
             <OutOfPocketCard
@@ -513,6 +525,7 @@ const OffPlanVsSecondary = () => {
           <ComparisonVerdict
             metrics={comparisonMetrics}
             offPlanProjectName={projectName}
+            language={language}
           />
         </div>
       </div>
