@@ -571,7 +571,6 @@ const OffPlanVsSecondary = () => {
               offPlanTotalMonths={offPlanCalcs.totalMonths}
               offPlanEntryCosts={offPlanCalcs.totalEntryCosts}
               secondaryPurchasePrice={secondaryInputs.purchasePrice}
-              secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
               secondaryAppreciationRate={secondaryInputs.appreciationRate}
               currency={currency}
               rate={rate}

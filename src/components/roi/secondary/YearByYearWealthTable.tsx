@@ -263,7 +263,7 @@ export const YearByYearWealthTable = ({
                       <span className={`text-sm font-medium ${
                         row.delta > 0 ? 'text-emerald-500' : 'text-theme-text'
                       }`}>
-                        {formatValue(row.offPlanWealth)}
+                        {formatSmallValue(row.offPlanWealth)}
                       </span>
                     </TableCell>
                     {/* Secondary Value */}
@@ -279,7 +279,7 @@ export const YearByYearWealthTable = ({
                       <span className={`text-sm font-medium ${
                         row.delta < 0 ? 'text-cyan-500' : 'text-theme-text'
                       }`}>
-                        {formatValue(row.secondaryWealth)}
+                        {formatSmallValue(row.secondaryWealth)}
                       </span>
                     </TableCell>
                     {/* Delta */}
@@ -289,7 +289,7 @@ export const YearByYearWealthTable = ({
                         <span className={`text-sm font-medium ${
                           row.delta > 0 ? 'text-emerald-500' : row.delta < 0 ? 'text-red-500' : 'text-theme-text-muted'
                         }`}>
-                          {row.delta >= 0 ? '+' : ''}{formatCompact(row.delta)}
+                          {row.delta >= 0 ? '+' : '-'}AED {formatCompact(Math.abs(row.delta))}
                         </span>
                       </div>
                     </TableCell>
