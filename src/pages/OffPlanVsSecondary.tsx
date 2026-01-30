@@ -742,10 +742,10 @@ const OffPlanVsSecondary = () => {
             language={language}
           />
 
-          {/* 5. Exit Scenarios Comparison */}
-          {exitMonths.length > 0 && (
+          {/* 5. Exit Scenarios Comparison - filter out exits before handover */}
+          {exitMonths.filter(m => m > handoverMonths).length > 0 && (
             <ExitScenariosComparison
-              exitMonths={exitMonths}
+              exitMonths={exitMonths.filter(m => m > handoverMonths)}
               offPlanInputs={safeOffPlanInputs}
               offPlanBasePrice={safeOffPlanInputs.basePrice}
               offPlanTotalMonths={offPlanCalcs.totalMonths}
