@@ -42,13 +42,15 @@ export const ComparisonConfiguratorModal = ({
 }: ComparisonConfiguratorModalProps) => {
   const [step, setStep] = useState<1 | 2 | 3>(initialQuoteId ? 2 : 1);
   const [selectedQuote, setSelectedQuote] = useState<CashflowQuote | null>(null);
+  
+  // Use a ref to store the "working" secondary inputs to prevent state loss
   const [secondaryInputs, setSecondaryInputs] = useState<SecondaryInputs>(
     initialSecondaryInputs || DEFAULT_SECONDARY_INPUTS
   );
   const [exitMonths, setExitMonths] = useState<number[]>(initialExitMonths);
   
-  // Track if we've initialized from quote (to prevent overwriting user changes)
-  const [hasInitializedFromQuote, setHasInitializedFromQuote] = useState(false);
+  // Track if we've EVER initialized from quote (once true, never reset until modal closes AND reopens fresh)
+  const [hasInitializedFromQuote, setHasInitializedFromQuote] = useState(!!initialSecondaryInputs);
   
   // Property name managed here to persist across modal opens
   const [propertyName, setPropertyName] = useState<string>(
@@ -87,38 +89,53 @@ export const ComparisonConfiguratorModal = ({
 
   const stepLabels = [t.selectQuote, t.configureSecondary, t.exitPoints];
 
-  // Reset when modal opens - but respect initial values
+  // Reset when modal opens - but ONLY reset if starting completely fresh (no initial data)
   useEffect(() => {
     if (open) {
-      // Only reset if no initial data is provided
+      // Only reset to defaults if this is a completely new comparison (no initial quote, no initial inputs)
       if (!initialQuoteId && !initialSecondaryInputs) {
         setStep(1);
         setSelectedQuote(null);
         setSecondaryInputs(DEFAULT_SECONDARY_INPUTS);
         setPropertyName('');
         setHasInitializedFromQuote(false);
-      } else {
-        // Respect provided initial inputs
+      }
+      // If we have initial data, use it (this handles the "Reconfigure" case)
+      else {
         if (initialSecondaryInputs) {
           setSecondaryInputs(initialSecondaryInputs);
           setPropertyName(initialSecondaryInputs.propertyName || '');
+          setHasInitializedFromQuote(true); // Already have inputs, don't overwrite
         }
         if (initialExitMonths && initialExitMonths.length > 0) {
           setExitMonths(initialExitMonths);
         }
+        // Start at step 2 if we have a quote
+        if (initialQuoteId) {
+          setStep(2);
+        }
       }
     }
-  }, [open, initialQuoteId, initialSecondaryInputs, initialExitMonths]);
-
-  // Reset initialization flag when modal closes
+  }, [open]); // Only depend on `open` - initial values are read once
+  
+  // Reset initialization flag when modal closes completely
+  // But DON'T reset if we're just temporarily closing
   useEffect(() => {
     if (!open) {
-      setHasInitializedFromQuote(false);
+      // Only reset if there's no initial data (meaning this was a fresh comparison)
+      if (!initialQuoteId && !initialSecondaryInputs) {
+        setHasInitializedFromQuote(false);
+      }
     }
-  }, [open]);
+  }, [open, initialQuoteId, initialSecondaryInputs]);
 
-  // Initialize secondary inputs when quote is selected - only on first selection
+  // Initialize secondary inputs when a NEW quote is selected in step 1
+  // This should ONLY run when user manually selects a different quote, not on re-renders
   useEffect(() => {
+    // Only initialize if:
+    // 1. We have a selected quote with inputs
+    // 2. We haven't already initialized from a quote
+    // 3. We don't have initial secondary inputs passed in (meaning this is a fresh selection)
     if (selectedQuote?.inputs && !hasInitializedFromQuote && !initialSecondaryInputs) {
       const inputs = selectedQuote.inputs as OIInputs;
       setSecondaryInputs(prev => ({
@@ -133,7 +150,7 @@ export const ComparisonConfiguratorModal = ({
       }));
       setHasInitializedFromQuote(true);
     }
-  }, [selectedQuote, hasInitializedFromQuote, initialSecondaryInputs]);
+  }, [selectedQuote?.id, hasInitializedFromQuote, initialSecondaryInputs]); // Use quote ID, not full object
 
   const handleQuoteSelect = (quote: CashflowQuote) => {
     setSelectedQuote(quote);
