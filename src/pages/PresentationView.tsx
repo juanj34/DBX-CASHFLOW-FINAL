@@ -576,7 +576,7 @@ const PresentationView = () => {
 
       {/* Main Content - Preview */}
       <main className="flex-1 overflow-auto">
-        <LanguageProvider defaultLanguage={language}>
+        <LanguageProvider overrideLanguage={language}>
           <PresentationPreview
             items={presentation.items}
             selectedIndex={selectedIndex}

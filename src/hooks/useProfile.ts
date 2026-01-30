@@ -13,6 +13,7 @@ export interface Profile {
   market_dubai_yield: number | null;
   market_mortgage_rate: number | null;
   market_top_area: string | null;
+  language_preference: string | null;
   // Growth projection defaults
   default_construction_appreciation: number | null;
   default_growth_appreciation: number | null;
@@ -50,7 +51,7 @@ export const useProfile = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code, commission_rate, market_dubai_yield, market_mortgage_rate, market_top_area, default_construction_appreciation, default_growth_appreciation, default_mature_appreciation, default_growth_period_years, default_adr, default_occupancy_percent, default_str_expense_percent, default_str_management_percent, default_adr_growth_rate, default_mortgage_financing_percent, default_mortgage_interest_rate, default_mortgage_term_years, default_mortgage_processing_fee, default_mortgage_valuation_fee, default_mortgage_registration_percent, default_mortgage_life_insurance_percent, default_mortgage_property_insurance')
+        .select('id, email, full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code, commission_rate, market_dubai_yield, market_mortgage_rate, market_top_area, language_preference, default_construction_appreciation, default_growth_appreciation, default_mature_appreciation, default_growth_period_years, default_adr, default_occupancy_percent, default_str_expense_percent, default_str_management_percent, default_adr_growth_rate, default_mortgage_financing_percent, default_mortgage_interest_rate, default_mortgage_term_years, default_mortgage_processing_fee, default_mortgage_valuation_fee, default_mortgage_registration_percent, default_mortgage_life_insurance_percent, default_mortgage_property_insurance')
         .eq('id', user.id)
         .single();
 

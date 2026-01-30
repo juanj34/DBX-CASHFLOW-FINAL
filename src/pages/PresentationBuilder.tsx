@@ -1052,7 +1052,7 @@ const PresentationBuilder = () => {
 
         {/* Main Content - Live Preview */}
         <main className="flex-1 overflow-hidden">
-          <LanguageProvider defaultLanguage={language}>
+          <LanguageProvider overrideLanguage={language}>
             <PresentationPreview
               items={items}
               selectedIndex={selectedPreviewIndex}
