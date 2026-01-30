@@ -38,8 +38,11 @@ export const ComparisonKeyInsights = ({
     ? metrics.offPlanWealthYear10 / metrics.offPlanCapitalDay1
     : 0;
   
-  const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
-    ? secondaryWealth10 / metrics.secondaryCapitalDay1
+  // For secondary multiplier: use gross wealth (add back the cash capital that was subtracted)
+  // This shows the true "your X became Y" multiplier
+  const secondaryGrossWealth = secondaryWealth10 + metrics.secondaryCashCapital;
+  const secondaryMultiplier = metrics.secondaryCashCapital > 0
+    ? secondaryGrossWealth / metrics.secondaryCashCapital
     : 0;
   
   const crossoverYear = isAirbnb ? metrics.crossoverYearST : metrics.crossoverYearLT;
