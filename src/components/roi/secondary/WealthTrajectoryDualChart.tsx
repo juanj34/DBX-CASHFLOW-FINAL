@@ -51,8 +51,26 @@ export const WealthTrajectoryDualChart = ({
   const chartData = useMemo(() => {
     const data = [];
     
-    // Calculate off-plan wealth (property value + cumulative rent - capital)
+    // Year 0 (starting point)
+    const opYear0 = offPlanProjections[0];
+    const secYear0 = secondaryProjections[0];
+    if (opYear0 && secYear0) {
+      data.push({
+        year: 0,
+        calendarYear: opYear0.calendarYear - 1,
+        offPlanWealth: opYear0.propertyValue,
+        offPlanValue: opYear0.propertyValue,
+        secondaryWealthLT: secYear0.propertyValue,
+        secondaryWealthST: secYear0.propertyValue,
+        secondaryValue: secYear0.propertyValue,
+        isConstruction: true,
+      });
+    }
+    
+    // Years 1-10: Wealth = Property Value + Cumulative Net Rent
     let offPlanCumulativeRent = 0;
+    let secondaryCumulativeRentLT = 0;
+    let secondaryCumulativeRentST = 0;
     
     for (let year = 1; year <= 10; year++) {
       const opProj = offPlanProjections[year - 1];
@@ -65,23 +83,29 @@ export const WealthTrajectoryDualChart = ({
         offPlanCumulativeRent += opProj.netIncome;
       }
       
-      // Off-plan wealth = property value + cumulative rent - capital invested
-      const offPlanWealth = opProj.propertyValue + offPlanCumulativeRent - offPlanCapitalInvested;
+      // Secondary cumulative rent (from day 1)
+      secondaryCumulativeRentLT += secProj.netRentLT || 0;
+      secondaryCumulativeRentST += secProj.netRentST || 0;
+      
+      // Wealth = Property Value + Cumulative Net Rent
+      const offPlanWealth = opProj.propertyValue + offPlanCumulativeRent;
+      const secondaryWealthLT = secProj.propertyValue + secondaryCumulativeRentLT;
+      const secondaryWealthST = secProj.propertyValue + secondaryCumulativeRentST;
       
       data.push({
         year,
         calendarYear: opProj.calendarYear,
         offPlanWealth,
         offPlanValue: opProj.propertyValue,
-        secondaryWealthLT: secProj.totalWealthLT,
-        secondaryWealthST: secProj.totalWealthST,
+        secondaryWealthLT,
+        secondaryWealthST,
         secondaryValue: secProj.propertyValue,
         isConstruction: year <= handoverYearIndex,
       });
     }
     
     return data;
-  }, [offPlanProjections, secondaryProjections, offPlanCapitalInvested, secondaryCapitalInvested, handoverYearIndex]);
+  }, [offPlanProjections, secondaryProjections, handoverYearIndex]);
 
   // Find crossover point
   const crossoverYear = useMemo(() => {
