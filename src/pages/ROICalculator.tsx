@@ -32,23 +32,23 @@ const ROICalculator = () => {
   const calculations = useROICalculations(inputs);
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
+    <div className="min-h-screen bg-theme-bg">
       {/* Header */}
-      <header className="border-b border-[#2a3142] bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/home">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
                 <LayoutDashboard className="w-5 h-5" />
               </Button>
             </Link>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#CCFF00]/20 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-[#CCFF00]" />
+              <div className="p-2 bg-theme-accent/20 rounded-xl">
+                <TrendingUp className="w-6 h-6 text-theme-accent" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">{t('roiInvestorType')}</h1>
-                <p className="text-sm text-gray-400">{t('roiCompareProfiles')}</p>
+                <h1 className="text-xl font-bold text-theme-text">{t('roiInvestorType')}</h1>
+                <p className="text-sm text-theme-text-muted">{t('roiCompareProfiles')}</p>
               </div>
             </div>
           </div>
@@ -61,7 +61,7 @@ const ROICalculator = () => {
               {currency === 'AED' ? '🇦🇪 AED' : '🇺🇸 USD'}
             </Button>
             <Link to="/account-settings">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]">
+              <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card">
                 <Settings className="w-5 h-5" />
               </Button>
             </Link>
@@ -92,62 +92,62 @@ const ROICalculator = () => {
             </div>
 
             {/* Comparison Table */}
-            <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-[#2a3142]">
-                <h3 className="font-semibold text-white">{t('roiDetailedComparison')}</h3>
+            <div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-theme-border">
+                <h3 className="font-semibold text-theme-text">{t('roiDetailedComparison')}</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-[#0d1117]">
+                  <thead className="bg-theme-bg-alt">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 tracking-wider">{t('roiMetric')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-[#CCFF00] tracking-wider">OI</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-[#00EAFF] tracking-wider">SI</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-[#FF00FF] tracking-wider">HO</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-theme-text-muted tracking-wider">{t('roiMetric')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-theme-accent tracking-wider">OI</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-theme-accent-secondary tracking-wider">SI</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-purple-400 tracking-wider">HO</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#2a3142]">
+                  <tbody className="divide-y divide-theme-border">
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiEntryPrice')}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.entryPrice, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.entryPrice, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.ho.entryPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roiEntryPrice')}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.oi.entryPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.si.entryPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.ho.entryPrice, currency)}</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiExitPrice')}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.exitPrice, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.exitPrice, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roiExitPrice')}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.oi.exitPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.si.exitPrice, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text-muted">—</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiEquityInvested')}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.oi.equityInvested, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.si.equityInvested, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-white font-mono">{formatCurrency(calculations.ho.equityInvested, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roiEquityInvested')}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.oi.equityInvested, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.si.equityInvested, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-theme-text font-mono">{formatCurrency(calculations.ho.equityInvested, currency)}</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiProjectedProfit')}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">+{formatCurrency(calculations.oi.projectedProfit, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">+{formatCurrency(calculations.si.projectedProfit, currency)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roiProjectedProfit')}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-accent">+{formatCurrency(calculations.oi.projectedProfit, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-accent-secondary">+{formatCurrency(calculations.si.projectedProfit, currency)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text-muted">—</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roe')}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-[#CCFF00]">{calculations.oi.roe.toFixed(1)}%</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-[#00EAFF]">{calculations.si.roe.toFixed(1)}%</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-gray-500">—</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roe')}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-accent">{calculations.oi.roe.toFixed(1)}%</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-accent-secondary">{calculations.si.roe.toFixed(1)}%</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text-muted">—</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiRentalYield')}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.oi.rentalYield.toFixed(2)}%</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.si.rentalYield.toFixed(2)}%</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.ho.rentalYield.toFixed(2)}%</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roiRentalYield')}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text">{calculations.oi.rentalYield.toFixed(2)}%</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text">{calculations.si.rentalYield.toFixed(2)}%</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text">{calculations.ho.rentalYield.toFixed(2)}%</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-400">{t('roiYearsToPay')}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.oi.yearsToPay.toFixed(1)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.si.yearsToPay.toFixed(1)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-white">{calculations.ho.yearsToPay.toFixed(1)}</td>
+                      <td className="px-4 py-3 text-sm text-theme-text-muted">{t('roiYearsToPay')}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text">{calculations.oi.yearsToPay.toFixed(1)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text">{calculations.si.yearsToPay.toFixed(1)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-theme-text">{calculations.ho.yearsToPay.toFixed(1)}</td>
                     </tr>
                   </tbody>
                 </table>
