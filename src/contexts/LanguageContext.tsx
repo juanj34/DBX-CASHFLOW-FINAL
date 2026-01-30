@@ -73,6 +73,8 @@ const translations: Translations = {
   completeLabel: { en: 'complete', es: 'completo' },
   cashInvestedLabel: { en: 'Cash Invested', es: 'Efectivo Invertido' },
   totalROELabel: { en: 'Total ROE', es: 'ROE Total' },
+  initialValueLabel: { en: 'Initial Value', es: 'Valor Inicial' },
+  currentValueLabel: { en: 'Current Value', es: 'Valor Actual' },
   clickForDetailsLong: { en: 'Click for detailed exit analysis', es: 'Clic para análisis detallado de salida' },
   
   // Compact Mortgage Card
