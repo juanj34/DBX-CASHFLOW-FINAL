@@ -13,6 +13,7 @@ import { ExitScenariosStep } from './ExitScenariosStep';
 import { SecondaryInputs, DEFAULT_SECONDARY_INPUTS } from './types';
 import { CashflowQuote } from '@/hooks/useCashflowQuote';
 import { OIInputs } from '@/components/roi/useOICalculations';
+import { Currency } from '@/components/roi/currencyUtils';
 
 interface ComparisonConfiguratorModalProps {
   open: boolean;
@@ -22,6 +23,8 @@ interface ComparisonConfiguratorModalProps {
   initialSecondaryInputs?: SecondaryInputs;
   initialExitMonths?: number[];
   handoverMonths?: number;
+  currency?: Currency;
+  rate?: number;
 }
 
 export const ComparisonConfiguratorModal = ({
@@ -32,6 +35,8 @@ export const ComparisonConfiguratorModal = ({
   initialSecondaryInputs,
   initialExitMonths = [36, 60, 120],
   handoverMonths = 24,
+  currency = 'AED',
+  rate = 1,
 }: ComparisonConfiguratorModalProps) => {
   const [step, setStep] = useState<1 | 2 | 3>(initialQuoteId ? 2 : 1);
   const [selectedQuote, setSelectedQuote] = useState<CashflowQuote | null>(null);
@@ -143,6 +148,8 @@ export const ComparisonConfiguratorModal = ({
               inputs={secondaryInputs}
               onChange={setSecondaryInputs}
               offPlanPrice={selectedQuote?.inputs?.basePrice}
+              currency={currency}
+              rate={rate}
             />
           )}
           {step === 3 && (

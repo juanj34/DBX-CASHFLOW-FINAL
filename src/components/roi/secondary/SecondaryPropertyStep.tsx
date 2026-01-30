@@ -21,24 +21,38 @@ import {
 import { ChevronDown } from 'lucide-react';
 import { SecondaryInputs, DEFAULT_SECONDARY_INPUTS } from './types';
 import { useSecondaryProperties, SecondaryProperty } from '@/hooks/useSecondaryProperties';
-import { formatCurrency } from '@/components/roi/currencyUtils';
+import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 
 interface SecondaryPropertyStepProps {
   inputs: SecondaryInputs;
   onChange: (inputs: SecondaryInputs) => void;
   offPlanPrice?: number;
+  currency?: Currency;
+  rate?: number;
 }
 
 export const SecondaryPropertyStep = ({
   inputs,
   onChange,
   offPlanPrice,
+  currency = 'AED',
+  rate = 1,
 }: SecondaryPropertyStepProps) => {
   const { properties, loading, createProperty, deleteProperty } = useSecondaryProperties();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [propertyName, setPropertyName] = useState('');
   const [mortgageOpen, setMortgageOpen] = useState(inputs.useMortgage);
   const [airbnbOpen, setAirbnbOpen] = useState(inputs.showAirbnbComparison);
+
+  // Helper to show dual currency
+  const showDualCurrency = (value: number) => {
+    if (currency === 'AED' || !rate) return null;
+    return (
+      <p className="text-[10px] text-theme-text-muted">
+        ≈ {formatCurrency(value, currency, rate)}
+      </p>
+    );
+  };
 
   const handleLoadProperty = (property: SecondaryProperty) => {
     onChange({
@@ -139,9 +153,11 @@ export const SecondaryPropertyStep = ({
                 onChange={(e) => updateInput('purchasePrice', Number(e.target.value))}
                 className="bg-theme-card border-theme-border text-theme-text"
               />
+              {showDualCurrency(inputs.purchasePrice)}
               {offPlanPrice && (
                 <p className="text-[10px] text-theme-text-muted">
                   Off-Plan: {formatCurrency(offPlanPrice, 'AED', 1)}
+                  {currency !== 'AED' && ` (${formatCurrency(offPlanPrice, currency, rate)})`}
                 </p>
               )}
             </div>
@@ -205,13 +221,14 @@ export const SecondaryPropertyStep = ({
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Service Charge/sqft</Label>
+              <Label className="text-xs text-theme-text-muted">Service Charge/sqft (AED)</Label>
               <Input
                 type="number"
                 value={inputs.serviceChargePerSqft}
                 onChange={(e) => updateInput('serviceChargePerSqft', Number(e.target.value))}
                 className="bg-theme-card border-theme-border text-theme-text"
               />
+              {showDualCurrency(inputs.serviceChargePerSqft)}
             </div>
           </div>
         </Card>
@@ -299,6 +316,7 @@ export const SecondaryPropertyStep = ({
                     onChange={(e) => updateInput('averageDailyRate', Number(e.target.value))}
                     className="bg-theme-card border-theme-border text-theme-text"
                   />
+                  {showDualCurrency(inputs.averageDailyRate)}
                 </div>
                 
                 <div className="space-y-1.5">

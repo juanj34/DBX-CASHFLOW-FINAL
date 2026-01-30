@@ -1,16 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopNavbar } from '@/components/layout/TopNavbar';
-import { TrendingUp, Settings2, Home, Palmtree } from 'lucide-react';
+import { TrendingUp, Settings2, Home, Palmtree, Coins, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useCashflowQuote } from '@/hooks/useCashflowQuote';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from '@/components/roi/useMortgageCalculations';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
-import { Currency } from '@/components/roi/currencyUtils';
+import { Currency, CURRENCY_CONFIG, formatCurrency } from '@/components/roi/currencyUtils';
 import {
   SecondaryInputs,
   DEFAULT_SECONDARY_INPUTS,
@@ -288,12 +295,7 @@ const OffPlanVsSecondary = () => {
   if (!hasConfigured && !quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <TopNavbar 
-          language={language}
-          setLanguage={setLanguage}
-          currency={currency}
-          setCurrency={setCurrency}
-        />
+        <TopNavbar />
         
         <div className="container mx-auto px-4 py-12 max-w-2xl">
           <Card className="p-8 bg-theme-card border-theme-border text-center">
@@ -337,6 +339,8 @@ const OffPlanVsSecondary = () => {
           onCompare={handleCompare}
           initialExitMonths={exitMonths}
           handoverMonths={handoverMonths}
+          currency={currency}
+          rate={rate}
         />
       </div>
     );
@@ -346,12 +350,7 @@ const OffPlanVsSecondary = () => {
   if (quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <TopNavbar 
-          language={language}
-          setLanguage={setLanguage}
-          currency={currency}
-          setCurrency={setCurrency}
-        />
+        <TopNavbar />
         <div className="container mx-auto px-4 py-6 space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
@@ -363,15 +362,10 @@ const OffPlanVsSecondary = () => {
   // Results view
   return (
     <div className="min-h-screen bg-theme-bg">
-      <TopNavbar 
-        language={language}
-        setLanguage={setLanguage}
-        currency={currency}
-        setCurrency={setCurrency}
-      />
+      <TopNavbar />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Header */}
+        {/* Header with In-Page Controls */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
@@ -379,11 +373,16 @@ const OffPlanVsSecondary = () => {
             </Badge>
             <span className="text-theme-text-muted">{t.vs}</span>
             <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/30">
-              {t.secondaryLabel} AED {(secondaryInputs.purchasePrice / 1000000).toFixed(2)}M
+              {t.secondaryLabel} {formatCurrency(secondaryInputs.purchasePrice, 'AED', 1)}
+              {currency !== 'AED' && (
+                <span className="ml-1 opacity-70">
+                  ({formatCurrency(secondaryInputs.purchasePrice, currency, rate)})
+                </span>
+              )}
             </Badge>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Rental Mode Toggle */}
             <div className="flex items-center gap-2 p-2 rounded-lg bg-theme-card border border-theme-border">
               <Home className={`w-4 h-4 ${rentalMode === 'long-term' ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
@@ -393,6 +392,31 @@ const OffPlanVsSecondary = () => {
               />
               <Palmtree className={`w-4 h-4 ${rentalMode === 'airbnb' ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
             </div>
+
+            {/* Language Toggle */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+              className="border-theme-border text-theme-text h-9 w-9"
+            >
+              {language === 'en' ? '🇬🇧' : '🇪🇸'}
+            </Button>
+
+            {/* Currency Dropdown */}
+            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
+              <SelectTrigger className="w-[120px] border-theme-border bg-theme-card text-theme-text h-9">
+                <Coins className="w-3.5 h-3.5 mr-1 text-theme-accent" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-theme-card border-theme-border">
+                {Object.entries(CURRENCY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key} className="text-theme-text">
+                    {config.flag} {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             <Button
               variant="outline"
@@ -423,6 +447,8 @@ const OffPlanVsSecondary = () => {
             metrics={comparisonMetrics}
             offPlanLabel={projectName}
             showAirbnb={rentalMode === 'airbnb'}
+            currency={currency}
+            rate={rate}
           />
 
           {/* 3. Year-by-Year Wealth Table */}
@@ -500,6 +526,8 @@ const OffPlanVsSecondary = () => {
         initialSecondaryInputs={secondaryInputs}
         initialExitMonths={exitMonths}
         handoverMonths={handoverMonths}
+        currency={currency}
+        rate={rate}
       />
     </div>
   );

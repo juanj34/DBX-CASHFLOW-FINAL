@@ -4,11 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Scale, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ComparisonMetrics } from './types';
+import { Currency, formatCurrency as formatCurrencyUtil } from '@/components/roi/currencyUtils';
 
 interface HeadToHeadTableProps {
   metrics: ComparisonMetrics;
   offPlanLabel?: string;
   showAirbnb?: boolean;
+  currency?: Currency;
+  rate?: number;
 }
 
 interface MetricRow {
@@ -24,12 +27,24 @@ export const HeadToHeadTable = ({
   metrics, 
   offPlanLabel = 'Off-Plan',
   showAirbnb = true,
+  currency = 'AED',
+  rate = 1,
 }: HeadToHeadTableProps) => {
-  const formatCurrency = (value: number): string => {
-    if (Math.abs(value) >= 1000000) {
-      return `AED ${(value / 1000000).toFixed(2)}M`;
-    }
-    return `AED ${(value / 1000).toFixed(0)}K`;
+  // Format currency with dual display
+  const formatMoney = (value: number): string => {
+    const aed = Math.abs(value) >= 1000000 
+      ? `AED ${(value / 1000000).toFixed(2)}M`
+      : `AED ${(value / 1000).toFixed(0)}K`;
+    
+    if (currency === 'AED') return aed;
+    
+    const converted = value * rate;
+    const secondary = Math.abs(converted) >= 1000000 
+      ? `${(converted / 1000000).toFixed(2)}M`
+      : `${(converted / 1000).toFixed(0)}K`;
+    
+    const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
+    return `${aed} (${symbol}${secondary})`;
   };
 
   const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
@@ -39,16 +54,16 @@ export const HeadToHeadTable = ({
     {
       category: 'CAPITAL',
       metric: 'Capital Día 1',
-      offPlanValue: formatCurrency(metrics.offPlanCapitalDay1),
-      secondaryValue: formatCurrency(metrics.secondaryCapitalDay1),
+      offPlanValue: formatMoney(metrics.offPlanCapitalDay1),
+      secondaryValue: formatMoney(metrics.secondaryCapitalDay1),
       winner: metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'off-plan' : 'secondary',
       highlight: true,
     },
     {
       category: 'CAPITAL',
       metric: 'Capital Total (Handover)',
-      offPlanValue: formatCurrency(metrics.offPlanTotalCapitalAtHandover),
-      secondaryValue: formatCurrency(metrics.secondaryCapitalDay1),
+      offPlanValue: formatMoney(metrics.offPlanTotalCapitalAtHandover),
+      secondaryValue: formatMoney(metrics.secondaryCapitalDay1),
       winner: metrics.offPlanTotalCapitalAtHandover < metrics.secondaryCapitalDay1 ? 'off-plan' : 'secondary',
     },
     {
@@ -62,8 +77,8 @@ export const HeadToHeadTable = ({
     {
       category: 'CASHFLOW',
       metric: 'Cashflow Año 1 (LT)',
-      offPlanValue: metrics.offPlanCashflowYear1 === 0 ? 'En construcción' : formatCurrency(metrics.offPlanCashflowYear1),
-      secondaryValue: formatCurrency(metrics.secondaryCashflowYear1LT),
+      offPlanValue: metrics.offPlanCashflowYear1 === 0 ? 'En construcción' : formatMoney(metrics.offPlanCashflowYear1),
+      secondaryValue: formatMoney(metrics.secondaryCashflowYear1LT),
       winner: metrics.offPlanCashflowYear1 > metrics.secondaryCashflowYear1LT ? 'off-plan' : 'secondary',
     },
     // Mortgage Coverage
@@ -79,15 +94,15 @@ export const HeadToHeadTable = ({
     {
       category: 'RIQUEZA',
       metric: 'Riqueza Año 5 (LT)',
-      offPlanValue: formatCurrency(metrics.offPlanWealthYear5),
-      secondaryValue: formatCurrency(metrics.secondaryWealthYear5LT),
+      offPlanValue: formatMoney(metrics.offPlanWealthYear5),
+      secondaryValue: formatMoney(metrics.secondaryWealthYear5LT),
       winner: metrics.offPlanWealthYear5 > metrics.secondaryWealthYear5LT ? 'off-plan' : 'secondary',
     },
     {
       category: 'RIQUEZA',
       metric: 'Riqueza Año 10 (LT)',
-      offPlanValue: formatCurrency(metrics.offPlanWealthYear10),
-      secondaryValue: formatCurrency(metrics.secondaryWealthYear10LT),
+      offPlanValue: formatMoney(metrics.offPlanWealthYear10),
+      secondaryValue: formatMoney(metrics.secondaryWealthYear10LT),
       winner: metrics.offPlanWealthYear10 > metrics.secondaryWealthYear10LT ? 'off-plan' : 'secondary',
       highlight: true,
     },
@@ -108,8 +123,8 @@ export const HeadToHeadTable = ({
       {
         category: 'AIRBNB',
         metric: 'Cashflow Año 1 (ST)',
-        offPlanValue: metrics.offPlanCashflowYear1 === 0 ? 'En construcción' : formatCurrency(metrics.offPlanCashflowYear1 * 1.3), // Estimate
-        secondaryValue: formatCurrency(metrics.secondaryCashflowYear1ST),
+        offPlanValue: metrics.offPlanCashflowYear1 === 0 ? 'En construcción' : formatMoney(metrics.offPlanCashflowYear1 * 1.3), // Estimate
+        secondaryValue: formatMoney(metrics.secondaryCashflowYear1ST),
         winner: 'secondary',
       },
       {
@@ -122,8 +137,8 @@ export const HeadToHeadTable = ({
       {
         category: 'AIRBNB',
         metric: 'Riqueza Año 10 (ST)',
-        offPlanValue: formatCurrency(metrics.offPlanWealthYear10),
-        secondaryValue: formatCurrency(metrics.secondaryWealthYear10ST),
+        offPlanValue: formatMoney(metrics.offPlanWealthYear10),
+        secondaryValue: formatMoney(metrics.secondaryWealthYear10ST),
         winner: metrics.offPlanWealthYear10 > metrics.secondaryWealthYear10ST ? 'off-plan' : 'secondary',
       }
     );
