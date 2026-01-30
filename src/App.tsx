@@ -38,6 +38,7 @@ import SnapshotPrint from "./pages/SnapshotPrint";
 import CashflowPrint from "./pages/CashflowPrint";
 import ClientsManager from "./pages/ClientsManager";
 import ClientPortal from "./pages/ClientPortal";
+import OffPlanVsSecondary from "./pages/OffPlanVsSecondary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -96,6 +97,7 @@ function App() {
                 <Route path="/roi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
                 <Route path="/cashflow/:quoteId" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
+                <Route path="/offplan-vs-secondary/:quoteId" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
                 {/* Redirects for old legacy URLs */}
                 <Route path="/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow-generator" replace />} />
