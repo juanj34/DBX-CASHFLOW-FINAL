@@ -127,8 +127,8 @@ export const YearByYearWealthTable = ({
     tooltip: 'Riqueza = Valor de Propiedad + Rentas Netas Acumuladas (después de gastos de servicio). Muestra cómo cada inversión construye riqueza a lo largo del tiempo.',
     year: 'Año',
     value: 'Valor',
-    rent: 'Renta',
-    wealth: 'Riqueza',
+  rent: 'Renta Acum.',
+  wealth: 'Riqueza',
     delta: 'Delta',
     longTerm: 'Renta Larga',
     airbnb: 'Airbnb',
@@ -144,8 +144,8 @@ export const YearByYearWealthTable = ({
     tooltip: 'Wealth = Property Value + Cumulative Net Rent (after service charges). Shows how each investment builds wealth over time.',
     year: 'Year',
     value: 'Value',
-    rent: 'Rent',
-    wealth: 'Wealth',
+  rent: 'Cumul. Rent',
+  wealth: 'Wealth',
     delta: 'Delta',
     longTerm: 'Long-Term',
     airbnb: 'Airbnb',
@@ -239,12 +239,12 @@ export const YearByYearWealthTable = ({
                     <TableCell className="text-right text-xs text-theme-text">
                       {formatSmallValue(row.offPlanValue)}
                     </TableCell>
-                    {/* Off-Plan Rent */}
+                    {/* Off-Plan Cumulative Rent */}
                     <TableCell className="text-right text-xs">
                       {row.isBeforeHandover ? (
                         <span className="text-theme-text-muted">{t.noRent}</span>
                       ) : (
-                        <span className="text-theme-text">{formatSmallValue(row.offPlanRent)}</span>
+                        <span className="text-theme-text">{formatSmallValue(row.offPlanCumulativeRent)}</span>
                       )}
                     </TableCell>
                     {/* Off-Plan Wealth with hover tooltip */}
@@ -279,9 +279,9 @@ export const YearByYearWealthTable = ({
                     <TableCell className="text-right text-xs text-theme-text">
                       {formatSmallValue(row.secondaryValue)}
                     </TableCell>
-                    {/* Secondary Rent */}
+                    {/* Secondary Cumulative Rent */}
                     <TableCell className="text-right text-xs text-theme-text">
-                      {formatSmallValue(row.secondaryRent)}
+                      {formatSmallValue(row.secondaryCumulativeRent)}
                     </TableCell>
                     {/* Secondary Wealth with hover tooltip */}
                     <TableCell className="text-right">
