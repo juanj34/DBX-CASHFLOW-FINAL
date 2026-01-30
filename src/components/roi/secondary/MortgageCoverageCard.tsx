@@ -31,6 +31,11 @@ export const MortgageCoverageCard = ({
   const isFullyCovered = coveragePercent >= 100;
   const cappedCoverage = Math.min(coveragePercent, 150); // Cap display at 150%
 
+  // Calculate yearly values
+  const yearlyRent = monthlyRent * 12;
+  const yearlyMortgage = monthlyMortgage * 12;
+  const yearlyCashflow = netCashflow * 12;
+
   const formatValue = (value: number): string => {
     const dual = formatDualCurrencyCompact(value, currency, rate);
     if (dual.secondary) {
@@ -49,14 +54,16 @@ export const MortgageCoverageCard = ({
     title: isFullyCovered ? '¡El Inquilino Paga Tu Hipoteca!' : 'Cobertura de Hipoteca',
     subtitle: isFullyCovered ? 'La propiedad se paga sola + ganancias' : 'La renta cubre parcialmente la hipoteca',
     monthlyRent: 'Renta Mensual',
+    yearlyRent: 'Renta Anual',
     mortgagePayment: 'Pago Hipoteca',
     netCashflow: 'Cashflow Neto',
     coverage: 'Cobertura',
-    gap: 'Brecha Mensual',
-    profit: 'Ganancia Mensual',
+    gap: 'Brecha',
+    profit: 'Ganancia',
     selfPaying: '✨ Auto-financiada',
     partialCoverage: 'Cobertura Parcial',
     perMonth: '/mes',
+    perYear: '/año',
     hiddenWealth: 'Riqueza Oculta',
     tenantPaysOff: 'Tu inquilino paga',
     ofYourLoan: 'de tu préstamo en 10 años',
@@ -67,14 +74,16 @@ export const MortgageCoverageCard = ({
     title: isFullyCovered ? 'Tenant Pays Your Mortgage!' : 'Mortgage Coverage',
     subtitle: isFullyCovered ? 'Property pays itself + profit' : 'Rent partially covers mortgage',
     monthlyRent: 'Monthly Rent',
+    yearlyRent: 'Yearly Rent',
     mortgagePayment: 'Mortgage Payment',
     netCashflow: 'Net Cashflow',
     coverage: 'Coverage',
-    gap: 'Monthly Gap',
-    profit: 'Monthly Profit',
+    gap: 'Gap',
+    profit: 'Profit',
     selfPaying: '✨ Self-Paying',
     partialCoverage: 'Partial Coverage',
     perMonth: '/mo',
+    perYear: '/yr',
     hiddenWealth: 'Hidden Wealth',
     tenantPaysOff: 'Your tenant pays off',
     ofYourLoan: 'of your loan in 10 years',
@@ -102,15 +111,17 @@ export const MortgageCoverageCard = ({
         </Badge>
       </div>
 
-      {/* Rent vs Mortgage Breakdown */}
+      {/* Rent vs Mortgage Breakdown - With Yearly + Monthly */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
           <p className="text-xs text-theme-text-muted mb-1">{t.monthlyRent}</p>
           <p className="text-lg font-semibold text-cyan-500">{formatValue(monthlyRent)}</p>
+          <p className="text-xs text-cyan-500/70 mt-0.5">{formatValue(yearlyRent)}{t.perYear}</p>
         </div>
         <div className="p-3 rounded-lg bg-theme-bg/50 border border-theme-border">
           <p className="text-xs text-theme-text-muted mb-1">{t.mortgagePayment}</p>
           <p className="text-lg font-semibold text-theme-text">{formatValue(monthlyMortgage)}</p>
+          <p className="text-xs text-theme-text-muted mt-0.5">{formatValue(yearlyMortgage)}{t.perYear}</p>
         </div>
       </div>
 
@@ -128,25 +139,32 @@ export const MortgageCoverageCard = ({
         />
       </div>
 
-      {/* Net Cashflow */}
-      <div className={`p-3 rounded-lg flex items-center justify-between mb-4 ${
+      {/* Net Cashflow - Monthly + Yearly */}
+      <div className={`p-3 rounded-lg mb-4 ${
         isFullyCovered 
           ? 'bg-emerald-500/10 border border-emerald-500/30' 
           : 'bg-amber-500/10 border border-amber-500/30'
       }`}>
-        <div className="flex items-center gap-2">
-          {isFullyCovered ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-amber-500" />
-          )}
-          <span className="text-sm text-theme-text">
-            {isFullyCovered ? t.profit : t.gap}
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {isFullyCovered ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+            )}
+            <span className="text-sm text-theme-text">
+              {isFullyCovered ? t.profit : t.gap}
+            </span>
+          </div>
+          <div className="text-right">
+            <span className={`text-lg font-bold ${isFullyCovered ? 'text-emerald-500' : 'text-amber-500'}`}>
+              {isFullyCovered ? '+' : '-'}{formatValue(Math.abs(netCashflow))}{t.perMonth}
+            </span>
+            <p className={`text-xs ${isFullyCovered ? 'text-emerald-500/70' : 'text-amber-500/70'}`}>
+              {isFullyCovered ? '+' : '-'}{formatValue(Math.abs(yearlyCashflow))}{t.perYear}
+            </p>
+          </div>
         </div>
-        <span className={`text-lg font-bold ${isFullyCovered ? 'text-emerald-500' : 'text-amber-500'}`}>
-          {isFullyCovered ? '+' : '-'}{formatValue(Math.abs(netCashflow))}{t.perMonth}
-        </span>
       </div>
 
       {/* Hidden Wealth - Principal Paydown Section */}

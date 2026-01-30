@@ -28,33 +28,40 @@ export const RentalComparisonAtHandover = ({
     return dual.primary;
   };
 
-  const percentDiff = offPlanMonthlyRent > 0
-    ? ((secondaryMonthlyRent - offPlanMonthlyRent) / offPlanMonthlyRent) * 100
+  // Calculate yearly rents
+  const offPlanYearlyRent = offPlanMonthlyRent * 12;
+  const secondaryYearlyRent = secondaryMonthlyRent * 12;
+
+  // Calculate who has higher rent and by how much
+  const offPlanIsHigher = offPlanMonthlyRent > secondaryMonthlyRent;
+  const percentDiff = secondaryMonthlyRent > 0
+    ? ((offPlanMonthlyRent - secondaryMonthlyRent) / secondaryMonthlyRent) * 100
     : 0;
 
-  const winner = secondaryMonthlyRent > offPlanMonthlyRent ? 'secondary' : 'offplan';
-  const winnerLabel = winner === 'secondary' 
-    ? (language === 'es' ? 'Secundaria' : 'Secondary')
-    : (language === 'es' ? 'Off-Plan' : 'Off-Plan');
+  const winner = offPlanIsHigher ? 'offplan' : 'secondary';
 
   const t = language === 'es' ? {
-    title: 'Renta Mensual al Handover',
+    title: 'Renta al Handover',
     subtitle: `Año ${handoverYear}`,
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
     perMonth: '/mes',
+    perYear: '/año',
     offPlanNote: 'Inicio de renta',
     secondaryNote: `Con ${handoverYear} años de crecimiento`,
-    winnerText: `${Math.abs(percentDiff).toFixed(0)}% ${percentDiff >= 0 ? 'más alta' : 'más baja'}`,
+    offPlanHigher: `Off-Plan: ${Math.abs(percentDiff).toFixed(0)}% más alta`,
+    secondaryHigher: `Secundaria: ${Math.abs(percentDiff).toFixed(0)}% más alta`,
   } : {
-    title: 'Monthly Rent at Handover',
+    title: 'Rent at Handover',
     subtitle: `Year ${handoverYear}`,
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
     perMonth: '/mo',
+    perYear: '/yr',
     offPlanNote: 'Rental starts',
     secondaryNote: `After ${handoverYear}yr rent growth`,
-    winnerText: `${Math.abs(percentDiff).toFixed(0)}% ${percentDiff >= 0 ? 'higher' : 'lower'}`,
+    offPlanHigher: `Off-Plan: ${Math.abs(percentDiff).toFixed(0)}% higher`,
+    secondaryHigher: `Secondary: ${Math.abs(percentDiff).toFixed(0)}% higher`,
   };
 
   return (
@@ -91,10 +98,17 @@ export const RentalComparisonAtHandover = ({
               {winner === 'offplan' && '🏆 '}{t.offPlan}
             </Badge>
           </div>
+          {/* Monthly */}
           <p className={`text-lg font-semibold ${
             winner === 'offplan' ? 'text-emerald-500' : 'text-theme-text'
           }`}>
             {formatValue(offPlanMonthlyRent)}{t.perMonth}
+          </p>
+          {/* Yearly */}
+          <p className={`text-sm ${
+            winner === 'offplan' ? 'text-emerald-500/80' : 'text-theme-text-muted'
+          }`}>
+            {formatValue(offPlanYearlyRent)}{t.perYear}
           </p>
           <p className="text-[10px] text-theme-text-muted mt-1">
             {t.offPlanNote}
@@ -119,10 +133,17 @@ export const RentalComparisonAtHandover = ({
               {winner === 'secondary' && '🏆 '}{t.secondary}
             </Badge>
           </div>
+          {/* Monthly */}
           <p className={`text-lg font-semibold ${
             winner === 'secondary' ? 'text-cyan-500' : 'text-theme-text'
           }`}>
             {formatValue(secondaryMonthlyRent)}{t.perMonth}
+          </p>
+          {/* Yearly */}
+          <p className={`text-sm ${
+            winner === 'secondary' ? 'text-cyan-500/80' : 'text-theme-text-muted'
+          }`}>
+            {formatValue(secondaryYearlyRent)}{t.perYear}
           </p>
           <p className="text-[10px] text-theme-text-muted mt-1">
             {t.secondaryNote}
@@ -130,20 +151,20 @@ export const RentalComparisonAtHandover = ({
         </div>
       </div>
 
-      {/* Winner Badge */}
+      {/* Winner Badge - Fixed logic */}
       {percentDiff !== 0 && (
         <div className={`p-2 rounded-lg flex items-center justify-center gap-2 ${
-          winner === 'secondary' 
-            ? 'bg-cyan-500/10 border border-cyan-500/30' 
-            : 'bg-emerald-500/10 border border-emerald-500/30'
+          winner === 'offplan' 
+            ? 'bg-emerald-500/10 border border-emerald-500/30' 
+            : 'bg-cyan-500/10 border border-cyan-500/30'
         }`}>
           <TrendingUp className={`w-4 h-4 ${
-            winner === 'secondary' ? 'text-cyan-500' : 'text-emerald-500'
+            winner === 'offplan' ? 'text-emerald-500' : 'text-cyan-500'
           }`} />
           <span className={`text-sm font-medium ${
-            winner === 'secondary' ? 'text-cyan-500' : 'text-emerald-500'
+            winner === 'offplan' ? 'text-emerald-500' : 'text-cyan-500'
           }`}>
-            {winnerLabel}: {t.winnerText}
+            {winner === 'offplan' ? t.offPlanHigher : t.secondaryHigher}
           </span>
         </div>
       )}
