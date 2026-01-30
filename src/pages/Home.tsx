@@ -1,25 +1,16 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
-  Map, Rocket, TrendingUp, FileText, Settings, LogOut, 
-  SlidersHorizontal, Menu, Scale, DollarSign, 
-  Edit, Sun, Moon, Cloud, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin,
-  Plus, BarChart3, Archive, ChevronDown, Presentation, Sparkles, Users
+  TrendingUp, FileText, Scale, Cloud,
+  DollarSign, Edit, Sun, Moon, Filter, Search, ArrowUpDown, ArrowUp, ArrowDown, X, CheckCircle2, Calendar, MapPin,
+  BarChart3, Presentation, Sparkles, Users, Map, Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppLogo } from "@/components/AppLogo";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { TopNavbar } from "@/components/layout/TopNavbar";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { useAdminRole } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,13 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -82,10 +66,8 @@ const Home = () => {
   useDocumentTitle("Dashboard");
   const navigate = useNavigate();
   const { profile, loading } = useProfile();
-  const { isAdmin } = useAdminRole();
   const { t } = useLanguage();
   const [quotes, setQuotes] = useState<QuoteWithDetails[]>([]);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('30days');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -397,216 +379,10 @@ const Home = () => {
     );
   }
 
-  const NavItems = ({ mobile = false }: { mobile?: boolean }) => (
-    <>
-      {/* Primary Actions */}
-      <Link to="/cashflow-generator" onClick={() => setMobileMenuOpen(false)}>
-        <Button 
-          className={mobile 
-            ? "w-full justify-start gap-2 bg-theme-accent text-theme-bg hover:bg-theme-accent/90" 
-            : "gap-2 bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
-          }
-        >
-          <Plus className="w-4 h-4" />
-          {t('quotesNewQuote')}
-        </Button>
-      </Link>
-
-      {/* Main Navigation Links */}
-      <Link to="/cashflow-generator" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <Sparkles className="w-4 h-4" />
-          Generator
-        </Button>
-      </Link>
-
-      <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <FileText className="w-4 h-4" />
-          All Quotes
-        </Button>
-      </Link>
-      
-      <Link to="/compare" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <Scale className="w-4 h-4" />
-          Compare
-        </Button>
-      </Link>
-
-      <Link to="/offplan-vs-secondary" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <TrendingUp className="w-4 h-4" />
-          Off-Plan vs Resale
-        </Button>
-      </Link>
-
-      <Link to="/presentations" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <Presentation className="w-4 h-4" />
-          Presentations
-        </Button>
-      </Link>
-      
-      <Link to="/quotes-analytics" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <BarChart3 className="w-4 h-4" />
-          Analytics
-        </Button>
-      </Link>
-
-      <Link to="/map" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <Map className="w-4 h-4" />
-          Map
-        </Button>
-      </Link>
-
-      <Link to="/clients" onClick={() => setMobileMenuOpen(false)}>
-        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-          <Users className="w-4 h-4" />
-          Clients
-        </Button>
-      </Link>
-
-      {/* Mobile-only additional items */}
-      {mobile && (
-        <>
-          <div className="border-t border-theme-border my-2" />
-          <Link to="/archived-quotes" onClick={() => setMobileMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-              <Archive className="w-4 h-4" />
-              {t('archivedQuotes')}
-            </Button>
-          </Link>
-          {isAdmin && (
-            <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-                <SlidersHorizontal className="w-4 h-4" />
-                {t('homeConfiguration')}
-              </Button>
-            </Link>
-          )}
-          <Link to="/account-settings" onClick={() => setMobileMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
-              <Settings className="w-4 h-4" />
-              {t('homeAccountSettings')}
-            </Button>
-          </Link>
-          <Button 
-            variant="ghost" 
-            onClick={() => {
-              handleSignOut();
-              setMobileMenuOpen(false);
-            }}
-            className="w-full justify-start text-theme-text-muted hover:text-destructive hover:bg-theme-card-alt gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            {t('signOut')}
-          </Button>
-        </>
-      )}
-    </>
-  );
-
   return (
     <div className="min-h-screen bg-theme-bg">
-      {/* Header */}
-      <header className="border-b border-theme-border bg-theme-bg/95 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <AppLogo size="md" linkTo="/home" showGlow={false} />
-            
-            {/* Desktop Navigation - Center */}
-            <nav className="hidden lg:flex items-center gap-1">
-              <NavItems />
-            </nav>
-            
-            {/* Desktop Right Side - Profile Menu */}
-            <div className="hidden lg:flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-theme-accent to-purple-500 flex items-center justify-center text-theme-bg text-sm font-semibold">
-                      {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-theme-card border-theme-border">
-                  <div className="px-3 py-2 border-b border-theme-border">
-                    <p className="text-sm font-medium text-theme-text">{profile?.full_name || 'User'}</p>
-                    <p className="text-xs text-theme-text-muted">{profile?.email}</p>
-                  </div>
-                  <DropdownMenuItem asChild className="cursor-pointer text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
-                    <Link to="/archived-quotes" className="flex items-center gap-2">
-                      <Archive className="w-4 h-4" />
-                      {t('archivedQuotes')}
-                    </Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild className="cursor-pointer text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
-                      <Link to="/dashboard" className="flex items-center gap-2">
-                        <SlidersHorizontal className="w-4 h-4" />
-                        {t('homeConfiguration')}
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem asChild className="cursor-pointer text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
-                    <Link to="/account-settings" className="flex items-center gap-2">
-                      <Settings className="w-4 h-4" />
-                      {t('homeAccountSettings')}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-theme-border" />
-                  <DropdownMenuItem 
-                    onClick={handleSignOut}
-                    className="cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {t('signOut')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            
-            {/* Mobile/Tablet - Compact Nav */}
-            <div className="flex lg:hidden items-center gap-2">
-              <Link to="/cashflow-generator">
-                <Button size="sm" className="gap-1.5 bg-theme-accent text-theme-bg hover:bg-theme-accent/90">
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('quotesNewQuote')}</span>
-                </Button>
-              </Link>
-              
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
-                    <Menu className="w-5 h-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] bg-theme-card border-theme-border">
-                  <SheetHeader className="pb-4 border-b border-theme-border">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-theme-accent to-purple-500 flex items-center justify-center text-theme-bg font-semibold">
-                        {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                      </div>
-                      <div className="text-left">
-                        <SheetTitle className="text-theme-text">{profile?.full_name || 'User'}</SheetTitle>
-                        <p className="text-xs text-theme-text-muted">{profile?.email}</p>
-                      </div>
-                    </div>
-                  </SheetHeader>
-                  <nav className="flex flex-col gap-1 mt-4">
-                    <NavItems mobile />
-                  </nav>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Unified Top Navigation */}
+      <TopNavbar />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-10">
