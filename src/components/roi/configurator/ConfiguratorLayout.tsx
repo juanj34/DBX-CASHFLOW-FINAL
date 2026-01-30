@@ -717,7 +717,7 @@ export const ConfiguratorLayout = ({
                           ? 'bg-theme-accent text-theme-bg scale-110' 
                           : isComplete 
                             ? 'bg-green-500 text-white' 
-                            : 'bg-theme-card border border-theme-border text-theme-text-muted group-hover:border-theme-text'
+                            : 'bg-theme-bg-alt border border-theme-border text-theme-text-muted group-hover:border-theme-accent group-hover:text-theme-text'
                         }
                       `}>
                         {isComplete && !isActive ? (
