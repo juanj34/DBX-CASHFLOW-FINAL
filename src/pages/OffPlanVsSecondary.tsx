@@ -182,10 +182,14 @@ const OffPlanVsSecondary = () => {
       clearTimeout(saveTimeoutRef.current);
     }
     
-    setSaveStatus('saving');
+    // Update last saved ref immediately to prevent duplicate saves
+    const dataToSave = currentData;
+    lastSavedDataRef.current = dataToSave;
     
-    // Debounce update (1.5s delay)
+    // Debounce update (1.5s delay) - only show saving status briefly
     saveTimeoutRef.current = setTimeout(async () => {
+      setSaveStatus('saving');
+      
       const success = await updateComparison(
         currentComparisonId,
         {
@@ -198,11 +202,12 @@ const OffPlanVsSecondary = () => {
       );
       
       if (success) {
-        lastSavedDataRef.current = currentData;
         setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
+        setTimeout(() => setSaveStatus('idle'), 1500);
       } else {
-        setSaveStatus('idle'); // Reset on failure
+        // On failure, clear the fingerprint so next change retries
+        lastSavedDataRef.current = '';
+        setSaveStatus('idle');
       }
     }, 1500);
     
