@@ -245,6 +245,16 @@ const Home = () => {
       action: t("analyze"),
     },
     {
+      id: "offplan-secondary",
+      title: "Off-Plan vs Resale",
+      description: "Compare off-plan growth vs secondary cashflow side by side",
+      icon: TrendingUp,
+      route: "/offplan-vs-secondary",
+      gradient: "from-emerald-500/30 via-emerald-500/10 to-transparent",
+      iconColor: "text-emerald-400",
+      action: "Compare",
+    },
+    {
       id: "presentations",
       title: "Client Presentations",
       description: "Bundle quotes and comparisons into shareable presentations",

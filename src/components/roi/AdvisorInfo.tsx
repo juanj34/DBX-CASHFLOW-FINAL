@@ -23,7 +23,7 @@ export const AdvisorInfo = ({ profile, size = 'sm', showSubtitle = false }: Advi
 
   return (
     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-      <div className={`${config.avatar} rounded-full overflow-hidden bg-[#2a3142] flex-shrink-0 ring-2 ring-[#CCFF00]/30`}>
+      <div className={`${config.avatar} rounded-full overflow-hidden bg-theme-card-alt flex-shrink-0 ring-2 ring-theme-accent/30`}>
         {profile.avatar_url ? (
           <img 
             src={profile.avatar_url} 
@@ -38,12 +38,12 @@ export const AdvisorInfo = ({ profile, size = 'sm', showSubtitle = false }: Advi
       </div>
       <div className="flex flex-col min-w-0">
         {profile.full_name && (
-          <span className={`${config.name} text-white font-medium leading-tight truncate max-w-[100px] sm:max-w-none`}>
+          <span className={`${config.name} text-theme-text font-medium leading-tight truncate max-w-[100px] sm:max-w-none`}>
             {profile.full_name}
           </span>
         )}
         {showSubtitle && (
-          <span className={`${config.subtitle} text-[#CCFF00] font-medium leading-tight hidden sm:block`}>
+          <span className={`${config.subtitle} text-theme-accent font-medium leading-tight hidden sm:block`}>
             {t('wealthAdvisor')}
           </span>
         )}

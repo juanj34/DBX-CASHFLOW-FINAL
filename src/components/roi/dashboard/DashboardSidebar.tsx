@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, LayoutDashboard, FolderOpen, History, SlidersHorizontal, Globe, Share2, Save, Loader2, GitCompare, ExternalLink, Sparkles, LayoutGrid, BarChart3, Presentation, Wand2, FileSpreadsheet, AlertTriangle, FilePlus, Users, Download, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OIInputs } from "@/components/roi/useOICalculations";
@@ -269,7 +269,7 @@ export const DashboardSidebar = ({
             {collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#2a3142] ring-2 ring-[#CCFF00]/30">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-theme-card-alt ring-2 ring-theme-accent/30">
                     {profile.avatar_url ? (
                       <img 
                         src={profile.avatar_url} 
@@ -465,6 +465,12 @@ export const DashboardSidebar = ({
             icon={GitCompare} 
             label="Compare" 
             to="/compare" 
+            collapsed={collapsed}
+          />
+          <ActionButton 
+            icon={TrendingUp} 
+            label="Off-Plan vs Resale" 
+            to="/offplan-vs-secondary" 
             collapsed={collapsed}
           />
           <ActionButton 
