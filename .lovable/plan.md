@@ -1,65 +1,151 @@
 
-# Plan: Theme-Aware Loading States
+# Plan: Fix Off-Plan vs Secondary Comparison Calculations & UI
 
-## Problem
-The loading screens shown during page transitions use hardcoded dark colors (#0f172a, #1a1f2e, #2a3142) instead of theme tokens. When using the light "Consultant" theme, users see a jarring dark flash before the page content loads.
+## Problems Identified
 
-## Affected Components
+### 1. Exit Scenarios Table - Unnecessary "Capital" Column
+The current Exit Scenarios table shows Value, Capital, Profit, ROE for each investment type. The user correctly identifies:
+- For **Secondary**, capital is always 100% of purchase price (confusing to show repeatedly)
+- For **Off-Plan**, capital varies by payment plan stage
 
-| Component | Location | Issue |
-|-----------|----------|-------|
-| `CashflowSkeleton` | `src/components/roi/CashflowSkeleton.tsx` | Full skeleton with all hardcoded hex colors |
-| `ProtectedRoute` | `src/components/auth/ProtectedRoute.tsx` | Already uses theme tokens (OK) |
-| `Home.tsx` | Loading spinner | Already uses theme tokens (OK) |
+**Solution**: Simplify the table to show only what matters:
+- Property Value (exit price)
+- Profit (appreciation)
+- ROE (%)
+- Remove the "Capital" column entirely
 
-The main culprit is `CashflowSkeleton.tsx` which is used across multiple pages:
-- `OICalculator.tsx` (Cashflow Generator)
-- `SnapshotView.tsx` (Shared quote view)
-- `CashflowView.tsx` (Legacy cashflow view)
-- `CashflowDashboard.tsx` (Legacy dashboard)
+### 2. Multiplier Calculation for Secondary is Wrong
+Current logic in `ComparisonKeyInsights.tsx`:
+```typescript
+// Current: Uses "cash capital" (equity + closing costs)
+const secondaryGrossWealth = secondaryWealth10 + metrics.secondaryCashCapital;
+const secondaryMultiplier = metrics.secondaryCashCapital > 0
+  ? secondaryGrossWealth / metrics.secondaryCashCapital
+  : 0;
+```
 
-## Solution
-Replace all hardcoded hex colors in `CashflowSkeleton.tsx` with theme-aware CSS classes.
+This is misleading because:
+- If buyer puts 40% down (4M on 10M property), `secondaryCashCapital` = 4M + closing
+- But they OWE the full 10M - the multiplier should reflect total commitment, not just cash
 
-### Color Mapping
+**Solution**: For fair comparison, use `secondaryCapitalDay1` (full price + closing costs) as the denominator for both "Entry Ticket" and "Multiplier" cards. This shows:
+- What total asset value you control
+- What your total commitment became
 
-| Hardcoded | Theme Token |
-|-----------|-------------|
-| `bg-[#0f172a]` | `bg-theme-bg` |
-| `bg-[#1a1f2e]` | `bg-theme-card` |
-| `bg-[#2a3142]` | `bg-theme-border` |
-| `border-[#2a3142]` | `border-theme-border` |
-| `bg-[#CCFF00]/20` | `bg-theme-accent/20` |
+### 3. Year 0 Shows Wrong Value in Table
+The `YearByYearWealthTable` uses `offPlanProjections[0]` for Year 0, but that's already Year 1's appreciated value.
 
-## Changes
+**Root cause**: The projections array starts at index 0 = Year 1, not Year 0.
 
-### File: `src/components/roi/CashflowSkeleton.tsx`
+**Solution**: Pass the base prices as separate props:
+- `offPlanBasePrice` - the purchase price at Day 0
+- `secondaryBasePrice` - the purchase price at Day 0
 
-1. **Main container** (line 5): `bg-[#0f172a]` becomes `bg-theme-bg`
+Year 0 row should use these base values, not projections.
 
-2. **Header** (line 7): 
-   - `border-[#2a3142]` becomes `border-theme-border`
-   - `bg-[#0f172a]/80` becomes `bg-theme-bg/80`
+### 4. Missing Key Contrast: Cashflow vs Appreciation
+The user wants to highlight the core trade-off:
+- **Off-Plan**: No cashflow during construction, but appreciation happens "for free"
+- **Secondary**: Cashflow from Day 1, but appreciation is slower
 
-3. **All Skeleton elements**: Replace `bg-[#2a3142]` with `bg-theme-border`
+This needs to be surfaced prominently.
 
-4. **All card containers**: 
-   - `bg-[#1a1f2e]` becomes `bg-theme-card`
-   - `border-[#2a3142]` becomes `border-theme-border`
+---
 
-5. **Accent skeleton elements**: Replace `bg-[#CCFF00]/20` with `bg-theme-accent/20`
+## Technical Changes
 
-6. **CardSkeleton, ChartSkeleton, TableSkeleton** exports: Apply same token replacements
+### File: `src/components/roi/secondary/ExitScenariosComparison.tsx`
 
-## Visual Result
+1. **Remove "Capital" column** from both Off-Plan and Secondary sections
+2. **Simplify header** to: Exit | Off-Plan (Value, Profit, ROE) | Secondary (Value, Profit, ROE) | Winner
+3. Keep tooltips for detailed explanations
 
-### Tech Dark Theme (current appearance)
-Dark navy background, dark gray skeletons - unchanged
+### File: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
 
-### Consultant (Light) Theme (fixed)
-Light gray background, white/light gray skeletons - now consistent with the light theme
+1. **Fix Multiplier calculation** for Secondary:
+   - Change from using `secondaryCashCapital` to `secondaryCapitalDay1`
+   - This gives a realistic "your X became Y" comparison
+   
+2. **Current (wrong)**:
+   ```typescript
+   const secondaryMultiplier = metrics.secondaryCashCapital > 0
+     ? secondaryGrossWealth / metrics.secondaryCashCapital
+     : 0;
+   ```
 
-## Impact
-- Smooth transitions: No more dark flash when navigating between pages in light theme
-- Theme consistency: Loading states match the selected theme
-- Applies to all pages using `CashflowSkeleton`
+3. **Fixed**:
+   ```typescript
+   // Use full property commitment, not just cash down payment
+   const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
+     ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
+     : 0;
+   ```
+
+### File: `src/components/roi/secondary/YearByYearWealthTable.tsx`
+
+1. **Add new props** for base prices:
+   ```typescript
+   offPlanBasePrice: number;
+   secondaryBasePrice: number;
+   ```
+
+2. **Fix Year 0 row** to use base prices:
+   ```typescript
+   // Year 0 = Entry point (base purchase prices, no appreciation yet)
+   data.push({
+     year: 0,
+     offPlanValue: offPlanBasePrice,       // Not projections[0]!
+     secondaryValue: secondaryBasePrice,   // Not projections[0]!
+     // ... rest
+   });
+   ```
+
+### File: `src/pages/OffPlanVsSecondary.tsx`
+
+1. **Pass base prices** to YearByYearWealthTable:
+   ```typescript
+   <YearByYearWealthTable
+     offPlanBasePrice={offPlanInputs.basePrice}
+     secondaryBasePrice={secondaryInputs.purchasePrice}
+     // ... existing props
+   />
+   ```
+
+---
+
+## Visual Changes Summary
+
+### Exit Scenarios Table (Before → After)
+
+**Before (10 columns):**
+| Exit | OP Value | OP Capital | OP Profit | OP ROE | SEC Value | SEC Capital | SEC Profit | SEC ROE | Winner |
+
+**After (7 columns):**
+| Exit | OP Value | OP Profit | OP ROE | SEC Value | SEC Profit | SEC ROE | Winner |
+
+### Multiplier Card (Before → After)
+
+**Before:**
+- Off-Plan: 20.7x (based on day-1 downpayment only) ← Wrong
+- Secondary: 4.4x (based on cash down payment) ← Misleading
+
+**After:**
+- Off-Plan: ~4.1x (based on total capital at handover)
+- Secondary: ~1.5x (based on full property commitment)
+
+### Year 0 in Table (Before → After)
+
+**Before:**
+| Year 0 | AED 10.87M | AED 10.18M | ← Already appreciated!
+
+**After:**
+| Year 0 | AED 9.68M | AED 9.89M | ← Base purchase prices
+
+---
+
+## Expected Result
+
+1. **Exit Scenarios**: Cleaner table without redundant capital column
+2. **Multiplier**: Realistic comparison showing true asset multiplication
+3. **Year 0**: Correctly shows entry point (base prices) before any appreciation
+4. **Trade-off Clarity**: The numbers now tell the real story of Cashflow vs Appreciation
