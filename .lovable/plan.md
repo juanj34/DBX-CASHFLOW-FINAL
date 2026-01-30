@@ -1,151 +1,143 @@
 
-# Plan: Fix Off-Plan vs Secondary Comparison Calculations & UI
+# Plan: Fix Payment Breakdown - Add Journey Subtotal and Percentages
 
-## Problems Identified
+## Problem Summary
 
-### 1. Exit Scenarios Table - Unnecessary "Capital" Column
-The current Exit Scenarios table shows Value, Capital, Profit, ROE for each investment type. The user correctly identifies:
-- For **Secondary**, capital is always 100% of purchase price (confusing to show repeatedly)
-- For **Off-Plan**, capital varies by payment plan stage
+The Payment Breakdown in the Cashflow View is missing critical information:
 
-**Solution**: Simplify the table to show only what matters:
-- Property Value (exit price)
-- Profit (appreciation)
-- ROE (%)
-- Remove the "Capital" column entirely
+| Section | Current | Expected |
+|---------|---------|----------|
+| **The Entry** | Shows 10% subtotal ✓ | Good |
+| **The Journey** | Shows amounts only, NO subtotal | Need % per payment + subtotal row |
+| **Handover** | Shows 40% + amount ✓ | Good |
 
-### 2. Multiplier Calculation for Secondary is Wrong
-Current logic in `ComparisonKeyInsights.tsx`:
-```typescript
-// Current: Uses "cash capital" (equity + closing costs)
-const secondaryGrossWealth = secondaryWealth10 + metrics.secondaryCashCapital;
-const secondaryMultiplier = metrics.secondaryCashCapital > 0
-  ? secondaryGrossWealth / metrics.secondaryCashCapital
-  : 0;
-```
-
-This is misleading because:
-- If buyer puts 40% down (4M on 10M property), `secondaryCashCapital` = 4M + closing
-- But they OWE the full 10M - the multiplier should reflect total commitment, not just cash
-
-**Solution**: For fair comparison, use `secondaryCapitalDay1` (full price + closing costs) as the denominator for both "Entry Ticket" and "Multiplier" cards. This shows:
-- What total asset value you control
-- What your total commitment became
-
-### 3. Year 0 Shows Wrong Value in Table
-The `YearByYearWealthTable` uses `offPlanProjections[0]` for Year 0, but that's already Year 1's appreciated value.
-
-**Root cause**: The projections array starts at index 0 = Year 1, not Year 0.
-
-**Solution**: Pass the base prices as separate props:
-- `offPlanBasePrice` - the purchase price at Day 0
-- `secondaryBasePrice` - the purchase price at Day 0
-
-Year 0 row should use these base values, not projections.
-
-### 4. Missing Key Contrast: Cashflow vs Appreciation
-The user wants to highlight the core trade-off:
-- **Off-Plan**: No cashflow during construction, but appreciation happens "for free"
-- **Secondary**: Cashflow from Day 1, but appreciation is slower
-
-This needs to be surfaced prominently.
+Looking at the screenshot:
+- 9 journey payments show amounts (AED 960,000, AED 480,000, etc.)
+- But NO percentage per payment
+- NO subtotal at the end of the journey section
+- The total appears to be 50% of the property but this isn't displayed
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/secondary/ExitScenariosComparison.tsx`
+### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-1. **Remove "Capital" column** from both Off-Plan and Secondary sections
-2. **Simplify header** to: Exit | Off-Plan (Value, Profit, ROE) | Secondary (Value, Profit, ROE) | Winner
-3. Keep tooltips for detailed explanations
+#### 1. Add percentage to each journey payment label (lines 420-421)
 
-### File: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
+**Current:**
+```tsx
+<span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
+```
 
-1. **Fix Multiplier calculation** for Secondary:
-   - Change from using `secondaryCashCapital` to `secondaryCapitalDay1`
-   - This gives a realistic "your X became Y" comparison
-   
-2. **Current (wrong)**:
-   ```typescript
-   const secondaryMultiplier = metrics.secondaryCashCapital > 0
-     ? secondaryGrossWealth / metrics.secondaryCashCapital
-     : 0;
-   ```
+**Fixed - Add percentage before the label:**
+```tsx
+<span className="text-xs text-theme-text-muted truncate">
+  {payment.paymentPercent}% · {labelWithDate}
+</span>
+```
 
-3. **Fixed**:
-   ```typescript
-   // Use full property commitment, not just cash down payment
-   const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
-     ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
-     : 0;
-   ```
+This will change:
+- "Month 1 (Feb 2026) → AED 960,000" 
+- TO: "10% · Month 1 (Feb 2026) → AED 960,000"
 
-### File: `src/components/roi/secondary/YearByYearWealthTable.tsx`
+#### 2. Add Journey Subtotal row after all journey payments (after line 456)
 
-1. **Add new props** for base prices:
-   ```typescript
-   offPlanBasePrice: number;
-   secondaryBasePrice: number;
-   ```
+Add a subtotal row showing the total journey percentage and amount:
 
-2. **Fix Year 0 row** to use base prices:
-   ```typescript
-   // Year 0 = Entry point (base purchase prices, no appreciation yet)
-   data.push({
-     year: 0,
-     offPlanValue: offPlanBasePrice,       // Not projections[0]!
-     secondaryValue: secondaryBasePrice,   // Not projections[0]!
-     // ... rest
-   });
-   ```
+```tsx
+{/* Journey Subtotal */}
+{preHandoverPayments.length > 0 && (
+  <div className="pt-1 border-t border-theme-border mt-1">
+    <DottedRow 
+      label={`${t('subtotalLabel')} (${journeyPercent}%)`}
+      value={getDualValue(journeyTotal).primary}
+      secondaryValue={getDualValue(journeyTotal).secondary}
+      bold
+      valueClassName="text-cyan-400"
+    />
+  </div>
+)}
+```
 
-### File: `src/pages/OffPlanVsSecondary.tsx`
+#### 3. Calculate journeyPercent (add near line 212)
 
-1. **Pass base prices** to YearByYearWealthTable:
-   ```typescript
-   <YearByYearWealthTable
-     offPlanBasePrice={offPlanInputs.basePrice}
-     secondaryBasePrice={secondaryInputs.purchasePrice}
-     // ... existing props
-   />
-   ```
+The `journeyTotal` is already calculated. Need to add the percentage:
+
+```tsx
+// Calculate journey percentage
+const journeyPercent = preHandoverPayments.reduce(
+  (sum, p) => sum + p.paymentPercent, 0
+);
+```
 
 ---
 
-## Visual Changes Summary
+### Additional Issue: Year 0 Removal in YearByYearWealthTable
 
-### Exit Scenarios Table (Before → After)
+As per the previous request, also need to:
 
-**Before (10 columns):**
-| Exit | OP Value | OP Capital | OP Profit | OP ROE | SEC Value | SEC Capital | SEC Profit | SEC ROE | Winner |
+**File: `src/components/roi/secondary/YearByYearWealthTable.tsx`**
 
-**After (7 columns):**
-| Exit | OP Value | OP Profit | OP ROE | SEC Value | SEC Profit | SEC ROE | Winner |
+Remove lines 64-83 (Year 0 data push) and simplify to only show Years 1-10.
 
-### Multiplier Card (Before → After)
+Also remove the now-unused props:
+- `offPlanBasePrice`
+- `secondaryBasePrice`
 
-**Before:**
-- Off-Plan: 20.7x (based on day-1 downpayment only) ← Wrong
-- Secondary: 4.4x (based on cash down payment) ← Misleading
+**File: `src/pages/OffPlanVsSecondary.tsx`**
 
-**After:**
-- Off-Plan: ~4.1x (based on total capital at handover)
-- Secondary: ~1.5x (based on full property commitment)
-
-### Year 0 in Table (Before → After)
-
-**Before:**
-| Year 0 | AED 10.87M | AED 10.18M | ← Already appreciated!
-
-**After:**
-| Year 0 | AED 9.68M | AED 9.89M | ← Base purchase prices
+Remove the base price props being passed to `YearByYearWealthTable`.
 
 ---
 
 ## Expected Result
 
-1. **Exit Scenarios**: Cleaner table without redundant capital column
-2. **Multiplier**: Realistic comparison showing true asset multiplication
-3. **Year 0**: Correctly shows entry point (base prices) before any appreciation
-4. **Trade-off Clarity**: The numbers now tell the real story of Cashflow vs Appreciation
+### Payment Breakdown (After Fix)
+
+```
+THE ENTRY
+EOI / Booking Fee                           AED 100,000
+Downpayment Balance                         AED 860,000
+Subtotal (10%)                              AED 960,000
+DLD Fee (4%)                                AED 384,000
+Oqood / Admin Fee                           AED 1,700
+Total Entry                                 AED 1,345,700
+
+THE JOURNEY (47MO)
+10% · Month 1 (Feb 2026)                    AED 960,000
+5% · Month 7 (Aug 2026)                     AED 480,000
+5% · Month 11 (Dec 2026)                    AED 480,000
+5% · Month 14 (Mar 2027)                    AED 480,000
+5% · Month 20 (Sep 2027)                    AED 480,000
+5% · Month 27 (Apr 2028)                    AED 480,000
+5% · Month 32 (Sep 2028)                    AED 480,000
+5% · Month 39 (Apr 2029)                    AED 480,000
+5% · Month 44 (Sep 2029)                    AED 480,000
+──────────────────────────────────────────
+Subtotal (50%)                              AED 4,800,000   ← NEW
+
+HANDOVER (40%)
+Final Payment                               AED 3,840,000
+
+Base Property Price                         AED 9,600,000
+Fees (DLD + Oqood)                          AED 385,700
+Total Investment                            AED 9,985,700
+```
+
+### Year-by-Year Wealth Table (After Fix)
+
+| Before | After |
+|--------|-------|
+| Year 0 (duplicate of Year 1) | **Removed** |
+| Year 1: AED 10.87M | Year 1: AED 10.87M (first row) |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add % to each payment label, add Journey subtotal row |
+| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Remove Year 0 logic, remove base price props |
+| `src/pages/OffPlanVsSecondary.tsx` | Remove base price props from table component |
