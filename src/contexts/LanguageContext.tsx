@@ -11,6 +11,9 @@ interface Translations {
 }
 
 const translations: Translations = {
+  // Snapshot Title (editable headline above project name)
+  defaultSnapshotTitle: { en: 'Monthly Cashflow Statement', es: 'Estado de Flujo de Caja Mensual' },
+  
   // Snapshot View Core Labels (unique naming to avoid conflicts)
   viewProjectButton: { en: 'Project', es: 'Proyecto' },
   floorPlanLabel: { en: 'Floor Plan', es: 'Plano' },

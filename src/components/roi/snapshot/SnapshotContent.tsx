@@ -31,6 +31,9 @@ interface SnapshotContentProps {
   language: 'en' | 'es';
   setLanguage?: (language: 'en' | 'es') => void;
   rate: number;
+  // Snapshot title (editable headline)
+  snapshotTitle?: string | null;
+  onSnapshotTitleChange?: (title: string) => void;
 }
 
 export const SnapshotContent = ({
@@ -46,6 +49,8 @@ export const SnapshotContent = ({
   language,
   setLanguage,
   rate,
+  snapshotTitle,
+  onSnapshotTitleChange,
 }: SnapshotContentProps) => {
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
   const [wealthModalOpen, setWealthModalOpen] = useState(false);
@@ -77,7 +82,7 @@ export const SnapshotContent = ({
           data={clientInfo}
           heroImageUrl={quoteImages.heroImageUrl}
           buildingRenderUrl={quoteImages.buildingRenderUrl}
-          readOnly={true}
+          readOnly={!onSnapshotTitleChange}
           showPriceInfo={true}
           basePrice={basePrice}
           pricePerSqft={pricePerSqft}
@@ -88,6 +93,8 @@ export const SnapshotContent = ({
           rate={rate}
           floorPlanUrl={quoteImages.floorPlanUrl}
           onViewFloorPlan={() => setFloorPlanOpen(true)}
+          snapshotTitle={snapshotTitle}
+          onSnapshotTitleChange={onSnapshotTitleChange}
         />
       </div>
 

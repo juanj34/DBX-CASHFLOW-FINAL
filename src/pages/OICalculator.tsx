@@ -414,6 +414,8 @@ const OICalculatorContent = () => {
             language={language}
             setLanguage={setLanguage}
             rate={rate}
+            snapshotTitle={(inputs as any).snapshotTitle || null}
+            onSnapshotTitleChange={(title) => setInputs(prev => ({ ...prev, snapshotTitle: title } as OIInputs))}
           />
         )}
 

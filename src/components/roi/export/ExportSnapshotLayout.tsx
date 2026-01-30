@@ -34,6 +34,7 @@ export interface ExportSnapshotLayoutProps {
   rate: number;
   language: 'en' | 'es';
   brokerInfo?: BrokerInfo;
+  snapshotTitle?: string | null;
 }
 
 /**
@@ -58,6 +59,7 @@ export const ExportSnapshotLayout = ({
   rate,
   language,
   brokerInfo,
+  snapshotTitle,
 }: ExportSnapshotLayoutProps) => {
   const basePrice = calculations.basePrice;
   const pricePerSqft = clientInfo.unitSizeSqf > 0 ? basePrice / clientInfo.unitSizeSqf : 0;
@@ -108,6 +110,7 @@ export const ExportSnapshotLayout = ({
         currency={currency}
         rate={rate}
         language={language}
+        snapshotTitle={snapshotTitle}
       />
 
       {/* Overview Cards */}
