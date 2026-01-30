@@ -1,33 +1,29 @@
 
-# Plan: Enhanced Off-Plan vs Secondary Comparison - Meaningful Metrics
+
+# Plan: Improve Key Insights Cards + Fix Configurator Modal Bugs
 
 ## Problems Identified
 
-### 1. "NaNK/mo" Bug in Monthly Cashflow Card
-**Screenshot shows**: Secondary Monthly Cashflow = "NaNK/mo"
+### 1. Key Insights Cards Need Improvement
+**User feedback:**
+- "Entry Ticket" is obvious and not worth showing - everyone knows off-plan requires less capital upfront
+- "Multiplier" should also show the actual property value at Year 10, not just the multiplier
+- Need a new card for "Total Wealth Created at Year 10"
 
-**Root cause**: The `formatValue()` function receives a NaN value when:
-- The secondary calculations haven't completed yet
-- There's an edge case in the mortgage calculation
+### 2. Configurator Modal Bugs
+**Issues found in `ComparisonConfiguratorModal.tsx`:**
 
-**Fix**: Add NaN check in `ComparisonKeyInsights.tsx`:
-```typescript
-const formattedCashflow = isNaN(secondaryMonthlyCashflow) 
-  ? 'N/A' 
-  : `${secondaryMonthlyCashflow >= 0 ? '+' : ''}${formatValue(secondaryMonthlyCashflow)}${t.perMonth}`;
-```
+a. **Property name is erased on reopen**
+   - The `propertyName` state is in `SecondaryPropertyStep.tsx` but resets each time the modal reopens
+   - It's not passed to/from the parent modal or saved with the secondary inputs
 
-### 2. Replace "Monthly Cashflow During Construction" with Total Income
-**Current**: Shows useless monthly value during a period when comparison should be cumulative
-**New**: Show **total rent earned by Secondary** during the construction phase (e.g., 48 months × monthly rent)
+b. **Secondary inputs change when reopening**
+   - Lines 82-88: Reset effect only checks `!initialQuoteId` but doesn't respect `initialSecondaryInputs`
+   - Lines 91-105: The quote selection effect overwrites secondaryInputs every time `selectedQuote` changes
 
-### 3. Missing: Tenant Mortgage Paydown (Principal Paid)
-The user wants to see how much of the mortgage principal is paid by the tenant over time. This is hidden wealth building!
-
-### 4. Missing: Rental Comparison at Handover
-At handover, both properties can be rented. Show side-by-side comparison:
-- Off-Plan: Expected Monthly Rent
-- Secondary: Monthly Rent (at that time, with growth applied)
+c. **Cannot click outside to close**
+   - By default, Radix Dialog closes on overlay click. This should work already.
+   - Need to verify there's no `onInteractOutside` preventing this behavior
 
 ---
 
@@ -35,163 +31,191 @@ At handover, both properties can be rented. Show side-by-side comparison:
 
 ### File 1: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
 
-#### Change "Monthly Cashflow" card to "Income During Build"
+#### Replace "Entry Ticket" with "Total Wealth" card
+
+Remove the Entry Ticket card (index 0) and replace with a Total Wealth card:
 
 | Before | After |
 |--------|-------|
-| Monthly Cashflow | Income During Build |
-| AED X/mo | Total: AED X.XM |
-| Shows monthly rate | Shows cumulative rent earned during construction |
+| 1. Entry Ticket | 1. **10-Year Wealth** (Property Value + Net Rent) |
+| 2. Multiplier | 2. Multiplier (+ show property value) |
+| 3. Income During Build | 3. Income During Build |
+| 4. Construction Bonus | 4. Construction Bonus |
 
-**New props needed**:
+**New props needed:**
 ```typescript
 interface ComparisonKeyInsightsProps {
   // ... existing
-  constructionMonths: number;  // NEW: Duration of construction
-  secondaryTotalIncomeAtHandover: number; // NEW: Net rent × months
+  offPlanPropertyValue10Y: number;      // NEW: Year 10 property value
+  secondaryPropertyValue10Y: number;    // NEW: Year 10 property value
 }
 ```
 
-**New card definition**:
+**Change card 1 (Entry Ticket → Total Wealth):**
 ```typescript
 {
-  key: 'income',
-  title: t.incomeBuildup,
-  subtitle: t.duringConstruction,
-  icon: Coins,
+  key: 'wealth10',
+  title: t.totalWealth,
+  subtitle: t.after10Years,
+  icon: Gem,  // New icon
   showComparison: true,
-  offPlanValue: 'AED 0',
-  secondaryValue: formatValue(secondaryTotalIncomeAtHandover),
-  badge: `${constructionMonths} ${t.months}`,
-  badgeColor: 'cyan',
-  winner: 'secondary',
+  offPlanValue: formatValue(metrics.offPlanWealthYear10 + offPlanTotalCapital),
+  secondaryValue: formatValue(secondaryWealth10 + secondaryCashCapital),
+  badge: null,
+  winner: (metrics.offPlanWealthYear10 + offPlanTotalCapital) > (secondaryWealth10 + secondaryCashCapital) 
+    ? 'offplan' : 'secondary',
 }
 ```
 
+**Enhance card 2 (Multiplier) to show property value:**
+- Add secondary row showing "→ AED X.XM" (the final property value after 10 years)
+- This shows both the multiplier (2.1x) and the actual resulting value
+
 ---
 
-### File 2: `src/components/roi/secondary/MortgageCoverageCard.tsx`
+### File 2: `src/components/roi/secondary/types.ts`
 
-#### Add Principal Paydown Section
+#### Add propertyName to SecondaryInputs (optional addition)
 
-Enhance the existing card to show tenant's contribution to mortgage principal:
-
-```text
-┌────────────────────────────────────────┐
-│ 🏠 Tenant Pays Your Mortgage           │
-│                                        │
-│ Monthly Rent:        AED 57,722        │
-│ Mortgage Payment:    AED 45,000        │
-│ [████████████████████] 128% Coverage   │
-│                                        │
-│ Net Cashflow: +AED 12,722/mo           │
-│                                        │
-│ ─── HIDDEN WEALTH ───                  │ ← NEW SECTION
-│ Principal Paid by Tenant (10Y):        │
-│ AED 2.4M of your AED 5.9M loan         │
-│ [████████▓▓▓▓▓▓▓▓▓▓▓▓] 41%            │
-└────────────────────────────────────────┘
-```
-
-**New props needed**:
+Consider adding:
 ```typescript
-interface MortgageCoverageCardProps {
+export interface SecondaryInputs {
   // ... existing
-  loanAmount: number;
-  principalPaidYear10: number;
+  propertyName?: string; // NEW: Optional name for saving/display
 }
 ```
 
+This allows the property name to persist with the secondary inputs.
+
 ---
 
-### File 3: Create `src/components/roi/secondary/RentalComparisonAtHandover.tsx`
+### File 3: `src/components/roi/secondary/ComparisonConfiguratorModal.tsx`
 
-New component showing side-by-side rental at handover:
+#### Fix 1: Reset logic should respect initial values
 
-```text
-┌────────────────────────────────────────┐
-│ 🏠 Monthly Rent at Handover            │
-│                                        │
-│  Off-Plan           Secondary          │
-│  ─────────          ──────────         │
-│  AED 56,000/mo      AED 59,400/mo      │
-│  (7% yield on       (After 4yr rent    │
-│   9.6M property)     growth at 3%/yr)  │
-│                                        │
-│  🏆 Secondary: +6% higher rent         │
-└────────────────────────────────────────┘
+**Lines 82-88** - Current:
+```typescript
+useEffect(() => {
+  if (open && !initialQuoteId) {
+    setStep(1);
+    setSelectedQuote(null);
+  }
+}, [open, initialQuoteId]);
+```
+
+**Fixed:**
+```typescript
+useEffect(() => {
+  if (open) {
+    // Only reset if no initial data is provided
+    if (!initialQuoteId && !initialSecondaryInputs) {
+      setStep(1);
+      setSelectedQuote(null);
+      setSecondaryInputs(DEFAULT_SECONDARY_INPUTS);
+    } else if (initialSecondaryInputs) {
+      // Respect provided initial inputs
+      setSecondaryInputs(initialSecondaryInputs);
+    }
+  }
+}, [open, initialQuoteId, initialSecondaryInputs]);
+```
+
+#### Fix 2: Don't overwrite secondaryInputs when quote is already selected
+
+**Lines 91-105** - Current:
+```typescript
+useEffect(() => {
+  if (selectedQuote?.inputs) {
+    const inputs = selectedQuote.inputs as OIInputs;
+    setSecondaryInputs(prev => ({
+      ...prev,
+      purchasePrice: inputs.basePrice || prev.purchasePrice,
+      // ... etc
+    }));
+  }
+}, [selectedQuote]);
+```
+
+**Fixed - Only run on first quote selection, not on re-renders:**
+```typescript
+const [hasInitializedFromQuote, setHasInitializedFromQuote] = useState(false);
+
+useEffect(() => {
+  // Only initialize from quote if we haven't already AND we don't have initial inputs
+  if (selectedQuote?.inputs && !hasInitializedFromQuote && !initialSecondaryInputs) {
+    const inputs = selectedQuote.inputs as OIInputs;
+    setSecondaryInputs(prev => ({
+      ...prev,
+      purchasePrice: inputs.basePrice || prev.purchasePrice,
+      // ... etc
+    }));
+    setHasInitializedFromQuote(true);
+  }
+}, [selectedQuote, hasInitializedFromQuote, initialSecondaryInputs]);
+
+// Reset the flag when modal closes
+useEffect(() => {
+  if (!open) {
+    setHasInitializedFromQuote(false);
+  }
+}, [open]);
+```
+
+#### Fix 3: Ensure click-outside works
+
+The Radix Dialog should handle this by default. Verify the `DialogContent` doesn't have `onPointerDownOutside` or `onInteractOutside` handlers that prevent closing.
+
+If it still doesn't work, explicitly add to `DialogContent`:
+```tsx
+<DialogContent 
+  className="..."
+  onPointerDownOutside={() => onOpenChange(false)}
+>
 ```
 
 ---
 
-### File 4: `src/pages/OffPlanVsSecondary.tsx`
+### File 4: `src/components/roi/secondary/SecondaryPropertyStep.tsx`
 
-#### Calculate new metrics and pass to components
+#### Move propertyName state up to parent
 
-**Add calculations**:
+Instead of local state, accept it as a prop:
+
+**Add to props:**
 ```typescript
-// Total income earned by Secondary during construction
-const secondaryTotalIncomeAtHandover = useMemo(() => {
-  const monthlyRent = rentalMode === 'long-term' 
-    ? secondaryCalcs.monthlyRentLT 
-    : secondaryCalcs.monthlyRentST;
-  const months = handoverYearIndex * 12;
-  // Simple calculation: average monthly rent × months (ignoring growth for simplicity)
-  return monthlyRent * months;
-}, [secondaryCalcs, handoverYearIndex, rentalMode]);
+interface SecondaryPropertyStepProps {
+  inputs: SecondaryInputs;
+  onChange: (inputs: SecondaryInputs) => void;
+  propertyName: string;              // NEW
+  onPropertyNameChange: (name: string) => void;  // NEW
+  // ... rest
+}
+```
 
-// Principal paid at Year 10 (from secondary projections)
-const secondaryPrincipalPaid10Y = useMemo(() => {
-  return secondaryCalcs.yearlyProjections[9]?.principalPaid || 0;
-}, [secondaryCalcs]);
+Then in `ComparisonConfiguratorModal.tsx`, manage the propertyName state there and pass it down.
 
-// Off-Plan rental at handover (from off-plan calcs)
-const offPlanMonthlyRentAtHandover = useMemo(() => {
-  return offPlanCalcs.holdAnalysis?.netAnnualRent / 12 || 0;
+---
+
+### File 5: `src/pages/OffPlanVsSecondary.tsx`
+
+#### Pass new props to ComparisonKeyInsights
+
+```typescript
+// Calculate Year 10 property values
+const offPlanPropertyValue10Y = useMemo(() => {
+  return offPlanCalcs.yearlyProjections[9]?.propertyValue || 0;
 }, [offPlanCalcs]);
 
-// Secondary rental at handover (with growth applied)
-const secondaryMonthlyRentAtHandover = useMemo(() => {
-  const baseRent = rentalMode === 'long-term' 
-    ? secondaryCalcs.monthlyRentLT 
-    : secondaryCalcs.monthlyRentST;
-  const growthFactor = Math.pow(1 + secondaryInputs.rentGrowthRate / 100, handoverYearIndex);
-  return baseRent * growthFactor;
-}, [secondaryCalcs, secondaryInputs, handoverYearIndex, rentalMode]);
-```
+const secondaryPropertyValue10Y = useMemo(() => {
+  return secondaryCalcs.yearlyProjections[9]?.propertyValue || 0;
+}, [secondaryCalcs]);
 
-**Update component props**:
-```tsx
+// Pass to component
 <ComparisonKeyInsights
-  // ... existing
-  constructionMonths={handoverYearIndex * 12}
-  secondaryTotalIncomeAtHandover={secondaryTotalIncomeAtHandover}
+  // ... existing props
+  offPlanPropertyValue10Y={offPlanPropertyValue10Y}
+  secondaryPropertyValue10Y={secondaryPropertyValue10Y}
 />
-
-<MortgageCoverageCard
-  // ... existing
-  loanAmount={secondaryCalcs.loanAmount}
-  principalPaidYear10={secondaryPrincipalPaid10Y}
-/>
-
-{/* Add new rental comparison card */}
-<RentalComparisonAtHandover
-  offPlanMonthlyRent={offPlanMonthlyRentAtHandover}
-  secondaryMonthlyRent={secondaryMonthlyRentAtHandover}
-  handoverYear={handoverYearIndex}
-  currency={currency}
-  rate={rate}
-  language={language}
-/>
-```
-
----
-
-### File 5: `src/components/roi/secondary/index.ts`
-
-Export new component:
-```typescript
-export { RentalComparisonAtHandover } from './RentalComparisonAtHandover';
 ```
 
 ---
@@ -200,41 +224,20 @@ export { RentalComparisonAtHandover } from './RentalComparisonAtHandover';
 
 ### Key Insights Cards (After Fix)
 
-| Card | Before | After |
-|------|--------|-------|
-| 1. Entry Ticket | ✓ Keep | ✓ Keep |
-| 2. Multiplier | ✓ Keep | ✓ Keep |
-| 3. Monthly Cashflow | "NaNK/mo" | **Income During Build: +AED 2.8M** |
-| 4. Construction Bonus | ✓ Keep | ✓ Keep |
+| Position | Card Name | Off-Plan | Secondary |
+|----------|-----------|----------|-----------|
+| 1 | **Total Wealth (10Y)** | AED 15.2M | AED 14.8M |
+| 2 | Multiplier | 2.1x → 12.4M | 1.8x → 13.2M |
+| 3 | Income During Build | No income | +AED 2.8M |
+| 4 | Construction Bonus | +AED 1.27M | — |
 
-### Mortgage Coverage Card (Enhanced)
+### Modal Behavior (After Fix)
 
-```text
-🏠 Tenant Pays Your Mortgage
-
-Monthly Rent:        AED 57,722
-Mortgage Payment:    AED 45,000
-[████████████████████] 128%
-
-Net Cashflow: +AED 12,722/mo
-
-── Principal Paydown (10Y) ──    ← NEW
-Tenant pays off: AED 2.4M        
-Remaining: AED 3.5M              
-[████████▓▓▓▓▓▓▓▓▓▓▓▓] 41%      
-```
-
-### New: Rental Comparison at Handover
-
-```text
-🏠 Rent at Handover (Year 4)
-
-Off-Plan         Secondary
-AED 56,000/mo    AED 59,400/mo
-(7% on 9.6M)     (7% on 9.9M + growth)
-
-Secondary: +6% higher at handover
-```
+| Action | Before | After |
+|--------|--------|-------|
+| Reopen configurator | Values reset, name erased | Values preserved, name stays |
+| Click outside modal | Nothing | Modal closes |
+| Select saved property | Overwrites on every render | Only on first selection |
 
 ---
 
@@ -242,8 +245,8 @@ Secondary: +6% higher at handover
 
 | File | Action | Changes |
 |------|--------|---------|
-| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Modify | Change Monthly Cashflow → Income During Build, add NaN fix |
-| `src/components/roi/secondary/MortgageCoverageCard.tsx` | Modify | Add Principal Paydown section |
-| `src/components/roi/secondary/RentalComparisonAtHandover.tsx` | **Create** | New card comparing rent at handover |
-| `src/pages/OffPlanVsSecondary.tsx` | Modify | Calculate new metrics, pass props |
-| `src/components/roi/secondary/index.ts` | Modify | Export new component |
+| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Modify | Replace Entry Ticket with Total Wealth, add property value to Multiplier |
+| `src/components/roi/secondary/ComparisonConfiguratorModal.tsx` | Modify | Fix reset logic, add initialization flag, ensure click-outside works |
+| `src/components/roi/secondary/SecondaryPropertyStep.tsx` | Modify | Accept propertyName as prop instead of local state |
+| `src/pages/OffPlanVsSecondary.tsx` | Modify | Pass Year 10 property values, manage propertyName state |
+
