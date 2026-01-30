@@ -668,8 +668,11 @@ const OffPlanVsSecondary = () => {
             rate={rate}
             language={language}
             appreciationDuringConstruction={appreciationDuringConstruction}
-            constructionMonths={handoverYearIndex * 12}
-            secondaryTotalIncomeAtHandover={secondaryTotalIncomeAtHandover}
+            secondaryMonthlyCashflow={
+              rentalMode === 'long-term' 
+                ? secondaryCalcs.monthlyCashflowLT 
+                : secondaryCalcs.monthlyCashflowST
+            }
             offPlanPropertyValue10Y={offPlanPropertyValue10Y}
             secondaryPropertyValue10Y={secondaryPropertyValue10Y}
           />
