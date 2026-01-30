@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FileText, Scale, Presentation, BarChart3, Map, Users, 
-  Sparkles, TrendingUp, Plus, Settings, LogOut, Menu
+  Sparkles, TrendingUp, Plus, Settings, LogOut, Menu, Globe, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/AppLogo';
@@ -23,6 +23,7 @@ import {
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
+import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 
 interface NavItem {
   label: string;
@@ -43,9 +44,19 @@ const navItems: NavItem[] = [
 
 interface TopNavbarProps {
   showNewQuote?: boolean;
+  language?: 'en' | 'es';
+  setLanguage?: (lang: 'en' | 'es') => void;
+  currency?: Currency;
+  setCurrency?: (currency: Currency) => void;
 }
 
-export const TopNavbar = ({ showNewQuote = true }: TopNavbarProps) => {
+export const TopNavbar = ({ 
+  showNewQuote = true,
+  language,
+  setLanguage,
+  currency,
+  setCurrency,
+}: TopNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useProfile();
@@ -116,8 +127,47 @@ export const TopNavbar = ({ showNewQuote = true }: TopNavbarProps) => {
             })}
           </nav>
 
-          {/* Right side - User Avatar */}
+          {/* Right side - Controls + Avatar */}
           <div className="flex items-center gap-2">
+            {/* Language Toggle */}
+            {setLanguage && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                title={language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
+              >
+                <span className="text-base">{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
+              </Button>
+            )}
+
+            {/* Currency Selector */}
+            {setCurrency && currency && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2">
+                    <span className="text-sm">{CURRENCY_CONFIG[currency].flag}</span>
+                    <span className="text-xs font-medium text-theme-text-muted">{currency}</span>
+                    <ChevronDown className="w-3 h-3 text-theme-text-muted" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 bg-theme-card border-theme-border">
+                  {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((curr) => (
+                    <DropdownMenuItem
+                      key={curr}
+                      onClick={() => setCurrency(curr)}
+                      className={`gap-2 cursor-pointer ${currency === curr ? 'bg-theme-accent/10' : ''}`}
+                    >
+                      <span>{CURRENCY_CONFIG[curr].flag}</span>
+                      <span className="text-theme-text">{curr}</span>
+                      <span className="text-xs text-theme-text-muted ml-auto">{CURRENCY_CONFIG[curr].name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
             {/* Mobile Menu Button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>

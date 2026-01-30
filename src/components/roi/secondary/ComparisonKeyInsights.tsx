@@ -7,19 +7,25 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { formatCurrency } from '@/components/roi/currencyUtils';
+import { Currency, formatDualCurrencyCompact } from '@/components/roi/currencyUtils';
 import { ComparisonMetrics } from './types';
 
 interface ComparisonKeyInsightsProps {
   metrics: ComparisonMetrics;
   rentalMode: 'long-term' | 'airbnb';
   offPlanLabel: string;
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
 }
 
 export const ComparisonKeyInsights = ({
   metrics,
   rentalMode,
   offPlanLabel,
+  currency,
+  rate,
+  language,
 }: ComparisonKeyInsightsProps) => {
   const isAirbnb = rentalMode === 'airbnb';
 
@@ -35,33 +41,70 @@ export const ComparisonKeyInsights = ({
     ? metrics.crossoverYearST 
     : metrics.crossoverYearLT;
 
-  // Determine winners
   const capitalWinner = metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'offplan' : 'secondary';
   const wealthWinner = metrics.offPlanWealthYear10 > secondaryWealth10 ? 'offplan' : 'secondary';
   const roeWinner = metrics.offPlanROEYear10 > secondaryROE ? 'offplan' : 'secondary';
 
+  const formatValue = (value: number): string => {
+    const dual = formatDualCurrencyCompact(value, currency, rate);
+    if (dual.secondary) {
+      return `${dual.primary} (${dual.secondary})`;
+    }
+    return dual.primary;
+  };
+
+  const t = language === 'es' ? {
+    initialCapital: 'Capital Inicial',
+    initialCapitalTooltip: 'Capital requerido el día 1 (sin hipoteca). Incluye downpayment + costos de entrada.',
+    wealthYear10: 'Riqueza Año 10',
+    wealthYear10Tooltip: 'Riqueza total acumulada: Valor de propiedad + Rentas acumuladas - Capital invertido.',
+    annualizedROE: 'ROE Anualizado',
+    annualizedROETooltip: 'Retorno anualizado sobre tu capital durante 10 años. (Ganancia Total / Capital) / 10.',
+    crossoverPoint: 'Punto de Cruce',
+    crossoverPointTooltip: 'El año cuando off-plan supera a secundaria en riqueza total acumulada.',
+    year: 'Año',
+    offPlanWins: 'Off-Plan gana',
+    secondaryLeads: 'Secundaria lidera',
+    offPlan: 'Off-Plan',
+    secondary: 'Secundaria',
+  } : {
+    initialCapital: 'Initial Capital',
+    initialCapitalTooltip: 'Capital required on day 1 (no mortgage). Includes downpayment + entry costs.',
+    wealthYear10: 'Wealth Year 10',
+    wealthYear10Tooltip: 'Total accumulated wealth: Property Value + Cumulative Rent - Capital Invested.',
+    annualizedROE: 'Annualized ROE',
+    annualizedROETooltip: 'Annualized return on your capital over 10 years. (Total Gain / Capital) / 10.',
+    crossoverPoint: 'Crossover Point',
+    crossoverPointTooltip: 'The year when off-plan surpasses secondary in total accumulated wealth.',
+    year: 'Year',
+    offPlanWins: 'Off-Plan wins',
+    secondaryLeads: 'Secondary leads',
+    offPlan: 'Off-Plan',
+    secondary: 'Secondary',
+  };
+
   const insights = [
     {
-      title: 'Capital Inicial',
-      tooltip: 'Capital requerido el día 1 (sin hipoteca). Incluye downpayment + costos de entrada.',
+      title: t.initialCapital,
+      tooltip: t.initialCapitalTooltip,
       icon: Wallet,
-      offPlanValue: formatCurrency(metrics.offPlanCapitalDay1, 'AED', 0),
-      secondaryValue: formatCurrency(metrics.secondaryCapitalDay1, 'AED', 0),
+      offPlanValue: formatValue(metrics.offPlanCapitalDay1),
+      secondaryValue: formatValue(metrics.secondaryCapitalDay1),
       winner: capitalWinner,
       lowerIsBetter: true,
     },
     {
-      title: 'Riqueza Año 10',
-      tooltip: 'Riqueza total acumulada: Valor de propiedad + Rentas acumuladas - Capital invertido.',
+      title: t.wealthYear10,
+      tooltip: t.wealthYear10Tooltip,
       icon: TrendingUp,
-      offPlanValue: formatCurrency(metrics.offPlanWealthYear10, 'AED', 0),
-      secondaryValue: formatCurrency(secondaryWealth10, 'AED', 0),
+      offPlanValue: formatValue(metrics.offPlanWealthYear10),
+      secondaryValue: formatValue(secondaryWealth10),
       winner: wealthWinner,
       lowerIsBetter: false,
     },
     {
-      title: 'ROE Anualizado',
-      tooltip: 'Retorno anualizado sobre tu capital durante 10 años. (Ganancia Total / Capital) / 10.',
+      title: t.annualizedROE,
+      tooltip: t.annualizedROETooltip,
       icon: Target,
       offPlanValue: `${metrics.offPlanROEYear10.toFixed(1)}%`,
       secondaryValue: `${secondaryROE.toFixed(1)}%`,
@@ -69,11 +112,11 @@ export const ComparisonKeyInsights = ({
       lowerIsBetter: false,
     },
     {
-      title: 'Punto de Cruce',
-      tooltip: 'El año cuando off-plan supera a secundaria en riqueza total acumulada.',
+      title: t.crossoverPoint,
+      tooltip: t.crossoverPointTooltip,
       icon: Calendar,
-      offPlanValue: crossoverYear ? `Año ${crossoverYear}` : 'N/A',
-      secondaryValue: crossoverYear ? `Off-Plan gana` : 'Secundaria lidera',
+      offPlanValue: crossoverYear ? `${t.year} ${crossoverYear}` : 'N/A',
+      secondaryValue: crossoverYear ? t.offPlanWins : t.secondaryLeads,
       winner: crossoverYear ? 'offplan' : 'secondary',
       lowerIsBetter: true,
       isCrossover: true,

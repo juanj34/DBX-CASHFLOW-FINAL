@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useCashflowQuote } from '@/hooks/useCashflowQuote';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from '@/components/roi/useMortgageCalculations';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { Currency } from '@/components/roi/currencyUtils';
 import {
   SecondaryInputs,
   DEFAULT_SECONDARY_INPUTS,
@@ -23,6 +24,7 @@ import {
   OutOfPocketCard,
   HeadToHeadTable,
   ComparisonVerdict,
+  ExitScenariosComparison,
 } from '@/components/roi/secondary';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -38,6 +40,14 @@ const OffPlanVsSecondary = () => {
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(quoteId);
   const [secondaryInputs, setSecondaryInputs] = useState<SecondaryInputs>(DEFAULT_SECONDARY_INPUTS);
   const [rentalMode, setRentalMode] = useState<'long-term' | 'airbnb'>('long-term');
+  
+  // Language and Currency state
+  const [language, setLanguage] = useState<'en' | 'es'>('es');
+  const [currency, setCurrency] = useState<Currency>('AED');
+  const { rate } = useExchangeRate(currency);
+  
+  // Exit scenarios
+  const [exitMonths, setExitMonths] = useState<number[]>([36, 60, 120]);
 
   // Load quote data
   const { quote, loading: quoteLoading } = useCashflowQuote(selectedQuoteId);
@@ -68,9 +78,12 @@ const OffPlanVsSecondary = () => {
   }, [quote?.inputs]);
 
   // Handle compare from modal
-  const handleCompare = (newQuoteId: string, newSecondaryInputs: SecondaryInputs) => {
+  const handleCompare = (newQuoteId: string, newSecondaryInputs: SecondaryInputs, newExitMonths?: number[]) => {
     setSelectedQuoteId(newQuoteId);
     setSecondaryInputs(newSecondaryInputs);
+    if (newExitMonths && newExitMonths.length > 0) {
+      setExitMonths(newExitMonths);
+    }
     setHasConfigured(true);
     // Update URL
     navigate(`/offplan-vs-secondary/${newQuoteId}`, { replace: true });
@@ -138,6 +151,9 @@ const OffPlanVsSecondary = () => {
     if (!offPlanInputs) return 2;
     return offPlanInputs.handoverYear - offPlanInputs.bookingYear + 1;
   }, [offPlanInputs]);
+  
+  // Handover months for exit scenarios
+  const handoverMonths = handoverYearIndex * 12;
 
   // Total capital at handover for off-plan
   const offPlanTotalCapitalAtHandover = useMemo(() => {
@@ -248,11 +264,36 @@ const OffPlanVsSecondary = () => {
 
   const projectName = quote?.project_name || quote?.developer || 'Off-Plan';
 
+  const t = language === 'es' ? {
+    title: 'Off-Plan vs Secundaria',
+    subtitle: 'Compara tu inversión off-plan contra una propiedad secundaria lista para ver qué estrategia construye más riqueza en 10 años.',
+    appreciationConstruction: 'Apreciación en construcción',
+    immediateCashflow: 'Cashflow inmediato',
+    startComparison: 'Iniciar Comparación',
+    reconfigure: 'Reconfigurar',
+    vs: 'vs',
+    secondaryLabel: 'Secundaria',
+  } : {
+    title: 'Off-Plan vs Secondary',
+    subtitle: 'Compare your off-plan investment against a ready secondary property to see which strategy builds more wealth over 10 years.',
+    appreciationConstruction: 'Construction appreciation',
+    immediateCashflow: 'Immediate cashflow',
+    startComparison: 'Start Comparison',
+    reconfigure: 'Reconfigure',
+    vs: 'vs',
+    secondaryLabel: 'Secondary',
+  };
+
   // Initial state - show CTA to open configurator
   if (!hasConfigured && !quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <TopNavbar />
+        <TopNavbar 
+          language={language}
+          setLanguage={setLanguage}
+          currency={currency}
+          setCurrency={setCurrency}
+        />
         
         <div className="container mx-auto px-4 py-12 max-w-2xl">
           <Card className="p-8 bg-theme-card border-theme-border text-center">
@@ -261,22 +302,21 @@ const OffPlanVsSecondary = () => {
             </div>
             
             <h1 className="text-2xl font-bold text-theme-text mb-3">
-              Off-Plan vs Secundaria
+              {t.title}
             </h1>
             
             <p className="text-theme-text-muted mb-6 max-w-md mx-auto">
-              Compara tu inversión off-plan contra una propiedad secundaria lista 
-              para ver qué estrategia construye más riqueza en 10 años.
+              {t.subtitle}
             </p>
 
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               <div className="flex items-center gap-2 text-sm text-theme-text-muted">
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                Apreciación en construcción
+                {t.appreciationConstruction}
               </div>
               <div className="flex items-center gap-2 text-sm text-theme-text-muted">
                 <div className="w-3 h-3 rounded-full bg-cyan-500" />
-                Cashflow inmediato
+                {t.immediateCashflow}
               </div>
             </div>
             
@@ -286,7 +326,7 @@ const OffPlanVsSecondary = () => {
               className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
             >
               <Settings2 className="w-5 h-5 mr-2" />
-              Iniciar Comparación
+              {t.startComparison}
             </Button>
           </Card>
         </div>
@@ -295,6 +335,8 @@ const OffPlanVsSecondary = () => {
           open={configuratorOpen}
           onOpenChange={setConfiguratorOpen}
           onCompare={handleCompare}
+          initialExitMonths={exitMonths}
+          handoverMonths={handoverMonths}
         />
       </div>
     );
@@ -304,7 +346,12 @@ const OffPlanVsSecondary = () => {
   if (quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <TopNavbar />
+        <TopNavbar 
+          language={language}
+          setLanguage={setLanguage}
+          currency={currency}
+          setCurrency={setCurrency}
+        />
         <div className="container mx-auto px-4 py-6 space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
@@ -316,7 +363,12 @@ const OffPlanVsSecondary = () => {
   // Results view
   return (
     <div className="min-h-screen bg-theme-bg">
-      <TopNavbar />
+      <TopNavbar 
+        language={language}
+        setLanguage={setLanguage}
+        currency={currency}
+        setCurrency={setCurrency}
+      />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Header */}
@@ -325,9 +377,9 @@ const OffPlanVsSecondary = () => {
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
               {projectName}
             </Badge>
-            <span className="text-theme-text-muted">vs</span>
+            <span className="text-theme-text-muted">{t.vs}</span>
             <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/30">
-              Secundaria AED {(secondaryInputs.purchasePrice / 1000000).toFixed(2)}M
+              {t.secondaryLabel} AED {(secondaryInputs.purchasePrice / 1000000).toFixed(2)}M
             </Badge>
           </div>
 
@@ -349,7 +401,7 @@ const OffPlanVsSecondary = () => {
               className="border-theme-border text-theme-text"
             >
               <Settings2 className="w-4 h-4 mr-2" />
-              Reconfigurar
+              {t.reconfigure}
             </Button>
           </div>
         </div>
@@ -361,18 +413,31 @@ const OffPlanVsSecondary = () => {
             metrics={comparisonMetrics}
             rentalMode={rentalMode}
             offPlanLabel={projectName}
+            currency={currency}
+            rate={rate}
+            language={language}
           />
 
-          {/* 2. Year-by-Year Wealth Table */}
+          {/* 2. Detailed Comparison Table */}
+          <HeadToHeadTable
+            metrics={comparisonMetrics}
+            offPlanLabel={projectName}
+            showAirbnb={rentalMode === 'airbnb'}
+          />
+
+          {/* 3. Year-by-Year Wealth Table */}
           <YearByYearWealthTable
             offPlanProjections={offPlanCalcs.yearlyProjections}
             secondaryProjections={secondaryCalcs.yearlyProjections}
             offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
             handoverYearIndex={handoverYearIndex}
             rentalMode={rentalMode}
+            currency={currency}
+            rate={rate}
+            language={language}
           />
 
-          {/* 3. Wealth Trajectory Chart */}
+          {/* 4. Wealth Trajectory Chart */}
           <WealthTrajectoryDualChart
             offPlanProjections={offPlanCalcs.yearlyProjections}
             secondaryProjections={secondaryCalcs.yearlyProjections}
@@ -382,7 +447,23 @@ const OffPlanVsSecondary = () => {
             showAirbnb={rentalMode === 'airbnb'}
           />
 
-          {/* 4. Two-column: DSCR Explanation + Out of Pocket */}
+          {/* 5. Exit Scenarios Comparison */}
+          {exitMonths.length > 0 && (
+            <ExitScenariosComparison
+              exitMonths={exitMonths}
+              offPlanProjections={offPlanCalcs.yearlyProjections}
+              secondaryProjections={secondaryCalcs.yearlyProjections}
+              offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
+              secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
+              handoverYearIndex={handoverYearIndex}
+              rentalMode={rentalMode}
+              currency={currency}
+              rate={rate}
+              language={language}
+            />
+          )}
+
+          {/* 6. Two-column: DSCR Explanation + Out of Pocket */}
           <div className="grid lg:grid-cols-2 gap-6">
             <DSCRExplanationCard
               offPlanDSCR={rentalMode === 'airbnb' ? comparisonMetrics.offPlanDSCRST : comparisonMetrics.offPlanDSCRLT}
@@ -396,17 +477,13 @@ const OffPlanVsSecondary = () => {
               appreciationDuringConstruction={appreciationDuringConstruction}
               secondaryCapitalDay1={secondaryCalcs.totalCapitalDay1}
               secondaryIncomeMonths={handoverYearIndex * 12}
+              currency={currency}
+              rate={rate}
+              language={language}
             />
           </div>
 
-          {/* 5. Head to Head Detailed Table */}
-          <HeadToHeadTable
-            metrics={comparisonMetrics}
-            offPlanLabel={projectName}
-            showAirbnb={rentalMode === 'airbnb'}
-          />
-
-          {/* 6. Verdict */}
+          {/* 7. Verdict */}
           <ComparisonVerdict
             metrics={comparisonMetrics}
             offPlanProjectName={projectName}
@@ -421,6 +498,8 @@ const OffPlanVsSecondary = () => {
         onCompare={handleCompare}
         initialQuoteId={selectedQuoteId}
         initialSecondaryInputs={secondaryInputs}
+        initialExitMonths={exitMonths}
+        handoverMonths={handoverMonths}
       />
     </div>
   );
