@@ -313,7 +313,9 @@ const OffPlanVsSecondary = () => {
 
     return {
       offPlanCapitalDay1,
-      secondaryCapitalDay1: secondaryCalcs.totalCapitalDay1,
+      // For fair comparison, use total property cost (not mortgage-adjusted)
+      // Secondary buyer commits to full price + fees, just like off-plan buyer
+      secondaryCapitalDay1: secondaryInputs.purchasePrice + secondaryCalcs.closingCosts,
       offPlanTotalCapitalAtHandover,
       offPlanOutOfPocket,
       offPlanMonthsNoIncome,
@@ -527,6 +529,7 @@ const OffPlanVsSecondary = () => {
             currency={currency}
             rate={rate}
             language={language}
+            appreciationDuringConstruction={appreciationDuringConstruction}
           />
 
           {/* 2. Detailed Comparison Table */}
