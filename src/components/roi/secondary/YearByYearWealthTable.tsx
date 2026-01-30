@@ -72,14 +72,18 @@ export const YearByYearWealthTable = ({
       
       const isBeforeHandover = year < handoverYearIndex;
       
+      // Get annual rent values
+      const opAnnualRent = isBeforeHandover ? 0 : (opProj?.netIncome || 0);
+      const secAnnualRent = isAirbnb ? (secProj?.netRentST || 0) : (secProj?.netRentLT || 0);
+      
       return {
         year,
         calendarYear: opProj?.calendarYear || new Date().getFullYear() + year,
         offPlanValue: opProj?.propertyValue || 0,
-        offPlanRent: isBeforeHandover ? 0 : (opProj?.netIncome || 0),
+        offPlanRent: opAnnualRent,
         offPlanWealth: opWealth,
         secondaryValue: secProj?.propertyValue || 0,
-        secondaryRent: isAirbnb ? (secProj?.netRentST || 0) : (secProj?.netRentLT || 0),
+        secondaryRent: secAnnualRent,
         secondaryWealth: secWealth || 0,
         delta,
         isHandover: year === handoverYearIndex,
@@ -96,12 +100,17 @@ export const YearByYearWealthTable = ({
     return dual.primary;
   };
 
+  const formatSmallValue = (value: number): string => {
+    return `AED ${formatCompact(value)}`;
+  };
+
   const t = language === 'es' ? {
     title: 'Progresión de Riqueza Año a Año',
     tooltip: 'Riqueza = Valor de Propiedad + Rentas Acumuladas - Capital Invertido. Muestra cómo cada inversión construye riqueza a lo largo del tiempo.',
     year: 'Año',
-    offPlanWealth: 'Off-Plan Riqueza',
-    secondaryWealth: 'Secundaria Riqueza',
+    value: 'Valor',
+    rent: 'Renta',
+    wealth: 'Riqueza',
     delta: 'Delta',
     longTerm: 'Renta Larga',
     airbnb: 'Airbnb',
@@ -109,12 +118,14 @@ export const YearByYearWealthTable = ({
     handover: 'Handover',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
+    noRent: '—',
   } : {
     title: 'Year-by-Year Wealth Progression',
     tooltip: 'Wealth = Property Value + Cumulative Rent - Capital Invested. Shows how each investment builds wealth over time.',
     year: 'Year',
-    offPlanWealth: 'Off-Plan Wealth',
-    secondaryWealth: 'Secondary Wealth',
+    value: 'Value',
+    rent: 'Rent',
+    wealth: 'Wealth',
     delta: 'Delta',
     longTerm: 'Long-Term',
     airbnb: 'Airbnb',
@@ -122,6 +133,7 @@ export const YearByYearWealthTable = ({
     handover: 'Handover',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
+    noRent: '—',
   };
 
   return (
@@ -148,14 +160,32 @@ export const YearByYearWealthTable = ({
           <Table>
             <TableHeader>
               <TableRow className="border-theme-border hover:bg-transparent">
-                <TableHead className="text-theme-text-muted text-xs w-16">{t.year}</TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-right">
-                  <span className="text-emerald-500">{t.offPlan}</span> {language === 'es' ? 'Riqueza' : 'Wealth'}
+                <TableHead className="text-theme-text-muted text-xs w-12">{t.year}</TableHead>
+                {/* Off-Plan Columns */}
+                <TableHead className="text-theme-text-muted text-xs text-right" colSpan={3}>
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-emerald-500">{t.offPlan}</span>
+                  </div>
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-right">
-                  <span className="text-cyan-500">{t.secondary}</span> {language === 'es' ? 'Riqueza' : 'Wealth'}
+                {/* Secondary Columns */}
+                <TableHead className="text-theme-text-muted text-xs text-right" colSpan={3}>
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-cyan-500" />
+                    <span className="text-cyan-500">{t.secondary}</span>
+                  </div>
                 </TableHead>
-                <TableHead className="text-theme-text-muted text-xs text-right w-28">{t.delta}</TableHead>
+                <TableHead className="text-theme-text-muted text-xs text-right w-24">{t.delta}</TableHead>
+              </TableRow>
+              <TableRow className="border-theme-border hover:bg-transparent">
+                <TableHead className="text-theme-text-muted text-[10px]"></TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right">{t.value}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right">{t.rent}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right">{t.wealth}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right">{t.value}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right">{t.rent}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right">{t.wealth}</TableHead>
+                <TableHead className="text-theme-text-muted text-[10px] text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -183,18 +213,35 @@ export const YearByYearWealthTable = ({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className={`text-sm font-medium ${
-                          row.delta > 0 ? 'text-emerald-500' : 'text-theme-text'
-                        }`}>
-                          {formatValue(row.offPlanWealth)}
-                        </span>
-                        {row.isBeforeHandover && (
-                          <span className="text-[10px] text-theme-text-muted">{t.underConstruction}</span>
-                        )}
-                      </div>
+                    {/* Off-Plan Value */}
+                    <TableCell className="text-right text-xs text-theme-text">
+                      {formatSmallValue(row.offPlanValue)}
                     </TableCell>
+                    {/* Off-Plan Rent */}
+                    <TableCell className="text-right text-xs">
+                      {row.isBeforeHandover ? (
+                        <span className="text-theme-text-muted">{t.noRent}</span>
+                      ) : (
+                        <span className="text-theme-text">{formatSmallValue(row.offPlanRent)}</span>
+                      )}
+                    </TableCell>
+                    {/* Off-Plan Wealth */}
+                    <TableCell className="text-right">
+                      <span className={`text-sm font-medium ${
+                        row.delta > 0 ? 'text-emerald-500' : 'text-theme-text'
+                      }`}>
+                        {formatValue(row.offPlanWealth)}
+                      </span>
+                    </TableCell>
+                    {/* Secondary Value */}
+                    <TableCell className="text-right text-xs text-theme-text">
+                      {formatSmallValue(row.secondaryValue)}
+                    </TableCell>
+                    {/* Secondary Rent */}
+                    <TableCell className="text-right text-xs text-theme-text">
+                      {formatSmallValue(row.secondaryRent)}
+                    </TableCell>
+                    {/* Secondary Wealth */}
                     <TableCell className="text-right">
                       <span className={`text-sm font-medium ${
                         row.delta < 0 ? 'text-cyan-500' : 'text-theme-text'
@@ -202,6 +249,7 @@ export const YearByYearWealthTable = ({
                         {formatValue(row.secondaryWealth)}
                       </span>
                     </TableCell>
+                    {/* Delta */}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         {deltaIcon}
@@ -232,6 +280,10 @@ export const YearByYearWealthTable = ({
           <div className="flex items-center gap-1.5">
             <Badge className="bg-emerald-500/20 text-emerald-500 text-[10px] px-1 py-0 border-0">🔑</Badge>
             <span>{t.handover}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-theme-text-muted">{t.noRent}</span>
+            <span>= {t.underConstruction}</span>
           </div>
         </div>
       </Card>

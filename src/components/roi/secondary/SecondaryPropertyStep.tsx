@@ -1,18 +1,11 @@
-import { useState } from 'react';
-import { Save, FolderOpen, Plus, Trash2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Save, FolderOpen, Plus, Trash2, Calculator } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Collapsible,
   CollapsibleContent,
@@ -29,6 +22,7 @@ interface SecondaryPropertyStepProps {
   offPlanPrice?: number;
   currency?: Currency;
   rate?: number;
+  language?: 'en' | 'es';
 }
 
 export const SecondaryPropertyStep = ({
@@ -37,12 +31,88 @@ export const SecondaryPropertyStep = ({
   offPlanPrice,
   currency = 'AED',
   rate = 1,
+  language = 'es',
 }: SecondaryPropertyStepProps) => {
   const { properties, loading, createProperty, deleteProperty } = useSecondaryProperties();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [propertyName, setPropertyName] = useState('');
   const [mortgageOpen, setMortgageOpen] = useState(inputs.useMortgage);
   const [airbnbOpen, setAirbnbOpen] = useState(inputs.showAirbnbComparison);
+
+  const t = language === 'es' ? {
+    savedProperties: 'Propiedades Guardadas',
+    propertyDetails: 'Detalles de Propiedad',
+    purchasePrice: 'Precio de Compra (AED)',
+    area: 'Área (sqft)',
+    closingCosts: 'Costos de Cierre %',
+    rentalYield: 'Yield Renta %',
+    appreciation: 'Apreciación %',
+    rentGrowth: 'Crecimiento Renta %',
+    serviceCharge: 'Service Charge/sqft (AED)',
+    mortgage: 'Hipoteca',
+    financing: 'Financiamiento %',
+    interestRate: 'Tasa de Interés %',
+    term: 'Plazo (años)',
+    compareAirbnb: 'Comparar Airbnb',
+    adr: 'ADR (AED/noche)',
+    occupancy: 'Ocupación %',
+    operatingExpense: 'Gastos Operativos %',
+    managementFee: 'Fee Gestión %',
+    saveForLater: 'Guardar Propiedad para Después',
+    propertyNamePlaceholder: 'Nombre de la propiedad (ej: Marina 2BR)',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    netRentSummary: 'Resumen de Renta Neta',
+    grossAnnualRent: 'Renta Bruta Anual',
+    serviceCharges: 'Service Charges',
+    netAnnualRent: 'Renta Neta Anual',
+    netYield: 'Yield Neto',
+    vsGross: 'vs bruto',
+  } : {
+    savedProperties: 'Saved Properties',
+    propertyDetails: 'Property Details',
+    purchasePrice: 'Purchase Price (AED)',
+    area: 'Area (sqft)',
+    closingCosts: 'Closing Costs %',
+    rentalYield: 'Rental Yield %',
+    appreciation: 'Appreciation %',
+    rentGrowth: 'Rent Growth %',
+    serviceCharge: 'Service Charge/sqft (AED)',
+    mortgage: 'Mortgage',
+    financing: 'Financing %',
+    interestRate: 'Interest Rate %',
+    term: 'Term (years)',
+    compareAirbnb: 'Compare Airbnb',
+    adr: 'ADR (AED/night)',
+    occupancy: 'Occupancy %',
+    operatingExpense: 'Operating Expenses %',
+    managementFee: 'Management Fee %',
+    saveForLater: 'Save Property for Later',
+    propertyNamePlaceholder: 'Property name (e.g., Marina 2BR)',
+    save: 'Save',
+    cancel: 'Cancel',
+    netRentSummary: 'Net Rent Summary',
+    grossAnnualRent: 'Gross Annual Rent',
+    serviceCharges: 'Service Charges',
+    netAnnualRent: 'Net Annual Rent',
+    netYield: 'Net Yield',
+    vsGross: 'vs gross',
+  };
+
+  // Calculate net rent values
+  const netRentCalculation = useMemo(() => {
+    const grossAnnualRent = inputs.purchasePrice * (inputs.rentalYieldPercent / 100);
+    const serviceCharges = inputs.unitSizeSqf * inputs.serviceChargePerSqft;
+    const netAnnualRent = grossAnnualRent - serviceCharges;
+    const netYield = (netAnnualRent / inputs.purchasePrice) * 100;
+    
+    return {
+      grossAnnualRent,
+      serviceCharges,
+      netAnnualRent,
+      netYield,
+    };
+  }, [inputs.purchasePrice, inputs.rentalYieldPercent, inputs.unitSizeSqf, inputs.serviceChargePerSqft]);
 
   // Helper to show dual currency
   const showDualCurrency = (value: number) => {
@@ -115,7 +185,7 @@ export const SecondaryPropertyStep = ({
         {/* Saved Properties */}
         {properties.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-theme-text-muted text-xs">Propiedades Guardadas</Label>
+            <Label className="text-theme-text-muted text-xs">{t.savedProperties}</Label>
             <div className="flex flex-wrap gap-2">
               {properties.map((prop) => (
                 <div
@@ -142,11 +212,11 @@ export const SecondaryPropertyStep = ({
 
         {/* Property Details */}
         <Card className="p-4 bg-theme-card/50 border-theme-border space-y-4">
-          <h4 className="font-medium text-theme-text text-sm">Detalles de Propiedad</h4>
+          <h4 className="font-medium text-theme-text text-sm">{t.propertyDetails}</h4>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Precio de Compra (AED)</Label>
+              <Label className="text-xs text-theme-text-muted">{t.purchasePrice}</Label>
               <Input
                 type="number"
                 value={inputs.purchasePrice}
@@ -163,7 +233,7 @@ export const SecondaryPropertyStep = ({
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Área (sqft)</Label>
+              <Label className="text-xs text-theme-text-muted">{t.area}</Label>
               <Input
                 type="number"
                 value={inputs.unitSizeSqf}
@@ -175,7 +245,7 @@ export const SecondaryPropertyStep = ({
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Costos de Cierre %</Label>
+              <Label className="text-xs text-theme-text-muted">{t.closingCosts}</Label>
               <Input
                 type="number"
                 step="0.5"
@@ -186,7 +256,7 @@ export const SecondaryPropertyStep = ({
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Yield Renta %</Label>
+              <Label className="text-xs text-theme-text-muted">{t.rentalYield}</Label>
               <Input
                 type="number"
                 step="0.5"
@@ -197,7 +267,7 @@ export const SecondaryPropertyStep = ({
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Apreciación %</Label>
+              <Label className="text-xs text-theme-text-muted">{t.appreciation}</Label>
               <Input
                 type="number"
                 step="0.5"
@@ -210,7 +280,7 @@ export const SecondaryPropertyStep = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Crecimiento Renta %</Label>
+              <Label className="text-xs text-theme-text-muted">{t.rentGrowth}</Label>
               <Input
                 type="number"
                 step="0.5"
@@ -221,7 +291,7 @@ export const SecondaryPropertyStep = ({
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-xs text-theme-text-muted">Service Charge/sqft (AED)</Label>
+              <Label className="text-xs text-theme-text-muted">{t.serviceCharge}</Label>
               <Input
                 type="number"
                 value={inputs.serviceChargePerSqft}
@@ -229,6 +299,54 @@ export const SecondaryPropertyStep = ({
                 className="bg-theme-card border-theme-border text-theme-text"
               />
               {showDualCurrency(inputs.serviceChargePerSqft)}
+            </div>
+          </div>
+        </Card>
+
+        {/* Net Rent Summary Card */}
+        <Card className="p-4 bg-theme-accent/5 border-theme-accent/20 space-y-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-theme-accent" />
+            <h4 className="font-medium text-theme-text text-sm">{t.netRentSummary}</h4>
+          </div>
+          
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-theme-text-muted">{t.grossAnnualRent}:</span>
+              <span className="text-theme-text font-medium">
+                {formatCurrency(netRentCalculation.grossAnnualRent, 'AED', 1)}
+                {currency !== 'AED' && (
+                  <span className="text-theme-text-muted ml-1">
+                    ({formatCurrency(netRentCalculation.grossAnnualRent, currency, rate)})
+                  </span>
+                )}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center text-red-500">
+              <span>- {t.serviceCharges} ({inputs.unitSizeSqf} × {inputs.serviceChargePerSqft}):</span>
+              <span className="font-medium">
+                - {formatCurrency(netRentCalculation.serviceCharges, 'AED', 1)}
+              </span>
+            </div>
+            
+            <div className="border-t border-theme-border pt-2 flex justify-between items-center">
+              <span className="text-theme-text font-medium">= {t.netAnnualRent}:</span>
+              <span className="text-emerald-500 font-bold">
+                {formatCurrency(netRentCalculation.netAnnualRent, 'AED', 1)}
+                {currency !== 'AED' && (
+                  <span className="text-theme-text-muted ml-1 font-normal">
+                    ({formatCurrency(netRentCalculation.netAnnualRent, currency, rate)})
+                  </span>
+                )}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-theme-text-muted">{t.netYield}:</span>
+              <span className="text-theme-accent font-medium">
+                {netRentCalculation.netYield.toFixed(2)}% ({t.vsGross} {inputs.rentalYieldPercent}%)
+              </span>
             </div>
           </div>
         </Card>
@@ -246,7 +364,7 @@ export const SecondaryPropertyStep = ({
                   }}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-medium text-theme-text text-sm">Hipoteca</span>
+                <span className="font-medium text-theme-text text-sm">{t.mortgage}</span>
               </div>
               <ChevronDown className={`w-4 h-4 text-theme-text-muted transition-transform ${mortgageOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
@@ -254,7 +372,7 @@ export const SecondaryPropertyStep = ({
             <CollapsibleContent className="pt-4 space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">Financiamiento %</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.financing}</Label>
                   <Input
                     type="number"
                     value={inputs.mortgageFinancingPercent}
@@ -264,7 +382,7 @@ export const SecondaryPropertyStep = ({
                 </div>
                 
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">Tasa de Interés %</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.interestRate}</Label>
                   <Input
                     type="number"
                     step="0.25"
@@ -275,7 +393,7 @@ export const SecondaryPropertyStep = ({
                 </div>
                 
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">Plazo (años)</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.term}</Label>
                   <Input
                     type="number"
                     value={inputs.mortgageLoanTermYears}
@@ -301,7 +419,7 @@ export const SecondaryPropertyStep = ({
                   }}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-medium text-theme-text text-sm">Comparar Airbnb</span>
+                <span className="font-medium text-theme-text text-sm">{t.compareAirbnb}</span>
               </div>
               <ChevronDown className={`w-4 h-4 text-theme-text-muted transition-transform ${airbnbOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
@@ -309,7 +427,7 @@ export const SecondaryPropertyStep = ({
             <CollapsibleContent className="pt-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">ADR (AED/noche)</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.adr}</Label>
                   <Input
                     type="number"
                     value={inputs.averageDailyRate}
@@ -320,7 +438,7 @@ export const SecondaryPropertyStep = ({
                 </div>
                 
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">Ocupación %</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.occupancy}</Label>
                   <Input
                     type="number"
                     value={inputs.occupancyPercent}
@@ -332,7 +450,7 @@ export const SecondaryPropertyStep = ({
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">Gastos Operativos %</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.operatingExpense}</Label>
                   <Input
                     type="number"
                     value={inputs.operatingExpensePercent}
@@ -342,7 +460,7 @@ export const SecondaryPropertyStep = ({
                 </div>
                 
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-theme-text-muted">Fee Gestión %</Label>
+                  <Label className="text-xs text-theme-text-muted">{t.managementFee}</Label>
                   <Input
                     type="number"
                     value={inputs.managementFeePercent}
@@ -364,12 +482,12 @@ export const SecondaryPropertyStep = ({
             className="w-full border-dashed border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent"
           >
             <Save className="w-4 h-4 mr-2" />
-            Guardar Propiedad para Después
+            {t.saveForLater}
           </Button>
         ) : (
           <Card className="p-3 bg-theme-card/50 border-theme-border space-y-3">
             <Input
-              placeholder="Nombre de la propiedad (ej: Marina 2BR)"
+              placeholder={t.propertyNamePlaceholder}
               value={propertyName}
               onChange={(e) => setPropertyName(e.target.value)}
               className="bg-theme-card border-theme-border text-theme-text"
@@ -382,7 +500,7 @@ export const SecondaryPropertyStep = ({
                 className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
               >
                 <Save className="w-4 h-4 mr-1" />
-                Guardar
+                {t.save}
               </Button>
               <Button
                 variant="ghost"
@@ -393,7 +511,7 @@ export const SecondaryPropertyStep = ({
                 }}
                 className="text-theme-text-muted"
               >
-                Cancelar
+                {t.cancel}
               </Button>
             </div>
           </Card>
