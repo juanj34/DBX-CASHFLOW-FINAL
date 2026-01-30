@@ -316,6 +316,8 @@ const OffPlanVsSecondary = () => {
       // For fair comparison, use total property cost (not mortgage-adjusted)
       // Secondary buyer commits to full price + fees, just like off-plan buyer
       secondaryCapitalDay1: secondaryInputs.purchasePrice + secondaryCalcs.closingCosts,
+      // Actual cash invested (for multiplier calculation)
+      secondaryCashCapital: secondaryCalcs.totalCapitalDay1,
       offPlanTotalCapitalAtHandover,
       offPlanOutOfPocket,
       offPlanMonthsNoIncome,

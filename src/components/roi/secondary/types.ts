@@ -116,7 +116,8 @@ export interface SecondaryCalculations {
 export interface ComparisonMetrics {
   // Capital
   offPlanCapitalDay1: number;
-  secondaryCapitalDay1: number;
+  secondaryCapitalDay1: number; // Full price + closing (for Entry Ticket comparison)
+  secondaryCashCapital: number; // Actual cash invested - down payment + closing (for Multiplier)
   offPlanTotalCapitalAtHandover: number;
   
   // Out of Pocket (Off-Plan during construction)
