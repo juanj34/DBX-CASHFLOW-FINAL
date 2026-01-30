@@ -171,7 +171,7 @@ const SidebarContent = ({
               {t('referenceCurrency')}
             </label>
             <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-              <SelectTrigger className="w-full h-9 bg-theme-card-alt border-theme-border text-theme-text">
+              <SelectTrigger className="w-full h-9 bg-theme-bg-alt border-theme-border text-theme-text">
                 <SelectValue placeholder="Select currency">
                   {CURRENCY_CONFIG[currency].flag} {currency}
                 </SelectValue>
@@ -190,7 +190,7 @@ const SidebarContent = ({
               {t('language')}
             </label>
             <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
-              <SelectTrigger className="w-full h-9 bg-theme-card-alt border-theme-border text-theme-text">
+              <SelectTrigger className="w-full h-9 bg-theme-bg-alt border-theme-border text-theme-text">
                 <SelectValue placeholder="Select language">
                   {language === 'en' ? '🇬🇧 English' : '🇪🇸 Español'}
                 </SelectValue>
@@ -259,7 +259,7 @@ export const SnapshotViewSidebar = (props: SnapshotViewSidebarProps) => {
           <div className="flex items-center gap-2">
             {/* Quick currency selector */}
             <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-              <SelectTrigger className="w-20 h-8 bg-theme-card-alt border-theme-border text-theme-text text-xs">
+              <SelectTrigger className="w-20 h-8 bg-theme-bg-alt border-theme-border text-theme-text text-xs">
                 <SelectValue>
                   {CURRENCY_CONFIG[currency].flag} {currency}
                 </SelectValue>
