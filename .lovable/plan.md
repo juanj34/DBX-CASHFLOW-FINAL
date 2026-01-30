@@ -1,288 +1,239 @@
 
-
-# Plan: Complete Off-Plan vs Secondary Comparison Tool Overhaul
+# Plan: Enhanced Off-Plan vs Secondary Comparison - Meaningful Metrics
 
 ## Problems Identified
 
-### 1. Year 1 Shows Appreciated Value Instead of Purchase Price
-**Screenshot shows**: Off-Plan Year 1 = AED 10.87M, but base price is AED 9.6M
+### 1. "NaNK/mo" Bug in Monthly Cashflow Card
+**Screenshot shows**: Secondary Monthly Cashflow = "NaNK/mo"
 
-**Root cause**: The `useOICalculations` and `useSecondaryCalculations` hooks calculate Year 1 with 1 year of appreciation already applied:
+**Root cause**: The `formatValue()` function receives a NaN value when:
+- The secondary calculations haven't completed yet
+- There's an edge case in the mortgage calculation
+
+**Fix**: Add NaN check in `ComparisonKeyInsights.tsx`:
 ```typescript
-// Secondary (line 108)
-const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year);
-
-// Off-Plan (similar)
-propertyValue = basePrice * (1 + yearAppreciation)
+const formattedCashflow = isNaN(secondaryMonthlyCashflow) 
+  ? 'N/A' 
+  : `${secondaryMonthlyCashflow >= 0 ? '+' : ''}${formatValue(secondaryMonthlyCashflow)}${t.perMonth}`;
 ```
 
-**Solution**: Add a "Year 0" row back, but correctly - representing the **purchase date**, not Year 1 data.
+### 2. Replace "Monthly Cashflow During Construction" with Total Income
+**Current**: Shows useless monthly value during a period when comparison should be cumulative
+**New**: Show **total rent earned by Secondary** during the construction phase (e.g., 48 months × monthly rent)
 
-Actually, simpler fix: We should show base price in Year 1 for the "Value" column, since Year 1 is "End of Year 1" - the value at purchase (start of Year 1) is the base price.
+### 3. Missing: Tenant Mortgage Paydown (Principal Paid)
+The user wants to see how much of the mortgage principal is paid by the tenant over time. This is hidden wealth building!
 
----
-
-### 2. Construction Phase Card - Wrong Rent Calculation
-**Current** (line 34 in `OutOfPocketCard.tsx`):
-```typescript
-const avgMonthlyRent = secondaryCapitalDay1 * 0.07 / 12;
-```
-
-`secondaryCapitalDay1` is equity + closing costs (e.g., 4.4M), NOT the property price (9.89M).
-
-**Fix**: Pass `secondaryPurchasePrice` as a prop and use it:
-```typescript
-const avgMonthlyRent = secondaryPurchasePrice * 0.07 / 12;
-```
-
----
-
-### 3. "Crossover Point" is Confusing
-The "Crossover Point" metric compares wealth of two different assets with different values. It's misleading when:
-- Off-Plan is 9.6M
-- Secondary is 9.89M
-
-**Replace with**: "Monthly Cashflow Comparison" showing:
-- **Off-Plan**: AED 0/mo (during construction)
-- **Secondary**: Net cashflow (Rent - Mortgage if financed)
-
----
-
-### 4. Missing: Mortgage Coverage for Secondary
-The user wants to see when mortgage is enabled:
-- How much rent covers the mortgage
-- Is the property "self-paying"?
-- Monthly cashflow after mortgage
+### 4. Missing: Rental Comparison at Handover
+At handover, both properties can be rented. Show side-by-side comparison:
+- Off-Plan: Expected Monthly Rent
+- Secondary: Monthly Rent (at that time, with growth applied)
 
 ---
 
 ## Technical Changes
 
-### File 1: `src/components/roi/secondary/YearByYearWealthTable.tsx`
+### File 1: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
 
-#### Fix Year 1 to show purchase prices (not appreciated values)
+#### Change "Monthly Cashflow" card to "Income During Build"
 
-The issue is that projections already contain `propertyValue` with Year 1 appreciation. For a fair "entry point" display:
+| Before | After |
+|--------|-------|
+| Monthly Cashflow | Income During Build |
+| AED X/mo | Total: AED X.XM |
+| Shows monthly rate | Shows cumulative rent earned during construction |
 
-**Option A** (cleaner): Add pass-through props for base prices and show them in Year 1
-**Option B**: Modify the loop to show base prices for Year 1 row
-
-I'll use **Option A** - add `offPlanBasePrice` and `secondaryPurchasePrice` props:
-
-```typescript
-interface YearByYearWealthTableProps {
-  // ... existing
-  offPlanBasePrice: number;      // NEW
-  secondaryPurchasePrice: number; // NEW
-}
-```
-
-Then in the table, for Year 1's "Value" column:
-```typescript
-// Year 1 shows purchase price (entry point)
-// Years 2+ show appreciated values
-const displayOffPlanValue = row.year === 1 ? offPlanBasePrice : row.offPlanValue;
-const displaySecondaryValue = row.year === 1 ? secondaryPurchasePrice : row.secondaryValue;
-```
-
----
-
-### File 2: `src/components/roi/secondary/OutOfPocketCard.tsx`
-
-#### Add `secondaryPurchasePrice` prop and fix rent calculation
-
-```typescript
-interface OutOfPocketCardProps {
-  // ... existing
-  secondaryPurchasePrice: number;  // NEW
-}
-
-// Fix the calculation (line 34)
-const avgMonthlyRent = secondaryPurchasePrice * 0.07 / 12;
-```
-
----
-
-### File 3: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
-
-#### Replace "Crossover Point" with "Monthly Cashflow"
-
-Change the 4 insight cards from:
-1. Entry Ticket
-2. Multiplier
-3. **Crossover Point** ← Remove
-4. Construction Bonus
-
-To:
-1. Entry Ticket
-2. Multiplier
-3. **Monthly Cashflow** ← New (show Off-Plan $0 vs Secondary net cashflow)
-4. Construction Bonus
-
-New props needed:
+**New props needed**:
 ```typescript
 interface ComparisonKeyInsightsProps {
   // ... existing
-  secondaryMonthlyCashflow: number;  // Net (rent - mortgage)
-  secondaryMonthlyRent: number;      // Gross rent
-  secondaryMonthlyMortgage: number;  // Mortgage payment (0 if no mortgage)
-  mortgageEnabled: boolean;
+  constructionMonths: number;  // NEW: Duration of construction
+  secondaryTotalIncomeAtHandover: number; // NEW: Net rent × months
 }
 ```
 
-New card design:
+**New card definition**:
 ```typescript
 {
-  key: 'cashflow',
-  title: 'Monthly Cashflow',
+  key: 'income',
+  title: t.incomeBuildup,
+  subtitle: t.duringConstruction,
   icon: Coins,
   showComparison: true,
   offPlanValue: 'AED 0',
-  secondaryValue: formatValue(secondaryMonthlyCashflow),
-  badge: mortgageEnabled 
-    ? (secondaryMonthlyCashflow >= 0 ? '100% Covered' : 'Partial Coverage')
-    : null,
-  winner: 'secondary', // Secondary always wins during construction
+  secondaryValue: formatValue(secondaryTotalIncomeAtHandover),
+  badge: `${constructionMonths} ${t.months}`,
+  badgeColor: 'cyan',
+  winner: 'secondary',
 }
 ```
 
 ---
 
-### File 4: `src/components/roi/secondary/MortgageCoverageCard.tsx` (NEW FILE)
+### File 2: `src/components/roi/secondary/MortgageCoverageCard.tsx`
 
-Create a new card that shows mortgage coverage when mortgage is enabled:
+#### Add Principal Paydown Section
 
+Enhance the existing card to show tenant's contribution to mortgage principal:
+
+```text
+┌────────────────────────────────────────┐
+│ 🏠 Tenant Pays Your Mortgage           │
+│                                        │
+│ Monthly Rent:        AED 57,722        │
+│ Mortgage Payment:    AED 45,000        │
+│ [████████████████████] 128% Coverage   │
+│                                        │
+│ Net Cashflow: +AED 12,722/mo           │
+│                                        │
+│ ─── HIDDEN WEALTH ───                  │ ← NEW SECTION
+│ Principal Paid by Tenant (10Y):        │
+│ AED 2.4M of your AED 5.9M loan         │
+│ [████████▓▓▓▓▓▓▓▓▓▓▓▓] 41%            │
+└────────────────────────────────────────┘
+```
+
+**New props needed**:
 ```typescript
 interface MortgageCoverageCardProps {
-  monthlyRent: number;
-  monthlyMortgage: number;
-  netCashflow: number;
-  coveragePercent: number; // rent / mortgage * 100
-  currency: Currency;
-  rate: number;
-  language: 'en' | 'es';
+  // ... existing
+  loanAmount: number;
+  principalPaidYear10: number;
 }
 ```
 
-Visual design:
-- Progress bar showing coverage %
-- If >= 100%: "Tenant pays your mortgage!" in green
-- If < 100%: "You pay AED X/mo gap" in amber
-
 ---
 
-### File 5: `src/pages/OffPlanVsSecondary.tsx`
+### File 3: Create `src/components/roi/secondary/RentalComparisonAtHandover.tsx`
 
-#### Pass new props to components
+New component showing side-by-side rental at handover:
 
-```typescript
-// To YearByYearWealthTable:
-<YearByYearWealthTable
-  // ... existing
-  offPlanBasePrice={safeOffPlanInputs.basePrice}
-  secondaryPurchasePrice={secondaryInputs.purchasePrice}
-/>
-
-// To OutOfPocketCard:
-<OutOfPocketCard
-  // ... existing
-  secondaryPurchasePrice={secondaryInputs.purchasePrice}
-/>
-
-// To ComparisonKeyInsights:
-<ComparisonKeyInsights
-  // ... existing
-  secondaryMonthlyCashflow={
-    rentalMode === 'long-term' 
-      ? secondaryCalcs.monthlyCashflowLT 
-      : secondaryCalcs.monthlyCashflowST
-  }
-  secondaryMonthlyRent={
-    rentalMode === 'long-term'
-      ? secondaryCalcs.monthlyRentLT
-      : secondaryCalcs.monthlyRentST
-  }
-  secondaryMonthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
-  mortgageEnabled={secondaryInputs.useMortgage}
-/>
-
-// Add MortgageCoverageCard when mortgage enabled:
-{secondaryInputs.useMortgage && (
-  <MortgageCoverageCard
-    monthlyRent={
-      rentalMode === 'long-term' 
-        ? secondaryCalcs.monthlyRentLT 
-        : secondaryCalcs.monthlyRentST
-    }
-    monthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
-    netCashflow={
-      rentalMode === 'long-term'
-        ? secondaryCalcs.monthlyCashflowLT
-        : secondaryCalcs.monthlyCashflowST
-    }
-    coveragePercent={
-      secondaryCalcs.monthlyMortgagePayment > 0
-        ? (secondaryCalcs.monthlyRentLT / secondaryCalcs.monthlyMortgagePayment) * 100
-        : 100
-    }
-    currency={currency}
-    rate={rate}
-    language={language}
-  />
-)}
+```text
+┌────────────────────────────────────────┐
+│ 🏠 Monthly Rent at Handover            │
+│                                        │
+│  Off-Plan           Secondary          │
+│  ─────────          ──────────         │
+│  AED 56,000/mo      AED 59,400/mo      │
+│  (7% yield on       (After 4yr rent    │
+│   9.6M property)     growth at 3%/yr)  │
+│                                        │
+│  🏆 Secondary: +6% higher rent         │
+└────────────────────────────────────────┘
 ```
 
 ---
 
-### File 6: `src/components/roi/secondary/index.ts`
+### File 4: `src/pages/OffPlanVsSecondary.tsx`
 
-Export the new component:
+#### Calculate new metrics and pass to components
+
+**Add calculations**:
 ```typescript
-export { MortgageCoverageCard } from './MortgageCoverageCard';
+// Total income earned by Secondary during construction
+const secondaryTotalIncomeAtHandover = useMemo(() => {
+  const monthlyRent = rentalMode === 'long-term' 
+    ? secondaryCalcs.monthlyRentLT 
+    : secondaryCalcs.monthlyRentST;
+  const months = handoverYearIndex * 12;
+  // Simple calculation: average monthly rent × months (ignoring growth for simplicity)
+  return monthlyRent * months;
+}, [secondaryCalcs, handoverYearIndex, rentalMode]);
+
+// Principal paid at Year 10 (from secondary projections)
+const secondaryPrincipalPaid10Y = useMemo(() => {
+  return secondaryCalcs.yearlyProjections[9]?.principalPaid || 0;
+}, [secondaryCalcs]);
+
+// Off-Plan rental at handover (from off-plan calcs)
+const offPlanMonthlyRentAtHandover = useMemo(() => {
+  return offPlanCalcs.holdAnalysis?.netAnnualRent / 12 || 0;
+}, [offPlanCalcs]);
+
+// Secondary rental at handover (with growth applied)
+const secondaryMonthlyRentAtHandover = useMemo(() => {
+  const baseRent = rentalMode === 'long-term' 
+    ? secondaryCalcs.monthlyRentLT 
+    : secondaryCalcs.monthlyRentST;
+  const growthFactor = Math.pow(1 + secondaryInputs.rentGrowthRate / 100, handoverYearIndex);
+  return baseRent * growthFactor;
+}, [secondaryCalcs, secondaryInputs, handoverYearIndex, rentalMode]);
+```
+
+**Update component props**:
+```tsx
+<ComparisonKeyInsights
+  // ... existing
+  constructionMonths={handoverYearIndex * 12}
+  secondaryTotalIncomeAtHandover={secondaryTotalIncomeAtHandover}
+/>
+
+<MortgageCoverageCard
+  // ... existing
+  loanAmount={secondaryCalcs.loanAmount}
+  principalPaidYear10={secondaryPrincipalPaid10Y}
+/>
+
+{/* Add new rental comparison card */}
+<RentalComparisonAtHandover
+  offPlanMonthlyRent={offPlanMonthlyRentAtHandover}
+  secondaryMonthlyRent={secondaryMonthlyRentAtHandover}
+  handoverYear={handoverYearIndex}
+  currency={currency}
+  rate={rate}
+  language={language}
+/>
+```
+
+---
+
+### File 5: `src/components/roi/secondary/index.ts`
+
+Export new component:
+```typescript
+export { RentalComparisonAtHandover } from './RentalComparisonAtHandover';
 ```
 
 ---
 
 ## Expected Results
 
-### Year-by-Year Table (After Fix)
-
-| Year | Off-Plan Value | Rent | Wealth | Secondary Value | Rent | Wealth |
-|------|----------------|------|--------|-----------------|------|--------|
-| 1    | AED 9.60M ✓    | —    | 9.60M  | AED 9.89M ✓     | 628K | 10.52M |
-| 2    | AED 10.87M     | —    | 10.87M | AED 10.18M      | 647K | 11.46M |
-
-### Construction Phase Card (After Fix)
-
-| Metric | Before | After |
-|--------|--------|-------|
-| Secondary Rent | +AED 1.2M | +AED 2.8M |
-| Calculation | 4.4M × 7% × 48mo | 9.89M × 7% × 48mo |
-
 ### Key Insights Cards (After Fix)
 
-| Before | After |
-|--------|-------|
-| 1. Entry Ticket | 1. Entry Ticket |
-| 2. Multiplier | 2. Multiplier |
-| 3. Crossover Point ❌ | 3. **Monthly Cashflow** ✓ |
-| 4. Construction Bonus | 4. Construction Bonus |
+| Card | Before | After |
+|------|--------|-------|
+| 1. Entry Ticket | ✓ Keep | ✓ Keep |
+| 2. Multiplier | ✓ Keep | ✓ Keep |
+| 3. Monthly Cashflow | "NaNK/mo" | **Income During Build: +AED 2.8M** |
+| 4. Construction Bonus | ✓ Keep | ✓ Keep |
 
-### New Mortgage Coverage Card
+### Mortgage Coverage Card (Enhanced)
 
-When Secondary has mortgage enabled:
 ```text
-┌────────────────────────────────────────┐
-│ 🏠 Tenant Pays Your Mortgage           │
-│                                        │
-│ Monthly Rent:     AED 57,722          │
-│ Mortgage Payment: AED 45,000          │
-│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
-│ [████████████████████▓▓▓▓] 128%       │
-│                                        │
-│ 🎉 Net Cashflow: +AED 12,722/mo       │
-│    Property pays itself + profit!      │
-└────────────────────────────────────────┘
+🏠 Tenant Pays Your Mortgage
+
+Monthly Rent:        AED 57,722
+Mortgage Payment:    AED 45,000
+[████████████████████] 128%
+
+Net Cashflow: +AED 12,722/mo
+
+── Principal Paydown (10Y) ──    ← NEW
+Tenant pays off: AED 2.4M        
+Remaining: AED 3.5M              
+[████████▓▓▓▓▓▓▓▓▓▓▓▓] 41%      
+```
+
+### New: Rental Comparison at Handover
+
+```text
+🏠 Rent at Handover (Year 4)
+
+Off-Plan         Secondary
+AED 56,000/mo    AED 59,400/mo
+(7% on 9.6M)     (7% on 9.9M + growth)
+
+Secondary: +6% higher at handover
 ```
 
 ---
@@ -291,10 +242,8 @@ When Secondary has mortgage enabled:
 
 | File | Action | Changes |
 |------|--------|---------|
-| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Modify | Add base price props, show purchase prices in Year 1 |
-| `src/components/roi/secondary/OutOfPocketCard.tsx` | Modify | Add purchasePrice prop, fix rent calculation |
-| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Modify | Replace Crossover with Cashflow card, add new props |
-| `src/components/roi/secondary/MortgageCoverageCard.tsx` | **Create** | New card showing mortgage coverage |
-| `src/pages/OffPlanVsSecondary.tsx` | Modify | Pass new props to all components |
+| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Modify | Change Monthly Cashflow → Income During Build, add NaN fix |
+| `src/components/roi/secondary/MortgageCoverageCard.tsx` | Modify | Add Principal Paydown section |
+| `src/components/roi/secondary/RentalComparisonAtHandover.tsx` | **Create** | New card comparing rent at handover |
+| `src/pages/OffPlanVsSecondary.tsx` | Modify | Calculate new metrics, pass props |
 | `src/components/roi/secondary/index.ts` | Modify | Export new component |
-
