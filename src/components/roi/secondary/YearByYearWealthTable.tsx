@@ -54,43 +54,76 @@ export const YearByYearWealthTable = ({
   const isAirbnb = rentalMode === 'airbnb';
 
   const tableData = useMemo(() => {
-    return offPlanProjections.slice(0, 10).map((opProj, index) => {
+    const data = [];
+    
+    // Year 0 (starting point)
+    const opYear0 = offPlanProjections[0];
+    const secYear0 = secondaryProjections[0];
+    const opBaseValue = opYear0?.propertyValue || 0;
+    const secBaseValue = secYear0?.propertyValue || 0;
+    
+    // Get secondary capital (purchase price + closing costs)
+    const secondaryPurchasePrice = secBaseValue;
+    
+    data.push({
+      year: 0,
+      calendarYear: (opYear0?.calendarYear || new Date().getFullYear()) - 1,
+      offPlanValue: opBaseValue,
+      offPlanRent: 0,
+      offPlanCumulativeRent: 0,
+      offPlanWealth: opBaseValue, // Wealth = Value + Cumulative Rent (0 at start)
+      secondaryValue: secBaseValue,
+      secondaryRent: 0,
+      secondaryCumulativeRent: 0,
+      secondaryWealth: secBaseValue, // Wealth = Value + Cumulative Rent (0 at start)
+      delta: opBaseValue - secBaseValue,
+      isHandover: false,
+      isBeforeHandover: true,
+    });
+    
+    // Years 1-10
+    let opCumulativeRent = 0;
+    let secCumulativeRent = 0;
+    
+    for (let index = 0; index < Math.min(offPlanProjections.length, 10); index++) {
+      const opProj = offPlanProjections[index];
       const secProj = secondaryProjections[index];
       const year = index + 1;
       
-      // Calculate off-plan cumulative rent (only after handover)
-      let opCumulativeRent = 0;
-      for (let i = 0; i <= index; i++) {
-        if (i >= handoverYearIndex - 1 && offPlanProjections[i]?.netIncome) {
-          opCumulativeRent += offPlanProjections[i].netIncome;
-        }
-      }
-      
-      const opWealth = (opProj?.propertyValue || 0) + opCumulativeRent - offPlanCapitalInvested;
-      const secWealth = isAirbnb ? secProj?.totalWealthST : secProj?.totalWealthLT;
-      const delta = opWealth - (secWealth || 0);
-      
       const isBeforeHandover = year < handoverYearIndex;
       
-      // Get annual rent values
+      // Get annual NET rent values (after service charges)
       const opAnnualRent = isBeforeHandover ? 0 : (opProj?.netIncome || 0);
       const secAnnualRent = isAirbnb ? (secProj?.netRentST || 0) : (secProj?.netRentLT || 0);
       
-      return {
+      // Accumulate rent
+      opCumulativeRent += opAnnualRent;
+      secCumulativeRent += secAnnualRent;
+      
+      // Wealth = Property Value + Cumulative Net Rent
+      const opWealth = (opProj?.propertyValue || 0) + opCumulativeRent;
+      const secWealth = (secProj?.propertyValue || 0) + secCumulativeRent;
+      const delta = opWealth - secWealth;
+      
+      data.push({
         year,
         calendarYear: opProj?.calendarYear || new Date().getFullYear() + year,
         offPlanValue: opProj?.propertyValue || 0,
         offPlanRent: opAnnualRent,
+        offPlanCumulativeRent: opCumulativeRent,
         offPlanWealth: opWealth,
         secondaryValue: secProj?.propertyValue || 0,
         secondaryRent: secAnnualRent,
-        secondaryWealth: secWealth || 0,
+        secondaryCumulativeRent: secCumulativeRent,
+        secondaryWealth: secWealth,
         delta,
         isHandover: year === handoverYearIndex,
         isBeforeHandover,
-      };
-    });
-  }, [offPlanProjections, secondaryProjections, offPlanCapitalInvested, handoverYearIndex, isAirbnb]);
+      });
+    }
+    
+    return data;
+  }, [offPlanProjections, secondaryProjections, handoverYearIndex, isAirbnb]);
 
   const formatValue = (value: number): string => {
     const dual = formatDualCurrencyCompact(value, currency, rate);
@@ -106,7 +139,7 @@ export const YearByYearWealthTable = ({
 
   const t = language === 'es' ? {
     title: 'Progresión de Riqueza Año a Año',
-    tooltip: 'Riqueza = Valor de Propiedad + Rentas Acumuladas - Capital Invertido. Muestra cómo cada inversión construye riqueza a lo largo del tiempo.',
+    tooltip: 'Riqueza = Valor de Propiedad + Rentas Netas Acumuladas (después de gastos de servicio). Muestra cómo cada inversión construye riqueza a lo largo del tiempo.',
     year: 'Año',
     value: 'Valor',
     rent: 'Renta',
@@ -121,7 +154,7 @@ export const YearByYearWealthTable = ({
     noRent: '—',
   } : {
     title: 'Year-by-Year Wealth Progression',
-    tooltip: 'Wealth = Property Value + Cumulative Rent - Capital Invested. Shows how each investment builds wealth over time.',
+    tooltip: 'Wealth = Property Value + Cumulative Net Rent (after service charges). Shows how each investment builds wealth over time.',
     year: 'Year',
     value: 'Value',
     rent: 'Rent',
