@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { TopNavbar } from '@/components/layout/TopNavbar';
 import { Building2, ArrowLeft, RefreshCw, Search, ArrowRight, User, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -262,13 +262,12 @@ const OffPlanVsSecondary = () => {
   if (!quoteId) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <PageHeader
-          title="Off-Plan vs Secundaria"
-          subtitle="Selecciona un quote off-plan para comparar contra una propiedad secundaria"
-          icon={<Building2 className="w-5 h-5" />}
-          backLink="/home"
-        />
+        <TopNavbar />
         <div className="container mx-auto px-4 py-6 max-w-3xl">
+          <div className="mb-6">
+            <h1 className="text-xl font-bold text-theme-text">Off-Plan vs Secundaria</h1>
+            <p className="text-sm text-theme-text-muted mt-1">Selecciona un quote off-plan para comparar</p>
+          </div>
           {/* Search */}
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
@@ -358,10 +357,7 @@ const OffPlanVsSecondary = () => {
   if (quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <PageHeader
-          title="Cargando..."
-          backLink="/offplan-vs-secondary"
-        />
+        <TopNavbar />
         <div className="container mx-auto px-4 py-6 space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
@@ -373,10 +369,7 @@ const OffPlanVsSecondary = () => {
   if (!quote || !offPlanInputs) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <PageHeader
-          title="Quote no encontrado"
-          backLink="/offplan-vs-secondary"
-        />
+        <TopNavbar />
         <div className="container mx-auto px-4 py-6">
           <p className="text-theme-text-muted">No se pudo cargar el quote. Por favor selecciona uno válido.</p>
           <Button 
@@ -395,12 +388,7 @@ const OffPlanVsSecondary = () => {
 
   return (
     <div className="min-h-screen bg-theme-bg">
-      <PageHeader
-        title="Off-Plan vs Secundaria"
-        subtitle={`Comparando ${projectName} contra inversión en secundaria`}
-        icon={<Building2 className="w-5 h-5" />}
-        backLink={`/cashflow/${quoteId}`}
-      />
+      <TopNavbar />
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
