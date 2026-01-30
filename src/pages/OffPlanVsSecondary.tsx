@@ -416,17 +416,16 @@ const OffPlanVsSecondary = () => {
                 {t.startComparison}
               </Button>
               
-              {comparisons.length > 0 && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setLoadModalOpen(true)}
-                  className="border-theme-border text-theme-text hover:bg-theme-card"
-                >
-                  <FolderOpen className="w-5 h-5 mr-2" />
-                  {t.loadRecent} ({comparisons.length})
-                </Button>
-              )}
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setLoadModalOpen(true)}
+                className="border-theme-border text-theme-text hover:bg-theme-card"
+                disabled={comparisonsLoading}
+              >
+                <FolderOpen className="w-5 h-5 mr-2" />
+                {t.loadRecent} {comparisons.length > 0 && `(${comparisons.length})`}
+              </Button>
             </div>
           </Card>
 
