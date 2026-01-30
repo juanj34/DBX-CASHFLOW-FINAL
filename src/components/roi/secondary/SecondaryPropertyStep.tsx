@@ -19,6 +19,8 @@ import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 interface SecondaryPropertyStepProps {
   inputs: SecondaryInputs;
   onChange: (inputs: SecondaryInputs) => void;
+  propertyName: string;
+  onPropertyNameChange: (name: string) => void;
   offPlanPrice?: number;
   currency?: Currency;
   rate?: number;
@@ -28,6 +30,8 @@ interface SecondaryPropertyStepProps {
 export const SecondaryPropertyStep = ({
   inputs,
   onChange,
+  propertyName,
+  onPropertyNameChange,
   offPlanPrice,
   currency = 'AED',
   rate = 1,
@@ -35,7 +39,6 @@ export const SecondaryPropertyStep = ({
 }: SecondaryPropertyStepProps) => {
   const { properties, loading, createProperty, deleteProperty } = useSecondaryProperties();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [propertyName, setPropertyName] = useState('');
   const [mortgageOpen, setMortgageOpen] = useState(inputs.useMortgage);
   const [airbnbOpen, setAirbnbOpen] = useState(inputs.showAirbnbComparison);
 
@@ -187,7 +190,7 @@ export const SecondaryPropertyStep = ({
       airbnb_management_fee: inputs.managementFeePercent,
     });
     
-    setPropertyName('');
+    // Note: Don't clear propertyName after saving - the parent controls it
     setSaveDialogOpen(false);
   };
 
@@ -232,7 +235,7 @@ export const SecondaryPropertyStep = ({
             <Label className="text-xs text-theme-text-muted">{t.propertyName}</Label>
             <Input
               value={propertyName}
-              onChange={(e) => setPropertyName(e.target.value)}
+              onChange={(e) => onPropertyNameChange(e.target.value)}
               placeholder={t.propertyNamePlaceholder}
               className="bg-theme-card border-theme-border text-theme-text"
             />
@@ -572,7 +575,7 @@ export const SecondaryPropertyStep = ({
             <Input
               placeholder={t.propertyNamePlaceholder}
               value={propertyName}
-              onChange={(e) => setPropertyName(e.target.value)}
+              onChange={(e) => onPropertyNameChange(e.target.value)}
               className="bg-theme-card border-theme-border text-theme-text"
             />
             <div className="flex gap-2">
@@ -590,7 +593,6 @@ export const SecondaryPropertyStep = ({
                 size="sm"
                 onClick={() => {
                   setSaveDialogOpen(false);
-                  setPropertyName('');
                 }}
                 className="text-theme-text-muted"
               >

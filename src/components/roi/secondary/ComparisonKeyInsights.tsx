@@ -1,4 +1,4 @@
-import { TrendingUp, Wallet, Coins, Building2 } from 'lucide-react';
+import { TrendingUp, Coins, Building2, Gem } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Currency, formatDualCurrencyCompact } from '@/components/roi/currencyUtils';
@@ -12,9 +12,12 @@ interface ComparisonKeyInsightsProps {
   rate: number;
   language: 'en' | 'es';
   appreciationDuringConstruction: number;
-  // New props for Income During Build card
+  // Props for Income During Build card
   constructionMonths: number;
   secondaryTotalIncomeAtHandover: number;
+  // NEW: Property values at Year 10
+  offPlanPropertyValue10Y: number;
+  secondaryPropertyValue10Y: number;
 }
 
 export const ComparisonKeyInsights = ({
@@ -27,6 +30,8 @@ export const ComparisonKeyInsights = ({
   appreciationDuringConstruction,
   constructionMonths,
   secondaryTotalIncomeAtHandover,
+  offPlanPropertyValue10Y,
+  secondaryPropertyValue10Y,
 }: ComparisonKeyInsightsProps) => {
   const isAirbnb = rentalMode === 'airbnb';
 
@@ -34,11 +39,6 @@ export const ComparisonKeyInsights = ({
     ? metrics.secondaryWealthYear10ST 
     : metrics.secondaryWealthYear10LT;
 
-  // Computed persuasive metrics
-  const entrySavings = metrics.secondaryCapitalDay1 > 0
-    ? ((metrics.secondaryCapitalDay1 - metrics.offPlanCapitalDay1) / metrics.secondaryCapitalDay1) * 100
-    : 0;
-  
   // Off-plan multiplier: use total capital at handover (realistic cash deployed)
   const offPlanTotalCapital = metrics.offPlanTotalCapitalAtHandover || metrics.offPlanCapitalDay1;
   const offPlanMultiplier = offPlanTotalCapital > 0
@@ -46,10 +46,13 @@ export const ComparisonKeyInsights = ({
     : 0;
   
   // Secondary multiplier: use full property commitment (purchase price + closing)
-  // This is the "asset you control" vs "what that asset becomes"
   const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
     ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
     : 0;
+
+  // Total Wealth = Property Value at Year 10 + Cumulative Net Rent
+  const offPlanTotalWealth10 = metrics.offPlanWealthYear10 + offPlanTotalCapital;
+  const secondaryTotalWealth10 = secondaryWealth10 + metrics.secondaryCapitalDay1;
 
   const formatValue = (value: number): string => {
     // Handle NaN and invalid values
@@ -63,57 +66,61 @@ export const ComparisonKeyInsights = ({
     return dual.primary;
   };
 
+  // Format short property value (just primary)
+  const formatPropertyValue = (value: number): string => {
+    if (isNaN(value) || !isFinite(value)) {
+      return 'N/A';
+    }
+    const dual = formatDualCurrencyCompact(value, currency, rate);
+    return dual.primary;
+  };
+
   const t = language === 'es' ? {
-    entryTicket: 'Capital Inicial',
-    entryTicketTooltip: 'Compromiso total requerido. Off-plan = precio + fees. Secundaria = precio + costos de cierre.',
+    totalWealth: 'Riqueza Total',
+    totalWealthSubtitle: 'Valor + Renta 10 años',
     moneyMultiplier: 'Multiplicador',
     moneyMultiplierSubtitle: 'Crecimiento 10 años',
     incomeDuringBuild: 'Ingresos Durante Obra',
     incomeDuringBuildSubtitle: 'Renta acumulada',
     constructionBonus: 'Bonus Construcción',
     constructionDescription: 'Apreciación "gratis" durante obra',
-    save: 'Ahorro',
-    growth: 'crecimiento',
-    year: 'Año',
     noData: 'N/A',
     freeEquity: '¡Equity gratis!',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
     noIncome: 'Sin ingresos',
     months: 'meses',
-    total: 'Total',
+    propertyValue: 'Valor propiedad',
   } : {
-    entryTicket: 'Entry Ticket',
-    entryTicketTooltip: 'Total commitment required. Off-plan = price + fees. Secondary = price + closing costs.',
+    totalWealth: 'Total Wealth',
+    totalWealthSubtitle: 'Value + Rent at 10Y',
     moneyMultiplier: 'Multiplier',
     moneyMultiplierSubtitle: '10-Year Growth',
     incomeDuringBuild: 'Income During Build',
     incomeDuringBuildSubtitle: 'Cumulative rent earned',
     constructionBonus: 'Construction Bonus',
     constructionDescription: '"Free" appreciation during build',
-    save: 'Save',
-    growth: 'growth',
-    year: 'Year',
     noData: 'N/A',
     freeEquity: 'Free equity!',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
     noIncome: 'No income',
     months: 'months',
-    total: 'Total',
+    propertyValue: 'Property value',
   };
 
   const cards = [
     {
-      key: 'entry',
-      title: t.entryTicket,
-      icon: Wallet,
+      key: 'wealth10',
+      title: t.totalWealth,
+      subtitle: t.totalWealthSubtitle,
+      icon: Gem,
       showComparison: true,
-      offPlanValue: formatValue(metrics.offPlanCapitalDay1),
-      secondaryValue: formatValue(metrics.secondaryCapitalDay1),
-      badge: entrySavings > 0 ? `${t.save} ${Math.round(entrySavings)}%` : null,
-      badgeColor: entrySavings > 0 ? 'emerald' : 'cyan',
-      winner: metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'offplan' : 'secondary',
+      offPlanValue: formatValue(offPlanTotalWealth10),
+      secondaryValue: formatValue(secondaryTotalWealth10),
+      badge: null,
+      badgeColor: null,
+      winner: offPlanTotalWealth10 > secondaryTotalWealth10 ? 'offplan' : 'secondary',
     },
     {
       key: 'multiplier',
@@ -122,7 +129,9 @@ export const ComparisonKeyInsights = ({
       icon: TrendingUp,
       showComparison: true,
       offPlanValue: `${offPlanMultiplier.toFixed(1)}x`,
+      offPlanSubValue: `→ ${formatPropertyValue(offPlanPropertyValue10Y)}`,
       secondaryValue: `${secondaryMultiplier.toFixed(1)}x`,
+      secondarySubValue: `→ ${formatPropertyValue(secondaryPropertyValue10Y)}`,
       badge: null,
       badgeColor: null,
       winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
@@ -205,11 +214,20 @@ export const ComparisonKeyInsights = ({
                   >
                     {isOffPlanWinner && '🏆 '}{t.offPlan}
                   </Badge>
-                  <span className={`text-sm font-semibold ${
-                    isOffPlanWinner ? 'text-emerald-500' : 'text-theme-text'
-                  }`}>
-                    {card.offPlanValue}
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-sm font-semibold ${
+                      isOffPlanWinner ? 'text-emerald-500' : 'text-theme-text'
+                    }`}>
+                      {card.offPlanValue}
+                    </span>
+                    {(card as any).offPlanSubValue && (
+                      <span className={`block text-[10px] ${
+                        isOffPlanWinner ? 'text-emerald-500/70' : 'text-theme-text-muted'
+                      }`}>
+                        {(card as any).offPlanSubValue}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Secondary Row */}
@@ -224,11 +242,20 @@ export const ComparisonKeyInsights = ({
                   >
                     {!isOffPlanWinner && '🏆 '}{t.secondary}
                   </Badge>
-                  <span className={`text-sm font-semibold ${
-                    !isOffPlanWinner ? 'text-cyan-500' : 'text-theme-text'
-                  }`}>
-                    {card.secondaryValue}
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-sm font-semibold ${
+                      !isOffPlanWinner ? 'text-cyan-500' : 'text-theme-text'
+                    }`}>
+                      {card.secondaryValue}
+                    </span>
+                    {(card as any).secondarySubValue && (
+                      <span className={`block text-[10px] ${
+                        !isOffPlanWinner ? 'text-cyan-500/70' : 'text-theme-text-muted'
+                      }`}>
+                        {(card as any).secondarySubValue}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Badge */}

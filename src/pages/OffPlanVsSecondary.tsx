@@ -267,6 +267,15 @@ const OffPlanVsSecondary = () => {
     return baseRent * growthFactor;
   }, [secondaryCalcs, secondaryInputs, handoverYearIndex, rentalMode]);
 
+  // NEW: Year 10 property values
+  const offPlanPropertyValue10Y = useMemo(() => {
+    return offPlanCalcs.yearlyProjections[9]?.propertyValue || 0;
+  }, [offPlanCalcs]);
+
+  const secondaryPropertyValue10Y = useMemo(() => {
+    return secondaryCalcs.yearlyProjections[9]?.propertyValue || 0;
+  }, [secondaryCalcs]);
+
   // Comparison metrics
   const comparisonMetrics: ComparisonMetrics = useMemo(() => {
     if (!offPlanInputs || !offPlanCalcs.yearlyProjections.length) {
@@ -637,6 +646,8 @@ const OffPlanVsSecondary = () => {
             appreciationDuringConstruction={appreciationDuringConstruction}
             constructionMonths={handoverYearIndex * 12}
             secondaryTotalIncomeAtHandover={secondaryTotalIncomeAtHandover}
+            offPlanPropertyValue10Y={offPlanPropertyValue10Y}
+            secondaryPropertyValue10Y={secondaryPropertyValue10Y}
           />
 
           {/* 2. Year-by-Year Wealth Table */}
