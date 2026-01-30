@@ -1056,6 +1056,78 @@ export type Database = {
         }
         Relationships: []
       }
+      secondary_properties: {
+        Row: {
+          airbnb_adr: number | null
+          airbnb_management_fee: number | null
+          airbnb_occupancy: number | null
+          airbnb_operating_expense: number | null
+          appreciation_rate: number
+          broker_id: string
+          closing_costs_percent: number
+          created_at: string
+          id: string
+          mortgage_financing_percent: number
+          mortgage_interest_rate: number
+          mortgage_term_years: number
+          name: string
+          purchase_price: number
+          rent_growth_rate: number
+          rental_yield_percent: number
+          service_charge_per_sqft: number
+          show_airbnb: boolean
+          unit_size_sqf: number
+          updated_at: string
+          use_mortgage: boolean
+        }
+        Insert: {
+          airbnb_adr?: number | null
+          airbnb_management_fee?: number | null
+          airbnb_occupancy?: number | null
+          airbnb_operating_expense?: number | null
+          appreciation_rate?: number
+          broker_id: string
+          closing_costs_percent?: number
+          created_at?: string
+          id?: string
+          mortgage_financing_percent?: number
+          mortgage_interest_rate?: number
+          mortgage_term_years?: number
+          name: string
+          purchase_price?: number
+          rent_growth_rate?: number
+          rental_yield_percent?: number
+          service_charge_per_sqft?: number
+          show_airbnb?: boolean
+          unit_size_sqf?: number
+          updated_at?: string
+          use_mortgage?: boolean
+        }
+        Update: {
+          airbnb_adr?: number | null
+          airbnb_management_fee?: number | null
+          airbnb_occupancy?: number | null
+          airbnb_operating_expense?: number | null
+          appreciation_rate?: number
+          broker_id?: string
+          closing_costs_percent?: number
+          created_at?: string
+          id?: string
+          mortgage_financing_percent?: number
+          mortgage_interest_rate?: number
+          mortgage_term_years?: number
+          name?: string
+          purchase_price?: number
+          rent_growth_rate?: number
+          rental_yield_percent?: number
+          service_charge_per_sqft?: number
+          show_airbnb?: boolean
+          unit_size_sqf?: number
+          updated_at?: string
+          use_mortgage?: boolean
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
