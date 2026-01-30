@@ -195,9 +195,9 @@ export const PropertyHeroCard = ({
                     </span>
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1f2e] border-white/20 z-50">
+                <SelectContent className="bg-theme-card border-theme-border z-50">
                   {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((c) => (
-                    <SelectItem key={c} value={c} className="text-white hover:bg-white/10">
+                    <SelectItem key={c} value={c} className="text-theme-text hover:bg-theme-card-alt">
                       <span className="flex items-center gap-2">
                         <span>{CURRENCY_CONFIG[c].flag}</span>
                         <span>{c}</span>
@@ -211,9 +211,9 @@ export const PropertyHeroCard = ({
                 <SelectTrigger className="w-[65px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
                   <SelectValue>{language.toUpperCase()}</SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1f2e] border-white/20 z-50">
-                  <SelectItem value="en" className="text-white hover:bg-white/10">EN</SelectItem>
-                  <SelectItem value="es" className="text-white hover:bg-white/10">ES</SelectItem>
+                <SelectContent className="bg-theme-card border-theme-border z-50">
+                  <SelectItem value="en" className="text-theme-text hover:bg-theme-card-alt">EN</SelectItem>
+                  <SelectItem value="es" className="text-theme-text hover:bg-theme-card-alt">ES</SelectItem>
                 </SelectContent>
               </Select>
             </div>
