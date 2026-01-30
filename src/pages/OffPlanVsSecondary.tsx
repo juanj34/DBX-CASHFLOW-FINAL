@@ -34,6 +34,7 @@ import {
   SaveSecondaryComparisonModal,
   LoadSecondaryComparisonModal,
   MortgageCoverageCard,
+  RentalComparisonAtHandover,
 } from '@/components/roi/secondary';
 import { useSecondaryComparisons, SecondaryComparison } from '@/hooks/useSecondaryComparisons';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -237,6 +238,34 @@ const OffPlanVsSecondary = () => {
     const handoverProj = offPlanCalcs.yearlyProjections[handoverYearIndex - 1];
     return (handoverProj?.propertyValue || offPlanInputs.basePrice) - offPlanInputs.basePrice;
   }, [offPlanInputs, offPlanCalcs, handoverYearIndex]);
+
+  // NEW: Total income earned by Secondary during construction
+  const secondaryTotalIncomeAtHandover = useMemo(() => {
+    const monthlyRent = rentalMode === 'long-term' 
+      ? secondaryCalcs.monthlyRentLT 
+      : secondaryCalcs.monthlyRentST;
+    const months = handoverYearIndex * 12;
+    return monthlyRent * months;
+  }, [secondaryCalcs, handoverYearIndex, rentalMode]);
+
+  // NEW: Principal paid at Year 10 (from secondary projections)
+  const secondaryPrincipalPaid10Y = useMemo(() => {
+    return secondaryCalcs.yearlyProjections[9]?.principalPaid || 0;
+  }, [secondaryCalcs]);
+
+  // NEW: Off-Plan rental at handover
+  const offPlanMonthlyRentAtHandover = useMemo(() => {
+    return offPlanCalcs.holdAnalysis?.netAnnualRent / 12 || 0;
+  }, [offPlanCalcs]);
+
+  // NEW: Secondary rental at handover (with growth applied)
+  const secondaryMonthlyRentAtHandover = useMemo(() => {
+    const baseRent = rentalMode === 'long-term' 
+      ? secondaryCalcs.monthlyRentLT 
+      : secondaryCalcs.monthlyRentST;
+    const growthFactor = Math.pow(1 + secondaryInputs.rentGrowthRate / 100, handoverYearIndex);
+    return baseRent * growthFactor;
+  }, [secondaryCalcs, secondaryInputs, handoverYearIndex, rentalMode]);
 
   // Comparison metrics
   const comparisonMetrics: ComparisonMetrics = useMemo(() => {
@@ -606,18 +635,8 @@ const OffPlanVsSecondary = () => {
             rate={rate}
             language={language}
             appreciationDuringConstruction={appreciationDuringConstruction}
-            secondaryMonthlyCashflow={
-              rentalMode === 'long-term' 
-                ? secondaryCalcs.monthlyCashflowLT 
-                : secondaryCalcs.monthlyCashflowST
-            }
-            secondaryMonthlyRent={
-              rentalMode === 'long-term'
-                ? secondaryCalcs.monthlyRentLT
-                : secondaryCalcs.monthlyRentST
-            }
-            secondaryMonthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
-            mortgageEnabled={secondaryInputs.useMortgage}
+            constructionMonths={handoverYearIndex * 12}
+            secondaryTotalIncomeAtHandover={secondaryTotalIncomeAtHandover}
           />
 
           {/* 2. Year-by-Year Wealth Table */}
@@ -698,9 +717,20 @@ const OffPlanVsSecondary = () => {
               currency={currency}
               rate={rate}
               language={language}
+              loanAmount={secondaryCalcs.loanAmount}
+              principalPaidYear10={secondaryPrincipalPaid10Y}
             />
           )}
 
+          {/* 6c. Rental Comparison at Handover */}
+          <RentalComparisonAtHandover
+            offPlanMonthlyRent={offPlanMonthlyRentAtHandover}
+            secondaryMonthlyRent={secondaryMonthlyRentAtHandover}
+            handoverYear={handoverYearIndex}
+            currency={currency}
+            rate={rate}
+            language={language}
+          />
 
           {/* 7. Verdict */}
           <ComparisonVerdict

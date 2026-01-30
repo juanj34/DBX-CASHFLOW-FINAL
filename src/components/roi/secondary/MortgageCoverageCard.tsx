@@ -1,4 +1,4 @@
-import { Home, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Home, TrendingUp, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +12,9 @@ interface MortgageCoverageCardProps {
   currency: Currency;
   rate: number;
   language: 'en' | 'es';
+  // New props for principal paydown
+  loanAmount: number;
+  principalPaidYear10: number;
 }
 
 export const MortgageCoverageCard = ({
@@ -22,6 +25,8 @@ export const MortgageCoverageCard = ({
   currency,
   rate,
   language,
+  loanAmount,
+  principalPaidYear10,
 }: MortgageCoverageCardProps) => {
   const isFullyCovered = coveragePercent >= 100;
   const cappedCoverage = Math.min(coveragePercent, 150); // Cap display at 150%
@@ -33,6 +38,12 @@ export const MortgageCoverageCard = ({
     }
     return dual.primary;
   };
+
+  // Principal paydown percentage
+  const principalPaydownPercent = loanAmount > 0 
+    ? (principalPaidYear10 / loanAmount) * 100 
+    : 0;
+  const remainingDebt = Math.max(0, loanAmount - principalPaidYear10);
 
   const t = language === 'es' ? {
     title: isFullyCovered ? '¡El Inquilino Paga Tu Hipoteca!' : 'Cobertura de Hipoteca',
@@ -46,6 +57,12 @@ export const MortgageCoverageCard = ({
     selfPaying: '✨ Auto-financiada',
     partialCoverage: 'Cobertura Parcial',
     perMonth: '/mes',
+    hiddenWealth: 'Riqueza Oculta',
+    tenantPaysOff: 'Tu inquilino paga',
+    ofYourLoan: 'de tu préstamo en 10 años',
+    paidOff: 'Pagado',
+    remaining: 'Restante',
+    principalPaydown: 'Reducción de Principal (10Y)',
   } : {
     title: isFullyCovered ? 'Tenant Pays Your Mortgage!' : 'Mortgage Coverage',
     subtitle: isFullyCovered ? 'Property pays itself + profit' : 'Rent partially covers mortgage',
@@ -58,6 +75,12 @@ export const MortgageCoverageCard = ({
     selfPaying: '✨ Self-Paying',
     partialCoverage: 'Partial Coverage',
     perMonth: '/mo',
+    hiddenWealth: 'Hidden Wealth',
+    tenantPaysOff: 'Your tenant pays off',
+    ofYourLoan: 'of your loan in 10 years',
+    paidOff: 'Paid Off',
+    remaining: 'Remaining',
+    principalPaydown: 'Principal Paydown (10Y)',
   };
 
   return (
@@ -106,7 +129,7 @@ export const MortgageCoverageCard = ({
       </div>
 
       {/* Net Cashflow */}
-      <div className={`p-3 rounded-lg flex items-center justify-between ${
+      <div className={`p-3 rounded-lg flex items-center justify-between mb-4 ${
         isFullyCovered 
           ? 'bg-emerald-500/10 border border-emerald-500/30' 
           : 'bg-amber-500/10 border border-amber-500/30'
@@ -125,6 +148,46 @@ export const MortgageCoverageCard = ({
           {isFullyCovered ? '+' : '-'}{formatValue(Math.abs(netCashflow))}{t.perMonth}
         </span>
       </div>
+
+      {/* Hidden Wealth - Principal Paydown Section */}
+      {loanAmount > 0 && principalPaidYear10 > 0 && (
+        <div className="border-t border-theme-border pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-semibold text-theme-text">{t.hiddenWealth}</span>
+          </div>
+          
+          <p className="text-xs text-theme-text-muted mb-3">
+            {t.tenantPaysOff} <span className="text-amber-500 font-semibold">{formatValue(principalPaidYear10)}</span> {t.ofYourLoan}
+          </p>
+          
+          {/* Principal Paydown Progress */}
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-theme-text-muted">{t.principalPaydown}</span>
+              <span className="text-xs font-semibold text-amber-500">
+                {principalPaydownPercent.toFixed(0)}%
+              </span>
+            </div>
+            <Progress 
+              value={Math.min(principalPaydownPercent, 100)} 
+              className="h-2 [&>div]:bg-amber-500"
+            />
+          </div>
+          
+          {/* Debt Breakdown */}
+          <div className="grid grid-cols-2 gap-2 text-[10px]">
+            <div className="flex items-center justify-between p-2 rounded bg-amber-500/10">
+              <span className="text-theme-text-muted">{t.paidOff}</span>
+              <span className="text-amber-500 font-semibold">{formatValue(principalPaidYear10)}</span>
+            </div>
+            <div className="flex items-center justify-between p-2 rounded bg-theme-bg/50">
+              <span className="text-theme-text-muted">{t.remaining}</span>
+              <span className="text-theme-text font-semibold">{formatValue(remainingDebt)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
