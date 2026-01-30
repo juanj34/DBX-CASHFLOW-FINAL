@@ -1,162 +1,218 @@
 
-# Plan: Fix Secondary Property Configurator & Formatting Issues
 
-## Issues Summary
+# Comprehensive Plan: Fix Bugs + Revamp Comparison Metrics
 
-From the screenshots and code analysis, I identified these problems:
+## Overview
 
-1. **Exit Scenarios Capital Bug**: Shows 920K instead of 2M because it uses mortgage-based capital (down payment + closing) instead of full purchase price
-2. **Wealth/Delta columns missing "AED" prefix**: Inconsistent currency formatting
-3. **Purchase price input not formatted**: Shows raw number `2000000` instead of `AED 2,000,000`
-4. **Cannot proceed past step 2 in configurator**: Button stays disabled when navigating via URL with quoteId
-5. **No name field for secondary property**: Can't easily save/identify configurations
+This plan addresses all identified issues and revamps the comparison view to be more persuasive for off-plan investments.
 
 ---
 
-## File Changes
+## Part 1: Fix Secondary Capital Bug (920K → 2.12M)
 
-### 1. `src/components/roi/secondary/YearByYearWealthTable.tsx`
+### Problem
+The comparison shows "Secondary Day 1 Capital" as AED 920K instead of AED 2.12M because it uses the mortgage-adjusted figure (down payment + closing costs) instead of the total property commitment.
 
-**Fix Wealth and Delta column formatting** - all monetary values should display "AED X.XM" consistently.
+### Solution
+Update the metrics calculation to use **Total Capital = Purchase Price + Closing Costs** for a fair apples-to-apples comparison.
 
-**Current Formatting (lines 262-294):**
-- Wealth columns use `formatValue()` which returns "2.2M" (missing AED)
-- Delta uses `formatCompact()` which returns "+174K" (missing AED)
+### File: `src/pages/OffPlanVsSecondary.tsx` (line 316)
 
-**Updated Formatting:**
 ```typescript
-// Line 266: Off-Plan Wealth
-{formatSmallValue(row.offPlanWealth)}
+// BEFORE:
+secondaryCapitalDay1: secondaryCalcs.totalCapitalDay1,
 
-// Line 282: Secondary Wealth  
-{formatSmallValue(row.secondaryWealth)}
-
-// Line 292: Delta
-{row.delta >= 0 ? '+' : ''}AED {formatCompact(Math.abs(row.delta))}
+// AFTER:
+// For fair comparison, use total property cost (not mortgage-adjusted)
+// Secondary buyer commits to full price + fees, just like off-plan buyer
+secondaryCapitalDay1: secondaryInputs.purchasePrice + secondaryCalcs.closingCosts,
 ```
 
-This ensures all columns show: `AED 2.2M`, `AED 3.3M`, `+AED 174K`
+**Result:** Secondary capital shows AED 2.12M (2M + 120K), not 920K.
 
 ---
 
-### 2. `src/components/roi/secondary/ExitScenariosComparison.tsx`
+## Part 2: Revamp Key Insights Cards (The Persuasion Engine)
 
-**Fix secondary capital to use full purchase price** instead of mortgage-based capital.
+### Current State (Ineffective)
+The current `ComparisonKeyInsights` shows:
+- Initial Capital (raw numbers)
+- Wealth Year 10 (raw numbers)
+- Annualized ROE (percentage)
 
-**Current Logic (line 116-121):**
+**Problem:** These are abstract metrics that don't tell a compelling "story."
+
+### New Design: 4 High-Impact Cards
+
+Replace the current 3 generic cards with 4 emotionally impactful cards:
+
+| Card | Metric | Purpose |
+|------|--------|---------|
+| **Entry Ticket** | Capital + "Save X%" | Shows how much LESS cash is needed |
+| **Money Multiplier** | X.Xx | "Your money grows X times" |
+| **Crossover Point** | Year N | When off-plan permanently wins |
+| **Construction Bonus** | +AED XXK | "Free" appreciation during build |
+
+### File: `src/components/roi/secondary/ComparisonKeyInsights.tsx` (Complete Revamp)
+
 ```typescript
-// Uses mortgage-based capital (down payment + closing = 920K)
-const secROE = secondaryCapitalInvested > 0 
-  ? (secAppreciation / secondaryCapitalInvested) * 100 : 0;
+// New props needed
+interface ComparisonKeyInsightsProps {
+  metrics: ComparisonMetrics;
+  rentalMode: 'long-term' | 'airbnb';
+  offPlanLabel: string;
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
+  appreciationDuringConstruction: number; // NEW
+}
+
+// New computed metrics:
+const entrySavings = ((metrics.secondaryCapitalDay1 - metrics.offPlanCapitalDay1) / metrics.secondaryCapitalDay1) * 100;
+
+const offPlanMultiplier = metrics.offPlanWealthYear10 / metrics.offPlanCapitalDay1;
+const secondaryMultiplier = secondaryWealth10 / metrics.secondaryCapitalDay1;
+
+const crossoverYear = metrics.crossoverYearLT || metrics.crossoverYearST;
+
+// New 4-card layout:
+const insights = [
+  {
+    title: 'Entry Ticket',
+    icon: Wallet,
+    offPlanValue: formatValue(metrics.offPlanCapitalDay1),
+    secondaryValue: formatValue(metrics.secondaryCapitalDay1),
+    badge: `Save ${entrySavings.toFixed(0)}%`, // Highlight the savings
+    badgeColor: entrySavings > 0 ? 'emerald' : 'cyan',
+    winner: metrics.offPlanCapitalDay1 < metrics.secondaryCapitalDay1 ? 'offplan' : 'secondary',
+  },
+  {
+    title: 'Money Multiplier',
+    subtitle: '10-Year Growth',
+    icon: TrendingUp,
+    offPlanValue: `${offPlanMultiplier.toFixed(1)}x`,
+    secondaryValue: `${secondaryMultiplier.toFixed(1)}x`,
+    winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
+  },
+  {
+    title: 'Crossover Point',
+    icon: Target,
+    value: crossoverYear ? `Year ${crossoverYear}` : 'N/A',
+    description: 'When Off-Plan wealth exceeds Secondary',
+    isPositive: crossoverYear && crossoverYear <= 5,
+  },
+  {
+    title: 'Construction Bonus',
+    icon: Building2,
+    value: formatValue(appreciationDuringConstruction),
+    description: '"Free" appreciation during build',
+    isPositive: appreciationDuringConstruction > 0,
+  },
+];
 ```
 
-**New Logic:**
-```typescript
-// For exits: Capital = Total Purchase Price
-// Mortgages are just financing - when you sell, what matters is what you paid vs what you sell for
-const secCapital = secondaryPurchasePrice;
-const secProfit = secExitPrice - secondaryPurchasePrice;
-const secTotalROE = secCapital > 0 ? (secProfit / secCapital) * 100 : 0;
-const secAnnualizedROE = years > 0 ? secTotalROE / years : 0;
+### Visual Design:
+```text
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  ENTRY TICKET   │ │ MONEY MULTIPLIER│ │ CROSSOVER POINT │ │CONSTRUCTION     │
+│  ────────────── │ │ ──────────────  │ │ ──────────────  │ │    BONUS        │
+│  OP: AED 520K   │ │  OP:  3.5x  🏆  │ │                 │ │                 │
+│  SEC: AED 2.1M  │ │  SEC: 1.8x      │ │   YEAR 3        │ │  +AED 180K      │
+│  ────────────── │ │                 │ │   🎯            │ │  ────────────   │
+│  [Save 75%] 🏆  │ │                 │ │  Off-Plan leads │ │  Free equity!   │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
-
-**Result:** Capital shows 2M (not 920K), ROE shows ~3%/year (matching appreciation rate)
-
-**Prop Changes:**
-- Remove `secondaryCapitalInvested` prop (no longer needed)
-- Keep `secondaryPurchasePrice` (already exists)
 
 ---
 
-### 3. `src/pages/OffPlanVsSecondary.tsx`
+## Part 3: Update HeadToHeadTable
 
-**Remove `secondaryCapitalInvested` prop** from ExitScenariosComparison call.
+### Changes:
+1. **Rename "Day 1 Capital" to "Total Capital"** for clarity
+2. **Add tooltip** explaining this is full property commitment
+3. **Ensure consistent dual currency formatting**
 
-**Current (line 574):**
+### File: `src/components/roi/secondary/HeadToHeadTable.tsx`
+
 ```typescript
-<ExitScenariosComparison
-  ...
-  secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
-  ...
-/>
-```
+// Update translations (line 59)
+day1Capital: 'Total Capital', // Was: 'Day 1 Capital'
+totalCapitalTooltip: 'Full property commitment including purchase price and closing costs',
 
-**Updated:**
-```typescript
-<ExitScenariosComparison
-  ...
-  // secondaryCapitalInvested removed - using secondaryPurchasePrice instead
-  ...
-/>
+// Update formatMoney to always include AED prefix
+const formatMoney = (value: number): string => {
+  const aed = Math.abs(value) >= 1000000 
+    ? `AED ${(value / 1000000).toFixed(2)}M`
+    : `AED ${(value / 1000).toFixed(0)}K`;
+  
+  if (currency === 'AED') return aed;
+  
+  const converted = value * rate;
+  const secondary = Math.abs(converted) >= 1000000 
+    ? `${(converted / 1000000).toFixed(2)}M`
+    : `${(converted / 1000).toFixed(0)}K`;
+  
+  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
+  return `${aed} (${symbol}${secondary})`;
+};
 ```
 
 ---
 
-### 4. `src/components/roi/secondary/ComparisonConfiguratorModal.tsx`
+## Part 4: Fix ComparisonVerdict Secondary Capital Reference
 
-**Fix navigation bug** - when arriving at step 2 via URL, load the initial quote data.
+The verdict currently uses the incorrect `secondaryCapitalDay1` value. After Part 1, this will automatically show the correct value.
 
-**Problem:**
-- Modal opens at step 2 when `initialQuoteId` is provided
-- But `selectedQuote` state remains null
-- "Next" button is disabled because it checks `disabled={!selectedQuote}`
+### File: `src/components/roi/secondary/ComparisonVerdict.tsx` (line 118)
 
-**Solution - Add quote loading:**
 ```typescript
+// This will now show correct value after Part 1 fix
+{ icon: DollarSign, text: `AED ${(metrics.secondaryCapitalDay1 / 1000000).toFixed(2)}M ${t.capitalRequired}` },
+```
+
+---
+
+## Part 5: Fix Configurator Navigation Bug
+
+### Problem
+When navigating to `/offplan-vs-secondary/:quoteId`, the modal opens at Step 2 but `selectedQuote` is null, disabling the "Next" button.
+
+### File: `src/components/roi/secondary/ComparisonConfiguratorModal.tsx`
+
+```typescript
+// Add import
 import { useCashflowQuote } from '@/hooks/useCashflowQuote';
 
-// Inside component:
-const { quote: initialQuote } = useCashflowQuote(initialQuoteId);
+// Inside component, after state declarations:
+const { quote: initialQuote, loading: initialQuoteLoading } = useCashflowQuote(initialQuoteId);
 
+// Add effect to load quote when initialQuoteId is provided
 useEffect(() => {
   if (initialQuote && !selectedQuote && initialQuoteId) {
     setSelectedQuote(initialQuote);
   }
 }, [initialQuote, selectedQuote, initialQuoteId]);
+
+// Update button disabled state
+<Button
+  onClick={handleNext}
+  disabled={step === 2 ? (!selectedQuote && !initialQuoteLoading && !initialQuoteId) : false}
+>
 ```
 
 ---
 
-### 5. `src/components/roi/secondary/SecondaryPropertyStep.tsx`
+## Part 6: Add Property Name to Secondary Configurator
 
-**A) Format purchase price input** with thousand separators:
-
-**Current:**
-```typescript
-<Input
-  type="number"
-  value={inputs.purchasePrice}
-  onChange={(e) => updateInput('purchasePrice', Number(e.target.value))}
-/>
-```
-
-**Updated:**
-```typescript
-<div className="relative">
-  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm">
-    AED
-  </span>
-  <Input
-    type="text"
-    value={inputs.purchasePrice.toLocaleString()}
-    onChange={(e) => {
-      const cleaned = e.target.value.replace(/[^0-9]/g, '');
-      updateInput('purchasePrice', Number(cleaned) || 0);
-    }}
-    className="pl-12 font-mono"
-  />
-</div>
-```
-
-**B) Add property name field** for saving/identifying configurations:
+### File: `src/components/roi/secondary/SecondaryPropertyStep.tsx`
 
 ```typescript
 // Add state for property name
-const [propertyName, setPropertyName] = useState('Secondary Property');
+const [propertyName, setPropertyName] = useState(initialInputs?.propertyName || 'Secondary Property');
 
-// Add name input at top of form
+// Add to form (at top of form fields):
 <div className="space-y-1.5">
-  <Label>Property Name</Label>
+  <Label>{t.propertyName || 'Property Name'}</Label>
   <Input
     value={propertyName}
     onChange={(e) => setPropertyName(e.target.value)}
@@ -166,42 +222,86 @@ const [propertyName, setPropertyName] = useState('Secondary Property');
 </div>
 ```
 
-**C) Pass name to save function** when saving secondary property.
+---
+
+## Part 7: Format Purchase Price Input
+
+### File: `src/components/roi/secondary/SecondaryPropertyStep.tsx`
+
+```typescript
+// Replace purchase price input:
+<div className="space-y-1.5">
+  <Label>{t.purchasePrice}</Label>
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm font-medium">
+      AED
+    </span>
+    <Input
+      type="text"
+      inputMode="numeric"
+      value={inputs.purchasePrice.toLocaleString()}
+      onChange={(e) => {
+        const cleaned = e.target.value.replace(/[^0-9]/g, '');
+        updateInput('purchasePrice', Number(cleaned) || 0);
+      }}
+      className="pl-14 font-mono"
+    />
+  </div>
+</div>
+```
 
 ---
 
-## Summary Table
+## Part 8: Update OffPlanVsSecondary to Pass New Props
 
-| Issue | File | Fix |
-|-------|------|-----|
-| Wealth missing "AED" | `YearByYearWealthTable.tsx` | Use `formatSmallValue()` for Wealth columns |
-| Delta missing "AED" | `YearByYearWealthTable.tsx` | Add "AED" prefix to delta display |
-| Capital = 920K | `ExitScenariosComparison.tsx` | Use `secondaryPurchasePrice` as capital |
-| Can't proceed step 2 | `ComparisonConfiguratorModal.tsx` | Load quote from `initialQuoteId` |
-| Purchase price format | `SecondaryPropertyStep.tsx` | Use formatted text input with "AED" prefix |
-| No property name | `SecondaryPropertyStep.tsx` | Add name input field |
+### File: `src/pages/OffPlanVsSecondary.tsx`
+
+```typescript
+// Pass appreciationDuringConstruction to ComparisonKeyInsights (line 523):
+<ComparisonKeyInsights
+  metrics={comparisonMetrics}
+  rentalMode={rentalMode}
+  offPlanLabel={projectName}
+  currency={currency}
+  rate={rate}
+  language={language}
+  appreciationDuringConstruction={appreciationDuringConstruction} // NEW
+/>
+```
 
 ---
 
-## Expected Results After Fix
+## Summary of All Changes
 
-### Year-by-Year Wealth Table:
-| Year | Value | Rent | Wealth | Delta |
-|------|-------|------|--------|-------|
-| 3 | AED 2.79M | AED 136K | **AED 2.8M** | **+AED 206K** |
-| 5 | AED 3.32M | AED 160K | **AED 3.6M** | **+AED 630K** |
+| File | Changes |
+|------|---------|
+| `OffPlanVsSecondary.tsx` | Fix secondaryCapitalDay1 calculation, pass new props |
+| `ComparisonKeyInsights.tsx` | Complete revamp with 4 persuasive cards |
+| `HeadToHeadTable.tsx` | Rename label, improve formatting |
+| `ComparisonVerdict.tsx` | Update format for larger capital values |
+| `ComparisonConfiguratorModal.tsx` | Fix navigation, load initial quote |
+| `SecondaryPropertyStep.tsx` | Add property name, format purchase price |
 
-All monetary values now consistently show "AED" prefix.
+---
 
-### Exit Scenarios:
-| Exit | Value | Capital | Profit | ROE |
-|------|-------|---------|--------|-----|
-| Year 3 | AED 2.19M | **AED 2.0M** | +AED 185K | **9.3%** |
-| Year 5 | AED 2.32M | **AED 2.0M** | +AED 319K | **16%** |
+## Expected Results After All Fixes
 
-Capital now shows full purchase price (2M, not 920K), and ROE reflects true appreciation return.
+### Top Cards (New Design):
+| Entry Ticket | Money Multiplier | Crossover | Construction Bonus |
+|--------------|------------------|-----------|-------------------|
+| OP: AED 520K | OP: **3.5x** 🏆 | **Year 3** | **+AED 180K** |
+| SEC: AED 2.1M | SEC: 1.8x | Off-Plan leads | Free equity during build |
+| **Save 75%** 🏆 | | | |
+
+### HeadToHead Table:
+| Metric | Off-Plan | Secondary |
+|--------|----------|-----------|
+| **Total Capital** | AED 520K | **AED 2.12M** |
+| Wealth Year 10 | AED 3.5M | AED 2.8M |
+| ROE | 22.4% | 8.1% |
 
 ### Configurator:
-- Purchase price input shows: `AED 2,000,000`
 - Property name field visible at top
-- Step 2 → Step 3 navigation works when arriving via URL
+- Purchase price formatted: `AED 2,000,000`
+- Navigation works when arriving via URL
+
