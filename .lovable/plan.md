@@ -1,252 +1,179 @@
 
 
-# Plan: Improve Key Insights Cards + Fix Configurator Modal Bugs
+# Plan: Fix Year-by-Year Wealth Table Calculations + Add Hover Tooltips
 
 ## Problems Identified
 
-### 1. Key Insights Cards Need Improvement
-**User feedback:**
-- "Entry Ticket" is obvious and not worth showing - everyone knows off-plan requires less capital upfront
-- "Multiplier" should also show the actual property value at Year 10, not just the multiplier
-- Need a new card for "Total Wealth Created at Year 10"
+### Problem 1: Off-Plan Wealth Mismatch (Year 1: Value 9.60M → Wealth 10.48M)
+**Current code in `YearByYearWealthTable.tsx` lines 84-90:**
+```typescript
+// Wealth uses appreciated propertyValue (10.48M)
+const opWealth = (opProj?.propertyValue || 0) + opCumulativeRent;
 
-### 2. Configurator Modal Bugs
-**Issues found in `ComparisonConfiguratorModal.tsx`:**
+// But display shows BASE price (9.60M)
+const displayOffPlanValue = year === 1 ? offPlanBasePrice : (opProj?.propertyValue || 0);
+```
+**Result:** Table shows Value=9.60M but Wealth=10.48M, which is impossible since rent=0
 
-a. **Property name is erased on reopen**
-   - The `propertyName` state is in `SecondaryPropertyStep.tsx` but resets each time the modal reopens
-   - It's not passed to/from the parent modal or saved with the secondary inputs
+### Problem 2: Secondary Wealth Mismatch (Year 1: Value 7.50M + Rent 481K → Wealth 8.21M)
+**In `useSecondaryCalculations.ts` line 108:**
+```typescript
+const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year);
+// Year 1: 7.5M * 1.08^1 = 8.1M (NOT 7.5M)
+```
+The secondary projections apply appreciation starting from Year 1, but table displays purchase price for Year 1 value.
 
-b. **Secondary inputs change when reopening**
-   - Lines 82-88: Reset effect only checks `!initialQuoteId` but doesn't respect `initialSecondaryInputs`
-   - Lines 91-105: The quote selection effect overwrites secondaryInputs every time `selectedQuote` changes
+### Problem 3: Secondary Property Value Resets
+The auto-initialization effect in `OffPlanVsSecondary.tsx` (lines 92-108) can trigger on quote reference changes even after user has configured secondary inputs.
 
-c. **Cannot click outside to close**
-   - By default, Radix Dialog closes on overlay click. This should work already.
-   - Need to verify there's no `onInteractOutside` preventing this behavior
+---
+
+## Solution
+
+### Principle: Use CONSISTENT values for display AND calculation
+For Year 1, we must decide: either show appreciated values OR use base prices for both display and wealth. 
+
+**Decision:** For Year 0 (entry point), show base prices. For Year 1+, show appreciated values. Wealth = Value shown + Cumulative Rent.
 
 ---
 
 ## Technical Changes
 
-### File 1: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
+### File 1: `src/components/roi/secondary/YearByYearWealthTable.tsx`
 
-#### Replace "Entry Ticket" with "Total Wealth" card
+#### 1.1 Fix wealth calculation to use displayed values
 
-Remove the Entry Ticket card (index 0) and replace with a Total Wealth card:
-
-| Before | After |
-|--------|-------|
-| 1. Entry Ticket | 1. **10-Year Wealth** (Property Value + Net Rent) |
-| 2. Multiplier | 2. Multiplier (+ show property value) |
-| 3. Income During Build | 3. Income During Build |
-| 4. Construction Bonus | 4. Construction Bonus |
-
-**New props needed:**
+**Lines 83-98 - Before:**
 ```typescript
-interface ComparisonKeyInsightsProps {
-  // ... existing
-  offPlanPropertyValue10Y: number;      // NEW: Year 10 property value
-  secondaryPropertyValue10Y: number;    // NEW: Year 10 property value
-}
+// Wealth uses appreciated value
+const opWealth = (opProj?.propertyValue || 0) + opCumulativeRent;
+const secWealth = (secProj?.propertyValue || 0) + secCumulativeRent;
+
+// Display uses base price for Year 1
+const displayOffPlanValue = year === 1 ? offPlanBasePrice : (opProj?.propertyValue || 0);
+const displaySecondaryValue = year === 1 ? secondaryPurchasePrice : (secProj?.propertyValue || 0);
 ```
 
-**Change card 1 (Entry Ticket → Total Wealth):**
+**After:**
 ```typescript
-{
-  key: 'wealth10',
-  title: t.totalWealth,
-  subtitle: t.after10Years,
-  icon: Gem,  // New icon
-  showComparison: true,
-  offPlanValue: formatValue(metrics.offPlanWealthYear10 + offPlanTotalCapital),
-  secondaryValue: formatValue(secondaryWealth10 + secondaryCashCapital),
-  badge: null,
-  winner: (metrics.offPlanWealthYear10 + offPlanTotalCapital) > (secondaryWealth10 + secondaryCashCapital) 
-    ? 'offplan' : 'secondary',
-}
+// USE THE SAME VALUE for display AND wealth calculation
+// For Year 1, we use the appreciated value from projections (consistent with other years)
+// This makes Value + Cumulative Rent = Wealth always true
+const offPlanValue = opProj?.propertyValue || offPlanBasePrice;
+const secondaryValue = secProj?.propertyValue || secondaryPurchasePrice;
+
+// Wealth = Property Value + Cumulative Rent (now consistent)
+const opWealth = offPlanValue + opCumulativeRent;
+const secWealth = secondaryValue + secCumulativeRent;
 ```
 
-**Enhance card 2 (Multiplier) to show property value:**
-- Add secondary row showing "→ AED X.XM" (the final property value after 10 years)
-- This shows both the multiplier (2.1x) and the actual resulting value
+#### 1.2 Add hover tooltips showing calculation breakdown
+
+For each Wealth cell, wrap in a `Tooltip` showing:
+```
+Property Value: AED 10.48M
++ Cumulative Rent: AED 0
+= Wealth: AED 10.48M
+```
+
+**Implementation:**
+```typescript
+<Tooltip>
+  <TooltipTrigger asChild>
+    <span className={`text-sm font-medium cursor-help ${...}`}>
+      {formatSmallValue(row.offPlanWealth)}
+    </span>
+  </TooltipTrigger>
+  <TooltipContent side="top" className="p-2">
+    <div className="text-xs space-y-1">
+      <div className="flex justify-between gap-4">
+        <span className="text-theme-text-muted">{t.value}:</span>
+        <span className="font-mono">{formatSmallValue(row.offPlanValue)}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-theme-text-muted">+ {t.cumulativeRent}:</span>
+        <span className="font-mono">{formatSmallValue(row.offPlanCumulativeRent)}</span>
+      </div>
+      <div className="border-t border-theme-border pt-1 flex justify-between gap-4 font-semibold">
+        <span>= {t.wealth}:</span>
+        <span className="font-mono">{formatSmallValue(row.offPlanWealth)}</span>
+      </div>
+    </div>
+  </TooltipContent>
+</Tooltip>
+```
 
 ---
 
-### File 2: `src/components/roi/secondary/types.ts`
+### File 2: `src/pages/OffPlanVsSecondary.tsx`
 
-#### Add propertyName to SecondaryInputs (optional addition)
+#### 2.1 Remove problematic auto-initialization effect
 
-Consider adding:
+**Delete lines 92-108** (the entire useEffect that auto-initializes secondary inputs):
 ```typescript
-export interface SecondaryInputs {
-  // ... existing
-  propertyName?: string; // NEW: Optional name for saving/display
-}
-```
-
-This allows the property name to persist with the secondary inputs.
-
----
-
-### File 3: `src/components/roi/secondary/ComparisonConfiguratorModal.tsx`
-
-#### Fix 1: Reset logic should respect initial values
-
-**Lines 82-88** - Current:
-```typescript
+// REMOVE THIS ENTIRE BLOCK:
 useEffect(() => {
-  if (open && !initialQuoteId) {
-    setStep(1);
-    setSelectedQuote(null);
-  }
-}, [open, initialQuoteId]);
-```
-
-**Fixed:**
-```typescript
-useEffect(() => {
-  if (open) {
-    // Only reset if no initial data is provided
-    if (!initialQuoteId && !initialSecondaryInputs) {
-      setStep(1);
-      setSelectedQuote(null);
-      setSecondaryInputs(DEFAULT_SECONDARY_INPUTS);
-    } else if (initialSecondaryInputs) {
-      // Respect provided initial inputs
-      setSecondaryInputs(initialSecondaryInputs);
-    }
-  }
-}, [open, initialQuoteId, initialSecondaryInputs]);
-```
-
-#### Fix 2: Don't overwrite secondaryInputs when quote is already selected
-
-**Lines 91-105** - Current:
-```typescript
-useEffect(() => {
-  if (selectedQuote?.inputs) {
-    const inputs = selectedQuote.inputs as OIInputs;
+  if (quote?.inputs && !hasInitializedSecondaryFromQuote && !hasConfigured) {
+    const inputs = quote.inputs as OIInputs;
     setSecondaryInputs(prev => ({
       ...prev,
       purchasePrice: inputs.basePrice || prev.purchasePrice,
-      // ... etc
+      ...
     }));
+    setHasInitializedSecondaryFromQuote(true);
+    setHasConfigured(true);
   }
-}, [selectedQuote]);
+}, [quote?.inputs, hasInitializedSecondaryFromQuote, hasConfigured]);
 ```
 
-**Fixed - Only run on first quote selection, not on re-renders:**
-```typescript
-const [hasInitializedFromQuote, setHasInitializedFromQuote] = useState(false);
+**Reasoning:** Initialization should ONLY happen through explicit user actions:
+1. `handleCompare()` - when user configures via modal
+2. `handleLoadComparison()` - when loading saved comparison
 
-useEffect(() => {
-  // Only initialize from quote if we haven't already AND we don't have initial inputs
-  if (selectedQuote?.inputs && !hasInitializedFromQuote && !initialSecondaryInputs) {
-    const inputs = selectedQuote.inputs as OIInputs;
-    setSecondaryInputs(prev => ({
-      ...prev,
-      purchasePrice: inputs.basePrice || prev.purchasePrice,
-      // ... etc
-    }));
-    setHasInitializedFromQuote(true);
-  }
-}, [selectedQuote, hasInitializedFromQuote, initialSecondaryInputs]);
+This eliminates the state reset issue entirely.
 
-// Reset the flag when modal closes
-useEffect(() => {
-  if (!open) {
-    setHasInitializedFromQuote(false);
-  }
-}, [open]);
-```
-
-#### Fix 3: Ensure click-outside works
-
-The Radix Dialog should handle this by default. Verify the `DialogContent` doesn't have `onPointerDownOutside` or `onInteractOutside` handlers that prevent closing.
-
-If it still doesn't work, explicitly add to `DialogContent`:
-```tsx
-<DialogContent 
-  className="..."
-  onPointerDownOutside={() => onOpenChange(false)}
->
-```
+#### 2.2 Also remove the `hasInitializedSecondaryFromQuote` state (no longer needed)
 
 ---
 
-### File 4: `src/components/roi/secondary/SecondaryPropertyStep.tsx`
+## Translation Updates
 
-#### Move propertyName state up to parent
-
-Instead of local state, accept it as a prop:
-
-**Add to props:**
+Add new translation keys in `YearByYearWealthTable.tsx`:
 ```typescript
-interface SecondaryPropertyStepProps {
-  inputs: SecondaryInputs;
-  onChange: (inputs: SecondaryInputs) => void;
-  propertyName: string;              // NEW
-  onPropertyNameChange: (name: string) => void;  // NEW
-  // ... rest
-}
-```
-
-Then in `ComparisonConfiguratorModal.tsx`, manage the propertyName state there and pass it down.
-
----
-
-### File 5: `src/pages/OffPlanVsSecondary.tsx`
-
-#### Pass new props to ComparisonKeyInsights
-
-```typescript
-// Calculate Year 10 property values
-const offPlanPropertyValue10Y = useMemo(() => {
-  return offPlanCalcs.yearlyProjections[9]?.propertyValue || 0;
-}, [offPlanCalcs]);
-
-const secondaryPropertyValue10Y = useMemo(() => {
-  return secondaryCalcs.yearlyProjections[9]?.propertyValue || 0;
-}, [secondaryCalcs]);
-
-// Pass to component
-<ComparisonKeyInsights
-  // ... existing props
-  offPlanPropertyValue10Y={offPlanPropertyValue10Y}
-  secondaryPropertyValue10Y={secondaryPropertyValue10Y}
-/>
+cumulativeRent: language === 'es' ? 'Renta Acumulada' : 'Cumulative Rent',
+breakdown: language === 'es' ? 'Desglose' : 'Breakdown',
 ```
 
 ---
 
 ## Expected Results
 
-### Key Insights Cards (After Fix)
+### Wealth Table After Fix
 
-| Position | Card Name | Off-Plan | Secondary |
-|----------|-----------|----------|-----------|
-| 1 | **Total Wealth (10Y)** | AED 15.2M | AED 14.8M |
-| 2 | Multiplier | 2.1x → 12.4M | 1.8x → 13.2M |
-| 3 | Income During Build | No income | +AED 2.8M |
-| 4 | Construction Bonus | +AED 1.27M | — |
+| Year | Value | Rent | Wealth | Hover shows... |
+|------|-------|------|--------|----------------|
+| 1 | AED 10.48M | — | AED 10.48M | 10.48M + 0 = 10.48M |
+| 2 | AED 11.45M | — | AED 11.45M | 11.45M + 0 = 11.45M |
+| 3 | AED 12.50M | — | AED 12.50M | 12.50M + 0 = 12.50M |
+| 4 🔑 | AED 13.65M | AED 480K | AED 14.13M | 13.65M + 0.48M = 14.13M |
+| 5 | AED 14.70M | AED 500K | AED 15.68M | 14.70M + 0.98M = 15.68M |
 
-### Modal Behavior (After Fix)
+**Now Value + Cumulative Rent = Wealth** ✓
+
+### Secondary Property Stability
 
 | Action | Before | After |
 |--------|--------|-------|
-| Reopen configurator | Values reset, name erased | Values preserved, name stays |
-| Click outside modal | Nothing | Modal closes |
-| Select saved property | Overwrites on every render | Only on first selection |
+| Enter custom price | Value resets on re-render | Value persists |
+| Tab away and back | Value might reset | Value stable |
+| Quote updates | Overwrites user input | No effect |
 
 ---
 
-## Files to Create/Modify
+## Files to Modify
 
-| File | Action | Changes |
-|------|--------|---------|
-| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Modify | Replace Entry Ticket with Total Wealth, add property value to Multiplier |
-| `src/components/roi/secondary/ComparisonConfiguratorModal.tsx` | Modify | Fix reset logic, add initialization flag, ensure click-outside works |
-| `src/components/roi/secondary/SecondaryPropertyStep.tsx` | Modify | Accept propertyName as prop instead of local state |
-| `src/pages/OffPlanVsSecondary.tsx` | Modify | Pass Year 10 property values, manage propertyName state |
+| File | Changes |
+|------|---------|
+| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Fix wealth calculation consistency, add hover tooltips with breakdown |
+| `src/pages/OffPlanVsSecondary.tsx` | Remove auto-initialization effect, remove unused state |
 
