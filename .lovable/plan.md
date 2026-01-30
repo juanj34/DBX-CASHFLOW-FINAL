@@ -1,173 +1,142 @@
 
-# Fix Off-Plan vs Secondary Auto-Save + Theme Consistency
+# Plan: Use Average Rent for Mortgage and Post-Handover Coverage Analysis
 
-## Problem Summary
+## Problem Statement
 
-### Issue 1: Auto-Save Stuck on "Saving..."
-The auto-save feature is experiencing a race condition that causes the "Saving..." indicator to get stuck:
+Currently, the Mortgage Analysis and Post-Handover Coverage Analysis cards use the **Year 1 rent** to calculate cashflow coverage. This is inaccurate because:
 
-1. **Root Cause**: The `useEffect` for auto-save (lines 141-174 in `OffPlanVsSecondary.tsx`) triggers immediately when a comparison is loaded via `handleLoadComparison`, because loading sets `currentComparisonId` and `hasConfigured` to true, which then triggers the effect with the loaded `secondaryInputs`.
+1. **Rent grows annually** (typically 3-5% per year via `rentGrowthRate`)
+2. For a **25-year mortgage**, using Year 1 rent significantly underestimates coverage
+3. For a **2-5 year post-handover plan**, the growing rent means payments become easier to cover over time
 
-2. **The Problem Flow**:
-   - User loads a saved comparison
-   - `handleLoadComparison` sets all state values including `currentComparisonId` and `hasConfigured`
-   - This triggers the auto-save `useEffect` 
-   - `setSaveStatus('saving')` is called immediately
-   - The debounced update runs, but if any state change happens in between, the timeout gets cleared and restarted, causing an infinite "Saving..." state
+The user correctly identified that the "Monthly Cash Flow" showing +AED 28,090 based on Year 1 rent doesn't reflect the true average experience over the mortgage/payment term.
 
-3. **Database Confirms Saves Work**: The database shows `updated_at: 2026-01-30 12:49:01` - data IS being saved, but the UI status doesn't reflect completion properly.
+## Solution: Calculate Average Rent Over the Relevant Period
 
-### Issue 2: Theme Colors Hardcoded
-Many components use hardcoded dark-theme colors (e.g., `bg-[#1a1f2e]`, `text-white`) instead of theme tokens, causing visibility issues in light themes.
+### Approach
 
----
+Instead of using just Year 1 rent, calculate the **average rent** over the payment period:
 
-## Solution Plan
+```text
+Average Monthly Rent = Sum of (Monthly Rent for each year) / Number of years
+```
 
-### Part 1: Fix Auto-Save Logic
+For a 4% annual rent growth starting at AED 68,632/month:
+- Year 1: AED 68,632
+- Year 5: AED 80,000 (approx)
+- Year 10: AED 94,000 (approx)
+- Year 25: AED 180,000 (approx)
 
-#### 1.1 Add Initial Load Guard
-Prevent auto-save from triggering on initial data load:
+Average over 25 years ≈ AED 115,000/month (significantly higher than Year 1)
 
-```tsx
-// Add a ref to track if we're in initial load
-const isInitialLoadRef = useRef(true);
-const lastSavedDataRef = useRef<string>('');
+### Implementation Details
 
-// In handleLoadComparison - mark as initial load
-const handleLoadComparison = (comparison: SecondaryComparison) => {
-  isInitialLoadRef.current = true;
-  // ... set all state
-  // Store initial data fingerprint
-  lastSavedDataRef.current = JSON.stringify({
-    secondary_inputs: comparison.secondary_inputs,
-    exit_months: comparison.exit_months,
-    rental_mode: comparison.rental_mode,
-    quote_id: comparison.quote_id,
-  });
+#### 1. Create Utility Function for Average Rent Calculation
+
+Add a helper function to calculate average rent over N years with growth:
+
+```typescript
+// Calculate average monthly rent over a period with annual growth
+export const calculateAverageMonthlyRent = (
+  initialMonthlyRent: number,
+  rentGrowthRate: number, // % annual growth (e.g., 4)
+  periodYears: number
+): number => {
+  if (periodYears <= 0) return initialMonthlyRent;
+  
+  let totalRent = 0;
+  let currentRent = initialMonthlyRent;
+  
+  for (let year = 1; year <= periodYears; year++) {
+    totalRent += currentRent * 12; // Add annual rent
+    currentRent = currentRent * (1 + rentGrowthRate / 100); // Grow for next year
+  }
+  
+  return totalRent / (periodYears * 12); // Average monthly
 };
 ```
 
-#### 1.2 Update Auto-Save Effect
-Only trigger saves when data actually changes from the last saved state:
+#### 2. Update Mortgage Analysis Components
 
-```tsx
-useEffect(() => {
-  if (!currentComparisonId || !hasConfigured) return;
+**Files to modify:**
+- `src/components/roi/snapshot/SnapshotContent.tsx`
+- `src/components/roi/snapshot/CompactMortgageCard.tsx` (add prop for average rent)
+- `src/components/roi/MortgageBreakdown.tsx` (show both Year 1 and average)
+
+**Changes:**
+- Pass `mortgageInputs.loanTermYears` and `inputs.rentGrowthRate` to calculate average
+- Display "Average Monthly Rent (over 25 years)" in the mortgage breakdown
+- Use average rent for cashflow calculation instead of Year 1 rent
+
+#### 3. Update Post-Handover Coverage Components
+
+**Files to modify:**
+- `src/components/roi/snapshot/CompactPostHandoverCard.tsx`
+- `src/components/roi/PostHandoverCoverageBreakdown.tsx`
+- `src/pages/CashflowView.tsx` (where PostHandoverCoverageBreakdown is called)
+
+**Changes:**
+- Calculate post-handover duration in years from `postHandoverMonths`
+- Calculate average rent over that period
+- Use average rent for tenant coverage calculation
+- Display both initial and average rent for clarity
+
+### UI Display Changes
+
+#### Mortgage Card (CompactMortgageCard)
+
+```text
+Current:
+  Rental Income         +AED 68,632/mo
+  Monthly Cash Flow     +AED 28,090/mo
+
+Proposed:
+  Rental Income (Avg)   +AED 115,000/mo   ← Average over 25 years
+  Monthly Cash Flow     +AED 74,458/mo    ← Much more positive!
   
-  // Skip initial load
-  if (isInitialLoadRef.current) {
-    isInitialLoadRef.current = false;
-    setSaveStatus('idle');
-    return;
-  }
-  
-  // Create data fingerprint
-  const currentData = JSON.stringify({
-    secondary_inputs: secondaryInputs,
-    exit_months: exitMonths,
-    rental_mode: rentalMode,
-    quote_id: selectedQuoteId || null,
-  });
-  
-  // Skip if no actual change
-  if (currentData === lastSavedDataRef.current) {
-    return;
-  }
-  
-  // ... rest of debounced save logic
-  // After successful save: lastSavedDataRef.current = currentData;
-}, [/* deps */]);
+  [small text] Year 1: AED 68,632/mo → Growing 4%/yr
 ```
 
-#### 1.3 Ensure Status Updates Correctly
-Add error handling to set status to 'idle' on failure:
+#### Post-Handover Card (CompactPostHandoverCard)
 
-```tsx
-saveTimeoutRef.current = setTimeout(async () => {
-  const success = await updateComparison(/*...*/);
-  if (success) {
-    lastSavedDataRef.current = currentData;
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
-  } else {
-    setSaveStatus('idle'); // Reset on failure
-  }
-}, 1500);
+```text
+Current:
+  Monthly Rent          +AED 68,632/mo
+  Monthly Gap/Surplus   -AED 10,000/mo
+
+Proposed:
+  Monthly Rent (Avg)    +AED 72,000/mo    ← Average over 3-year plan
+  Monthly Surplus       +AED 3,000/mo     ← Better coverage!
+  
+  [small text] Year 1: AED 68,632/mo → Growing 4%/yr
 ```
 
-### Part 2: Fix Theme Colors
-
-Replace hardcoded colors with theme tokens in these files:
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `MobileConfiguratorSheet.tsx` | ~30 replacements: `bg-[#0d1117]` → `bg-theme-bg-alt`, `border-[#2a3142]` → `border-theme-border`, `text-[#CCFF00]` → `text-theme-accent` |
-| `PaymentSection.tsx` | ~25 replacements for step indicators, buttons, inputs |
-| `AppreciationSection.tsx` | ~20 replacements in profile cards and chart container |
-| `RentSection.tsx` | Similar patterns to PaymentSection |
-| `ExitsSection.tsx` | Similar patterns |
-| `ValueSection.tsx` | Similar patterns |
-| `ZoneInfoCard.tsx` | ~12 replacements in info card |
-| `LayerToggle.tsx` | ~10 replacements in toggle panel |
-| `OIYearlyProjectionTable.tsx` | ~15 replacements in table headers, rows, badges |
-| `ProfileSelector.tsx` | ~10 replacements in profile buttons |
-| `RecommendationBadge.tsx` | ~8 replacements in score display |
-| `RecommendationSummary.tsx` | ~5 replacements in insight cards |
+| `src/components/roi/currencyUtils.ts` | Add `calculateAverageMonthlyRent()` utility function |
+| `src/components/roi/snapshot/SnapshotContent.tsx` | Calculate average rent for mortgage term and pass to CompactMortgageCard |
+| `src/components/roi/snapshot/CompactMortgageCard.tsx` | Accept and display average rent with Year 1 comparison |
+| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Calculate average rent for post-handover duration |
+| `src/components/roi/MortgageBreakdown.tsx` | Update cashflow calculation to use average rent, show comparison |
+| `src/pages/CashflowView.tsx` | Calculate and pass average rent to PostHandoverCoverageBreakdown |
+| `src/components/roi/PostHandoverCoverageBreakdown.tsx` | Accept average rent prop and update calculations |
 
-#### Token Mapping:
-| Hardcoded | Theme Token |
-|-----------|-------------|
-| `bg-[#0d1117]` | `bg-theme-bg-alt` |
-| `bg-[#1a1f2e]` | `bg-theme-card` |
-| `bg-[#2a3142]` | `bg-theme-card-alt` |
-| `border-[#2a3142]` | `border-theme-border` |
-| `text-white` | `text-theme-text` |
-| `text-gray-300` | `text-theme-text` |
-| `text-gray-400` | `text-theme-text-muted` |
-| `text-[#CCFF00]` | `text-theme-accent` |
-| `bg-[#CCFF00]` | `bg-theme-accent` |
+### Technical Notes
 
-#### Colors to Keep (semantic meaning):
-- `text-green-400/500` - success states
-- `text-red-400/500` - error states  
-- `text-amber-400/500` - warning states
-- `text-blue-400`, `text-cyan-400` - data visualization
+1. **Backward Compatibility**: Keep Year 1 rent visible as context, but use average for calculations
+2. **Rent Growth Source**: Use `inputs.rentGrowthRate` (default 4%) for growth projections
+3. **Period Calculation**:
+   - Mortgage: `mortgageInputs.loanTermYears` (typically 25 years)
+   - Post-Handover: `postHandoverMonths / 12` (1-5 years typically)
+4. **Pro-rata Handling**: For partial years, use monthly calculation with growth factor
 
----
-
-## Files to Modify
-
-1. `src/pages/OffPlanVsSecondary.tsx` - Fix auto-save logic
-2. `src/components/roi/configurator/MobileConfiguratorSheet.tsx` - Theme tokens
-3. `src/components/roi/configurator/PaymentSection.tsx` - Theme tokens
-4. `src/components/roi/configurator/AppreciationSection.tsx` - Theme tokens
-5. `src/components/roi/configurator/RentSection.tsx` - Theme tokens
-6. `src/components/roi/configurator/ExitsSection.tsx` - Theme tokens
-7. `src/components/roi/configurator/ValueSection.tsx` - Theme tokens
-8. `src/components/map/ZoneInfoCard.tsx` - Theme tokens
-9. `src/components/map/LayerToggle.tsx` - Theme tokens
-10. `src/components/roi/OIYearlyProjectionTable.tsx` - Theme tokens
-11. `src/components/roi/compare/ProfileSelector.tsx` - Theme tokens
-12. `src/components/roi/compare/RecommendationBadge.tsx` - Theme tokens
-13. `src/components/roi/compare/RecommendationSummary.tsx` - Theme tokens
-
----
-
-## Database Confirmation
-
-The `secondary_comparisons` table exists and is working correctly:
-- Records are being created and updated (verified via database query)
-- RLS policies are properly configured for broker access
-- The issue is purely in the frontend state management, not the database
-
----
-
-## Testing Checklist
+### Testing Checklist
 
 After implementation:
-- [ ] Load an existing comparison - should show "Auto-save" (idle) immediately
-- [ ] Modify secondary inputs - should show "Saving..." then "Saved"
-- [ ] Verify database updates with new timestamps
-- [ ] Test all views in light themes (Consultant, Dark Consultant)
-- [ ] Verify dropdowns, inputs, and cards are visible in all themes
+- [ ] Mortgage card shows higher average rent and improved cashflow
+- [ ] Post-handover card shows average rent for payment period
+- [ ] Year 1 rent is still visible for reference
+- [ ] Calculations match expected growth formula
+- [ ] All theme colors work in light and dark modes
