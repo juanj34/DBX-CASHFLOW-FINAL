@@ -357,6 +357,8 @@ const OffPlanVsSecondary = () => {
     save: 'Guardar',
     update: 'Actualizar',
     load: 'Cargar',
+    loadRecent: 'Cargar Reciente',
+    recentComparisons: 'Comparaciones Recientes',
   } : {
     title: 'Off-Plan vs Secondary',
     subtitle: 'Compare your off-plan investment against a ready secondary property to see which strategy builds more wealth over 10 years.',
@@ -369,9 +371,11 @@ const OffPlanVsSecondary = () => {
     save: 'Save',
     update: 'Update',
     load: 'Load',
+    loadRecent: 'Load Recent',
+    recentComparisons: 'Recent Comparisons',
   };
 
-  // Initial state - show CTA to open configurator
+  // Initial state - show CTA to open configurator or load saved
   if (!hasConfigured && !quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
@@ -402,15 +406,75 @@ const OffPlanVsSecondary = () => {
               </div>
             </div>
             
-            <Button
-              size="lg"
-              onClick={() => setConfiguratorOpen(true)}
-              className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
-            >
-              <Settings2 className="w-5 h-5 mr-2" />
-              {t.startComparison}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                size="lg"
+                onClick={() => setConfiguratorOpen(true)}
+                className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
+              >
+                <Settings2 className="w-5 h-5 mr-2" />
+                {t.startComparison}
+              </Button>
+              
+              {comparisons.length > 0 && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setLoadModalOpen(true)}
+                  className="border-theme-border text-theme-text hover:bg-theme-card"
+                >
+                  <FolderOpen className="w-5 h-5 mr-2" />
+                  {t.loadRecent} ({comparisons.length})
+                </Button>
+              )}
+            </div>
           </Card>
+
+          {/* Recent Comparisons Preview */}
+          {comparisons.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold text-theme-text mb-4 flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-theme-accent" />
+                {t.recentComparisons}
+              </h2>
+              <div className="grid gap-3">
+                {comparisons.slice(0, 5).map((comparison) => (
+                  <Card
+                    key={comparison.id}
+                    className="p-4 bg-theme-card border-theme-border hover:border-theme-accent/50 cursor-pointer transition-colors group"
+                    onClick={() => handleLoadComparison(comparison)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-theme-text truncate group-hover:text-theme-accent transition-colors">
+                          {comparison.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-theme-text-muted">
+                          <Badge variant="outline" className="text-[10px]">
+                            {formatCurrency(comparison.secondary_inputs.purchasePrice, 'AED', 1)}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[10px] ${
+                              comparison.rental_mode === 'airbnb' 
+                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+                                : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                            }`}
+                          >
+                            {comparison.rental_mode === 'airbnb' ? '🏖️ Airbnb' : '🏠 Long-Term'}
+                          </Badge>
+                          <span className="text-theme-text-muted">
+                            {new Date(comparison.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <TrendingUp className="w-5 h-5 text-theme-text-muted group-hover:text-theme-accent transition-colors" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <ComparisonConfiguratorModal
@@ -421,6 +485,16 @@ const OffPlanVsSecondary = () => {
           handoverMonths={handoverMonths}
           currency={currency}
           rate={rate}
+        />
+        
+        <LoadSecondaryComparisonModal
+          open={loadModalOpen}
+          onOpenChange={setLoadModalOpen}
+          comparisons={comparisons}
+          loading={comparisonsLoading}
+          onLoad={handleLoadComparison}
+          onDelete={deleteComparison}
+          language={language}
         />
       </div>
     );
