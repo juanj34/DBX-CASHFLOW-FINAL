@@ -34,15 +34,16 @@ export const ComparisonKeyInsights = ({
     ? ((metrics.secondaryCapitalDay1 - metrics.offPlanCapitalDay1) / metrics.secondaryCapitalDay1) * 100
     : 0;
   
-  const offPlanMultiplier = metrics.offPlanCapitalDay1 > 0
-    ? metrics.offPlanWealthYear10 / metrics.offPlanCapitalDay1
+  // Off-plan multiplier: use total capital at handover (realistic cash deployed)
+  const offPlanTotalCapital = metrics.offPlanTotalCapitalAtHandover || metrics.offPlanCapitalDay1;
+  const offPlanMultiplier = offPlanTotalCapital > 0
+    ? (metrics.offPlanWealthYear10 + offPlanTotalCapital) / offPlanTotalCapital
     : 0;
   
-  // For secondary multiplier: use gross wealth (add back the cash capital that was subtracted)
-  // This shows the true "your X became Y" multiplier
-  const secondaryGrossWealth = secondaryWealth10 + metrics.secondaryCashCapital;
-  const secondaryMultiplier = metrics.secondaryCashCapital > 0
-    ? secondaryGrossWealth / metrics.secondaryCashCapital
+  // Secondary multiplier: use full property commitment (purchase price + closing)
+  // This is the "asset you control" vs "what that asset becomes"
+  const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
+    ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
     : 0;
   
   const crossoverYear = isAirbnb ? metrics.crossoverYearST : metrics.crossoverYearLT;
