@@ -16,3 +16,5 @@ export * from './DSCRExplanationCard';
 export * from './OutOfPocketCard';
 export * from './ExitScenariosStep';
 export * from './ExitScenariosComparison';
+export * from './SaveSecondaryComparisonModal';
+export * from './LoadSecondaryComparisonModal';

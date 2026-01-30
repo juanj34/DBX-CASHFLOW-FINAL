@@ -38,52 +38,37 @@ export const HeadToHeadTable = ({
     winner: 'Ganador',
     metric: 'Métrica',
     capital: 'Capital',
-    cashflow: 'Cashflow',
-    mortgage: 'Hipoteca',
     wealth: 'Riqueza',
     returnLabel: 'Retorno',
     airbnb: 'Airbnb',
-    strategy: 'Estrategia',
     day1Capital: 'Capital Día 1',
     totalCapitalHandover: 'Capital Total (Handover)',
-    dscrLongTerm: 'DSCR Largo Plazo',
-    wealthYear5LT: 'Riqueza Año 5 (LT)',
-    wealthYear10LT: 'Riqueza Año 10 (LT)',
+    wealthYear5LT: 'Riqueza Año 5',
+    wealthYear10LT: 'Riqueza Año 10',
     annualizedROE: 'ROE Anualizado (10Y)',
-    cashflowYear1ST: 'Cashflow Año 1 (ST)',
-    dscrAirbnb: 'DSCR Airbnb',
-    wealthYear10ST: 'Riqueza Año 10 (ST)',
+    wealthYear10ST: 'Riqueza Año 10 (Airbnb)',
   } : {
     detailedComparison: 'Detailed Comparison',
     secondary: 'Secondary',
     winner: 'Winner',
     metric: 'Metric',
     capital: 'Capital',
-    cashflow: 'Cashflow',
-    mortgage: 'Mortgage',
     wealth: 'Wealth',
     returnLabel: 'Return',
     airbnb: 'Airbnb',
-    strategy: 'Strategy',
     day1Capital: 'Day 1 Capital',
     totalCapitalHandover: 'Total Capital (Handover)',
-    dscrLongTerm: 'DSCR Long-Term',
-    wealthYear5LT: 'Wealth Year 5 (LT)',
-    wealthYear10LT: 'Wealth Year 10 (LT)',
+    wealthYear5LT: 'Wealth Year 5',
+    wealthYear10LT: 'Wealth Year 10',
     annualizedROE: 'Annualized ROE (10Y)',
-    cashflowYear1ST: 'Cashflow Year 1 (ST)',
-    dscrAirbnb: 'DSCR Airbnb',
-    wealthYear10ST: 'Wealth Year 10 (ST)',
+    wealthYear10ST: 'Wealth Year 10 (Airbnb)',
   };
 
   const categoryLabels: Record<string, string> = {
     CAPITAL: t.capital,
-    CASHFLOW: t.cashflow,
-    HIPOTECA: t.mortgage,
     RIQUEZA: t.wealth,
     RETORNO: t.returnLabel,
     AIRBNB: t.airbnb,
-    ESTRATEGIA: t.strategy,
   };
 
   // Format currency with dual display
@@ -122,16 +107,7 @@ export const HeadToHeadTable = ({
       secondaryValue: formatMoney(metrics.secondaryCapitalDay1),
       winner: metrics.offPlanTotalCapitalAtHandover < metrics.secondaryCapitalDay1 ? 'off-plan' : 'secondary',
     },
-    // Mortgage Coverage
-    {
-      category: 'HIPOTECA',
-      metric: t.dscrLongTerm,
-      offPlanValue: metrics.offPlanDSCRLT === Infinity ? '∞' : formatPercent(metrics.offPlanDSCRLT * 100),
-      secondaryValue: metrics.secondaryDSCRLT === Infinity ? '∞' : formatPercent(metrics.secondaryDSCRLT * 100),
-      winner: metrics.offPlanDSCRLT > metrics.secondaryDSCRLT ? 'off-plan' : 
-              metrics.offPlanDSCRLT < metrics.secondaryDSCRLT ? 'secondary' : 'tie',
-    },
-    // Wealth
+    // Wealth (no more DSCR/Mortgage rows)
     {
       category: 'RIQUEZA',
       metric: t.wealthYear5LT,
@@ -161,13 +137,6 @@ export const HeadToHeadTable = ({
   // Add Airbnb rows if enabled
   if (showAirbnb) {
     rows.push(
-      {
-        category: 'AIRBNB',
-        metric: t.dscrAirbnb,
-        offPlanValue: metrics.offPlanDSCRST === Infinity ? '∞' : formatPercent(metrics.offPlanDSCRST * 100),
-        secondaryValue: metrics.secondaryDSCRST === Infinity ? '∞' : formatPercent(metrics.secondaryDSCRST * 100),
-        winner: metrics.offPlanDSCRST > metrics.secondaryDSCRST ? 'off-plan' : 'secondary',
-      },
       {
         category: 'AIRBNB',
         metric: t.wealthYear10ST,
