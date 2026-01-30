@@ -1,183 +1,145 @@
 
-# Plan: Off-Plan vs Secondary Comparison Tool Redesign
+# Plan: Enhanced Off-Plan vs Secondary Comparison Tool
 
 ## Overview
 
-Redesign the comparison tool to follow the same pattern as the Cashflow Generator:
-1. **Modal-first configurator** using Dialog component
-2. **Two-step wizard**: Select off-plan quote, then configure/select secondary property
-3. **Results view** after configuration is complete
+This plan adds the following features to the comparison tool:
+1. **Language toggle in navbar** - Persistent EN/ES switch for client presentations
+2. **Currency selector with dual display** - Like cashflow view, showing AED (converted value)
+3. **Reorder sections** - Detailed comparison → Wealth progression → Chart
+4. **Custom exit scenarios** - Compare both properties at any exit point (year 3, 4, 5, etc.)
 
 ---
 
-## User Flow
+## User Experience Changes
 
-```text
-/offplan-vs-secondary
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  INITIAL STATE (No comparison configured)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│     [Icon: TrendingUp]                                          │
-│                                                                  │
-│     "Off-Plan vs Secondary Comparison"                          │
-│                                                                  │
-│     Compare your off-plan investment against a                  │
-│     ready secondary property to see which                       │
-│     strategy builds more wealth over 10 years.                  │
-│                                                                  │
-│              [Start Comparison]  ← Opens modal                  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+### 1. Language & Currency in TopNavbar
 
-         │ Click "Start Comparison"
-         ▼
+The TopNavbar will include:
+- Language toggle button (🇬🇧/🇪🇸) visible on all pages
+- Currency dropdown with flag indicators
 
-┌─────────────────────────────────────────────────────────────────┐
-│  CONFIGURATOR MODAL (Similar to OIInputModal)                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  STEP 1: SELECT OFF-PLAN QUOTE                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Search quotes...                                         │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌───────────────────────────────────────────────────────┐     │
-│  │ Marina Shores - Unit 1204                              │     │
-│  │ Emaar • AED 1,450,000 • Handover: Q4 2026              │     │
-│  └───────────────────────────────────────────────────────┘     │
-│                                                                  │
-│  [← Back]                                          [Next →]     │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  STEP 2: CONFIGURE SECONDARY PROPERTY                           │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │ [+ Create New] [Load Saved ▼]                            │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  Property Details:                                               │
-│  - Purchase Price, Size, Closing Costs                          │
-│  - Rental Yield, Appreciation Rate                              │
-│  - Mortgage options (optional)                                  │
-│  - Airbnb comparison (optional)                                 │
-│                                                                  │
-│  [Save Property for Later]                                      │
-│                                                                  │
-│  [← Back]                                     [Compare Now →]   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+The Off-Plan vs Secondary page will consume these settings and pass them to all components.
 
-         │ Click "Compare Now"
-         ▼
+### 2. Dual Currency Display
 
-┌─────────────────────────────────────────────────────────────────┐
-│  RESULTS VIEW (Full page comparison)                            │
-│  [Reconfigure] button in header to reopen modal                 │
-└─────────────────────────────────────────────────────────────────┘
+All monetary values will show:
+```
+AED 1,500,000 ($408,000)
+```
+Using the same `DualCurrencyValue` component pattern from the Cashflow snapshot.
+
+### 3. Section Reordering
+
+New order in results view:
+1. Key Insights (4 cards)
+2. **Detailed Comparison Table** (moved up)
+3. **Wealth Progression Table** (moved down)
+4. Wealth Trajectory Chart
+5. Exit Scenarios Comparison (NEW)
+6. DSCR Explanation + Out of Pocket
+7. Verdict
+
+### 4. Custom Exit Scenarios
+
+New feature in configurator Step 2 (or Step 3):
+- Add exit points at any month/year
+- Compare both properties side-by-side at each exit point
+- Show: Property Value, Capital Invested, Profit, Total ROE
+
+---
+
+## Technical Implementation
+
+### A. TopNavbar Language & Currency Controls
+
+**File: `src/components/layout/TopNavbar.tsx`**
+
+Add props and controls:
+- `language` / `setLanguage` props (optional, for pages that need control)
+- `currency` / `setCurrency` props (optional)
+- Display current language flag as toggle button
+- Currency dropdown with all supported currencies
+
+When props are not provided, the navbar shows read-only current settings from LanguageContext.
+
+### B. Off-Plan vs Secondary Page State
+
+**File: `src/pages/OffPlanVsSecondary.tsx`**
+
+Add new state:
+```typescript
+const [language, setLanguage] = useState<'en' | 'es'>('en');
+const [currency, setCurrency] = useState<Currency>('AED');
+const { rate, isLive } = useExchangeRate(currency);
 ```
 
----
+Pass to TopNavbar and all child components.
 
-## Database Changes
+### C. Exit Scenarios Comparison Component
 
-### New Table: `secondary_properties`
+**New File: `src/components/roi/secondary/ExitScenariosComparison.tsx`**
 
-Stores reusable secondary property configurations.
+A card showing side-by-side comparison at multiple exit points:
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| broker_id | uuid | Owner (FK to auth.users) |
-| name | text | Property name/label |
-| purchase_price | numeric | AED price |
-| unit_size_sqf | numeric | Size in sqft |
-| closing_costs_percent | numeric | Default 6% |
-| rental_yield_percent | numeric | Default 7% |
-| rent_growth_rate | numeric | Default 3% |
-| appreciation_rate | numeric | Default 3% |
-| service_charge_per_sqft | numeric | Default 22 |
-| use_mortgage | boolean | Default true |
-| mortgage_financing_percent | numeric | Default 60% |
-| mortgage_interest_rate | numeric | Default 4.5% |
-| mortgage_term_years | integer | Default 25 |
-| show_airbnb | boolean | Default false |
-| airbnb_adr | numeric | Average daily rate |
-| airbnb_occupancy | numeric | Occupancy % |
-| airbnb_operating_expense | numeric | Operating expense % |
-| airbnb_management_fee | numeric | Management fee % |
-| created_at | timestamptz | Timestamp |
-| updated_at | timestamptz | Timestamp |
+| Exit Point | Off-Plan Value | Off-Plan Profit | Off-Plan ROE | Secondary Value | Secondary Profit | Secondary ROE |
+|------------|----------------|-----------------|--------------|-----------------|------------------|---------------|
+| Year 3     | 1.65M          | +280K           | 45%          | 1.27M           | +120K            | 18%           |
+| Year 4     | 1.82M          | +420K           | 52%          | 1.31M           | +180K            | 22%           |
+| Year 5     | 1.95M          | +580K           | 58%          | 1.35M           | +250K            | 26%           |
 
-**RLS Policy**: Users can only manage their own properties.
+### D. Configurator Exit Scenarios Step
 
----
+**New File: `src/components/roi/secondary/ExitScenariosStep.tsx`**
 
-## New Components
+Optional Step 3 in the configurator modal:
+- Quick-add buttons: Year 3, Year 4, Year 5, Year 7, Year 10
+- Custom input: Add exit at month X
+- List of selected exit points with remove option
 
-### 1. `ComparisonConfiguratorModal.tsx`
-The main modal component (like OIInputModal) containing:
-- Step indicator (1/2)
-- Step 1: Quote selector with search
-- Step 2: Secondary property form with save/load functionality
-- Navigation buttons (Back, Next, Compare Now)
+### E. Update Comparison Types
 
-### 2. `QuoteSelectionStep.tsx`
-- Searchable list of off-plan quotes
-- Shows: Project, Developer, Price, Handover, Client
-- Click to select
+**File: `src/components/roi/secondary/types.ts`**
 
-### 3. `SecondaryPropertyStep.tsx`
-- Form for secondary property inputs
-- "Save for Later" button to persist to database
-- "Load Saved" dropdown to select existing properties
-- All fields from SecondaryInputs type
+Add new type for exit comparison:
+```typescript
+export interface ExitComparisonPoint {
+  months: number;
+  offPlan: {
+    propertyValue: number;
+    capitalInvested: number;
+    profit: number;
+    totalROE: number;
+    annualizedROE: number;
+  };
+  secondary: {
+    propertyValue: number;
+    capitalInvested: number;
+    profit: number;
+    totalROE: number;
+    annualizedROE: number;
+  };
+}
+```
 
-### 4. `ComparisonKeyInsights.tsx`
-4 key insight cards at top of results:
-- **Capital Inicial**: Day 1 investment for each
-- **Riqueza Año 10**: Total wealth at year 10
-- **ROE Anualizado**: Annualized ROE over 10 years
-- **Punto de Cruce**: Year when off-plan surpasses secondary
+### F. Dual Currency Formatting in Components
 
-### 5. `YearByYearWealthTable.tsx`
-Critical table showing wealth progression:
-
-| Year | Off-Plan Wealth | Secondary Wealth | Delta |
-|------|-----------------|------------------|-------|
-| 1    | 150K            | 130K             | +20K  |
-| 2    | 320K            | 260K             | +60K  |
-| ...  | ...             | ...              | ...   |
-| 10   | 1.8M            | 1.1M             | +700K |
-
-### 6. `DSCRExplanationCard.tsx`
-Explains DSCR in simple terms:
-- What it measures
-- Color-coded thresholds (green/yellow/red)
-- Why it matters
-
-### 7. `OutOfPocketCard.tsx`
-Simplified replacement for OutOfPocketTimeline:
-- Total capital during construction
-- Months without rental income
-- Appreciation gained while waiting
+Update these components to accept currency/rate props and use dual display:
+- `ComparisonKeyInsights.tsx`
+- `YearByYearWealthTable.tsx`
+- `HeadToHeadTable.tsx`
+- `ExitScenariosComparison.tsx` (new)
+- `OutOfPocketCard.tsx`
+- `DSCRExplanationCard.tsx`
 
 ---
 
 ## Files to Create
 
-| File | Description |
-|------|-------------|
-| `src/components/roi/secondary/ComparisonConfiguratorModal.tsx` | Main modal component |
-| `src/components/roi/secondary/QuoteSelectionStep.tsx` | Step 1: Quote picker |
-| `src/components/roi/secondary/SecondaryPropertyStep.tsx` | Step 2: Secondary config |
-| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | 4 insight cards |
-| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Wealth progression table |
-| `src/components/roi/secondary/DSCRExplanationCard.tsx` | DSCR explanation |
-| `src/components/roi/secondary/OutOfPocketCard.tsx` | Simplified OOP display |
-| `src/hooks/useSecondaryProperties.ts` | CRUD for saved properties |
+| File | Purpose |
+|------|---------|
+| `src/components/roi/secondary/ExitScenariosComparison.tsx` | Side-by-side exit comparison table |
+| `src/components/roi/secondary/ExitScenariosStep.tsx` | Step 3 in configurator for exit points |
 
 ---
 
@@ -185,62 +147,177 @@ Simplified replacement for OutOfPocketTimeline:
 
 | File | Changes |
 |------|---------|
-| `src/pages/OffPlanVsSecondary.tsx` | Complete rewrite with modal-first flow |
-| `src/components/roi/secondary/WealthTrajectoryDualChart.tsx` | Fix overflow, improve formatting |
+| `src/components/layout/TopNavbar.tsx` | Add language toggle + currency dropdown |
+| `src/pages/OffPlanVsSecondary.tsx` | Add language/currency state, reorder sections, add exit scenarios |
+| `src/components/roi/secondary/ComparisonConfiguratorModal.tsx` | Add optional Step 3 for exit scenarios |
+| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Add currency/rate props, dual display |
+| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Add currency/rate props, dual display |
+| `src/components/roi/secondary/HeadToHeadTable.tsx` | Add currency/rate props, dual display |
+| `src/components/roi/secondary/OutOfPocketCard.tsx` | Add currency/rate props, dual display |
+| `src/components/roi/secondary/DSCRExplanationCard.tsx` | Minor: language support |
+| `src/components/roi/secondary/types.ts` | Add ExitComparisonPoint type |
 | `src/components/roi/secondary/index.ts` | Export new components |
 
 ---
 
-## Rental Mode Toggle
+## Detailed Component Changes
 
-Add a prominent toggle between:
-- **Renta Larga** (Long-term rental) - default
-- **Airbnb** (Short-term rental)
+### TopNavbar Language Toggle
 
-This toggle affects:
-- Wealth Year 10 calculations
-- ROE calculations  
-- Year-by-year table values
-- DSCR coverage display
+```tsx
+// New props
+interface TopNavbarProps {
+  showNewQuote?: boolean;
+  language?: 'en' | 'es';
+  setLanguage?: (lang: 'en' | 'es') => void;
+  currency?: Currency;
+  setCurrency?: (currency: Currency) => void;
+}
 
----
+// In navbar, add controls before avatar:
+<Button variant="ghost" size="icon" onClick={() => setLanguage?.(language === 'en' ? 'es' : 'en')}>
+  {language === 'en' ? '🇬🇧' : '🇪🇸'}
+</Button>
 
-## Key Metrics Explanations
+<DropdownMenu>
+  <DropdownMenuTrigger>
+    <Button variant="ghost" size="sm">
+      {CURRENCY_CONFIG[currency].flag} {currency}
+    </Button>
+  </DropdownMenuTrigger>
+  {/* Currency options */}
+</DropdownMenu>
+```
 
-### DSCR (Debt Service Coverage Ratio)
-"Mide si la renta cubre la hipoteca. DSCR de 120% = la renta es 20% mayor que el pago mensual."
+### Exit Scenarios Calculation
 
-### Riqueza Total
-"Valor de propiedad + Rentas acumuladas - Capital invertido = Lo que realmente tienes."
+For each exit point, calculate:
 
-### Punto de Cruce
-"El año cuando off-plan supera a secundaria en riqueza total."
+**Off-Plan:**
+- Use `calculateExitScenario()` from constructionProgress.ts
+- Accounts for construction appreciation, capital deployed at that point
 
-### ROE Anualizado
-"Retorno anualizado sobre tu capital invertido durante 10 años."
+**Secondary:**
+- Property Value = purchasePrice × (1 + appreciationRate)^years
+- Profit = PropertyValue + CumulativeRent - TotalCapital - ExitCosts
+- ROE = Profit / TotalCapital × 100
+- Annualized ROE = ROE / years
 
----
+### Dual Currency Format in Tables
 
-## UI Improvements
+Example in YearByYearWealthTable:
+```tsx
+// Instead of:
+formatCompact(row.offPlanWealth)
 
-1. **No number overflow**: All charts and tables use proper formatting (K for thousands, M for millions)
-2. **Theme-aware colors**: All components use theme tokens
-3. **Clear hierarchy**: 4 key cards → Detailed table → Charts → Explanations → Verdict
-4. **Better spacing**: Proper gaps between sections
-5. **Tooltips**: Every metric has an explanation tooltip
+// Use:
+<div className="flex flex-col items-end">
+  <span>{formatCurrency(row.offPlanWealth, 'AED', 1)}</span>
+  {currency !== 'AED' && (
+    <span className="text-xs text-theme-text-muted">
+      ({formatCurrency(row.offPlanWealth, currency, rate)})
+    </span>
+  )}
+</div>
+```
 
 ---
 
 ## Implementation Order
 
-1. Create database migration for `secondary_properties` table
-2. Create `useSecondaryProperties` hook for CRUD operations
-3. Build `ComparisonConfiguratorModal` with two steps
-4. Build `QuoteSelectionStep` component
-5. Build `SecondaryPropertyStep` component with save/load
-6. Rewrite `OffPlanVsSecondary.tsx` with modal-first approach
-7. Create `ComparisonKeyInsights` (4 cards)
-8. Create `YearByYearWealthTable`
-9. Create `DSCRExplanationCard` and `OutOfPocketCard`
-10. Fix `WealthTrajectoryDualChart` overflow issues
-11. Update exports and test flow
+1. **Update TopNavbar** - Add language toggle and currency dropdown props
+2. **Update OffPlanVsSecondary.tsx** - Add state, pass to navbar, reorder sections
+3. **Create ExitScenariosStep.tsx** - Exit point selector for configurator
+4. **Update ComparisonConfiguratorModal.tsx** - Add Step 3 for exits
+5. **Create ExitScenariosComparison.tsx** - Side-by-side exit table
+6. **Update all cards/tables** - Add currency/rate props, dual display
+7. **Update types and exports**
+
+---
+
+## Visual Layout After Changes
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TopNavbar                            [🇬🇧/🇪🇸] [🇦🇪 AED ▼] [👤]  │
+├─────────────────────────────────────────────────────────────────┤
+│  Header: "Off-Plan vs Secundaria"                               │
+│  [← Reconfigurar]  [Toggle: Renta Larga | Airbnb]               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. KEY INSIGHTS (4 Cards) - with dual currency                 │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  2. DETAILED COMPARISON TABLE (HeadToHeadTable) - dual currency │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  3. YEAR-BY-YEAR WEALTH PROGRESSION - dual currency             │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  4. WEALTH TRAJECTORY CHART                                     │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  5. EXIT SCENARIOS COMPARISON (NEW)                             │
+│  Table comparing exits at Year 3, 4, 5, etc.                    │
+│  Shows profit & ROE side-by-side for both strategies            │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  6. DSCR EXPLANATION + OUT OF POCKET                            │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  7. VERDICT / RECOMMENDATION                                    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Exit Scenarios UI Design
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  📊 Exit Scenarios Comparison                                   │
+│  What if you sell both properties at the same time?             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────┬──────────────────────┬──────────────────────┐      │
+│  │ Exit    │     OFF-PLAN 🏗️      │    SECONDARY 🏠      │      │
+│  ├─────────┼──────────────────────┼──────────────────────┤      │
+│  │ Year 3  │ Value: AED 1.65M     │ Value: AED 1.27M     │      │
+│  │         │ Profit: +280K        │ Profit: +120K        │      │
+│  │         │ ROE: 45% (15%/yr)    │ ROE: 18% (6%/yr)     │      │
+│  │         │ 🏆 WINNER            │                      │      │
+│  ├─────────┼──────────────────────┼──────────────────────┤      │
+│  │ Year 5  │ Value: AED 1.95M     │ Value: AED 1.35M     │      │
+│  │         │ Profit: +580K        │ Profit: +250K        │      │
+│  │         │ ROE: 58% (11.6%/yr)  │ ROE: 26% (5.2%/yr)   │      │
+│  │         │ 🏆 WINNER            │                      │      │
+│  ├─────────┼──────────────────────┼──────────────────────┤      │
+│  │ Year 10 │ Value: AED 2.4M      │ Value: AED 1.55M     │      │
+│  │         │ Profit: +1.2M        │ Profit: +580K        │      │
+│  │         │ ROE: 95% (9.5%/yr)   │ ROE: 48% (4.8%/yr)   │      │
+│  │         │ 🏆 WINNER            │                      │      │
+│  └─────────┴──────────────────────┴──────────────────────┘      │
+│                                                                  │
+│  💡 Off-plan appreciation during construction creates a         │
+│     significant wealth advantage that compounds over time.      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Summary
+
+This implementation enhances the Off-Plan vs Secondary tool with:
+
+1. **Global controls** - Language and currency toggles in the navbar for easy client customization
+2. **Dual currency display** - All monetary values show both AED and the selected reference currency
+3. **Reordered sections** - Detailed comparison comes before the wealth progression table
+4. **Custom exit scenarios** - The key feature showing what happens if both properties are sold at the same point in time, demonstrating the off-plan appreciation advantage
