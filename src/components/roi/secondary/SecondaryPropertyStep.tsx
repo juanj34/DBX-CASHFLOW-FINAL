@@ -42,7 +42,8 @@ export const SecondaryPropertyStep = ({
   const t = language === 'es' ? {
     savedProperties: 'Propiedades Guardadas',
     propertyDetails: 'Detalles de Propiedad',
-    purchasePrice: 'Precio de Compra (AED)',
+    propertyName: 'Nombre de la Propiedad',
+    purchasePrice: 'Precio de Compra',
     area: 'Área (sqft)',
     closingCosts: 'Costos de Cierre %',
     rentalYield: 'Yield Renta %',
@@ -77,7 +78,8 @@ export const SecondaryPropertyStep = ({
   } : {
     savedProperties: 'Saved Properties',
     propertyDetails: 'Property Details',
-    purchasePrice: 'Purchase Price (AED)',
+    propertyName: 'Property Name',
+    purchasePrice: 'Purchase Price',
     area: 'Area (sqft)',
     closingCosts: 'Closing Costs %',
     rentalYield: 'Rental Yield %',
@@ -224,6 +226,19 @@ export const SecondaryPropertyStep = ({
           </div>
         )}
 
+        {/* Property Name */}
+        <Card className="p-4 bg-theme-card/50 border-theme-border space-y-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-theme-text-muted">{t.propertyName}</Label>
+            <Input
+              value={propertyName}
+              onChange={(e) => setPropertyName(e.target.value)}
+              placeholder={t.propertyNamePlaceholder}
+              className="bg-theme-card border-theme-border text-theme-text"
+            />
+          </div>
+        </Card>
+
         {/* Property Details */}
         <Card className="p-4 bg-theme-card/50 border-theme-border space-y-4">
           <h4 className="font-medium text-theme-text text-sm">{t.propertyDetails}</h4>
@@ -231,12 +246,20 @@ export const SecondaryPropertyStep = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs text-theme-text-muted">{t.purchasePrice}</Label>
-              <Input
-                type="number"
-                value={inputs.purchasePrice}
-                onChange={(e) => updateInput('purchasePrice', Number(e.target.value))}
-                className="bg-theme-card border-theme-border text-theme-text"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm">
+                  AED
+                </span>
+                <Input
+                  type="text"
+                  value={inputs.purchasePrice.toLocaleString()}
+                  onChange={(e) => {
+                    const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                    updateInput('purchasePrice', Number(cleaned) || 0);
+                  }}
+                  className="bg-theme-card border-theme-border text-theme-text pl-12 font-mono"
+                />
+              </div>
               {showDualCurrency(inputs.purchasePrice)}
               {offPlanPrice && (
                 <p className="text-[10px] text-theme-text-muted">

@@ -11,7 +11,7 @@ import { QuoteSelectionStep } from './QuoteSelectionStep';
 import { SecondaryPropertyStep } from './SecondaryPropertyStep';
 import { ExitScenariosStep } from './ExitScenariosStep';
 import { SecondaryInputs, DEFAULT_SECONDARY_INPUTS } from './types';
-import { CashflowQuote } from '@/hooks/useCashflowQuote';
+import { CashflowQuote, useCashflowQuote } from '@/hooks/useCashflowQuote';
 import { OIInputs } from '@/components/roi/useOICalculations';
 import { Currency } from '@/components/roi/currencyUtils';
 
@@ -46,6 +46,16 @@ export const ComparisonConfiguratorModal = ({
     initialSecondaryInputs || DEFAULT_SECONDARY_INPUTS
   );
   const [exitMonths, setExitMonths] = useState<number[]>(initialExitMonths);
+  
+  // Load initial quote when initialQuoteId is provided
+  const { quote: initialQuote } = useCashflowQuote(initialQuoteId);
+  
+  // Set selectedQuote from initialQuote when it loads
+  useEffect(() => {
+    if (initialQuote && !selectedQuote && initialQuoteId) {
+      setSelectedQuote(initialQuote);
+    }
+  }, [initialQuote, selectedQuote, initialQuoteId]);
 
   const t = language === 'es' ? {
     title: 'Off-Plan vs Secundaria',

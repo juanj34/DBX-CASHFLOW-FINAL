@@ -33,7 +33,6 @@ interface ExitScenariosComparisonProps {
   offPlanEntryCosts: number;
   // Secondary data
   secondaryPurchasePrice: number;
-  secondaryCapitalInvested: number;
   secondaryAppreciationRate: number;
   // Display
   currency: Currency;
@@ -48,7 +47,6 @@ export const ExitScenariosComparison = ({
   offPlanTotalMonths,
   offPlanEntryCosts,
   secondaryPurchasePrice,
-  secondaryCapitalInvested,
   secondaryAppreciationRate,
   currency,
   rate,
@@ -113,11 +111,13 @@ export const ExitScenariosComparison = ({
       const opROE = opCapitalAtExit > 0 ? (opAppreciation / opCapitalAtExit) * 100 : 0;
       const opAnnualizedROE = years > 0 ? opROE / years : 0;
       
-      // === SECONDARY: All capital paid day 1 ===
+      // === SECONDARY: Capital = Full purchase price (financing is irrelevant for exits) ===
+      // When you sell, what matters is: what you paid vs what you sell for
       const secExitPrice = secondaryPurchasePrice * Math.pow(1 + secondaryAppreciationRate / 100, years);
-      const secAppreciation = secExitPrice - secondaryPurchasePrice;
+      const secProfit = secExitPrice - secondaryPurchasePrice;
       
-      const secROE = secondaryCapitalInvested > 0 ? (secAppreciation / secondaryCapitalInvested) * 100 : 0;
+      // ROE based on full purchase price, not mortgage down payment
+      const secROE = secondaryPurchasePrice > 0 ? (secProfit / secondaryPurchasePrice) * 100 : 0;
       const secAnnualizedROE = years > 0 ? secROE / years : 0;
       
       return {
@@ -131,8 +131,8 @@ export const ExitScenariosComparison = ({
         },
         secondary: {
           propertyValue: secExitPrice,
-          capitalInvested: secondaryCapitalInvested,
-          profit: secAppreciation,           // Pure appreciation
+          capitalInvested: secondaryPurchasePrice,  // Full purchase price for exits
+          profit: secProfit,                        // Pure appreciation
           totalROE: secROE,
           annualizedROE: secAnnualizedROE,
         },
@@ -145,7 +145,6 @@ export const ExitScenariosComparison = ({
     offPlanTotalMonths, 
     offPlanEntryCosts, 
     secondaryPurchasePrice, 
-    secondaryCapitalInvested, 
     secondaryAppreciationRate
   ]);
 
@@ -284,12 +283,12 @@ export const ExitScenariosComparison = ({
                     <TableCell className="text-center">
                       <Tooltip>
                         <TooltipTrigger>
-                          <span className="text-xs text-theme-text-muted">
+                      <span className="text-xs text-theme-text-muted">
                             {formatValue(exit.secondary.capitalInvested)}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">{language === 'es' ? 'Capital día 1' : 'Day 1 capital'}</p>
+                          <p className="text-xs">{language === 'es' ? 'Precio de compra total' : 'Total purchase price'}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
