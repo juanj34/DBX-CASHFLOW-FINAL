@@ -33,7 +33,8 @@ interface YearByYearWealthTableProps {
   language: 'en' | 'es';
 }
 
-const formatCompact = (value: number): string => {
+const formatCompact = (value: number | undefined | null): string => {
+  if (value === undefined || value === null || isNaN(value)) return '—';
   if (Math.abs(value) >= 1000000) {
     return `${(value / 1000000).toFixed(2)}M`;
   }
