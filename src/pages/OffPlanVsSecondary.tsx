@@ -29,7 +29,6 @@ import {
   YearByYearWealthTable,
   WealthTrajectoryDualChart,
   OutOfPocketCard,
-  HeadToHeadTable,
   ComparisonVerdict,
   ExitScenariosComparison,
   SaveSecondaryComparisonModal,
@@ -534,17 +533,7 @@ const OffPlanVsSecondary = () => {
             appreciationDuringConstruction={appreciationDuringConstruction}
           />
 
-          {/* 2. Detailed Comparison Table */}
-          <HeadToHeadTable
-            metrics={comparisonMetrics}
-            offPlanLabel={projectName}
-            showAirbnb={rentalMode === 'airbnb'}
-            currency={currency}
-            rate={rate}
-            language={language}
-          />
-
-          {/* 3. Year-by-Year Wealth Table */}
+          {/* 2. Year-by-Year Wealth Table */}
           <YearByYearWealthTable
             offPlanProjections={offPlanCalcs.yearlyProjections}
             secondaryProjections={secondaryCalcs.yearlyProjections}

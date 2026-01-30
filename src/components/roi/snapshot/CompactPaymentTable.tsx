@@ -213,8 +213,12 @@ export const CompactPaymentTable = ({
     (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
   );
 
-  // Total Cash Until Handover = Entry + Journey + On Handover
+  // Total Cash Until Handover = Entry + Journey + On Handover (for grand total)
   const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
+  
+  // "Total to this point" = entry + journey payments only
+  // Handover payment is shown AFTER this total in the UI
+  const totalToHandoverQuarter = entryTotal + journeyTotal;
   
   const getPaymentLabel = (payment: PaymentMilestone): string => {
     if (payment.type === 'time') {
@@ -439,9 +443,9 @@ export const CompactPaymentTable = ({
                               {t('totalToThisPointLabel')}
                             </span>
                             <span className="font-mono text-theme-accent font-medium">
-                              {getDualValue(totalUntilHandover).primary}
+                              {getDualValue(totalToHandoverQuarter).primary}
                               {currency !== 'AED' && (
-                                <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
+                                <span className="text-theme-text-muted ml-1">({getDualValue(totalToHandoverQuarter).secondary})</span>
                               )}
                             </span>
                           </div>
