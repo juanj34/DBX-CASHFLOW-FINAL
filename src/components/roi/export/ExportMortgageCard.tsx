@@ -87,29 +87,48 @@ export const ExportMortgageCard = ({
       <div style={{ padding: '12px' }}>
         <div style={rowStyle}>
           <span style={labelStyle}>{t.loanAmount} ({100 - equityRequiredPercent}%)</span>
-          <span style={valueStyle}>{getDualValue(loanAmount).primary}</span>
+          <span style={valueStyle}>
+            {getDualValue(loanAmount).primary}
+            {getDualValue(loanAmount).secondary && (
+              <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(loanAmount).secondary})</span>
+            )}
+          </span>
         </div>
         
         <div style={rowStyle}>
           <span style={{ ...labelStyle, fontWeight: 600 }}>{t.monthlyPayment}</span>
-          <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(168, 85, 247)' }}>{getDualValue(monthlyPayment).primary}</span>
+          <span style={{ ...valueStyle, fontWeight: 700, color: 'rgb(168, 85, 247)' }}>
+            {getDualValue(monthlyPayment).primary}
+            {getDualValue(monthlyPayment).secondary && (
+              <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(monthlyPayment).secondary})</span>
+            )}
+          </span>
         </div>
         
         <div style={rowStyle}>
           <span style={labelStyle}>{t.rentalIncome}</span>
-          <span style={{ ...valueStyle, color: 'rgb(34, 211, 238)' }}>+{getDualValue(monthlyRent).primary}</span>
+          <span style={{ ...valueStyle, color: 'rgb(34, 211, 238)' }}>
+            +{getDualValue(monthlyRent).primary}
+            {getDualValue(monthlyRent).secondary && (
+              <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(monthlyRent).secondary})</span>
+            )}
+          </span>
         </div>
         
         <div style={{ ...rowStyle, borderTop: '1px solid hsl(var(--border))', marginTop: '8px', paddingTop: '8px' }}>
           <span style={{ ...labelStyle, fontWeight: 600 }}>{t.monthlyCashflow}</span>
           <span style={{ ...valueStyle, fontWeight: 700, color: isPositive ? 'rgb(74, 222, 128)' : 'rgb(248, 113, 113)' }}>
             {isPositive ? '+' : ''}{getDualValue(monthlyCashflow).primary}
+            {getDualValue(monthlyCashflow).secondary && (
+              <span style={{ marginLeft: '4px', fontWeight: 400 }}>({getDualValue(monthlyCashflow).secondary})</span>
+            )}
           </span>
         </div>
         
         <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
           <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
             {t.interest}: {getDualValue(totalInterest).primary}
+            {getDualValue(totalInterest).secondary && ` (${getDualValue(totalInterest).secondary})`}
           </span>
           <span 
             style={{ 
