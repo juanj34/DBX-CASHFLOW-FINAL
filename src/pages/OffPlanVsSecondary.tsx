@@ -1,26 +1,26 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopNavbar } from '@/components/layout/TopNavbar';
-import { Building2, ArrowLeft, RefreshCw, Search, ArrowRight, User, Calendar } from 'lucide-react';
+import { TrendingUp, Settings2, Home, Palmtree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { useCashflowQuote, useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useCashflowQuote } from '@/hooks/useCashflowQuote';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from '@/components/roi/useMortgageCalculations';
-import { formatCurrency } from '@/components/roi/currencyUtils';
 import {
   SecondaryInputs,
   DEFAULT_SECONDARY_INPUTS,
   ComparisonMetrics,
   useSecondaryCalculations,
-  SecondarySimulatorForm,
-  ComparisonSummaryCards,
+  ComparisonConfiguratorModal,
+  ComparisonKeyInsights,
+  YearByYearWealthTable,
   WealthTrajectoryDualChart,
-  MortgageCoverageMatrix,
-  OutOfPocketTimeline,
+  DSCRExplanationCard,
+  OutOfPocketCard,
   HeadToHeadTable,
   ComparisonVerdict,
 } from '@/components/roi/secondary';
@@ -29,37 +29,58 @@ import { Skeleton } from '@/components/ui/skeleton';
 const OffPlanVsSecondary = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
-  const { quote, loading: quoteLoading } = useCashflowQuote(quoteId);
   
-  // Secondary inputs state
+  // Modal state
+  const [configuratorOpen, setConfiguratorOpen] = useState(false);
+  const [hasConfigured, setHasConfigured] = useState(false);
+  
+  // Selected quote and secondary inputs
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(quoteId);
   const [secondaryInputs, setSecondaryInputs] = useState<SecondaryInputs>(DEFAULT_SECONDARY_INPUTS);
-  
-  // Initialize secondary inputs based on off-plan quote
+  const [rentalMode, setRentalMode] = useState<'long-term' | 'airbnb'>('long-term');
+
+  // Load quote data
+  const { quote, loading: quoteLoading } = useCashflowQuote(selectedQuoteId);
+
+  // Open configurator on mount if no quoteId
+  useEffect(() => {
+    if (!quoteId && !hasConfigured) {
+      setConfiguratorOpen(true);
+    }
+  }, [quoteId, hasConfigured]);
+
+  // Initialize secondary inputs from quote
   useEffect(() => {
     if (quote?.inputs) {
       const inputs = quote.inputs as OIInputs;
       setSecondaryInputs(prev => ({
         ...prev,
-        // Match purchase price to off-plan
         purchasePrice: inputs.basePrice || prev.purchasePrice,
         unitSizeSqf: inputs.unitSizeSqf || prev.unitSizeSqf,
-        // Airbnb settings from off-plan if available
         showAirbnbComparison: inputs.showAirbnbComparison ?? true,
         averageDailyRate: inputs.shortTermRental?.averageDailyRate || prev.averageDailyRate,
         occupancyPercent: inputs.shortTermRental?.occupancyPercent || prev.occupancyPercent,
         operatingExpensePercent: inputs.shortTermRental?.operatingExpensePercent || prev.operatingExpensePercent,
         managementFeePercent: inputs.shortTermRental?.managementFeePercent || prev.managementFeePercent,
       }));
+      setHasConfigured(true);
     }
   }, [quote?.inputs]);
 
-  // Off-Plan calculations - create safe default inputs to prevent hook errors
+  // Handle compare from modal
+  const handleCompare = (newQuoteId: string, newSecondaryInputs: SecondaryInputs) => {
+    setSelectedQuoteId(newQuoteId);
+    setSecondaryInputs(newSecondaryInputs);
+    setHasConfigured(true);
+    // Update URL
+    navigate(`/offplan-vs-secondary/${newQuoteId}`, { replace: true });
+  };
+
+  // Off-Plan calculations - create safe default inputs
   const offPlanInputs = quote?.inputs as OIInputs | undefined;
   
-  // Create a safe fallback with required arrays to prevent forEach errors
   const safeOffPlanInputs = useMemo((): OIInputs => {
     if (offPlanInputs) return offPlanInputs;
-    // Return minimal valid inputs when no quote is loaded
     return {
       basePrice: 0,
       rentalYieldPercent: 0,
@@ -70,11 +91,11 @@ const OffPlanVsSecondary = () => {
       handoverYear: new Date().getFullYear() + 2,
       downpaymentPercent: 20,
       preHandoverPercent: 30,
-      additionalPayments: [], // Required to prevent forEach error
+      additionalPayments: [],
       hasPostHandoverPlan: false,
       onHandoverPercent: 0,
       postHandoverPercent: 0,
-      postHandoverPayments: [], // Required to prevent forEach error
+      postHandoverPayments: [],
       postHandoverEndQuarter: 4,
       postHandoverEndYear: new Date().getFullYear() + 4,
       eoiFee: 50000,
@@ -112,21 +133,27 @@ const OffPlanVsSecondary = () => {
   // Secondary calculations
   const secondaryCalcs = useSecondaryCalculations(secondaryInputs);
 
-  // Calculate handover year index
+  // Handover year index
   const handoverYearIndex = useMemo(() => {
     if (!offPlanInputs) return 2;
     return offPlanInputs.handoverYear - offPlanInputs.bookingYear + 1;
   }, [offPlanInputs]);
 
-  // Calculate total capital at handover for off-plan
+  // Total capital at handover for off-plan
   const offPlanTotalCapitalAtHandover = useMemo(() => {
     if (!offPlanInputs) return 0;
     const downpayment = offPlanInputs.basePrice * (offPlanInputs.downpaymentPercent / 100);
     const preHandover = offPlanInputs.basePrice * (offPlanInputs.preHandoverPercent / 100);
-    const onHandover = offPlanInputs.basePrice * ((100 - offPlanInputs.preHandoverPercent - (offPlanInputs.postHandoverPercent || 0)) / 100);
     const entryCosts = offPlanCalcs.totalEntryCosts;
-    return downpayment + preHandover + onHandover + entryCosts - (offPlanInputs.basePrice * offPlanInputs.downpaymentPercent / 100); // Avoid double counting
+    return downpayment + preHandover + entryCosts;
   }, [offPlanInputs, offPlanCalcs]);
+
+  // Appreciation during construction
+  const appreciationDuringConstruction = useMemo(() => {
+    if (!offPlanInputs || !offPlanCalcs.yearlyProjections.length) return 0;
+    const handoverProj = offPlanCalcs.yearlyProjections[handoverYearIndex - 1];
+    return (handoverProj?.propertyValue || offPlanInputs.basePrice) - offPlanInputs.basePrice;
+  }, [offPlanInputs, offPlanCalcs, handoverYearIndex]);
 
   // Comparison metrics
   const comparisonMetrics: ComparisonMetrics = useMemo(() => {
@@ -134,17 +161,10 @@ const OffPlanVsSecondary = () => {
       return {} as ComparisonMetrics;
     }
 
-    // Off-Plan capital at day 1 (downpayment + entry costs)
     const offPlanCapitalDay1 = (offPlanInputs.basePrice * offPlanInputs.downpaymentPercent / 100) + offPlanCalcs.totalEntryCosts;
-    
-    // Off-Plan total out of pocket before handover
     const offPlanOutOfPocket = offPlanTotalCapitalAtHandover;
-    
-    // Off-Plan months without income
     const offPlanMonthsNoIncome = handoverYearIndex * 12;
     
-    // Off-Plan wealth calculations
-    const offPlanYear5 = offPlanCalcs.yearlyProjections[4];
     const offPlanYear10 = offPlanCalcs.yearlyProjections[9];
     
     let offPlanCumulativeRent = 0;
@@ -155,17 +175,9 @@ const OffPlanVsSecondary = () => {
       }
     }
     
-    const offPlanWealth5 = (offPlanYear5?.propertyValue || 0) + 
-      offPlanCalcs.yearlyProjections.slice(0, 5).reduce((sum, p) => sum + (p.netIncome || 0), 0) - 
-      offPlanCapitalDay1;
-    
     const offPlanWealth10 = (offPlanYear10?.propertyValue || 0) + offPlanCumulativeRent - offPlanCapitalDay1;
+    const offPlanROE10 = offPlanCapitalDay1 > 0 ? (offPlanWealth10 / offPlanCapitalDay1 * 100) / 10 : 0;
     
-    // Off-Plan ROE
-    const offPlanProfit10 = offPlanWealth10;
-    const offPlanROE10 = offPlanCapitalDay1 > 0 ? (offPlanProfit10 / offPlanCapitalDay1 * 100) / 10 : 0;
-    
-    // Off-Plan DSCR (post-handover)
     const offPlanMonthlyRentLT = offPlanCalcs.holdAnalysis?.netAnnualRent / 12 || 0;
     const offPlanMonthlyRentST = (offPlanCalcs.holdAnalysis?.airbnbAnnualRent || 0) / 12;
     const offPlanDSCRLT = offPlanMortgage.monthlyPayment > 0 
@@ -175,13 +187,11 @@ const OffPlanVsSecondary = () => {
       ? offPlanMonthlyRentST / offPlanMortgage.monthlyPayment 
       : Infinity;
     
-    // Secondary ROE
     const secondaryProfit10 = secondaryCalcs.wealthYear10LT;
     const secondaryROE10 = secondaryCalcs.totalCapitalDay1 > 0 
       ? (secondaryProfit10 / secondaryCalcs.totalCapitalDay1 * 100) / 10 
       : 0;
 
-    // Find crossover year (when off-plan wealth > secondary)
     let crossoverYearLT: number | null = null;
     let crossoverYearST: number | null = null;
     
@@ -213,13 +223,13 @@ const OffPlanVsSecondary = () => {
       offPlanTotalCapitalAtHandover,
       offPlanOutOfPocket,
       offPlanMonthsNoIncome,
-      offPlanWealthYear5: offPlanWealth5,
+      offPlanWealthYear5: 0,
       secondaryWealthYear5LT: secondaryCalcs.wealthYear5LT,
       secondaryWealthYear5ST: secondaryCalcs.wealthYear5ST,
       offPlanWealthYear10: offPlanWealth10,
       secondaryWealthYear10LT: secondaryCalcs.wealthYear10LT,
       secondaryWealthYear10ST: secondaryCalcs.wealthYear10ST,
-      offPlanCashflowYear1: 0, // In construction
+      offPlanCashflowYear1: 0,
       secondaryCashflowYear1LT: secondaryCalcs.monthlyCashflowLT * 12,
       secondaryCashflowYear1ST: secondaryCalcs.monthlyCashflowST * 12,
       offPlanDSCRLT,
@@ -236,124 +246,61 @@ const OffPlanVsSecondary = () => {
     };
   }, [offPlanInputs, offPlanCalcs, offPlanMortgage, secondaryCalcs, handoverYearIndex, offPlanTotalCapitalAtHandover]);
 
-  // Quote selector state for when no quoteId is provided
-  const { quotes: allQuotes, loading: quotesLoading } = useQuotesList();
-  const [searchTerm, setSearchTerm] = useState('');
+  const projectName = quote?.project_name || quote?.developer || 'Off-Plan';
 
-  const filteredQuotes = useMemo(() => {
-    if (!searchTerm.trim()) return allQuotes;
-    const lower = searchTerm.toLowerCase();
-    return allQuotes.filter(q => 
-      q.title?.toLowerCase().includes(lower) ||
-      q.project_name?.toLowerCase().includes(lower) ||
-      q.developer?.toLowerCase().includes(lower) ||
-      q.client_name?.toLowerCase().includes(lower)
-    );
-  }, [allQuotes, searchTerm]);
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  // Show quote selector when no quoteId is provided
-  if (!quoteId) {
+  // Initial state - show CTA to open configurator
+  if (!hasConfigured && !quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
         <TopNavbar />
-        <div className="container mx-auto px-4 py-6 max-w-3xl">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-theme-text">Off-Plan vs Secundaria</h1>
-            <p className="text-sm text-theme-text-muted mt-1">Selecciona un quote off-plan para comparar</p>
-          </div>
-          {/* Search */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
-            <Input
-              placeholder="Buscar por proyecto, desarrollador, cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
-            />
-          </div>
+        
+        <div className="container mx-auto px-4 py-12 max-w-2xl">
+          <Card className="p-8 bg-theme-card border-theme-border text-center">
+            <div className="p-4 rounded-2xl bg-theme-accent/10 w-fit mx-auto mb-6">
+              <TrendingUp className="w-12 h-12 text-theme-accent" />
+            </div>
+            
+            <h1 className="text-2xl font-bold text-theme-text mb-3">
+              Off-Plan vs Secundaria
+            </h1>
+            
+            <p className="text-theme-text-muted mb-6 max-w-md mx-auto">
+              Compara tu inversión off-plan contra una propiedad secundaria lista 
+              para ver qué estrategia construye más riqueza en 10 años.
+            </p>
 
-          {/* Quote List */}
-          <div className="space-y-3">
-            {quotesLoading ? (
-              <>
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-              </>
-            ) : filteredQuotes.length === 0 ? (
-              <div className="text-center py-12">
-                <Building2 className="w-12 h-12 mx-auto text-theme-text-muted mb-4" />
-                <p className="text-theme-text-muted">
-                  {searchTerm ? 'No se encontraron quotes' : 'No tienes quotes. Crea uno primero.'}
-                </p>
-                {!searchTerm && (
-                  <Button 
-                    onClick={() => navigate('/cashflow-generator')} 
-                    className="mt-4 bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
-                  >
-                    Crear Quote
-                  </Button>
-                )}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex items-center gap-2 text-sm text-theme-text-muted">
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                Apreciación en construcción
               </div>
-            ) : (
-              filteredQuotes.map((q) => (
-                <Card 
-                  key={q.id}
-                  className="p-4 bg-theme-card border-theme-border hover:border-theme-accent/50 transition-colors cursor-pointer group"
-                  onClick={() => navigate(`/offplan-vs-secondary/${q.id}`)}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-theme-text truncate">
-                        {q.title || q.project_name || 'Sin título'}
-                      </h3>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-theme-text-muted">
-                        {q.developer && (
-                          <span className="flex items-center gap-1">
-                            <Building2 className="w-3 h-3" />
-                            {q.developer}
-                          </span>
-                        )}
-                        {q.client_name && (
-                          <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {q.client_name}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(q.updated_at)}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-sm font-medium text-theme-accent">
-                        {formatCurrency(q.inputs?.basePrice || 0, 'AED', 1)}
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-theme-text-muted group-hover:text-theme-accent group-hover:bg-theme-accent/10"
-                    >
-                      Comparar
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
+              <div className="flex items-center gap-2 text-sm text-theme-text-muted">
+                <div className="w-3 h-3 rounded-full bg-cyan-500" />
+                Cashflow inmediato
+              </div>
+            </div>
+            
+            <Button
+              size="lg"
+              onClick={() => setConfiguratorOpen(true)}
+              className="bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
+            >
+              <Settings2 className="w-5 h-5 mr-2" />
+              Iniciar Comparación
+            </Button>
+          </Card>
         </div>
+
+        <ComparisonConfiguratorModal
+          open={configuratorOpen}
+          onOpenChange={setConfiguratorOpen}
+          onCompare={handleCompare}
+        />
       </div>
     );
   }
 
+  // Loading state
   if (quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
@@ -366,129 +313,115 @@ const OffPlanVsSecondary = () => {
     );
   }
 
-  if (!quote || !offPlanInputs) {
-    return (
-      <div className="min-h-screen bg-theme-bg">
-        <TopNavbar />
-        <div className="container mx-auto px-4 py-6">
-          <p className="text-theme-text-muted">No se pudo cargar el quote. Por favor selecciona uno válido.</p>
-          <Button 
-            onClick={() => navigate('/offplan-vs-secondary')} 
-            className="mt-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Seleccionar otro Quote
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const projectName = quote.project_name || quote.developer || 'Off-Plan';
-
+  // Results view
   return (
     <div className="min-h-screen bg-theme-bg">
       <TopNavbar />
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar - Secondary Simulator */}
-          <aside className="w-full lg:w-80 shrink-0">
-            <div className="sticky top-20">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-theme-text">Configurar Secundaria</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setSecondaryInputs({
-                    ...DEFAULT_SECONDARY_INPUTS,
-                    purchasePrice: offPlanInputs.basePrice,
-                    unitSizeSqf: offPlanInputs.unitSizeSqf || 650,
-                  })}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </div>
-              <ScrollArea className="h-[calc(100vh-180px)]">
-                <SecondarySimulatorForm 
-                  inputs={secondaryInputs}
-                  onChange={setSecondaryInputs}
-                />
-              </ScrollArea>
-            </div>
-          </aside>
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+              {projectName}
+            </Badge>
+            <span className="text-theme-text-muted">vs</span>
+            <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/30">
+              Secundaria AED {(secondaryInputs.purchasePrice / 1000000).toFixed(2)}M
+            </Badge>
+          </div>
 
-          {/* Main Content */}
-          <main className="flex-1 space-y-6">
-            {/* Header Cards */}
-            <div className="flex items-center gap-3 mb-2">
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500">
-                {projectName}
-              </Badge>
-              <span className="text-theme-text-muted">vs</span>
-              <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500">
-                Secundaria AED {(secondaryInputs.purchasePrice / 1000).toFixed(0)}K
-              </Badge>
-            </div>
-
-            {/* Summary Cards */}
-            <ComparisonSummaryCards 
-              metrics={comparisonMetrics}
-              showAirbnb={secondaryInputs.showAirbnbComparison}
-            />
-
-            {/* Verdict */}
-            <ComparisonVerdict 
-              metrics={comparisonMetrics}
-              offPlanProjectName={projectName}
-            />
-
-            {/* Wealth Trajectory Chart */}
-            <WealthTrajectoryDualChart
-              offPlanProjections={offPlanCalcs.yearlyProjections}
-              secondaryProjections={secondaryCalcs.yearlyProjections}
-              offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
-              secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
-              handoverYearIndex={handoverYearIndex}
-              showAirbnb={secondaryInputs.showAirbnbComparison}
-            />
-
-            {/* Out of Pocket Timeline */}
-            <OutOfPocketTimeline
-              basePrice={offPlanInputs.basePrice}
-              downpaymentPercent={offPlanInputs.downpaymentPercent}
-              additionalPayments={offPlanInputs.additionalPayments || []}
-              handoverPercent={100 - offPlanInputs.preHandoverPercent - (offPlanInputs.postHandoverPercent || 0)}
-              totalMonths={offPlanCalcs.totalMonths}
-              propertyValueAtHandover={offPlanCalcs.yearlyProjections[handoverYearIndex - 1]?.propertyValue || offPlanInputs.basePrice}
-              entryCosts={offPlanCalcs.totalEntryCosts}
-              secondaryCapitalDay1={secondaryCalcs.totalCapitalDay1}
-            />
-
-            {/* Mortgage Coverage Matrix */}
-            {(offPlanMortgageInputs.enabled || secondaryInputs.useMortgage) && (
-              <MortgageCoverageMatrix
-                offPlanMonthlyRentLT={offPlanCalcs.holdAnalysis?.netAnnualRent / 12 || 0}
-                offPlanMonthlyRentST={(offPlanCalcs.holdAnalysis?.airbnbAnnualRent || 0) / 12}
-                offPlanMonthlyMortgage={offPlanMortgageInputs.enabled ? offPlanMortgage.monthlyPayment : 0}
-                offPlanLoanAmount={offPlanMortgageInputs.enabled ? offPlanMortgage.loanAmount : 0}
-                secondaryMonthlyRentLT={secondaryCalcs.monthlyRentLT}
-                secondaryMonthlyRentST={secondaryCalcs.monthlyRentST}
-                secondaryMonthlyMortgage={secondaryInputs.useMortgage ? secondaryCalcs.monthlyMortgagePayment : 0}
-                secondaryLoanAmount={secondaryInputs.useMortgage ? secondaryCalcs.loanAmount : 0}
-                showAirbnb={secondaryInputs.showAirbnbComparison}
+          <div className="flex items-center gap-4">
+            {/* Rental Mode Toggle */}
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-theme-card border border-theme-border">
+              <Home className={`w-4 h-4 ${rentalMode === 'long-term' ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
+              <Switch
+                checked={rentalMode === 'airbnb'}
+                onCheckedChange={(checked) => setRentalMode(checked ? 'airbnb' : 'long-term')}
               />
-            )}
+              <Palmtree className={`w-4 h-4 ${rentalMode === 'airbnb' ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfiguratorOpen(true)}
+              className="border-theme-border text-theme-text"
+            >
+              <Settings2 className="w-4 h-4 mr-2" />
+              Reconfigurar
+            </Button>
+          </div>
+        </div>
 
-            {/* Head to Head Table */}
-            <HeadToHeadTable 
-              metrics={comparisonMetrics}
-              offPlanLabel={projectName}
-              showAirbnb={secondaryInputs.showAirbnbComparison}
+        {/* Content */}
+        <div className="space-y-6">
+          {/* 1. Key Insights (4 Cards) */}
+          <ComparisonKeyInsights
+            metrics={comparisonMetrics}
+            rentalMode={rentalMode}
+            offPlanLabel={projectName}
+          />
+
+          {/* 2. Year-by-Year Wealth Table */}
+          <YearByYearWealthTable
+            offPlanProjections={offPlanCalcs.yearlyProjections}
+            secondaryProjections={secondaryCalcs.yearlyProjections}
+            offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
+            handoverYearIndex={handoverYearIndex}
+            rentalMode={rentalMode}
+          />
+
+          {/* 3. Wealth Trajectory Chart */}
+          <WealthTrajectoryDualChart
+            offPlanProjections={offPlanCalcs.yearlyProjections}
+            secondaryProjections={secondaryCalcs.yearlyProjections}
+            offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
+            secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
+            handoverYearIndex={handoverYearIndex}
+            showAirbnb={rentalMode === 'airbnb'}
+          />
+
+          {/* 4. Two-column: DSCR Explanation + Out of Pocket */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            <DSCRExplanationCard
+              offPlanDSCR={rentalMode === 'airbnb' ? comparisonMetrics.offPlanDSCRST : comparisonMetrics.offPlanDSCRLT}
+              secondaryDSCR={rentalMode === 'airbnb' ? comparisonMetrics.secondaryDSCRST : comparisonMetrics.secondaryDSCRLT}
+              rentalMode={rentalMode}
             />
-          </main>
+            
+            <OutOfPocketCard
+              offPlanCapitalDuringConstruction={offPlanTotalCapitalAtHandover}
+              monthsWithoutIncome={handoverYearIndex * 12}
+              appreciationDuringConstruction={appreciationDuringConstruction}
+              secondaryCapitalDay1={secondaryCalcs.totalCapitalDay1}
+              secondaryIncomeMonths={handoverYearIndex * 12}
+            />
+          </div>
+
+          {/* 5. Head to Head Detailed Table */}
+          <HeadToHeadTable
+            metrics={comparisonMetrics}
+            offPlanLabel={projectName}
+            showAirbnb={rentalMode === 'airbnb'}
+          />
+
+          {/* 6. Verdict */}
+          <ComparisonVerdict
+            metrics={comparisonMetrics}
+            offPlanProjectName={projectName}
+          />
         </div>
       </div>
+
+      {/* Configurator Modal */}
+      <ComparisonConfiguratorModal
+        open={configuratorOpen}
+        onOpenChange={setConfiguratorOpen}
+        onCompare={handleCompare}
+        initialQuoteId={selectedQuoteId}
+        initialSecondaryInputs={secondaryInputs}
+      />
     </div>
   );
 };
