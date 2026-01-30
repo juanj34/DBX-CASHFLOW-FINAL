@@ -1,126 +1,170 @@
 
-# Plan: Fix PDF Export to Match Live Cashflow View
+# Plan: Fix PNG Export Dual Currency & Add Drag-to-Select for Payment Rows
 
-## Problem Summary
-The PDF export uses a completely different rendering engine (`pdfGenerator.ts` with jsPDF manual drawing) instead of the same layout used in the live Snapshot/Cashflow view. This creates a fundamentally different document.
+## Problem 1: PNG Export Missing Dual Currency Values
 
-## Solution: Unify Export to Use DOM-Based Approach
+### Analysis
+The export components (`ExportPaymentTable.tsx`, `ExportOverviewCards.tsx`, etc.) are NOT showing the secondary currency (e.g., EUR/USD) alongside AED in many places. The `formatDualCurrency()` function returns both `.primary` (AED) and `.secondary` (converted value), but only `.primary` is displayed in most payment rows.
 
-### Phase 1: Fix the Export Modal Routing
-**File: `src/components/roi/ExportModal.tsx`**
-
-Currently the ExportModal uses two different approaches:
-- PNG: Uses `exportSnapshot` (html2canvas on ExportSnapshotDOM) ✓
-- PDF: Uses `downloadSnapshotPDF` from pdfGenerator.ts ✗
-
-**Change:**
-- Remove the PDF special case and use `exportSnapshot` for both PNG and PDF
-- Both formats will render ExportSnapshotDOM and capture with html2canvas
-- PDF will embed the high-resolution image into a PDF document
-
-### Phase 2: Enhance ExportSnapshotDOM to Match SnapshotContent
-
-The `ExportSnapshotDOM` component needs to mirror the live `SnapshotContent` exactly:
-
-**File: `src/components/roi/export/ExportSnapshotDOM.tsx`**
-
-1. **Add Hero Section**
-   - Replace `ExportHeader` with a new `ExportPropertyHero` component that matches `PropertyHeroCard`
-   - Include project hero image, building render, project/developer names
-   - Display price info with dual currency
-
-2. **Ensure 4 Overview Cards Match**
-   - Verify `ExportOverviewCards` matches `SnapshotOverviewCards` visually (currently looks good)
-
-3. **Update Payment Table**
-   - Ensure `ExportPaymentTable` includes:
-     - Handover quarter badges (green "Handover" label on relevant rows)
-     - "Total to this point" cumulative line after handover payments
-     - Value Differentiators section at bottom
-     - All the same sections: Entry, Journey, Handover, Post-Handover
-
-4. **Ensure Exit Scenarios Match**
-   - `ExportExitCards` should match `CompactAllExitsCard` layout (numbered scenarios, same metrics)
-
-5. **Verify Rent Card Matches**
-   - `ExportRentCard` should match `CompactRentCard` (Long-Term + Short-Term if enabled)
-
-6. **Verify Post-Handover Card Matches**
-   - `ExportPostHandoverCard` should match `CompactPostHandoverCard`
-
-7. **Verify Mortgage Card Matches**
-   - `ExportMortgageCard` should match `CompactMortgageCard`
-
-8. **Ensure Wealth Timeline Matches**
-   - `ExportWealthTimeline` should match `WealthProjectionTimeline` (7 dots, connecting lines, phase legend)
-
-### Phase 3: Remove Legacy pdfGenerator.ts Path
+### Solution
+Update all export components to display dual currency values inline (AED + converted in parentheses) when a non-AED currency is selected:
 
 **Files to modify:**
-- `src/components/roi/ExportModal.tsx`: Remove `downloadSnapshotPDF` import and usage
-- Consider deprecating `src/lib/pdfGenerator.ts` entirely (or keep for reference)
+1. `src/components/roi/export/ExportPaymentTable.tsx`
+   - Add secondary value display after primary for: EOI, Downpayment, DLD, Oqood, all journey payments, handover, post-handover payments, subtotals, and grand total
+   - Format: `{primary} ({secondary})` when secondary exists
 
-### Phase 4: Ensure Consistent Data Flow
+2. `src/components/roi/export/ExportOverviewCards.tsx` (already mostly correct, verify)
 
-Both live view and export must receive identical:
-- `inputs` (OIInputs)
-- `calculations` (OICalculations)
-- `clientInfo` (ClientUnitData) 
-- `mortgageInputs` & `mortgageAnalysis`
-- `exitScenarios` array
-- `currency`, `rate`, `language`
+3. `src/components/roi/export/ExportExitCards.tsx`
+   - Ensure all monetary values show dual currency
+
+4. `src/components/roi/export/ExportRentCard.tsx`
+   - Ensure monthly/annual rent shows dual currency
+
+5. `src/components/roi/export/ExportMortgageCard.tsx`
+   - Ensure mortgage values show dual currency
+
+6. `src/components/roi/export/ExportPostHandoverCard.tsx`
+   - Ensure all amounts show dual currency
+
+---
+
+## Problem 2: Payment Row Drag-to-Select
+
+### Analysis
+Currently, users must click each payment row individually to select it. The user wants Excel-like behavior where they can click and drag across multiple rows to select them in a single gesture.
+
+### Solution
+Implement mouse-based drag selection using `onMouseDown`, `onMouseMove`, and `onMouseUp` events with a tracking state for the drag operation.
+
+**File to modify:** `src/components/roi/snapshot/CompactPaymentTable.tsx`
+
+**Implementation approach:**
+1. Add a `isDragging` ref to track when user is actively dragging
+2. Add a `dragStartId` ref to remember where the drag started
+3. On `mousedown` on a payment row:
+   - Set `isDragging = true`
+   - Start tracking which rows are part of the drag gesture
+   - Store the starting row ID
+4. On `mousemove` (document-level while dragging):
+   - Track which rows the mouse passes over
+   - Add them to the selection set
+5. On `mouseup`:
+   - Set `isDragging = false`
+   - Finalize the selection
+6. Keep existing click-to-toggle for individual row selection
+7. Add `user-select: none` during drag to prevent text selection
+
+**Key code changes:**
+```typescript
+// New refs for drag tracking
+const isDragging = useRef(false);
+const dragStartY = useRef<number | null>(null);
+const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+// On mousedown on a row
+const handleRowMouseDown = (e: React.MouseEvent, id: string, amount: number) => {
+  isDragging.current = true;
+  dragStartY.current = e.clientY;
+  // Clear previous selection and start fresh with this row
+  setSelectedPayments(new Map([[id, amount]]));
+};
+
+// On mousemove (attached to document while dragging)
+// Check if mouse Y intersects with any row bounds
+// If so, add that row to selection
+
+// On mouseup
+// Finalize selection, reset isDragging
+```
+
+**Visual feedback:**
+- During drag, show a subtle "dragging" state (e.g., cursor change)
+- Rows being added to selection highlight immediately
+- Keep the animated selection bar at bottom
+
+---
 
 ## Technical Details
 
-### Changes to ExportModal.tsx
+### ExportPaymentTable.tsx Changes
 ```typescript
-// Remove this import and usage:
-// import { downloadSnapshotPDF } from '@/lib/pdfGenerator';
+// Before (line 271):
+<span style={valueStyle}>{getDualValue(amount).primary}</span>
 
-// Change handleExport to always use DOM-based export:
-if (format === 'pdf') {
-  // Use same DOM-based approach as PNG
-  const result = await exportSnapshot(
-    { inputs, calculations, clientInfo, ... },
-    'pdf' // format passed to useExportRenderer
-  );
-}
+// After:
+<span style={valueStyle}>
+  {getDualValue(amount).primary}
+  {getDualValue(amount).secondary && (
+    <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>
+      ({getDualValue(amount).secondary})
+    </span>
+  )}
+</span>
 ```
 
-### Changes to ExportSnapshotDOM.tsx
-1. Add `ExportPropertyHero` import and replace `ExportHeader`
-2. Pass hero image URLs to the hero component
-3. Ensure all conditional visibility matches live (exit scenarios, post-handover, etc.)
-
-### New Component: ExportPropertyHero.tsx
+### CompactPaymentTable.tsx Drag Selection
 ```typescript
-// Static version of PropertyHeroCard for export
-// Fixed height, no animations, inline styles
-// Shows: project name, developer, unit info, price, hero image background
+// Add to component
+const isDragging = useRef(false);
+const rowElements = useRef<Map<string, { id: string; amount: number; element: HTMLDivElement }>>(new Map());
+
+// Wrapper for each selectable row
+const handleMouseDown = (e: React.MouseEvent, id: string, amount: number) => {
+  e.preventDefault(); // Prevent text selection
+  isDragging.current = true;
+  setSelectedPayments(new Map([[id, amount]]));
+};
+
+const handleMouseEnter = (id: string, amount: number) => {
+  if (isDragging.current) {
+    setSelectedPayments(prev => {
+      const next = new Map(prev);
+      next.set(id, amount);
+      return next;
+    });
+  }
+};
+
+// Add document-level mouseup listener
+useEffect(() => {
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+  document.addEventListener('mouseup', handleMouseUp);
+  return () => document.removeEventListener('mouseup', handleMouseUp);
+}, []);
 ```
+
+---
 
 ## Files to Modify
-1. `src/components/roi/ExportModal.tsx` - Use DOM-based export for PDF
-2. `src/components/roi/export/ExportSnapshotDOM.tsx` - Add hero section, verify structure
-3. `src/components/roi/export/ExportPropertyHero.tsx` - Create new component (or enhance ExportHeader)
-4. `src/components/roi/export/ExportPaymentTable.tsx` - Add handover badges, cumulative total
-5. `src/hooks/useExportRenderer.tsx` - May need quoteImages prop for hero image
 
-## Expected Outcome
-After implementation:
-- PDF and PNG exports will be **pixel-perfect matches** of the live Cashflow view
-- Same layout, colors, sections, and conditional visibility
-- Hero image, overview cards, payment table, exit scenarios, rent, mortgage, wealth timeline all match
-- Dual currency and language localization work identically
+1. **`src/components/roi/export/ExportPaymentTable.tsx`**
+   - Add dual currency display to all monetary value rows
+
+2. **`src/components/roi/export/ExportExitCards.tsx`**
+   - Add dual currency display to exit scenario values
+
+3. **`src/components/roi/export/ExportRentCard.tsx`**
+   - Add dual currency display to rent values
+
+4. **`src/components/roi/export/ExportMortgageCard.tsx`**
+   - Add dual currency display to mortgage values
+
+5. **`src/components/roi/export/ExportPostHandoverCard.tsx`**
+   - Add dual currency display to post-handover values
+
+6. **`src/components/roi/snapshot/CompactPaymentTable.tsx`**
+   - Add drag-to-select functionality with mousedown/mousemove/mouseup
+
+---
 
 ## Testing Checklist
-- [ ] Export PDF matches live view layout
-- [ ] Export PNG matches live view layout
-- [ ] Hero image appears in export (if configured)
-- [ ] All payment sections visible with correct styling
-- [ ] Exit scenarios show with correct calculations
-- [ ] Post-handover card appears when enabled
-- [ ] Mortgage card appears when enabled
-- [ ] Wealth timeline shows all 7 years with phase colors
-- [ ] Spanish translations work correctly
-- [ ] Dual currency (AED + reference) displays correctly
+- [ ] PNG export shows dual currency (e.g., "AED 100,000 (€25,000)") for all values
+- [ ] PDF export shows dual currency for all values
+- [ ] Drag-to-select works by clicking and dragging across multiple payment rows
+- [ ] Single click still toggles individual row selection
+- [ ] Selection clears when clicking outside the table
+- [ ] PaymentSelectionBar shows correct sum/average for dragged selection
