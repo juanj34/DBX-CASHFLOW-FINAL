@@ -24,8 +24,6 @@ interface YearByYearWealthTableProps {
   offPlanProjections: OIYearlyProjection[];
   secondaryProjections: SecondaryYearlyProjection[];
   offPlanCapitalInvested: number;
-  offPlanBasePrice: number;
-  secondaryBasePrice: number;
   handoverYearIndex: number;
   rentalMode: 'long-term' | 'airbnb';
   currency: Currency;
@@ -48,8 +46,6 @@ export const YearByYearWealthTable = ({
   offPlanProjections,
   secondaryProjections,
   offPlanCapitalInvested,
-  offPlanBasePrice,
-  secondaryBasePrice,
   handoverYearIndex,
   rentalMode,
   currency,
@@ -61,28 +57,7 @@ export const YearByYearWealthTable = ({
   const tableData = useMemo(() => {
     const data = [];
     
-    // Year 0 (starting point) - use base purchase prices, not appreciated values
-    const currentCalendarYear = offPlanProjections[0]?.calendarYear 
-      ? offPlanProjections[0].calendarYear - 1 
-      : new Date().getFullYear();
-    
-    data.push({
-      year: 0,
-      calendarYear: currentCalendarYear,
-      offPlanValue: offPlanBasePrice,
-      offPlanRent: 0,
-      offPlanCumulativeRent: 0,
-      offPlanWealth: offPlanBasePrice, // Wealth = Value + Cumulative Rent (0 at start)
-      secondaryValue: secondaryBasePrice,
-      secondaryRent: 0,
-      secondaryCumulativeRent: 0,
-      secondaryWealth: secondaryBasePrice, // Wealth = Value + Cumulative Rent (0 at start)
-      delta: offPlanBasePrice - secondaryBasePrice,
-      isHandover: false,
-      isBeforeHandover: true,
-    });
-    
-    // Years 1-10
+    // Years 1-10 (no Year 0)
     let opCumulativeRent = 0;
     let secCumulativeRent = 0;
     
@@ -124,7 +99,7 @@ export const YearByYearWealthTable = ({
     }
     
     return data;
-  }, [offPlanProjections, secondaryProjections, offPlanBasePrice, secondaryBasePrice, handoverYearIndex, isAirbnb]);
+  }, [offPlanProjections, secondaryProjections, handoverYearIndex, isAirbnb]);
 
   const formatValue = (value: number): string => {
     const dual = formatDualCurrencyCompact(value, currency, rate);

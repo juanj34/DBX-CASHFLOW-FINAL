@@ -212,6 +212,11 @@ export const CompactPaymentTable = ({
   const journeyTotal = preHandoverPayments.reduce(
     (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
   );
+  
+  // Calculate journey percentage
+  const journeyPercent = preHandoverPayments.reduce(
+    (sum, p) => sum + p.paymentPercent, 0
+  );
 
   // Total Cash Until Handover = Entry + Journey + On Handover (for grand total)
   const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
@@ -418,7 +423,7 @@ export const CompactPaymentTable = ({
                         )}
                       >
                         <div className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
+                          <span className="text-xs text-theme-text-muted truncate">{payment.paymentPercent}% · {labelWithDate}</span>
                       {isHandoverQuarter && (
                             <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                               <Key className="w-2.5 h-2.5" />
@@ -454,6 +459,19 @@ export const CompactPaymentTable = ({
                     </div>
                   );
                 })}
+                
+                {/* Journey Subtotal */}
+                {preHandoverPayments.length > 0 && (
+                  <div className="pt-1 border-t border-theme-border mt-1">
+                    <DottedRow 
+                      label={`${t('subtotalLabel')} (${journeyPercent}%)`}
+                      value={getDualValue(journeyTotal).primary}
+                      secondaryValue={getDualValue(journeyTotal).secondary}
+                      bold
+                      valueClassName="text-cyan-400"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
