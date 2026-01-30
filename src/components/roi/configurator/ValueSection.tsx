@@ -11,7 +11,7 @@ export const ValueSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">Value Differentiators</h3>
+        <h3 className="text-lg font-semibold text-theme-text mb-1">Value Differentiators</h3>
         <p className="text-sm text-theme-text-muted">Identify unique property features that can boost appreciation</p>
       </div>
 

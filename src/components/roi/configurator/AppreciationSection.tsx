@@ -167,10 +167,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
   const getColorClasses = (color: string, isSelected: boolean) => {
     if (!isSelected) {
       return {
-        bg: 'bg-[#1a1f2e]',
-        border: 'border-[#2a3142]',
-        text: 'text-gray-400',
-        icon: 'text-gray-500',
+        bg: 'bg-theme-card',
+        border: 'border-theme-border',
+        text: 'text-theme-text-muted',
+        icon: 'text-theme-text-muted',
       };
     }
     switch (color) {
@@ -183,10 +183,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         };
       case 'lime':
         return {
-          bg: 'bg-[#CCFF00]/10',
-          border: 'border-[#CCFF00]/50',
-          text: 'text-[#CCFF00]',
-          icon: 'text-[#CCFF00]',
+          bg: 'bg-theme-accent/10',
+          border: 'border-theme-accent/50',
+          text: 'text-theme-accent',
+          icon: 'text-theme-accent',
         };
       case 'blue':
         return {
@@ -197,10 +197,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         };
       default:
         return {
-          bg: 'bg-[#1a1f2e]',
-          border: 'border-[#2a3142]',
-          text: 'text-gray-400',
-          icon: 'text-gray-500',
+          bg: 'bg-theme-card',
+          border: 'border-theme-border',
+          text: 'text-theme-text-muted',
+          icon: 'text-theme-text-muted',
         };
     }
   };
@@ -228,10 +228,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">
+        <h3 className="text-lg font-semibold text-theme-text mb-1">
           {language === 'es' ? 'Proyección de Crecimiento' : 'Growth Projection'}
         </h3>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-theme-text-muted">
           {language === 'es' 
             ? 'Proyecta cómo crecerá el valor de la propiedad en el tiempo'
             : 'Project how the property value will grow over time'}
@@ -240,13 +240,13 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
 
       {/* Appreciation Bonus Banner */}
       {appreciationBonus > 0 && (
-        <div className="p-2 bg-[#CCFF00]/10 rounded-lg border border-[#CCFF00]/30">
+        <div className="p-2 bg-theme-accent/10 rounded-lg border border-theme-accent/30">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#CCFF00] flex items-center gap-1">
+            <span className="text-xs text-theme-accent flex items-center gap-1">
               <Zap className="w-3 h-3" />
               {language === 'es' ? 'Bonus por Diferenciadores' : 'Value Differentiators Bonus'}
             </span>
-            <span className="text-xs text-[#CCFF00] font-mono font-bold">+{appreciationBonus.toFixed(1)}%</span>
+            <span className="text-xs text-theme-accent font-mono font-bold">+{appreciationBonus.toFixed(1)}%</span>
           </div>
         </div>
       )}
@@ -267,22 +267,22 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 "flex-1 p-2.5 rounded-xl border transition-all text-center",
                 colors.bg,
                 colors.border,
-                isSelected ? "ring-1 ring-offset-1 ring-offset-[#0d1117]" : "hover:border-gray-600",
+                isSelected ? "ring-1 ring-offset-1 ring-offset-theme-bg" : "hover:border-theme-text-muted",
                 isSelected && profile.color === 'orange' && "ring-orange-500/50",
-                isSelected && profile.color === 'lime' && "ring-[#CCFF00]/50",
+                isSelected && profile.color === 'lime' && "ring-theme-accent/50",
                 isSelected && profile.color === 'blue' && "ring-blue-500/50"
               )}
             >
               <div className="flex flex-col items-center gap-1.5">
                 <Icon className={cn("w-4 h-4", colors.icon)} />
-                <h4 className={cn("font-medium text-xs", isSelected ? colors.text : "text-white")}>
+                <h4 className={cn("font-medium text-xs", isSelected ? colors.text : "text-theme-text")}>
                   {language === 'es' ? profile.nameEs : profile.name}
                 </h4>
                 <div className="flex items-center gap-0.5 text-[8px] font-mono">
                   <span className="text-orange-400">{profile.constructionAppreciation}%</span>
-                  <span className="text-gray-600">→</span>
+                  <span className="text-theme-text-muted">→</span>
                   <span className="text-green-400">{profile.growthAppreciation}% ({profile.growthPeriodYears}y)</span>
-                  <span className="text-gray-600">→</span>
+                  <span className="text-theme-text-muted">→</span>
                   <span className="text-blue-400">{profile.matureAppreciation}%</span>
                 </div>
               </div>
@@ -303,9 +303,9 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             </div>
             <div className="flex items-center gap-2 text-[10px] font-mono">
               <span className="text-orange-400">{inputs.constructionAppreciation ?? 12}%</span>
-              <span className="text-gray-600">→</span>
+              <span className="text-theme-text-muted">→</span>
               <span className="text-green-400">{inputs.growthAppreciation ?? 8}%</span>
-              <span className="text-gray-600">→</span>
+              <span className="text-theme-text-muted">→</span>
               <span className="text-blue-400">{inputs.matureAppreciation ?? 4}%</span>
             </div>
           </div>
@@ -313,19 +313,19 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
       )}
 
       {/* Growth Projection Chart */}
-      <div className="p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+      <div className="p-4 bg-theme-card rounded-xl border border-theme-border">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-white">
+          <h4 className="text-sm font-medium text-theme-text">
             {language === 'es' ? 'Proyección 7 Años' : '7-Year Projection'}
           </h4>
-          <div className="flex items-center gap-1 p-0.5 bg-[#0d1117] rounded-lg">
+          <div className="flex items-center gap-1 p-0.5 bg-theme-bg-alt rounded-lg">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowPSF(false)}
               className={cn(
                 "h-6 px-2 text-xs",
-                !showPSF ? "bg-[#CCFF00]/20 text-[#CCFF00]" : "text-gray-400 hover:text-white"
+                !showPSF ? "bg-theme-accent/20 text-theme-accent" : "text-theme-text-muted hover:text-theme-text"
               )}
             >
               Total
@@ -336,7 +336,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               onClick={() => setShowPSF(true)}
               className={cn(
                 "h-6 px-2 text-xs",
-                showPSF ? "bg-[#CCFF00]/20 text-[#CCFF00]" : "text-gray-400 hover:text-white"
+                showPSF ? "bg-theme-accent/20 text-theme-accent" : "text-theme-text-muted hover:text-theme-text"
               )}
             >
               PSF
@@ -355,8 +355,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               </defs>
               <XAxis 
                 dataKey="year" 
-                tick={{ fill: '#6b7280', fontSize: 10 }}
-                axisLine={{ stroke: '#2a3142' }}
+                tick={{ fill: 'hsl(var(--theme-text-muted))', fontSize: 10 }}
+                axisLine={{ stroke: 'hsl(var(--theme-border))' }}
                 tickLine={false}
                 tickFormatter={(v) => `Y${v}`}
               />
@@ -368,13 +368,13 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                 <>
                   <ReferenceLine 
                     x={handoverYear} 
-                    stroke="#CCFF00" 
+                    stroke="hsl(var(--theme-accent))"
                     strokeDasharray="3 3"
                     strokeOpacity={0.5}
                     label={{
                       value: language === 'es' ? '🔑 Entrega' : '🔑 Handover',
                       position: 'top',
-                      fill: '#CCFF00',
+                      fill: 'hsl(var(--theme-accent))',
                       fontSize: 9,
                       fontWeight: 'bold',
                     }}
@@ -384,8 +384,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                       x={handoverYear}
                       y={showPSF ? handoverDataPoint.psfValue : handoverDataPoint.totalValue}
                       r={5}
-                      fill="#CCFF00"
-                      stroke="#0d1117"
+                      fill="hsl(var(--theme-accent))"
+                      stroke="hsl(var(--theme-bg))"
                       strokeWidth={2}
                     />
                   )}
@@ -396,14 +396,14 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="bg-[#0d1117] border border-[#2a3142] rounded-lg p-2 text-xs">
-                        <p className="text-gray-400">Year {data.year}</p>
-                        <p className="text-[#CCFF00] font-mono font-bold">
+                      <div className="bg-theme-bg-alt border border-theme-border rounded-lg p-2 text-xs">
+                        <p className="text-theme-text-muted">Year {data.year}</p>
+                        <p className="text-theme-accent font-mono font-bold">
                           {formatValue(showPSF ? data.psfValue : data.totalValue)}
                         </p>
-                        <p className="text-gray-500 capitalize">{data.phase} phase</p>
+                        <p className="text-theme-text-muted capitalize">{data.phase} phase</p>
                         {data.isHandover && (
-                          <p className="text-[#CCFF00] text-[10px] mt-1">🔑 Handover Year</p>
+                          <p className="text-theme-accent text-[10px] mt-1">🔑 Handover Year</p>
                         )}
                       </div>
                     );
@@ -437,7 +437,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-blue-400" />
-            <span className="text-gray-500">{language === 'es' ? 'Madurez' : 'Mature'}</span>
+            <span className="text-theme-text-muted">{language === 'es' ? 'Madurez' : 'Mature'}</span>
           </div>
         </div>
       </div>

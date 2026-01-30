@@ -42,15 +42,15 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
     zone.maturity_level || zone.price_range_min || zone.ticket_1br_min;
 
   return (
-    <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-20 w-auto sm:w-80 max-h-[80vh] overflow-y-auto shadow-xl z-10 bg-[#1a1f2e] border border-[#2a3142] rounded-xl" data-info-card>
+    <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-20 w-auto sm:w-80 max-h-[80vh] overflow-y-auto shadow-xl z-10 bg-theme-card border border-theme-border rounded-xl" data-info-card>
       <div className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
         <div className="flex-1 pr-2">
-          <h3 className="text-xl font-semibold text-white leading-tight">{zone.name}</h3>
+          <h3 className="text-xl font-semibold text-theme-text leading-tight">{zone.name}</h3>
           {zone.tagline && (
-            <p className="text-sm text-gray-400 italic mt-1">"{zone.tagline}"</p>
+            <p className="text-sm text-theme-text-muted italic mt-1">"{zone.tagline}"</p>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0 text-gray-400 hover:text-white hover:bg-[#2a3142]">
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0 text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt">
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -65,18 +65,18 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
 
         {hasInvestmentProfile && (
           <div className="space-y-4">
-            <p className="font-bold text-sm text-[#CCFF00] border-b border-[#2a3142] pb-1">Perfil de Inversión</p>
+            <p className="font-bold text-sm text-theme-accent border-b border-theme-border pb-1">Perfil de Inversión</p>
 
             {zone.concept && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Concepto</p>
-                <p className="text-sm text-gray-400">{zone.concept}</p>
+                <p className="font-semibold text-sm mb-1 text-theme-text">Concepto</p>
+                <p className="text-sm text-theme-text-muted">{zone.concept}</p>
               </div>
             )}
 
             {(zone.maturity_level !== null && zone.maturity_level !== undefined) && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Nivel de Madurez</p>
+                <p className="font-semibold text-sm mb-1 text-theme-text">Nivel de Madurez</p>
                 <div className="space-y-1">
                   <Progress value={zone.maturity_level} className="h-2" />
                   <div className="flex justify-between text-xs">
@@ -91,15 +91,15 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
 
             {zone.investment_focus && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Enfoque de Inversión</p>
-                <p className="text-sm text-gray-400">{zone.investment_focus}</p>
+                <p className="font-semibold text-sm mb-1 text-theme-text">Enfoque de Inversión</p>
+                <p className="text-sm text-theme-text-muted">{zone.investment_focus}</p>
               </div>
             )}
 
             {(zone.price_range_min || zone.price_range_max) && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Rango de Precios</p>
-                <p className="text-sm text-gray-400">
+                <p className="font-semibold text-sm mb-1 text-theme-text">Rango de Precios</p>
+                <p className="text-sm text-theme-text-muted">
                   {zone.price_range_min?.toLocaleString()} – {zone.price_range_max?.toLocaleString()} AED/sqft
                 </p>
               </div>
@@ -107,8 +107,8 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
 
             {(zone.ticket_1br_min || zone.ticket_1br_max) && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Ticket 1BR</p>
-                <p className="text-sm text-gray-400">
+                <p className="font-semibold text-sm mb-1 text-theme-text">Ticket 1BR</p>
+                <p className="text-sm text-theme-text-muted">
                   {formatPrice(zone.ticket_1br_min || 0)} – {formatPrice(zone.ticket_1br_max || 0)} AED
                 </p>
               </div>
@@ -116,15 +116,15 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
 
             {zone.main_developer && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Desarrollador Principal</p>
-                <p className="text-sm text-gray-400">{zone.main_developer}</p>
+                <p className="font-semibold text-sm mb-1 text-theme-text">Desarrollador Principal</p>
+                <p className="text-sm text-theme-text-muted">{zone.main_developer}</p>
               </div>
             )}
 
             {zone.property_types && (
               <div>
-                <p className="font-semibold text-sm mb-1 text-white">Tipos de Propiedad</p>
-                <p className="text-sm text-gray-400">{zone.property_types}</p>
+                <p className="font-semibold text-sm mb-1 text-theme-text">Tipos de Propiedad</p>
+                <p className="text-sm text-theme-text-muted">{zone.property_types}</p>
               </div>
             )}
           </div>
@@ -132,8 +132,8 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
 
         {zone.description && (
           <div>
-            <p className="font-semibold text-sm mb-1 text-white">Descripción</p>
-            <p className="text-sm text-gray-400">{zone.description}</p>
+            <p className="font-semibold text-sm mb-1 text-theme-text">Descripción</p>
+            <p className="text-sm text-theme-text-muted">{zone.description}</p>
           </div>
         )}
 
@@ -142,20 +142,20 @@ export const ZoneInfoCard = ({ zone, onClose }: ZoneInfoCardProps) => {
           <div className="space-y-2">
             {zone.population !== null && zone.population !== undefined && (
               <div className="flex justify-between text-sm">
-                <span className="font-medium text-white">Population:</span>
-                <span className="text-gray-400">{zone.population.toLocaleString()}</span>
+                <span className="font-medium text-theme-text">Population:</span>
+                <span className="text-theme-text-muted">{zone.population.toLocaleString()}</span>
               </div>
             )}
             {zone.occupancy_rate !== null && zone.occupancy_rate !== undefined && (
               <div className="flex justify-between text-sm">
-                <span className="font-medium text-white">Occupancy Rate:</span>
-                <span className="text-gray-400">{zone.occupancy_rate}%</span>
+                <span className="font-medium text-theme-text">Occupancy Rate:</span>
+                <span className="text-theme-text-muted">{zone.occupancy_rate}%</span>
               </div>
             )}
             {zone.absorption_rate !== null && zone.absorption_rate !== undefined && (
               <div className="flex justify-between text-sm">
-                <span className="font-medium text-white">Absorption Rate:</span>
-                <span className="text-gray-400">{zone.absorption_rate}%</span>
+                <span className="font-medium text-theme-text">Absorption Rate:</span>
+                <span className="text-theme-text-muted">{zone.absorption_rate}%</span>
               </div>
             )}
           </div>

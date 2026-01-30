@@ -74,34 +74,34 @@ const MiniPreviewStrip = ({
   const paymentSplit = `${inputs.preHandoverPercent}/${100 - inputs.preHandoverPercent}`;
   
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-theme-bg-alt rounded-lg border border-theme-border">
       <div className="flex items-center gap-1.5 min-w-0">
-        <Wallet className="w-3.5 h-3.5 text-[#CCFF00] flex-shrink-0" />
+        <Wallet className="w-3.5 h-3.5 text-theme-accent flex-shrink-0" />
         <span className="text-[10px] text-theme-text-muted truncate">
           {formatCurrency(inputs.basePrice, currency)}
         </span>
       </div>
-      <div className="w-px h-4 bg-[#2a3142]" />
+      <div className="w-px h-4 bg-theme-border" />
       <div className="flex items-center gap-1.5 min-w-0">
         <Home className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
         <span className="text-[10px] text-theme-text-muted truncate">
           {paymentSplit}
         </span>
       </div>
-      <div className="w-px h-4 bg-[#2a3142]" />
+      <div className="w-px h-4 bg-theme-border" />
       <div className="flex items-center gap-1.5 min-w-0">
         <TrendingUp className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
         <span className="text-[10px] text-theme-text-muted truncate">
           {inputs.rentalYieldPercent}% yield
         </span>
       </div>
-      <div className="w-px h-4 bg-[#2a3142]" />
+      <div className="w-px h-4 bg-theme-border" />
       <button
         onClick={onToggleMortgage}
         className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
           mortgageEnabled 
             ? 'bg-blue-500/20 text-blue-400' 
-            : 'bg-[#2a3142] text-gray-500'
+            : 'bg-theme-card-alt text-theme-text-muted'
         }`}
       >
         <Building2 className="w-3 h-3 flex-shrink-0" />
@@ -405,11 +405,11 @@ export const MobileConfiguratorSheet = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-[#1a1f2e] border-t border-[#2a3142] max-h-[90vh]">
+      <DrawerContent className="bg-theme-card border-t border-theme-border max-h-[90vh]">
         {/* Header */}
-        <DrawerHeader className="border-b border-[#2a3142] pb-3 space-y-3">
+        <DrawerHeader className="border-b border-theme-border pb-3 space-y-3">
           <div className="flex items-center justify-between">
-            <DrawerTitle className="text-lg font-bold text-white">
+            <DrawerTitle className="text-lg font-bold text-theme-text">
               {t('investmentConfigurator') || 'Investment Configurator'}
             </DrawerTitle>
             <div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ export const MobileConfiguratorSheet = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleLoadSample}
-                    className="text-gray-400 hover:text-white hover:bg-[#2a3142] h-8 px-2"
+                    className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt h-8 px-2"
                   >
                     <FileText className="w-4 h-4" />
                   </Button>
@@ -437,7 +437,7 @@ export const MobileConfiguratorSheet = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleReset}
-                className="text-gray-400 hover:text-white hover:bg-[#2a3142] h-8 px-2"
+                className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt h-8 px-2"
               >
                 <RotateCcw className="w-4 h-4" />
               </Button>
@@ -445,7 +445,7 @@ export const MobileConfiguratorSheet = ({
                 variant="ghost"
                 size="icon"
                 onClick={handleClose}
-                className="text-gray-400 hover:text-white hover:bg-[#2a3142] h-8 w-8"
+                className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt h-8 w-8"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -472,10 +472,10 @@ export const MobileConfiguratorSheet = ({
                   onClick={() => navigateToSection(section)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                     isActive
-                      ? 'bg-[#CCFF00] text-black'
+                      ? 'bg-theme-accent text-black'
                       : isComplete
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-[#2a3142] text-gray-400'
+                        : 'bg-theme-card-alt text-theme-text-muted'
                   }`}
                 >
                   {isComplete && !isActive && <Check className="w-3 h-3" />}

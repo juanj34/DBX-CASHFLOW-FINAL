@@ -38,8 +38,8 @@ export const ProfileSelector = ({ selected, onSelect }: ProfileSelectorProps) =>
             onClick={() => onSelect(isSelected ? null : id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
               isSelected
-                ? 'bg-[#CCFF00]/10 border-[#CCFF00] text-[#CCFF00]'
-                : 'bg-[#0f172a] border-[#2a3142] text-gray-400 hover:border-[#CCFF00]/50 hover:text-gray-300'
+                ? 'bg-theme-accent/10 border-theme-accent text-theme-accent'
+                : 'bg-theme-bg-alt border-theme-border text-theme-text-muted hover:border-theme-accent/50 hover:text-theme-text'
             }`}
           >
             <Icon className="w-4 h-4" />
