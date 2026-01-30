@@ -97,6 +97,7 @@ function App() {
                 <Route path="/roi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
                 <Route path="/cashflow/:quoteId" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
+                <Route path="/offplan-vs-secondary" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
                 <Route path="/offplan-vs-secondary/:quoteId" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
                 {/* Redirects for old legacy URLs */}
                 <Route path="/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />

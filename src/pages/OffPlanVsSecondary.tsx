@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Building2, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Building2, ArrowLeft, RefreshCw, Search, ArrowRight, User, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useCashflowQuote } from '@/hooks/useCashflowQuote';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { useCashflowQuote, useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { useOICalculations, OIInputs } from '@/components/roi/useOICalculations';
 import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from '@/components/roi/useMortgageCalculations';
+import { formatCurrency } from '@/components/roi/currencyUtils';
 import {
   SecondaryInputs,
   DEFAULT_SECONDARY_INPUTS,
@@ -194,12 +197,131 @@ const OffPlanVsSecondary = () => {
     };
   }, [offPlanInputs, offPlanCalcs, offPlanMortgage, secondaryCalcs, handoverYearIndex, offPlanTotalCapitalAtHandover]);
 
+  // Quote selector state for when no quoteId is provided
+  const { quotes: allQuotes, loading: quotesLoading } = useQuotesList();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredQuotes = useMemo(() => {
+    if (!searchTerm.trim()) return allQuotes;
+    const lower = searchTerm.toLowerCase();
+    return allQuotes.filter(q => 
+      q.title?.toLowerCase().includes(lower) ||
+      q.project_name?.toLowerCase().includes(lower) ||
+      q.developer?.toLowerCase().includes(lower) ||
+      q.client_name?.toLowerCase().includes(lower)
+    );
+  }, [allQuotes, searchTerm]);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  // Show quote selector when no quoteId is provided
+  if (!quoteId) {
+    return (
+      <div className="min-h-screen bg-theme-bg">
+        <PageHeader
+          title="Off-Plan vs Secundaria"
+          subtitle="Selecciona un quote off-plan para comparar contra una propiedad secundaria"
+          icon={<Building2 className="w-5 h-5" />}
+          backLink="/home"
+        />
+        <div className="container mx-auto px-4 py-6 max-w-3xl">
+          {/* Search */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
+            <Input
+              placeholder="Buscar por proyecto, desarrollador, cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
+            />
+          </div>
+
+          {/* Quote List */}
+          <div className="space-y-3">
+            {quotesLoading ? (
+              <>
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </>
+            ) : filteredQuotes.length === 0 ? (
+              <div className="text-center py-12">
+                <Building2 className="w-12 h-12 mx-auto text-theme-text-muted mb-4" />
+                <p className="text-theme-text-muted">
+                  {searchTerm ? 'No se encontraron quotes' : 'No tienes quotes. Crea uno primero.'}
+                </p>
+                {!searchTerm && (
+                  <Button 
+                    onClick={() => navigate('/cashflow-generator')} 
+                    className="mt-4 bg-theme-accent text-theme-accent-foreground hover:bg-theme-accent/90"
+                  >
+                    Crear Quote
+                  </Button>
+                )}
+              </div>
+            ) : (
+              filteredQuotes.map((q) => (
+                <Card 
+                  key={q.id}
+                  className="p-4 bg-theme-card border-theme-border hover:border-theme-accent/50 transition-colors cursor-pointer group"
+                  onClick={() => navigate(`/offplan-vs-secondary/${q.id}`)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-theme-text truncate">
+                        {q.title || q.project_name || 'Sin título'}
+                      </h3>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-theme-text-muted">
+                        {q.developer && (
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {q.developer}
+                          </span>
+                        )}
+                        {q.client_name && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {q.client_name}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(q.updated_at)}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm font-medium text-theme-accent">
+                        {formatCurrency(q.inputs?.basePrice || 0, 'AED', 1)}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-theme-text-muted group-hover:text-theme-accent group-hover:bg-theme-accent/10"
+                    >
+                      Comparar
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (quoteLoading) {
     return (
       <div className="min-h-screen bg-theme-bg">
         <PageHeader
           title="Cargando..."
-          backLink="/my-quotes"
+          backLink="/offplan-vs-secondary"
         />
         <div className="container mx-auto px-4 py-6 space-y-4">
           <Skeleton className="h-32 w-full" />
@@ -214,16 +336,16 @@ const OffPlanVsSecondary = () => {
       <div className="min-h-screen bg-theme-bg">
         <PageHeader
           title="Quote no encontrado"
-          backLink="/my-quotes"
+          backLink="/offplan-vs-secondary"
         />
         <div className="container mx-auto px-4 py-6">
           <p className="text-theme-text-muted">No se pudo cargar el quote. Por favor selecciona uno válido.</p>
           <Button 
-            onClick={() => navigate('/my-quotes')} 
+            onClick={() => navigate('/offplan-vs-secondary')} 
             className="mt-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver a Mis Quotes
+            Seleccionar otro Quote
           </Button>
         </div>
       </div>
