@@ -1,143 +1,300 @@
 
-# Plan: Fix Payment Breakdown - Add Journey Subtotal and Percentages
 
-## Problem Summary
+# Plan: Complete Off-Plan vs Secondary Comparison Tool Overhaul
 
-The Payment Breakdown in the Cashflow View is missing critical information:
+## Problems Identified
 
-| Section | Current | Expected |
-|---------|---------|----------|
-| **The Entry** | Shows 10% subtotal ✓ | Good |
-| **The Journey** | Shows amounts only, NO subtotal | Need % per payment + subtotal row |
-| **Handover** | Shows 40% + amount ✓ | Good |
+### 1. Year 1 Shows Appreciated Value Instead of Purchase Price
+**Screenshot shows**: Off-Plan Year 1 = AED 10.87M, but base price is AED 9.6M
 
-Looking at the screenshot:
-- 9 journey payments show amounts (AED 960,000, AED 480,000, etc.)
-- But NO percentage per payment
-- NO subtotal at the end of the journey section
-- The total appears to be 50% of the property but this isn't displayed
+**Root cause**: The `useOICalculations` and `useSecondaryCalculations` hooks calculate Year 1 with 1 year of appreciation already applied:
+```typescript
+// Secondary (line 108)
+const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year);
+
+// Off-Plan (similar)
+propertyValue = basePrice * (1 + yearAppreciation)
+```
+
+**Solution**: Add a "Year 0" row back, but correctly - representing the **purchase date**, not Year 1 data.
+
+Actually, simpler fix: We should show base price in Year 1 for the "Value" column, since Year 1 is "End of Year 1" - the value at purchase (start of Year 1) is the base price.
+
+---
+
+### 2. Construction Phase Card - Wrong Rent Calculation
+**Current** (line 34 in `OutOfPocketCard.tsx`):
+```typescript
+const avgMonthlyRent = secondaryCapitalDay1 * 0.07 / 12;
+```
+
+`secondaryCapitalDay1` is equity + closing costs (e.g., 4.4M), NOT the property price (9.89M).
+
+**Fix**: Pass `secondaryPurchasePrice` as a prop and use it:
+```typescript
+const avgMonthlyRent = secondaryPurchasePrice * 0.07 / 12;
+```
+
+---
+
+### 3. "Crossover Point" is Confusing
+The "Crossover Point" metric compares wealth of two different assets with different values. It's misleading when:
+- Off-Plan is 9.6M
+- Secondary is 9.89M
+
+**Replace with**: "Monthly Cashflow Comparison" showing:
+- **Off-Plan**: AED 0/mo (during construction)
+- **Secondary**: Net cashflow (Rent - Mortgage if financed)
+
+---
+
+### 4. Missing: Mortgage Coverage for Secondary
+The user wants to see when mortgage is enabled:
+- How much rent covers the mortgage
+- Is the property "self-paying"?
+- Monthly cashflow after mortgage
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
+### File 1: `src/components/roi/secondary/YearByYearWealthTable.tsx`
 
-#### 1. Add percentage to each journey payment label (lines 420-421)
+#### Fix Year 1 to show purchase prices (not appreciated values)
 
-**Current:**
-```tsx
-<span className="text-xs text-theme-text-muted truncate">{labelWithDate}</span>
+The issue is that projections already contain `propertyValue` with Year 1 appreciation. For a fair "entry point" display:
+
+**Option A** (cleaner): Add pass-through props for base prices and show them in Year 1
+**Option B**: Modify the loop to show base prices for Year 1 row
+
+I'll use **Option A** - add `offPlanBasePrice` and `secondaryPurchasePrice` props:
+
+```typescript
+interface YearByYearWealthTableProps {
+  // ... existing
+  offPlanBasePrice: number;      // NEW
+  secondaryPurchasePrice: number; // NEW
+}
 ```
 
-**Fixed - Add percentage before the label:**
-```tsx
-<span className="text-xs text-theme-text-muted truncate">
-  {payment.paymentPercent}% · {labelWithDate}
-</span>
+Then in the table, for Year 1's "Value" column:
+```typescript
+// Year 1 shows purchase price (entry point)
+// Years 2+ show appreciated values
+const displayOffPlanValue = row.year === 1 ? offPlanBasePrice : row.offPlanValue;
+const displaySecondaryValue = row.year === 1 ? secondaryPurchasePrice : row.secondaryValue;
 ```
 
-This will change:
-- "Month 1 (Feb 2026) → AED 960,000" 
-- TO: "10% · Month 1 (Feb 2026) → AED 960,000"
+---
 
-#### 2. Add Journey Subtotal row after all journey payments (after line 456)
+### File 2: `src/components/roi/secondary/OutOfPocketCard.tsx`
 
-Add a subtotal row showing the total journey percentage and amount:
+#### Add `secondaryPurchasePrice` prop and fix rent calculation
 
-```tsx
-{/* Journey Subtotal */}
-{preHandoverPayments.length > 0 && (
-  <div className="pt-1 border-t border-theme-border mt-1">
-    <DottedRow 
-      label={`${t('subtotalLabel')} (${journeyPercent}%)`}
-      value={getDualValue(journeyTotal).primary}
-      secondaryValue={getDualValue(journeyTotal).secondary}
-      bold
-      valueClassName="text-cyan-400"
-    />
-  </div>
+```typescript
+interface OutOfPocketCardProps {
+  // ... existing
+  secondaryPurchasePrice: number;  // NEW
+}
+
+// Fix the calculation (line 34)
+const avgMonthlyRent = secondaryPurchasePrice * 0.07 / 12;
+```
+
+---
+
+### File 3: `src/components/roi/secondary/ComparisonKeyInsights.tsx`
+
+#### Replace "Crossover Point" with "Monthly Cashflow"
+
+Change the 4 insight cards from:
+1. Entry Ticket
+2. Multiplier
+3. **Crossover Point** ← Remove
+4. Construction Bonus
+
+To:
+1. Entry Ticket
+2. Multiplier
+3. **Monthly Cashflow** ← New (show Off-Plan $0 vs Secondary net cashflow)
+4. Construction Bonus
+
+New props needed:
+```typescript
+interface ComparisonKeyInsightsProps {
+  // ... existing
+  secondaryMonthlyCashflow: number;  // Net (rent - mortgage)
+  secondaryMonthlyRent: number;      // Gross rent
+  secondaryMonthlyMortgage: number;  // Mortgage payment (0 if no mortgage)
+  mortgageEnabled: boolean;
+}
+```
+
+New card design:
+```typescript
+{
+  key: 'cashflow',
+  title: 'Monthly Cashflow',
+  icon: Coins,
+  showComparison: true,
+  offPlanValue: 'AED 0',
+  secondaryValue: formatValue(secondaryMonthlyCashflow),
+  badge: mortgageEnabled 
+    ? (secondaryMonthlyCashflow >= 0 ? '100% Covered' : 'Partial Coverage')
+    : null,
+  winner: 'secondary', // Secondary always wins during construction
+}
+```
+
+---
+
+### File 4: `src/components/roi/secondary/MortgageCoverageCard.tsx` (NEW FILE)
+
+Create a new card that shows mortgage coverage when mortgage is enabled:
+
+```typescript
+interface MortgageCoverageCardProps {
+  monthlyRent: number;
+  monthlyMortgage: number;
+  netCashflow: number;
+  coveragePercent: number; // rent / mortgage * 100
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
+}
+```
+
+Visual design:
+- Progress bar showing coverage %
+- If >= 100%: "Tenant pays your mortgage!" in green
+- If < 100%: "You pay AED X/mo gap" in amber
+
+---
+
+### File 5: `src/pages/OffPlanVsSecondary.tsx`
+
+#### Pass new props to components
+
+```typescript
+// To YearByYearWealthTable:
+<YearByYearWealthTable
+  // ... existing
+  offPlanBasePrice={safeOffPlanInputs.basePrice}
+  secondaryPurchasePrice={secondaryInputs.purchasePrice}
+/>
+
+// To OutOfPocketCard:
+<OutOfPocketCard
+  // ... existing
+  secondaryPurchasePrice={secondaryInputs.purchasePrice}
+/>
+
+// To ComparisonKeyInsights:
+<ComparisonKeyInsights
+  // ... existing
+  secondaryMonthlyCashflow={
+    rentalMode === 'long-term' 
+      ? secondaryCalcs.monthlyCashflowLT 
+      : secondaryCalcs.monthlyCashflowST
+  }
+  secondaryMonthlyRent={
+    rentalMode === 'long-term'
+      ? secondaryCalcs.monthlyRentLT
+      : secondaryCalcs.monthlyRentST
+  }
+  secondaryMonthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
+  mortgageEnabled={secondaryInputs.useMortgage}
+/>
+
+// Add MortgageCoverageCard when mortgage enabled:
+{secondaryInputs.useMortgage && (
+  <MortgageCoverageCard
+    monthlyRent={
+      rentalMode === 'long-term' 
+        ? secondaryCalcs.monthlyRentLT 
+        : secondaryCalcs.monthlyRentST
+    }
+    monthlyMortgage={secondaryCalcs.monthlyMortgagePayment}
+    netCashflow={
+      rentalMode === 'long-term'
+        ? secondaryCalcs.monthlyCashflowLT
+        : secondaryCalcs.monthlyCashflowST
+    }
+    coveragePercent={
+      secondaryCalcs.monthlyMortgagePayment > 0
+        ? (secondaryCalcs.monthlyRentLT / secondaryCalcs.monthlyMortgagePayment) * 100
+        : 100
+    }
+    currency={currency}
+    rate={rate}
+    language={language}
+  />
 )}
 ```
 
-#### 3. Calculate journeyPercent (add near line 212)
+---
 
-The `journeyTotal` is already calculated. Need to add the percentage:
+### File 6: `src/components/roi/secondary/index.ts`
 
-```tsx
-// Calculate journey percentage
-const journeyPercent = preHandoverPayments.reduce(
-  (sum, p) => sum + p.paymentPercent, 0
-);
+Export the new component:
+```typescript
+export { MortgageCoverageCard } from './MortgageCoverageCard';
 ```
 
 ---
 
-### Additional Issue: Year 0 Removal in YearByYearWealthTable
+## Expected Results
 
-As per the previous request, also need to:
+### Year-by-Year Table (After Fix)
 
-**File: `src/components/roi/secondary/YearByYearWealthTable.tsx`**
+| Year | Off-Plan Value | Rent | Wealth | Secondary Value | Rent | Wealth |
+|------|----------------|------|--------|-----------------|------|--------|
+| 1    | AED 9.60M ✓    | —    | 9.60M  | AED 9.89M ✓     | 628K | 10.52M |
+| 2    | AED 10.87M     | —    | 10.87M | AED 10.18M      | 647K | 11.46M |
 
-Remove lines 64-83 (Year 0 data push) and simplify to only show Years 1-10.
+### Construction Phase Card (After Fix)
 
-Also remove the now-unused props:
-- `offPlanBasePrice`
-- `secondaryBasePrice`
+| Metric | Before | After |
+|--------|--------|-------|
+| Secondary Rent | +AED 1.2M | +AED 2.8M |
+| Calculation | 4.4M × 7% × 48mo | 9.89M × 7% × 48mo |
 
-**File: `src/pages/OffPlanVsSecondary.tsx`**
-
-Remove the base price props being passed to `YearByYearWealthTable`.
-
----
-
-## Expected Result
-
-### Payment Breakdown (After Fix)
-
-```
-THE ENTRY
-EOI / Booking Fee                           AED 100,000
-Downpayment Balance                         AED 860,000
-Subtotal (10%)                              AED 960,000
-DLD Fee (4%)                                AED 384,000
-Oqood / Admin Fee                           AED 1,700
-Total Entry                                 AED 1,345,700
-
-THE JOURNEY (47MO)
-10% · Month 1 (Feb 2026)                    AED 960,000
-5% · Month 7 (Aug 2026)                     AED 480,000
-5% · Month 11 (Dec 2026)                    AED 480,000
-5% · Month 14 (Mar 2027)                    AED 480,000
-5% · Month 20 (Sep 2027)                    AED 480,000
-5% · Month 27 (Apr 2028)                    AED 480,000
-5% · Month 32 (Sep 2028)                    AED 480,000
-5% · Month 39 (Apr 2029)                    AED 480,000
-5% · Month 44 (Sep 2029)                    AED 480,000
-──────────────────────────────────────────
-Subtotal (50%)                              AED 4,800,000   ← NEW
-
-HANDOVER (40%)
-Final Payment                               AED 3,840,000
-
-Base Property Price                         AED 9,600,000
-Fees (DLD + Oqood)                          AED 385,700
-Total Investment                            AED 9,985,700
-```
-
-### Year-by-Year Wealth Table (After Fix)
+### Key Insights Cards (After Fix)
 
 | Before | After |
 |--------|-------|
-| Year 0 (duplicate of Year 1) | **Removed** |
-| Year 1: AED 10.87M | Year 1: AED 10.87M (first row) |
+| 1. Entry Ticket | 1. Entry Ticket |
+| 2. Multiplier | 2. Multiplier |
+| 3. Crossover Point ❌ | 3. **Monthly Cashflow** ✓ |
+| 4. Construction Bonus | 4. Construction Bonus |
+
+### New Mortgage Coverage Card
+
+When Secondary has mortgage enabled:
+```text
+┌────────────────────────────────────────┐
+│ 🏠 Tenant Pays Your Mortgage           │
+│                                        │
+│ Monthly Rent:     AED 57,722          │
+│ Mortgage Payment: AED 45,000          │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│ [████████████████████▓▓▓▓] 128%       │
+│                                        │
+│ 🎉 Net Cashflow: +AED 12,722/mo       │
+│    Property pays itself + profit!      │
+└────────────────────────────────────────┘
+```
 
 ---
 
-## Files to Modify
+## Files to Create/Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add % to each payment label, add Journey subtotal row |
-| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Remove Year 0 logic, remove base price props |
-| `src/pages/OffPlanVsSecondary.tsx` | Remove base price props from table component |
+| File | Action | Changes |
+|------|--------|---------|
+| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Modify | Add base price props, show purchase prices in Year 1 |
+| `src/components/roi/secondary/OutOfPocketCard.tsx` | Modify | Add purchasePrice prop, fix rent calculation |
+| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Modify | Replace Crossover with Cashflow card, add new props |
+| `src/components/roi/secondary/MortgageCoverageCard.tsx` | **Create** | New card showing mortgage coverage |
+| `src/pages/OffPlanVsSecondary.tsx` | Modify | Pass new props to all components |
+| `src/components/roi/secondary/index.ts` | Modify | Export new component |
+
