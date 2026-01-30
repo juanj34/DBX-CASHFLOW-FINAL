@@ -1,227 +1,344 @@
 
-# Plan: Fix Secondary Multiplier Calculation
 
-## The Problem
+# Comprehensive Plan: Fix HeadToHeadTable, Payment Total, and Exit Scenarios
 
-The secondary multiplier shows **1.1x** for 10-year growth, which is clearly wrong. A property appreciating at 3%/year for 10 years should show much higher growth.
+## Overview
 
-### Root Cause
-
-There's a mismatch between how wealth is calculated and what capital is used for the multiplier:
-
-| Step | Formula | Value Used |
-|------|---------|------------|
-| Wealth calculation | `equityBuildup + cumulativeRent - totalCapitalDay1` | **920K** (mortgage-adjusted) |
-| Multiplier division | `wealthYear10 / secondaryCapitalDay1` | **2.12M** (full price) |
-
-The wealth formula already subtracts the 920K capital, creating a "net profit" figure. Then we divide by 2.12M which is larger, artificially shrinking the multiplier.
-
-### Example Math (2M property, 60% mortgage):
-- Property Value Year 10: ~2.68M
-- Cumulative Rent 10Y: ~1.4M
-- Mortgage Balance Year 10: ~1.0M
-- Wealth10 = (2.68M - 1.0M) + 1.4M - 920K = **~2.18M** (net wealth)
-- Multiplier = 2.18M / 2.12M = **1.03x** (wrong!)
+This plan addresses three separate issues:
+1. **Remove HeadToHeadTable** - Redundant comparison table 
+2. **Fix "Total to this point"** - Shows incorrect amount including handover
+3. **Improve Exit Scenarios Card** - Make it understandable with clear labels and dual currency
 
 ---
 
-## Solution: Calculate Gross Wealth for Multiplier
+## Part 1: Remove HeadToHeadTable Component
 
-The multiplier should answer: **"Your total portfolio grew to X times your initial investment."**
+### Current Problem
+The "Detailed Comparison" table shows metrics already displayed in Key Insights cards and Year-by-Year table, adding visual noise.
 
-**Correct Formula:**
-```
-Multiplier = (Wealth10 + Capital) / Capital
-           = (Net Profit + Capital) / Capital
-           = Total Value / Capital
+### Solution
+Remove the component from the OffPlanVsSecondary page.
+
+### File: `src/pages/OffPlanVsSecondary.tsx`
+
+**Line 32 - Update import:**
+```typescript
+// Remove HeadToHeadTable from import
+import {
+  SecondaryInputs,
+  DEFAULT_SECONDARY_INPUTS,
+  ComparisonMetrics,
+  useSecondaryCalculations,
+  ComparisonConfiguratorModal,
+  ComparisonKeyInsights,
+  YearByYearWealthTable,
+  WealthTrajectoryDualChart,
+  OutOfPocketCard,
+  // HeadToHeadTable, ← REMOVE
+  ComparisonVerdict,
+  ExitScenariosComparison,
+  SaveSecondaryComparisonModal,
+  LoadSecondaryComparisonModal,
+} from '@/components/roi/secondary';
 ```
 
-Or equivalently:
+**Lines 537-545 - Remove component:**
+```typescript
+// DELETE this entire block:
+{/* 2. Detailed Comparison Table */}
+<HeadToHeadTable
+  metrics={comparisonMetrics}
+  offPlanLabel={projectName}
+  showAirbnb={rentalMode === 'airbnb'}
+  currency={currency}
+  rate={rate}
+  language={language}
+/>
 ```
-grossWealth = wealthYear10 + secondaryCalcs.totalCapitalDay1
-Multiplier = grossWealth / metrics.secondaryCapitalDay1
-```
-
-Wait, this still mixes the two capital values. Let me think more carefully...
 
 ---
 
-## Deeper Analysis
+## Part 2: Fix "Total to this point" Calculation
 
-The issue is that `secondaryCalcs.wealthYear10LT` subtracts `totalCapitalDay1` (920K), but we changed `metrics.secondaryCapitalDay1` to be 2.12M.
+### Current Problem
+"Total to this point" shows AED 2,885,000 when it should show AED 1,085,000.
 
-**Two consistent options:**
+**Current Formula (line 217):**
+- `totalUntilHandover = entryTotal + journeyTotal + handoverAmount`
+- = 485K + 600K + 1.8M = **2,885,000** (WRONG)
 
-### Option A: Keep capital consistent at 2.12M everywhere
-- Recalculate wealth: `equityBuildup + cumulativeRent - fullPurchasePrice - closingCosts`
-- This would show negative wealth for leveraged properties (since you'd subtract the full 2M price when you only put in 920K)
-- **Not ideal**
+**Expected:**
+- Total up to last journey payment = 485K + 600K = **1,085,000** (CORRECT)
 
-### Option B: Compute multiplier correctly using gross values
-- Multiplier = (Equity at Year 10 + Cumulative Rent) / Initial Capital
-- This shows the true return on investment
+### Solution
+Create a new variable `totalToHandoverQuarter` that excludes the handover payment.
 
-**Recommended: Option B**
+### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-In `ComparisonKeyInsights.tsx`, instead of using `wealthYear10` (which is already net of capital), calculate the multiplier from the underlying components:
-
+**Line ~217 - Add new calculation:**
 ```typescript
-// For secondary: 
-// Year 10 Property Value = propertyValue from projections
-// Year 10 Mortgage Balance = mortgageBalance from projections
-// Cumulative Rent = cumulativeRentLT from projections
-// Equity = propertyValue - mortgageBalance
+// Total Cash Until Handover = Entry + Journey + On Handover (for grand total)
+const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
 
-const secYear10 = secondaryProjections[9];
-const secGrossWealth = secYear10.equityBuildup + secYear10.cumulativeRentLT;
-const secondaryMultiplier = secGrossWealth / totalCapitalDay1; // Use 920K
+// NEW: "Total to this point" = entry + journey payments only
+// Handover payment is shown AFTER this total in the UI
+const totalToHandoverQuarter = entryTotal + journeyTotal;
 ```
 
-But wait - we want to compare apples-to-apples. The off-plan multiplier uses `offPlanWealthYear10 / offPlanCapitalDay1`. Let me check that calculation...
+**Lines 442-445 - Use new variable:**
+```typescript
+// BEFORE:
+{getDualValue(totalUntilHandover).primary}
+{currency !== 'AED' && (
+  <span className="text-theme-text-muted ml-1">({getDualValue(totalUntilHandover).secondary})</span>
+)}
+
+// AFTER:
+{getDualValue(totalToHandoverQuarter).primary}
+{currency !== 'AED' && (
+  <span className="text-theme-text-muted ml-1">({getDualValue(totalToHandoverQuarter).secondary})</span>
+)}
+```
 
 ---
 
-## The Real Fix
+## Part 3: Revamp Exit Scenarios Card
 
-Looking at it more carefully, the issue is:
+### Current Problems
+1. Numbers are cryptic - no labels explaining what each value means
+2. Capital is always in AED even when EUR/USD is toggled
+3. Tooltip also only shows AED
+4. No comparison showing initial vs current property value
 
-1. **Off-Plan Multiplier**: `offPlanWealthYear10 / offPlanCapitalDay1` where wealth = propertyValue + rent - capital ✓
-2. **Secondary Multiplier**: `secondaryWealthYear10 / secondaryCapitalDay1` where wealth = equity + rent - capital ✓
-
-But we changed `secondaryCapitalDay1` to 2.12M while the wealth still subtracts 920K!
-
-### Correct Fix
-
-In `ComparisonKeyInsights.tsx`, we need to add back the **difference** between the two capitals to get apples-to-apples:
-
-```typescript
-// The wealth was calculated subtracting 920K (mortgage capital)
-// But secondaryCapitalDay1 is now 2.12M (full price)
-// So we need to adjust:
-const capitalDifference = metrics.secondaryCapitalDay1 - secondaryCalcs.totalCapitalDay1;
-const adjustedSecondaryWealth = secondaryWealth10 + capitalDifference;
-const secondaryMultiplier = adjustedSecondaryWealth / metrics.secondaryCapitalDay1;
+### Current Display:
+```text
+#1  ⏱ 18m  Jul'27                    38% built
+$  AED 785,000  +AED 222,379              28%
 ```
 
-**But this requires passing `secondaryCalcs` to ComparisonKeyInsights...**
+**Problems:**
+- What is AED 785,000? Capital? Property value?
+- What is +AED 222,379? Profit? 
+- What is 28%? ROE? Yield?
 
-### Simpler Solution: Pass the correct wealth value from the parent
-
-In `OffPlanVsSecondary.tsx`, calculate the wealth using consistent capital:
-
-```typescript
-// For secondary, use consistent capital (full price + closing)
-const secondaryFullCapital = secondaryInputs.purchasePrice + secondaryCalcs.closingCosts;
-const secondaryGrossWealth10LT = secondaryCalcs.yearlyProjections[9]?.equityBuildup 
-  + secondaryCalcs.yearlyProjections[9]?.cumulativeRentLT 
-  - secondaryFullCapital;
+### New Design:
+```text
+#1  ⏱ 18m  Jul'27                    38% built
+Capital: AED 785,000 (€182K)
+Value: AED 3,222K → AED 3,445K  ← Shows initial + appreciated
+Profit: +AED 222,379 (€51K)   ROE: 28%
 ```
 
-Wait, that would give the same result (subtracting 2.12M gives lower wealth).
+### File: `src/components/roi/snapshot/CompactAllExitsCard.tsx`
 
----
-
-## Final Correct Approach
-
-For a **Money Multiplier**, we should show:
-
-**"Your AED X investment became AED Y"** → Multiplier = Y / X
-
-Where:
-- X = Initial capital invested
-- Y = Total value at Year 10 (property equity + cumulative income)
-
-For leveraged secondary with mortgage:
-- X = 920K (what you actually put in)
-- Y = Equity(2.68M - 1.0M) + Rent(1.4M) = 3.08M
-- **Multiplier = 3.08M / 920K = 3.3x** ✓
-
-For non-leveraged comparison using full price:
-- X = 2.12M (full commitment)
-- Y = Property(2.68M) + Rent(1.4M) = 4.08M
-- **Multiplier = 4.08M / 2.12M = 1.9x** ✓
-
-### The Problem We Created
-
-We changed `secondaryCapitalDay1` to 2.12M for the "Entry Ticket" card, but the multiplier should use the **mortgage-adjusted capital (920K)** because that's what the investor actually puts in.
-
-### The Fix
-
-Pass **both** capital values to `ComparisonKeyInsights`:
-- `secondaryCapitalDay1` (2.12M) for "Entry Ticket"
-- `secondaryCashCapital` (920K) for "Multiplier"
-
----
-
-## Implementation Plan
-
-### File: `src/components/roi/secondary/types.ts`
-
-Add new field to `ComparisonMetrics`:
+**Update imports to use dual currency:**
 ```typescript
-export interface ComparisonMetrics {
-  // ... existing fields
-  secondaryCashCapital: number; // 920K - what you actually put in (for multiplier)
-}
+import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
 ```
 
-### File: `src/pages/OffPlanVsSecondary.tsx` (~line 318)
-
-Pass both capital values:
+**Add helper for dual currency display:**
 ```typescript
-return {
-  // ... existing fields
-  secondaryCapitalDay1: secondaryInputs.purchasePrice + secondaryCalcs.closingCosts, // 2.12M for "Entry Ticket"
-  secondaryCashCapital: secondaryCalcs.totalCapitalDay1, // 920K for "Multiplier"
+// Dual currency helper
+const getDualValue = (value: number) => {
+  const dual = formatDualCurrency(value, currency, rate);
+  return { primary: dual.primary, secondary: dual.secondary };
+};
+
+// Format with inline secondary
+const formatWithSecondary = (value: number, showSign = false) => {
+  const prefix = showSign && value >= 0 ? '+' : '';
+  const aed = formatCurrency(Math.abs(value), 'AED', 1);
+  const aedWithSign = `${prefix}${value < 0 ? '-' : ''}${aed}`;
+  
+  if (currency === 'AED') return aedWithSign;
+  
+  const secondary = formatCurrency(Math.abs(value), currency, rate);
+  return `${aedWithSign} (${secondary})`;
 };
 ```
 
-### File: `src/components/roi/secondary/ComparisonKeyInsights.tsx` (~line 41)
-
-Use cash capital for multiplier, add back capital to get gross wealth:
+**Add basePrice to scenario for "Initial Value" display (line ~63-74):**
 ```typescript
-// For multiplier: use actual cash invested (920K) and gross wealth (not net)
-// Gross wealth = net wealth + cash capital (add back what was subtracted)
-const secondaryGrossWealth = secondaryWealth10 + metrics.secondaryCashCapital;
-const secondaryMultiplier = metrics.secondaryCashCapital > 0
-  ? secondaryGrossWealth / metrics.secondaryCashCapital
-  : 0;
+return {
+  exitMonths,
+  exitPrice: scenarioResult.exitPrice,
+  totalCapitalDeployed: scenarioResult.totalCapital,
+  trueProfit: scenarioResult.trueProfit,
+  trueROE: scenarioResult.trueROE,
+  annualizedROE: scenarioResult.annualizedROE,
+  isHandover,
+  dateStr,
+  constructionPct,
+  exitNumber: index + 1,
+  initialValue: basePrice,  // NEW: Original property price
+};
 ```
 
-This gives:
-- Gross Wealth = 2.18M + 920K = 3.08M
-- Multiplier = 3.08M / 920K = **3.3x** ✓
+**Revamp card display (lines 108-154):**
+```typescript
+<div 
+  className="p-2.5 rounded-lg transition-colors bg-theme-bg/50 hover:bg-theme-border/30 border border-theme-border/30"
+>
+  {/* Top Row: Exit Number, Months, Date, Construction % */}
+  <div className="flex items-center justify-between mb-2">
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] font-bold text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
+        #{scenario.exitNumber}
+      </span>
+      <Clock className="w-3 h-3 text-theme-text-muted" />
+      <span className="text-sm font-medium text-theme-text">
+        {scenario.exitMonths}m
+      </span>
+      <span className="text-xs text-theme-text-muted">
+        {scenario.dateStr}
+      </span>
+    </div>
+    <div className="flex items-center gap-1">
+      <Hammer className="w-3 h-3 text-orange-400" />
+      <span className="text-xs text-orange-400 font-medium">
+        {scenario.constructionPct.toFixed(0)}% {t('builtLabel')}
+      </span>
+    </div>
+  </div>
+  
+  {/* NEW: Clear labeled metrics */}
+  <div className="space-y-1 text-xs">
+    {/* Row 1: Capital Invested */}
+    <div className="flex items-center justify-between">
+      <span className="text-theme-text-muted">{t('cashInvestedLabel')}:</span>
+      <span className="text-theme-text font-mono">
+        {getDualValue(scenario.totalCapitalDeployed).primary}
+        {currency !== 'AED' && getDualValue(scenario.totalCapitalDeployed).secondary && (
+          <span className="text-theme-text-muted ml-1">({getDualValue(scenario.totalCapitalDeployed).secondary})</span>
+        )}
+      </span>
+    </div>
+    
+    {/* Row 2: Property Value (Initial → Current) */}
+    <div className="flex items-center justify-between">
+      <span className="text-theme-text-muted">{t('propertyValueLabel')}:</span>
+      <span className="text-theme-text font-mono">
+        <span className="text-theme-text-muted">{formatCurrency(scenario.initialValue, 'AED', 1)}</span>
+        <span className="text-theme-text-muted mx-1">→</span>
+        <span className="text-theme-text">{formatCurrency(scenario.exitPrice, 'AED', 1)}</span>
+        {currency !== 'AED' && (
+          <span className="text-theme-text-muted ml-1">({formatCurrency(scenario.exitPrice, currency, rate)})</span>
+        )}
+      </span>
+    </div>
+    
+    {/* Row 3: Profit + ROE */}
+    <div className="flex items-center justify-between">
+      <span className="text-theme-text-muted">{t('profit')}:</span>
+      <div className="flex items-center gap-2">
+        <span className={cn(
+          "font-mono font-medium",
+          scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"
+        )}>
+          {scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit).primary}
+          {currency !== 'AED' && getDualValue(scenario.trueProfit).secondary && (
+            <span className="opacity-70 ml-1">({getDualValue(scenario.trueProfit).secondary})</span>
+          )}
+        </span>
+        <span className={cn(
+          "font-bold font-mono px-1.5 py-0.5 rounded text-[10px]",
+          scenario.trueROE >= 0 ? "text-green-400 bg-green-400/10" : "text-red-400 bg-red-400/10"
+        )}>
+          {scenario.trueROE?.toFixed(0) ?? 0}% ROE
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+**Update Tooltip with dual currency and property comparison (lines 156-177):**
+```typescript
+<TooltipContent side="left" className="max-w-xs bg-theme-card border-theme-border">
+  <div className="space-y-2 text-xs">
+    <p className="font-semibold text-theme-text">
+      {t('exitAtLabel')} {scenario.exitMonths}m ({scenario.dateStr})
+    </p>
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+      <span className="text-theme-text-muted">{t('constructionTime')}:</span>
+      <span className="text-theme-text">{scenario.constructionPct.toFixed(0)}% {t('completeLabel')}</span>
+      
+      <span className="text-theme-text-muted">{t('cashInvestedLabel')}:</span>
+      <span className="text-theme-text">
+        {getDualValue(scenario.totalCapitalDeployed).primary}
+        {currency !== 'AED' && getDualValue(scenario.totalCapitalDeployed).secondary && (
+          <span className="opacity-70 ml-1">({getDualValue(scenario.totalCapitalDeployed).secondary})</span>
+        )}
+      </span>
+      
+      {/* NEW: Initial Value */}
+      <span className="text-theme-text-muted">{t('initialValueLabel') || 'Initial Value'}:</span>
+      <span className="text-theme-text">
+        {getDualValue(scenario.initialValue).primary}
+        {currency !== 'AED' && getDualValue(scenario.initialValue).secondary && (
+          <span className="opacity-70 ml-1">({getDualValue(scenario.initialValue).secondary})</span>
+        )}
+      </span>
+      
+      <span className="text-theme-text-muted">{t('propertyValueLabel')}:</span>
+      <span className="text-theme-text">
+        {getDualValue(scenario.exitPrice).primary}
+        {currency !== 'AED' && getDualValue(scenario.exitPrice).secondary && (
+          <span className="opacity-70 ml-1">({getDualValue(scenario.exitPrice).secondary})</span>
+        )}
+      </span>
+      
+      <span className="text-theme-text-muted">{t('profit')}:</span>
+      <span className={scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"}>
+        {getDualValue(scenario.trueProfit).primary}
+        {currency !== 'AED' && getDualValue(scenario.trueProfit).secondary && (
+          <span className="opacity-70 ml-1">({getDualValue(scenario.trueProfit).secondary})</span>
+        )}
+      </span>
+      
+      <span className="text-theme-text-muted">{t('totalROELabel')}:</span>
+      <span className="font-bold text-theme-text">{scenario.trueROE?.toFixed(2) ?? 0}%</span>
+    </div>
+  </div>
+</TooltipContent>
+```
+
+### Add translation key:
+
+**File: `src/contexts/LanguageContext.tsx`**
+```typescript
+initialValueLabel: { en: 'Initial Value', es: 'Valor Inicial' },
+```
 
 ---
 
-## Updated Entry Ticket Card
+## Summary of All Changes
 
-The "Entry Ticket" card should clarify what we're comparing:
-
-| Entry Ticket | Off-Plan | Secondary |
-|--------------|----------|-----------|
-| Total Commitment | AED 520K | AED 2.12M |
-| Cash Required | - | AED 920K |
-
-Or better yet, compare cash-to-cash:
-- Off-Plan: Total you pay = AED 520K (or full contract over time)
-- Secondary: Cash required = AED 920K + mortgage obligation
-
-For simplicity, keep Entry Ticket as "Total Commitment" (2.12M) but add a tooltip explaining the mortgage.
+| File | Change |
+|------|--------|
+| `OffPlanVsSecondary.tsx` | Remove HeadToHeadTable import and component |
+| `CompactPaymentTable.tsx` | Add `totalToHandoverQuarter`, use for "Total to this point" |
+| `CompactAllExitsCard.tsx` | Complete revamp with labeled metrics, dual currency, value comparison |
+| `LanguageContext.tsx` | Add `initialValueLabel` translation |
 
 ---
 
-## Summary
+## Expected Results
 
-| Change | File | Description |
-|--------|------|-------------|
-| Add `secondaryCashCapital` | `types.ts` | New field for mortgage-adjusted capital |
-| Pass both capitals | `OffPlanVsSecondary.tsx` | 2.12M for Entry Ticket, 920K for Multiplier |
-| Fix multiplier formula | `ComparisonKeyInsights.tsx` | Use gross wealth / cash capital |
+### Exit Scenarios Card (After):
+```text
+#1  ⏱ 18m  Jul'27                         38% built
+Cash Invested: AED 785,000 (€182K)
+Value: AED 3,000,000 → AED 3,222,379 (€747K)
+Profit: +AED 222,379 (€52K)          28% ROE
+```
 
-### Expected Result After Fix:
+### "Total to this point" (After):
+- Entry Total: AED 485,000
+- Journey Total: AED 600,000
+- **Total to this point: AED 1,085,000** (was 2,885,000)
 
-| Card | Off-Plan | Secondary |
-|------|----------|-----------|
-| Entry Ticket | AED 520K | AED 2.12M |
-| Multiplier | 10.5x | **3.3x** (was 1.1x) |
+### Comparison Page:
+- HeadToHeadTable removed
+- 6 focused sections instead of 7
+
