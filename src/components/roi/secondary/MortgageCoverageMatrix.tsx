@@ -18,6 +18,7 @@ interface MortgageCoverageMatrixProps {
   secondaryLoanAmount: number;
   
   showAirbnb?: boolean;
+  language?: 'en' | 'es';
 }
 
 interface CoverageCell {
@@ -45,14 +46,22 @@ const StatusIcon = ({ status }: { status: 'positive' | 'tight' | 'negative' }) =
   }
 };
 
-const CoverageCell = ({ 
+const CoverageCellComponent = ({ 
   label, 
   cell, 
-  subLabel 
+  subLabel,
+  t,
 }: { 
   label: string; 
   cell: CoverageCell;
   subLabel?: string;
+  t: {
+    income: string;
+    mortgage: string;
+    surplus: string;
+    gap: string;
+    perMonth: string;
+  };
 }) => {
   const dscrPercent = (cell.dscr * 100).toFixed(0);
   
@@ -74,20 +83,20 @@ const CoverageCell = ({
       
       <div className="space-y-1">
         <div className="flex justify-between text-xs">
-          <span className="text-theme-text-muted">Ingreso:</span>
+          <span className="text-theme-text-muted">{t.income}:</span>
           <span className="text-theme-text font-medium">
-            AED {cell.monthlyIncome.toLocaleString()}/mes
+            AED {cell.monthlyIncome.toLocaleString()}{t.perMonth}
           </span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-theme-text-muted">Hipoteca:</span>
+          <span className="text-theme-text-muted">{t.mortgage}:</span>
           <span className="text-theme-text">
-            AED {cell.monthlyMortgage.toLocaleString()}/mes
+            AED {cell.monthlyMortgage.toLocaleString()}{t.perMonth}
           </span>
         </div>
         <div className="flex justify-between text-xs pt-1 border-t border-theme-border mt-1">
           <span className="text-theme-text-muted">
-            {cell.gap >= 0 ? 'Surplus:' : 'Gap:'}
+            {cell.gap >= 0 ? `${t.surplus}:` : `${t.gap}:`}
           </span>
           <span className={cn(
             "font-medium",
@@ -128,7 +137,60 @@ export const MortgageCoverageMatrix = ({
   secondaryMonthlyMortgage,
   secondaryLoanAmount,
   showAirbnb = true,
+  language = 'es',
 }: MortgageCoverageMatrixProps) => {
+  const t = language === 'es' ? {
+    title: 'Análisis de Cobertura de Hipoteca',
+    subtitle: '¿La renta cubre el pago mensual de la hipoteca?',
+    offPlanLoan: 'Off-Plan Préstamo',
+    secondaryLoan: 'Secundaria Préstamo',
+    postHandover: '(Post-Handover)',
+    fromDay1: '(Desde Día 1)',
+    longTerm: 'Largo Plazo',
+    airbnb: 'Airbnb',
+    income: 'Ingreso',
+    mortgage: 'Hipoteca',
+    surplus: 'Surplus',
+    gap: 'Gap',
+    perMonth: '/mes',
+    dscrComfortable: 'DSCR ≥120%: Holgura cómoda',
+    dscrTight: 'DSCR 100-120%: Ajustado',
+    dscrNoCover: 'DSCR <100%: No cubre',
+    offPlanLT: 'Off-Plan LT',
+    offPlanAirbnb: 'Off-Plan Airbnb',
+    secondaryLT: 'Secundaria LT',
+    secondaryAirbnb: 'Secundaria Airbnb',
+  } : {
+    title: 'Mortgage Coverage Analysis',
+    subtitle: 'Does the rent cover the monthly mortgage payment?',
+    offPlanLoan: 'Off-Plan Loan',
+    secondaryLoan: 'Secondary Loan',
+    postHandover: '(Post-Handover)',
+    fromDay1: '(From Day 1)',
+    longTerm: 'Long-Term',
+    airbnb: 'Airbnb',
+    income: 'Income',
+    mortgage: 'Mortgage',
+    surplus: 'Surplus',
+    gap: 'Gap',
+    perMonth: '/mo',
+    dscrComfortable: 'DSCR ≥120%: Comfortable margin',
+    dscrTight: 'DSCR 100-120%: Tight',
+    dscrNoCover: 'DSCR <100%: Does not cover',
+    offPlanLT: 'Off-Plan LT',
+    offPlanAirbnb: 'Off-Plan Airbnb',
+    secondaryLT: 'Secondary LT',
+    secondaryAirbnb: 'Secondary Airbnb',
+  };
+
+  const cellTranslations = {
+    income: t.income,
+    mortgage: t.mortgage,
+    surplus: t.surplus,
+    gap: t.gap,
+    perMonth: t.perMonth,
+  };
+
   // Calculate all cells
   const offPlanLT: CoverageCell = {
     dscr: offPlanMonthlyMortgage > 0 ? offPlanMonthlyRentLT / offPlanMonthlyMortgage : Infinity,
@@ -167,23 +229,23 @@ export const MortgageCoverageMatrix = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold text-theme-text flex items-center gap-2">
           <Banknote className="w-5 h-5 text-amber-500" />
-          Análisis de Cobertura de Hipoteca
+          {t.title}
         </CardTitle>
         <p className="text-sm text-theme-text-muted">
-          ¿La renta cubre el pago mensual de la hipoteca?
+          {t.subtitle}
         </p>
       </CardHeader>
       <CardContent>
         {/* Loan Summary */}
         <div className="grid grid-cols-2 gap-4 mb-4 p-3 rounded-lg bg-theme-bg/50 border border-theme-border">
           <div>
-            <p className="text-xs text-theme-text-muted mb-1">Off-Plan Préstamo</p>
+            <p className="text-xs text-theme-text-muted mb-1">{t.offPlanLoan}</p>
             <p className="text-sm font-medium text-theme-text">
               AED {offPlanLoanAmount.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-xs text-theme-text-muted mb-1">Secundaria Préstamo</p>
+            <p className="text-xs text-theme-text-muted mb-1">{t.secondaryLoan}</p>
             <p className="text-sm font-medium text-theme-text">
               AED {secondaryLoanAmount.toLocaleString()}
             </p>
@@ -199,13 +261,13 @@ export const MortgageCoverageMatrix = ({
               <Badge variant="outline" className="bg-theme-accent/10 text-theme-accent border-theme-accent">
                 OFF-PLAN
               </Badge>
-              <p className="text-[10px] text-theme-text-muted mt-1">(Post-Handover)</p>
+              <p className="text-[10px] text-theme-text-muted mt-1">{t.postHandover}</p>
             </div>
             <div className="text-center">
               <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500">
-                SECUNDARIA
+                {language === 'es' ? 'SECUNDARIA' : 'SECONDARY'}
               </Badge>
-              <p className="text-[10px] text-theme-text-muted mt-1">(Desde Día 1)</p>
+              <p className="text-[10px] text-theme-text-muted mt-1">{t.fromDay1}</p>
             </div>
           </div>
 
@@ -213,11 +275,11 @@ export const MortgageCoverageMatrix = ({
           <div className="grid grid-cols-3 gap-4">
             <div className="flex items-center">
               <Badge variant="outline" className="text-xs">
-                Largo Plazo
+                {t.longTerm}
               </Badge>
             </div>
-            <CoverageCell label="Off-Plan LT" cell={offPlanLT} />
-            <CoverageCell label="Secundaria LT" cell={secondaryLT} />
+            <CoverageCellComponent label={t.offPlanLT} cell={offPlanLT} t={cellTranslations} />
+            <CoverageCellComponent label={t.secondaryLT} cell={secondaryLT} t={cellTranslations} />
           </div>
 
           {/* Airbnb Row */}
@@ -225,11 +287,11 @@ export const MortgageCoverageMatrix = ({
             <div className="grid grid-cols-3 gap-4">
               <div className="flex items-center">
                 <Badge variant="outline" className="text-xs bg-pink-500/10 text-pink-500 border-pink-500">
-                  Airbnb
+                  {t.airbnb}
                 </Badge>
               </div>
-              <CoverageCell label="Off-Plan Airbnb" cell={offPlanST} />
-              <CoverageCell label="Secundaria Airbnb" cell={secondaryST} />
+              <CoverageCellComponent label={t.offPlanAirbnb} cell={offPlanST} t={cellTranslations} />
+              <CoverageCellComponent label={t.secondaryAirbnb} cell={secondaryST} t={cellTranslations} />
             </div>
           )}
         </div>
@@ -239,15 +301,15 @@ export const MortgageCoverageMatrix = ({
           <div className="flex flex-wrap gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="text-theme-text-muted">DSCR ≥120%: Holgura cómoda</span>
+              <span className="text-theme-text-muted">{t.dscrComfortable}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-              <span className="text-theme-text-muted">DSCR 100-120%: Ajustado</span>
+              <span className="text-theme-text-muted">{t.dscrTight}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <XCircle className="w-3.5 h-3.5 text-red-500" />
-              <span className="text-theme-text-muted">DSCR &lt;100%: No cubre</span>
+              <span className="text-theme-text-muted">{t.dscrNoCover}</span>
             </div>
           </div>
         </div>

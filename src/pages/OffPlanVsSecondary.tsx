@@ -460,6 +460,7 @@ const OffPlanVsSecondary = () => {
             showAirbnb={rentalMode === 'airbnb'}
             currency={currency}
             rate={rate}
+            language={language}
           />
 
           {/* 3. Year-by-Year Wealth Table */}
@@ -482,6 +483,7 @@ const OffPlanVsSecondary = () => {
             secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
             handoverYearIndex={handoverYearIndex}
             showAirbnb={rentalMode === 'airbnb'}
+            language={language}
           />
 
           {/* 5. Exit Scenarios Comparison */}
@@ -541,6 +543,7 @@ const OffPlanVsSecondary = () => {
         handoverMonths={handoverMonths}
         currency={currency}
         rate={rate}
+        language={language}
       />
     </div>
   );

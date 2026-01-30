@@ -12,6 +12,7 @@ interface WealthTrajectoryDualChartProps {
   secondaryCapitalInvested: number;
   handoverYearIndex: number;
   showAirbnb?: boolean;
+  language?: 'en' | 'es';
 }
 
 export const WealthTrajectoryDualChart = ({
@@ -21,7 +22,32 @@ export const WealthTrajectoryDualChart = ({
   secondaryCapitalInvested,
   handoverYearIndex,
   showAirbnb = true,
+  language = 'es',
 }: WealthTrajectoryDualChartProps) => {
+  const t = language === 'es' ? {
+    title: 'Trayectoria de Riqueza (10 Años)',
+    surpasses: 'Off-plan supera a secundaria en',
+    year: 'Año',
+    offPlanWealth: 'Off-Plan (Riqueza Total)',
+    secondaryLT: 'Secundaria LT',
+    secondaryAirbnb: 'Secundaria Airbnb',
+    offPlanLegend: 'Off-Plan: Mayor apreciación durante construcción',
+    secondaryLegend: 'Secundaria: Cashflow desde día 1',
+    handover: 'Handover',
+    crossover: '🔄 Cruce',
+  } : {
+    title: 'Wealth Trajectory (10 Years)',
+    surpasses: 'Off-plan surpasses secondary in',
+    year: 'Year',
+    offPlanWealth: 'Off-Plan (Total Wealth)',
+    secondaryLT: 'Secondary LT',
+    secondaryAirbnb: 'Secondary Airbnb',
+    offPlanLegend: 'Off-Plan: Higher appreciation during construction',
+    secondaryLegend: 'Secondary: Cashflow from day 1',
+    handover: 'Handover',
+    crossover: '🔄 Crossover',
+  };
+
   const chartData = useMemo(() => {
     const data = [];
     
@@ -80,7 +106,7 @@ export const WealthTrajectoryDualChart = ({
     
     return (
       <div className="bg-theme-card border border-theme-border rounded-lg p-3 shadow-xl">
-        <p className="text-xs font-medium text-theme-text mb-2">Año {label}</p>
+        <p className="text-xs font-medium text-theme-text mb-2">{t.year} {label}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2 text-xs">
             <div 
@@ -102,11 +128,11 @@ export const WealthTrajectoryDualChart = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold text-theme-text flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-theme-accent" />
-          Trayectoria de Riqueza (10 Años)
+          {t.title}
         </CardTitle>
         {crossoverYear && (
           <p className="text-sm text-theme-text-muted">
-            Off-plan supera a secundaria en <span className="text-emerald-500 font-medium">Año {crossoverYear}</span>
+            {t.surpasses} <span className="text-emerald-500 font-medium">{t.year} {crossoverYear}</span>
           </p>
         )}
       </CardHeader>
@@ -157,7 +183,7 @@ export const WealthTrajectoryDualChart = ({
                   stroke="hsl(var(--theme-accent))" 
                   strokeDasharray="5 5" 
                   label={{ 
-                    value: 'Handover', 
+                    value: t.handover, 
                     fill: 'hsl(var(--theme-accent))',
                     fontSize: 11,
                     position: 'top'
@@ -172,7 +198,7 @@ export const WealthTrajectoryDualChart = ({
                   stroke="#10B981" 
                   strokeDasharray="5 5" 
                   label={{ 
-                    value: '🔄 Cruce', 
+                    value: t.crossover, 
                     fill: '#10B981',
                     fontSize: 11,
                     position: 'insideTopRight'
@@ -192,7 +218,7 @@ export const WealthTrajectoryDualChart = ({
               <Line 
                 type="monotone" 
                 dataKey="offPlanWealth" 
-                name="Off-Plan (Riqueza Total)"
+                name={t.offPlanWealth}
                 stroke="hsl(var(--theme-accent))" 
                 strokeWidth={3}
                 dot={{ fill: 'hsl(var(--theme-accent))', r: 4 }}
@@ -202,7 +228,7 @@ export const WealthTrajectoryDualChart = ({
               <Line 
                 type="monotone" 
                 dataKey="secondaryWealthLT" 
-                name="Secundaria LT"
+                name={t.secondaryLT}
                 stroke="#06B6D4" 
                 strokeWidth={2}
                 dot={{ fill: '#06B6D4', r: 3 }}
@@ -213,7 +239,7 @@ export const WealthTrajectoryDualChart = ({
                 <Line 
                   type="monotone" 
                   dataKey="secondaryWealthST" 
-                  name="Secundaria Airbnb"
+                  name={t.secondaryAirbnb}
                   stroke="#EC4899" 
                   strokeWidth={2}
                   dot={{ fill: '#EC4899', r: 3 }}
@@ -228,11 +254,11 @@ export const WealthTrajectoryDualChart = ({
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-theme-text-muted">
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-theme-accent" />
-            <span>Off-Plan: Mayor apreciación durante construcción</span>
+            <span>{t.offPlanLegend}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-cyan-500" />
-            <span>Secundaria: Cashflow desde día 1</span>
+            <span>{t.secondaryLegend}</span>
           </div>
         </div>
       </CardContent>

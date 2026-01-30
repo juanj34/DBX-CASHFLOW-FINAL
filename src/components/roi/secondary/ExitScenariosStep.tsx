@@ -10,22 +10,50 @@ interface ExitScenariosStepProps {
   exitMonths: number[];
   onChange: (months: number[]) => void;
   handoverMonths: number;
+  language?: 'en' | 'es';
 }
-
-const QUICK_EXITS = [
-  { label: 'Año 3', months: 36 },
-  { label: 'Año 4', months: 48 },
-  { label: 'Año 5', months: 60 },
-  { label: 'Año 7', months: 84 },
-  { label: 'Año 10', months: 120 },
-];
 
 export const ExitScenariosStep = ({
   exitMonths,
   onChange,
   handoverMonths,
+  language = 'es',
 }: ExitScenariosStepProps) => {
   const [customYears, setCustomYears] = useState('');
+
+  const t = language === 'es' ? {
+    title: 'Puntos de Salida',
+    description: 'Selecciona momentos para comparar qué pasaría si vendes ambas propiedades al mismo tiempo.',
+    quickAdd: 'Agregar Rápido',
+    year: 'Año',
+    customAdd: 'Agregar Personalizado',
+    years: 'años',
+    add: 'Agregar',
+    selectedExits: 'Puntos de Salida Seleccionados',
+    disabledNote: '* Salidas antes del handover (mes {months}) están deshabilitadas',
+    tip: '💡 Consejo:',
+    tipText: 'Comparar en múltiples puntos muestra cómo la apreciación off-plan crea una ventaja que crece con el tiempo.',
+  } : {
+    title: 'Exit Points',
+    description: 'Select moments to compare what would happen if you sell both properties at the same time.',
+    quickAdd: 'Quick Add',
+    year: 'Year',
+    customAdd: 'Custom Add',
+    years: 'years',
+    add: 'Add',
+    selectedExits: 'Selected Exit Points',
+    disabledNote: '* Exits before handover (month {months}) are disabled',
+    tip: '💡 Tip:',
+    tipText: 'Comparing at multiple points shows how off-plan appreciation creates an advantage that grows over time.',
+  };
+
+  const QUICK_EXITS = [
+    { label: `${t.year} 3`, months: 36 },
+    { label: `${t.year} 4`, months: 48 },
+    { label: `${t.year} 5`, months: 60 },
+    { label: `${t.year} 7`, months: 84 },
+    { label: `${t.year} 10`, months: 120 },
+  ];
 
   const addExit = (months: number) => {
     if (!exitMonths.includes(months) && months > 0) {
@@ -48,7 +76,7 @@ export const ExitScenariosStep = ({
   const formatExitLabel = (months: number) => {
     const years = months / 12;
     if (Number.isInteger(years)) {
-      return `Año ${years}`;
+      return `${t.year} ${years}`;
     }
     return `${months}m`;
   };
@@ -57,17 +85,17 @@ export const ExitScenariosStep = ({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-theme-text mb-2">
-          Puntos de Salida
+          {t.title}
         </h3>
         <p className="text-sm text-theme-text-muted">
-          Selecciona momentos para comparar qué pasaría si vendes ambas propiedades al mismo tiempo.
+          {t.description}
         </p>
       </div>
 
       {/* Quick Add Buttons */}
       <div className="space-y-3">
         <Label className="text-theme-text-muted text-xs uppercase tracking-wide">
-          Agregar Rápido
+          {t.quickAdd}
         </Label>
         <div className="flex flex-wrap gap-2">
           {QUICK_EXITS.map((exit) => {
@@ -96,7 +124,7 @@ export const ExitScenariosStep = ({
         </div>
         {handoverMonths > 36 && (
           <p className="text-xs text-amber-500">
-            * Salidas antes del handover (mes {handoverMonths}) están deshabilitadas
+            {t.disabledNote.replace('{months}', handoverMonths.toString())}
           </p>
         )}
       </div>
@@ -104,7 +132,7 @@ export const ExitScenariosStep = ({
       {/* Custom Input */}
       <div className="space-y-3">
         <Label className="text-theme-text-muted text-xs uppercase tracking-wide">
-          Agregar Personalizado
+          {t.customAdd}
         </Label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-[150px]">
@@ -119,7 +147,7 @@ export const ExitScenariosStep = ({
               className="bg-theme-card border-theme-border text-theme-text pr-12"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-theme-text-muted">
-              años
+              {t.years}
             </span>
           </div>
           <Button
@@ -130,7 +158,7 @@ export const ExitScenariosStep = ({
             className="border-theme-border text-theme-text"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Agregar
+            {t.add}
           </Button>
         </div>
       </div>
@@ -139,7 +167,7 @@ export const ExitScenariosStep = ({
       {exitMonths.length > 0 && (
         <Card className="p-4 bg-theme-card border-theme-border">
           <Label className="text-theme-text-muted text-xs uppercase tracking-wide mb-3 block">
-            Puntos de Salida Seleccionados ({exitMonths.length})
+            {t.selectedExits} ({exitMonths.length})
           </Label>
           <div className="flex flex-wrap gap-2">
             {exitMonths.map((months) => (
@@ -165,8 +193,7 @@ export const ExitScenariosStep = ({
       {/* Explanation */}
       <div className="p-3 rounded-lg bg-theme-bg/50 text-xs text-theme-text-muted">
         <p>
-          <strong className="text-theme-text">💡 Consejo:</strong> Comparar en múltiples puntos 
-          muestra cómo la apreciación off-plan crea una ventaja que crece con el tiempo.
+          <strong className="text-theme-text">{t.tip}</strong> {t.tipText}
         </p>
       </div>
     </div>

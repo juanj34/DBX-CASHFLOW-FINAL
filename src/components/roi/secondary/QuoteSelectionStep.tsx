@@ -12,14 +12,32 @@ import { OIInputs } from '@/components/roi/useOICalculations';
 interface QuoteSelectionStepProps {
   selectedQuoteId?: string;
   onSelect: (quote: CashflowQuote) => void;
+  language?: 'en' | 'es';
 }
 
 export const QuoteSelectionStep = ({
   selectedQuoteId,
   onSelect,
+  language = 'es',
 }: QuoteSelectionStepProps) => {
   const { quotes, loading } = useQuotesList();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const t = language === 'es' ? {
+    description: 'Selecciona el quote off-plan que quieres comparar con una propiedad secundaria.',
+    searchPlaceholder: 'Buscar por proyecto, desarrollador, cliente...',
+    noQuotesFound: 'No se encontraron quotes',
+    noQuotesCreate: 'No tienes quotes. Crea uno primero.',
+    noTitle: 'Sin título',
+    handover: 'Handover',
+  } : {
+    description: 'Select the off-plan quote you want to compare with a secondary property.',
+    searchPlaceholder: 'Search by project, developer, client...',
+    noQuotesFound: 'No quotes found',
+    noQuotesCreate: "You don't have quotes. Create one first.",
+    noTitle: 'Untitled',
+    handover: 'Handover',
+  };
 
   const filteredQuotes = useMemo(() => {
     if (!searchTerm.trim()) return quotes;
@@ -33,7 +51,8 @@ export const QuoteSelectionStep = ({
   }, [quotes, searchTerm]);
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-ES', {
+    const locale = language === 'es' ? 'es-ES' : 'en-US';
+    return new Date(dateStr).toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
     });
@@ -58,14 +77,14 @@ export const QuoteSelectionStep = ({
   return (
     <div className="space-y-4">
       <p className="text-sm text-theme-text-muted">
-        Selecciona el quote off-plan que quieres comparar con una propiedad secundaria.
+        {t.description}
       </p>
 
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
         <Input
-          placeholder="Buscar por proyecto, desarrollador, cliente..."
+          placeholder={t.searchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10 bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted"
@@ -79,7 +98,7 @@ export const QuoteSelectionStep = ({
             <div className="text-center py-8">
               <Building2 className="w-10 h-10 mx-auto text-theme-text-muted mb-3" />
               <p className="text-theme-text-muted text-sm">
-                {searchTerm ? 'No se encontraron quotes' : 'No tienes quotes. Crea uno primero.'}
+                {searchTerm ? t.noQuotesFound : t.noQuotesCreate}
               </p>
             </div>
           ) : (
@@ -101,7 +120,7 @@ export const QuoteSelectionStep = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-theme-text text-sm truncate">
-                        {quote.title || quote.project_name || 'Sin título'}
+                        {quote.title || quote.project_name || t.noTitle}
                       </h3>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-theme-text-muted">
                         {quote.developer && (
@@ -127,7 +146,7 @@ export const QuoteSelectionStep = ({
                         </span>
                         {handover && (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            Handover {handover}
+                            {t.handover} {handover}
                           </Badge>
                         )}
                       </div>
