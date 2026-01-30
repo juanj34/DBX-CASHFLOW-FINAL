@@ -412,7 +412,7 @@ const Home = () => {
         </Button>
       </Link>
 
-      {/* Main Navigation Links - Order: Generator, All Quotes, Compare, Presentations, Analytics, Map */}
+      {/* Main Navigation Links */}
       <Link to="/cashflow-generator" onClick={() => setMobileMenuOpen(false)}>
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <Sparkles className="w-4 h-4" />
@@ -431,6 +431,13 @@ const Home = () => {
         <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
           <Scale className="w-4 h-4" />
           Compare
+        </Button>
+      </Link>
+
+      <Link to="/offplan-vs-secondary" onClick={() => setMobileMenuOpen(false)}>
+        <Button variant="ghost" className="w-full justify-start sm:w-auto text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt gap-2">
+          <TrendingUp className="w-4 h-4" />
+          Off-Plan vs Resale
         </Button>
       </Link>
 
