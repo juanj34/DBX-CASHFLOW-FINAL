@@ -337,6 +337,27 @@ const OffPlanVsSecondary = () => {
     return secondaryCalcs.yearlyProjections[9]?.propertyValue || 0;
   }, [secondaryCalcs]);
 
+  // NEW: Year 10 cumulative rent (matching table logic exactly)
+  const offPlanCumulativeRent10Y = useMemo(() => {
+    let cumulative = 0;
+    for (let i = 0; i < 10; i++) {
+      if (i >= handoverYearIndex - 1) {
+        cumulative += offPlanCalcs.yearlyProjections[i]?.netIncome || 0;
+      }
+    }
+    return cumulative;
+  }, [offPlanCalcs.yearlyProjections, handoverYearIndex]);
+
+  const secondaryCumulativeRent10Y = useMemo(() => {
+    return rentalMode === 'airbnb'
+      ? secondaryCalcs.yearlyProjections[9]?.cumulativeRentST || 0
+      : secondaryCalcs.yearlyProjections[9]?.cumulativeRentLT || 0;
+  }, [secondaryCalcs.yearlyProjections, rentalMode]);
+
+  // NEW: Year 10 Total Assets (matching table exactly: Value + Rent)
+  const offPlanTotalAssets10Y = offPlanPropertyValue10Y + offPlanCumulativeRent10Y;
+  const secondaryTotalAssets10Y = secondaryPropertyValue10Y + secondaryCumulativeRent10Y;
+
   // Comparison metrics
   const comparisonMetrics: ComparisonMetrics = useMemo(() => {
     if (!offPlanInputs || !offPlanCalcs.yearlyProjections.length) {
@@ -720,6 +741,8 @@ const OffPlanVsSecondary = () => {
             }
             offPlanPropertyValue10Y={offPlanPropertyValue10Y}
             secondaryPropertyValue10Y={secondaryPropertyValue10Y}
+            offPlanTotalAssets10Y={offPlanTotalAssets10Y}
+            secondaryTotalAssets10Y={secondaryTotalAssets10Y}
           />
 
           {/* 2. Year-by-Year Wealth Table */}

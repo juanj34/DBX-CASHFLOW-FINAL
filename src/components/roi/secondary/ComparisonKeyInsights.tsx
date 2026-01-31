@@ -14,9 +14,12 @@ interface ComparisonKeyInsightsProps {
   appreciationDuringConstruction: number;
   // Props for Monthly Cashflow card
   secondaryMonthlyCashflow: number;
-  // NEW: Property values at Year 10
+  // Property values at Year 10
   offPlanPropertyValue10Y: number;
   secondaryPropertyValue10Y: number;
+  // Total Assets at Year 10 (Value + Cumulative Rent - matches table exactly)
+  offPlanTotalAssets10Y: number;
+  secondaryTotalAssets10Y: number;
 }
 
 export const ComparisonKeyInsights = ({
@@ -30,29 +33,24 @@ export const ComparisonKeyInsights = ({
   secondaryMonthlyCashflow,
   offPlanPropertyValue10Y,
   secondaryPropertyValue10Y,
+  offPlanTotalAssets10Y,
+  secondaryTotalAssets10Y,
 }: ComparisonKeyInsightsProps) => {
-  const isAirbnb = rentalMode === 'airbnb';
-
-  const secondaryWealth10 = isAirbnb 
-    ? metrics.secondaryWealthYear10ST 
-    : metrics.secondaryWealthYear10LT;
-
   // Off-plan multiplier: use total capital at handover (realistic cash deployed)
   const offPlanTotalCapital = metrics.offPlanTotalCapitalAtHandover || metrics.offPlanCapitalDay1;
   const offPlanMultiplier = offPlanTotalCapital > 0
-    ? (metrics.offPlanWealthYear10 + offPlanTotalCapital) / offPlanTotalCapital
+    ? offPlanPropertyValue10Y / offPlanTotalCapital
     : 0;
   
   // Secondary multiplier: use full property commitment (purchase price + closing)
   const secondaryMultiplier = metrics.secondaryCapitalDay1 > 0
-    ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
+    ? secondaryPropertyValue10Y / metrics.secondaryCapitalDay1
     : 0;
 
-  // Total Wealth (Gross/Total Assets) = Property Value at Year 10 + Cumulative Net Rent
-  // The metrics.offPlanWealthYear10 = propertyValue + cumulativeRent - capital
-  // To get Gross Wealth, we add capital back: grossWealth = netWealth + capital
-  const offPlanTotalWealth10 = metrics.offPlanWealthYear10 + metrics.offPlanCapitalDay1;
-  const secondaryTotalWealth10 = secondaryWealth10 + metrics.secondaryCashCapital;
+  // Total Wealth = Year 10 Total Assets (Property Value + Cumulative Rent)
+  // Now passed directly from parent to match table exactly
+  const offPlanTotalWealth10 = offPlanTotalAssets10Y;
+  const secondaryTotalWealth10 = secondaryTotalAssets10Y;
 
   const formatValue = (value: number): string => {
     // Handle NaN and invalid values
