@@ -57,16 +57,29 @@ const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: num
   return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
 };
 
-// Check if payment is AFTER the handover quarter (strictly after Q end, not start)
-const isPaymentAfterHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+// Check if payment is AFTER the handover month (month-based detection for accuracy)
+// Uses handoverMonth (1-12) if available, falls back to quarter-based detection
+const isPaymentAfterHandover = (
+  monthsFromBooking: number, 
+  bookingMonth: number, 
+  bookingYear: number, 
+  handoverMonth: number | undefined,
+  handoverQuarter: number, 
+  handoverYear: number
+): boolean => {
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
   const paymentDate = new Date(bookingDate);
   paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
   
-  // Handover quarter END = last month of quarter (Q3 = Sep = month 9)
-  const handoverQuarterEndMonth = handoverQuarter * 3;
-  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28); // End of last month in quarter
+  // If we have the exact handover month, use it for precise detection
+  if (handoverMonth !== undefined) {
+    const handoverDate = new Date(handoverYear, handoverMonth - 1);
+    return paymentDate > handoverDate;
+  }
   
+  // Fallback: use quarter-based detection (end of quarter)
+  const handoverQuarterEndMonth = handoverQuarter * 3;
+  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
   return paymentDate > handoverQuarterEnd;
 };
 
@@ -148,6 +161,7 @@ export const CompactPaymentTable = ({
     additionalPayments, 
     bookingMonth, 
     bookingYear,
+    handoverMonth, // NEW: month-based handover (1-12)
     handoverQuarter,
     handoverYear,
     oqoodFee,
@@ -170,19 +184,19 @@ export const CompactPaymentTable = ({
   });
 
   // Derive pre-handover and post-handover payments from additionalPayments by date
-  // Pre-handover includes payments UP TO AND INCLUDING the handover quarter
-  // Post-handover is STRICTLY AFTER the handover quarter ends
+  // Pre-handover includes payments UP TO AND INCLUDING the handover month/quarter
+  // Post-handover is STRICTLY AFTER the handover
   const preHandoverPayments = hasPostHandoverPlan
     ? sortedPayments.filter(p => {
         if (p.type !== 'time') return true; // construction-based = pre-handover
-        return !isPaymentAfterHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+        return !isPaymentAfterHandover(p.triggerValue, bookingMonth, bookingYear, handoverMonth, handoverQuarter, handoverYear);
       })
     : sortedPayments;
 
   const derivedPostHandoverPayments = hasPostHandoverPlan
     ? sortedPayments.filter(p => {
         if (p.type !== 'time') return false;
-        return isPaymentAfterHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+        return isPaymentAfterHandover(p.triggerValue, bookingMonth, bookingYear, handoverMonth, handoverQuarter, handoverYear);
       })
     : [];
   
