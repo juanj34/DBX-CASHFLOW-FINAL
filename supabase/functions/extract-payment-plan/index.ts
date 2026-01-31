@@ -535,6 +535,24 @@ CRITICAL INSTRUCTIONS:
         console.log(`Set onHandoverPercent from handover installment: ${handoverInst.paymentPercent}`);
       }
     }
+    
+    // Fallback 5: Calculate paymentSplit from installments if not extracted
+    // This ensures the split is always available for the client to set preHandoverPercent
+    if (!extractedData.paymentStructure.paymentSplit) {
+      // Pre-handover = all "time" + "construction" installments (before handover)
+      const preHandoverTotal = extractedData.installments
+        .filter(i => i.type === 'time' || i.type === 'construction')
+        .reduce((sum, i) => sum + i.paymentPercent, 0);
+      
+      // Post-handover includes handover payment + any post-handover installments
+      const postHandoverTotal = 100 - preHandoverTotal;
+      
+      if (preHandoverTotal > 0 && postHandoverTotal > 0) {
+        extractedData.paymentStructure.paymentSplit = 
+          `${Math.round(preHandoverTotal)}/${Math.round(postHandoverTotal)}`;
+        console.log(`Calculated paymentSplit from installments: ${extractedData.paymentStructure.paymentSplit}`);
+      }
+    }
 
     // Validate that percentages sum to 100
     const totalPercent = extractedData.installments.reduce(

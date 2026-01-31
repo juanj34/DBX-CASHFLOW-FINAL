@@ -301,21 +301,43 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
     
     // === STEP 4: Determine pre-handover percent from split ===
+    // Priority 1: Use AI-extracted paymentSplit
     let preHandoverPercent = inputs.preHandoverPercent;
     if (data.paymentStructure.paymentSplit) {
       const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
-      if (!isNaN(pre)) preHandoverPercent = pre;
+      if (!isNaN(pre)) {
+        preHandoverPercent = pre;
+        console.log('Set preHandoverPercent from paymentSplit:', pre);
+      }
+    } else {
+      // Priority 2: Calculate from downpayment + pre-HO installments
+      // Only 'time' and 'construction' types are pre-handover (excludes 'handover' and 'post-handover')
+      const preHOInstallments = data.installments.filter(i => 
+        i.type === 'time' || i.type === 'construction'
+      );
+      const preHOTotal = preHOInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+      
+      if (preHOTotal > 0 && preHOTotal <= 100) {
+        preHandoverPercent = preHOTotal;
+        console.log('Calculated preHandoverPercent from installments:', preHOTotal);
+      }
     }
     
-    // === STEP 5: Convert ALL installments to configurator format ===
-    // INCLUDE handover payment with isHandover flag for explicit marking
+    // === STEP 5: Convert installments to configurator format ===
+    // CRITICAL: Exclude handover payment - it's handled by preHandoverPercent/handoverPercent
     const additionalPayments = data.installments
       .filter(i => {
-        // Skip downpayment (Month 0) - it's handled separately
+        // Skip downpayment (Month 0) - handled by downpaymentPercent
         if (i.type === 'time' && i.triggerValue === 0) return false;
         
-        // Also skip any Month 1 installment that has the exact same percentage as downpayment
-        // This prevents AI from duplicating the downpayment as "Month 1"
+        // CRITICAL FIX: Skip handover payment - it's NOT an installment, it's the completion lump sum
+        // This prevents the handover % from being double-counted
+        if (i.type === 'handover') {
+          console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
+          return false;
+        }
+        
+        // Skip duplicate Month 1 if same as downpayment
         if (i.type === 'time' && i.triggerValue === 1 && 
             downpayment && i.paymentPercent === downpayment.paymentPercent) {
           console.warn('Skipping duplicate: Month 1 has same % as downpayment');
@@ -326,15 +348,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       })
       .map((inst, idx) => ({
         id: inst.id || `ai-${Date.now()}-${idx}`,
-        // Convert handover and post-handover to time (they have absolute months)
-        // Only keep construction type as-is
+        // Only keep construction type as-is, everything else becomes time
         type: inst.type === 'construction' 
           ? 'construction' as const 
           : 'time' as const,
         triggerValue: inst.triggerValue, // Already absolute from AI
         paymentPercent: inst.paymentPercent,
-        // NEW: Preserve isHandover flag for explicit completion payment marking
-        isHandover: inst.type === 'handover',
       }))
       .sort((a, b) => a.triggerValue - b.triggerValue);
     
@@ -402,13 +421,13 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       </div>
 
       {/* Step 1: Preset Split Buttons */}
-      <div className="space-y-2 p-3 bg-theme-card rounded-lg border border-theme-border">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-theme-accent/20 flex items-center justify-center text-xs font-bold text-theme-accent">1</div>
-          <label className="text-sm text-theme-text font-medium">Split</label>
+      <div className="space-y-1.5 p-2 bg-theme-card rounded-lg border border-theme-border">
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent">1</div>
+          <label className="text-xs text-theme-text font-medium">Split</label>
           <InfoTooltip translationKey="tooltipPreHandover" />
         </div>
-        <div className="flex flex-wrap gap-1.5 ml-7">
+        <div className="flex flex-wrap gap-1 ml-5">
           {presetSplits.map((split) => (
             <Button
               key={split}
@@ -464,14 +483,14 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
       {/* Step 2: Downpayment - Only show after split is selected */}
       {hasSplitSelected && (
-        <div className="space-y-2 p-3 bg-theme-card rounded-lg border border-theme-accent/30 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-theme-accent/20 flex items-center justify-center text-xs font-bold text-theme-accent">2</div>
-            <span className="text-sm font-medium text-theme-accent">Down</span>
-            <span className="text-xs text-theme-text-muted">(EOI {formatCurrency(inputs.eoiFee, currency)})</span>
+        <div className="space-y-1.5 p-2 bg-theme-card rounded-lg border border-theme-accent/30 animate-fade-in">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent">2</div>
+            <span className="text-xs font-medium text-theme-accent">Down</span>
+            <span className="text-[10px] text-theme-text-muted">(EOI {formatCurrency(inputs.eoiFee, currency)})</span>
             <InfoTooltip translationKey="tooltipDownpayment" />
           </div>
-          <div className="flex items-center gap-2 ml-7">
+          <div className="flex items-center gap-2 ml-5">
             <Slider
               value={[inputs.downpaymentPercent]}
               onValueChange={([value]) => setInputs(prev => ({ ...prev, downpaymentPercent: value }))}
@@ -504,11 +523,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
       {/* Step 3: Installment Generator - Compact single row */}
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
-        <div className="space-y-3 animate-fade-in">
+        <div className="space-y-2 animate-fade-in">
           {/* Generator - Single row */}
           <div className="p-2 bg-theme-card rounded-lg border border-theme-accent/30">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent shrink-0">3</div>
+              <div className="w-4 h-4 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent shrink-0">3</div>
               
               <div className="flex items-center gap-1">
                 <Input
@@ -564,11 +583,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
           {/* Installments List - Only show if there are payments */}
           {inputs.additionalPayments.length > 0 && (
-            <div className="space-y-2 p-3 bg-theme-card rounded-lg border border-theme-border">
+            <div className="space-y-1.5 p-2 bg-theme-card rounded-lg border border-theme-border">
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-theme-text font-medium">Installments</label>
-                  <span className="text-xs text-theme-text-muted">({inputs.additionalPayments.length})</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-theme-text font-medium">Installments</span>
+                  <span className="text-[10px] text-theme-text-muted">({inputs.additionalPayments.length})</span>
                   <Button
                     type="button"
                     onClick={addAdditionalPayment}
