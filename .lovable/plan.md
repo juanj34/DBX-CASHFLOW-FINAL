@@ -1,223 +1,335 @@
 
 
-# Fix Theme Color Issues Across Components
+# AI Payment Plan Extractor - Complete Implementation Plan
 
-## Problem Summary
+## Overview
 
-Multiple components throughout the application use hardcoded hex colors (e.g., `#0f172a`, `#1a1f2e`, `#2a3142`, `text-gray-400`, `text-white`) instead of semantic theme tokens. This causes:
+Build an advanced AI-powered tool that extracts payment plan data from marketing materials (brochures, screenshots, PDFs - including multi-page documents) and automatically populates the cashflow configurator. The tool will intelligently handle different payment formats (monthly vs installment-based) and provide full customization before applying.
 
-1. **Poor contrast** in light themes (Consultant) - dark text on dark backgrounds or vice versa
-2. **Inconsistent appearance** - components don't adapt to theme changes
-3. **Maintenance burden** - each theme change requires updating multiple files
+## User Experience Flow
 
-## Files to Fix
-
-### 1. ROICalculator.tsx (Full Refactor Needed)
-**Current Issues:**
-- Line 35: `bg-[#0f172a]` → hardcoded dark background
-- Line 37: `border-[#2a3142] bg-[#0f172a]/80` → hardcoded header styling
-- Line 41: `text-gray-400 hover:text-white hover:bg-[#1a1f2e]` → hardcoded button colors
-- Line 46: `bg-[#CCFF00]/20` → hardcoded accent (should use `bg-theme-accent/20`)
-- Line 47: `text-[#CCFF00]` → should use `text-theme-accent`
-- Line 50: `text-white` → should use `text-theme-text`
-- Line 51: `text-gray-400` → should use `text-theme-text-muted`
-- Line 64: `text-gray-400 hover:text-white hover:bg-[#1a1f2e]`
-- Line 95-109: Table with `bg-[#1a1f2e]`, `border-[#2a3142]`, `bg-[#0d1117]`, `text-gray-400`, `text-white`
-
-**Changes:**
-| From | To |
-|------|-----|
-| `bg-[#0f172a]` | `bg-theme-bg` |
-| `bg-[#1a1f2e]` | `bg-theme-card` |
-| `bg-[#0d1117]` | `bg-theme-bg-alt` |
-| `border-[#2a3142]` | `border-theme-border` |
-| `text-white` | `text-theme-text` |
-| `text-gray-400` | `text-theme-text-muted` |
-| `text-[#CCFF00]` | `text-theme-accent` |
-| `text-[#00EAFF]` | `text-theme-accent-secondary` |
-| `bg-[#CCFF00]/20` | `bg-theme-accent/20` |
-| `divide-[#2a3142]` | `divide-theme-border` |
-
----
-
-### 2. OIYearlyProjectionTable.tsx (Already Theme-Aware - No Changes)
-This file already uses theme tokens correctly (`bg-theme-card`, `text-theme-text`, etc.). No changes needed.
-
----
-
-### 3. LandmarkInfoCard.tsx
-**Current Issues:**
-- Line 21: `bg-[#1a1f2e] border border-[#2a3142]` → hardcoded modal background
-- Line 45: `text-white` → should use `text-theme-text`
-- Line 47: `text-gray-400` → should use `text-theme-text-muted`
-
-**Changes:**
-| Line | From | To |
-|------|------|-----|
-| 21 | `bg-[#1a1f2e] border border-[#2a3142]` | `bg-theme-card border border-theme-border` |
-| 45 | `text-white` | `text-theme-text` |
-| 47 | `text-gray-400` | `text-theme-text-muted` |
-
----
-
-### 4. ZoneInfoCard.tsx (Already Theme-Aware - No Changes)
-This file already uses theme tokens correctly. No changes needed.
-
----
-
-### 5. LayerToggle.tsx (Already Theme-Aware - No Changes)
-This file already uses theme tokens correctly. No changes needed.
-
----
-
-### 6. MobileConfiguratorSheet.tsx (Already Theme-Aware - Minor Cleanup)
-Most of this file is theme-aware. Minor review for any overlooked hardcoded values - appears clean.
-
----
-
-### 7. PaymentSection.tsx (Already Theme-Aware - No Changes)
-Already uses theme tokens correctly (`text-theme-text`, `bg-theme-card`, etc.).
-
----
-
-### 8. AppreciationSection.tsx (Hardcoded Chart Colors)
-**Current Issues:**
-- Lines 351-355: Hardcoded chart gradient colors `#CCFF00`
-- Line 417: Hardcoded stroke color `#CCFF00`
-
-The chart colors need to remain as specific values for the gradient to work, but the component's structural styling is already theme-aware. The accent color `#CCFF00` is acceptable for the "Tech Dark" theme's lime accent, but ideally should use CSS custom properties. However, Recharts doesn't support CSS variables directly in SVG gradients. **This is acceptable as-is** since chart accents are intentionally consistent.
-
----
-
-## Implementation Summary
-
-| File | Status | Changes Needed |
-|------|--------|----------------|
-| `ROICalculator.tsx` | ❌ Needs Fix | Full theme token migration |
-| `OIYearlyProjectionTable.tsx` | ✅ Already Fixed | None |
-| `LandmarkInfoCard.tsx` | ❌ Needs Fix | 3 line changes |
-| `ZoneInfoCard.tsx` | ✅ Already Fixed | None |
-| `LayerToggle.tsx` | ✅ Already Fixed | None |
-| `MobileConfiguratorSheet.tsx` | ✅ Already Fixed | None |
-| `PaymentSection.tsx` | ✅ Already Fixed | None |
-| `AppreciationSection.tsx` | ⚠️ Chart colors | Acceptable as-is |
-
----
-
-## Technical Implementation
-
-### ROICalculator.tsx - Full Changes
-
-```tsx
-// Line 35
-// Before: <div className="min-h-screen bg-[#0f172a]">
-// After:
-<div className="min-h-screen bg-theme-bg">
-
-// Line 37
-// Before: <header className="border-b border-[#2a3142] bg-[#0f172a]/80 ...">
-// After:
-<header className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-xl sticky top-0 z-50">
-
-// Line 41
-// Before: className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]"
-// After:
-className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card"
-
-// Lines 46-47
-// Before: <div className="p-2 bg-[#CCFF00]/20 rounded-xl">
-//         <TrendingUp className="w-6 h-6 text-[#CCFF00]" />
-// After:
-<div className="p-2 bg-theme-accent/20 rounded-xl">
-  <TrendingUp className="w-6 h-6 text-theme-accent" />
-
-// Lines 50-51
-// Before: <h1 className="text-xl font-bold text-white">
-//         <p className="text-sm text-gray-400">
-// After:
-<h1 className="text-xl font-bold text-theme-text">
-<p className="text-sm text-theme-text-muted">
-
-// Line 64
-// Before: className="text-gray-400 hover:text-white hover:bg-[#1a1f2e]"
-// After:
-className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card"
-
-// Lines 95-109 - Comparison Table
-// Before: <div className="bg-[#1a1f2e] border border-[#2a3142] rounded-2xl ...">
-// After:
-<div className="bg-theme-card border border-theme-border rounded-2xl overflow-hidden">
-
-// Before: <div className="p-4 border-b border-[#2a3142]">
-// After:
-<div className="p-4 border-b border-theme-border">
-
-// Before: <h3 className="font-semibold text-white">
-// After:
-<h3 className="font-semibold text-theme-text">
-
-// Before: <thead className="bg-[#0d1117]">
-// After:
-<thead className="bg-theme-bg-alt">
-
-// Table header colors - keep investor type colors
-// text-[#CCFF00] → text-theme-accent
-// text-[#00EAFF] → text-theme-accent-secondary  
-// text-[#FF00FF] → text-purple-400 (keep as-is, no theme token for tertiary)
-
-// Before: <th className="... text-gray-400 ...">
-// After:
-<th className="... text-theme-text-muted ...">
-
-// Before: <tbody className="divide-y divide-[#2a3142]">
-// After:
-<tbody className="divide-y divide-theme-border">
-
-// Before: <td className="... text-gray-400">
-// After:
-<td className="... text-theme-text-muted">
-
-// Before: <td className="... text-white ...">
-// After:
-<td className="... text-theme-text ...">
-
-// Keep accent colors for OI/SI values:
-// text-[#CCFF00] → text-theme-accent
-// text-[#00EAFF] → text-theme-accent-secondary
-
-// Before: text-gray-500 (for "—" placeholder)
-// After: text-theme-text-muted
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  PaymentSection.tsx                                         │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  ✨ AI Import  │ (button in header)                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PaymentPlanExtractor Modal (Sheet)                         │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  1. UPLOAD ZONE                                      │   │
+│  │  ┌─────────────────────────────────────────────┐     │   │
+│  │  │  Drag & drop, paste (Ctrl+V), or click      │     │   │
+│  │  │  to upload payment plan images/PDFs         │     │   │
+│  │  │  (Supports multiple pages)                   │     │   │
+│  │  └─────────────────────────────────────────────┘     │   │
+│  │  [image1.png] [image2.png] [brochure.pdf]            │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  2. BOOKING DATE (for calculating payment dates)    │   │
+│  │  ○ Use today's date                                  │   │
+│  │  ○ Use existing configurator date                   │   │
+│  │  ○ Specify custom date: [Month ▼] [Year ▼]          │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  [ Extract Payment Plan ]                                   │
+└───────────────────────────────────────────────────────────────┘
+                              │
+                              ▼ (AI Processing 3-8 seconds)
+┌─────────────────────────────────────────────────────────────┐
+│  ExtractedDataPreview (Editable)                            │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  PROPERTY INFO (Optional - extracted if visible)     │   │
+│  │  Developer: [Emaar ▼]   Project: [Creek Harbour]     │   │
+│  │  Unit: [T1-2304]        Size: [1,250 sqft]           │   │
+│  │  Type: [2BR ▼]          Price: [AED 2,500,000]       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  PAYMENT STRUCTURE                                   │   │
+│  │  Split detected: [40/60 ▼] ✓ High confidence         │   │
+│  │  Post-handover: [Yes/No ▼]                           │   │
+│  │  Handover: [Q4 ▼] [2027 ▼]                           │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  EXTRACTED INSTALLMENTS                              │   │
+│  │  ┌──────────────────────────────────────────────┐    │   │
+│  │  │ # │ Type │ Trigger  │ %    │ Label         │    │   │
+│  │  │ 1 │ Time │ 0 mo     │ 20%  │ Booking       │ ✓  │   │
+│  │  │ 2 │ Cons │ 30%      │ 10%  │ 30% Complete  │ ✓  │   │
+│  │  │ 3 │ Time │ 6 mo     │ 5%   │ Month 6       │ ⚠  │   │
+│  │  │ 4 │ Time │ 12 mo    │ 5%   │ Month 12      │ ✓  │   │
+│  │  │ 5 │ Hand │ Handover │ 60%  │ On Handover   │ ✓  │   │
+│  │  └──────────────────────────────────────────────┘    │   │
+│  │  Total: 100% ✓                                       │   │
+│  │  [+ Add Row] [Remove Selected]                       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  CONFIDENCE SUMMARY                                  │   │
+│  │  Overall: 87% ●●●●●●●●○○                             │   │
+│  │  ⚠ Month 6 payment: uncertain trigger (edit above)  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  [ Cancel ]                    [ Apply to Configurator ]    │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-### LandmarkInfoCard.tsx - Changes
+## Technical Architecture
 
-```tsx
-// Line 21
-// Before: className="relative max-w-4xl ... bg-[#1a1f2e] border border-[#2a3142] ..."
-// After:
-className="relative max-w-4xl w-[calc(100vw-2rem)] sm:w-[90vw] max-h-[85vh] bg-theme-card border border-theme-border rounded-xl shadow-2xl overflow-hidden mx-4 sm:mx-0"
+### 1. New Edge Function: `extract-payment-plan`
 
-// Line 45
-// Before: <h2 className="text-2xl font-bold text-white">
-// After:
-<h2 className="text-2xl font-bold text-theme-text">
+**Location:** `supabase/functions/extract-payment-plan/index.ts`
 
-// Line 47
-// Before: <p className="text-gray-400">
-// After:
-<p className="text-theme-text-muted">
+**Capabilities:**
+- Accept multiple base64-encoded images/PDFs (handles 2+ page payment plans)
+- Use Lovable AI Gateway with `google/gemini-3-flash-preview` (best for vision + complex reasoning)
+- Structured output via tool calling for reliable JSON extraction
+- Detect payment format: monthly-based vs installment-based vs construction milestone
+- Identify post-handover payments by keywords and structure
+
+**AI Prompt Strategy:**
+```text
+SYSTEM PROMPT:
+You are a Dubai real estate payment plan analyzer. Extract structured payment data from 
+marketing materials with high precision.
+
+PAYMENT FORMATS TO RECOGNIZE:
+1. TIME-BASED: "Month 1", "Month 6", "12 months", "6 months post-booking"
+2. CONSTRUCTION-BASED: "On completion of 30%", "At 50% construction", "Ground floor"
+3. HANDOVER-BASED: "On handover", "At completion", "Key handover"
+4. POST-HANDOVER: "48 months post-handover", "2 years after completion", "5 years post-delivery"
+
+MULTI-PAGE HANDLING:
+- When given multiple images, treat them as pages of the same document
+- Look for continuation patterns ("continued...", page numbers)
+- Combine information from all pages into single coherent output
+
+SPLIT DETECTION:
+- Look for patterns: "40/60", "50:50", "30-70"
+- Calculate from downpayment + installments if not explicit
+- During Construction / On Handover patterns
+
+POST-HANDOVER DETECTION:
+- Keywords: "post-handover", "after completion", "after delivery", "post-possession"
+- Payment plans extending beyond handover date
+- Multiple years of payments after key handover
+
+EXTRACTION PRIORITIES:
+1. Payment percentages (highest priority - must sum to 100%)
+2. Payment triggers (month/milestone)
+3. Property info (if visible)
+4. Dates (handover quarter/year)
 ```
 
----
+**Tool Schema for Structured Output:**
+```typescript
+{
+  type: "function",
+  function: {
+    name: "extract_payment_plan",
+    description: "Extract structured payment plan from analyzed images",
+    parameters: {
+      type: "object",
+      properties: {
+        // Property Info (optional)
+        property: {
+          type: "object",
+          properties: {
+            developer: { type: "string" },
+            projectName: { type: "string" },
+            unitNumber: { type: "string" },
+            unitType: { type: "string", enum: ["studio", "1br", "2br", "3br", "4br", "penthouse", "townhouse", "villa"] },
+            unitSizeSqft: { type: "number" },
+            basePrice: { type: "number" }
+          }
+        },
+        // Payment Structure
+        paymentStructure: {
+          type: "object",
+          properties: {
+            paymentSplit: { type: "string", description: "e.g., '40/60', '50/50'" },
+            hasPostHandover: { type: "boolean" },
+            handoverQuarter: { type: "number", enum: [1, 2, 3, 4] },
+            handoverYear: { type: "number" }
+          }
+        },
+        // Installments
+        installments: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string", enum: ["time", "construction", "handover", "post-handover"] },
+              triggerValue: { type: "number", description: "Months or construction %" },
+              paymentPercent: { type: "number" },
+              label: { type: "string" },
+              confidence: { type: "number", description: "0-100 confidence score" }
+            }
+          }
+        },
+        // Confidence
+        overallConfidence: { type: "number" },
+        warnings: { type: "array", items: { type: "string" } }
+      },
+      required: ["installments", "overallConfidence"]
+    }
+  }
+}
+```
 
-## Testing Checklist
+### 2. New UI Components
 
-After implementation:
-- [ ] ROICalculator displays correctly in Tech Dark theme
-- [ ] ROICalculator displays correctly in Consultant (light) theme  
-- [ ] ROICalculator displays correctly in Consultant Dark theme
-- [ ] LandmarkInfoCard modal has proper contrast in all themes
-- [ ] Table text is readable on all theme backgrounds
-- [ ] Accent colors (lime, cyan) are consistent with theme
-- [ ] No yellow/broken color artifacts appear
+#### a) `PaymentPlanExtractor.tsx`
+**Location:** `src/components/roi/configurator/PaymentPlanExtractor.tsx`
+
+**Features:**
+- Reuse existing `FileUploadZone` component for multi-file upload
+- Booking date selector (today / existing / custom)
+- Processing state with animated AI indicator
+- Error handling with retry option
+
+#### b) `ExtractedDataPreview.tsx`
+**Location:** `src/components/roi/configurator/ExtractedDataPreview.tsx`
+
+**Features:**
+- Editable property info section
+- Payment structure configuration (split, post-handover toggle)
+- Sortable installment table with inline editing
+- Confidence indicators (✓ green, ⚠ yellow, ✗ red)
+- Running total validation (must equal 100%)
+- Add/remove installment rows
+
+#### c) Type Definitions
+**Location:** `src/lib/paymentPlanTypes.ts`
+
+```typescript
+export interface ExtractedPaymentPlan {
+  property?: {
+    developer?: string;
+    projectName?: string;
+    unitNumber?: string;
+    unitType?: string;
+    unitSizeSqft?: number;
+    basePrice?: number;
+  };
+  paymentStructure: {
+    paymentSplit?: string;
+    hasPostHandover: boolean;
+    handoverQuarter?: number;
+    handoverYear?: number;
+  };
+  installments: ExtractedInstallment[];
+  overallConfidence: number;
+  warnings: string[];
+}
+
+export interface ExtractedInstallment {
+  id: string;
+  type: 'time' | 'construction' | 'handover' | 'post-handover';
+  triggerValue: number;
+  paymentPercent: number;
+  label?: string;
+  confidence: number;
+  isPostHandover?: boolean;
+}
+```
+
+### 3. Integration Points
+
+#### a) PaymentSection.tsx Modifications
+- Add "✨ AI Import" button in header area
+- Open `PaymentPlanExtractor` as a Sheet/Modal on click
+- Handle extracted data callback to populate:
+  - `downpaymentPercent`
+  - `preHandoverPercent`
+  - `additionalPayments[]`
+  - `hasPostHandoverPlan`
+  - Date fields (if extracted)
+
+#### b) ConfiguratorLayout.tsx Modifications
+- Pass `setClientInfo` callback to PaymentSection for property auto-fill
+- Handle cross-section updates from AI extraction
+
+#### c) ClientSection.tsx / PropertySection.tsx
+- Accept optional pre-fill data from extraction
+- Auto-select developer/project if matched in database
+
+### 4. Files to Create
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/extract-payment-plan/index.ts` | AI extraction edge function |
+| `src/components/roi/configurator/PaymentPlanExtractor.tsx` | Upload + extraction UI |
+| `src/components/roi/configurator/ExtractedDataPreview.tsx` | Editable preview component |
+| `src/lib/paymentPlanTypes.ts` | Shared TypeScript types |
+
+### 5. Files to Modify
+
+| File | Changes |
+|------|---------|
+| `supabase/config.toml` | Add `extract-payment-plan` function config |
+| `src/components/roi/configurator/PaymentSection.tsx` | Add AI Import button, handle extraction callback |
+| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Pass callbacks for cross-section updates |
+
+## Edge Cases Handled
+
+| Scenario | Solution |
+|----------|----------|
+| Multiple pages | Combine all images in single AI request, AI treats as one document |
+| Monthly vs installment formats | AI detects format and converts to consistent `additionalPayments[]` |
+| No explicit dates shown | Use booking date option + handover defaults |
+| Arabic + English mixed | Gemini handles multilingual content |
+| Post-handover detection | Keywords + structural analysis (payments after handover date) |
+| Construction milestones | Converted to `type: 'construction'` with percentage trigger |
+| Partial data | Show warnings, let user fill gaps before applying |
+| Low confidence | Yellow/red indicators, require user confirmation |
+| Total ≠ 100% | Validation error, prevent apply until corrected |
+
+## Implementation Steps
+
+### Phase 1: Edge Function
+1. Create `extract-payment-plan` edge function
+2. Implement multi-image handling
+3. Configure AI prompt with tool calling
+4. Add error handling and logging
+5. Test with sample payment plan images
+
+### Phase 2: Core UI
+1. Create type definitions
+2. Build `PaymentPlanExtractor` component with file upload
+3. Build `ExtractedDataPreview` with editable table
+4. Integrate booking date selector
+
+### Phase 3: Integration
+1. Add AI Import button to PaymentSection
+2. Wire up extraction callback
+3. Implement cross-section updates (property info → ClientSection)
+4. Add success/error toasts
+
+### Phase 4: Polish
+1. Confidence score visualization
+2. Keyboard shortcuts
+3. Loading animations
+4. Mobile responsiveness
+
+## Security Considerations
+
+- Images processed via Lovable AI Gateway (secure, no external storage)
+- No image data persisted in database
+- Only extracted structured data saved with quote
+- User confirmation required before applying
+
+## Success Metrics
+
+- **Time saved**: 10+ minutes manual entry → < 30 seconds
+- **Accuracy**: 90%+ on well-formatted payment plans
+- **User adoption**: High usage in quote creation workflow
 
