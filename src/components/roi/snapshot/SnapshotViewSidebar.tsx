@@ -80,7 +80,7 @@ const SidebarContent = ({
       {/* Logo */}
       {showLogo && (
         <div className="p-4 border-b border-theme-border">
-          <AppLogo />
+          <AppLogo size="sm" linkTo={undefined} />
         </div>
       )}
 
@@ -255,7 +255,7 @@ export const SnapshotViewSidebar = (props: SnapshotViewSidebarProps) => {
       {/* Mobile Header - visible on small screens */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-theme-card border-b border-theme-border">
         <div className="flex items-center justify-between p-3 h-14">
-          <AppLogo />
+          <AppLogo size="sm" linkTo={undefined} />
           <div className="flex items-center gap-2">
             {/* Quick currency selector */}
             <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>

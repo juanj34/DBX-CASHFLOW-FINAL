@@ -31,6 +31,7 @@ import { useQuotesList } from "@/hooks/useCashflowQuote";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useProfile } from "@/hooks/useProfile";
 import { AdvisorInfo } from "@/components/roi/AdvisorInfo";
+import { AppLogo } from "@/components/AppLogo";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Currency, CURRENCY_CONFIG } from "@/components/roi/currencyUtils";
@@ -67,55 +68,6 @@ import {
   QuoteToAdd 
 } from "@/components/presentation";
 import { PresentationAnalyticsModal } from "@/components/presentation/PresentationAnalyticsModal";
-
-// App Logo Component (matching DashboardSidebar)
-const AppLogo = ({ collapsed }: { collapsed: boolean }) => (
-  <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2")}>
-    <div className="relative flex-shrink-0">
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-purple-500 to-[#CCFF00] p-[2px]">
-        <div className="w-full h-full rounded-lg bg-theme-card flex items-center justify-center">
-          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-            <path 
-              d="M12 2L2 7L12 12L22 7L12 2Z" 
-              stroke="url(#presentation-logo-gradient)" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-            <path 
-              d="M2 17L12 22L22 17" 
-              stroke="url(#presentation-logo-gradient)" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-            <path 
-              d="M2 12L12 17L22 12" 
-              stroke="url(#presentation-logo-gradient)" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-            <defs>
-              <linearGradient id="presentation-logo-gradient" x1="2" y1="2" x2="22" y2="22">
-                <stop stopColor="#00EAFF" />
-                <stop offset="0.5" stopColor="#A855F7" />
-                <stop offset="1" stopColor="#CCFF00" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-      </div>
-    </div>
-    {!collapsed && (
-      <span className="text-sm font-bold tracking-tight">
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-[#CCFF00]">Dubai</span>
-        <span className="text-theme-text">Invest</span>
-        <span className="text-[#CCFF00]">Pro</span>
-      </span>
-    )}
-  </div>
-);
 
 // Section Header Component for sidebar sections
 const SidebarSectionHeader = ({ label, collapsed }: { label: string; collapsed: boolean }) => {
@@ -624,7 +576,7 @@ const PresentationBuilder = () => {
             "h-14 border-b border-theme-border flex items-center px-3 flex-shrink-0",
             sidebarCollapsed ? "justify-center" : "justify-between"
           )}>
-            <AppLogo collapsed={sidebarCollapsed} />
+            <AppLogo size="sm" collapsed={sidebarCollapsed} linkTo="/home" />
             {!sidebarCollapsed && (
               <Button
                 variant="ghost"
