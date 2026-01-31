@@ -415,7 +415,8 @@ export const CompactPaymentTable = ({
                   const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
                   
                   // Check for handover indicators - highlight payments in handover quarter
-                  const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
+                  // BUT NOT for post-handover plans, which have an explicit handover section
+                  const isHandoverQuarter = !hasPostHandoverPlan && payment.type === 'time' && isPaymentInHandoverQuarter(
                     payment.triggerValue,
                     bookingMonth,
                     bookingYear,
