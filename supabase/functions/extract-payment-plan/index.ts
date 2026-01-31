@@ -148,8 +148,7 @@ const extractionTool = {
               type: "number",
               description: "Total percentage due after handover (if post-handover plan exists)"
             }
-          },
-          required: ["hasPostHandover"]
+          }
         },
         installments: {
           type: "array",
