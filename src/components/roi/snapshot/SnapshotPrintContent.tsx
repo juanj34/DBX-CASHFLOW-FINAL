@@ -148,7 +148,7 @@ export const SnapshotPrintContent = ({
               )}
               
               {/* All Exits Card */}
-              {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
+              {showExits && (
                 <CompactAllExitsCard
                   inputs={inputs}
                   calculations={calculations}
@@ -156,6 +156,17 @@ export const SnapshotPrintContent = ({
                   currency={currency}
                   rate={rate}
                   onClick={() => {}}
+                />
+              )}
+              
+              {/* Post-Handover Coverage Card */}
+              {showPostHandover && (
+                <CompactPostHandoverCard
+                  inputs={inputs}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
                 />
               )}
               

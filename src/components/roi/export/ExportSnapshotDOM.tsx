@@ -71,6 +71,18 @@ export const ExportSnapshotDOM = ({
   // Get hero image URL
   const heroImageUrl = quoteImages?.heroImageUrl || quoteImages?.buildingRenderUrl || null;
 
+  // Check if long payment plan (>12 payments) - matches SnapshotContent logic
+  const isLongPaymentPlan = (inputs.additionalPayments || []).length > 12;
+
+  // Check visibility conditions for cards
+  const showRent = inputs.rentalYieldPercent > 0;
+  const showExits = inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0;
+  const showPostHandover = inputs.hasPostHandoverPlan;
+  const showMortgage = mortgageInputs.enabled;
+
+  // Count visible cards for dynamic grid
+  const visibleCardCount = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
+
   return (
     <div 
       style={{
@@ -106,70 +118,136 @@ export const ExportSnapshotDOM = ({
         />
       </div>
 
-      {/* Main Content - 2 Column Layout (matches SnapshotContent grid) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-        {/* Left Column: Payment (with Value Differentiators) */}
-        <div>
-          <ExportPaymentTable
-            inputs={inputs}
-            clientInfo={clientInfo}
-            valueDifferentiators={valueDifferentiators}
-            appreciationBonus={appreciationBonus}
-            currency={currency}
-            rate={rate}
-            totalMonths={calculations.totalMonths}
-            language={language}
-          />
+      {/* Main Content - Adaptive Layout based on payment plan length */}
+      {isLongPaymentPlan ? (
+        /* STACKED LAYOUT for long payment plans (>12 payments) */
+        <div style={{ marginBottom: '16px' }}>
+          {/* Payment Table - Full Width */}
+          <div style={{ marginBottom: '16px' }}>
+            <ExportPaymentTable
+              inputs={inputs}
+              clientInfo={clientInfo}
+              valueDifferentiators={valueDifferentiators}
+              appreciationBonus={appreciationBonus}
+              currency={currency}
+              rate={rate}
+              totalMonths={calculations.totalMonths}
+              language={language}
+            />
+          </div>
+          
+          {/* Insight Cards - Dynamic grid based on visible cards */}
+          {visibleCardCount > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleCardCount}, 1fr)`, gap: '12px' }}>
+              {showRent && (
+                <ExportRentCard
+                  inputs={inputs}
+                  currency={currency}
+                  rate={rate}
+                  language={language}
+                />
+              )}
+              
+              {showExits && (
+                <ExportExitCards
+                  inputs={inputs}
+                  calculations={calculations}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                  language={language}
+                />
+              )}
+              
+              {showPostHandover && (
+                <ExportPostHandoverCard
+                  inputs={inputs}
+                  monthlyRent={monthlyRent}
+                  currency={currency}
+                  rate={rate}
+                  language={language}
+                />
+              )}
+              
+              {showMortgage && (
+                <ExportMortgageCard
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  monthlyRent={monthlyRent}
+                  currency={currency}
+                  rate={rate}
+                  language={language}
+                />
+              )}
+            </div>
+          )}
         </div>
+      ) : (
+        /* ORIGINAL 2-COLUMN LAYOUT for short payment plans */
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          {/* Left Column: Payment (with Value Differentiators) */}
+          <div>
+            <ExportPaymentTable
+              inputs={inputs}
+              clientInfo={clientInfo}
+              valueDifferentiators={valueDifferentiators}
+              appreciationBonus={appreciationBonus}
+              currency={currency}
+              rate={rate}
+              totalMonths={calculations.totalMonths}
+              language={language}
+            />
+          </div>
 
-        {/* Right Column: Rent + Exits + Post-Handover + Mortgage */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Rent Card - only show if rentalYieldPercent > 0 */}
-          {inputs.rentalYieldPercent > 0 && (
-            <ExportRentCard
-              inputs={inputs}
-              currency={currency}
-              rate={rate}
-              language={language}
-            />
-          )}
-          
-          {/* Exit Scenarios - only show if enabled AND we have valid data */}
-          {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0 && (
-            <ExportExitCards
-              inputs={inputs}
-              calculations={calculations}
-              exitScenarios={exitScenarios}
-              currency={currency}
-              rate={rate}
-              language={language}
-            />
-          )}
-          
-          {/* Post-Handover Coverage Card - only show if hasPostHandoverPlan */}
-          {inputs.hasPostHandoverPlan && (
-            <ExportPostHandoverCard
-              inputs={inputs}
-              monthlyRent={monthlyRent}
-              currency={currency}
-              rate={rate}
-              language={language}
-            />
-          )}
-          
-          {/* Mortgage Card - only show if enabled */}
-          {mortgageInputs.enabled && (
-            <ExportMortgageCard
-              mortgageInputs={mortgageInputs}
-              mortgageAnalysis={mortgageAnalysis}
-              monthlyRent={monthlyRent}
-              currency={currency}
-              rate={rate}
-              language={language}
-            />
-          )}
+          {/* Right Column: Rent + Exits + Post-Handover + Mortgage */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Rent Card - only show if rentalYieldPercent > 0 */}
+            {showRent && (
+              <ExportRentCard
+                inputs={inputs}
+                currency={currency}
+                rate={rate}
+                language={language}
+              />
+            )}
+            
+            {/* Exit Scenarios - only show if enabled AND we have valid data */}
+            {showExits && (
+              <ExportExitCards
+                inputs={inputs}
+                calculations={calculations}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+                language={language}
+              />
+            )}
+            
+            {/* Post-Handover Coverage Card - only show if hasPostHandoverPlan */}
+            {showPostHandover && (
+              <ExportPostHandoverCard
+                inputs={inputs}
+                monthlyRent={monthlyRent}
+                currency={currency}
+                rate={rate}
+                language={language}
+              />
+            )}
+            
+            {/* Mortgage Card - only show if enabled */}
+            {showMortgage && (
+              <ExportMortgageCard
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                monthlyRent={monthlyRent}
+                currency={currency}
+                rate={rate}
+                language={language}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Wealth Projection Timeline - Full Width (matches WealthProjectionTimeline) */}
       <ExportWealthTimeline
