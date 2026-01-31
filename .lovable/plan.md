@@ -1,94 +1,55 @@
 
+# Fix: Remove Redundant Handover Badges for Post-Handover Plans
 
-# Fix Currency & Language Button Visibility in Light Themes
+## Verified Compatibility with AI Extraction
 
-## Problem
+The fix **works correctly** with AI extraction because:
 
-The currency (AED) and language (EN) dropdown buttons in the Snapshot View hero card use hardcoded `text-white` styling. This works when there's a background image (because of the dark gradient overlay), but becomes invisible when:
-1. No background image is set
-2. The fallback gradient uses light theme colors (Consultant theme)
+1. **AI sets `hasPostHandoverPlan: true`** when extracting post-handover plans (line 348 of PaymentSection.tsx)
+2. **AI preserves `isHandover: true`** on the completion payment (line 337)
+3. When `hasPostHandoverPlan` is true, the separate "ON HANDOVER" section is rendered to explicitly mark the handover
 
-**Current styling:**
-```tsx
-<SelectTrigger className="... bg-white/10 border-white/20 text-white ...">
+## Current Problem
+
+In `CompactPaymentTable.tsx`, lines 417-424 show "🔑 Handover" badges on ALL payments within the handover quarter:
+
+```typescript
+const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
+  payment.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear
+);
 ```
 
-On the Consultant theme without a background image:
-- Background: Light gray gradient (`from-theme-card` = white)
-- Text: White (`text-white`)
-- **Result: Invisible buttons**
-
----
+This creates confusion when there's ALSO an explicit "ON HANDOVER" section in post-handover plans.
 
 ## Solution
 
-Make the select triggers **theme-aware** by checking if there's a background image:
-- **With background image**: Keep white styling (readable over dark overlay)
-- **Without background image**: Use theme-aware colors
+Add a check for `!hasPostHandoverPlan` so the quarter-based handover indicators only apply to **standard plans** (where the entire handover quarter represents the completion window).
 
----
+### File: `src/components/roi/snapshot/CompactPaymentTable.tsx`
 
-## Implementation
-
-**File: `src/components/roi/PropertyHeroCard.tsx`**
-
-### Change 1: Add helper variable (around line 174)
+**Change at lines 417-424:**
 
 ```typescript
-const backgroundImage = project?.hero_image_url || heroImageUrl || buildingRenderUrl;
-const hasBackgroundImage = !!backgroundImage; // NEW: boolean for conditional styling
+// Check for handover indicators - highlight payments in handover quarter
+// BUT NOT for post-handover plans, which have an explicit handover section
+const isHandoverQuarter = !hasPostHandoverPlan && payment.type === 'time' && isPaymentInHandoverQuarter(
+  payment.triggerValue,
+  bookingMonth,
+  bookingYear,
+  handoverQuarter,
+  handoverYear
+);
 ```
-
-### Change 2: Update Currency SelectTrigger (lines 235-243)
-
-From:
-```tsx
-<SelectTrigger className="w-[90px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
-```
-
-To:
-```tsx
-<SelectTrigger className={cn(
-  "w-[90px] h-7 text-xs",
-  hasBackgroundImage 
-    ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
-    : "bg-theme-bg-alt hover:bg-theme-card-alt border-theme-border text-theme-text"
-)}>
-```
-
-### Change 3: Update Language SelectTrigger (lines 256-258)
-
-From:
-```tsx
-<SelectTrigger className="w-[65px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
-```
-
-To:
-```tsx
-<SelectTrigger className={cn(
-  "w-[65px] h-7 text-xs",
-  hasBackgroundImage 
-    ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
-    : "bg-theme-bg-alt hover:bg-theme-card-alt border-theme-border text-theme-text"
-)}>
-```
-
----
 
 ## Result
 
-| Scenario | Currency/Language Buttons |
-|----------|---------------------------|
-| With hero image (any theme) | White text on semi-transparent background |
-| Without hero image (Tech Dark) | Theme text on dark card background |
-| Without hero image (Consultant) | Dark text on light card background ✓ |
-| Without hero image (Dark Consultant) | Light text on charcoal background |
+| Scenario | Behavior |
+|----------|----------|
+| **Standard plan** (no post-handover) | Shows 🔑 Handover badges on all payments in handover quarter (unchanged) |
+| **Post-handover plan** (from AI or manual) | No badges on regular installments; uses explicit "ON HANDOVER" section only |
 
----
-
-## Files Modified
+## Summary
 
 | File | Change |
 |------|--------|
-| `src/components/roi/PropertyHeroCard.tsx` | Add `hasBackgroundImage` variable and use `cn()` for conditional styling on both SelectTrigger components |
-
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add `!hasPostHandoverPlan &&` condition to `isHandoverQuarter` check |
