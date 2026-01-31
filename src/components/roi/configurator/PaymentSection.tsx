@@ -241,57 +241,74 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
   // Handle AI extraction result - comprehensive mapping to configurator state
   const handleAIExtraction = (data: ExtractedPaymentPlan) => {
-    // Find downpayment (month 0 or "On Booking")
+    // === STEP 1: Calculate handover Q/Y from handoverMonthFromBooking ===
+    let handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
+    let handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
+    
+    if (data.paymentStructure.handoverMonthFromBooking) {
+      const handoverMonths = data.paymentStructure.handoverMonthFromBooking;
+      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      const handoverDate = new Date(bookingDate);
+      handoverDate.setMonth(handoverDate.getMonth() + handoverMonths);
+      
+      handoverYear = handoverDate.getFullYear();
+      handoverQuarter = (Math.floor(handoverDate.getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+    }
+    
+    // === STEP 2: Find special installments ===
+    // Downpayment (month 0)
     const downpayment = data.installments.find(
       i => i.type === 'time' && i.triggerValue === 0
     );
     const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
     
-    // Categorize installments by pre/post handover
-    const preHandoverInstallments = data.installments.filter(i => 
-      i.type !== 'post-handover' && i.type !== 'handover'
-    );
+    // Explicit handover payment
+    const handoverPayment = data.installments.find(i => i.type === 'handover');
+    const onHandoverPercent = handoverPayment?.paymentPercent || 0;
+    
+    // === STEP 3: Calculate totals for validation ===
     const postHandoverInstallments = data.installments.filter(i => 
       i.type === 'post-handover'
     );
-    
-    // Calculate totals
-    const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
     const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
     
-    // Determine pre-handover percent from split or calculation
-    let preHandoverPercent = preHandoverTotal;
+    // === STEP 4: Determine pre-handover percent from split ===
+    let preHandoverPercent = inputs.preHandoverPercent;
     if (data.paymentStructure.paymentSplit) {
       const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
       if (!isNaN(pre)) preHandoverPercent = pre;
     }
     
-    // Convert installments to PaymentMilestone format
-    // EXCLUDE: downpayment (month 0) and explicit handover markers
+    // === STEP 5: Convert ALL installments to configurator format ===
+    // Keep construction type as-is, convert post-handover to time (configurator derives from date)
     const additionalPayments = data.installments
       .filter(i => {
         if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
-        if (i.type === 'handover') return false; // Skip handover markers
+        if (i.type === 'handover') return false; // Skip explicit handover marker
         return true;
       })
       .map((inst, idx) => ({
         id: inst.id || `ai-${Date.now()}-${idx}`,
-        type: inst.type === 'post-handover' ? 'time' as const : inst.type as 'time' | 'construction',
-        triggerValue: inst.triggerValue,
+        // KEEP construction type, convert post-handover to time
+        type: inst.type === 'construction' 
+          ? 'construction' as const 
+          : 'time' as const,
+        triggerValue: inst.triggerValue, // Already absolute from AI
         paymentPercent: inst.paymentPercent,
-      }));
+      }))
+      .sort((a, b) => a.triggerValue - b.triggerValue);
     
-    // Update inputs with proper structure
+    // === STEP 6: Update inputs with complete structure ===
     setInputs(prev => ({
       ...prev,
       downpaymentPercent,
       preHandoverPercent,
+      onHandoverPercent,
       additionalPayments,
       hasPostHandoverPlan: data.paymentStructure.hasPostHandover || postHandoverTotal > 0,
       postHandoverPercent: postHandoverTotal || data.paymentStructure.postHandoverPercent || 0,
-      // Update handover dates if extracted
-      ...(data.paymentStructure.handoverQuarter && { handoverQuarter: data.paymentStructure.handoverQuarter }),
-      ...(data.paymentStructure.handoverYear && { handoverYear: data.paymentStructure.handoverYear }),
+      handoverQuarter,
+      handoverYear,
       // Update property price if extracted
       ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
     }));

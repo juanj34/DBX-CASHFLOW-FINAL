@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CreditCard, ArrowRight, Users, Sparkles, Key, Wallet } from 'lucide-react';
+import { CreditCard, ArrowRight, Users, Sparkles, Key, Wallet, Info } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { ClientUnitData } from '../ClientUnitInfo';
 import { Currency, formatDualCurrency } from '../currencyUtils';
@@ -8,6 +8,7 @@ import { DottedRow } from './DottedRow';
 import { PaymentSplitModal } from './PaymentSplitModal';
 import { PaymentSelectionBar } from './PaymentSelectionBar';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { cn } from '@/lib/utils';
 
@@ -235,13 +236,19 @@ export const CompactPaymentTable = ({
     return payment.label || 'Payment';
   };
   
+  // Check if payment is construction-based (needs S-curve disclaimer)
+  const isConstructionPayment = (payment: PaymentMilestone): boolean => {
+    return payment.type === 'construction';
+  };
+  
   const getPaymentDate = (payment: PaymentMilestone): string => {
     if (payment.type === 'time') {
       return estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language);
     }
     if (payment.type === 'construction') {
+      // S-curve estimation for construction milestones
       const monthsForPercent = Math.round((payment.triggerValue / 100) * totalMonths);
-      return estimateDateFromMonths(monthsForPercent, bookingMonth, bookingYear, language);
+      return `~${estimateDateFromMonths(monthsForPercent, bookingMonth, bookingYear, language)}`;
     }
     return '';
   };
@@ -424,7 +431,19 @@ export const CompactPaymentTable = ({
                       >
                         <div className="flex items-center gap-1 min-w-0 flex-1">
                           <span className="text-xs text-theme-text-muted truncate">{payment.paymentPercent}% · {labelWithDate}</span>
-                      {isHandoverQuarter && (
+                          {isConstructionPayment(payment) && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="w-3 h-3 text-orange-400/70 shrink-0 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[200px]">
+                                  <p className="text-xs">Estimated date based on typical Dubai construction S-curve. Actual timing may vary.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {isHandoverQuarter && (
                             <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                               <Key className="w-2.5 h-2.5" />
                               {t('handoverBadge')}

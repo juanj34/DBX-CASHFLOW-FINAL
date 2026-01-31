@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
-import { CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, ArrowLeft, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ExtractedPaymentPlan, ExtractedInstallment } from "@/lib/paymentPlanTypes";
 
@@ -28,10 +29,10 @@ const UNIT_TYPES = [
 ];
 
 const INSTALLMENT_TYPES = [
-  { value: "time", label: "Month" },
-  { value: "construction", label: "Construction %" },
-  { value: "handover", label: "Handover" },
-  { value: "post-handover", label: "Post-Handover" },
+  { value: "time", label: "Month #" },
+  { value: "construction", label: "% Built" },
+  { value: "handover", label: "Completion" },
+  { value: "post-handover", label: "Post-HO" },
 ];
 
 const ConfidenceIcon = ({ confidence }: { confidence: number }) => {
@@ -42,6 +43,35 @@ const ConfidenceIcon = ({ confidence }: { confidence: number }) => {
   } else {
     return <XCircle className="w-4 h-4 text-red-500" />;
   }
+};
+
+// Helper to display trigger value context
+const TriggerValueLabel = ({ 
+  inst, 
+  handoverMonth 
+}: { 
+  inst: ExtractedInstallment; 
+  handoverMonth?: number;
+}) => {
+  if (inst.type === 'construction') {
+    return (
+      <span className="text-[9px] text-orange-400">@{inst.triggerValue}% built</span>
+    );
+  }
+  if (inst.type === 'post-handover' && handoverMonth) {
+    const relativeMonths = inst.triggerValue - handoverMonth;
+    return (
+      <span className="text-[9px] text-purple-400">+{relativeMonths} after HO</span>
+    );
+  }
+  if (inst.type === 'handover') {
+    return (
+      <span className="text-[9px] text-green-400">On Completion</span>
+    );
+  }
+  return (
+    <span className="text-[9px] text-gray-400">M{inst.triggerValue}</span>
+  );
 };
 
 export const ExtractedDataPreview = ({
@@ -266,6 +296,31 @@ export const ExtractedDataPreview = ({
             <Label className="text-xs">Post-Handover Plan</Label>
           </div>
           <div>
+            <Label className="text-xs flex items-center gap-1">
+              Handover Month (from booking)
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[200px]">
+                    <p className="text-xs">Auto-detected from last pre-handover payment. Used to calculate handover Q/Y from booking date.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </Label>
+            <Input
+              type="number"
+              value={data.paymentStructure.handoverMonthFromBooking || ''}
+              onChange={(e) => updateStructure('handoverMonthFromBooking', parseInt(e.target.value) || undefined)}
+              placeholder="e.g., 26"
+              className="h-8 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Auto-calculated from last pre-HO payment
+            </p>
+          </div>
+          <div>
             <Label className="text-xs">Handover Quarter</Label>
             <Select
               value={data.paymentStructure.handoverQuarter?.toString() || ''}
@@ -324,7 +379,8 @@ export const ExtractedDataPreview = ({
                 className={cn(
                   "grid grid-cols-[auto_1fr_80px_70px_70px_auto] gap-2 p-2 items-center text-xs border-b last:border-b-0",
                   inst.type === 'handover' && "bg-green-500/10",
-                  inst.type === 'post-handover' && "bg-purple-500/10"
+                  inst.type === 'post-handover' && "bg-purple-500/10",
+                  inst.type === 'construction' && "bg-orange-500/10"
                 )}
               >
                 <div className="w-6 flex items-center gap-1">
@@ -347,13 +403,19 @@ export const ExtractedDataPreview = ({
                   </SelectContent>
                 </Select>
                 
-                <Input
-                  type="number"
-                  value={inst.triggerValue}
-                  onChange={(e) => updateInstallment(inst.id, 'triggerValue', parseFloat(e.target.value) || 0)}
-                  className="h-7 text-xs font-mono"
-                  disabled={inst.type === 'handover'}
-                />
+                <div className="space-y-0.5">
+                  <Input
+                    type="number"
+                    value={inst.triggerValue}
+                    onChange={(e) => updateInstallment(inst.id, 'triggerValue', parseFloat(e.target.value) || 0)}
+                    className="h-7 text-xs font-mono"
+                    disabled={inst.type === 'handover'}
+                  />
+                  <TriggerValueLabel 
+                    inst={inst} 
+                    handoverMonth={data.paymentStructure.handoverMonthFromBooking} 
+                  />
+                </div>
                 
                 <div className="flex items-center gap-0.5">
                   <Input
