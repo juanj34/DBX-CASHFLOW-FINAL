@@ -73,12 +73,12 @@ export const YearByYearWealthTable = ({
       offPlanValue: offPlanBasePrice,
       offPlanRent: 0,
       offPlanCumulativeRent: 0,
-      offPlanWealth: offPlanBasePrice - offPlanCapitalInvested, // Net Wealth
+      offPlanWealth: offPlanBasePrice, // Gross Wealth = Value + Rent (no capital subtraction)
       secondaryValue: secondaryPurchasePrice,
       secondaryRent: 0,
       secondaryCumulativeRent: 0,
-      secondaryWealth: secondaryPurchasePrice - secondaryCapitalInvested, // Net Wealth
-      delta: (offPlanBasePrice - offPlanCapitalInvested) - (secondaryPurchasePrice - secondaryCapitalInvested),
+      secondaryWealth: secondaryPurchasePrice, // Gross Wealth = Value + Rent (no capital subtraction)
+      delta: offPlanBasePrice - secondaryPurchasePrice,
       isHandover: false,
       isBeforeHandover: true,
       isPurchase: true, // New flag for styling
@@ -107,9 +107,9 @@ export const YearByYearWealthTable = ({
       const offPlanValue = opProj?.propertyValue || offPlanBasePrice;
       const secondaryValue = secProj?.propertyValue || secondaryPurchasePrice;
       
-      // Net Wealth = Property Value + Cumulative Net Rent - Initial Capital
-      const opWealth = offPlanValue + opCumulativeRent - offPlanCapitalInvested;
-      const secWealth = secondaryValue + secCumulativeRent - secondaryCapitalInvested;
+      // Gross Wealth (Total Assets) = Property Value + Cumulative Net Rent
+      const opWealth = offPlanValue + opCumulativeRent;
+      const secWealth = secondaryValue + secCumulativeRent;
       const delta = opWealth - secWealth;
       
       data.push({
@@ -138,12 +138,12 @@ export const YearByYearWealthTable = ({
   };
 
   const t = language === 'es' ? {
-    title: 'Progresión de Riqueza Año a Año',
-    tooltip: 'Riqueza = Valor de Propiedad + Rentas Netas Acumuladas - Inversión Inicial. Muestra la ganancia neta sobre el tiempo.',
+    title: 'Progresión de Activos Año a Año',
+    tooltip: 'Activos Totales = Valor de Propiedad + Rentas Netas Acumuladas. Muestra el valor total de tus activos en el tiempo.',
     year: 'Año',
     value: 'Valor',
     rent: 'Renta Acum.',
-    wealth: 'Riqueza',
+    wealth: 'Activos',
     delta: 'Delta',
     longTerm: 'Renta Larga',
     airbnb: 'Airbnb',
@@ -154,15 +154,14 @@ export const YearByYearWealthTable = ({
     noRent: '—',
     cumulativeRent: 'Renta Acumulada',
     propertyValue: 'Valor Propiedad',
-    initialInvestment: 'Inversión Inicial',
     purchase: 'Compra',
   } : {
-    title: 'Year-by-Year Wealth Progression',
-    tooltip: 'Wealth = Property Value + Cumulative Net Rent - Initial Investment. Shows net gain over time.',
+    title: 'Year-by-Year Asset Progression',
+    tooltip: 'Total Assets = Property Value + Cumulative Net Rent earned to date.',
     year: 'Year',
     value: 'Value',
     rent: 'Cumul. Rent',
-    wealth: 'Wealth',
+    wealth: 'Assets',
     delta: 'Delta',
     longTerm: 'Long-Term',
     airbnb: 'Airbnb',
@@ -173,7 +172,6 @@ export const YearByYearWealthTable = ({
     noRent: '—',
     cumulativeRent: 'Cumulative Rent',
     propertyValue: 'Property Value',
-    initialInvestment: 'Initial Investment',
     purchase: 'Purchase',
   };
 
@@ -237,10 +235,6 @@ export const YearByYearWealthTable = ({
                   ? <TrendingDown className="w-3 h-3 text-red-500" />
                   : <Minus className="w-3 h-3 text-theme-text-muted" />;
 
-                // Capital values for tooltip breakdown
-                const opCapital = offPlanCapitalInvested;
-                const secCapital = secondaryCapitalInvested;
-
                 return (
                   <TableRow 
                     key={row.year}
@@ -298,10 +292,6 @@ export const YearByYearWealthTable = ({
                               <span className="text-theme-text-muted">+ {t.cumulativeRent}:</span>
                               <span className="font-mono">{formatSmallValue(row.offPlanCumulativeRent)}</span>
                             </div>
-                            <div className="flex justify-between gap-4">
-                              <span className="text-theme-text-muted">− {t.initialInvestment}:</span>
-                              <span className="font-mono">{formatSmallValue(opCapital)}</span>
-                            </div>
                             <div className="border-t border-theme-border pt-1 flex justify-between gap-4 font-semibold">
                               <span>= {t.wealth}:</span>
                               <span className="font-mono">{formatSmallValue(row.offPlanWealth)}</span>
@@ -341,10 +331,6 @@ export const YearByYearWealthTable = ({
                             <div className="flex justify-between gap-4">
                               <span className="text-theme-text-muted">+ {t.cumulativeRent}:</span>
                               <span className="font-mono">{formatSmallValue(row.secondaryCumulativeRent)}</span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                              <span className="text-theme-text-muted">− {t.initialInvestment}:</span>
-                              <span className="font-mono">{formatSmallValue(secCapital)}</span>
                             </div>
                             <div className="border-t border-theme-border pt-1 flex justify-between gap-4 font-semibold">
                               <span>= {t.wealth}:</span>
