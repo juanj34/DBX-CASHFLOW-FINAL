@@ -117,22 +117,30 @@ export const OIGrowthCurve = ({
     return path;
   }, [basePrice, totalMonths, chartMaxMonth, inputs, xScale, yScale]);
 
-  // Calculate exit scenarios using the SAME function as SnapshotExitCards
+  // Calculate exit scenarios - FILTER OUT exits at handover month (they would overlap with Handover Value)
   const exitMarkersData = useMemo(() => {
-    return exitScenarios.map((month, index) => {
-      const scenario = calculateExitScenario(month, basePrice, totalMonths, inputs, totalEntryCosts);
-      return {
-        scenario,
-        exitMonth: month,
-        label: `Exit ${index + 1}`,
-      };
-    });
+    let exitNumber = 0;
+    return exitScenarios
+      .map((month) => {
+        // Skip exits exactly at handover month - those are shown as "Handover Value"
+        if (month === totalMonths) return null;
+        
+        exitNumber++;
+        const scenario = calculateExitScenario(month, basePrice, totalMonths, inputs, totalEntryCosts);
+        return {
+          scenario,
+          exitMonth: month,
+          label: `Exit ${exitNumber}`,
+          exitNumber,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [exitScenarios, basePrice, totalMonths, inputs, totalEntryCosts]);
 
-  // Handover calculation using the SAME function
-  const handoverScenario = useMemo(() => {
-    return calculateExitScenario(totalMonths, basePrice, totalMonths, inputs, totalEntryCosts);
-  }, [totalMonths, basePrice, inputs, totalEntryCosts]);
+  // Handover - just the property VALUE at completion (not an exit scenario)
+  const handoverPrice = useMemo(() => {
+    return calculateExitPrice(totalMonths, basePrice, totalMonths, inputs);
+  }, [totalMonths, basePrice, inputs]);
 
   // Construction progress markers for the timeline - only up to handover
   const constructionMarkers = useMemo(() => {
@@ -483,53 +491,42 @@ export const OIGrowthCurve = ({
             );
           })}
 
-          {/* Handover marker */}
+          {/* Handover Value marker - milestone, NOT an exit scenario */}
           <g style={{
             opacity: showMarkers ? 1 : 0,
             transition: 'opacity 0.3s ease-out 0.3s'
           }}>
-            {/* Handover label */}
+            {/* Handover label - now shows it's just the property value */}
             <text
               x={xScale(totalMonths)}
-              y={yScale(handoverScenario.exitPrice) - 30}
+              y={yScale(handoverPrice) - 24}
               fill="#ffffff"
               fontSize="9"
               fontWeight="bold"
               textAnchor="middle"
             >
-              Handover
+              🔑 Handover Value
             </text>
             
-            {/* Handover price */}
+            {/* Handover price - just the property value at completion */}
             <text
               x={xScale(totalMonths)}
-              y={yScale(handoverScenario.exitPrice) - 18}
+              y={yScale(handoverPrice) - 10}
               fill="#ffffff"
               fontSize="10"
               fontWeight="bold"
               textAnchor="middle"
               fontFamily="monospace"
             >
-              {formatCurrencyShort(handoverScenario.exitPrice, currency, rate)}
+              {formatCurrencyShort(handoverPrice, currency, rate)}
             </text>
 
-            {/* Handover ROE - now using annualizedROE */}
-            <text
-              x={xScale(totalMonths)}
-              y={yScale(handoverScenario.exitPrice) - 6}
-              fill="#22d3d1"
-              fontSize="8"
-              fontWeight="bold"
-              textAnchor="middle"
-              fontFamily="monospace"
-            >
-              {handoverScenario.annualizedROE.toFixed(0)}%/yr
-            </text>
+            {/* NO ROE shown - handover is a milestone, not an exit */}
             
             {/* Marker circles */}
             <circle
               cx={xScale(totalMonths)}
-              cy={yScale(handoverScenario.exitPrice)}
+              cy={yScale(handoverPrice)}
               r="8"
               fill="#0f172a"
               stroke="#ffffff"
@@ -537,7 +534,7 @@ export const OIGrowthCurve = ({
             />
             <circle
               cx={xScale(totalMonths)}
-              cy={yScale(handoverScenario.exitPrice)}
+              cy={yScale(handoverPrice)}
               r="4"
               fill="#ffffff"
             />
