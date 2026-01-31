@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus, Building2, X } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronsUpDown, Building2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,62 +16,44 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Developer {
-  id: string;
-  name: string;
-  logo_url: string | null;
-}
+import { DEVELOPERS, searchDevelopers } from "@/data/developers";
 
 interface DeveloperSelectProps {
-  value: string | null;
-  manualValue?: string;
-  onValueChange: (id: string | null, name: string) => void;
-  onManualMode: () => void;
+  value: string;
+  onValueChange: (name: string) => void;
   className?: string;
 }
 
 export const DeveloperSelect = ({
   value,
-  manualValue,
   onValueChange,
-  onManualMode,
   className,
 }: DeveloperSelectProps) => {
   const [open, setOpen] = useState(false);
-  const [developers, setDevelopers] = useState<Developer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState('');
 
-  useEffect(() => {
-    const fetchDevelopers = async () => {
-      const { data, error } = await supabase
-        .from('developers')
-        .select('id, name, logo_url')
-        .order('name');
-      
-      if (!error && data) {
-        setDevelopers(data);
-      }
-      setLoading(false);
-    };
-    
-    fetchDevelopers();
-  }, []);
-
-  const selectedDeveloper = developers.find(d => d.id === value);
-  const displayValue = selectedDeveloper?.name || manualValue || "";
-  const isManualEntry = !value && !!manualValue;
+  // Filter developers based on search
+  const filteredDevelopers = searchDevelopers(searchValue);
   
-  // Check if there's a matching developer for the current search
-  const hasExactMatch = developers.some(d => 
-    d.name.toLowerCase() === searchValue.toLowerCase()
+  // Check if there's an exact match for custom entry detection
+  const hasExactMatch = DEVELOPERS.some(d => 
+    d.toLowerCase() === searchValue.toLowerCase()
   );
   
-  const handleCreateNew = () => {
+  // Check if current value is a custom entry (not in the list)
+  const isCustomValue = value && !DEVELOPERS.some(d => 
+    d.toLowerCase() === value.toLowerCase()
+  );
+  
+  const handleSelect = (name: string) => {
+    onValueChange(name);
+    setOpen(false);
+    setSearchValue('');
+  };
+  
+  const handleCreateCustom = () => {
     if (searchValue.trim()) {
-      onValueChange(null, searchValue.trim());
+      onValueChange(searchValue.trim());
       setOpen(false);
       setSearchValue('');
     }
@@ -79,7 +61,7 @@ export const DeveloperSelect = ({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onValueChange(null, '');
+    onValueChange('');
   };
 
   return (
@@ -92,27 +74,19 @@ export const DeveloperSelect = ({
             aria-expanded={open}
             className={cn(
               "w-full justify-between bg-theme-bg border-theme-border text-theme-text hover:bg-theme-card hover:text-theme-text",
-              !displayValue && "text-theme-text-muted",
-              isManualEntry && "border-theme-accent/30",
+              !value && "text-theme-text-muted",
+              isCustomValue && "border-theme-accent/30",
               className
             )}
           >
             <div className="flex items-center gap-2 truncate">
-              {selectedDeveloper?.logo_url ? (
-                <img 
-                  src={selectedDeveloper.logo_url} 
-                  alt="" 
-                  className="w-5 h-5 rounded object-cover"
-                />
-              ) : (
-                <Building2 className="w-4 h-4 text-theme-text-muted" />
-              )}
+              <Building2 className="w-4 h-4 text-theme-text-muted flex-shrink-0" />
               <span className="truncate">
-                {displayValue || "Select developer..."}
+                {value || "Select developer..."}
               </span>
-              {isManualEntry && (
-                <span className="text-[10px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
-                  Manual
+              {isCustomValue && (
+                <span className="text-[10px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded flex-shrink-0">
+                  Custom
                 </span>
               )}
             </div>
@@ -122,75 +96,60 @@ export const DeveloperSelect = ({
         <PopoverContent className="w-[300px] p-0 bg-theme-card border-theme-border">
           <Command className="bg-transparent">
             <CommandInput 
-              placeholder="Search or type new..." 
+              placeholder="Search or type custom..." 
               className="text-theme-text" 
               value={searchValue}
               onValueChange={setSearchValue}
             />
             <CommandList>
               <CommandEmpty className="text-theme-text-muted py-3 text-center">
-                {loading ? "Loading..." : (
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-sm">No developer found</span>
-                    {searchValue.trim() && (
-                      <Button 
-                        size="sm" 
-                        onClick={handleCreateNew}
-                        className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Create "{searchValue}"
-                      </Button>
-                    )}
-                  </div>
-                )}
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-sm">No developer found</span>
+                  {searchValue.trim() && (
+                    <Button 
+                      size="sm" 
+                      onClick={handleCreateCustom}
+                      className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
+                    >
+                      Use "{searchValue}"
+                    </Button>
+                  )}
+                </div>
               </CommandEmpty>
-              <CommandGroup>
-                {developers.map((developer) => (
+              <CommandGroup heading={`${filteredDevelopers.length} developers`}>
+                {filteredDevelopers.slice(0, 50).map((developer) => (
                   <CommandItem
-                    key={developer.id}
-                    value={developer.name}
-                    onSelect={() => {
-                      onValueChange(developer.id, developer.name);
-                      setOpen(false);
-                      setSearchValue('');
-                    }}
+                    key={developer}
+                    value={developer}
+                    onSelect={() => handleSelect(developer)}
                     className="text-theme-text hover:bg-theme-border cursor-pointer"
                   >
                     <div className="flex items-center gap-2 flex-1">
-                      {developer.logo_url ? (
-                        <img 
-                          src={developer.logo_url} 
-                          alt="" 
-                          className="w-6 h-6 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded bg-theme-border flex items-center justify-center">
-                          <Building2 className="w-3 h-3 text-theme-text-muted" />
-                        </div>
-                      )}
-                      <span>{developer.name}</span>
+                      <div className="w-6 h-6 rounded bg-theme-border flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-3 h-3 text-theme-text-muted" />
+                      </div>
+                      <span>{developer}</span>
                     </div>
                     <Check
                       className={cn(
                         "ml-auto h-4 w-4",
-                        value === developer.id ? "opacity-100 text-theme-accent" : "opacity-0"
+                        value === developer ? "opacity-100 text-theme-accent" : "opacity-0"
                       )}
                     />
                   </CommandItem>
                 ))}
               </CommandGroup>
-              {/* Show create option when typing something not in list */}
+              {/* Show custom entry option when typing something not in list */}
               {searchValue.trim() && !hasExactMatch && (
                 <>
                   <CommandSeparator className="bg-theme-border" />
                   <CommandGroup>
                     <CommandItem
-                      onSelect={handleCreateNew}
+                      onSelect={handleCreateCustom}
                       className="text-theme-accent hover:bg-theme-border cursor-pointer"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create "{searchValue}"
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Use "{searchValue}" as custom developer
                     </CommandItem>
                   </CommandGroup>
                 </>
@@ -200,8 +159,8 @@ export const DeveloperSelect = ({
         </PopoverContent>
       </Popover>
       
-      {/* Clear button for manual entries or selected values */}
-      {displayValue && (
+      {/* Clear button */}
+      {value && (
         <Button
           variant="ghost"
           size="icon"

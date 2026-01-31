@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus, Building2, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Check, ChevronsUpDown, Building2, X, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,84 +16,48 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Project {
-  id: string;
-  name: string | null;
-  developer_id: string | null;
-  logo_url: string | null;
-  zone_id: string | null;
-  delivery_date: string | null;
-  zones?: { name: string } | null;
-}
+import { useRecentProjects, RecentProject } from "@/hooks/useRecentProjects";
 
 interface ProjectSelectProps {
-  value: string | null;
-  developerId: string | null;
-  manualValue?: string;
-  onValueChange: (id: string | null, project: Project | null) => void;
-  onManualMode: () => void;
+  value: string;
+  developer?: string;
+  onValueChange: (name: string) => void;
   className?: string;
 }
 
 export const ProjectSelect = ({
   value,
-  developerId,
-  manualValue,
+  developer,
   onValueChange,
-  onManualMode,
   className,
 }: ProjectSelectProps) => {
   const [open, setOpen] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState('');
+  const { recents, getRecents } = useRecentProjects();
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      let query = supabase
-        .from('projects')
-        .select('id, name, developer_id, logo_url, zone_id, delivery_date, zones(name)')
-        .order('name');
-      
-      if (developerId) {
-        query = query.eq('developer_id', developerId);
-      }
-      
-      const { data, error } = await query;
-      
-      if (!error && data) {
-        setProjects(data as unknown as Project[]);
-      }
-      setLoading(false);
-    };
+  // Get recent projects, optionally filtered by current developer
+  const filteredRecents = useMemo(() => {
+    const all = getRecents();
+    if (!searchValue.trim()) return all;
     
-    fetchProjects();
-  }, [developerId]);
+    const lowerSearch = searchValue.toLowerCase();
+    return all.filter(p => p.name.toLowerCase().includes(lowerSearch));
+  }, [getRecents, searchValue]);
 
-  const selectedProject = projects.find(p => p.id === value);
-  const displayValue = selectedProject?.name || manualValue || "";
-  const isManualEntry = !value && !!manualValue;
-  
-  // Check if there's a matching project for the current search
-  const hasExactMatch = projects.some(p => 
-    p.name?.toLowerCase() === searchValue.toLowerCase()
+  // Check if current search matches any recent
+  const hasMatch = filteredRecents.some(p => 
+    p.name.toLowerCase() === searchValue.toLowerCase()
   );
   
-  const handleCreateNew = () => {
+  const handleSelect = (name: string) => {
+    onValueChange(name);
+    setOpen(false);
+    setSearchValue('');
+  };
+  
+  const handleUseCustom = () => {
     if (searchValue.trim()) {
-      // Create a minimal project object for manual entry
-      const manualProject: Project = {
-        id: '',
-        name: searchValue.trim(),
-        developer_id: developerId,
-        logo_url: null,
-        zone_id: null,
-        delivery_date: null,
-      };
-      onValueChange(null, manualProject);
+      onValueChange(searchValue.trim());
       setOpen(false);
       setSearchValue('');
     }
@@ -101,7 +65,7 @@ export const ProjectSelect = ({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onValueChange(null, null);
+    onValueChange('');
   };
 
   return (
@@ -114,29 +78,15 @@ export const ProjectSelect = ({
             aria-expanded={open}
             className={cn(
               "w-full justify-between bg-theme-bg border-theme-border text-theme-text hover:bg-theme-card hover:text-theme-text",
-              !displayValue && "text-theme-text-muted",
-              isManualEntry && "border-theme-accent/30",
+              !value && "text-theme-text-muted",
               className
             )}
           >
             <div className="flex items-center gap-2 truncate">
-              {selectedProject?.logo_url ? (
-                <img 
-                  src={selectedProject.logo_url} 
-                  alt="" 
-                  className="w-5 h-5 rounded object-cover"
-                />
-              ) : (
-                <Building2 className="w-4 h-4 text-theme-text-muted" />
-              )}
+              <Building2 className="w-4 h-4 text-theme-text-muted flex-shrink-0" />
               <span className="truncate">
-                {displayValue || "Select project..."}
+                {value || "Enter project name..."}
               </span>
-              {isManualEntry && (
-                <span className="text-[10px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
-                  Manual
-                </span>
-              )}
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -144,93 +94,77 @@ export const ProjectSelect = ({
         <PopoverContent className="w-[300px] p-0 bg-theme-card border-theme-border">
           <Command className="bg-transparent">
             <CommandInput 
-              placeholder="Search or type new..." 
+              placeholder="Type project name..." 
               className="text-theme-text" 
               value={searchValue}
               onValueChange={setSearchValue}
             />
             <CommandList>
-              <CommandEmpty className="text-theme-text-muted py-3 text-center">
-                {loading ? "Loading..." : (
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-sm">
-                      {developerId ? "No projects found for this developer" : "No projects found"}
-                    </span>
-                    {searchValue.trim() && (
-                      <Button 
-                        size="sm" 
-                        onClick={handleCreateNew}
-                        className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Create "{searchValue}"
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CommandEmpty>
-              <CommandGroup>
-                {projects.map((project) => (
+              {/* When typing, always show the option to use the typed value */}
+              {searchValue.trim() && (
+                <CommandGroup>
                   <CommandItem
-                    key={project.id}
-                    value={project.name || ''}
-                    onSelect={() => {
-                      onValueChange(project.id, project);
-                      setOpen(false);
-                      setSearchValue('');
-                    }}
-                    className="text-theme-text hover:bg-theme-border cursor-pointer"
+                    onSelect={handleUseCustom}
+                    className="text-theme-accent hover:bg-theme-border cursor-pointer"
                   >
-                    <div className="flex items-center gap-2 flex-1">
-                      {project.logo_url ? (
-                        <img 
-                          src={project.logo_url} 
-                          alt="" 
-                          className="w-6 h-6 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded bg-theme-border flex items-center justify-center">
-                          <Building2 className="w-3 h-3 text-theme-text-muted" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span>{project.name}</span>
-                        {project.zones?.name && (
-                          <span className="text-xs text-theme-text-muted">{project.zones.name}</span>
-                        )}
-                      </div>
-                    </div>
-                    <Check
-                      className={cn(
-                        "ml-auto h-4 w-4",
-                        value === project.id ? "opacity-100 text-theme-accent" : "opacity-0"
-                      )}
-                    />
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Use "{searchValue}"
                   </CommandItem>
-                ))}
-              </CommandGroup>
-              {/* Show create option when typing something not in list */}
-              {searchValue.trim() && !hasExactMatch && (
+                </CommandGroup>
+              )}
+              
+              {/* Recent projects */}
+              {filteredRecents.length > 0 && (
                 <>
-                  <CommandSeparator className="bg-theme-border" />
-                  <CommandGroup>
-                    <CommandItem
-                      onSelect={handleCreateNew}
-                      className="text-theme-accent hover:bg-theme-border cursor-pointer"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create "{searchValue}"
-                    </CommandItem>
+                  {searchValue.trim() && <CommandSeparator className="bg-theme-border" />}
+                  <CommandGroup heading="Recent Projects">
+                    {filteredRecents.map((project: RecentProject) => (
+                      <CommandItem
+                        key={`${project.name}-${project.developer}`}
+                        value={project.name}
+                        onSelect={() => handleSelect(project.name)}
+                        className="text-theme-text hover:bg-theme-border cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Clock className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="truncate">{project.name}</span>
+                            {project.developer && (
+                              <span className="text-xs text-theme-text-muted truncate">
+                                {project.developer}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4 flex-shrink-0",
+                            value === project.name ? "opacity-100 text-theme-accent" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
                   </CommandGroup>
                 </>
+              )}
+              
+              {/* Empty state when no recents and no search */}
+              {!searchValue.trim() && filteredRecents.length === 0 && (
+                <CommandEmpty className="text-theme-text-muted py-4 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Building2 className="w-8 h-8 opacity-30" />
+                    <span className="text-sm">Type a project name</span>
+                    <span className="text-xs opacity-60">Your recent projects will appear here</span>
+                  </div>
+                </CommandEmpty>
               )}
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
       
-      {/* Clear button for manual entries or selected values */}
-      {displayValue && (
+      {/* Clear button */}
+      {value && (
         <Button
           variant="ghost"
           size="icon"

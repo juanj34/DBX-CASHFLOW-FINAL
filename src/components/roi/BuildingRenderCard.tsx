@@ -1,44 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Building2, Maximize2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface BuildingRenderCardProps {
   imageUrl: string | null;
-  developerId?: string | null;
-  showLogoOverlay?: boolean;
+  developerName?: string;
   className?: string;
 }
 
 export const BuildingRenderCard = ({
   imageUrl,
-  developerId,
-  showLogoOverlay = true,
+  developerName,
   className,
 }: BuildingRenderCardProps) => {
-  const [developerLogo, setDeveloperLogo] = useState<string | null>(null);
-  const [developerWhiteLogo, setDeveloperWhiteLogo] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchDeveloperLogo = async () => {
-      if (!developerId || !showLogoOverlay) return;
-      
-      const { data, error } = await supabase
-        .from('developers')
-        .select('logo_url, white_logo_url')
-        .eq('id', developerId)
-        .maybeSingle();
-      
-      if (!error && data) {
-        setDeveloperLogo(data.logo_url);
-        setDeveloperWhiteLogo(data.white_logo_url);
-      }
-    };
-    
-    fetchDeveloperLogo();
-  }, [developerId, showLogoOverlay]);
 
   if (!imageUrl) {
     return (
@@ -72,27 +48,18 @@ export const BuildingRenderCard = ({
           className="w-full h-full object-cover"
         />
 
-        {/* Logo Overlay */}
-        {showLogoOverlay && developerLogo && (
+        {/* Developer name overlay if provided */}
+        {developerName && (
           <>
             {/* Dark overlay */}
             <div className="absolute inset-0 bg-black/30" />
             
-            {/* Developer logo - use white version if available */}
+            {/* Developer name */}
             <div className="absolute inset-0 flex items-center justify-center p-8">
-              {developerWhiteLogo ? (
-                <img 
-                  src={developerWhiteLogo} 
-                  alt="Developer Logo"
-                  className="max-w-[40%] max-h-[40%] object-contain opacity-90"
-                />
-              ) : (
-                <img 
-                  src={developerLogo} 
-                  alt="Developer Logo"
-                  className="max-w-[40%] max-h-[40%] object-contain filter brightness-0 invert opacity-90"
-                />
-              )}
+              <div className="text-center">
+                <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Developer</p>
+                <p className="text-white text-xl font-semibold">{developerName}</p>
+              </div>
             </div>
           </>
         )}
@@ -113,13 +80,9 @@ export const BuildingRenderCard = ({
               alt="Building Render" 
               className="w-full h-auto max-h-[90vh] object-contain"
             />
-            {showLogoOverlay && developerLogo && (
-              <div className="absolute bottom-4 right-4 bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                <img 
-                  src={developerLogo} 
-                  alt="Developer Logo"
-                  className="max-w-[120px] max-h-[60px] object-contain"
-                />
+            {developerName && (
+              <div className="absolute bottom-4 right-4 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
+                <p className="text-white font-medium">{developerName}</p>
               </div>
             )}
           </div>

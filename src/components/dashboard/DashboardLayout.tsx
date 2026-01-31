@@ -14,13 +14,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { AppLogo } from "@/components/AppLogo";
 import ZonesManager from "./ZonesManager";
 import HotspotsManager from "./HotspotsManager";
-import ProjectsManager from "./ProjectsManager";
-import DevelopersManager from "./DevelopersManager";
 import LandmarksManager from "./LandmarksManager";
 import PresetsManager from "./PresetsManager";
 import AIChatPanel from "./AIChatPanel";
 
-type ActiveTab = "zones" | "presets" | "hotspots" | "projects" | "developers" | "landmarks";
+type ActiveTab = "zones" | "presets" | "hotspots" | "landmarks";
 
 const DashboardLayout = () => {
   const { signOut } = useAuth();
@@ -98,8 +96,6 @@ const DashboardLayout = () => {
           <NavButton tab="zones" icon={Layers} label="Zones" />
           <NavButton tab="presets" icon={TrendingUp} label="Appreciation Presets" />
           <NavButton tab="hotspots" icon={Target} label="Hotspots" />
-          <NavButton tab="projects" icon={Building2} label="Projects" />
-          <NavButton tab="developers" icon={Users} label="Developers" />
           <NavButton tab="landmarks" icon={Landmark} label="Landmarks" />
         </CollapsibleContent>
       </Collapsible>
@@ -161,8 +157,6 @@ const DashboardLayout = () => {
         {activeTab === "zones" && <ZonesManager />}
         {activeTab === "presets" && <PresetsManager />}
         {activeTab === "hotspots" && <HotspotsManager />}
-        {activeTab === "projects" && <ProjectsManager />}
-        {activeTab === "developers" && <DevelopersManager />}
         {activeTab === "landmarks" && <LandmarksManager />}
 
         {/* Floating AI Button */}

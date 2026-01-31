@@ -5,8 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { ZoneSelect } from "@/components/ui/zone-select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, ExternalLink, UserPlus, Sparkles } from "lucide-react";
+import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, UserPlus, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "../ClientUnitInfo";
 import { Client, UNIT_TYPES } from "../ClientUnitModal";
@@ -42,31 +41,18 @@ export const ClientSection = ({
 }: ClientSectionProps) => {
   const { language, t } = useLanguage();
   const { clients: dbClients, createClient } = useClients();
-  const [selectedDeveloperId, setSelectedDeveloperId] = useState<string | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [manualDeveloper, setManualDeveloper] = useState(false);
-  const [manualProject, setManualProject] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showClientForm, setShowClientForm] = useState(false);
   const [selectedDbClientId, setSelectedDbClientId] = useState<string | null>(clientInfo.dbClientId || null);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
 
-  // Check if user is admin
-  useEffect(() => {
-    const checkAdminRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-        setIsAdmin(!!data);
-      }
-    };
-    checkAdminRole();
-  }, []);
+  // Simplified developer and project handlers (no more DB IDs)
+  const handleDeveloperChange = (name: string) => {
+    handleChange('developer', name);
+  };
+
+  const handleProjectChange = (name: string) => {
+    handleChange('projectName', name);
+  };
 
   // Get clients array, handling legacy format
   const clients: Client[] = clientInfo.clients?.length > 0 
@@ -151,27 +137,7 @@ export const ClientSection = ({
     }
   };
 
-  const handleDeveloperSelect = (developerId: string | null, developerName: string) => {
-    setSelectedDeveloperId(developerId);
-    setManualDeveloper(false);
-    handleChange('developer', developerName);
-  };
-
-  const handleProjectSelect = (projectId: string | null, projectData: any) => {
-    setSelectedProjectId(projectId);
-    setManualProject(false);
-    const projectName = projectData?.name || '';
-    handleChange('projectName', projectName);
-    
-    // Auto-populate zone if project has one
-    if (projectData?.zone_id) {
-      onClientInfoChange({
-        ...clientInfo,
-        projectName,
-        zoneId: projectData.zone_id,
-      });
-    }
-  };
+  // Note: handleDeveloperChange and handleProjectChange are defined above
 
   const handleDbClientSelect = (clientId: string | null, dbClient: DbClient | null) => {
     setSelectedDbClientId(clientId);
@@ -359,136 +325,24 @@ export const ClientSection = ({
         </h3>
         
         <div className="space-y-4">
-          {/* Developer Selection */}
-          {manualDeveloper ? (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-theme-text-muted">{t('developer')}</label>
-                {isAdmin && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
-                          onClick={() => window.open('/map-config?tab=developers', '_blank')}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p className="text-xs">Add new developer</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-              <Input
-                value={clientInfo.developer}
-                onChange={(e) => handleChange('developer', e.target.value)}
-                placeholder="e.g. Emaar"
-                className="bg-theme-bg border-theme-border text-theme-text h-9"
-              />
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-theme-text-muted">{t('developer')}</label>
-                {isAdmin && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
-                          onClick={() => window.open('/map-config?tab=developers', '_blank')}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p className="text-xs">Add new developer</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-              <DeveloperSelect
-                value={selectedDeveloperId}
-                manualValue={clientInfo.developer}
-                onValueChange={handleDeveloperSelect}
-                onManualMode={() => setManualDeveloper(true)}
-              />
-            </div>
-          )}
+          {/* Developer Selection - Simplified */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-theme-text-muted">{t('developer')}</label>
+            <DeveloperSelect
+              value={clientInfo.developer || ''}
+              onValueChange={handleDeveloperChange}
+            />
+          </div>
 
-          {/* Project Selection */}
-          {manualProject ? (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-theme-text-muted">{t('projectName')}</label>
-                {isAdmin && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
-                          onClick={() => window.open('/map-config?tab=projects', '_blank')}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p className="text-xs">Add new project</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-              <Input
-                value={clientInfo.projectName || ''}
-                onChange={(e) => handleChange('projectName', e.target.value)}
-                placeholder="e.g. The Valley"
-                className="bg-theme-bg border-theme-border text-theme-text h-9"
-              />
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-theme-text-muted">{t('projectName')}</label>
-                {isAdmin && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
-                          onClick={() => window.open('/map-config?tab=projects', '_blank')}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p className="text-xs">Add new project</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-              <ProjectSelect
-                value={selectedProjectId}
-                developerId={selectedDeveloperId}
-                manualValue={clientInfo.projectName || ''}
-                onValueChange={handleProjectSelect}
-                onManualMode={() => setManualProject(true)}
-              />
-            </div>
-          )}
+          {/* Project Selection - Simplified */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-theme-text-muted">{t('projectName')}</label>
+            <ProjectSelect
+              value={clientInfo.projectName || ''}
+              developer={clientInfo.developer}
+              onValueChange={handleProjectChange}
+            />
+          </div>
 
           {/* Unit Details Grid */}
           <div className="grid grid-cols-2 gap-3">

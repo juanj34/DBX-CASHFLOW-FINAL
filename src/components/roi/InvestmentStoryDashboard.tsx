@@ -512,8 +512,6 @@ export const InvestmentStoryDashboard = ({
                 rate={rate}
                 heroImageUrl={heroImageUrl}
                 buildingRenderUrl={buildingRenderUrl}
-                developerId={developerId}
-                projectId={projectId}
                 zoneId={zoneId}
                 className="h-full"
               />
