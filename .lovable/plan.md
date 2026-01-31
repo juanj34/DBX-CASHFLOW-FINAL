@@ -1,338 +1,252 @@
 
-# Export Functionality for Off-Plan vs Secondary Comparison Tool
 
-## Overview
+# Add Handover Row to Wealth Projection Tables
 
-This plan implements a complete PDF/PNG export system for the Off-Plan vs Secondary comparison tool, following the established **Export DOM Architecture** pattern used throughout the application.
+## Problem Statement
 
-The export will capture:
-1. Key Insights (4 comparison cards)
-2. Year-by-Year Asset Progression Table
-3. Wealth Trajectory Chart
-4. Exit Scenarios Comparison Table
-5. Out of Pocket Analysis Card
-6. Mortgage Coverage Card (if applicable)
-7. Rental Comparison at Handover
-8. Final Verdict
+The Wealth Projection displays property values by **calendar year** (2026, 2027, 2028...), but handover happens at a specific **quarter** (e.g., Q4 2029). Currently, users cannot see the exact value at the handover moment, which is a critical milestone.
 
----
+**Current State:**
+| 2026 | 2027 | 2028 | 2029 | 2030 | 2031 | 2032 |
+|------|------|------|------|------|------|------|
+| 9.6M | 11.0M | 12.7M | 14.6M | 15.2M | 15.8M | 16.4M |
+| Constr | Constr | Constr | Constr | Growth | Growth | Growth |
 
-## Architecture
+**Desired State:**
+| 2026 | 2027 | 2028 | 2029 | 🔑 Q4'29 | 2030 | 2031 | 2032 |
+|------|------|------|------|----------|------|------|------|
+| 9.6M | 11.0M | 12.7M | 14.4M | **14.6M** | 15.2M | 15.8M | 16.4M |
+| Constr | Constr | Constr | Constr | **Handover** | Growth | Growth | Growth |
 
-Following the existing pattern from the main cashflow export system:
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Export Flow                                      │
-├─────────────────────────────────────────────────────────────────────┤
-│  User clicks "Export" button in header                               │
-│           ↓                                                          │
-│  ExportComparisonModal opens (format selection: PDF/PNG)             │
-│           ↓                                                          │
-│  useExportRenderer hook creates offscreen container                  │
-│           ↓                                                          │
-│  ExportComparisonDOM rendered (static, A3 landscape, 1587px width)   │
-│           ↓                                                          │
-│  html2canvas captures at 2x resolution                               │
-│           ↓                                                          │
-│  jsPDF embeds image / PNG downloaded directly                        │
-└─────────────────────────────────────────────────────────────────────┘
-```
+The handover column should:
+- Show the exact property value at handover (using monthly appreciation up to that point)
+- Display with a special badge/highlight (🔑 icon, green styling)
+- Insert between the handover year and the following year
 
 ---
 
-## Files to Create
+## Technical Implementation
 
-### 1. `src/components/roi/secondary/export/ExportComparisonDOM.tsx`
-Main static export container component (similar to `ExportSnapshotDOM.tsx`).
+### Approach: Insert Handover as Dedicated Data Point
 
-**Props:**
+Since handover occurs mid-year (at a specific quarter), we need to:
+
+1. Calculate the property value at the **exact handover month** using monthly compounding
+2. Insert this as a special row/column between the handover year and next year
+3. Style it distinctly (green highlight, 🔑 badge)
+
+### Calculation Logic
+
 ```typescript
-interface ExportComparisonDOMProps {
-  // Off-Plan data
-  offPlanInputs: OIInputs;
-  offPlanCalcs: OICalculations;
-  offPlanProjectName: string;
-  
-  // Secondary data
-  secondaryInputs: SecondaryInputs;
-  secondaryCalcs: SecondaryCalculations;
-  
-  // Shared metrics
-  metrics: ComparisonMetrics;
-  handoverYearIndex: number;
-  exitMonths: number[];
-  rentalMode: 'long-term' | 'airbnb';
-  
-  // Calculated values (passed from parent to ensure consistency)
-  offPlanTotalAssets10Y: number;
-  secondaryTotalAssets10Y: number;
-  offPlanMonthlyRent5Y: number;
-  secondaryMonthlyRent5Y: number;
-  appreciationDuringConstruction: number;
-  secondaryRentDuringConstruction: number;
-  
-  // Display settings
-  currency: Currency;
-  rate: number;
-  language: 'en' | 'es';
-}
+// Given:
+// - handoverQuarter: 1-4 (Q1=Feb, Q2=May, Q3=Aug, Q4=Nov)
+// - handoverYear: e.g., 2029
+// - bookingYear: e.g., 2026
+// - basePrice: e.g., 9.6M
+// - constructionAppreciation: e.g., 12%
+
+// Calculate months from booking to handover
+const handoverMonth = quarterToMonth(handoverQuarter); // Q4 = month 11
+const bookingDate = new Date(bookingYear, bookingMonth - 1);
+const handoverDate = new Date(handoverYear, handoverMonth - 1);
+const monthsToHandover = Math.round((handoverDate - bookingDate) / (30 * 24 * 60 * 60 * 1000));
+
+// Calculate value at exact handover using monthly appreciation
+const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+const handoverValue = basePrice * Math.pow(1 + monthlyRate, monthsToHandover);
 ```
-
-**Structure:**
-- Fixed 1587px width (A3 landscape @ 96dpi)
-- All inline styles (no hover effects, no animations, no framer-motion)
-- Uses CSS variables for theme consistency
-
-### 2. `src/components/roi/secondary/export/ExportKeyInsights.tsx`
-Static version of `ComparisonKeyInsights.tsx` for export.
-
-**Features:**
-- 4-column grid layout
-- Same metric calculations
-- No tooltips, no interactivity
-- Fixed fonts and colors
-
-### 3. `src/components/roi/secondary/export/ExportWealthTable.tsx`
-Static version of `YearByYearWealthTable.tsx` for export.
-
-**Features:**
-- Full 10-year data table
-- Simplified headers (no tooltip triggers)
-- Fixed column widths for consistency
-- Color-coded delta values
-
-### 4. `src/components/roi/secondary/export/ExportWealthChart.tsx`
-Static version of `WealthTrajectoryDualChart.tsx` for export.
-
-**Considerations:**
-- Recharts renders as SVG, which html2canvas handles well
-- Need to ensure fixed dimensions (no ResponsiveContainer in export)
-- Remove Legend interactivity
-
-### 5. `src/components/roi/secondary/export/ExportExitScenarios.tsx`
-Static version of `ExitScenariosComparison.tsx` for export.
-
-**Features:**
-- Simplified table without tooltips
-- Winner badges inline
-- Fixed column widths
-
-### 6. `src/components/roi/secondary/export/ExportOutOfPocket.tsx`
-Static version of `OutOfPocketCard.tsx` for export.
-
-### 7. `src/components/roi/secondary/export/ExportMortgageCoverage.tsx`
-Static version of `MortgageCoverageCard.tsx` for export (conditional).
-
-### 8. `src/components/roi/secondary/export/ExportRentalComparison.tsx`
-Static version of `RentalComparisonAtHandover.tsx` for export.
-
-### 9. `src/components/roi/secondary/export/ExportVerdict.tsx`
-Static version of `ComparisonVerdict.tsx` for export.
-
-### 10. `src/components/roi/secondary/export/ExportComparisonHeader.tsx`
-Header section with:
-- Title: "Off-Plan vs Secondary Property Comparison"
-- Off-Plan project name + base price
-- Secondary property name + purchase price
-- Export date
-- Broker info (if available)
-
-### 11. `src/components/roi/secondary/export/ExportComparisonFooter.tsx`
-Footer with:
-- "Powered by DBX Prime" branding
-- Disclaimer text
-- Generation timestamp
-
-### 12. `src/components/roi/secondary/export/index.ts`
-Barrel export file for all export components.
-
-### 13. `src/components/roi/secondary/ExportComparisonModal.tsx`
-Modal for selecting export format (PDF/PNG).
-
-**Features:**
-- Format selection (PDF default, PNG option)
-- Progress indicator during export
-- Uses `useExportRenderer` hook pattern
 
 ---
 
 ## Files to Modify
 
-### 1. `src/pages/OffPlanVsSecondary.tsx`
+### 1. `src/components/roi/snapshot/WealthProjectionTable.tsx`
 
-**Add:**
-- Import `ExportComparisonModal`
-- State for `exportModalOpen`
-- Export button in the header (next to Load/Reconfigure buttons)
-- Pass all required props to modal
+**Changes:**
+- Add props: `handoverQuarter`, `handoverYear`, `handoverMonth`, `bookingMonth`
+- Insert a "Handover" row after the construction phase ends
+- Calculate exact handover value using monthly compounding
+- Style with green background and 🔑 badge
 
-**Header addition (~line 748):**
-```tsx
-<Button
-  variant="outline"
-  size="sm"
-  onClick={() => setExportModalOpen(true)}
-  className="border-theme-border text-theme-text"
->
-  <Download className="w-4 h-4 mr-2" />
-  Export
-</Button>
+**Interface Update:**
+```typescript
+interface WealthProjectionTableProps {
+  // ... existing props ...
+  handoverQuarter: number;  // NEW
+  handoverYear: number;     // NEW
+  handoverMonth?: number;   // NEW (optional, can derive from quarter)
+}
 ```
 
-### 2. `src/hooks/useExportRenderer.tsx`
-
-**Add:**
-- New export function for comparison: `exportComparison`
-- Import and use `ExportComparisonDOM` component
+**Data Structure Update:**
+```typescript
+interface YearRow {
+  year: number;
+  value: number;
+  phase: string;
+  appreciation: number;
+  annualRent: number;
+  cumulativeRent: number;
+  isHandover?: boolean;  // NEW: Flag for handover row
+  label?: string;        // NEW: Custom label (e.g., "🔑 Q4'29")
+}
+```
 
 ---
 
-## Export Component Design Principles
+### 2. `src/components/roi/snapshot/WealthProjectionTimeline.tsx`
 
-Following the existing pattern from `ExportSnapshotDOM`:
+**Changes:**
+- Add props: `handoverQuarter`, `handoverYear`
+- Insert handover column with special styling
+- Increase from 7 columns to 8 (7 years + handover)
+- Use smaller spacing to fit extra column
 
-1. **Fixed Dimensions**
-   - Width: 1587px (A3 landscape)
-   - No responsive breakpoints
-   - All elements use fixed px values
+**Visual Update:**
+```text
+| 2026 | 2027 | 2028 | 2029 | 🔑Q4'29 | 2030 | 2031 | 2032 |
+  ●──────●──────●──────●───────◉───────●──────●──────●
+Constr Constr Constr Constr Handover Growth Growth Growth
+```
 
-2. **Inline Styles Only**
-   - No Tailwind classes that might not render in offscreen DOM
-   - Use `style={{}}` for all styling
-   - Reference CSS variables via `hsl(var(--theme-xxx))`
-
-3. **No Interactivity**
-   - No hover states
-   - No click handlers
-   - No tooltips with triggers
-   - No animations or transitions
-
-4. **Static Data Display**
-   - All calculations done in parent
-   - Components receive final values as props
-   - No hooks inside export components (except useMemo for formatting)
-
-5. **Theme Consistency**
-   - Use theme CSS variables for colors
-   - Export captures current theme (light/dark)
-   - Background color from `getBackgroundColor()` in renderer
+The handover column gets:
+- Larger dot (◉ vs ●)
+- Green background glow
+- 🔑 icon in label
+- Bold value
 
 ---
 
-## Technical Implementation Details
+### 3. `src/components/roi/export/ExportWealthTimeline.tsx`
 
-### Chart Rendering for Export
+**Changes:**
+- Same logic as WealthProjectionTimeline but with inline styles
+- Add handover column between appropriate years
+- Green styling for handover column
 
-For the `ExportWealthChart`, we need special handling since Recharts uses ResponsiveContainer:
+---
 
-```tsx
-// Export version uses fixed dimensions
-<ComposedChart width={700} height={300} data={chartData}>
-  {/* No ResponsiveContainer wrapper */}
-</ComposedChart>
+### 4. `src/components/roi/snapshot/WealthProjectionModal.tsx`
+
+**Changes:**
+- Pass new props (handoverQuarter, handoverYear) to `WealthProjectionTable`
+
+---
+
+### 5. `src/components/roi/snapshot/SnapshotContent.tsx`
+
+**Changes:**
+- Calculate and pass `handoverQuarter`, `handoverYear` to `WealthProjectionModal`
+- Pass to any `WealthProjectionTimeline` instances
+
+---
+
+### 6. Parent Components Using These Timelines
+
+Update all parent components to pass the new handover props:
+- `SnapshotContent.tsx`
+- `ExportSnapshotDOM.tsx`
+- Any other views using wealth projection
+
+---
+
+## Layout Strategy for 8 Columns
+
+Since we're adding an extra column (7 years + handover), we need to adjust spacing:
+
+**Option A: Reduce Year 7**
+Show years 1-6 + Handover + Year 7 (drop year 8)
+
+**Option B: Compress All (Preferred)**
+Keep all 7 years but use `grid-cols-8` with tighter gaps:
+```css
+grid-template-columns: repeat(8, 1fr);
+gap: 4px; /* Reduced from 8px */
 ```
 
-### Calculation Consistency
+**Option C: Dynamic Insert**
+Insert handover column only where it belongs in the sequence, maintaining 8 total columns.
 
-All calculated values are passed as props from the parent component to ensure the export shows exactly what the user sees:
+---
 
-```tsx
-<ExportComparisonDOM
-  // Pre-calculated values from parent (same as live view)
-  offPlanTotalAssets10Y={offPlanTotalAssets10Y}
-  secondaryTotalAssets10Y={secondaryTotalAssets10Y}
-  // ... etc
-/>
-```
+## Handover Value Calculation
 
-### Export Renderer Integration
-
-Add a new method to `useExportRenderer`:
+Use the same `calculateExitPrice` function from `constructionProgress.ts` for consistency:
 
 ```typescript
-const exportComparison = useCallback(async (
-  props: ExportComparisonDOMProps,
-  format: FormatType
-): Promise<ExportResult> => {
-  // Similar to exportSnapshot but renders ExportComparisonDOM
-  return await renderAndCaptureComparison(props, format, 'comparison');
-}, [renderAndCaptureComparison]);
+import { calculateExitPrice } from '../constructionProgress';
+
+const handoverValue = calculateExitPrice(
+  monthsToHandover,
+  basePrice,
+  totalMonths,
+  {
+    constructionAppreciation,
+    growthAppreciation,
+    matureAppreciation,
+    growthPeriodYears,
+  }
+);
 ```
 
+This ensures the handover value matches exit scenario calculations perfectly.
+
 ---
 
-## Visual Layout (A3 Landscape - 1587 x auto px)
+## Visual Design
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│ HEADER: Off-Plan vs Secondary Comparison                                        │
-│ [Off-Plan: Project Name - AED X.XXM]  [Secondary: Property - AED X.XXM]  [Date] │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ KEY INSIGHTS (4 cards row)                                                      │
-│ ┌────────────┬────────────┬────────────┬────────────┐                          │
-│ │Total Wealth│ Multiplier │Monthly Rent│Construction│                          │
-│ │  (10Y)     │   (10Y)    │  (Year 5)  │  Trade-off │                          │
-│ └────────────┴────────────┴────────────┴────────────┘                          │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ YEAR-BY-YEAR TABLE                   │ WEALTH TRAJECTORY CHART                  │
-│ Year | Off-Plan | Secondary | Delta  │  [Line chart with Off-Plan vs Secondary] │
-│ 0-10 data rows                       │                                          │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ EXIT SCENARIOS TABLE                                                            │
-│ [Year 3/5/10 exit comparison with Value, Profit, ROE for both properties]       │
-├──────────────────────────────────────┬──────────────────────────────────────────┤
-│ OUT OF POCKET ANALYSIS               │ RENTAL COMPARISON AT HANDOVER            │
-│ [Capital during construction]        │ [Monthly rent comparison]                │
-├──────────────────────────────────────┴──────────────────────────────────────────┤
-│ MORTGAGE COVERAGE (if applicable)                                               │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ VERDICT                                                                         │
-│ [Winner summary with key differentiators]                                       │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ FOOTER: Powered by DBX Prime | Disclaimer | Generated: Jan 31, 2026             │
-└─────────────────────────────────────────────────────────────────────────────────┘
+### Timeline Column (Handover)
+
+```
+    🔑 Q4'29
+    ─────────
+    14.6M
+    €3.3M
+       ◉      ← Larger dot with glow
+    Handover  ← Green text
 ```
 
----
+**Styling:**
+- Background: `bg-green-500/10`
+- Border: `border border-green-500/30`
+- Dot: Larger (16px vs 12px), green with glow
+- Label: Green bold text
 
-## File Summary
+### Table Row (Handover)
 
-| New Files | Description |
-|-----------|-------------|
-| `src/components/roi/secondary/export/ExportComparisonDOM.tsx` | Main export container |
-| `src/components/roi/secondary/export/ExportComparisonHeader.tsx` | Header with property info |
-| `src/components/roi/secondary/export/ExportKeyInsights.tsx` | 4 insight cards |
-| `src/components/roi/secondary/export/ExportWealthTable.tsx` | Year-by-year table |
-| `src/components/roi/secondary/export/ExportWealthChart.tsx` | Trajectory chart |
-| `src/components/roi/secondary/export/ExportExitScenarios.tsx` | Exit comparison table |
-| `src/components/roi/secondary/export/ExportOutOfPocket.tsx` | Capital analysis card |
-| `src/components/roi/secondary/export/ExportMortgageCoverage.tsx` | Mortgage card (optional) |
-| `src/components/roi/secondary/export/ExportRentalComparison.tsx` | Rental at handover |
-| `src/components/roi/secondary/export/ExportVerdict.tsx` | Final recommendation |
-| `src/components/roi/secondary/export/ExportComparisonFooter.tsx` | Footer with branding |
-| `src/components/roi/secondary/export/index.ts` | Barrel exports |
-| `src/components/roi/secondary/ExportComparisonModal.tsx` | Format selection modal |
+```
+| 🔑 Q4'29 | 14.6M | - | Handover |
+```
 
-| Modified Files | Changes |
-|----------------|---------|
-| `src/pages/OffPlanVsSecondary.tsx` | Add export button + modal state |
-| `src/hooks/useExportRenderer.tsx` | Add `exportComparison` function |
-| `src/components/roi/secondary/index.ts` | Export new modal component |
+**Styling:**
+- Row background: `bg-green-500/10`
+- Left border: `border-l-4 border-green-500`
+- Badge: `bg-green-500/20 text-green-400`
 
 ---
 
-## Implementation Order
+## Summary of Changes
 
-1. Create export subfolder and index
-2. Build `ExportComparisonHeader` and `ExportComparisonFooter`
-3. Build `ExportKeyInsights` (static 4-card grid)
-4. Build `ExportWealthTable` (static table)
-5. Build `ExportWealthChart` (fixed-dimension chart)
-6. Build `ExportExitScenarios` (static table)
-7. Build remaining cards (OutOfPocket, MortgageCoverage, RentalComparison, Verdict)
-8. Assemble `ExportComparisonDOM` with all components
-9. Create `ExportComparisonModal` with format selection
-10. Update `useExportRenderer` hook
-11. Add export button to `OffPlanVsSecondary.tsx`
-12. Test both PDF and PNG exports with light and dark themes
+| File | Type | Description |
+|------|------|-------------|
+| `WealthProjectionTable.tsx` | Modify | Add handover row with special styling |
+| `WealthProjectionTimeline.tsx` | Modify | Add handover column in horizontal timeline |
+| `ExportWealthTimeline.tsx` | Modify | Static export version with handover column |
+| `WealthProjectionModal.tsx` | Modify | Pass handover props to table |
+| `SnapshotContent.tsx` | Modify | Pass handover props to modal and timeline |
+| `ExportSnapshotDOM.tsx` | Modify | Pass handover props to export timeline |
+
+---
+
+## Prop Requirements
+
+Each component needs these additional props:
+```typescript
+handoverQuarter: number;  // 1-4 (Q1, Q2, Q3, Q4)
+handoverYear: number;     // Calendar year (e.g., 2029)
+bookingMonth: number;     // 1-12 (for exact month calculation)
+bookingYear: number;      // Already exists in most components
+```
+
+These are all available in `inputs: OIInputs` which is already passed to most components.
+
