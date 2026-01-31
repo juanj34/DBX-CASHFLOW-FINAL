@@ -16,7 +16,7 @@ interface PaymentPlanExtractorProps {
   onOpenChange: (open: boolean) => void;
   existingBookingMonth?: number;
   existingBookingYear?: number;
-  onApply: (data: ExtractedPaymentPlan) => void;
+  onApply: (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => void;
 }
 
 const MONTHS = [
@@ -139,7 +139,8 @@ export const PaymentPlanExtractor = ({
   };
 
   const handleApply = (data: ExtractedPaymentPlan) => {
-    onApply(data);
+    const booking = getBookingDate();
+    onApply(data, { month: booking.month!, year: booking.year! });
     onOpenChange(false);
     // Reset state
     setFiles([]);

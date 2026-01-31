@@ -240,7 +240,13 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   };
 
   // Handle AI extraction result - comprehensive mapping to configurator state
-  const handleAIExtraction = (data: ExtractedPaymentPlan) => {
+  const handleAIExtraction = (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => {
+    // === STEP 0: Apply booking date from extractor ===
+    const appliedBookingMonth = bookingDate.month;
+    const appliedBookingYear = bookingDate.year;
+    
+    console.log('Applying booking date from extractor:', { appliedBookingMonth, appliedBookingYear });
+    
     // === STEP 1: Find handover payment first to derive handover timing (most accurate source) ===
     const handoverPayment = data.installments.find(i => i.type === 'handover');
     
@@ -250,12 +256,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     
     // PRIORITY 1: Derive from handover payment's triggerValue (most accurate)
     if (handoverPayment && handoverPayment.triggerValue > 0) {
-      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-      const handoverDate = new Date(bookingDate);
-      handoverDate.setMonth(handoverDate.getMonth() + handoverPayment.triggerValue);
+      const bookingDateObj = new Date(appliedBookingYear, appliedBookingMonth - 1);
+      const handoverDateObj = new Date(bookingDateObj);
+      handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverPayment.triggerValue);
       
-      handoverMonth = handoverDate.getMonth() + 1;
-      handoverYear = handoverDate.getFullYear();
+      handoverMonth = handoverDateObj.getMonth() + 1;
+      handoverYear = handoverDateObj.getFullYear();
       handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
       
       console.log('Handover derived from completion payment:', { 
@@ -268,12 +274,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     // PRIORITY 2: Fall back to handoverMonthFromBooking
     else if (data.paymentStructure.handoverMonthFromBooking) {
       const handoverMonths = data.paymentStructure.handoverMonthFromBooking;
-      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-      const handoverDate = new Date(bookingDate);
-      handoverDate.setMonth(handoverDate.getMonth() + handoverMonths);
+      const bookingDateObj = new Date(appliedBookingYear, appliedBookingMonth - 1);
+      const handoverDateObj = new Date(bookingDateObj);
+      handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverMonths);
       
-      handoverMonth = handoverDate.getMonth() + 1;
-      handoverYear = handoverDate.getFullYear();
+      handoverMonth = handoverDateObj.getMonth() + 1;
+      handoverYear = handoverDateObj.getFullYear();
       handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
     }
     // PRIORITY 3: Use explicit quarter/year if provided
@@ -357,9 +363,13 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       }))
       .sort((a, b) => a.triggerValue - b.triggerValue);
     
-    // === STEP 6: Update inputs with complete structure ===
+    // === STEP 6: Update inputs with complete structure (including booking date) ===
     setInputs(prev => ({
       ...prev,
+      // Apply booking date from extractor
+      bookingMonth: appliedBookingMonth,
+      bookingYear: appliedBookingYear,
+      // Payment structure
       downpaymentPercent,
       preHandoverPercent,
       onHandoverPercent,
@@ -369,8 +379,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       handoverMonth, // Actual month (1-12) from completion payment
       handoverQuarter,
       handoverYear,
-      // Update property price if extracted
+      // Update property fields if extracted
       ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
+      ...(data.property?.unitSizeSqft && { unitSizeSqf: data.property.unitSizeSqft }),
     }));
     
     setShowInstallments(additionalPayments.length > 0);
