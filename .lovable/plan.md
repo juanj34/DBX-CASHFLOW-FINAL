@@ -1,207 +1,186 @@
 
-# Adaptive 2-Column Payment Layout for Long Quotes
+# Adaptive Payment Layout Improvements
 
-## Problem Analysis
+## Problem Summary
 
-Looking at the screenshot, I can see a 28-month payment plan creating a payment breakdown that's **extremely long vertically** (30+ rows), pushing the important insight cards (Rental Income, Exit Scenarios, Post-Handover Coverage) far down the page. This creates a poor reading experience where:
+Looking at the screenshot, I can identify three issues:
 
-1. Clients have to scroll excessively to see key metrics
-2. The right column is underutilized (it only has 3-4 small cards)
-3. Visual balance is lost - left column is 3x taller than right
+1. **Bottom cards use fixed 4-column grid** - Even when only 3 cards are visible (Rental Income, Exit Scenarios, Post-Handover Coverage), the layout uses 4 columns leaving empty space
+2. **Text overflow in Post-Handover Coverage card** - Values like "AED 349,36..." are being truncated
+3. **Vertical height still excessive** - User wants to explore 3-column payment breakdown instead of 2-column to further reduce scroll depth
 
-## Proposed Solution: Adaptive Payment Layout
+---
 
-When payment count exceeds a threshold (e.g., 15 installments), automatically switch to a **2-column payment layout** with insight cards flowing underneath in a consistent grid.
+## Technical Solution
 
-```text
-CURRENT LAYOUT (Long quotes)
-─────────────────────────────────────────────────────────
-┌─────────────────────────────┐ ┌──────────────────────┐
-│                             │ │  Rental Income       │
-│                             │ └──────────────────────┘
-│                             │ ┌──────────────────────┐
-│     PAYMENT BREAKDOWN       │ │  Exit Scenarios      │
-│     (30+ rows)              │ └──────────────────────┘
-│     Scrolls forever...      │ ┌──────────────────────┐
-│                             │ │  Post-HO Coverage    │
-│                             │ └──────────────────────┘
-│                             │ ┌──────────────────────┐
-│                             │ │  Mortgage            │
-│                             │ └──────────────────────┘
-│                             │
-│                             │       ← Empty space
-│                             │
-└─────────────────────────────┘
+### 1. Dynamic Column Grid for Bottom Cards
 
-NEW ADAPTIVE LAYOUT (Long quotes)
-─────────────────────────────────────────────────────────
-┌───────────────────────────────────────────────────────┐
-│                 PAYMENT BREAKDOWN                     │
-│ ┌─────────────────────────┐ ┌───────────────────────┐ │
-│ │ ENTRY                   │ │ JOURNEY (Months 13-28)│ │
-│ │ EOI, Downpayment, DLD   │ │ 1% Month 13           │ │
-│ │                         │ │ 1% Month 14           │ │
-│ │ JOURNEY (Months 1-12)   │ │ ...                   │ │
-│ │ 5% Month 2              │ │ 8% Month 24           │ │
-│ │ 10% Month 3             │ │                       │ │
-│ │ 1% Month 4              │ │ POST-HANDOVER         │ │
-│ │ ...                     │ │ 1% Month +1           │ │
-│ │ 1% Month 12             │ │ 1% Month +2...        │ │
-│ └─────────────────────────┘ └───────────────────────┘ │
-│                    [ TOTAL INVESTMENT ]               │
-└───────────────────────────────────────────────────────┘
-
-┌───────────────────────────────────────────────────────┐
-│   RENTAL INCOME   │   EXIT SCENARIOS   │  POST-HO    │
-│   ┌───────────┐   │   ┌───────────┐    │ ┌─────────┐ │
-│   │  Gross    │   │   │ #1 18m    │    │ │Coverage │ │
-│   │  Net/Year │   │   │ #2 24m    │    │ │ Matrix  │ │
-│   └───────────┘   │   └───────────┘    │ └─────────┘ │
-└───────────────────────────────────────────────────────┘
-
-┌───────────────────────────────────────────────────────┐
-│                   MORTGAGE ANALYSIS                   │
-└───────────────────────────────────────────────────────┘
+**Current Code (SnapshotContent.tsx line 141):**
+```typescript
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
 ```
 
-## Technical Approach
+**Problem:** Always uses 4 columns on xl screens regardless of how many cards are visible.
 
-### 1. Update `CompactPaymentTable.tsx`
+**Solution:** Count visible cards and apply dynamic grid classes:
 
-Add a **compact 2-column mode** prop that:
-- Splits payment rows into 2 columns when `journeyPayments.length > 12`
-- Places Entry section in left column header
-- Distributes Journey payments evenly between columns
-- Places On-Handover / Post-Handover at bottom spanning both columns
+```typescript
+// Count visible cards
+const visibleCards = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
+
+// Dynamic grid based on card count
+const cardGridClass = useMemo(() => {
+  switch (visibleCards) {
+    case 1: return 'grid grid-cols-1';
+    case 2: return 'grid grid-cols-1 md:grid-cols-2';
+    case 3: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+    case 4: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+    default: return 'grid grid-cols-1';
+  }
+}, [visibleCards]);
+```
+
+This ensures:
+- 3 cards → 3 columns (fills the row completely)
+- 2 cards → 2 columns
+- 4 cards → 4 columns
+
+---
+
+### 2. Fix Text Overflow in Cards
+
+**Identified Issues:**
+
+In `CompactPostHandoverCard.tsx`:
+- Values like "AED 349,368" are truncating due to insufficient space
+- The DottedRow component uses `whitespace-nowrap` which prevents wrapping
+
+**Solution:** Add `truncate` and `min-w-0` to value containers, or use responsive text sizing:
+
+```typescript
+// In DottedRow.tsx - ensure proper truncation
+<span className={cn(
+  'font-mono tabular-nums text-theme-text text-sm',
+  'truncate min-w-0',  // Add truncation safety
+  bold && 'font-semibold',
+  valueClassName
+)}>
+```
+
+For the Post-Handover card specifically, reduce font size on smaller containers:
+```typescript
+// In CompactPostHandoverCard.tsx - use slightly smaller text in tight layouts
+<DottedRow 
+  label={...}
+  value={...}
+  className="text-xs"  // Smaller text to prevent overflow
+/>
+```
+
+Also add `overflow-hidden` to the card container and ensure values have room to breathe.
+
+---
+
+### 3. Three-Column Payment Breakdown Option
+
+**Current:** Journey payments split into 2 columns
+**Proposed:** Add support for 3 columns to further reduce height
+
+**Implementation:**
+
+Modify `CompactPaymentTable.tsx` to support a `threeColumnMode` or extend `twoColumnMode` to `'auto' | 'two' | 'three' | 'never'`:
 
 ```typescript
 interface CompactPaymentTableProps {
-  // ...existing props
-  twoColumnMode?: 'auto' | 'always' | 'never';  // Default: 'auto'
+  // ... existing props
+  twoColumnMode?: 'auto' | 'always' | 'never';
+  columnCount?: 2 | 3;  // New prop for explicit control
 }
-
-// Inside component:
-const useTwoColumns = useMemo(() => {
-  if (twoColumnMode === 'never') return false;
-  if (twoColumnMode === 'always') return true;
-  // Auto: trigger when pre-handover + post-handover payments > 12
-  const totalPayments = preHandoverPayments.length + derivedPostHandoverPayments.length;
-  return totalPayments > 12;
-}, [twoColumnMode, preHandoverPayments, derivedPostHandoverPayments]);
 ```
 
-### 2. Column Split Logic
-
-Split payments into left/right columns:
-
+**Column splitting logic:**
 ```typescript
-const splitPayments = useMemo(() => {
-  if (!useTwoColumns) return { left: preHandoverPayments, right: [] };
-  
-  const midpoint = Math.ceil(preHandoverPayments.length / 2);
-  return {
-    left: preHandoverPayments.slice(0, midpoint),
-    right: preHandoverPayments.slice(midpoint),
-  };
-}, [useTwoColumns, preHandoverPayments]);
+const splitIntoColumns = (payments: PaymentMilestone[], numColumns: number) => {
+  const itemsPerColumn = Math.ceil(payments.length / numColumns);
+  return Array.from({ length: numColumns }, (_, i) => 
+    payments.slice(i * itemsPerColumn, (i + 1) * itemsPerColumn)
+  );
+};
 ```
 
-### 3. Update `SnapshotContent.tsx` Layout
-
-Change from fixed 2-column grid to **adaptive stacked layout**:
-
+**Rendering:**
 ```typescript
-// Determine if we have a long payment schedule
-const isLongPaymentPlan = useMemo(() => {
-  const payments = inputs.additionalPayments || [];
-  return payments.length > 12;
-}, [inputs.additionalPayments]);
-
-// Render layout:
-{isLongPaymentPlan ? (
-  // STACKED LAYOUT: Payment full width, then 3-column cards below
-  <div className="flex flex-col gap-4">
-    {/* Payment Table - Full Width with 2 internal columns */}
-    <CompactPaymentTable
-      {...props}
-      twoColumnMode="auto"
-    />
-    
-    {/* Insight Cards - 3 columns on desktop, 1 on mobile */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      {showRent && <CompactRentCard {...} />}
-      {showExits && <CompactAllExitsCard {...} />}
-      {showPostHandover && <CompactPostHandoverCard {...} />}
-      {showMortgage && <CompactMortgageCard {...} />}
-    </div>
-  </div>
-) : (
-  // ORIGINAL LAYOUT: 2 columns side by side
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <CompactPaymentTable {...props} />
-    <div className="flex flex-col gap-3">
-      {/* Cards stacked */}
-    </div>
+{useTwoColumns && (
+  <div className={cn(
+    "grid gap-4",
+    columnCount === 3 ? "grid-cols-3" : "grid-cols-2"
+  )}>
+    {splitColumns.map((columnPayments, colIndex) => (
+      <div key={colIndex} className="space-y-1">
+        {columnPayments.map((payment, index) => renderPaymentRow(...))}
+      </div>
+    ))}
   </div>
 )}
 ```
 
-### 4. Internal Payment Table Styling
+**Threshold Logic:**
+- 12-20 payments → 2 columns
+- 21+ payments → 3 columns (optional auto-upgrade)
 
-For 2-column mode within the payment card:
-
-```typescript
-// Section: The Journey - 2-column layout
-{useTwoColumns && preHandoverPayments.length > 0 && (
-  <div>
-    <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">
-      {t('theJourneyLabel')} ({totalMonths}{t('moShort')})
-    </div>
-    <div className="grid grid-cols-2 gap-4">
-      {/* Left Column */}
-      <div className="space-y-1">
-        {splitPayments.left.map((payment, index) => (
-          <PaymentRow key={index} payment={payment} />
-        ))}
-      </div>
-      {/* Right Column */}
-      <div className="space-y-1">
-        {splitPayments.right.map((payment, index) => (
-          <PaymentRow key={index} payment={payment} />
-        ))}
-      </div>
-    </div>
-  </div>
-)}
-```
+---
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `CompactPaymentTable.tsx` | Add `twoColumnMode` prop, split logic, 2-column grid for Journey section |
-| `SnapshotContent.tsx` | Adaptive layout based on payment count |
-| `CashflowView.tsx` | Same adaptive logic for consistency |
-| `ExportSnapshotLayout.tsx` | Ensure export respects 2-column mode |
+| `src/components/roi/snapshot/SnapshotContent.tsx` | Dynamic grid class based on visible card count |
+| `src/components/roi/snapshot/SnapshotPrintContent.tsx` | Same dynamic grid logic |
+| `src/components/roi/export/ExportSnapshotLayout.tsx` | Dynamic grid for export layout |
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add 3-column support, fix text sizing |
+| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Fix text overflow with smaller fonts |
+| `src/components/roi/snapshot/DottedRow.tsx` | Add truncation safety classes |
 
-## Visual Benefits
+---
 
-1. **Reduced scroll depth** - Payment fits in ~50% of current height
-2. **Better balance** - Content is horizontally distributed
-3. **Cards at eye level** - Key metrics (exits, rent) are immediately visible
-4. **Consistent reading flow** - Natural left-to-right, top-to-bottom
+## Visual Result
 
-## Threshold Configuration
+**Before (Current):**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Rental Income │ Exit Scenarios │ Post-Handover │   EMPTY   │
+│     CARD      │      CARD      │     CARD      │   SPACE   │
+└─────────────────────────────────────────────────────────────┘
+```
 
-The auto-switch threshold (12 payments) can be tuned:
-- **12 payments**: Typical monthly plans for 1-year construction
-- **15 payments**: More conservative, only for very long plans
-- **8 payments**: Aggressive, switches sooner
+**After (Fixed):**
+```
+┌───────────────────────────────────────────────────────────┐
+│   Rental Income   │   Exit Scenarios   │   Post-Handover │
+│        CARD       │        CARD        │       CARD      │
+└───────────────────────────────────────────────────────────┘
+```
 
-## Edge Cases
+**3-Column Payment Breakdown (Optional):**
+```
+┌───────────────────────────────────────────────────────────┐
+│ ENTRY              │ JOURNEY (cont.)    │ JOURNEY (cont.) │
+│ Booking Fee        │ Month 15           │ Month 30        │
+│ Downpayment        │ Month 16           │ Month 31        │
+│ DLD + Oqood        │ Month 17           │ POST-HANDOVER   │
+│                    │ ...                │ Month +1        │
+│ JOURNEY (start)    │                    │ Month +2...     │
+│ Month 1            │                    │                 │
+│ Month 14           │                    │                 │
+├───────────────────────────────────────────────────────────┤
+│ Total Investment                              AED 1,093K  │
+└───────────────────────────────────────────────────────────┘
+```
 
-- **Short plans (< 12 payments)**: Original side-by-side layout
-- **Post-handover plans**: Post-HO payments flow into right column
-- **Export mode**: Always use 2-column for consistency
-- **Mobile**: Single column stacked regardless of payment count
+---
 
+## Implementation Priority
+
+1. **Dynamic card grid** - Quick fix, high impact
+2. **Text overflow fixes** - Critical for readability
+3. **3-column payment layout** - Enhanced feature, optional
