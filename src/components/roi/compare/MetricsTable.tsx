@@ -1,6 +1,7 @@
 import { QuoteWithCalculations, ComparisonMetrics } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MetricsTableProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -8,6 +9,12 @@ interface MetricsTableProps {
   currency?: Currency;
   exchangeRate?: number;
 }
+
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']  // Gold, blue, purple, orange, teal, pink
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4']; // Lime, cyan, magenta, orange, coral, teal
 
 const MetricRow = ({ 
   label, 
@@ -19,12 +26,12 @@ const MetricRow = ({
   formatter?: (value: any) => string;
 }) => {
   return (
-    <div className="grid items-center border-b border-[#2a3142] py-3" 
+    <div className="grid items-center border-b border-theme-border py-3" 
       style={{ gridTemplateColumns: `180px repeat(${values.length}, minmax(120px, 1fr))` }}>
-      <span className="text-gray-400 text-sm">{label}</span>
+      <span className="text-theme-text-muted text-sm">{label}</span>
       {values.map((item, idx) => (
         <div key={idx} className="flex items-center gap-2">
-          <span className="font-medium text-white">
+          <span className="font-medium text-theme-text">
             {formatter(item.value)}
           </span>
         </div>
@@ -34,7 +41,9 @@ const MetricRow = ({
 };
 
 export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', exchangeRate = 1 }: MetricsTableProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
   const { t } = useLanguage();
   const fmt = (v: number) => formatCurrency(v, currency, exchangeRate);
 
@@ -66,7 +75,6 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
     
     if (hasPostHandover) {
       const onHandover = quote.inputs.onHandoverPercent || 0;
-      // Use stored postHandoverPercent directly
       const postHandover = quote.inputs.postHandoverPercent || 0;
       return {
         type: 'post-handover',
@@ -97,7 +105,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
   return (
     <div className="space-y-0">
       {/* Header row with quote names */}
-      <div className="grid border-b border-[#2a3142] pb-3 mb-2" 
+      <div className="grid border-b border-theme-border pb-3 mb-2" 
         style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, minmax(120px, 1fr))` }}>
         <span className="text-theme-text-muted text-sm">{t('metric') || 'Metric'}</span>
         {quotesWithCalcs.map((q, idx) => (
@@ -180,7 +188,6 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
           label={t('postHandover') || 'Post-Handover'}
           values={quotesWithCalcs.map(q => {
             if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
-            // Use stored postHandoverPercent directly
             const postPercent = q.quote.inputs.postHandoverPercent || 0;
             return { value: q.quote.inputs.basePrice * postPercent / 100 };
           })}

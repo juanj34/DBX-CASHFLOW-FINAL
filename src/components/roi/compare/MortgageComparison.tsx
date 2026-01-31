@@ -1,8 +1,15 @@
 import { useMemo } from 'react';
-import { Home, TrendingUp, AlertTriangle, Check } from 'lucide-react';
+import { AlertTriangle, Check } from 'lucide-react';
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
-import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from '@/components/roi/useMortgageCalculations';
+import { MortgageInputs } from '@/components/roi/useMortgageCalculations';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { useTheme } from '@/contexts/ThemeContext';
+
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
 
 interface MortgageComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -42,6 +49,10 @@ export const MortgageComparison = ({
   currency = 'AED',
   exchangeRate = 1 
 }: MortgageComparisonProps) => {
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
+
   const mortgageData = useMemo(() => {
     return quotesWithCalcs.map(({ quote, calculations }) => {
       const mortgageInputs = (quote.inputs as any)?._mortgageInputs as MortgageInputs | undefined;
@@ -103,7 +114,7 @@ export const MortgageComparison = ({
   const lowestInterest = enabledData.length > 0 ? Math.min(...enabledData.map(d => d.totalInterest)) : 0;
   const lowestRate = enabledData.length > 0 ? Math.min(...enabledData.map(d => d.interestRate)) : 0;
 
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  
 
   const MetricRow = ({ 
     label, 

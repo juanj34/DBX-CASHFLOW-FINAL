@@ -1,6 +1,7 @@
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { calculateExitScenario } from '@/components/roi/constructionProgress';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ExitComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -8,12 +9,20 @@ interface ExitComparisonProps {
   exchangeRate?: number;
 }
 
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+
 export const ExitComparison = ({ 
   quotesWithCalcs,
   currency = 'AED',
   exchangeRate = 1,
 }: ExitComparisonProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
   
   // Common exit points
   const exitPoints = [24, 36, 48, 60];

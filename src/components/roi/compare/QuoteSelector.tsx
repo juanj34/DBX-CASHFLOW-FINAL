@@ -76,11 +76,11 @@ export const QuoteSelector = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-[#1a1f2e] border-[#2a3142] max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="bg-theme-card border-theme-border max-w-lg max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center justify-between">
+          <DialogTitle className="text-theme-text flex items-center justify-between">
             <span>Select Quotes to Compare</span>
-            <span className="text-sm font-normal text-gray-400">
+            <span className="text-sm font-normal text-theme-text-muted">
               {selectedIds.length}/{maxQuotes} selected
             </span>
           </DialogTitle>
@@ -88,8 +88,8 @@ export const QuoteSelector = ({
 
         {/* Recent Comparisons Section */}
         {recentComparisons.length > 0 && !search && (
-          <div className="border-b border-[#2a3142] pb-4 mb-4">
-            <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
+          <div className="border-b border-theme-border pb-4 mb-4">
+            <div className="flex items-center gap-2 text-sm text-theme-text-muted mb-3">
               <FolderOpen className="w-4 h-4" />
               <span>Recent Comparisons</span>
             </div>
@@ -98,15 +98,15 @@ export const QuoteSelector = ({
                 <button
                   key={comparison.id}
                   onClick={() => handleLoadComparison(comparison)}
-                  className="w-full text-left p-2 rounded-lg bg-[#0f172a] border border-[#2a3142] hover:border-[#CCFF00]/50 transition-all flex items-center justify-between group"
+                  className="w-full text-left p-2 rounded-lg bg-theme-bg-alt border border-theme-border hover:border-theme-accent/50 transition-all flex items-center justify-between group"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{comparison.title}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-theme-text truncate">{comparison.title}</p>
+                    <p className="text-xs text-theme-text-muted">
                       {comparison.quote_ids.length} quotes · {formatDate(comparison.updated_at)}
                     </p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-[#CCFF00] transition-colors" />
+                  <ArrowRight className="w-4 h-4 text-theme-text-muted group-hover:text-theme-accent transition-colors" />
                 </button>
               ))}
             </div>
@@ -114,22 +114,22 @@ export const QuoteSelector = ({
         )}
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
           <Input
             placeholder="Search by project, developer, client..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-[#0f172a] border-[#2a3142] text-white placeholder:text-gray-500"
+            className="pl-10 bg-theme-bg-alt border-theme-border text-theme-text placeholder:text-theme-text-muted"
           />
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2 mt-4 min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#CCFF00]" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-theme-accent" />
             </div>
           ) : filteredQuotes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-theme-text-muted">
               {search ? 'No quotes match your search' : 'No quotes available'}
             </div>
           ) : (
@@ -144,18 +144,18 @@ export const QuoteSelector = ({
                   disabled={isDisabled}
                   className={`w-full text-left p-3 rounded-lg border transition-all ${
                     isSelected
-                      ? 'bg-[#CCFF00]/10 border-[#CCFF00] ring-1 ring-[#CCFF00]/30'
+                      ? 'bg-theme-accent/10 border-theme-accent ring-1 ring-theme-accent/30'
                       : isDisabled
-                      ? 'bg-[#0f172a]/50 border-[#2a3142] opacity-50 cursor-not-allowed'
-                      : 'bg-[#0f172a] border-[#2a3142] hover:border-[#CCFF00]/50'
+                      ? 'bg-theme-bg-alt/50 border-theme-border opacity-50 cursor-not-allowed'
+                      : 'bg-theme-bg-alt border-theme-border hover:border-theme-accent/50'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-white truncate">
+                      <h4 className="font-medium text-theme-text truncate">
                         {quote.title || 'Untitled Quote'}
                       </h4>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-gray-400">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-theme-text-muted">
                         {quote.project_name && (
                           <span className="flex items-center gap-1">
                             <Building2 className="w-3 h-3" />
@@ -173,16 +173,16 @@ export const QuoteSelector = ({
                           {formatDate(quote.updated_at)}
                         </span>
                       </div>
-                      <div className="mt-2 text-sm text-[#CCFF00]">
+                      <div className="mt-2 text-sm text-theme-accent">
                         {formatCurrency(quote.inputs.basePrice, 'AED', 1)}
                       </div>
                     </div>
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                       isSelected 
-                        ? 'bg-[#CCFF00] border-[#CCFF00]' 
-                        : 'border-gray-500'
+                        ? 'bg-theme-accent border-theme-accent' 
+                        : 'border-theme-text-muted'
                     }`}>
-                      {isSelected && <X className="w-3 h-3 text-black" />}
+                      {isSelected && <X className="w-3 h-3 text-theme-bg" />}
                     </div>
                   </div>
                 </button>
@@ -191,18 +191,18 @@ export const QuoteSelector = ({
           )}
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#2a3142]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-theme-border">
           <Button
             variant="outline"
             onClick={onClose}
-            className="border-[#2a3142] text-gray-300 hover:bg-[#2a3142]"
+            className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt"
           >
             Cancel
           </Button>
           <Button
             onClick={onClose}
             disabled={selectedIds.length < 2}
-            className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90"
+            className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
           >
             Compare {selectedIds.length} Quotes
           </Button>

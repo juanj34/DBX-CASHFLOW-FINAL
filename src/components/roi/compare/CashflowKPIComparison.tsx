@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { Trophy, TrendingUp, TrendingDown, Home, Banknote } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CashflowKPIComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -9,12 +10,20 @@ interface CashflowKPIComparisonProps {
   exchangeRate?: number;
 }
 
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+
 export const CashflowKPIComparison = ({
   quotesWithCalcs,
   currency = 'AED',
   exchangeRate = 1,
 }: CashflowKPIComparisonProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
 
   const cashflowData = useMemo(() => {
     return quotesWithCalcs.map(({ quote, calculations }) => {
@@ -71,14 +80,14 @@ export const CashflowKPIComparison = ({
         return (
           <div
             key={data.quoteId}
-            className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-4 space-y-4"
+            className="bg-theme-card border border-theme-border rounded-xl p-4 space-y-4"
             style={{ borderTopColor: color, borderTopWidth: '3px' }}
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium truncate" style={{ color }}>
                 {data.title}
               </span>
-              {isBest && <Trophy className="w-4 h-4 text-emerald-400" />}
+              {isBest && <Trophy className="w-4 h-4 text-theme-positive" />}
             </div>
 
             {/* Rental Income */}
@@ -87,7 +96,7 @@ export const CashflowKPIComparison = ({
                 <Home className="w-3.5 h-3.5" />
                 <span>Monthly Rent</span>
               </div>
-              <p className="text-lg font-semibold text-emerald-400">
+              <p className="text-lg font-semibold text-theme-positive">
                 {data.monthlyRent > 0 
                   ? `+${formatCurrency(data.monthlyRent, currency, exchangeRate)}`
                   : '—'}
@@ -101,23 +110,23 @@ export const CashflowKPIComparison = ({
                   <Banknote className="w-3.5 h-3.5" />
                   <span>Monthly Mortgage</span>
                 </div>
-                <p className="text-lg font-semibold text-red-400">
+                <p className="text-lg font-semibold text-theme-negative">
                   -{formatCurrency(data.monthlyMortgage, currency, exchangeRate)}
                 </p>
               </div>
             )}
 
             {/* Net Cashflow */}
-            <div className="pt-3 border-t border-[#2a3142] space-y-1">
+            <div className="pt-3 border-t border-theme-border space-y-1">
               <div className="flex items-center gap-2 text-xs text-theme-text-muted">
                 {isPositive ? (
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                  <TrendingUp className="w-3.5 h-3.5 text-theme-positive" />
                 ) : (
-                  <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                  <TrendingDown className="w-3.5 h-3.5 text-theme-negative" />
                 )}
                 <span>Net Monthly Cashflow</span>
               </div>
-              <p className={`text-xl font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              <p className={`text-xl font-bold ${isPositive ? 'text-theme-positive' : 'text-theme-negative'}`}>
                 {isPositive ? '+' : ''}{formatCurrency(data.netCashflow, currency, exchangeRate)}
               </p>
               <p className="text-xs text-theme-text-muted">
