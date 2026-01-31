@@ -172,6 +172,7 @@ export const PropertyHeroCard = ({
 
   // Background image - prefer project hero image
   const backgroundImage = project?.hero_image_url || heroImageUrl || buildingRenderUrl;
+  const hasBackgroundImage = !!backgroundImage;
 
   if (!hasData) {
     return (
@@ -233,7 +234,12 @@ export const PropertyHeroCard = ({
           {showPriceInfo && setCurrency && setLanguage && (
             <div className="absolute bottom-4 right-5 flex items-center gap-2 z-20">
               <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                <SelectTrigger className="w-[90px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
+                <SelectTrigger className={cn(
+                  "w-[90px] h-7 text-xs",
+                  hasBackgroundImage 
+                    ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                    : "bg-theme-bg-alt hover:bg-theme-card-alt border-theme-border text-theme-text"
+                )}>
                   <SelectValue>
                     <span className="flex items-center gap-1.5">
                       <span>{CURRENCY_CONFIG[currency].flag}</span>
@@ -254,7 +260,12 @@ export const PropertyHeroCard = ({
               </Select>
               
               <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
-                <SelectTrigger className="w-[65px] h-7 bg-white/10 hover:bg-white/20 border-white/20 text-white text-xs">
+                <SelectTrigger className={cn(
+                  "w-[65px] h-7 text-xs",
+                  hasBackgroundImage 
+                    ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                    : "bg-theme-bg-alt hover:bg-theme-card-alt border-theme-border text-theme-text"
+                )}>
                   <SelectValue>{language.toUpperCase()}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-theme-card border-theme-border z-50">
