@@ -393,10 +393,10 @@ export const ExtractedDataPreview = ({
                 <div className="flex items-center gap-0.5">
                   <Input
                     type="number"
-                    step="0.1"
-                    value={inst.paymentPercent}
+                    step="0.01"
+                    value={inst.paymentPercent.toString()}
                     onChange={(e) => updateInstallment(inst.id, 'paymentPercent', parseFloat(e.target.value) || 0)}
-                    className="h-7 text-xs font-mono"
+                    className="h-7 text-xs font-mono w-[70px]"
                   />
                   <span className="text-muted-foreground">%</span>
                 </div>
