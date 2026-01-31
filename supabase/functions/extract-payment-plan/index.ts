@@ -163,8 +163,7 @@ const extractionTool = {
         },
         paymentStructure: {
           type: "object",
-          description: "Overall payment structure information",
-          required: ["hasPostHandover"],
+          description: "Overall payment structure information - hasPostHandover MUST always be set",
           properties: {
             paymentSplit: { 
               type: "string", 
@@ -172,7 +171,7 @@ const extractionTool = {
             },
             hasPostHandover: { 
               type: "boolean", 
-              description: "REQUIRED: Whether there are payments scheduled after handover/completion. Set TRUE if any installments exist AFTER the handover date." 
+              description: "CRITICAL REQUIRED FIELD: Whether there are payments scheduled after handover/completion. MUST be set to TRUE if any installments exist AFTER the handover date, FALSE otherwise. Never leave undefined." 
             },
             handoverMonthFromBooking: {
               type: "number",
