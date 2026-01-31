@@ -17,14 +17,13 @@ import { useOICalculations } from '@/components/roi/useOICalculations';
 import { useRecommendationEngine, InvestmentFocus } from '@/hooks/useRecommendationEngine';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
-import { MetricsTable } from '@/components/roi/compare/MetricsTable';
+import { ComparisonTable } from '@/components/roi/compare/ComparisonTable';
 import { MortgageComparison } from '@/components/roi/compare/MortgageComparison';
 import { RentalYieldComparison } from '@/components/roi/compare/RentalYieldComparison';
 import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
 import { RecommendationSummary } from '@/components/roi/compare/RecommendationSummary';
 import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
-import { CompareHeader } from '@/components/roi/compare/CompareHeader';
 import { AppLogo } from '@/components/AppLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -360,23 +359,13 @@ const CompareView = () => {
               </div>
             )}
 
-            {/* Draggable Property Cards */}
-            <CompareHeader 
-              quotes={orderedQuotes} 
-              onRemove={() => {}} 
+            {/* Unified Key Metrics Table with Draggable Headers */}
+            <ComparisonTable 
+              quotesWithCalcs={quotesWithCalcs} 
               onReorder={setOrderedQuoteIds}
+              currency={currency}
+              exchangeRate={rate}
             />
-
-            {/* Key Metrics Table */}
-            {metrics && (
-              <CollapsibleSection
-                title="Key Metrics Comparison"
-                icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={true}
-              >
-                <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} currency={currency} exchangeRate={rate} />
-              </CollapsibleSection>
-            )}
 
             {/* Mortgage Comparison */}
             {quotesWithCalcs.some(q => (q.quote.inputs as any)?._mortgageInputs?.enabled) && (

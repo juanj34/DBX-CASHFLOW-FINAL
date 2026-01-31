@@ -14,8 +14,7 @@ import { useRecommendationEngine, InvestmentFocus } from '@/hooks/useRecommendat
 import { useSavedComparisons, SavedComparison } from '@/hooks/useSavedComparisons';
 import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { QuoteSelector } from '@/components/roi/compare/QuoteSelector';
-import { CompareHeader } from '@/components/roi/compare/CompareHeader';
-import { MetricsTable } from '@/components/roi/compare/MetricsTable';
+import { ComparisonTable } from '@/components/roi/compare/ComparisonTable';
 import { PaymentComparison } from '@/components/roi/compare/PaymentComparison';
 import { GrowthComparisonChart } from '@/components/roi/compare/GrowthComparisonChart';
 import { ExitComparison } from '@/components/roi/compare/ExitComparison';
@@ -332,11 +331,12 @@ const QuotesCompare = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Property Cards - Draggable */}
-            <CompareHeader 
-              quotes={quotes} 
-              onRemove={handleRemoveQuote}
+            {/* Unified Key Metrics Table with Draggable Headers */}
+            <ComparisonTable 
+              quotesWithCalcs={quotesWithCalcs} 
               onReorder={setSelectedIds}
+              currency={currency}
+              exchangeRate={exchangeRate.rate}
             />
 
             {/* Recommendation Engine Toggle Section */}
@@ -356,17 +356,6 @@ const QuotesCompare = () => {
                 <ProfileSelector selected={selectedFocus} onSelect={setSelectedFocus} />
                 <RecommendationSummary result={recommendations} focus={selectedFocus} />
               </div>
-            )}
-
-            {/* Key Metrics Table */}
-            {metrics && (
-              <CollapsibleSection
-                title="Key Metrics Comparison"
-                icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
-                defaultOpen={allExpanded}
-              >
-                <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} />
-              </CollapsibleSection>
             )}
 
             {/* Payment & Growth Section - Combined */}

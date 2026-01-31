@@ -30,13 +30,12 @@ import { ValueDifferentiatorsDisplay } from "@/components/roi/ValueDifferentiato
 import { SnapshotContent } from "@/components/roi/snapshot";
 
 // Comparison components
-import { MetricsTable } from "@/components/roi/compare/MetricsTable";
+import { ComparisonTable } from "@/components/roi/compare/ComparisonTable";
 import { PaymentComparison } from "@/components/roi/compare/PaymentComparison";
 import { GrowthComparisonChart } from "@/components/roi/compare/GrowthComparisonChart";
 import { ExitComparison } from "@/components/roi/compare/ExitComparison";
 import { MortgageComparison } from "@/components/roi/compare/MortgageComparison";
 import { DifferentiatorsComparison } from "@/components/roi/compare/DifferentiatorsComparison";
-import { CompareHeader } from "@/components/roi/compare/CompareHeader";
 import { computeComparisonMetrics, QuoteWithCalculations, ComparisonQuote } from "@/hooks/useQuotesComparison";
 
 interface PresentationPreviewProps {
@@ -468,23 +467,13 @@ const ComparisonPreview = ({
             </div>
           </div>
 
-          {/* Draggable Property Cards */}
-          <CompareHeader 
-            quotes={orderedQuotesForHeader} 
-            onRemove={() => {}} 
+          {/* Unified Key Metrics Table with Draggable Headers */}
+          <ComparisonTable 
+            quotesWithCalcs={quotesWithCalcs} 
             onReorder={setOrderedQuoteIds}
+            currency={currency}
+            exchangeRate={rate}
           />
-
-          {/* Key Metrics Table */}
-          {metrics && (
-            <CollapsibleSection
-              title="Key Metrics Comparison"
-              icon={<BarChart3 className="w-4 h-4 text-theme-accent" />}
-              defaultOpen={true}
-            >
-              <MetricsTable quotesWithCalcs={quotesWithCalcs} metrics={metrics} currency={currency} exchangeRate={rate} />
-            </CollapsibleSection>
-          )}
 
           {/* Payment & Growth */}
           <CollapsibleSection

@@ -187,6 +187,13 @@ const translations: Translations = {
   noZones: { en: 'No zones available', es: 'No hay zonas disponibles' },
   searchQuotes: { en: 'Search quotes...', es: 'Buscar cotizaciones...' },
   pricePerSqft: { en: 'Price/sqft', es: 'Precio/sqft' },
+  // Comparison Table
+  metric: { en: 'Metric', es: 'Métrica' },
+  propertyValue: { en: 'Property Value', es: 'Valor de Propiedad' },
+  area: { en: 'Area', es: 'Área' },
+  preHandoverSpend: { en: 'Pre-Handover', es: 'Pre-Entrega' },
+  postHandoverSpend: { en: 'Post-Handover', es: 'Post-Entrega' },
+  rentCoverage: { en: 'Rent Coverage', es: 'Cobertura Alquiler' },
   
   // Month names for configurator
   january: { en: 'January', es: 'Enero' },
@@ -1471,7 +1478,7 @@ const translations: Translations = {
   advancedProjectionsDesc: { en: '10-year simulation for analysis purposes', es: 'Simulación a 10 años para propósitos de análisis' },
 
   // Comparison Components (unique keys)
-  metric: { en: 'Metric', es: 'Métrica' },
+  comparisonMetric: { en: 'Metric', es: 'Métrica' },
   standard: { en: 'Standard', es: 'Estándar' },
   installments: { en: 'installments', es: 'cuotas' },
   y1RentIncome: { en: 'Y1 Rent Income', es: 'Ingreso Renta A1' },
