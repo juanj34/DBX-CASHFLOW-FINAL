@@ -20,3 +20,4 @@ export * from './SaveSecondaryComparisonModal';
 export * from './LoadSecondaryComparisonModal';
 export * from './MortgageCoverageCard';
 export * from './RentalComparisonAtHandover';
+export * from './ExportComparisonModal';
