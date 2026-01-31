@@ -239,49 +239,56 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     setShowInstallments(true);
   };
 
-  // Handle AI extraction result
+  // Handle AI extraction result - comprehensive mapping to configurator state
   const handleAIExtraction = (data: ExtractedPaymentPlan) => {
-    // Convert extracted installments to our payment milestone format
-    const newPayments: PaymentMilestone[] = [];
-    let downpaymentPercent = inputs.downpaymentPercent;
-    let hasPostHandover = data.paymentStructure.hasPostHandover;
+    // Find downpayment (month 0 or "On Booking")
+    const downpayment = data.installments.find(
+      i => i.type === 'time' && i.triggerValue === 0
+    );
+    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
     
-    for (const inst of data.installments) {
-      // First installment at month 0 with type 'time' is typically the downpayment
-      if (inst.type === 'time' && inst.triggerValue === 0) {
-        downpaymentPercent = inst.paymentPercent;
-        continue;
-      }
-      
-      // Skip explicit handover markers - they're calculated from the split
-      if (inst.type === 'handover') {
-        continue;
-      }
-      
-      newPayments.push({
-        id: inst.id,
-        type: inst.type === 'post-handover' ? 'time' : inst.type as 'time' | 'construction',
-        triggerValue: inst.triggerValue,
-        paymentPercent: inst.paymentPercent,
-      });
-    }
+    // Categorize installments by pre/post handover
+    const preHandoverInstallments = data.installments.filter(i => 
+      i.type !== 'post-handover' && i.type !== 'handover'
+    );
+    const postHandoverInstallments = data.installments.filter(i => 
+      i.type === 'post-handover'
+    );
     
-    // Calculate pre-handover percent from split if available
-    let preHandoverPercent = inputs.preHandoverPercent;
+    // Calculate totals
+    const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    
+    // Determine pre-handover percent from split or calculation
+    let preHandoverPercent = preHandoverTotal;
     if (data.paymentStructure.paymentSplit) {
       const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
-      if (!isNaN(pre)) {
-        preHandoverPercent = pre;
-      }
+      if (!isNaN(pre)) preHandoverPercent = pre;
     }
     
-    // Update inputs
+    // Convert installments to PaymentMilestone format
+    // EXCLUDE: downpayment (month 0) and explicit handover markers
+    const additionalPayments = data.installments
+      .filter(i => {
+        if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
+        if (i.type === 'handover') return false; // Skip handover markers
+        return true;
+      })
+      .map((inst, idx) => ({
+        id: inst.id || `ai-${Date.now()}-${idx}`,
+        type: inst.type === 'post-handover' ? 'time' as const : inst.type as 'time' | 'construction',
+        triggerValue: inst.triggerValue,
+        paymentPercent: inst.paymentPercent,
+      }));
+    
+    // Update inputs with proper structure
     setInputs(prev => ({
       ...prev,
       downpaymentPercent,
       preHandoverPercent,
-      additionalPayments: newPayments,
-      hasPostHandoverPlan: hasPostHandover,
+      additionalPayments,
+      hasPostHandoverPlan: data.paymentStructure.hasPostHandover || postHandoverTotal > 0,
+      postHandoverPercent: postHandoverTotal || data.paymentStructure.postHandoverPercent || 0,
       // Update handover dates if extracted
       ...(data.paymentStructure.handoverQuarter && { handoverQuarter: data.paymentStructure.handoverQuarter }),
       ...(data.paymentStructure.handoverYear && { handoverYear: data.paymentStructure.handoverYear }),
@@ -289,7 +296,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
     }));
     
-    setShowInstallments(newPayments.length > 0);
+    setShowInstallments(additionalPayments.length > 0);
   };
 
   return (
