@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { TrendingUp, Wallet } from 'lucide-react';
+import { TrendingUp, Wallet, Key } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Currency, formatCurrency } from '../currencyUtils';
+import { calculateExitPrice } from '../constructionProgress';
 
 interface WealthProjectionTableProps {
   basePrice: number;
@@ -17,7 +18,21 @@ interface WealthProjectionTableProps {
   rentalYieldPercent?: number;
   rentGrowthRate?: number;
   showRentalIncome?: boolean;
+  // Handover props (for dedicated handover row)
+  handoverQuarter?: number;
+  handoverYear?: number;
+  bookingMonth?: number;
 }
+
+const quarterToMonth = (quarter: number): number => {
+  switch (quarter) {
+    case 1: return 2;  // Q1 = February
+    case 2: return 5;  // Q2 = May
+    case 3: return 8;  // Q3 = August
+    case 4: return 11; // Q4 = November
+    default: return 11;
+  }
+};
 
 export const WealthProjectionTable = ({
   basePrice,
@@ -32,6 +47,9 @@ export const WealthProjectionTable = ({
   rentalYieldPercent = 6,
   rentGrowthRate = 3,
   showRentalIncome = true,
+  handoverQuarter,
+  handoverYear: propHandoverYear,
+  bookingMonth = 1,
 }: WealthProjectionTableProps) => {
   const tableData = useMemo(() => {
     const data: { 
@@ -41,13 +59,35 @@ export const WealthProjectionTable = ({
       appreciation: number;
       annualRent: number;
       cumulativeRent: number;
+      isHandover?: boolean;
+      label?: string;
     }[] = [];
     const constructionYears = Math.ceil(constructionMonths / 12);
+    
+    // Calculate handover year and value
+    const handoverYear = propHandoverYear || (bookingYear + constructionYears);
+    const handoverMonth = handoverQuarter ? quarterToMonth(handoverQuarter) : 11;
+    
+    // Calculate months from booking to handover
+    const bookingDate = new Date(bookingYear, bookingMonth - 1);
+    const handoverDate = new Date(handoverYear, handoverMonth - 1);
+    const monthsToHandover = Math.max(0, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+    
+    // Calculate handover value using the same function as exits
+    const handoverValue = calculateExitPrice(
+      monthsToHandover,
+      basePrice,
+      constructionMonths,
+      { constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears }
+    );
+    
     let currentValue = basePrice;
     let cumulativeRent = 0;
     let currentRent = 0;
+    let handoverInserted = false;
 
     for (let year = 0; year <= 7; year++) {
+      const calendarYear = bookingYear + year;
       let phase: string;
       let appreciation: number;
       let annualRent = 0;
@@ -79,7 +119,7 @@ export const WealthProjectionTable = ({
       }
 
       data.push({
-        year: bookingYear + year,
+        year: calendarYear,
         value: Math.round(currentValue),
         phase,
         appreciation,
@@ -87,23 +127,41 @@ export const WealthProjectionTable = ({
         cumulativeRent: Math.round(cumulativeRent),
       });
 
+      // Insert handover row after the handover year, before the next year
+      if (!handoverInserted && calendarYear === handoverYear && handoverQuarter) {
+        const quarterLabel = `Q${handoverQuarter}'${String(handoverYear).slice(-2)}`;
+        data.push({
+          year: handoverYear,
+          value: Math.round(handoverValue),
+          phase: 'Handover',
+          appreciation: 0,
+          annualRent: 0,
+          cumulativeRent: 0,
+          isHandover: true,
+          label: `🔑 ${quarterLabel}`,
+        });
+        handoverInserted = true;
+      }
+
       currentValue = currentValue * (1 + appreciation / 100);
     }
 
     return data;
-  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, rentalYieldPercent, rentGrowthRate]);
+  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, rentalYieldPercent, rentGrowthRate, handoverQuarter, propHandoverYear, bookingMonth]);
 
-  const totalGrowth = tableData.length > 0 
-    ? ((tableData[tableData.length - 1].value - tableData[0].value) / tableData[0].value * 100) 
+  const regularData = tableData.filter(d => !d.isHandover);
+  const totalGrowth = regularData.length > 0 
+    ? ((regularData[regularData.length - 1].value - regularData[0].value) / regularData[0].value * 100) 
     : 0;
 
-  const totalRent = tableData[tableData.length - 1]?.cumulativeRent || 0;
+  const totalRent = regularData[regularData.length - 1]?.cumulativeRent || 0;
 
   const getPhaseColor = (phase: string) => {
     switch (phase) {
       case 'Construction': return 'bg-orange-400';
       case 'Growth': return 'bg-green-400';
       case 'Mature': return 'bg-blue-400';
+      case 'Handover': return 'bg-green-500';
       default: return 'bg-gray-400';
     }
   };
@@ -113,6 +171,7 @@ export const WealthProjectionTable = ({
       case 'Construction': return 'text-orange-400';
       case 'Growth': return 'text-green-400';
       case 'Mature': return 'text-blue-400';
+      case 'Handover': return 'text-green-500';
       default: return 'text-gray-400';
     }
   };
@@ -175,17 +234,28 @@ export const WealthProjectionTable = ({
           <tbody>
             {tableData.map((row, index) => (
               <motion.tr 
-                key={row.year}
+                key={row.isHandover ? `handover-${row.year}` : row.year}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
-                className={`border-b border-theme-border/50 last:border-0 ${index === 0 ? 'bg-theme-accent/5' : ''}`}
+                className={`border-b border-theme-border/50 last:border-0 ${
+                  row.isHandover 
+                    ? 'bg-green-500/10 border-l-4 border-l-green-500' 
+                    : index === 0 ? 'bg-theme-accent/5' : ''
+                }`}
               >
                 <td className="py-1.5 px-2 text-theme-text font-medium">
-                  {row.year}
+                  {row.isHandover ? (
+                    <span className="flex items-center gap-1 text-green-500">
+                      <Key className="w-3 h-3" />
+                      {row.label}
+                    </span>
+                  ) : (
+                    row.year
+                  )}
                 </td>
                 <td className="py-1.5 px-2 text-right">
-                  <div className="text-theme-text tabular-nums font-medium">
+                  <div className={`tabular-nums font-medium ${row.isHandover ? 'text-green-500 font-bold' : 'text-theme-text'}`}>
                     {formatCurrency(row.value, 'AED', 1)}
                   </div>
                   {currency !== 'AED' && (
@@ -198,12 +268,12 @@ export const WealthProjectionTable = ({
                   <span className="inline-flex items-center gap-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${getPhaseColor(row.phase)}`} />
                     <span className={`text-[10px] ${getPhaseTextColor(row.phase)}`}>
-                      {row.phase.slice(0, 4)}
+                      {row.isHandover ? 'Handover' : row.phase.slice(0, 4)}
                     </span>
                   </span>
                 </td>
                 <td className={`py-1.5 px-2 text-right tabular-nums ${getPhaseTextColor(row.phase)}`}>
-                  +{row.appreciation}%
+                  {row.isHandover ? '-' : `+${row.appreciation}%`}
                 </td>
                 {showRentalIncome && (
                   <>

@@ -198,6 +198,9 @@ export const SnapshotContent = ({
         rentGrowthRate={inputs.rentGrowthRate || 3}
         currency={currency}
         rate={rate}
+        handoverQuarter={inputs.handoverQuarter}
+        handoverYear={inputs.handoverYear}
+        bookingMonth={inputs.bookingMonth}
       />
 
       {/* Exit Chart Modal */}
