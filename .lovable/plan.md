@@ -1,177 +1,142 @@
 
-# Fix AI Payment Plan Extractor: Correct Split Handling and Prevent Double-Counting
+# Fix AI Payment Plan Extractor: Apply Booking Date to Configurator
 
 ## Problem Analysis
 
-Based on the edge function logs and screenshot, here's what's happening:
+When using the AI Payment Plan Extractor:
+1. User selects a booking date (today, existing, or custom) in the extraction sheet
+2. This date is sent to the AI for calculating payment timelines
+3. AI extracts handover timing correctly (e.g., "Month 23 from booking")
+4. **BUT**: When clicking "Apply to Configurator", the booking date chosen in the extractor is **never applied** to the configurator's Property section
 
-### What the AI Correctly Extracted:
+As a result:
+- The "Booking Date" dropdown in PropertySection still shows the old/default value (January 2026 in your screenshot)
+- The "Handover Date" doesn't update correctly because it's derived from the booking date + offset
+- User expects these fields to auto-fill based on their AI extraction choices
+
+## Root Cause
+
+In `PaymentSection.tsx` → `handleAIExtraction()`:
+
+```typescript
+setInputs(prev => ({
+  ...prev,
+  downpaymentPercent,
+  preHandoverPercent,
+  // ...
+  handoverMonth,
+  handoverQuarter,
+  handoverYear,
+  // basePrice is applied if extracted
+  ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
+  // ❌ MISSING: bookingMonth and bookingYear are NOT being applied
+}));
 ```
-installmentsCount: 2
-handoverMonthFromBooking: 23
-onHandoverPercent: 80
-totalPercent: 100
-hasPostHandover: false
-```
 
-This means: **20% downpayment on Month 0** + **80% completion on Month 23** = 100% (a simple 20/80 plan)
-
-### What's Broken in the UI:
-1. **Split selector shows "30/70"** instead of "20/80" despite AI extracting the correct split
-2. **Footer shows "PRE-HO 20%, HANDOVER 70%, TOTAL 90%"** - mathematically impossible
-3. **An 80% payment appears in the installments list** - it shouldn't be there
-
-### Root Causes:
-
-**Issue 1: Handover payment added to installments incorrectly**
-- In `handleAIExtraction()` (line 312-339), the filter excludes Month 0 (downpayment) but **includes the handover payment**
-- The 80% completion payment is being added to `additionalPayments` as a regular installment
-- It then gets classified as a "post-handover" payment because its month (23) equals the handover date
-
-**Issue 2: `preHandoverPercent` not being set correctly**
-- The AI doesn't return `paymentSplit` in many cases
-- The fallback logic (lines 304-308) only extracts it IF the AI provides it
-- Without `paymentSplit`, `preHandoverPercent` stays at its previous value (30%) instead of 20%
-
-**Issue 3: Footer calculation uses wrong values**
-- `handoverPercent = 100 - preHandoverPercent` uses the stale 30% value
-- Result: 100 - 30 = 70% handover (wrong)
-- Total becomes 20 + 70 = 90% (missing the 80% that went to installments)
-
----
+The booking date selected in the extractor sheet (`getBookingDate()`) is only used for API calculation but never flows back to the configurator state.
 
 ## Solution
 
-### Fix 1: Calculate `paymentSplit` from Installments (Edge Function)
+### 1. Add `bookingDate` to the extraction data flow
 
-Add a fallback in the edge function to compute the split from the extracted installments:
+Currently, `PaymentPlanExtractor` passes `bookingDate` to the edge function but doesn't include it in the `onApply` callback data. We need to:
+
+**Option A (Preferred - No type changes):** Track the booking date in the extractor and pass it with the extracted data
+- Store the selected booking date in the extractor component
+- Include it in the `handleApply` call alongside the extracted data
+
+**Option B:** Extend `ExtractedPaymentPlan` type to include booking date (requires type file changes)
+
+### 2. Update `handleAIExtraction` to apply booking date
+
+When the extraction is applied, set:
+- `bookingMonth` from the extractor's selected booking date
+- `bookingYear` from the extractor's selected booking date
+
+## Implementation Plan
+
+### Step 1: Modify `PaymentPlanExtractor.tsx`
+
+Update the component to pass the booking date alongside the extracted data:
 
 ```typescript
-// Fallback 5: Calculate paymentSplit from installments
-if (!extractedData.paymentStructure.paymentSplit) {
-  const preHOTotal = extractedData.installments
-    .filter(i => i.type === 'time' || i.type === 'construction')
-    .reduce((sum, i) => sum + i.paymentPercent, 0);
-  
-  const postHOTotal = 100 - preHOTotal;
-  extractedData.paymentStructure.paymentSplit = `${Math.round(preHOTotal)}/${Math.round(postHOTotal)}`;
+// Change the onApply signature to include booking date
+interface PaymentPlanExtractorProps {
+  // ...existing props
+  onApply: (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => void;
 }
+
+// In handleApply:
+const handleApply = (data: ExtractedPaymentPlan) => {
+  const booking = getBookingDate();
+  onApply(data, { month: booking.month!, year: booking.year! });
+  // ...rest
+};
 ```
 
-### Fix 2: Exclude Handover Payment from Installments (Client-Side)
+### Step 2: Update `PaymentSection.tsx`
 
-In `PaymentSection.tsx` → `handleAIExtraction()`, modify the filter to exclude handover-type installments:
-
-```typescript
-const additionalPayments = data.installments
-  .filter(i => {
-    // Skip downpayment (Month 0)
-    if (i.type === 'time' && i.triggerValue === 0) return false;
-    
-    // Skip handover payment - it's handled by preHandoverPercent/handoverPercent
-    if (i.type === 'handover') return false;
-    
-    // Skip duplicates
-    if (i.type === 'time' && i.triggerValue === 1 && 
-        downpayment && i.paymentPercent === downpayment.paymentPercent) {
-      return false;
-    }
-    
-    return true;
-  })
-  // ... rest of mapping
-```
-
-### Fix 3: Derive `preHandoverPercent` from Downpayment + Installments
-
-If the AI doesn't provide `paymentSplit`, calculate it from the extracted data:
+Modify `handleAIExtraction` to:
+1. Accept the booking date parameter
+2. Apply `bookingMonth` and `bookingYear` to inputs
 
 ```typescript
-let preHandoverPercent = inputs.preHandoverPercent;
-if (data.paymentStructure.paymentSplit) {
-  const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
-  if (!isNaN(pre)) preHandoverPercent = pre;
-} else {
-  // Calculate from extracted installments: downpayment + all pre-HO installments
-  const preHOTotal = (downpaymentPercent || 0) + 
-    data.installments
-      .filter(i => (i.type === 'time' || i.type === 'construction') && i.triggerValue > 0 && i.type !== 'handover')
-      .reduce((sum, i) => sum + i.paymentPercent, 0);
+const handleAIExtraction = (
+  data: ExtractedPaymentPlan, 
+  bookingDate: { month: number; year: number }
+) => {
+  // Existing logic for deriving handover...
   
-  if (preHOTotal > 0 && preHOTotal <= 100) {
-    preHandoverPercent = preHOTotal;
-  }
-}
+  setInputs(prev => ({
+    ...prev,
+    // NEW: Apply the booking date from extractor
+    bookingMonth: bookingDate.month,
+    bookingYear: bookingDate.year,
+    // Existing fields
+    downpaymentPercent,
+    preHandoverPercent,
+    handoverQuarter,
+    handoverYear,
+    // ...etc
+  }));
+};
 ```
 
----
+### Step 3: Recalculate Handover from New Booking Date
 
-## UI/UX Improvements (Optional - Address Clutter)
+Since handover is calculated as an offset from booking, ensure the calculation uses the applied booking date:
 
-Based on your feedback about redundant UI elements, here are targeted improvements:
+```typescript
+// When applying extraction:
+const bookingDate = new Date(selectedBookingYear, selectedBookingMonth - 1);
+const handoverDate = new Date(bookingDate);
+handoverDate.setMonth(handoverDate.getMonth() + handoverMonthFromBooking);
 
-### Reduce Visual Clutter:
-1. **Remove duplicate section headers** - The "Payment Plan" title appears twice in some states
-2. **Consolidate padding** - Some nested boxes have excessive padding (p-3 inside p-3)
-3. **Simplify step badges** - Currently 3 visual levels (badge + text + icon), reduce to 2
-
-### Specific Changes:
-- Remove outer title from step blocks (keep only the numbered badge)
-- Reduce nested card padding from `p-3` to `p-2`
-- Consolidate the "Generate" row and "Installments" section header
-
----
+const handoverMonth = handoverDate.getMonth() + 1;
+const handoverYear = handoverDate.getFullYear();
+const handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
+```
 
 ## Files to Modify
 
-### `supabase/functions/extract-payment-plan/index.ts`
-- Add Fallback 5 to calculate `paymentSplit` from installments
-
-### `src/components/roi/configurator/PaymentSection.tsx`
-- Fix `handleAIExtraction()` to:
-  1. Exclude handover-type payments from `additionalPayments`
-  2. Calculate `preHandoverPercent` when `paymentSplit` is missing
-- Reduce UI clutter in step blocks
-
----
+| File | Changes |
+|------|---------|
+| `src/components/roi/configurator/PaymentPlanExtractor.tsx` | Update `onApply` to include booking date parameter |
+| `src/components/roi/configurator/PaymentSection.tsx` | Update `handleAIExtraction` to accept and apply booking date |
 
 ## Expected Outcome
 
-After these fixes, importing a **20/80 payment plan** will:
-1. ✅ Show "20/80" selected in the Split buttons
-2. ✅ Set downpayment to 20%
-3. ✅ Show **empty** installments list (no intermediate payments)
-4. ✅ Footer shows "PRE-HO 20%, HANDOVER 80%, TOTAL 100%"
+After applying an AI-extracted payment plan:
+1. **Booking Date** in PropertySection updates to match the extractor selection (e.g., "January 2026" if user chose today's date)
+2. **Handover Date** updates to the correctly calculated Q/Year based on booking + offset
+3. All payment milestones align with the correct timeline
+4. Footer shows accurate totals (100%)
 
----
+## Additional Property Fields (Bonus)
 
-## Technical Details
+The AI already extracts other property fields that could also be applied:
+- `property.developer` → Could update client info
+- `property.projectName` → Could update client info
+- `property.unitSizeSqft` → Could update `unitSizeSqf` in inputs
 
-### Why the 80% Installment Appeared at Month 23
-
-The AI correctly identified:
-```json
-{
-  "type": "handover",
-  "triggerValue": 23,
-  "paymentPercent": 80
-}
-```
-
-But the client code mapped it as:
-```typescript
-type: 'time',           // Converted from 'handover'
-triggerValue: 23,       // Month 23
-paymentPercent: 80
-```
-
-Because Month 23 equals the handover month, it was classified as a post-handover payment, bypassing the pre-handover total calculation entirely.
-
-### The Math That Was Happening
-```
-preHandoverTotal = 20% (downpayment) + 0% (no pre-HO installments) = 20%
-handoverPercent = 100% - 30% (stale preHandoverPercent) = 70%
-totalPayment = 20% + 70% = 90%
-```
-
-The 80% completion payment was in `additionalPayments` but filtered into `postHandoverPayments` array, which has no effect on the standard (non-post-handover) calculation.
+These could be added as optional enhancements in the same change.
