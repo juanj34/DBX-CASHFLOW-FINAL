@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { ZoneSelect } from "@/components/ui/zone-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, ExternalLink, UserPlus } from "lucide-react";
+import { Plus, Trash2, Users, Percent, AlertCircle, MapPin, Building, Building2, ExternalLink, UserPlus, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ClientUnitData, ClientShare } from "../ClientUnitInfo";
 import { Client, UNIT_TYPES } from "../ClientUnitModal";
@@ -15,6 +15,9 @@ import { ProjectSelect } from "./ProjectSelect";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import { Client as DbClient, useClients } from "@/hooks/useClients";
 import { ClientForm } from "@/components/clients/ClientForm";
+import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
+import { ExtractedPaymentPlan } from "@/lib/paymentPlanTypes";
+import { OIInputs } from "../useOICalculations";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,6 +26,9 @@ interface ClientSectionProps {
   clientInfo: ClientUnitData;
   onClientInfoChange: (data: ClientUnitData) => void;
   quoteId?: string;
+  // For AI extraction to populate inputs
+  inputs?: OIInputs;
+  setInputs?: React.Dispatch<React.SetStateAction<OIInputs>>;
 }
 
 const SQF_TO_M2 = 0.092903;
@@ -31,6 +37,8 @@ export const ClientSection = ({
   clientInfo,
   onClientInfoChange,
   quoteId,
+  inputs,
+  setInputs,
 }: ClientSectionProps) => {
   const { language, t } = useLanguage();
   const { clients: dbClients, createClient } = useClients();
@@ -41,6 +49,7 @@ export const ClientSection = ({
   const [isAdmin, setIsAdmin] = useState(false);
   const [showClientForm, setShowClientForm] = useState(false);
   const [selectedDbClientId, setSelectedDbClientId] = useState<string | null>(clientInfo.dbClientId || null);
+  const [showAIExtractor, setShowAIExtractor] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -195,6 +204,69 @@ export const ClientSection = ({
     }
   };
 
+  // Handle AI extraction results
+  const handleAIExtraction = (extractedData: ExtractedPaymentPlan) => {
+    // Update client info with extracted property details
+    const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2 * 10) / 10;
+    
+    onClientInfoChange({
+      ...clientInfo,
+      developer: extractedData.property?.developer || clientInfo.developer,
+      projectName: extractedData.property?.projectName || clientInfo.projectName,
+      unit: extractedData.property?.unitNumber || clientInfo.unit,
+      unitType: extractedData.property?.unitType || clientInfo.unitType,
+      unitSizeSqf: extractedData.property?.unitSizeSqft || clientInfo.unitSizeSqf,
+      unitSizeM2: extractedData.property?.unitSizeSqft 
+        ? sqfToM2(extractedData.property.unitSizeSqft) 
+        : clientInfo.unitSizeM2,
+    });
+    
+    // Update inputs if setInputs is provided
+    if (setInputs && inputs) {
+      // Calculate pre-handover percent from non-post-handover installments
+      const preHandoverInstallments = extractedData.installments.filter(i => i.type !== 'post-handover');
+      const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
+      const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+      
+      // Find downpayment (first time-based payment at month 0 or on booking)
+      const downpayment = extractedData.installments.find(
+        i => i.type === 'time' && i.triggerValue === 0
+      );
+      const downpaymentPercent = downpayment?.paymentPercent || 0;
+      
+      // Additional payments exclude downpayment and handover
+      const additionalPayments = extractedData.installments
+        .filter(i => {
+          if (i.type === 'time' && i.triggerValue === 0) return false; // Exclude downpayment
+          if (i.type === 'handover') return false; // Exclude handover (calculated as balance)
+          return true;
+        })
+        .map((inst, idx) => ({
+          id: inst.id || `extracted-${idx}`,
+          type: (inst.type === 'handover' ? 'time' : inst.type) as 'time' | 'construction' | 'post-handover',
+          triggerValue: inst.triggerValue,
+          paymentPercent: inst.paymentPercent,
+          label: inst.label || `Installment ${idx + 1}`,
+        }));
+      
+      setInputs(prev => ({
+        ...prev,
+        basePrice: extractedData.property?.basePrice || prev.basePrice,
+        downpaymentPercent,
+        preHandoverPercent: Math.round(preHandoverTotal),
+        additionalPayments,
+        handoverQuarter: extractedData.paymentStructure.handoverQuarter || prev.handoverQuarter,
+        handoverYear: extractedData.paymentStructure.handoverYear || prev.handoverYear,
+        hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover,
+        postHandoverPercent: extractedData.paymentStructure.postHandoverPercent || 
+          postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0),
+      }));
+    }
+    
+    toast.success('Quote data imported from AI extraction!');
+    setShowAIExtractor(false);
+  };
+
   return (
     <>
       <ClientForm
@@ -203,7 +275,38 @@ export const ClientSection = ({
         onSubmit={handleCreateNewClient}
         mode="create"
       />
+      <PaymentPlanExtractor
+        open={showAIExtractor}
+        onOpenChange={setShowAIExtractor}
+        existingBookingMonth={inputs?.bookingMonth}
+        existingBookingYear={inputs?.bookingYear}
+        onApply={handleAIExtraction}
+      />
     <div className="space-y-6">
+      {/* AI Import Banner */}
+      <div className="p-4 rounded-lg border border-purple-500/30 bg-purple-500/10">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h4 className="text-sm font-medium text-theme-text flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              AI Auto-Fill
+            </h4>
+            <p className="text-xs text-theme-text-muted mt-1">
+              Upload a brochure or payment plan to auto-fill developer, unit info, price, and payment schedule.
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowAIExtractor(true)}
+            variant="outline"
+            size="sm"
+            className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+            Import
+          </Button>
+        </div>
+      </div>
+
       {/* Property Details Section */}
       <div>
         <h3 className="text-sm font-semibold text-theme-text mb-3 flex items-center gap-2">

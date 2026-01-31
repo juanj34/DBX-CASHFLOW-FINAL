@@ -23,6 +23,7 @@ interface ExtractedPaymentPlan {
     unitType?: string;
     unitSizeSqft?: number;
     basePrice?: number;
+    currency?: 'AED' | 'USD' | 'EUR' | 'GBP';
   };
   paymentStructure: {
     paymentSplit?: string;
@@ -38,6 +39,17 @@ interface ExtractedPaymentPlan {
 }
 
 const systemPrompt = `You are a Dubai real estate payment plan analyzer. Extract structured payment data from marketing materials with HIGH PRECISION.
+
+EXTRACTION PRIORITIES (in order):
+1. Property info (developer, project name, unit details, price, currency) - ALWAYS extract if visible
+2. Payment percentages (MUST sum to 100%)
+3. Payment triggers (month number or construction milestone)
+4. Dates (handover quarter/year)
+
+CURRENCY DETECTION:
+- Default to AED (Dubai Dirhams) if no currency is explicitly shown
+- Look for: "AED", "درهم", "$", "USD", "€", "EUR", "£", "GBP"
+- Price formats: "2,500,000 AED", "AED 2.5M", "2.5 Million", etc.
 
 PAYMENT FORMATS TO RECOGNIZE:
 1. TIME-BASED: "Month 1", "Month 6", "12 months", "6 months post-booking", "On Booking", "Booking", "Down Payment"
@@ -60,12 +72,6 @@ POST-HANDOVER DETECTION:
 - Keywords: "post-handover", "after completion", "after delivery", "post-possession", "post completion"
 - Payment schedules extending beyond handover date
 - Multiple years of payments after key handover (e.g., "3 years post-handover")
-
-EXTRACTION PRIORITIES (in order):
-1. Payment percentages (MUST sum to 100%)
-2. Payment triggers (month number or construction milestone)
-3. Property info (developer, project, unit details) - only if clearly visible
-4. Dates (handover quarter/year)
 
 IMPORTANT RULES:
 - All percentages MUST add up to exactly 100%
@@ -94,9 +100,9 @@ const extractionTool = {
       properties: {
         property: {
           type: "object",
-          description: "Property information if visible in the document",
+          description: "Property information if visible in the document - ALWAYS extract these if visible",
           properties: {
-            developer: { type: "string", description: "Developer name (e.g., Emaar, Damac, Sobha)" },
+            developer: { type: "string", description: "Developer name (e.g., Emaar, Damac, Sobha, Meraas, Dubai Properties)" },
             projectName: { type: "string", description: "Project or community name" },
             unitNumber: { type: "string", description: "Unit/apartment number" },
             unitType: { 
@@ -105,7 +111,12 @@ const extractionTool = {
               description: "Type of unit" 
             },
             unitSizeSqft: { type: "number", description: "Unit size in square feet" },
-            basePrice: { type: "number", description: "Total property price in AED (without commas)" }
+            basePrice: { type: "number", description: "Total property price (without commas, just the number)" },
+            currency: {
+              type: "string",
+              enum: ["AED", "USD", "EUR", "GBP"],
+              description: "Currency detected in the document. Default to AED for Dubai properties."
+            }
           }
         },
         paymentStructure: {
@@ -239,23 +250,14 @@ Extract ALL payment milestones ensuring they sum to exactly 100%. Call the extra
         }
       }
       
-      // Check if it's a PDF
-      if (mediaType === "application/pdf") {
-        contentParts.push({
-          type: "file",
-          file: {
-            filename: `page_${i + 1}.pdf`,
-            file_data: base64Data,
-          }
-        });
-      } else {
-        contentParts.push({
-          type: "image_url",
-          image_url: {
-            url: imageData.startsWith("data:") ? imageData : `data:${mediaType};base64,${imageData}`
-          }
-        });
-      }
+      // Use image_url format for ALL files (images AND PDFs)
+      // The Lovable AI Gateway only supports image_url content type
+      contentParts.push({
+        type: "image_url",
+        image_url: {
+          url: imageData.startsWith("data:") ? imageData : `data:${mediaType};base64,${base64Data}`
+        }
+      });
     }
 
     // Call Lovable AI Gateway with Gemini 3 Flash Preview

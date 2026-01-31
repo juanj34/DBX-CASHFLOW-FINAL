@@ -7,6 +7,7 @@ export interface ExtractedProperty {
   unitType?: 'studio' | '1br' | '2br' | '3br' | '4br' | 'penthouse' | 'townhouse' | 'villa' | string;
   unitSizeSqft?: number;
   basePrice?: number;
+  currency?: 'AED' | 'USD' | 'EUR' | 'GBP';
 }
 
 export interface ExtractedPaymentStructure {

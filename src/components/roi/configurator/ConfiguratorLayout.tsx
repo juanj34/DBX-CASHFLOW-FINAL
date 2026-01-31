@@ -524,6 +524,8 @@ export const ConfiguratorLayout = ({
             clientInfo={clientInfo}
             onClientInfoChange={setClientInfo}
             quoteId={quoteId}
+            inputs={inputs}
+            setInputs={setInputs}
           />
         );
       case 'property':
