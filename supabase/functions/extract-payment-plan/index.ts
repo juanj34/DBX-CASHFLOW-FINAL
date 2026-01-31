@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -259,22 +259,84 @@ serve(async (req) => {
       throw new Error("No images provided. Please upload at least one image or PDF.");
     }
 
-    console.log(`Processing ${images.length} image(s) for payment plan extraction`);
+    console.log(`Processing ${images.length} file(s) for payment plan extraction`);
     console.log(`Booking date context:`, bookingDate);
 
     // Build the content array with all images
     const contentParts: any[] = [];
+    let excelTextContext = "";
+    const imageContents: any[] = [];
+    
+    // Process each file - separate Excel from images/PDFs
+    for (let i = 0; i < images.length; i++) {
+      const fileData = images[i];
+      
+      // Check if it's an Excel file (by MIME type in data URL)
+      if (fileData.startsWith("data:application/vnd.") && 
+          (fileData.includes("spreadsheet") || fileData.includes("excel") || fileData.includes("ms-excel"))) {
+        
+        try {
+          console.log(`Processing Excel file ${i + 1}...`);
+          
+          // Extract base64 data
+          const base64Match = fileData.match(/^data:[^;]+;base64,(.+)$/);
+          if (base64Match) {
+            const base64Data = base64Match[1];
+            const binaryString = atob(base64Data);
+            const binaryData = new Uint8Array(binaryString.length);
+            for (let j = 0; j < binaryString.length; j++) {
+              binaryData[j] = binaryString.charCodeAt(j);
+            }
+            
+            // Parse with SheetJS
+            const workbook = XLSX.read(binaryData, { type: "array" });
+            
+            // Convert all sheets to text/CSV
+            for (const sheetName of workbook.SheetNames) {
+              const sheet = workbook.Sheets[sheetName];
+              const csv = XLSX.utils.sheet_to_csv(sheet);
+              excelTextContext += `\n=== Sheet: ${sheetName} ===\n${csv}\n`;
+            }
+            
+            console.log(`Excel parsed successfully: ${workbook.SheetNames.length} sheet(s)`);
+          }
+        } catch (excelError) {
+          console.error("Excel parsing error:", excelError);
+          throw new Error("Failed to parse Excel file. Please ensure it's a valid .xlsx or .xls file.");
+        }
+        
+        continue; // Don't add Excel to image content
+      }
+      
+      // Handle images and PDFs
+      let mediaType = "image/jpeg";
+      let base64Data = fileData;
+      
+      if (fileData.startsWith("data:")) {
+        const matches = fileData.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          mediaType = matches[1];
+          base64Data = matches[2];
+        }
+      }
+      
+      // Use image_url format for images and PDFs
+      imageContents.push({
+        type: "image_url",
+        image_url: {
+          url: fileData.startsWith("data:") ? fileData : `data:${mediaType};base64,${base64Data}`
+        }
+      });
+    }
     
     // Add instruction text first with detailed booking context
     const bookingContext = bookingDate?.month && bookingDate?.year 
       ? `Booking/reference date: ${bookingDate.month}/${bookingDate.year} (Month ${bookingDate.month}, Year ${bookingDate.year})`
       : 'Booking date: Not specified - use document date or assume current month';
     
-    contentParts.push({
-      type: "text",
-      text: `Analyze the following ${images.length > 1 ? 'pages of a ' : ''}payment plan document and extract all payment information.
+    let instructionText = `Analyze the following payment plan document and extract all payment information.
       
-${images.length > 1 ? 'These images are pages from the SAME document - combine all information.' : ''}
+${images.length > 1 ? 'These files are from the SAME document - combine all information.' : ''}
 
 Context:
 - ${bookingContext}
@@ -289,34 +351,29 @@ CRITICAL INSTRUCTIONS:
 4. For construction milestones (30% complete, foundation, etc.), use type: "construction" with triggerValue as percentage
 5. Include the "Completion" payment with type: "handover" - DO NOT skip it
 6. Ensure all percentages sum to exactly 100%
-7. Set hasPostHandover = true if there are any payments after the Completion payment
+7. Set hasPostHandover = true if there are any payments after the Completion payment`;
 
-Call the extract_payment_plan function with your findings.`
+    // Add Excel data as text context if we have any
+    if (excelTextContext) {
+      instructionText += `\n\n=== EXCEL PAYMENT SCHEDULE DATA ===\n${excelTextContext}\n=== END EXCEL DATA ===`;
+      console.log(`Added Excel text context (${excelTextContext.length} chars)`);
+    }
+
+    instructionText += `\n\nCall the extract_payment_plan function with your findings.`;
+    
+    contentParts.push({
+      type: "text",
+      text: instructionText
     });
 
-    // Add each image
-    for (let i = 0; i < images.length; i++) {
-      const imageData = images[i];
-      
-      // Handle both data URLs and raw base64
-      let mediaType = "image/jpeg";
-      let base64Data = imageData;
-      
-      if (imageData.startsWith("data:")) {
-        const matches = imageData.match(/^data:([^;]+);base64,(.+)$/);
-        if (matches) {
-          mediaType = matches[1];
-          base64Data = matches[2];
-        }
-      }
-      
-      // Use image_url format for ALL files (images AND PDFs)
-      contentParts.push({
-        type: "image_url",
-        image_url: {
-          url: imageData.startsWith("data:") ? imageData : `data:${mediaType};base64,${base64Data}`
-        }
-      });
+    // Add all image content parts
+    for (const imgContent of imageContents) {
+      contentParts.push(imgContent);
+    }
+    
+    // Ensure we have something to analyze
+    if (imageContents.length === 0 && !excelTextContext) {
+      throw new Error("No valid content to analyze. Please upload images, PDFs, or Excel files.");
     }
 
     // Call Lovable AI Gateway with Gemini 3 Flash Preview
@@ -368,11 +425,23 @@ Call the extract_payment_plan function with your findings.`
     const aiResponse = await response.json();
     console.log("AI Response received:", JSON.stringify(aiResponse).slice(0, 500));
 
+    // Check if the AI gateway returned an error object instead of valid data
+    if (aiResponse.error) {
+      console.error("AI Gateway returned error:", aiResponse.error);
+      
+      const errorMessage = aiResponse.error.message === "Internal Server Error"
+        ? "The AI service encountered an issue processing your file. Please try with a smaller image or a different file format."
+        : aiResponse.error.message || "AI processing failed";
+      
+      throw new Error(errorMessage);
+    }
+
     // Extract the tool call result
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall || toolCall.function.name !== "extract_payment_plan") {
-      throw new Error("AI did not return structured extraction data");
+      console.error("Unexpected AI response structure:", JSON.stringify(aiResponse).slice(0, 1000));
+      throw new Error("AI did not return structured extraction data. Please try again or use a clearer image.");
     }
 
     let extractedData: ExtractedPaymentPlan;

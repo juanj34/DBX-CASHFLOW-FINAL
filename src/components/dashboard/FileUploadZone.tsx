@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from "react";
-import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { Upload, X, FileText, Loader2, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { compressPdf, shouldCompress, formatFileSize } from "@/lib/pdfCompressor";
 
@@ -14,11 +14,18 @@ interface FileUploadZoneProps {
 export interface FileWithPreview {
   file: File;
   preview: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "excel";
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const ACCEPTED_TYPES = [
+  "image/jpeg", 
+  "image/png", 
+  "image/webp", 
+  "application/pdf",
+  "application/vnd.ms-excel",                                      // .xls
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"  // .xlsx
+];
 
 const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, acceptPaste = true }: FileUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -30,11 +37,14 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, accept
     const newFiles: FileWithPreview[] = [];
     
     for (let file of Array.from(fileList)) {
-      // For pasted images, check if it's an image type
+      // Check file types
       const isImage = file.type.startsWith("image/");
       const isPdf = file.type === "application/pdf";
+      const isExcel = file.type.includes("spreadsheet") || 
+                      file.type.includes("excel") || 
+                      file.type === "application/vnd.ms-excel";
       
-      if (!isImage && !isPdf) {
+      if (!isImage && !isPdf && !isExcel) {
         console.warn(`Tipo de archivo no soportado: ${file.type}`);
         continue;
       }
@@ -73,7 +83,7 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, accept
       newFiles.push({
         file,
         preview,
-        type: isPdf ? "pdf" : "image",
+        type: isExcel ? "excel" : isPdf ? "pdf" : "image",
       });
     }
 
@@ -171,7 +181,7 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, accept
               <span className="text-muted-foreground"> o arrastra archivos</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              PDF, JPG, PNG (máx 25MB) • Ctrl+V para pegar
+              PDF, Images, Excel (máx 25MB) • Ctrl+V para pegar
             </p>
           </div>
         )}
@@ -185,7 +195,9 @@ const FileUploadZone = ({ onFilesSelected, files, onRemoveFile, disabled, accept
               key={index}
               className="relative group rounded-lg border bg-muted/50 p-2 flex items-center gap-2"
             >
-              {f.type === "pdf" ? (
+              {f.type === "excel" ? (
+                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+              ) : f.type === "pdf" ? (
                 <FileText className="h-8 w-8 text-red-500" />
               ) : (
                 <img
