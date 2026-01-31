@@ -621,10 +621,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                             value={payment.type}
                             onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
                           >
-                            <SelectTrigger className="w-[60px] h-6 text-[10px] bg-theme-card border-theme-border px-1.5">
+                            <SelectTrigger className="w-[60px] h-6 text-[10px] bg-theme-bg-alt border-theme-border text-theme-text px-1.5">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-theme-card border-theme-border z-50">
+                            <SelectContent className="bg-theme-bg-alt border-theme-border z-50">
                               <SelectItem value="time" className="text-theme-text hover:bg-theme-border text-xs">
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
@@ -656,10 +656,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                   updateAdditionalPayment(payment.id, 'triggerValue', Math.max(1, monthsDiff));
                                 }}
                               >
-                                <SelectTrigger className="w-[52px] h-6 text-[10px] bg-theme-card border-theme-border px-1">
+                                <SelectTrigger className="w-[52px] h-6 text-[10px] bg-theme-bg-alt border-theme-border text-theme-text px-1">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-theme-card border-theme-border z-50 max-h-[200px]">
+                                <SelectContent className="bg-theme-bg-alt border-theme-border z-50 max-h-[200px]">
                                   {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
                                     <SelectItem key={i} value={String(i + 1)} className="text-theme-text hover:bg-theme-border text-xs">
                                       {m}
@@ -680,10 +680,10 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                   updateAdditionalPayment(payment.id, 'triggerValue', Math.max(1, monthsDiff));
                                 }}
                               >
-                                <SelectTrigger className="w-[58px] h-6 text-[10px] bg-theme-card border-theme-border px-1">
+                                <SelectTrigger className="w-[58px] h-6 text-[10px] bg-theme-bg-alt border-theme-border text-theme-text px-1">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-theme-card border-theme-border z-50 max-h-[200px]">
+                                <SelectContent className="bg-theme-bg-alt border-theme-border z-50 max-h-[200px]">
                                   {Array.from({ length: 12 }, (_, i) => inputs.bookingYear + i).map((year) => (
                                     <SelectItem key={year} value={String(year)} className="text-theme-text hover:bg-theme-border text-xs">
                                       {year}
@@ -703,7 +703,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                   const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                   updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
                                 }}
-                                className="w-10 h-6 text-center bg-theme-card border-theme-border text-theme-text font-mono text-[10px]"
+                                className="w-10 h-6 text-center bg-theme-bg-alt border-theme-border text-theme-text font-mono text-[10px]"
                               />
                               <span className="text-[10px] text-theme-text-muted">%</span>
                             </div>
@@ -737,7 +737,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                 const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
                                 updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, val)));
                               }}
-                              className="w-12 h-6 text-center bg-theme-card border-theme-border text-theme-accent font-mono text-[10px]"
+                              className="w-12 h-6 text-center bg-theme-bg-alt border-theme-border text-theme-text font-bold font-mono text-[10px]"
                             />
                             <span className="text-[10px] text-theme-text-muted">%</span>
                           </div>
