@@ -1,168 +1,144 @@
 
-# Fix: Wealth Table Logic Inconsistency
+# Fix: Align Top Card "Total Wealth" with Table Year 10 Values
 
-## Issues Identified
+## Problem Identified
 
-After analyzing the code, I found **three interconnected problems**:
+The **"Total Wealth (10Y)"** card and the **Year-by-Year Table** show different values because they use different calculation methods:
 
-### 1. Year 0 Secondary Shows Negative Wealth
-
-**Current Calculation (YearByYearWealthTable.tsx line 80):**
+### Table (Correct - Gross Wealth):
 ```
-secondaryWealth = secondaryPurchasePrice - secondaryCapitalInvested
-               = 7,500,000 - 7,950,000 = -450,000
+Year 10 Assets = Property Value + Cumulative Rent
+```
+**No capital subtraction.** Simple and intuitive.
+
+### Cards (Currently Broken):
+```
+offPlanTotalWealth10 = metrics.offPlanWealthYear10 + metrics.offPlanCapitalDay1
+                     = (propertyValue + rent - capitalDay1) + capitalDay1
 ```
 
-**Why it's negative:** The capital invested includes 6% closing costs, so you're "underwater" by exactly that closing cost amount on Day 1.
+This *should* cancel out to gross wealth, but:
 
-**This is technically correct for "Net Wealth"** (cash position change), but very confusing to users.
+1. **`secondaryWealthYear10`** in `useSecondaryCalculations.ts` (line 147) is calculated as:
+   ```
+   totalWealthLT = equityBuildup + cumulativeRentLT - totalCapitalDay1
+   ```
+   Where `equityBuildup = propertyValue - mortgageBalance` (NOT just property value!)
 
----
+2. When mortgage is enabled, the secondary wealth already accounts for mortgage balance reduction, creating a different formula than the table.
 
-### 2. Top Cards Use Different Capital Than Table
-
-| Component | Capital Used | Formula |
-|-----------|--------------|---------|
-| **Top Cards** (ComparisonKeyInsights) | `offPlanCapitalDay1` (~14%) | Property + Rent - Downpayment |
-| **Table** (YearByYearWealthTable) | `offPlanTotalCapitalAtHandover` (~52%) | Property + Rent - TotalPreHandover |
-
-This causes the cards to show much higher wealth than the table for Year 10.
+3. The cards add `secondaryCashCapital` (equity invested) but the original subtracted `totalCapitalDay1` - these may differ slightly.
 
 ---
 
-### 3. User's Math Check Question
+## Solution: Pass Year 10 Values Directly from Table Data Source
 
-For Secondary Year 10:
-- Property Value: 20.64M
-- Cumulative Rent: 5.46M
-- Shown Wealth: ~19M
-
-The math IS correct: `20.64M + 5.46M - 7.95M (capital) = 18.15M`
-
-The confusion is that users expect "Total Wealth" to mean Value + Rent, not the net position after subtracting investment.
-
----
-
-## Recommended Solution
-
-### Option A: Use "Gross Wealth" Everywhere (Simpler for Users)
-
-Define Wealth as `Property Value + Cumulative Rent` **without subtracting capital**.
-
-This matches intuitive expectations:
-- "My property is worth 20M and I've earned 5M in rent = I have 25M in wealth"
-- The "profit" or "gain" is a separate metric
-
-### Option B: Keep "Net Wealth" But Align Both Components
-
-If we want to show "Net Position" (what you gained vs. cash-in-bank alternative):
-1. Use the **same capital definition** in both cards and table
-2. Either use `offPlanCapitalDay1` everywhere, OR `offPlanTotalCapitalAtHandover` everywhere
-3. Rename column to **"Net Position"** or **"Gain vs Cash"** to clarify
-
-### Option C: Show BOTH (Most Informative)
-
-- **Column 1:** "Total Assets" = Property Value + Cumulative Rent
-- **Column 2:** "Net Gain" = Total Assets - Capital Invested
-
-This eliminates confusion by being explicit.
-
----
-
-## Technical Implementation (Option A - Gross Wealth)
+Instead of reverse-engineering gross wealth, pass the actual Year 10 values (property + cumulative rent) directly to the cards component. This ensures they match exactly.
 
 ### Files to Modify
 
-1. **`src/components/roi/secondary/YearByYearWealthTable.tsx`**
-   - Remove capital subtraction from wealth calculation
-   - Change column header from "Wealth" to "Total Assets" or "Value + Rent"
-   - Update tooltip to reflect new formula
-
-2. **`src/components/roi/secondary/ComparisonKeyInsights.tsx`**
-   - Change "Total Wealth" calculation to match: `propertyValue + cumulativeRent`
-   - Keep capital subtraction for "Net Gain" if desired as separate metric
-
-### Code Changes
-
-**YearByYearWealthTable.tsx - Line 76 (Year 0):**
-```typescript
-// Current:
-offPlanWealth: offPlanBasePrice - offPlanCapitalInvested,
-secondaryWealth: secondaryPurchasePrice - secondaryCapitalInvested,
-
-// New (Gross Wealth):
-offPlanWealth: offPlanBasePrice,  // Just property value at purchase
-secondaryWealth: secondaryPurchasePrice,
-```
-
-**YearByYearWealthTable.tsx - Lines 111-112 (Year 1-10):**
-```typescript
-// Current:
-const opWealth = offPlanValue + opCumulativeRent - offPlanCapitalInvested;
-const secWealth = secondaryValue + secCumulativeRent - secondaryCapitalInvested;
-
-// New (Gross Wealth):
-const opWealth = offPlanValue + opCumulativeRent;
-const secWealth = secondaryValue + secCumulativeRent;
-```
-
-**Update column header in translations (line 165):**
-```typescript
-// Current:
-wealth: 'Wealth',
-
-// New:
-wealth: 'Total Assets',
-```
-
-**Update tooltip (line 161):**
-```typescript
-// Current:
-tooltip: 'Wealth = Property Value + Cumulative Net Rent - Initial Investment...'
-
-// New:
-tooltip: 'Total Assets = Property Value + Cumulative Net Rent earned to date.'
-```
-
-### Also Update ComparisonKeyInsights.tsx
-
-Lines 51-54:
-```typescript
-// Current (confusing because it uses different capital):
-const offPlanTotalWealth10 = metrics.offPlanWealthYear10;
-
-// New (calculate fresh with gross formula):
-const offPlanTotalWealth10 = offPlanPropertyValue10Y + offPlanCumulativeRent10Y;
-const secondaryTotalWealth10 = secondaryPropertyValue10Y + (isAirbnb ? secondaryCumulativeRentST : secondaryCumulativeRentLT);
-```
-
-This requires passing additional props for cumulative rent values.
+| File | Change |
+|------|--------|
+| `src/pages/OffPlanVsSecondary.tsx` | Calculate Year 10 gross wealth values and pass as new props |
+| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Use new props directly instead of reverse-calculating |
 
 ---
 
-## Expected Results After Fix
+## Technical Implementation
 
-| Year | Off-Plan Value | Off-Plan Rent | Off-Plan Total | Secondary Value | Secondary Rent | Secondary Total |
-|------|----------------|---------------|----------------|-----------------|----------------|-----------------|
-| 0 | 9.60M | 0 | 9.60M | 7.50M | 0 | 7.50M |
-| 1 | 11.04M | 0 | 11.04M | 7.88M | 525K | 8.40M |
-| 10 | 16.8M | 3.2M | 20.0M | 12.2M | 5.8M | 18.0M |
+### 1. Calculate Year 10 Gross Wealth in `OffPlanVsSecondary.tsx`
 
-**No more negative values. Card and table values will match.**
+Add calculations for the exact values the table shows:
+
+```typescript
+// Year 10 property values (already exist)
+const offPlanPropertyValue10Y = offPlanCalcs.yearlyProjections[9]?.propertyValue || 0;
+const secondaryPropertyValue10Y = secondaryCalcs.yearlyProjections[9]?.propertyValue || 0;
+
+// NEW: Year 10 cumulative rent
+const offPlanCumulativeRent10Y = useMemo(() => {
+  let cumulative = 0;
+  for (let i = 0; i < 10; i++) {
+    if (i >= handoverYearIndex - 1) {
+      cumulative += offPlanCalcs.yearlyProjections[i]?.netIncome || 0;
+    }
+  }
+  return cumulative;
+}, [offPlanCalcs.yearlyProjections, handoverYearIndex]);
+
+const secondaryCumulativeRent10Y = rentalMode === 'airbnb'
+  ? secondaryCalcs.yearlyProjections[9]?.cumulativeRentST || 0
+  : secondaryCalcs.yearlyProjections[9]?.cumulativeRentLT || 0;
+
+// NEW: Year 10 Total Assets (matching table exactly)
+const offPlanTotalAssets10Y = offPlanPropertyValue10Y + offPlanCumulativeRent10Y;
+const secondaryTotalAssets10Y = secondaryPropertyValue10Y + secondaryCumulativeRent10Y;
+```
+
+### 2. Pass New Props to `ComparisonKeyInsights`
+
+```tsx
+<ComparisonKeyInsights
+  metrics={comparisonMetrics}
+  // ... existing props ...
+  
+  // NEW: Pass exact Year 10 Total Assets
+  offPlanTotalAssets10Y={offPlanTotalAssets10Y}
+  secondaryTotalAssets10Y={secondaryTotalAssets10Y}
+/>
+```
+
+### 3. Update `ComparisonKeyInsights.tsx` to Use Direct Props
+
+Replace the reverse-calculation logic:
+
+```typescript
+// BEFORE (broken):
+const offPlanTotalWealth10 = metrics.offPlanWealthYear10 + metrics.offPlanCapitalDay1;
+const secondaryTotalWealth10 = secondaryWealth10 + metrics.secondaryCashCapital;
+
+// AFTER (simple, matches table):
+const offPlanTotalWealth10 = offPlanTotalAssets10Y;
+const secondaryTotalWealth10 = secondaryTotalAssets10Y;
+```
+
+### 4. Update Interface
+
+Add new props to `ComparisonKeyInsightsProps`:
+
+```typescript
+interface ComparisonKeyInsightsProps {
+  // ... existing props ...
+  
+  // NEW: Year 10 Total Assets (Value + Rent)
+  offPlanTotalAssets10Y: number;
+  secondaryTotalAssets10Y: number;
+}
+```
+
+---
+
+## Expected Result
+
+After this fix:
+
+| Component | Off-Plan Year 10 | Secondary Year 10 |
+|-----------|------------------|-------------------|
+| **Table (Row 10, "Assets" column)** | 20.00M | 26.10M |
+| **Top Card ("Total Wealth")** | 20.00M | 26.10M |
+
+**Both will now show identical values** because they use the same source calculation:
+```
+Total Assets = Property Value at Year 10 + Cumulative Net Rent (Years 1-10)
+```
 
 ---
 
 ## Summary
 
-The core issue is **inconsistent capital definitions** and **confusing terminology**:
+The fix is straightforward:
+1. Calculate Year 10 gross wealth (value + rent) in the parent component
+2. Pass these values directly as props
+3. Remove the reverse-calculation logic from the cards component
 
-1. Cards use "Day 1 Capital" (~14%)
-2. Table uses "Total Capital at Handover" (~52%)
-3. Users see "Wealth" but expect "Property Value + Rent"
-
-**Recommended fix:** Switch to "Gross Wealth" (Value + Rent) without capital subtraction. This:
-- Eliminates negative Year 0 values
-- Makes card and table values consistent
-- Matches user intuition about "total wealth"
-
-The profit/gain metrics can be shown separately in the Exit Scenarios section where capital context is clearer.
+This eliminates all the complexity around capital adjustments and ensures the card always shows exactly what the table's Year 10 row displays.
