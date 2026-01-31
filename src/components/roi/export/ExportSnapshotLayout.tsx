@@ -80,6 +80,9 @@ export const ExportSnapshotLayout = ({
   const showPostHandover = inputs.hasPostHandoverPlan;
   const showMortgage = mortgageInputs.enabled;
 
+  // Determine if we have a long payment plan
+  const isLongPaymentPlan = (inputs.additionalPayments || []).length > 12;
+
   return (
     <div 
       style={{
@@ -123,79 +126,152 @@ export const ExportSnapshotLayout = ({
         />
       </div>
 
-      {/* Main Content - 2 Column Layout */}
-      <div 
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '16px', 
-          marginBottom: '16px' 
-        }}
-        data-export-layout="static"
-      >
-        {/* Left Column: Payment */}
-        <div>
-          <CompactPaymentTable
-            inputs={inputs}
-            clientInfo={clientInfo}
-            valueDifferentiators={valueDifferentiators}
-            appreciationBonus={appreciationBonus}
-            currency={currency}
-            rate={rate}
-            totalMonths={calculations.totalMonths}
-          />
+      {/* Main Content - Adaptive Layout */}
+      {isLongPaymentPlan ? (
+        /* STACKED LAYOUT for long payment plans */
+        <div style={{ marginBottom: '16px' }} data-export-layout="static">
+          {/* Payment Table - Full Width with 2-column */}
+          <div style={{ marginBottom: '16px' }}>
+            <CompactPaymentTable
+              inputs={inputs}
+              clientInfo={clientInfo}
+              valueDifferentiators={valueDifferentiators}
+              appreciationBonus={appreciationBonus}
+              currency={currency}
+              rate={rate}
+              totalMonths={calculations.totalMonths}
+              twoColumnMode="always"
+            />
+          </div>
+          
+          {/* Insight Cards - horizontal grid */}
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(4, 1fr)', 
+              gap: '12px' 
+            }}
+          >
+            {/* Rent Card */}
+            {showRent && (
+              <CompactRentCard
+                inputs={inputs}
+                currency={currency}
+                rate={rate}
+                onViewWealthProjection={undefined}
+              />
+            )}
+            
+            {/* Exit Scenarios */}
+            {showExits && (
+              <CompactAllExitsCard
+                inputs={inputs}
+                calculations={calculations}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+                onClick={undefined}
+              />
+            )}
+            
+            {/* Post-Handover Coverage */}
+            {showPostHandover && (
+              <CompactPostHandoverCard
+                inputs={inputs}
+                monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+            
+            {/* Mortgage */}
+            {showMortgage && (
+              <CompactMortgageCard
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+          </div>
         </div>
+      ) : (
+        /* ORIGINAL 2-COLUMN LAYOUT for short payment plans */
+        <div 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr', 
+            gap: '16px', 
+            marginBottom: '16px' 
+          }}
+          data-export-layout="static"
+        >
+          {/* Left Column: Payment */}
+          <div>
+            <CompactPaymentTable
+              inputs={inputs}
+              clientInfo={clientInfo}
+              valueDifferentiators={valueDifferentiators}
+              appreciationBonus={appreciationBonus}
+              currency={currency}
+              rate={rate}
+              totalMonths={calculations.totalMonths}
+              twoColumnMode="never"
+            />
+          </div>
 
-        {/* Right Column: Rent + Exits + Post-Handover + Mortgage */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Rent Card */}
-          {showRent && (
-            <CompactRentCard
-              inputs={inputs}
-              currency={currency}
-              rate={rate}
-              // No modal trigger in export
-              onViewWealthProjection={undefined}
-            />
-          )}
-          
-          {/* Exit Scenarios */}
-          {showExits && (
-            <CompactAllExitsCard
-              inputs={inputs}
-              calculations={calculations}
-              exitScenarios={exitScenarios}
-              currency={currency}
-              rate={rate}
-              // No click handler in export
-              onClick={undefined}
-            />
-          )}
-          
-          {/* Post-Handover Coverage */}
-          {showPostHandover && (
-            <CompactPostHandoverCard
-              inputs={inputs}
-              monthlyRent={monthlyRent}
-              rentGrowthRate={inputs.rentGrowthRate || 4}
-              currency={currency}
-              rate={rate}
-            />
-          )}
-          
-          {/* Mortgage */}
-          {showMortgage && (
-            <CompactMortgageCard
-              mortgageInputs={mortgageInputs}
-              mortgageAnalysis={mortgageAnalysis}
-              monthlyRent={monthlyRent}
-              rentGrowthRate={inputs.rentGrowthRate || 4}
-              currency={currency}
-              rate={rate}
-            />
-          )}
+          {/* Right Column: Rent + Exits + Post-Handover + Mortgage */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Rent Card */}
+            {showRent && (
+              <CompactRentCard
+                inputs={inputs}
+                currency={currency}
+                rate={rate}
+                onViewWealthProjection={undefined}
+              />
+            )}
+            
+            {/* Exit Scenarios */}
+            {showExits && (
+              <CompactAllExitsCard
+                inputs={inputs}
+                calculations={calculations}
+                exitScenarios={exitScenarios}
+                currency={currency}
+                rate={rate}
+                onClick={undefined}
+              />
+            )}
+            
+            {/* Post-Handover Coverage */}
+            {showPostHandover && (
+              <CompactPostHandoverCard
+                inputs={inputs}
+                monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+            
+            {/* Mortgage */}
+            {showMortgage && (
+              <CompactMortgageCard
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                monthlyRent={monthlyRent}
+                rentGrowthRate={inputs.rentGrowthRate || 4}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Wealth Projection Timeline - Full Width */}
       <div data-export-layout="static">

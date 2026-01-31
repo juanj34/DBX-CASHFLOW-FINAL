@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
@@ -58,6 +59,12 @@ export const SnapshotPrintContent = ({
   const valueDifferentiators = (inputs as any).valueDifferentiators || [];
   const appreciationBonus = (inputs as any).appreciationBonus || 0;
 
+  // Determine if we have a long payment plan (use 2-column for print always)
+  const isLongPaymentPlan = useMemo(() => {
+    const payments = inputs.additionalPayments || [];
+    return payments.length > 12;
+  }, [inputs.additionalPayments]);
+
   return (
     <div 
       className="snapshot-print-content bg-theme-bg min-h-screen"
@@ -93,11 +100,12 @@ export const SnapshotPrintContent = ({
         />
       </div>
 
-      {/* Main Content - Side by Side */}
+      {/* Main Content - Adaptive Layout */}
       <div className="px-6 pb-4">
-        <div className="grid grid-cols-2 gap-6">
-          {/* Left Column: Payment Breakdown */}
-          <div>
+        {isLongPaymentPlan ? (
+          /* STACKED LAYOUT for long payment plans */
+          <div className="flex flex-col gap-4">
+            {/* Payment Table - Full Width with 2-column */}
             <CompactPaymentTable
               inputs={inputs}
               clientInfo={clientInfo}
@@ -106,46 +114,101 @@ export const SnapshotPrintContent = ({
               currency={currency}
               rate={rate}
               totalMonths={calculations.totalMonths}
+              twoColumnMode="always"
             />
+            
+            {/* Insight Cards - 4-column grid for print */}
+            <div className="grid grid-cols-4 gap-4">
+              {/* Rent Card */}
+              {inputs.rentalYieldPercent > 0 && (
+                <CompactRentCard
+                  inputs={inputs}
+                  currency={currency}
+                  rate={rate}
+                  onViewWealthProjection={() => {}}
+                />
+              )}
+              
+              {/* All Exits Card */}
+              {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
+                <CompactAllExitsCard
+                  inputs={inputs}
+                  calculations={calculations}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                  onClick={() => {}}
+                />
+              )}
+              
+              {/* Mortgage Card */}
+              {mortgageInputs.enabled && (
+                <CompactMortgageCard
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </div>
           </div>
+        ) : (
+          /* ORIGINAL 2-COLUMN LAYOUT for short payment plans */
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column: Payment Breakdown */}
+            <div>
+              <CompactPaymentTable
+                inputs={inputs}
+                clientInfo={clientInfo}
+                valueDifferentiators={valueDifferentiators}
+                appreciationBonus={appreciationBonus}
+                currency={currency}
+                rate={rate}
+                totalMonths={calculations.totalMonths}
+                twoColumnMode="never"
+              />
+            </div>
 
-          {/* Right Column: Rent + Exits + Mortgage */}
-          <div className="flex flex-col gap-4">
-            {/* Rent Card */}
-            {inputs.rentalYieldPercent > 0 && (
-              <CompactRentCard
-                inputs={inputs}
-                currency={currency}
-                rate={rate}
-                onViewWealthProjection={() => {}}
-              />
-            )}
-            
-            {/* All Exits Card */}
-            {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
-              <CompactAllExitsCard
-                inputs={inputs}
-                calculations={calculations}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-                onClick={() => {}}
-              />
-            )}
-            
-            {/* Mortgage Card */}
-            {mortgageInputs.enabled && (
-              <CompactMortgageCard
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                monthlyRent={monthlyRent}
-                rentGrowthRate={inputs.rentGrowthRate || 4}
-                currency={currency}
-                rate={rate}
-              />
-            )}
+            {/* Right Column: Rent + Exits + Mortgage */}
+            <div className="flex flex-col gap-4">
+              {/* Rent Card */}
+              {inputs.rentalYieldPercent > 0 && (
+                <CompactRentCard
+                  inputs={inputs}
+                  currency={currency}
+                  rate={rate}
+                  onViewWealthProjection={() => {}}
+                />
+              )}
+              
+              {/* All Exits Card */}
+              {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && (
+                <CompactAllExitsCard
+                  inputs={inputs}
+                  calculations={calculations}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                  onClick={() => {}}
+                />
+              )}
+              
+              {/* Mortgage Card */}
+              {mortgageInputs.enabled && (
+                <CompactMortgageCard
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Wealth Projection Timeline - Full Width */}
