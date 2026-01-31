@@ -277,6 +277,12 @@ serve(async (req) => {
     for (let i = 0; i < images.length; i++) {
       const fileData = images[i];
       
+      // Skip null/undefined/empty entries
+      if (!fileData || typeof fileData !== 'string') {
+        console.warn(`Skipping invalid file at index ${i}: ${typeof fileData}`);
+        continue;
+      }
+      
       // Check if it's an Excel file (by MIME type in data URL)
       if (fileData.startsWith("data:application/vnd.") && 
           (fileData.includes("spreadsheet") || fileData.includes("excel") || fileData.includes("ms-excel"))) {
