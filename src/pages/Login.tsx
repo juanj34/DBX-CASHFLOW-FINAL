@@ -77,7 +77,7 @@ const Login = () => {
             className="text-center mb-8"
           >
             <div className="flex justify-center mb-6">
-              <AppLogo size="lg" showGlow={true} linkTo="" />
+              <AppLogo size="lg" showGlow={true} linkTo={undefined} />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">
               {t('loginTitle')}
