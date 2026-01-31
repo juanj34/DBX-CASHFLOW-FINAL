@@ -358,6 +358,32 @@ const OffPlanVsSecondary = () => {
   const offPlanTotalAssets10Y = offPlanPropertyValue10Y + offPlanCumulativeRent10Y;
   const secondaryTotalAssets10Y = secondaryPropertyValue10Y + secondaryCumulativeRent10Y;
 
+  // NEW: Year 5 monthly rent for both (meaningful comparison after handover)
+  const offPlanMonthlyRent5Y = useMemo(() => {
+    // If Year 5 is during construction, no rent yet
+    if (5 <= handoverYearIndex) return 0;
+    return (offPlanCalcs.yearlyProjections[4]?.netIncome || 0) / 12;
+  }, [offPlanCalcs.yearlyProjections, handoverYearIndex]);
+
+  const secondaryMonthlyRent5Y = useMemo(() => {
+    const proj = secondaryCalcs.yearlyProjections[4]; // Index 4 = Year 5
+    return rentalMode === 'airbnb'
+      ? (proj?.netRentST || 0) / 12
+      : (proj?.netRentLT || 0) / 12;
+  }, [secondaryCalcs.yearlyProjections, rentalMode]);
+
+  // NEW: Total rent Secondary earns during off-plan construction period
+  const secondaryRentDuringConstruction = useMemo(() => {
+    let total = 0;
+    for (let i = 0; i < handoverYearIndex; i++) {
+      const proj = secondaryCalcs.yearlyProjections[i];
+      if (proj) {
+        total += rentalMode === 'airbnb' ? proj.netRentST : proj.netRentLT;
+      }
+    }
+    return total;
+  }, [secondaryCalcs.yearlyProjections, handoverYearIndex, rentalMode]);
+
   // Comparison metrics
   const comparisonMetrics: ComparisonMetrics = useMemo(() => {
     if (!offPlanInputs || !offPlanCalcs.yearlyProjections.length) {
@@ -734,15 +760,13 @@ const OffPlanVsSecondary = () => {
             rate={rate}
             language={language}
             appreciationDuringConstruction={appreciationDuringConstruction}
-            secondaryMonthlyCashflow={
-              rentalMode === 'long-term' 
-                ? secondaryCalcs.monthlyCashflowLT 
-                : secondaryCalcs.monthlyCashflowST
-            }
             offPlanPropertyValue10Y={offPlanPropertyValue10Y}
             secondaryPropertyValue10Y={secondaryPropertyValue10Y}
             offPlanTotalAssets10Y={offPlanTotalAssets10Y}
             secondaryTotalAssets10Y={secondaryTotalAssets10Y}
+            offPlanMonthlyRent5Y={offPlanMonthlyRent5Y}
+            secondaryMonthlyRent5Y={secondaryMonthlyRent5Y}
+            secondaryRentDuringConstruction={secondaryRentDuringConstruction}
           />
 
           {/* 2. Year-by-Year Wealth Table */}
