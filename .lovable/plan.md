@@ -1,149 +1,219 @@
 
+# Single Working Draft System
 
-# Unified Comparison Table: Enhanced Design
+## Concept
 
-## User Requirements
+Each user has exactly **ONE** "working draft" row in the database. This draft:
+- Is reused across sessions until explicitly saved as a proper quote
+- Gets overwritten each time the user starts a new quote
+- Transitions from `status: 'working_draft'` to `status: 'draft'` when promoted
 
-1. **Rent Coverage Row Enhancement**:
-   - Show positive/negative cashflow amount (e.g., "+AED 2,500" or "-AED 1,200")
-   - Display coverage percentage in smaller text next to it
-
-2. **Draggable Header Enhancement**:
-   - Add Developer name (small text)
-   - Add Zone name (small text)
-   - Project name remains the primary heading
-
-## Final Metrics List (User Specified)
-
-| Metric | Source | Notes |
-|--------|--------|-------|
-| Property Value | `inputs.basePrice` | Primary property price |
-| Price/sqft | `basePrice / unitSizeSqf` | Calculated |
-| Area | `unitSizeSqf` | sqft |
-| Rental Income | Annual rent | Show yield % next to it (e.g., "AED 72K (7%)") |
-| Handover | `Q# YYYY` | With countdown in parentheses |
-| Pre-Handover | `preHandoverPercent * basePrice` | Money spent before handover |
-| Post-Handover | `postHandoverPercent * basePrice` | Money spent after handover (or "—") |
-| Rent vs Post-HO Coverage | Cashflow ± amount | With % in small text |
-
-## Design Mockup
+## How It Works
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│               │ 🟡 Sera Gardens    │ 🔵 Zenith Tower     │ 🟣 Samana Manhattan  │
-│               │ ⋮⋮ Emaar           │ ⋮⋮ Damac            │ ⋮⋮ Samana              │
-│   Metric      │    JVC             │    Business Bay     │    JVC                │
-├───────────────┼────────────────────┼─────────────────────┼───────────────────────┤
-│ Property Value│ AED 890,000        │ AED 998,195         │ AED 850,500           │
-│ Price/sqft    │ AED 1,413          │ AED 1,103           │ AED 1,418             │
-│ Area          │ 630 sqft           │ 905 sqft            │ 600 sqft              │
-│ Rental Income │ AED 53,400 (6%)    │ AED 69,874 (7%)     │ AED 51,030 (6%)       │
-│ Handover      │ Q1 2028 (2y)       │ Q2 2028 (2y 3m)     │ Q1 2029 (3y)          │
-│ Pre-Handover  │ AED 178,000        │ AED 299,459         │ AED 255,150           │
-│ Post-Handover │ —                  │ AED 349,368         │ AED 272,160           │
-│ Rent Coverage │ —                  │ +AED 2,500 (58%)    │ -AED 1,200 (42%)      │
-│               │                    │ ↑ green             │ ↑ red                 │
-└───────────────┴────────────────────┴─────────────────────┴───────────────────────┘
+User opens /cashflow-generator (no quoteId)
+        ↓
+Load user's working draft from DB (or create one if none exists)
+        ↓
+Auto-save updates THIS SAME ROW
+        ↓
+User clicks "Save" or names the quote
+        ↓
+Status changes: working_draft → draft (promoted to real quote)
+New working draft slot is created for next time
 ```
 
-**Header Row Design:**
-- Project name: Large, colored (theme-aware)
-- Developer: Small, muted text
-- Zone: Small, muted text below developer
-- Drag handle: `⋮⋮` icon, visible on hover
+## Key States
 
-**Rent Coverage Row Logic:**
-1. If no post-handover plan → show "—"
-2. If positive cashflow → show "+AED X,XXX" in **green** with "(XX%)" small
-3. If negative cashflow → show "-AED X,XXX" in **red** with "(XX%)" small
+| Status | Meaning | Visible in Quote List? |
+|--------|---------|------------------------|
+| `working_draft` | Active session work, not yet saved | **No** - Hidden from list |
+| `draft` | Saved draft, intentionally kept | Yes |
+| `presented` | Shared with client | Yes |
+| `negotiating` | In discussion | Yes |
+| `sold` | Closed deal | Yes |
 
-## Technical Implementation
+## User Experience
 
-### 1. Create `ComparisonTable.tsx`
+1. **Opening Generator Without Quote ID**:
+   - System loads user's existing `working_draft` (if any)
+   - If no working draft exists, creates one
+   - User continues where they left off
 
-The new unified component replaces both `CompareHeader` and `MetricsTable`:
+2. **Navigating to Another Quote**:
+   - Show dialog: "You have unsaved work. Save as draft or discard?"
+   - **Save**: Promotes current working_draft → draft, then loads selected quote
+   - **Discard**: Clears working_draft content, loads selected quote
+   - **Cancel**: Stay on current page
+
+3. **Clicking "New Quote"**:
+   - Same dialog if working_draft has content
+   - After handling, clears working_draft for fresh start
+
+4. **Explicit Save Action**:
+   - Promotes working_draft → draft with proper title
+   - Creates new empty working_draft for next session
+
+## Database Changes
+
+Add new status value `working_draft` for internal use:
+
+```sql
+-- Update existing quotes to ensure clean state
+-- No migration needed - just start using new status value
+```
+
+The `status` column is already `text` type, so no schema change required.
+
+## Implementation Details
+
+### 1. Update `useCashflowQuote.ts`
+
+**New Function: `getOrCreateWorkingDraft`**
+```typescript
+const getOrCreateWorkingDraft = async (userId: string): Promise<string> => {
+  // Try to find existing working draft
+  const { data: existing } = await supabase
+    .from('cashflow_quotes')
+    .select('id')
+    .eq('broker_id', userId)
+    .eq('status', 'working_draft')
+    .maybeSingle();
+  
+  if (existing) {
+    return existing.id;
+  }
+  
+  // Create new working draft
+  const { data: newDraft } = await supabase
+    .from('cashflow_quotes')
+    .insert({
+      broker_id: userId,
+      inputs: {},
+      status: 'working_draft',
+      title: null,
+    })
+    .select('id')
+    .single();
+  
+  return newDraft.id;
+};
+```
+
+**New Function: `promoteWorkingDraft`**
+```typescript
+const promoteWorkingDraft = async (quoteId: string): Promise<void> => {
+  // Change status from working_draft to draft
+  await supabase
+    .from('cashflow_quotes')
+    .update({ status: 'draft' })
+    .eq('id', quoteId)
+    .eq('status', 'working_draft');
+};
+```
+
+**New Function: `clearWorkingDraft`**
+```typescript
+const clearWorkingDraft = async (userId: string): Promise<void> => {
+  // Reset working draft to empty state
+  await supabase
+    .from('cashflow_quotes')
+    .update({
+      inputs: {},
+      client_name: null,
+      project_name: null,
+      developer: null,
+      unit: null,
+      title: null,
+    })
+    .eq('broker_id', userId)
+    .eq('status', 'working_draft');
+};
+```
+
+**New Function: `hasWorkingDraftContent`**
+```typescript
+const hasWorkingDraftContent = (quote: CashflowQuote | null): boolean => {
+  if (!quote) return false;
+  return Boolean(
+    quote.client_name ||
+    quote.project_name ||
+    quote.developer ||
+    quote.inputs?.basePrice > 0
+  );
+};
+```
+
+### 2. Create `UnsavedDraftDialog.tsx`
+
+Dialog shown when user tries to navigate away from working draft with content:
 
 ```typescript
-interface ComparisonTableProps {
-  quotesWithCalcs: QuoteWithCalculations[];
-  onReorder?: (newOrder: string[]) => void;
-  currency?: Currency;
-  exchangeRate?: number;
+interface UnsavedDraftDialogProps {
+  open: boolean;
+  onSave: () => Promise<void>;
+  onDiscard: () => void;
+  onCancel: () => void;
 }
 ```
 
-**Features:**
-- `@dnd-kit/sortable` on header cells for drag-and-drop columns
-- Synchronized metric rows following header order
-- Theme-aware colors using `getQuoteColors()`
-- Full translation support with `useLanguage()`
+Options:
+- **Save as Draft**: Promotes working draft, then proceeds
+- **Discard**: Clears working draft content, proceeds
+- **Cancel**: Stays on page
 
-### 2. Rent Coverage Calculation
+### 3. Update `useQuotesList.ts`
 
-Reuse logic from `CompactPostHandoverCard.tsx`:
+Filter out `working_draft` from the quotes list:
+
 ```typescript
-const getRentCoverage = (item: QuoteWithCalculations) => {
-  const inputs = item.quote.inputs;
-  if (!inputs.hasPostHandoverPlan) return null;
-  
-  // Calculate post-HO payments
-  const postPayments = inputs.postHandoverPayments?.length > 0 
-    ? inputs.postHandoverPayments 
-    : inputs.additionalPayments?.filter(p => isAfterHandover(p));
-  
-  if (postPayments.length === 0) return null;
-  
-  const postTotal = inputs.basePrice * (inputs.postHandoverPercent / 100);
-  const durationMonths = calculateDuration(postPayments);
-  const monthlyPayment = postTotal / durationMonths;
-  
-  // Monthly rent (from calculations)
-  const monthlyRent = item.calculations.holdAnalysis.netAnnualRent / 12;
-  
-  const cashflow = monthlyRent - monthlyPayment;
-  const coveragePercent = Math.min(100, (monthlyRent * durationMonths / postTotal) * 100);
-  
-  return { cashflow, coveragePercent, isPositive: cashflow >= 0 };
-};
+// Exclude working_draft from visible quotes
+.neq('status', 'working_draft')
 ```
 
-### 3. Zone Name Access
+### 4. Update Navigation Logic
 
-Zone is stored in `inputs._clientInfo.zoneName` or can be fetched via `inputs.zoneId`:
-```typescript
-const getZoneName = (quote: ComparisonQuote) => {
-  const clientInfo = quote.inputs._clientInfo as any;
-  return clientInfo?.zoneName || null;
-};
-```
+**In `OICalculator.tsx` and `CashflowDashboard.tsx`**:
 
-### 4. Translation Keys to Add
+When user clicks "New Quote" or "Load Quote":
+1. Check if current quote is a `working_draft` with content
+2. If yes, show `UnsavedDraftDialog`
+3. Handle user's choice before proceeding
+
+### 5. Update Cleanup Edge Function
+
+Modify `cleanup-empty-drafts` to:
+- Skip `working_draft` status (keep one per user)
+- Only clean `draft` status quotes that are empty and old
+
+### 6. Translation Keys
 
 | Key | EN | ES |
 |-----|----|----|
-| `propertyValue` | Property Value | Valor de Propiedad |
-| `area` | Area | Área |
-| `preHandoverSpend` | Pre-Handover | Pre-Entrega |
-| `postHandoverSpend` | Post-Handover | Post-Entrega |
-| `rentCoverage` | Rent Coverage | Cobertura Alquiler |
+| `unsavedDraft` | Unsaved Draft | Borrador sin Guardar |
+| `unsavedDraftMessage` | You have unsaved work. What would you like to do? | Tienes trabajo sin guardar. ¿Qué te gustaría hacer? |
+| `saveAsDraft` | Save as Draft | Guardar como Borrador |
+| `discardDraft` | Discard | Descartar |
+| `keepEditing` | Keep Editing | Seguir Editando |
 
 ## Files to Modify
 
 | File | Action |
 |------|--------|
-| `src/components/roi/compare/ComparisonTable.tsx` | **CREATE** - New unified table component |
-| `src/components/roi/compare/index.ts` | **UPDATE** - Export `ComparisonTable` |
-| `src/pages/QuotesCompare.tsx` | **UPDATE** - Replace `CompareHeader` + `MetricsTable` with `ComparisonTable` |
-| `src/pages/CompareView.tsx` | **UPDATE** - Replace with `ComparisonTable` |
-| `src/components/presentation/PresentationPreview.tsx` | **UPDATE** - Replace with `ComparisonTable` |
-| `src/contexts/LanguageContext.tsx` | **UPDATE** - Add missing translation keys |
+| `src/hooks/useCashflowQuote.ts` | Add working draft functions, update createDraft logic |
+| `src/components/roi/UnsavedDraftDialog.tsx` | **CREATE** - Dialog for save/discard prompt |
+| `src/pages/OICalculator.tsx` | Integrate working draft loading, add dialog |
+| `src/pages/CashflowDashboard.tsx` | Same integration as OICalculator |
+| `src/pages/Home.tsx` | Filter out working_draft from quotes list |
+| `src/pages/QuotesDashboard.tsx` | Filter out working_draft from quotes list |
+| `supabase/functions/cleanup-empty-drafts/index.ts` | Skip working_draft in cleanup |
+| `src/contexts/LanguageContext.tsx` | Add translation keys |
 
 ## Benefits
 
-1. **Single Component** - One unified table for all comparison views
-2. **Drag-to-Reorder** - Header drag moves entire column
-3. **Full i18n** - All labels translated (EN/ES)
-4. **Focused Metrics** - Only essential data for quick comparison
-5. **Clear Visual Feedback** - Green/red for positive/negative cashflow
-6. **Developer + Zone Info** - Quick context in header row
-
+1. **One Draft Per User**: No more empty quote clutter
+2. **Session Persistence**: Work-in-progress survives browser close
+3. **Clear Intent**: Users explicitly choose to save or discard
+4. **Hidden From List**: Working drafts don't appear in quote management
+5. **Clean Promotion**: Clear transition from draft work → saved quote
+6. **Reduced Cleanup**: Less need for background cleanup jobs
