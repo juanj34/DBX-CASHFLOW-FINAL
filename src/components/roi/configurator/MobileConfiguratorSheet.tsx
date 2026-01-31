@@ -90,7 +90,9 @@ export const MobileConfiguratorSheet = ({
 }: MobileConfiguratorSheetProps) => {
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>('project');
-  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set());
+  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
+    new Set(['project']) // Always start with first section visited
+  );
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [showSampleFlash, setShowSampleFlash] = useState(false);
   
