@@ -36,6 +36,7 @@ import { GrowthComparisonChart } from "@/components/roi/compare/GrowthComparison
 import { ExitComparison } from "@/components/roi/compare/ExitComparison";
 import { MortgageComparison } from "@/components/roi/compare/MortgageComparison";
 import { DifferentiatorsComparison } from "@/components/roi/compare/DifferentiatorsComparison";
+import { CompareHeader } from "@/components/roi/compare/CompareHeader";
 import { computeComparisonMetrics, QuoteWithCalculations, ComparisonQuote } from "@/hooks/useQuotesComparison";
 
 interface PresentationPreviewProps {
@@ -376,6 +377,14 @@ const ComparisonPreview = ({
   const { rate: defaultRate } = useExchangeRate(currency);
   const rate = propRate ?? defaultRate;
   const [calculationsMap, setCalculationsMap] = useState<Record<string, any>>({});
+  const [orderedQuoteIds, setOrderedQuoteIds] = useState<string[]>([]);
+
+  // Sync ordered quote IDs when comparison data loads
+  useEffect(() => {
+    if (comparisonData.quoteIds.length > 0) {
+      setOrderedQuoteIds(comparisonData.quoteIds);
+    }
+  }, [comparisonData.quoteIds]);
 
   const handleCalculated = useCallback((quoteId: string, calc: any) => {
     setCalculationsMap(prev => {
@@ -384,37 +393,41 @@ const ComparisonPreview = ({
     });
   }, []);
 
-  // Build quotesWithCalcs from comparisonData.quotes
+  // Order quotes based on orderedQuoteIds and convert to ComparisonQuote
+  const orderedQuotesForHeader: ComparisonQuote[] = useMemo(() => {
+    return orderedQuoteIds
+      .map(id => comparisonData.quotes.find(q => q.id === id))
+      .filter((q): q is CashflowQuote => q !== undefined)
+      .map(q => ({
+        id: q.id,
+        title: q.title || q.project_name || 'Quote',
+        projectName: q.project_name || undefined,
+        developer: q.developer || undefined,
+        clientName: q.client_name || undefined,
+        unit: q.unit || undefined,
+        unitType: q.unit_type || undefined,
+        unitSizeSqf: q.unit_size_sqf || undefined,
+        inputs: q.inputs,
+        updatedAt: q.updated_at || new Date().toISOString(),
+      }));
+  }, [comparisonData.quotes, orderedQuoteIds]);
+
+  // Build quotesWithCalcs from ordered quotes
   const quotesWithCalcs: QuoteWithCalculations[] = useMemo(() => {
-    return comparisonData.quotes
+    return orderedQuotesForHeader
       .filter(q => calculationsMap[q.id])
-      .map(q => {
-        // Map CashflowQuote to ComparisonQuote structure
-        const comparisonQuote: ComparisonQuote = {
-          id: q.id,
-          title: q.title || q.project_name || 'Quote',
-          projectName: q.project_name || undefined,
-          developer: q.developer || undefined,
-          clientName: q.client_name || undefined,
-          unit: q.unit || undefined,
-          unitType: q.unit_type || undefined,
-          unitSizeSqf: q.unit_size_sqf || undefined,
-          inputs: q.inputs,
-          updatedAt: q.updated_at || new Date().toISOString(),
-        };
-        return {
-          quote: comparisonQuote,
-          calculations: calculationsMap[q.id],
-        };
-      });
-  }, [comparisonData.quotes, calculationsMap]);
+      .map(q => ({
+        quote: q,
+        calculations: calculationsMap[q.id],
+      }));
+  }, [orderedQuotesForHeader, calculationsMap]);
 
   const metrics = useMemo(() => {
     if (quotesWithCalcs.length < 2) return null;
     return computeComparisonMetrics(quotesWithCalcs);
   }, [quotesWithCalcs]);
 
-  const allCalculated = comparisonData.quotes.length > 0 && 
+  const allCalculated = orderedQuotesForHeader.length > 0 && 
     comparisonData.quotes.every(q => calculationsMap[q.id]);
 
   // Check for mortgage data
@@ -443,7 +456,7 @@ const ComparisonPreview = ({
       ) : (
         <div className="p-6 space-y-6">
           {/* Comparison Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-theme-text flex items-center gap-2">
                 <GitCompare className="w-5 h-5 text-purple-400" />
@@ -454,6 +467,13 @@ const ComparisonPreview = ({
               </p>
             </div>
           </div>
+
+          {/* Draggable Property Cards */}
+          <CompareHeader 
+            quotes={orderedQuotesForHeader} 
+            onRemove={() => {}} 
+            onReorder={setOrderedQuoteIds}
+          />
 
           {/* Key Metrics Table */}
           {metrics && (

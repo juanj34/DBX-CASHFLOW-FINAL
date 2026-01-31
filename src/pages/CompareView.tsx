@@ -12,7 +12,7 @@ import {
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSavedComparisons, SavedComparison } from '@/hooks/useSavedComparisons';
-import { useQuotesComparison, computeComparisonMetrics, QuoteWithCalculations } from '@/hooks/useQuotesComparison';
+import { useQuotesComparison, computeComparisonMetrics, QuoteWithCalculations, ComparisonQuote } from '@/hooks/useQuotesComparison';
 import { useOICalculations } from '@/components/roi/useOICalculations';
 import { useRecommendationEngine, InvestmentFocus } from '@/hooks/useRecommendationEngine';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
@@ -24,6 +24,7 @@ import { ProfileSelector } from '@/components/roi/compare/ProfileSelector';
 import { RecommendationBadge, ScoreDisplay } from '@/components/roi/compare/RecommendationBadge';
 import { RecommendationSummary } from '@/components/roi/compare/RecommendationSummary';
 import { CollapsibleSection } from '@/components/roi/CollapsibleSection';
+import { CompareHeader } from '@/components/roi/compare/CompareHeader';
 import { AppLogo } from '@/components/AppLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -68,6 +69,7 @@ const CompareView = () => {
   const [selectedFocus, setSelectedFocus] = useState<InvestmentFocus | null>(null);
   const [currency, setCurrency] = useState<Currency>('AED');
   const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const [orderedQuoteIds, setOrderedQuoteIds] = useState<string[]>([]);
   
   const { rate } = useExchangeRate(currency);
   const { getComparisonByShareToken } = useSavedComparisons();
@@ -118,28 +120,42 @@ const CompareView = () => {
     fetchComparison();
   }, [shareToken]);
 
-  const { quotes, loading: quotesLoading } = useQuotesComparison(comparison?.quote_ids || []);
+  // Sync ordered quote IDs when comparison loads
+  useEffect(() => {
+    if (comparison?.quote_ids) {
+      setOrderedQuoteIds(comparison.quote_ids);
+    }
+  }, [comparison]);
+
+  const { quotes, loading: quotesLoading } = useQuotesComparison(orderedQuoteIds.length > 0 ? orderedQuoteIds : (comparison?.quote_ids || []));
 
   const handleCalculated = (quoteId: string, calc: any) => {
     setCalculationsMap(prev => ({ ...prev, [quoteId]: calc }));
   };
 
+  // Order quotes based on orderedQuoteIds
+  const orderedQuotes: ComparisonQuote[] = useMemo(() => {
+    return orderedQuoteIds
+      .map(id => quotes.find(q => q.id === id))
+      .filter((q): q is ComparisonQuote => q !== undefined);
+  }, [quotes, orderedQuoteIds]);
+
   // Build quotes with calculations
   const quotesWithCalcs: QuoteWithCalculations[] = useMemo(() => {
-    return quotes
+    return orderedQuotes
       .filter(q => calculationsMap[q.id])
       .map(q => ({
         quote: q,
         calculations: calculationsMap[q.id],
       }));
-  }, [quotes, calculationsMap]);
+  }, [orderedQuotes, calculationsMap]);
 
   const metrics = useMemo(() => {
     if (quotesWithCalcs.length < 2) return null;
     return computeComparisonMetrics(quotesWithCalcs);
   }, [quotesWithCalcs]);
 
-  const allCalculated = quotes.length > 0 && quotes.every(q => calculationsMap[q.id]);
+  const allCalculated = orderedQuotes.length > 0 && orderedQuotes.every(q => calculationsMap[q.id]);
 
   // Recommendation engine
   const recommendations = useRecommendationEngine(quotesWithCalcs);
@@ -344,54 +360,12 @@ const CompareView = () => {
               </div>
             )}
 
-            {/* Property Cards with Recommendation Badges */}
-            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${quotes.length}, minmax(200px, 1fr))` }}>
-              {quotes.map((quote, index) => {
-                const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
-                const color = colors[index % colors.length];
-                const recommendation = recommendations?.recommendations.find(r => r.quoteId === quote.id);
-
-                return (
-                  <div
-                    key={quote.id}
-                    className="bg-[#1a1f2e] border border-[#2a3142] rounded-xl p-4 relative"
-                    style={{ borderTopColor: color, borderTopWidth: '3px' }}
-                  >
-                    {showRecommendations && recommendation && (
-                      <div className="mb-3">
-                        <RecommendationBadge 
-                          recommendation={recommendation} 
-                          focus={selectedFocus} 
-                          color={color}
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-semibold text-white truncate">
-                          {quote.title || 'Untitled Quote'}
-                        </h3>
-                        {quote.projectName && (
-                          <p className="text-sm text-gray-400 mt-1">
-                            {quote.projectName}
-                          </p>
-                        )}
-                        {quote.developer && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            by {quote.developer}
-                          </p>
-                        )}
-                      </div>
-
-                      {showRecommendations && recommendation && (
-                        <ScoreDisplay scores={recommendation.scores} focus={selectedFocus} />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Draggable Property Cards */}
+            <CompareHeader 
+              quotes={orderedQuotes} 
+              onRemove={() => {}} 
+              onReorder={setOrderedQuoteIds}
+            />
 
             {/* Key Metrics Table */}
             {metrics && (
