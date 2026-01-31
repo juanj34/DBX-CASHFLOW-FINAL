@@ -520,10 +520,10 @@ export const CompactPaymentTable = ({
                             </span>
                           )}
                         </div>
-                        <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[11px]")}>
+                        <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[10px]")}>
                           {getDualValue(amount).primary}
-                          {currency !== 'AED' && !useTwoColumns && (
-                            <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
+                          {currency !== 'AED' && (
+                            <span className={cn("text-theme-text-muted ml-1", useTwoColumns && "text-[9px]")}>({getDualValue(amount).secondary})</span>
                           )}
                         </span>
                       </div>
@@ -668,10 +668,10 @@ export const CompactPaymentTable = ({
                       )}
                     >
                       <span className={cn("text-xs text-theme-text-muted truncate", useTwoColumns && "text-[11px]")}>{label}</span>
-                      <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[11px]")}>
+                      <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[10px]")}>
                         {getDualValue(amount).primary}
-                        {currency !== 'AED' && !useTwoColumns && (
-                          <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
+                        {currency !== 'AED' && (
+                          <span className={cn("text-theme-text-muted ml-1", useTwoColumns && "text-[9px]")}>({getDualValue(amount).secondary})</span>
                         )}
                       </span>
                     </div>
