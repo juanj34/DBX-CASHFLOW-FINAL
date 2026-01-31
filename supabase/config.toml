@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.generate-snapshot-screenshot]
 verify_jwt = false
+
+[functions.extract-payment-plan]
+verify_jwt = true

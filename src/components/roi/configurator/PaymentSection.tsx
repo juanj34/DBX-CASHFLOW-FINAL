@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Clock, Building2, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar, Zap } from "lucide-react";
+import { Plus, Trash2, Clock, Building2, Home, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, Key, Calendar, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -11,6 +11,8 @@ import { PaymentMilestone } from "../useOICalculations";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
+import { ExtractedPaymentPlan } from "@/lib/paymentPlanTypes";
 
 // Helper to calculate actual payment date
 const getPaymentDate = (monthsFromBooking: number, bookingMonth: number, bookingYear: number): Date => {
@@ -47,6 +49,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const [numPayments, setNumPayments] = useState(4);
   const [paymentInterval, setPaymentInterval] = useState(3);
   const [paymentPercent, setPaymentPercent] = useState(5);
+  const [showAIExtractor, setShowAIExtractor] = useState(false);
 
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -236,12 +239,86 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     setShowInstallments(true);
   };
 
+  // Handle AI extraction result
+  const handleAIExtraction = (data: ExtractedPaymentPlan) => {
+    // Convert extracted installments to our payment milestone format
+    const newPayments: PaymentMilestone[] = [];
+    let downpaymentPercent = inputs.downpaymentPercent;
+    let hasPostHandover = data.paymentStructure.hasPostHandover;
+    
+    for (const inst of data.installments) {
+      // First installment at month 0 with type 'time' is typically the downpayment
+      if (inst.type === 'time' && inst.triggerValue === 0) {
+        downpaymentPercent = inst.paymentPercent;
+        continue;
+      }
+      
+      // Skip explicit handover markers - they're calculated from the split
+      if (inst.type === 'handover') {
+        continue;
+      }
+      
+      newPayments.push({
+        id: inst.id,
+        type: inst.type === 'post-handover' ? 'time' : inst.type as 'time' | 'construction',
+        triggerValue: inst.triggerValue,
+        paymentPercent: inst.paymentPercent,
+      });
+    }
+    
+    // Calculate pre-handover percent from split if available
+    let preHandoverPercent = inputs.preHandoverPercent;
+    if (data.paymentStructure.paymentSplit) {
+      const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
+      if (!isNaN(pre)) {
+        preHandoverPercent = pre;
+      }
+    }
+    
+    // Update inputs
+    setInputs(prev => ({
+      ...prev,
+      downpaymentPercent,
+      preHandoverPercent,
+      additionalPayments: newPayments,
+      hasPostHandoverPlan: hasPostHandover,
+      // Update handover dates if extracted
+      ...(data.paymentStructure.handoverQuarter && { handoverQuarter: data.paymentStructure.handoverQuarter }),
+      ...(data.paymentStructure.handoverYear && { handoverYear: data.paymentStructure.handoverYear }),
+      // Update property price if extracted
+      ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
+    }));
+    
+    setShowInstallments(newPayments.length > 0);
+  };
+
   return (
     <div className="space-y-3">
-      <div className="pb-1">
-        <h3 className="text-lg font-semibold text-theme-text">Payment Plan</h3>
-        <p className="text-sm text-theme-text-muted">Configure your payment schedule</p>
+      <div className="flex items-center justify-between pb-1">
+        <div>
+          <h3 className="text-lg font-semibold text-theme-text">Payment Plan</h3>
+          <p className="text-sm text-theme-text-muted">Configure your payment schedule</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowAIExtractor(true)}
+          className="gap-1.5 h-8 text-xs border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          AI Import
+        </Button>
       </div>
+
+      {/* AI Extractor Sheet */}
+      <PaymentPlanExtractor
+        open={showAIExtractor}
+        onOpenChange={setShowAIExtractor}
+        existingBookingMonth={inputs.bookingMonth}
+        existingBookingYear={inputs.bookingYear}
+        onApply={handleAIExtraction}
+      />
 
       {/* Post-Handover Toggle - At the top for visibility */}
       <div className="flex items-center justify-between p-2 bg-theme-card rounded-lg border border-purple-500/30">
