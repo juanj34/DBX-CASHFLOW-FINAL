@@ -67,10 +67,6 @@ const QuotesCompare = () => {
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedFocus, setSelectedFocus] = useState<InvestmentFocus | null>(null);
   
-  // Drag state
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  
   // Expand/Collapse all state
   const [allExpanded, setAllExpanded] = useState(false);
   
@@ -103,36 +99,6 @@ const QuotesCompare = () => {
 
   const handleCalculated = (quoteId: string, calc: any) => {
     setCalculationsMap(prev => ({ ...prev, [quoteId]: calc }));
-  };
-
-  // Drag handlers for reordering
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (dropIndex: number) => {
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-    
-    const newIds = [...selectedIds];
-    const [draggedId] = newIds.splice(draggedIndex, 1);
-    newIds.splice(dropIndex, 0, draggedId);
-    setSelectedIds(newIds);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
   };
 
   // Build quotes with calculations
@@ -366,6 +332,13 @@ const QuotesCompare = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Property Cards - Draggable */}
+            <CompareHeader 
+              quotes={quotes} 
+              onRemove={handleRemoveQuote}
+              onReorder={setSelectedIds}
+            />
+
             {/* Recommendation Engine Toggle Section */}
             {showRecommendations && recommendations && (
               <div className="space-y-4">
