@@ -1,219 +1,192 @@
 
-# Fix AI Payment Plan Extractor & Move to First Configurator Step
+# Fix AI Payment Plan Extraction to Match Configurator Logic
 
-## Problem Summary
+## Problem Analysis
 
-1. **Edge Function 400 Error**: The AI gateway returns "Invalid content" because PDFs are being sent in an unsupported format (`type: "file"`)
-2. **Wrong Position**: The AI extractor is currently in the Payment section (step 4), but should be in the Client section (step 1) to auto-fill ALL fields early
-3. **Missing Currency Detection**: The AI doesn't extract currency information (usually AED)
+The AI extraction produces payment data that doesn't properly map to the configurator's structure:
 
----
+| AI Extracts | Configurator Expects |
+|-------------|---------------------|
+| Raw installments array | `downpaymentPercent`, `preHandoverPercent`, `additionalPayments[]` |
+| `hasPostHandover: true` | Toggle ON + categorize payments by date |
+| Individual installments | Split (e.g., "30/70") + proper pre/post categorization |
+| `paymentSplit: "30/70"` | `preHandoverPercent: 30` |
 
-## Root Cause Analysis
+### Current Issues
 
-### Error: "Invalid content"
-
-Looking at the edge function code (lines 243-258):
-
-```typescript
-// Check if it's a PDF
-if (mediaType === "application/pdf") {
-  contentParts.push({
-    type: "file",  // ❌ NOT SUPPORTED by Lovable AI Gateway
-    file: {
-      filename: `page_${i + 1}.pdf`,
-      file_data: base64Data,
-    }
-  });
-}
-```
-
-The Lovable AI Gateway only supports `image_url` content type for vision models, not `file`. PDFs need to be either:
-- Converted to images first (render each page as PNG)
-- OR sent as inline PDF using the proper format
-
-**Solution**: For PDFs, we need to use `image_url` with the data URL format since Gemini models can process inline PDFs via the vision API.
+1. **Post-handover toggle not activating** - Even when extracted as `true`, the UI doesn't reflect this
+2. **Split not matching** - Extracted split like "30/70" should set `preHandoverPercent: 30`
+3. **Installments miscategorized** - Post-handover payments need to be identified by comparing their trigger dates to handover date
+4. **Downpayment calculation wrong** - First installment at month 0 should be the downpayment, but current logic doesn't handle all cases
 
 ---
 
-## Changes Required
+## Solution Architecture
 
-### 1. Fix Edge Function (`supabase/functions/extract-payment-plan/index.ts`)
+### 1. Enhance AI Extraction Mapping (Edge Function)
 
-**Fix PDF handling to use proper format:**
-```typescript
-// For ALL files (images AND PDFs), use image_url format
-contentParts.push({
-  type: "image_url",
-  image_url: {
-    url: imageData.startsWith("data:") ? imageData : `data:${mediaType};base64,${base64Data}`
-  }
-});
-```
+Update the system prompt to be more explicit about:
+- Booking payment = Month 0 = Downpayment
+- Calculate split from pre-handover total vs post-handover total
+- Mark post-handover installments with proper type
 
-**Add currency extraction to the tool schema:**
-```typescript
-// In property extraction
-currency: { 
-  type: "string", 
-  enum: ["AED", "USD", "EUR", "GBP"],
-  description: "Currency detected in the document (default: AED)" 
-}
-```
+### 2. Fix ClientSection.tsx `handleAIExtraction`
 
-**Update system prompt to prioritize property info extraction:**
-```
-EXTRACTION PRIORITIES (in order):
-1. Property info (developer, project name, unit details, price, currency)
-2. Payment percentages (MUST sum to 100%)
-3. Payment triggers (month number or construction milestone)
-4. Dates (handover quarter/year)
-```
-
----
-
-### 2. Update Types (`src/lib/paymentPlanTypes.ts`)
-
-Add currency to `ExtractedProperty`:
-```typescript
-export interface ExtractedProperty {
-  developer?: string;
-  projectName?: string;
-  unitNumber?: string;
-  unitType?: string;
-  unitSizeSqft?: number;
-  basePrice?: number;
-  currency?: 'AED' | 'USD' | 'EUR' | 'GBP';  // NEW
-}
-```
-
----
-
-### 3. Move AI Extractor to Client Section
-
-**Current flow:**
-```
-Client → Property → Images → Payment (AI Extractor here) → ...
-```
-
-**New flow:**
-```
-Client (AI Extractor at top) → Property → Images → Payment → ...
-```
-
-**Files to modify:**
-
-#### `src/components/roi/configurator/ClientSection.tsx`
-- Add AI Import button at the top
-- Import `PaymentPlanExtractor`
-- Handle extraction results to populate:
-  - Developer name
-  - Project name
-  - Unit number
-  - Unit type
-  - Unit size
-  - Base price
-  - Payment plan
-  - Handover dates
-  - Currency
-
-#### `src/components/roi/configurator/PaymentSection.tsx`
-- Keep the AI Import button as a secondary option
-- But primary use case will be from Client section
-
----
-
-### 4. Update Extraction Handler
-
-Create a comprehensive handler that populates ALL fields from extraction:
+The comprehensive handler needs to:
 
 ```typescript
 const handleAIExtraction = (data: ExtractedPaymentPlan) => {
-  // Update client info
-  if (setClientInfo) {
-    setClientInfo(prev => ({
-      ...prev,
-      developer: data.property?.developer || prev.developer,
-      projectName: data.property?.projectName || prev.projectName,
-      unit: data.property?.unitNumber || prev.unit,
-      unitType: data.property?.unitType || prev.unitType,
-      unitSizeSqf: data.property?.unitSizeSqft || prev.unitSizeSqf,
-      unitSizeM2: data.property?.unitSizeSqft ? Math.round(data.property.unitSizeSqft * 0.0929) : prev.unitSizeM2,
-    }));
+  // 1. Find downpayment (month 0 or "On Booking")
+  const downpayment = data.installments.find(i => 
+    i.type === 'time' && i.triggerValue === 0
+  );
+  const downpaymentPercent = downpayment?.paymentPercent || 0;
+  
+  // 2. Calculate pre-handover vs post-handover totals
+  const preHandoverInstallments = data.installments.filter(i => 
+    i.type !== 'post-handover' && i.type !== 'handover'
+  );
+  const postHandoverInstallments = data.installments.filter(i => 
+    i.type === 'post-handover'
+  );
+  
+  const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+  const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+  
+  // 3. Determine the split
+  let preHandoverPercent = preHandoverTotal;
+  if (data.paymentStructure.paymentSplit) {
+    // Parse explicit split like "30/70"
+    const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
+    if (!isNaN(pre)) preHandoverPercent = pre;
   }
   
-  // Update inputs (property, payment, dates)
+  // 4. Convert installments to PaymentMilestone format
+  // EXCLUDE: downpayment (month 0) and explicit handover entries
+  const additionalPayments = data.installments
+    .filter(i => {
+      if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
+      if (i.type === 'handover') return false; // Skip handover markers
+      return true;
+    })
+    .map((inst, idx) => ({
+      id: inst.id || `ai-${Date.now()}-${idx}`,
+      type: inst.type === 'post-handover' ? 'time' : inst.type as 'time' | 'construction',
+      triggerValue: inst.triggerValue,
+      paymentPercent: inst.paymentPercent,
+    }));
+  
+  // 5. Update inputs with proper structure
   setInputs(prev => ({
     ...prev,
     basePrice: data.property?.basePrice || prev.basePrice,
-    downpaymentPercent: /* extracted */,
-    preHandoverPercent: /* from split */,
-    additionalPayments: /* converted installments */,
+    downpaymentPercent,
+    preHandoverPercent,
+    additionalPayments,
+    hasPostHandoverPlan: data.paymentStructure.hasPostHandover || postHandoverTotal > 0,
+    postHandoverPercent: postHandoverTotal,
     handoverQuarter: data.paymentStructure.handoverQuarter || prev.handoverQuarter,
     handoverYear: data.paymentStructure.handoverYear || prev.handoverYear,
-    hasPostHandoverPlan: data.paymentStructure.hasPostHandover,
   }));
-  
-  // Navigate to next section or show success
 };
 ```
 
----
+### 3. Fix PaymentSection.tsx `handleAIExtraction`
 
-### 5. Update ExtractedDataPreview
+Same logic as ClientSection - ensure both handlers are consistent.
 
-The preview already allows editing property info, but ensure it's prominently displayed when detected.
+### 4. Improve Edge Function Post-Handover Detection
 
-Make Property Info section **open by default** when data is detected:
-```typescript
-const [showPropertyInfo, setShowPropertyInfo] = useState(
-  !!data.property?.developer || 
-  !!data.property?.projectName ||
-  !!data.property?.basePrice  // NEW: Also open if price detected
-);
-```
+Update the extraction logic to:
+- Better detect post-handover payments (any payment with months > handover)
+- Calculate `postHandoverPercent` from sum of post-handover installments
+- Ensure `hasPostHandover` is `true` when any installments extend past handover
 
 ---
 
-## File Summary
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/extract-payment-plan/index.ts` | Fix PDF format, add currency extraction, improve prompts |
-| `src/lib/paymentPlanTypes.ts` | Add `currency` to `ExtractedProperty` |
-| `src/components/roi/configurator/ClientSection.tsx` | Add AI Import button and handler |
-| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Pass `setClientInfo` to ClientSection for AI updates |
-| `src/components/roi/configurator/ExtractedDataPreview.tsx` | Open property section by default when data exists |
+| `supabase/functions/extract-payment-plan/index.ts` | Improve system prompt for post-handover detection, calculate split from totals |
+| `src/components/roi/configurator/ClientSection.tsx` | Rewrite `handleAIExtraction` with proper mapping logic |
+| `src/components/roi/configurator/PaymentSection.tsx` | Sync `handleAIExtraction` with ClientSection logic |
 
 ---
 
-## Visual Layout Change
+## Detailed Mapping Logic
 
-**Client Section (NEW):**
+### From Extracted Data to Configurator State
+
 ```
-┌──────────────────────────────────────────────────────────┐
-│ Client Details                          [🪄 AI Import]   │
-├──────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────┐  │
-│ │ Upload a brochure or payment plan to auto-fill all  │  │
-│ │ quote details including developer, unit info, and   │  │
-│ │ payment schedule.                                   │  │
-│ └─────────────────────────────────────────────────────┘  │
-│                                                          │
-│ Developer:  [                    ]                       │
-│ Project:    [                    ]                       │
-│ Unit Type:  [Select...]     Zone: [Select...]           │
-│ ...                                                      │
-└──────────────────────────────────────────────────────────┘
+ExtractedPaymentPlan:
+├── installments[]
+│   ├── type: 'time' | 'construction' | 'handover' | 'post-handover'
+│   ├── triggerValue: number (months or %)
+│   └── paymentPercent: number
+├── paymentStructure.hasPostHandover: boolean
+└── paymentStructure.paymentSplit: "30/70"
+
+                ↓ MAPS TO ↓
+
+OIInputs:
+├── downpaymentPercent: installments[0] where triggerValue=0
+├── preHandoverPercent: from split or calculated
+├── additionalPayments[]: all except downpayment & handover
+├── hasPostHandoverPlan: true if post-handover exists
+└── postHandoverPercent: sum of post-handover installments
+```
+
+### Post-Handover Installment Handling
+
+When `hasPostHandoverPlan: true`:
+1. Set the toggle ON
+2. Post-handover installments have `type: 'post-handover'` in extracted data
+3. Convert them to `type: 'time'` with appropriate `triggerValue` (months from booking)
+4. The configurator will auto-highlight them purple based on handover date comparison
+
+---
+
+## Visual Result After Fix
+
+After applying these changes, when AI extracts a 30/70 post-handover plan:
+
+- Toggle: "Allow Payments Past Handover" = ON
+- Split: "30/70" selected
+- Downpayment: 5%
+- Installments: 52 entries spanning pre and post-handover
+- Footer: Shows Pre | On-HO | Post | Total layout
+
+---
+
+## Edge Function Prompt Enhancement
+
+Add to system prompt:
+```
+POST-HANDOVER CALCULATION:
+- Sum all payments with type "post-handover" to get postHandoverPercent
+- Set hasPostHandover = true if postHandoverPercent > 0
+- Pre-handover payments are: booking + all construction milestones + time-based payments BEFORE handover
+- Calculate payment split from totals if not explicitly stated: pre/post
+
+SPLIT CALCULATION:
+- If document shows "30/70" → preHandover=30, remaining=70
+- If no explicit split, calculate: preHandoverTotal = sum(booking + pre-handover installments)
+- The split should represent: (during construction) / (on or after completion)
 ```
 
 ---
 
-## Implementation Order
+## Summary
 
-1. Fix edge function PDF handling (critical - currently broken)
-2. Add currency to types and extraction schema
-3. Update extraction system prompt
-4. Move AI Import button to ClientSection
-5. Update ConfiguratorLayout to pass setClientInfo
-6. Test with PDF upload
+The fix involves three key changes:
+
+1. **Edge Function**: Better extraction prompts for post-handover detection and split calculation
+2. **ClientSection**: Comprehensive mapping from `ExtractedPaymentPlan` to `OIInputs`
+3. **PaymentSection**: Sync the handler to use identical mapping logic
+
+This ensures AI-extracted payment plans properly populate:
+- The post-handover toggle
+- The split selection
+- The downpayment percentage
+- All installments with correct categorization
