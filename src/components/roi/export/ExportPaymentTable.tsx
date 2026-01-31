@@ -133,6 +133,9 @@ export const ExportPaymentTable = ({
     (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
   );
 
+  // Total Cash Until Handover = Entry + Journey + On Handover
+  const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
+
   const grandTotal = hasPostHandoverPlan
     ? entryTotal + journeyTotal + handoverAmount + postHandoverTotal
     : entryTotal + journeyTotal + handoverAmount;
@@ -175,6 +178,8 @@ export const ExportPaymentTable = ({
     handoverPayment: language === 'es' ? 'Pago en Entrega' : 'Handover Payment',
     postHandover: language === 'es' ? 'Post-Entrega' : 'Post-Handover',
     months: language === 'es' ? 'meses' : 'months',
+    paidUntilHandover: language === 'es' ? 'Pagado Hasta Handover' : 'Paid Until Handover',
+    paidPostHandover: language === 'es' ? 'Pagado Post-Handover' : 'Paid Post-Handover',
   };
 
   const sectionStyle = { marginBottom: '12px' };
@@ -383,26 +388,55 @@ export const ExportPaymentTable = ({
           </div>
         )}
 
-        {/* Grand Total */}
+        {/* Grand Total Summary */}
         <div style={{ borderTop: '1px solid hsl(var(--theme-border))', paddingTop: '8px' }}>
-          <div style={rowStyle}>
-            <span style={labelStyle}>{t.basePropertyPrice}</span>
-            <span style={valueStyle}>
-              {getDualValue(basePrice).primary}
-              {getDualValue(basePrice).secondary && (
-                <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(basePrice).secondary})</span>
-              )}
-            </span>
-          </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>{t.transactionFees}</span>
-            <span style={{ ...valueStyle, color: 'hsl(var(--theme-text-muted))' }}>
-              {getDualValue(dldFee + oqoodFee).primary}
-              {getDualValue(dldFee + oqoodFee).secondary && (
-                <span style={{ marginLeft: '4px' }}>({getDualValue(dldFee + oqoodFee).secondary})</span>
-              )}
-            </span>
-          </div>
+          {hasPostHandoverPlan && postHandoverTotal > 0 ? (
+            /* Post-handover plan: show Pre/Post breakdown */
+            <>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{t.paidUntilHandover}</span>
+                <span style={{ ...valueStyle, color: 'rgb(74, 222, 128)' }}>
+                  {getDualValue(totalUntilHandover).primary}
+                  {getDualValue(totalUntilHandover).secondary && (
+                    <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(totalUntilHandover).secondary})</span>
+                  )}
+                </span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{t.paidPostHandover}</span>
+                <span style={{ ...valueStyle, color: '#a855f7' }}>
+                  {getDualValue(postHandoverTotal).primary}
+                  {getDualValue(postHandoverTotal).secondary && (
+                    <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(postHandoverTotal).secondary})</span>
+                  )}
+                </span>
+              </div>
+            </>
+          ) : (
+            /* Standard plan: show Base Price + Fees breakdown */
+            <>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{t.basePropertyPrice}</span>
+                <span style={valueStyle}>
+                  {getDualValue(basePrice).primary}
+                  {getDualValue(basePrice).secondary && (
+                    <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px' }}>({getDualValue(basePrice).secondary})</span>
+                  )}
+                </span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{t.transactionFees}</span>
+                <span style={{ ...valueStyle, color: 'hsl(var(--theme-text-muted))' }}>
+                  {getDualValue(dldFee + oqoodFee).primary}
+                  {getDualValue(dldFee + oqoodFee).secondary && (
+                    <span style={{ marginLeft: '4px' }}>({getDualValue(dldFee + oqoodFee).secondary})</span>
+                  )}
+                </span>
+              </div>
+            </>
+          )}
+          
+          {/* Total Investment - always show */}
           <div style={{ ...rowStyle, fontSize: '14px' }}>
             <span style={{ ...labelStyle, fontWeight: 600, fontSize: '14px' }}>{t.totalInvestment}</span>
             <span style={{ ...valueStyle, fontWeight: 700, fontSize: '14px' }}>

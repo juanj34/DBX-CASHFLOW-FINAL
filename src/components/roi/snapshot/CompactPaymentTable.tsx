@@ -718,45 +718,46 @@ export const CompactPaymentTable = ({
             </div>
           )}
 
-          {/* Grand Total with Fee Breakdown */}
+          {/* Grand Total Summary */}
           <div className="pt-2 border-t border-theme-border space-y-1">
-            {/* Property Price */}
-            <DottedRow 
-              label={t('basePropertyPrice')}
-              value={getDualValue(basePrice).primary}
-              secondaryValue={getDualValue(basePrice).secondary}
-              className="text-xs"
-            />
-            {/* Transaction Fees */}
-            <DottedRow 
-              label={t('transactionFees')}
-              value={getDualValue(dldFee + oqoodFee).primary}
-              secondaryValue={getDualValue(dldFee + oqoodFee).secondary}
-              className="text-xs"
-              valueClassName="text-theme-text-muted"
-            />
-            
-            {/* Show subtotals for post-handover plans */}
-            {hasPostHandoverPlan && postHandoverTotal > 0 && (
-              <div className="pt-1 mt-1 border-t border-dashed border-theme-border/50 space-y-1">
+            {hasPostHandoverPlan && postHandoverTotal > 0 ? (
+              /* Post-handover plan: show Pre/Post breakdown */
+              <>
                 <DottedRow 
-                  label="Paid Until Handover"
+                  label={language === 'es' ? 'Pagado Hasta Handover' : 'Paid Until Handover'}
                   value={getDualValue(totalUntilHandover).primary}
                   secondaryValue={getDualValue(totalUntilHandover).secondary}
                   className="text-xs"
                   valueClassName="text-green-400"
                 />
                 <DottedRow 
-                  label="Post-Handover Balance"
+                  label={language === 'es' ? 'Pagado Post-Handover' : 'Paid Post-Handover'}
                   value={getDualValue(postHandoverTotal).primary}
                   secondaryValue={getDualValue(postHandoverTotal).secondary}
                   className="text-xs"
                   valueClassName="text-purple-400"
                 />
-              </div>
+              </>
+            ) : (
+              /* Standard plan: show Base Price + Fees breakdown */
+              <>
+                <DottedRow 
+                  label={t('basePropertyPrice')}
+                  value={getDualValue(basePrice).primary}
+                  secondaryValue={getDualValue(basePrice).secondary}
+                  className="text-xs"
+                />
+                <DottedRow 
+                  label={t('transactionFees')}
+                  value={getDualValue(dldFee + oqoodFee).primary}
+                  secondaryValue={getDualValue(dldFee + oqoodFee).secondary}
+                  className="text-xs"
+                  valueClassName="text-theme-text-muted"
+                />
+              </>
             )}
             
-            {/* Total Investment */}
+            {/* Total Investment - always show */}
             <DottedRow 
               label={t('totalInvestmentLabel')}
               value={getDualValue(grandTotal).primary}
