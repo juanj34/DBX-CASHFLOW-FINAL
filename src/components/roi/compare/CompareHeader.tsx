@@ -1,4 +1,4 @@
-import { X, Building2, Calendar, MapPin, GripVertical } from 'lucide-react';
+import { X, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ComparisonQuote } from '@/hooks/useQuotesComparison';
 import { formatCurrency } from '@/components/roi/currencyUtils';
@@ -35,6 +35,42 @@ const getQuoteColors = (isLightTheme: boolean) =>
     ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
     : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
 
+// Calculate property value at year N with phased appreciation
+const calculateFutureValue = (
+  basePrice: number,
+  constructionMonths: number,
+  constructionAppreciation: number,
+  growthAppreciation: number,
+  matureAppreciation: number,
+  growthPeriodYears: number,
+  targetYears: number
+): number => {
+  const totalMonths = targetYears * 12;
+  let value = basePrice;
+  
+  for (let month = 1; month <= totalMonths; month++) {
+    let annualRate: number;
+    
+    if (month <= constructionMonths) {
+      annualRate = constructionAppreciation;
+    } else {
+      const monthsAfterHandover = month - constructionMonths;
+      const yearsAfterHandover = monthsAfterHandover / 12;
+      
+      if (yearsAfterHandover <= growthPeriodYears) {
+        annualRate = growthAppreciation;
+      } else {
+        annualRate = matureAppreciation;
+      }
+    }
+    
+    const monthlyRate = annualRate / 100 / 12;
+    value *= (1 + monthlyRate);
+  }
+  
+  return value;
+};
+
 // Sortable Card Component
 const SortableQuoteCard = ({ 
   quote, 
@@ -65,24 +101,48 @@ const SortableQuoteCard = ({
     borderTopWidth: '3px',
   };
 
-  // Format handover
-  const formatHandover = () => {
-    const q = quote.inputs.handoverQuarter;
-    const y = quote.inputs.handoverYear;
-    if (!q || !y) return null;
-    
-    const now = new Date();
-    const handoverMonth = (q - 1) * 3 + 1;
-    const handoverDate = new Date(y, handoverMonth, 1);
-    const monthsAway = Math.round((handoverDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30));
-    
-    return {
-      label: `Q${q} ${y}`,
-      monthsAway: monthsAway > 0 ? monthsAway : null
-    };
-  };
-
-  const handoverInfo = formatHandover();
+  const inputs = quote.inputs;
+  const basePrice = inputs.basePrice || 0;
+  const unitSize = quote.unitSizeSqf || inputs.unitSizeSqf || 0;
+  const pricePerSqft = unitSize > 0 ? basePrice / unitSize : 0;
+  
+  // Calculate rental income
+  const grossAnnualRent = basePrice * (inputs.rentalYieldPercent || 0) / 100;
+  const annualServiceCharge = unitSize * (inputs.serviceChargePerSqft || 18);
+  const netAnnualRent = grossAnnualRent - annualServiceCharge;
+  const monthlyRent = netAnnualRent / 12;
+  
+  // Calculate monthly burn during pre-handover
+  const bookingDate = new Date(inputs.bookingYear, (inputs.bookingMonth || 1) - 1, 1);
+  const handoverMonth = ((inputs.handoverQuarter || 4) - 1) * 3 + 1;
+  const handoverDate = new Date(inputs.handoverYear || inputs.bookingYear + 2, handoverMonth, 1);
+  const constructionMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+  
+  // Entry costs
+  const dldFee = basePrice * 0.04;
+  const oqoodFee = inputs.oqoodFee || 5000;
+  const downpayment = basePrice * (inputs.downpaymentPercent || 20) / 100;
+  const entryCosts = downpayment + dldFee + oqoodFee;
+  
+  // Pre-handover installments total
+  const additionalTotal = (inputs.additionalPayments || []).reduce(
+    (sum: number, m: any) => sum + (basePrice * (m.paymentPercent || 0) / 100), 
+    0
+  );
+  
+  const totalPreHandover = entryCosts + additionalTotal;
+  const monthlyBurn = constructionMonths > 0 ? totalPreHandover / constructionMonths : 0;
+  
+  // Calculate 5-year property value
+  const value5Years = calculateFutureValue(
+    basePrice,
+    constructionMonths,
+    inputs.constructionAppreciation || 12,
+    inputs.growthAppreciation || 8,
+    inputs.matureAppreciation || 4,
+    inputs.growthPeriodYears || 3,
+    5
+  );
 
   return (
     <div
@@ -114,7 +174,7 @@ const SortableQuoteCard = ({
 
       <div className="p-4 pt-8 space-y-3">
         {/* Project Name - Primary Display */}
-        <div>
+        <div className="pb-2 border-b border-theme-border">
           <h3 
             className="font-semibold text-lg truncate"
             style={{ color }}
@@ -128,42 +188,59 @@ const SortableQuoteCard = ({
           )}
         </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
-            <span className="text-[10px] uppercase text-theme-text-muted block">Unit</span>
-            <span className="text-sm text-theme-text font-medium truncate block">
-              {quote.unitType || quote.unit || 'N/A'}
+        {/* Metrics Grid */}
+        <div className="space-y-2">
+          {/* Base Price */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-theme-text-muted">Base Price</span>
+            <span className="text-sm font-semibold text-theme-text">
+              {formatCurrency(basePrice, 'AED', 1)}
             </span>
           </div>
-          <div className="bg-theme-bg-alt rounded-lg p-2 text-center">
-            <span className="text-[10px] uppercase text-theme-text-muted block">Size</span>
-            <span className="text-sm text-theme-text font-medium">
-              {quote.unitSizeSqf ? `${quote.unitSizeSqf.toLocaleString()} sqft` : 'N/A'}
+          
+          {/* Size */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-theme-text-muted">Size</span>
+            <span className="text-sm font-medium text-theme-text">
+              {unitSize > 0 ? `${unitSize.toLocaleString()} sqft` : '—'}
             </span>
           </div>
-        </div>
-
-        {/* Handover */}
-        {handoverInfo && (
-          <div className="flex items-center gap-2 text-xs text-theme-text-muted">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{handoverInfo.label}</span>
-            {handoverInfo.monthsAway && (
-              <span className="text-theme-text-muted/60">({handoverInfo.monthsAway}mo)</span>
-            )}
+          
+          {/* Price/sqft */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-theme-text-muted">Price/sqft</span>
+            <span className="text-sm font-medium text-theme-text">
+              {pricePerSqft > 0 ? formatCurrency(pricePerSqft, 'AED', 1) : '—'}
+            </span>
           </div>
-        )}
 
-        {/* Base Price */}
-        <div className="pt-2 border-t border-theme-border">
-          <span className="text-[10px] uppercase text-theme-text-muted block">Base Price</span>
-          <p 
-            className="text-xl font-bold"
-            style={{ color }}
-          >
-            {formatCurrency(quote.inputs.basePrice, 'AED', 1)}
-          </p>
+          <div className="border-t border-theme-border my-2" />
+          
+          {/* Monthly Rent */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-theme-text-muted">Monthly Rent (Net)</span>
+            <span className="text-sm font-medium text-theme-positive">
+              {monthlyRent > 0 ? formatCurrency(monthlyRent, 'AED', 1) : '—'}
+            </span>
+          </div>
+          
+          {/* Monthly Burn */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-theme-text-muted">Burn (Pre-Handover)</span>
+            <span className="text-sm font-medium text-theme-text">
+              ~{formatCurrency(monthlyBurn, 'AED', 1)}/mo
+            </span>
+          </div>
+
+          <div className="border-t border-theme-border my-2" />
+          
+          {/* 5-Year Value */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-theme-text-muted">Value (Year 5)</span>
+            <span className="text-sm font-bold" style={{ color }}>
+              {formatCurrency(value5Years, 'AED', 1)}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -212,7 +289,7 @@ export const CompareHeader = ({ quotes, onRemove, onReorder }: CompareHeaderProp
       >
         <div 
           className="grid gap-4" 
-          style={{ gridTemplateColumns: `repeat(${quotes.length}, minmax(200px, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${quotes.length}, minmax(220px, 1fr))` }}
         >
           {quotes.map((quote, index) => (
             <SortableQuoteCard
