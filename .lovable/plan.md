@@ -1,176 +1,338 @@
 
-# Redesign Insight Cards 3 & 4
+# Export Functionality for Off-Plan vs Secondary Comparison Tool
 
-## Current State (What's Stupid)
+## Overview
 
-| Card | Current Content | Problem |
-|------|-----------------|---------|
-| **Card 3: Monthly Cashflow** | Off-Plan: AED 0 vs Secondary: monthly cashflow during construction | Obviously Off-Plan earns nothing during construction - trivial comparison |
-| **Card 4: Construction Bonus** | Single value: "+X appreciation during build" | Doesn't compare, just shows off-plan benefit in isolation |
+This plan implements a complete PDF/PNG export system for the Off-Plan vs Secondary comparison tool, following the established **Export DOM Architecture** pattern used throughout the application.
 
----
-
-## New Design
-
-### Card 3: "Monthly Rent (Year 5)"
-Compare monthly rental income at Year 5 for both properties - a meaningful comparison point after handover when both are generating income.
-
-**Visual:**
-- 🏆 Off-Plan: AED 48K/mo
-- Secondary: AED 42K/mo
-
-**Subtitle:** "Rental income at maturity"
+The export will capture:
+1. Key Insights (4 comparison cards)
+2. Year-by-Year Asset Progression Table
+3. Wealth Trajectory Chart
+4. Exit Scenarios Comparison Table
+5. Out of Pocket Analysis Card
+6. Mortgage Coverage Card (if applicable)
+7. Rental Comparison at Handover
+8. Final Verdict
 
 ---
 
-### Card 4: "Construction Trade-off"
-Compare what each strategy gains DURING the construction period:
-- **Off-Plan gains:** Appreciation while you pay in installments ("Free equity")
-- **Secondary gains:** Actual rental cashflow from Day 1
+## Architecture
 
-**Visual:**
-- 🏠 Off-Plan: +AED 2.4M (value growth)
-- 💰 Secondary: +AED 1.8M (rent earned)
-- Winner gets 🏆
+Following the existing pattern from the main cashflow export system:
 
-**Subtitle:** "What you gain during construction"
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Export Flow                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│  User clicks "Export" button in header                               │
+│           ↓                                                          │
+│  ExportComparisonModal opens (format selection: PDF/PNG)             │
+│           ↓                                                          │
+│  useExportRenderer hook creates offscreen container                  │
+│           ↓                                                          │
+│  ExportComparisonDOM rendered (static, A3 landscape, 1587px width)   │
+│           ↓                                                          │
+│  html2canvas captures at 2x resolution                               │
+│           ↓                                                          │
+│  jsPDF embeds image / PNG downloaded directly                        │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Technical Implementation
+## Files to Create
 
-### 1. Calculate Year 5 Monthly Rent in Parent (`OffPlanVsSecondary.tsx`)
+### 1. `src/components/roi/secondary/export/ExportComparisonDOM.tsx`
+Main static export container component (similar to `ExportSnapshotDOM.tsx`).
 
+**Props:**
 ```typescript
-// Off-Plan Year 5 monthly rent (if after handover, otherwise 0)
-const offPlanMonthlyRent5Y = useMemo(() => {
-  if (5 <= handoverYearIndex) return 0; // Still in construction
-  return (offPlanCalcs.yearlyProjections[4]?.netIncome || 0) / 12;
-}, [offPlanCalcs.yearlyProjections, handoverYearIndex]);
-
-// Secondary Year 5 monthly rent
-const secondaryMonthlyRent5Y = useMemo(() => {
-  const proj = secondaryCalcs.yearlyProjections[4]; // Index 4 = Year 5
-  return rentalMode === 'airbnb'
-    ? (proj?.netRentST || 0) / 12
-    : (proj?.netRentLT || 0) / 12;
-}, [secondaryCalcs.yearlyProjections, rentalMode]);
-```
-
-### 2. Calculate Secondary Cumulative Rent During Construction
-
-```typescript
-// Total rent Secondary earns during off-plan construction period
-const secondaryRentDuringConstruction = useMemo(() => {
-  let total = 0;
-  for (let i = 0; i < handoverYearIndex; i++) {
-    const proj = secondaryCalcs.yearlyProjections[i];
-    if (proj) {
-      total += rentalMode === 'airbnb' ? proj.netRentST : proj.netRentLT;
-    }
-  }
-  return total;
-}, [secondaryCalcs.yearlyProjections, handoverYearIndex, rentalMode]);
-```
-
-### 3. Update Props Passed to `ComparisonKeyInsights`
-
-```tsx
-<ComparisonKeyInsights
-  // ... existing props ...
+interface ExportComparisonDOMProps {
+  // Off-Plan data
+  offPlanInputs: OIInputs;
+  offPlanCalcs: OICalculations;
+  offPlanProjectName: string;
   
-  // NEW: Year 5 monthly rent
-  offPlanMonthlyRent5Y={offPlanMonthlyRent5Y}
-  secondaryMonthlyRent5Y={secondaryMonthlyRent5Y}
+  // Secondary data
+  secondaryInputs: SecondaryInputs;
+  secondaryCalcs: SecondaryCalculations;
   
-  // NEW: Construction period comparison
-  secondaryRentDuringConstruction={secondaryRentDuringConstruction}
-/>
-```
-
-### 4. Update `ComparisonKeyInsights.tsx` Interface
-
-```typescript
-interface ComparisonKeyInsightsProps {
-  // ... existing props ...
+  // Shared metrics
+  metrics: ComparisonMetrics;
+  handoverYearIndex: number;
+  exitMonths: number[];
+  rentalMode: 'long-term' | 'airbnb';
   
-  // Year 5 monthly rent for both
+  // Calculated values (passed from parent to ensure consistency)
+  offPlanTotalAssets10Y: number;
+  secondaryTotalAssets10Y: number;
   offPlanMonthlyRent5Y: number;
   secondaryMonthlyRent5Y: number;
-  
-  // Secondary's rent earned during construction
+  appreciationDuringConstruction: number;
   secondaryRentDuringConstruction: number;
+  
+  // Display settings
+  currency: Currency;
+  rate: number;
+  language: 'en' | 'es';
 }
 ```
 
-### 5. Redesign Card Definitions
+**Structure:**
+- Fixed 1587px width (A3 landscape @ 96dpi)
+- All inline styles (no hover effects, no animations, no framer-motion)
+- Uses CSS variables for theme consistency
 
-**Card 3 - Monthly Rent at Year 5:**
-```typescript
-{
-  key: 'rent5y',
-  title: t.monthlyRent5Y,
-  subtitle: t.monthlyRent5YSubtitle,
-  icon: Coins,
-  showComparison: true,
-  offPlanValue: formatValue(offPlanMonthlyRent5Y),
-  secondaryValue: formatValue(secondaryMonthlyRent5Y),
-  winner: offPlanMonthlyRent5Y > secondaryMonthlyRent5Y ? 'offplan' : 'secondary',
-}
-```
+### 2. `src/components/roi/secondary/export/ExportKeyInsights.tsx`
+Static version of `ComparisonKeyInsights.tsx` for export.
 
-**Card 4 - Construction Trade-off:**
-```typescript
-{
-  key: 'tradeoff',
-  title: t.constructionTradeoff,
-  subtitle: t.constructionTradeoffSubtitle,
-  icon: Building2,
-  showComparison: true, // Now a comparison card!
-  offPlanValue: formatValue(appreciationDuringConstruction),
-  offPlanSubValue: '📈 Value growth',
-  secondaryValue: formatValue(secondaryRentDuringConstruction),
-  secondarySubValue: '💰 Rent earned',
-  winner: appreciationDuringConstruction > secondaryRentDuringConstruction ? 'offplan' : 'secondary',
-}
-```
+**Features:**
+- 4-column grid layout
+- Same metric calculations
+- No tooltips, no interactivity
+- Fixed fonts and colors
 
-### 6. Update Translations
+### 3. `src/components/roi/secondary/export/ExportWealthTable.tsx`
+Static version of `YearByYearWealthTable.tsx` for export.
 
-```typescript
-const t = language === 'es' ? {
-  // ... existing ...
-  monthlyRent5Y: 'Renta Mensual (Año 5)',
-  monthlyRent5YSubtitle: 'Ingreso a madurez',
-  constructionTradeoff: 'Período Construcción',
-  constructionTradeoffSubtitle: 'Qué ganas mientras esperas',
-} : {
-  // ... existing ...
-  monthlyRent5Y: 'Monthly Rent (Year 5)',
-  monthlyRent5YSubtitle: 'Rental at maturity',
-  constructionTradeoff: 'Construction Period',
-  constructionTradeoffSubtitle: 'What you gain while waiting',
-};
-```
+**Features:**
+- Full 10-year data table
+- Simplified headers (no tooltip triggers)
+- Fixed column widths for consistency
+- Color-coded delta values
 
----
+### 4. `src/components/roi/secondary/export/ExportWealthChart.tsx`
+Static version of `WealthTrajectoryDualChart.tsx` for export.
 
-## Expected Visual Result
+**Considerations:**
+- Recharts renders as SVG, which html2canvas handles well
+- Need to ensure fixed dimensions (no ResponsiveContainer in export)
+- Remove Legend interactivity
 
-| Card | Off-Plan | Secondary | Winner |
-|------|----------|-----------|--------|
-| **Total Wealth (10Y)** | AED 20.0M | AED 26.1M | Secondary 🏆 |
-| **Value Multiplier** | 2.1x → 16.8M | 1.9x → 12.2M | Off-Plan 🏆 |
-| **Monthly Rent (Y5)** | AED 48K/mo | AED 42K/mo | Off-Plan 🏆 |
-| **Construction Period** | +2.4M value | +1.8M rent | Off-Plan 🏆 |
+### 5. `src/components/roi/secondary/export/ExportExitScenarios.tsx`
+Static version of `ExitScenariosComparison.tsx` for export.
 
-Both cards now show **meaningful comparisons** instead of trivial "0 vs something" or single isolated values.
+**Features:**
+- Simplified table without tooltips
+- Winner badges inline
+- Fixed column widths
+
+### 6. `src/components/roi/secondary/export/ExportOutOfPocket.tsx`
+Static version of `OutOfPocketCard.tsx` for export.
+
+### 7. `src/components/roi/secondary/export/ExportMortgageCoverage.tsx`
+Static version of `MortgageCoverageCard.tsx` for export (conditional).
+
+### 8. `src/components/roi/secondary/export/ExportRentalComparison.tsx`
+Static version of `RentalComparisonAtHandover.tsx` for export.
+
+### 9. `src/components/roi/secondary/export/ExportVerdict.tsx`
+Static version of `ComparisonVerdict.tsx` for export.
+
+### 10. `src/components/roi/secondary/export/ExportComparisonHeader.tsx`
+Header section with:
+- Title: "Off-Plan vs Secondary Property Comparison"
+- Off-Plan project name + base price
+- Secondary property name + purchase price
+- Export date
+- Broker info (if available)
+
+### 11. `src/components/roi/secondary/export/ExportComparisonFooter.tsx`
+Footer with:
+- "Powered by DBX Prime" branding
+- Disclaimer text
+- Generation timestamp
+
+### 12. `src/components/roi/secondary/export/index.ts`
+Barrel export file for all export components.
+
+### 13. `src/components/roi/secondary/ExportComparisonModal.tsx`
+Modal for selecting export format (PDF/PNG).
+
+**Features:**
+- Format selection (PDF default, PNG option)
+- Progress indicator during export
+- Uses `useExportRenderer` hook pattern
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/pages/OffPlanVsSecondary.tsx` | Add Year 5 rent calculations + construction period rent for secondary |
-| `src/components/roi/secondary/ComparisonKeyInsights.tsx` | Update interface, card definitions, translations, and remove old cashflow card logic |
+### 1. `src/pages/OffPlanVsSecondary.tsx`
+
+**Add:**
+- Import `ExportComparisonModal`
+- State for `exportModalOpen`
+- Export button in the header (next to Load/Reconfigure buttons)
+- Pass all required props to modal
+
+**Header addition (~line 748):**
+```tsx
+<Button
+  variant="outline"
+  size="sm"
+  onClick={() => setExportModalOpen(true)}
+  className="border-theme-border text-theme-text"
+>
+  <Download className="w-4 h-4 mr-2" />
+  Export
+</Button>
+```
+
+### 2. `src/hooks/useExportRenderer.tsx`
+
+**Add:**
+- New export function for comparison: `exportComparison`
+- Import and use `ExportComparisonDOM` component
+
+---
+
+## Export Component Design Principles
+
+Following the existing pattern from `ExportSnapshotDOM`:
+
+1. **Fixed Dimensions**
+   - Width: 1587px (A3 landscape)
+   - No responsive breakpoints
+   - All elements use fixed px values
+
+2. **Inline Styles Only**
+   - No Tailwind classes that might not render in offscreen DOM
+   - Use `style={{}}` for all styling
+   - Reference CSS variables via `hsl(var(--theme-xxx))`
+
+3. **No Interactivity**
+   - No hover states
+   - No click handlers
+   - No tooltips with triggers
+   - No animations or transitions
+
+4. **Static Data Display**
+   - All calculations done in parent
+   - Components receive final values as props
+   - No hooks inside export components (except useMemo for formatting)
+
+5. **Theme Consistency**
+   - Use theme CSS variables for colors
+   - Export captures current theme (light/dark)
+   - Background color from `getBackgroundColor()` in renderer
+
+---
+
+## Technical Implementation Details
+
+### Chart Rendering for Export
+
+For the `ExportWealthChart`, we need special handling since Recharts uses ResponsiveContainer:
+
+```tsx
+// Export version uses fixed dimensions
+<ComposedChart width={700} height={300} data={chartData}>
+  {/* No ResponsiveContainer wrapper */}
+</ComposedChart>
+```
+
+### Calculation Consistency
+
+All calculated values are passed as props from the parent component to ensure the export shows exactly what the user sees:
+
+```tsx
+<ExportComparisonDOM
+  // Pre-calculated values from parent (same as live view)
+  offPlanTotalAssets10Y={offPlanTotalAssets10Y}
+  secondaryTotalAssets10Y={secondaryTotalAssets10Y}
+  // ... etc
+/>
+```
+
+### Export Renderer Integration
+
+Add a new method to `useExportRenderer`:
+
+```typescript
+const exportComparison = useCallback(async (
+  props: ExportComparisonDOMProps,
+  format: FormatType
+): Promise<ExportResult> => {
+  // Similar to exportSnapshot but renders ExportComparisonDOM
+  return await renderAndCaptureComparison(props, format, 'comparison');
+}, [renderAndCaptureComparison]);
+```
+
+---
+
+## Visual Layout (A3 Landscape - 1587 x auto px)
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ HEADER: Off-Plan vs Secondary Comparison                                        │
+│ [Off-Plan: Project Name - AED X.XXM]  [Secondary: Property - AED X.XXM]  [Date] │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ KEY INSIGHTS (4 cards row)                                                      │
+│ ┌────────────┬────────────┬────────────┬────────────┐                          │
+│ │Total Wealth│ Multiplier │Monthly Rent│Construction│                          │
+│ │  (10Y)     │   (10Y)    │  (Year 5)  │  Trade-off │                          │
+│ └────────────┴────────────┴────────────┴────────────┘                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ YEAR-BY-YEAR TABLE                   │ WEALTH TRAJECTORY CHART                  │
+│ Year | Off-Plan | Secondary | Delta  │  [Line chart with Off-Plan vs Secondary] │
+│ 0-10 data rows                       │                                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ EXIT SCENARIOS TABLE                                                            │
+│ [Year 3/5/10 exit comparison with Value, Profit, ROE for both properties]       │
+├──────────────────────────────────────┬──────────────────────────────────────────┤
+│ OUT OF POCKET ANALYSIS               │ RENTAL COMPARISON AT HANDOVER            │
+│ [Capital during construction]        │ [Monthly rent comparison]                │
+├──────────────────────────────────────┴──────────────────────────────────────────┤
+│ MORTGAGE COVERAGE (if applicable)                                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ VERDICT                                                                         │
+│ [Winner summary with key differentiators]                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ FOOTER: Powered by DBX Prime | Disclaimer | Generated: Jan 31, 2026             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## File Summary
+
+| New Files | Description |
+|-----------|-------------|
+| `src/components/roi/secondary/export/ExportComparisonDOM.tsx` | Main export container |
+| `src/components/roi/secondary/export/ExportComparisonHeader.tsx` | Header with property info |
+| `src/components/roi/secondary/export/ExportKeyInsights.tsx` | 4 insight cards |
+| `src/components/roi/secondary/export/ExportWealthTable.tsx` | Year-by-year table |
+| `src/components/roi/secondary/export/ExportWealthChart.tsx` | Trajectory chart |
+| `src/components/roi/secondary/export/ExportExitScenarios.tsx` | Exit comparison table |
+| `src/components/roi/secondary/export/ExportOutOfPocket.tsx` | Capital analysis card |
+| `src/components/roi/secondary/export/ExportMortgageCoverage.tsx` | Mortgage card (optional) |
+| `src/components/roi/secondary/export/ExportRentalComparison.tsx` | Rental at handover |
+| `src/components/roi/secondary/export/ExportVerdict.tsx` | Final recommendation |
+| `src/components/roi/secondary/export/ExportComparisonFooter.tsx` | Footer with branding |
+| `src/components/roi/secondary/export/index.ts` | Barrel exports |
+| `src/components/roi/secondary/ExportComparisonModal.tsx` | Format selection modal |
+
+| Modified Files | Changes |
+|----------------|---------|
+| `src/pages/OffPlanVsSecondary.tsx` | Add export button + modal state |
+| `src/hooks/useExportRenderer.tsx` | Add `exportComparison` function |
+| `src/components/roi/secondary/index.ts` | Export new modal component |
+
+---
+
+## Implementation Order
+
+1. Create export subfolder and index
+2. Build `ExportComparisonHeader` and `ExportComparisonFooter`
+3. Build `ExportKeyInsights` (static 4-card grid)
+4. Build `ExportWealthTable` (static table)
+5. Build `ExportWealthChart` (fixed-dimension chart)
+6. Build `ExportExitScenarios` (static table)
+7. Build remaining cards (OutOfPocket, MortgageCoverage, RentalComparison, Verdict)
+8. Assemble `ExportComparisonDOM` with all components
+9. Create `ExportComparisonModal` with format selection
+10. Update `useExportRenderer` hook
+11. Add export button to `OffPlanVsSecondary.tsx`
+12. Test both PDF and PNG exports with light and dark themes
