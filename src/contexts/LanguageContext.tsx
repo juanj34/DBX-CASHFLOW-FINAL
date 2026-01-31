@@ -1421,6 +1421,13 @@ const translations: Translations = {
   saved: { en: 'Saved', es: 'Guardado' },
   saving: { en: 'Saving...', es: 'Guardando...' },
   
+  // Working Draft Dialog
+  unsavedDraft: { en: 'Unsaved Draft', es: 'Borrador sin Guardar' },
+  unsavedDraftMessage: { en: 'You have unsaved work. What would you like to do?', es: 'Tienes trabajo sin guardar. ¿Qué te gustaría hacer?' },
+  saveAsDraft: { en: 'Save as Draft', es: 'Guardar como Borrador' },
+  discardDraft: { en: 'Discard', es: 'Descartar' },
+  keepEditing: { en: 'Keep Editing', es: 'Seguir Editando' },
+  
   // Quick Search & Pipeline Analytics
   searchPlaceholder: { en: 'Search client, project, or developer...', es: 'Buscar cliente, proyecto o desarrollador...' },
   pipelineAnalytics: { en: 'Pipeline Analytics', es: 'Análisis de Pipeline' },
