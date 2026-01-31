@@ -39,9 +39,17 @@ export const OIGrowthCurve = ({
     };
   }, []);
   
-  // Calculate handover price using the SAME function as exit scenario cards
-  const handoverPrice = calculateExitPrice(totalMonths, basePrice, totalMonths, inputs);
-  const maxValue = handoverPrice * 1.08;
+  // Calculate chart max month - extend to show post-handover if exits exist beyond handover
+  const maxExitMonth = exitScenarios.length > 0 ? Math.max(...exitScenarios, totalMonths) : totalMonths;
+  const chartMaxMonth = Math.max(totalMonths + 12, maxExitMonth + 6); // At least 1 year post-HO or latest exit + buffer
+  
+  // Growth period for phase calculations
+  const growthPeriodYears = inputs.growthPeriodYears || 5;
+  const growthPhaseEndMonth = totalMonths + (growthPeriodYears * 12);
+  
+  // Calculate max price for y-axis scaling (now considering post-handover appreciation)
+  const maxChartPrice = calculateExitPrice(chartMaxMonth, basePrice, totalMonths, inputs);
+  const maxValue = maxChartPrice * 1.08;
   const minValue = basePrice * 0.95;
 
   // SVG dimensions - more compact with more bottom space
@@ -51,8 +59,8 @@ export const OIGrowthCurve = ({
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
-  // Scale functions
-  const xScale = (months: number) => padding.left + (months / totalMonths) * chartWidth;
+  // Scale functions - now using chartMaxMonth instead of totalMonths
+  const xScale = (months: number) => padding.left + (months / chartMaxMonth) * chartWidth;
   const yScale = (value: number) => padding.top + chartHeight - ((value - minValue) / (maxValue - minValue)) * chartHeight;
   
   // Calculate approximate path length for animation
@@ -70,30 +78,32 @@ export const OIGrowthCurve = ({
     ];
   }, [minValue, maxValue]);
 
-  // X-axis time labels - every 6 months, avoiding overlap
+  // X-axis time labels - adapted for extended timeline
   const timeLabels = useMemo(() => {
     const labels: number[] = [];
-    for (let m = 0; m <= totalMonths; m += 6) {
+    const interval = chartMaxMonth <= 36 ? 6 : 12; // Use 6-month intervals for short timelines, 12 for longer
+    
+    for (let m = 0; m <= chartMaxMonth; m += interval) {
       labels.push(m);
     }
     // Only add final month if it's at least 3 months from last label
-    if (labels.length > 0 && totalMonths - labels[labels.length - 1] >= 3) {
-      labels.push(totalMonths);
-    } else if (labels[labels.length - 1] !== totalMonths) {
-      // Replace last label with totalMonths if close
-      labels[labels.length - 1] = totalMonths;
+    if (labels.length > 0 && chartMaxMonth - labels[labels.length - 1] >= 3) {
+      labels.push(chartMaxMonth);
+    } else if (labels[labels.length - 1] !== chartMaxMonth) {
+      // Replace last label with chartMaxMonth if close
+      labels[labels.length - 1] = chartMaxMonth;
     }
     return labels;
-  }, [totalMonths]);
+  }, [chartMaxMonth]);
 
-  // Generate smooth curve path using the SAME phased appreciation as exit cards
+  // Generate smooth curve path - NOW EXTENDED beyond handover
   const curvePath = useMemo(() => {
     const points: { x: number; y: number }[] = [];
-    const steps = 30;
+    const steps = 40;
     for (let i = 0; i <= steps; i++) {
       const progress = i / steps;
-      const month = progress * totalMonths;
-      // Use the canonical exit price calculation
+      const month = progress * chartMaxMonth; // Use chartMaxMonth, not totalMonths
+      // Use the canonical exit price calculation (handles all phases)
       const price = calculateExitPrice(month, basePrice, totalMonths, inputs);
       points.push({ x: month, y: price });
     }
@@ -105,7 +115,7 @@ export const OIGrowthCurve = ({
     }
     
     return path;
-  }, [basePrice, totalMonths, inputs, xScale, yScale]);
+  }, [basePrice, totalMonths, chartMaxMonth, inputs, xScale, yScale]);
 
   // Calculate exit scenarios using the SAME function as SnapshotExitCards
   const exitMarkersData = useMemo(() => {
@@ -124,9 +134,9 @@ export const OIGrowthCurve = ({
     return calculateExitScenario(totalMonths, basePrice, totalMonths, inputs, totalEntryCosts);
   }, [totalMonths, basePrice, inputs, totalEntryCosts]);
 
-  // Construction progress markers for the timeline
+  // Construction progress markers for the timeline - only up to handover
   const constructionMarkers = useMemo(() => {
-    // Show construction % at key timeline points
+    // Show construction % at key timeline points (only during construction phase)
     const markers: { month: number; percent: number }[] = [];
     for (let m = 0; m <= totalMonths; m += 6) {
       markers.push({ month: m, percent: monthToConstruction(m, totalMonths) });
@@ -138,6 +148,27 @@ export const OIGrowthCurve = ({
     return markers;
   }, [totalMonths]);
 
+  // Phase labels for the x-axis
+  const phaseLabels = useMemo(() => {
+    const labels: { x: number; label: string; color: string }[] = [];
+    
+    // Only show phase labels if we're showing post-handover
+    if (chartMaxMonth > totalMonths) {
+      labels.push({ x: totalMonths / 2, label: 'Construction', color: '#f97316' });
+      
+      const growthEnd = Math.min(growthPhaseEndMonth, chartMaxMonth);
+      if (growthEnd > totalMonths) {
+        labels.push({ x: (totalMonths + growthEnd) / 2, label: 'Growth', color: '#22c55e' });
+      }
+      
+      if (chartMaxMonth > growthPhaseEndMonth) {
+        labels.push({ x: (growthPhaseEndMonth + chartMaxMonth) / 2, label: 'Mature', color: '#3b82f6' });
+      }
+    }
+    
+    return labels;
+  }, [chartMaxMonth, totalMonths, growthPhaseEndMonth]);
+
   return (
     <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 relative overflow-hidden h-full">
       <div className="relative h-full flex flex-col">
@@ -148,11 +179,13 @@ export const OIGrowthCurve = ({
         </div>
 
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="flex-1" preserveAspectRatio="xMidYMid meet">
-          {/* Gradient definitions */}
+          {/* Gradient definitions - with phased coloring */}
           <defs>
-            <linearGradient id="curveGradientMain" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#CCFF00" />
-              <stop offset="100%" stopColor="#22d3d1" />
+            {/* Phased gradient for the curve - Construction → Growth → Mature */}
+            <linearGradient id="curveGradientPhased" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset={`${(totalMonths / chartMaxMonth) * 100}%`} stopColor="#CCFF00" />
+              <stop offset={`${(Math.min(growthPhaseEndMonth, chartMaxMonth) / chartMaxMonth) * 100}%`} stopColor="#22c55e" />
+              <stop offset="100%" stopColor="#3b82f6" />
             </linearGradient>
             
             <linearGradient id="areaGradientMain" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -225,11 +258,11 @@ export const OIGrowthCurve = ({
             </text>
           ))}
 
-          {/* Construction progress bar - full width, filled */}
+          {/* Construction progress bar - only up to handover */}
           <rect
             x={padding.left}
             y={height - 28}
-            width={chartWidth}
+            width={(totalMonths / chartMaxMonth) * chartWidth}
             height={6}
             fill="url(#constructionBarGradient)"
             rx="3"
@@ -248,6 +281,50 @@ export const OIGrowthCurve = ({
               {Math.round(marker.percent)}%
             </text>
           ))}
+
+          {/* Phase labels (Construction, Growth, Mature) */}
+          {phaseLabels.map((phase, i) => (
+            <text
+              key={`phase-${i}`}
+              x={xScale(phase.x)}
+              y={height - 14}
+              fill={phase.color}
+              fontSize="8"
+              textAnchor="middle"
+              fontWeight="bold"
+              opacity="0.7"
+            >
+              {phase.label}
+            </text>
+          ))}
+
+          {/* Handover vertical marker line */}
+          {chartMaxMonth > totalMonths && (
+            <line
+              x1={xScale(totalMonths)}
+              y1={padding.top}
+              x2={xScale(totalMonths)}
+              y2={height - padding.bottom}
+              stroke="#CCFF00"
+              strokeWidth="1"
+              strokeDasharray="4,4"
+              opacity="0.4"
+            />
+          )}
+
+          {/* Growth → Mature transition line */}
+          {chartMaxMonth > growthPhaseEndMonth && (
+            <line
+              x1={xScale(growthPhaseEndMonth)}
+              y1={padding.top}
+              x2={xScale(growthPhaseEndMonth)}
+              y2={height - padding.bottom}
+              stroke="#3b82f6"
+              strokeWidth="1"
+              strokeDasharray="4,4"
+              opacity="0.3"
+            />
+          )}
 
           {/* Base price dashed line */}
           <line
@@ -271,7 +348,7 @@ export const OIGrowthCurve = ({
 
           {/* Area fill under curve */}
           <path
-            d={`${curvePath} L ${xScale(totalMonths)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
+            d={`${curvePath} L ${xScale(chartMaxMonth)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
             fill="url(#areaGradientMain)"
             style={{
               opacity: isAnimated ? 1 : 0,
@@ -279,11 +356,11 @@ export const OIGrowthCurve = ({
             }}
           />
 
-          {/* Growth curve */}
+          {/* Growth curve - now with phased gradient */}
           <path
             d={curvePath}
             fill="none"
-            stroke="url(#curveGradientMain)"
+            stroke={chartMaxMonth > totalMonths ? "url(#curveGradientPhased)" : "#CCFF00"}
             strokeWidth="2.5"
             strokeLinecap="round"
             style={{
@@ -320,6 +397,8 @@ export const OIGrowthCurve = ({
           {exitMarkersData.map(({ scenario, exitMonth, label }, index) => {
             const isHighlighted = highlightedExit === index;
             const markerDelay = 0.1 * index;
+            const isPostHandover = exitMonth > totalMonths;
+            const markerColor = isPostHandover ? '#22c55e' : '#CCFF00';
             
             return (
               <g 
@@ -328,7 +407,7 @@ export const OIGrowthCurve = ({
                 onMouseEnter={() => onExitHover?.(index)}
                 onMouseLeave={() => onExitHover?.(null)}
                 style={{ 
-                  filter: isHighlighted ? 'drop-shadow(0 0 10px rgba(204,255,0,0.7))' : undefined,
+                  filter: isHighlighted ? `drop-shadow(0 0 10px ${markerColor}aa)` : undefined,
                   opacity: showMarkers ? 1 : 0,
                   transition: `opacity 0.3s ease-out ${markerDelay}s`
                 }}
@@ -337,7 +416,7 @@ export const OIGrowthCurve = ({
                 <text
                   x={xScale(exitMonth)}
                   y={yScale(scenario.exitPrice) - 30}
-                  fill="#CCFF00"
+                  fill={markerColor}
                   fontSize="9"
                   fontWeight="bold"
                   textAnchor="middle"
@@ -345,11 +424,25 @@ export const OIGrowthCurve = ({
                   Exit {index + 1}
                 </text>
                 
+                {/* Post-handover indicator */}
+                {isPostHandover && (
+                  <text
+                    x={xScale(exitMonth)}
+                    y={yScale(scenario.exitPrice) - 42}
+                    fill="#22c55e"
+                    fontSize="7"
+                    textAnchor="middle"
+                    opacity="0.7"
+                  >
+                    +{exitMonth - totalMonths}mo
+                  </text>
+                )}
+                
                 {/* Price label */}
                 <text
                   x={xScale(exitMonth)}
                   y={yScale(scenario.exitPrice) - 18}
-                  fill="#CCFF00"
+                  fill={markerColor}
                   fontSize="10"
                   fontWeight="bold"
                   textAnchor="middle"
@@ -377,14 +470,14 @@ export const OIGrowthCurve = ({
                   cy={yScale(scenario.exitPrice)}
                   r={isHighlighted ? 9 : 7}
                   fill="#0f172a"
-                  stroke="#CCFF00"
+                  stroke={markerColor}
                   strokeWidth={isHighlighted ? 3 : 2}
                 />
                 <circle
                   cx={xScale(exitMonth)}
                   cy={yScale(scenario.exitPrice)}
                   r={isHighlighted ? 4 : 3}
-                  fill="#CCFF00"
+                  fill={markerColor}
                 />
               </g>
             );
