@@ -1,120 +1,168 @@
 
-# Analysis: Year 0 Wealth Table Logic
+# Fix: Wealth Table Logic Inconsistency
 
-## Understanding the Current Calculation
+## Issues Identified
 
-The table uses **Net Wealth** formula:
+After analyzing the code, I found **three interconnected problems**:
+
+### 1. Year 0 Secondary Shows Negative Wealth
+
+**Current Calculation (YearByYearWealthTable.tsx line 80):**
 ```
-Wealth = Property Value + Cumulative Rent - Capital Invested
+secondaryWealth = secondaryPurchasePrice - secondaryCapitalInvested
+               = 7,500,000 - 7,950,000 = -450,000
 ```
 
-### Why Secondary Shows Negative Wealth at Purchase (Year 0)
+**Why it's negative:** The capital invested includes 6% closing costs, so you're "underwater" by exactly that closing cost amount on Day 1.
 
-The "Capital Invested" values are fundamentally different:
-
-| Investment Type | Capital Day 1 | What It Represents |
-|-----------------|---------------|-------------------|
-| **Off-Plan** | ~AED 1.35M | Downpayment (20%) + Entry Costs (4%) = ~24% of property |
-| **Secondary** | ~AED 7.95M | Full Price (7.5M) + Closing Costs (6%) = ~106% of property |
-
-**Year 0 Calculation:**
-- **Off-Plan:** 9.60M (value) - 1.35M (paid) = **+8.25M** 
-  - You paid 14% but own a 9.6M asset → huge positive wealth
-- **Secondary:** 7.50M (value) - 7.95M (paid) = **-450K**
-  - You paid 7.95M but asset is worth 7.5M → negative due to closing costs
-
-This is **mathematically correct** for "Net Wealth" (change from holding cash), but it's **extremely confusing** because:
-1. Users see negative wealth and think it's an error
-2. The comparison seems unfair - off-plan looks artificially good because you haven't paid the full price yet
-3. It doesn't account for the fact that off-plan still owes 76% of the property price
-
-## The Core Problem
-
-The current approach compares apples to oranges:
-- **Off-Plan:** Only counts partial payment made (not committed debt)
-- **Secondary:** Counts full purchase (but also has full ownership)
-
-For a fair comparison, we need to either:
-1. **Option A:** Use "Equity" instead of "Wealth" (what you actually own free and clear)
-2. **Option B:** Count Off-Plan's total committed payments as capital (not just what's paid to date)
-3. **Option C:** Remove Year 0 entirely and only show years after both properties are fully paid/delivered
+**This is technically correct for "Net Wealth"** (cash position change), but very confusing to users.
 
 ---
 
-## Recommended Solution: Option B - Use Total Committed Capital
+### 2. Top Cards Use Different Capital Than Table
 
-Adjust the Off-Plan "Capital Invested" to represent what the buyer is **committed to paying**, not just what they've paid so far. This makes Year 0 values more comparable.
+| Component | Capital Used | Formula |
+|-----------|--------------|---------|
+| **Top Cards** (ComparisonKeyInsights) | `offPlanCapitalDay1` (~14%) | Property + Rent - Downpayment |
+| **Table** (YearByYearWealthTable) | `offPlanTotalCapitalAtHandover` (~52%) | Property + Rent - TotalPreHandover |
 
-### For Off-Plan:
-Instead of:
-```typescript
-offPlanCapitalDay1 = downpayment + entryCosts  // ~1.35M
-```
-
-Use "Total Capital at Handover" (pre-handover payments + entry costs):
-```typescript
-offPlanCapitalCommitted = (basePrice × downpaymentPercent / 100) 
-                        + (basePrice × preHandoverPercent / 100) 
-                        + entryCosts
-// For 20% down + 30% pre-handover + 4% entry = ~5.4M
-```
-
-Or even use the full purchase price + entry costs to match secondary's approach.
-
-### Expected Result After Fix:
-
-| Year | Off-Plan Value | Off-Plan Wealth | Secondary Value | Secondary Wealth |
-|------|----------------|-----------------|-----------------|------------------|
-| 0 (Purchase) | 9.60M | 4.14M | 7.50M | -450K |
-| 1 | 11.04M | 5.58M | 7.88M | 220K |
-
-Now off-plan still shows higher wealth but the numbers are more balanced and secondary won't show as severely negative.
+This causes the cards to show much higher wealth than the table for Year 10.
 
 ---
 
-## Alternative Solution: Different Column Label
+### 3. User's Math Check Question
 
-If we want to keep the current "capital spent to date" logic, we should:
+For Secondary Year 10:
+- Property Value: 20.64M
+- Cumulative Rent: 5.46M
+- Shown Wealth: ~19M
 
-1. **Rename "Wealth" to "Equity Gained"** or **"Position"**
-2. **Add a tooltip explaining:** "Shows current asset value minus capital deployed so far. Off-plan shows higher initial values because full payment hasn't occurred yet."
-3. **Add a visual indicator** on Year 0 secondary row explaining the closing costs impact
+The math IS correct: `20.64M + 5.46M - 7.95M (capital) = 18.15M`
+
+The confusion is that users expect "Total Wealth" to mean Value + Rent, not the net position after subtracting investment.
 
 ---
 
-## Technical Changes Required
+## Recommended Solution
 
-### Option B Implementation (Recommended)
+### Option A: Use "Gross Wealth" Everywhere (Simpler for Users)
 
-**File: `src/pages/OffPlanVsSecondary.tsx`**
+Define Wealth as `Property Value + Cumulative Rent` **without subtracting capital**.
 
-Change how `offPlanCapitalInvested` is calculated for the table:
+This matches intuitive expectations:
+- "My property is worth 20M and I've earned 5M in rent = I have 25M in wealth"
+- The "profit" or "gain" is a separate metric
 
+### Option B: Keep "Net Wealth" But Align Both Components
+
+If we want to show "Net Position" (what you gained vs. cash-in-bank alternative):
+1. Use the **same capital definition** in both cards and table
+2. Either use `offPlanCapitalDay1` everywhere, OR `offPlanTotalCapitalAtHandover` everywhere
+3. Rename column to **"Net Position"** or **"Gain vs Cash"** to clarify
+
+### Option C: Show BOTH (Most Informative)
+
+- **Column 1:** "Total Assets" = Property Value + Cumulative Rent
+- **Column 2:** "Net Gain" = Total Assets - Capital Invested
+
+This eliminates confusion by being explicit.
+
+---
+
+## Technical Implementation (Option A - Gross Wealth)
+
+### Files to Modify
+
+1. **`src/components/roi/secondary/YearByYearWealthTable.tsx`**
+   - Remove capital subtraction from wealth calculation
+   - Change column header from "Wealth" to "Total Assets" or "Value + Rent"
+   - Update tooltip to reflect new formula
+
+2. **`src/components/roi/secondary/ComparisonKeyInsights.tsx`**
+   - Change "Total Wealth" calculation to match: `propertyValue + cumulativeRent`
+   - Keep capital subtraction for "Net Gain" if desired as separate metric
+
+### Code Changes
+
+**YearByYearWealthTable.tsx - Line 76 (Year 0):**
 ```typescript
-// Current (line 729):
-offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
+// Current:
+offPlanWealth: offPlanBasePrice - offPlanCapitalInvested,
+secondaryWealth: secondaryPurchasePrice - secondaryCapitalInvested,
 
-// Changed to:
-offPlanCapitalInvested={offPlanTotalCapitalAtHandover}  // Uses full pre-handover commitment
+// New (Gross Wealth):
+offPlanWealth: offPlanBasePrice,  // Just property value at purchase
+secondaryWealth: secondaryPurchasePrice,
 ```
 
-This would use:
+**YearByYearWealthTable.tsx - Lines 111-112 (Year 1-10):**
 ```typescript
-const offPlanTotalCapitalAtHandover = downpayment + preHandover + entryCosts  // ~5.4M
+// Current:
+const opWealth = offPlanValue + opCumulativeRent - offPlanCapitalInvested;
+const secWealth = secondaryValue + secCumulativeRent - secondaryCapitalInvested;
+
+// New (Gross Wealth):
+const opWealth = offPlanValue + opCumulativeRent;
+const secWealth = secondaryValue + secCumulativeRent;
 ```
 
-**Expected Result:**
-- Off-Plan Year 0: 9.60M - 5.4M = **+4.2M** (still positive, but more balanced)
-- Secondary Year 0: 7.50M - 7.95M = **-450K** (still negative due to closing costs)
+**Update column header in translations (line 165):**
+```typescript
+// Current:
+wealth: 'Wealth',
 
-The gap narrows but off-plan still shows advantage during construction.
+// New:
+wealth: 'Total Assets',
+```
+
+**Update tooltip (line 161):**
+```typescript
+// Current:
+tooltip: 'Wealth = Property Value + Cumulative Net Rent - Initial Investment...'
+
+// New:
+tooltip: 'Total Assets = Property Value + Cumulative Net Rent earned to date.'
+```
+
+### Also Update ComparisonKeyInsights.tsx
+
+Lines 51-54:
+```typescript
+// Current (confusing because it uses different capital):
+const offPlanTotalWealth10 = metrics.offPlanWealthYear10;
+
+// New (calculate fresh with gross formula):
+const offPlanTotalWealth10 = offPlanPropertyValue10Y + offPlanCumulativeRent10Y;
+const secondaryTotalWealth10 = secondaryPropertyValue10Y + (isAirbnb ? secondaryCumulativeRentST : secondaryCumulativeRentLT);
+```
+
+This requires passing additional props for cumulative rent values.
+
+---
+
+## Expected Results After Fix
+
+| Year | Off-Plan Value | Off-Plan Rent | Off-Plan Total | Secondary Value | Secondary Rent | Secondary Total |
+|------|----------------|---------------|----------------|-----------------|----------------|-----------------|
+| 0 | 9.60M | 0 | 9.60M | 7.50M | 0 | 7.50M |
+| 1 | 11.04M | 0 | 11.04M | 7.88M | 525K | 8.40M |
+| 10 | 16.8M | 3.2M | 20.0M | 12.2M | 5.8M | 18.0M |
+
+**No more negative values. Card and table values will match.**
 
 ---
 
 ## Summary
 
-The negative wealth for secondary at Year 0 is **technically correct** but **confusing**. It happens because:
-1. Secondary pays 100% + closing costs upfront
-2. Off-Plan only pays ~24% upfront but gets credit for full property value
+The core issue is **inconsistent capital definitions** and **confusing terminology**:
 
-**Recommendation:** Use off-plan's "Total Capital at Handover" instead of "Day 1 Capital" for the table comparison. This makes the wealth comparison more intuitive while still showing off-plan's payment flexibility advantage through the actual cash flow timeline.
+1. Cards use "Day 1 Capital" (~14%)
+2. Table uses "Total Capital at Handover" (~52%)
+3. Users see "Wealth" but expect "Property Value + Rent"
+
+**Recommended fix:** Switch to "Gross Wealth" (Value + Rent) without capital subtraction. This:
+- Eliminates negative Year 0 values
+- Makes card and table values consistent
+- Matches user intuition about "total wealth"
+
+The profit/gain metrics can be shown separately in the Exit Scenarios section where capital context is clearer.
