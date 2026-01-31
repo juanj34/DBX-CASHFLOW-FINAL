@@ -211,13 +211,27 @@ export const CompactPaymentTable = ({
   let handoverAmount: number;
   let postHandoverTotal = 0;
   
+  // Calculate total percentage from all payments
+  const totalAdditionalPercent = sortedPayments.reduce((sum, p) => sum + p.paymentPercent, 0);
+  const totalAllocatedPercent = downpaymentPercent + totalAdditionalPercent;
+  
   if (hasPostHandoverPlan) {
-    handoverPercent = inputs.onHandoverPercent || 0;
-    handoverAmount = basePrice * handoverPercent / 100;
     // Calculate from derived payments
     postHandoverTotal = derivedPostHandoverPayments.reduce(
       (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
     );
+    
+    // Check if payments already sum to 100% - if so, handover is already included
+    // and we should NOT add an extra onHandoverPercent
+    if (Math.abs(totalAllocatedPercent - 100) < 0.5) {
+      // All payments are in additionalPayments, no separate handover payment
+      handoverPercent = 0;
+      handoverAmount = 0;
+    } else {
+      // Use configured onHandoverPercent for explicit handover payment
+      handoverPercent = inputs.onHandoverPercent || 0;
+      handoverAmount = basePrice * handoverPercent / 100;
+    }
   } else {
     handoverPercent = 100 - inputs.preHandoverPercent;
     handoverAmount = basePrice * handoverPercent / 100;

@@ -177,12 +177,27 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
           label={t('onHandover') || 'On Handover'}
           values={quotesWithCalcs.map(q => {
             const hasPostHandover = q.quote.inputs.hasPostHandoverPlan;
-            const onHandoverPercent = hasPostHandover 
-              ? (q.quote.inputs.onHandoverPercent || 0)
-              : (100 - q.quote.inputs.preHandoverPercent);
+            
+            if (!hasPostHandover) {
+              const onHandoverPercent = 100 - q.quote.inputs.preHandoverPercent;
+              return { value: q.quote.inputs.basePrice * onHandoverPercent / 100 };
+            }
+            
+            // Check if payments already sum to 100%
+            const totalAdditionalPercent = (q.quote.inputs.additionalPayments || []).reduce(
+              (sum, p) => sum + p.paymentPercent, 0
+            );
+            const totalAllocatedPercent = q.quote.inputs.downpaymentPercent + totalAdditionalPercent;
+            
+            // If payments sum to 100%, on-handover is effectively 0
+            if (Math.abs(totalAllocatedPercent - 100) < 0.5) {
+              return { value: 0 };
+            }
+            
+            const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
             return { value: q.quote.inputs.basePrice * onHandoverPercent / 100 };
           })}
-          formatter={(v) => fmt(v)}
+          formatter={(v) => v > 0 ? fmt(v) : '—'}
         />
         {/* Post-Handover Amount - always show */}
         <MetricRow
