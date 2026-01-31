@@ -1,335 +1,180 @@
 
-
-# AI Payment Plan Extractor - Complete Implementation Plan
+# Comprehensive Fix: Off-Plan vs Secondary Calculation Consistency
 
 ## Overview
 
-Build an advanced AI-powered tool that extracts payment plan data from marketing materials (brochures, screenshots, PDFs - including multi-page documents) and automatically populates the cashflow configurator. The tool will intelligently handle different payment formats (monthly vs installment-based) and provide full customization before applying.
+This plan addresses all identified issues to ensure complete consistency between the summary cards, year-by-year table, and underlying calculations. We'll add a Year 0 (Purchase Day) reference row and align all wealth calculations.
 
-## User Experience Flow
+## Issues to Fix
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  PaymentSection.tsx                                         │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  ✨ AI Import  │ (button in header)                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-└───────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  PaymentPlanExtractor Modal (Sheet)                         │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  1. UPLOAD ZONE                                      │   │
-│  │  ┌─────────────────────────────────────────────┐     │   │
-│  │  │  Drag & drop, paste (Ctrl+V), or click      │     │   │
-│  │  │  to upload payment plan images/PDFs         │     │   │
-│  │  │  (Supports multiple pages)                   │     │   │
-│  │  └─────────────────────────────────────────────┘     │   │
-│  │  [image1.png] [image2.png] [brochure.pdf]            │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  2. BOOKING DATE (for calculating payment dates)    │   │
-│  │  ○ Use today's date                                  │   │
-│  │  ○ Use existing configurator date                   │   │
-│  │  ○ Specify custom date: [Month ▼] [Year ▼]          │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  [ Extract Payment Plan ]                                   │
-└───────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ (AI Processing 3-8 seconds)
-┌─────────────────────────────────────────────────────────────┐
-│  ExtractedDataPreview (Editable)                            │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  PROPERTY INFO (Optional - extracted if visible)     │   │
-│  │  Developer: [Emaar ▼]   Project: [Creek Harbour]     │   │
-│  │  Unit: [T1-2304]        Size: [1,250 sqft]           │   │
-│  │  Type: [2BR ▼]          Price: [AED 2,500,000]       │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  PAYMENT STRUCTURE                                   │   │
-│  │  Split detected: [40/60 ▼] ✓ High confidence         │   │
-│  │  Post-handover: [Yes/No ▼]                           │   │
-│  │  Handover: [Q4 ▼] [2027 ▼]                           │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  EXTRACTED INSTALLMENTS                              │   │
-│  │  ┌──────────────────────────────────────────────┐    │   │
-│  │  │ # │ Type │ Trigger  │ %    │ Label         │    │   │
-│  │  │ 1 │ Time │ 0 mo     │ 20%  │ Booking       │ ✓  │   │
-│  │  │ 2 │ Cons │ 30%      │ 10%  │ 30% Complete  │ ✓  │   │
-│  │  │ 3 │ Time │ 6 mo     │ 5%   │ Month 6       │ ⚠  │   │
-│  │  │ 4 │ Time │ 12 mo    │ 5%   │ Month 12      │ ✓  │   │
-│  │  │ 5 │ Hand │ Handover │ 60%  │ On Handover   │ ✓  │   │
-│  │  └──────────────────────────────────────────────┘    │   │
-│  │  Total: 100% ✓                                       │   │
-│  │  [+ Add Row] [Remove Selected]                       │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  CONFIDENCE SUMMARY                                  │   │
-│  │  Overall: 87% ●●●●●●●●○○                             │   │
-│  │  ⚠ Month 6 payment: uncertain trigger (edit above)  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  [ Cancel ]                    [ Apply to Configurator ]    │
-└───────────────────────────────────────────────────────────────┘
-```
+| # | Issue | Location | Fix |
+|---|-------|----------|-----|
+| 1 | Secondary Year 1 shows appreciated value | `useSecondaryCalculations.ts` | Change exponent from `year` to `year - 1` |
+| 2 | Off-Plan Year 1 shows appreciated value | Table rendering | Use base price for Year 1 in table display |
+| 3 | Wealth Cards ≠ Table values | `YearByYearWealthTable.tsx` | Align both to use same definition (Net Wealth) |
+| 4 | No purchase reference point | `YearByYearWealthTable.tsx` | Add Year 0 row showing purchase day values |
 
-## Technical Architecture
+## Implementation Details
 
-### 1. New Edge Function: `extract-payment-plan`
+### 1. Fix Secondary Year 1 Property Value
 
-**Location:** `supabase/functions/extract-payment-plan/index.ts`
+**File:** `src/components/roi/secondary/useSecondaryCalculations.ts`
 
-**Capabilities:**
-- Accept multiple base64-encoded images/PDFs (handles 2+ page payment plans)
-- Use Lovable AI Gateway with `google/gemini-3-flash-preview` (best for vision + complex reasoning)
-- Structured output via tool calling for reliable JSON extraction
-- Detect payment format: monthly-based vs installment-based vs construction milestone
-- Identify post-handover payments by keywords and structure
-
-**AI Prompt Strategy:**
-```text
-SYSTEM PROMPT:
-You are a Dubai real estate payment plan analyzer. Extract structured payment data from 
-marketing materials with high precision.
-
-PAYMENT FORMATS TO RECOGNIZE:
-1. TIME-BASED: "Month 1", "Month 6", "12 months", "6 months post-booking"
-2. CONSTRUCTION-BASED: "On completion of 30%", "At 50% construction", "Ground floor"
-3. HANDOVER-BASED: "On handover", "At completion", "Key handover"
-4. POST-HANDOVER: "48 months post-handover", "2 years after completion", "5 years post-delivery"
-
-MULTI-PAGE HANDLING:
-- When given multiple images, treat them as pages of the same document
-- Look for continuation patterns ("continued...", page numbers)
-- Combine information from all pages into single coherent output
-
-SPLIT DETECTION:
-- Look for patterns: "40/60", "50:50", "30-70"
-- Calculate from downpayment + installments if not explicit
-- During Construction / On Handover patterns
-
-POST-HANDOVER DETECTION:
-- Keywords: "post-handover", "after completion", "after delivery", "post-possession"
-- Payment plans extending beyond handover date
-- Multiple years of payments after key handover
-
-EXTRACTION PRIORITIES:
-1. Payment percentages (highest priority - must sum to 100%)
-2. Payment triggers (month/milestone)
-3. Property info (if visible)
-4. Dates (handover quarter/year)
-```
-
-**Tool Schema for Structured Output:**
+Change line 108 from:
 ```typescript
-{
-  type: "function",
-  function: {
-    name: "extract_payment_plan",
-    description: "Extract structured payment plan from analyzed images",
-    parameters: {
-      type: "object",
-      properties: {
-        // Property Info (optional)
-        property: {
-          type: "object",
-          properties: {
-            developer: { type: "string" },
-            projectName: { type: "string" },
-            unitNumber: { type: "string" },
-            unitType: { type: "string", enum: ["studio", "1br", "2br", "3br", "4br", "penthouse", "townhouse", "villa"] },
-            unitSizeSqft: { type: "number" },
-            basePrice: { type: "number" }
-          }
-        },
-        // Payment Structure
-        paymentStructure: {
-          type: "object",
-          properties: {
-            paymentSplit: { type: "string", description: "e.g., '40/60', '50/50'" },
-            hasPostHandover: { type: "boolean" },
-            handoverQuarter: { type: "number", enum: [1, 2, 3, 4] },
-            handoverYear: { type: "number" }
-          }
-        },
-        // Installments
-        installments: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              type: { type: "string", enum: ["time", "construction", "handover", "post-handover"] },
-              triggerValue: { type: "number", description: "Months or construction %" },
-              paymentPercent: { type: "number" },
-              label: { type: "string" },
-              confidence: { type: "number", description: "0-100 confidence score" }
-            }
-          }
-        },
-        // Confidence
-        overallConfidence: { type: "number" },
-        warnings: { type: "array", items: { type: "string" } }
-      },
-      required: ["installments", "overallConfidence"]
-    }
-  }
-}
+const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year);
 ```
 
-### 2. New UI Components
+To:
+```typescript
+// Year 1 = purchase price, Year 2 = 1 year appreciation, etc.
+const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year - 1);
+```
 
-#### a) `PaymentPlanExtractor.tsx`
-**Location:** `src/components/roi/configurator/PaymentPlanExtractor.tsx`
+This ensures:
+- Year 1: `purchasePrice * (1.05)^0 = purchasePrice` ✓
+- Year 2: `purchasePrice * (1.05)^1 = +5%`
+- Year 10: `purchasePrice * (1.05)^9`
 
-**Features:**
-- Reuse existing `FileUploadZone` component for multi-file upload
-- Booking date selector (today / existing / custom)
-- Processing state with animated AI indicator
-- Error handling with retry option
+### 2. Add Year 0 Row to Table
 
-#### b) `ExtractedDataPreview.tsx`
-**Location:** `src/components/roi/configurator/ExtractedDataPreview.tsx`
+**File:** `src/components/roi/secondary/YearByYearWealthTable.tsx`
 
-**Features:**
-- Editable property info section
-- Payment structure configuration (split, post-handover toggle)
-- Sortable installment table with inline editing
-- Confidence indicators (✓ green, ⚠ yellow, ✗ red)
-- Running total validation (must equal 100%)
-- Add/remove installment rows
-
-#### c) Type Definitions
-**Location:** `src/lib/paymentPlanTypes.ts`
+Add a new row at the beginning of `tableData` representing the purchase day:
 
 ```typescript
-export interface ExtractedPaymentPlan {
-  property?: {
-    developer?: string;
-    projectName?: string;
-    unitNumber?: string;
-    unitType?: string;
-    unitSizeSqft?: number;
-    basePrice?: number;
-  };
-  paymentStructure: {
-    paymentSplit?: string;
-    hasPostHandover: boolean;
-    handoverQuarter?: number;
-    handoverYear?: number;
-  };
-  installments: ExtractedInstallment[];
-  overallConfidence: number;
-  warnings: string[];
-}
+const tableData = useMemo(() => {
+  const data = [];
+  
+  // Year 0 - Purchase Day (baseline reference)
+  const currentYear = new Date().getFullYear();
+  data.push({
+    year: 0,
+    calendarYear: offPlanProjections[0]?.calendarYear 
+      ? offPlanProjections[0].calendarYear - 1 
+      : currentYear,
+    offPlanValue: offPlanBasePrice,
+    offPlanRent: 0,
+    offPlanCumulativeRent: 0,
+    offPlanWealth: offPlanBasePrice,  // Initial investment value
+    secondaryValue: secondaryPurchasePrice,
+    secondaryRent: 0,
+    secondaryCumulativeRent: 0,
+    secondaryWealth: secondaryPurchasePrice, // Initial investment value
+    delta: offPlanBasePrice - secondaryPurchasePrice,
+    isHandover: false,
+    isBeforeHandover: true,
+    isPurchase: true,  // New flag for styling
+  });
+  
+  // Years 1-10 continue as before...
+```
 
-export interface ExtractedInstallment {
-  id: string;
-  type: 'time' | 'construction' | 'handover' | 'post-handover';
-  triggerValue: number;
-  paymentPercent: number;
-  label?: string;
-  confidence: number;
-  isPostHandover?: boolean;
+### 3. Style Year 0 Row Distinctively
+
+Add visual distinction for the purchase row:
+- Light accent background
+- Left border accent
+- "(Purchase)" label next to Year 0
+
+```tsx
+<TableRow 
+  className={`border-theme-border ${
+    row.isPurchase 
+      ? 'bg-theme-accent/5 border-l-2 border-l-theme-accent' 
+      : row.isHandover 
+        ? 'bg-emerald-500/5 border-l-2 border-l-emerald-500' 
+        : ''
+  }`}
+>
+  <TableCell>
+    {row.isPurchase ? (
+      <span className="italic text-theme-text-muted">0 (Purchase)</span>
+    ) : row.year}
+  </TableCell>
+```
+
+### 4. Align Wealth Definition: Choose Net Wealth
+
+To match the summary cards, the table will also use **Net Wealth**:
+
+**Current (Gross):**
+```typescript
+const opWealth = offPlanValue + opCumulativeRent;
+```
+
+**New (Net):**
+```typescript
+const opWealth = offPlanValue + opCumulativeRent - offPlanCapitalInvested;
+const secWealth = secondaryValue + secCumulativeRent - secondaryCapitalInvested;
+```
+
+This requires:
+1. Adding `secondaryCapitalInvested` as a new prop to `YearByYearWealthTable`
+2. Updating the wealth calculation for both columns
+3. Updating the tooltip formula to show: `Value + Rent - Initial Investment = Wealth`
+
+### 5. Pass Secondary Capital to Table
+
+**File:** `src/pages/OffPlanVsSecondary.tsx`
+
+Add new prop when rendering the table:
+```tsx
+<YearByYearWealthTable
+  // ...existing props
+  secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
+/>
+```
+
+### 6. Update Props Interface
+
+**File:** `src/components/roi/secondary/YearByYearWealthTable.tsx`
+
+```typescript
+interface YearByYearWealthTableProps {
+  // ...existing
+  secondaryCapitalInvested: number; // NEW
 }
 ```
 
-### 3. Integration Points
+### 7. Update Tooltip Text
 
-#### a) PaymentSection.tsx Modifications
-- Add "✨ AI Import" button in header area
-- Open `PaymentPlanExtractor` as a Sheet/Modal on click
-- Handle extracted data callback to populate:
-  - `downpaymentPercent`
-  - `preHandoverPercent`
-  - `additionalPayments[]`
-  - `hasPostHandoverPlan`
-  - Date fields (if extracted)
+Update the tooltip to reflect the complete formula:
+```typescript
+tooltip: 'Wealth = Property Value + Cumulative Net Rent - Initial Investment. Shows net gain over time.',
+```
 
-#### b) ConfiguratorLayout.tsx Modifications
-- Pass `setClientInfo` callback to PaymentSection for property auto-fill
-- Handle cross-section updates from AI extraction
+And in the hover tooltip breakdown:
+```tsx
+<div>- Initial Investment: {formatSmallValue(capitalInvested)}</div>
+<div className="border-t">= Net Wealth: {formatSmallValue(wealth)}</div>
+```
 
-#### c) ClientSection.tsx / PropertySection.tsx
-- Accept optional pre-fill data from extraction
-- Auto-select developer/project if matched in database
-
-### 4. Files to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/extract-payment-plan/index.ts` | AI extraction edge function |
-| `src/components/roi/configurator/PaymentPlanExtractor.tsx` | Upload + extraction UI |
-| `src/components/roi/configurator/ExtractedDataPreview.tsx` | Editable preview component |
-| `src/lib/paymentPlanTypes.ts` | Shared TypeScript types |
-
-### 5. Files to Modify
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/config.toml` | Add `extract-payment-plan` function config |
-| `src/components/roi/configurator/PaymentSection.tsx` | Add AI Import button, handle extraction callback |
-| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Pass callbacks for cross-section updates |
+| `src/components/roi/secondary/useSecondaryCalculations.ts` | Fix Year 1 appreciation exponent |
+| `src/components/roi/secondary/YearByYearWealthTable.tsx` | Add Year 0 row, align wealth to Net, add styling, update tooltips |
+| `src/pages/OffPlanVsSecondary.tsx` | Pass `secondaryCapitalInvested` prop |
 
-## Edge Cases Handled
+## Validation After Implementation
 
-| Scenario | Solution |
-|----------|----------|
-| Multiple pages | Combine all images in single AI request, AI treats as one document |
-| Monthly vs installment formats | AI detects format and converts to consistent `additionalPayments[]` |
-| No explicit dates shown | Use booking date option + handover defaults |
-| Arabic + English mixed | Gemini handles multilingual content |
-| Post-handover detection | Keywords + structural analysis (payments after handover date) |
-| Construction milestones | Converted to `type: 'construction'` with percentage trigger |
-| Partial data | Show warnings, let user fill gaps before applying |
-| Low confidence | Yellow/red indicators, require user confirmation |
-| Total ≠ 100% | Validation error, prevent apply until corrected |
+The following must be true after the fix:
 
-## Implementation Steps
+| Validation | Expected |
+|------------|----------|
+| Table Year 0 Off-Plan Value | = `basePrice` (purchase price) |
+| Table Year 0 Secondary Value | = `purchasePrice` |
+| Table Year 1 Secondary Value | = `purchasePrice` (no appreciation yet) |
+| Table Year 2 Secondary Value | = `purchasePrice * (1 + rate)` |
+| Table Year 10 Wealth | = Cards "Total Wealth (10Y)" value |
+| Tooltip breakdown | Value + Rent - Capital = Wealth ✓ |
 
-### Phase 1: Edge Function
-1. Create `extract-payment-plan` edge function
-2. Implement multi-image handling
-3. Configure AI prompt with tool calling
-4. Add error handling and logging
-5. Test with sample payment plan images
+## Summary
 
-### Phase 2: Core UI
-1. Create type definitions
-2. Build `PaymentPlanExtractor` component with file upload
-3. Build `ExtractedDataPreview` with editable table
-4. Integrate booking date selector
-
-### Phase 3: Integration
-1. Add AI Import button to PaymentSection
-2. Wire up extraction callback
-3. Implement cross-section updates (property info → ClientSection)
-4. Add success/error toasts
-
-### Phase 4: Polish
-1. Confidence score visualization
-2. Keyboard shortcuts
-3. Loading animations
-4. Mobile responsiveness
-
-## Security Considerations
-
-- Images processed via Lovable AI Gateway (secure, no external storage)
-- No image data persisted in database
-- Only extracted structured data saved with quote
-- User confirmation required before applying
-
-## Success Metrics
-
-- **Time saved**: 10+ minutes manual entry → < 30 seconds
-- **Accuracy**: 90%+ on well-formatted payment plans
-- **User adoption**: High usage in quote creation workflow
-
+This comprehensive fix ensures:
+1. **Clear baseline**: Year 0 shows purchase day values for reference
+2. **Correct appreciation**: Year 1 = purchase price, Year 2 = +1 year appreciation
+3. **Consistent wealth definition**: Both cards and table use Net Wealth (Value + Rent - Capital)
+4. **Verifiable math**: Tooltip breakdowns match displayed values exactly
