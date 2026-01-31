@@ -80,6 +80,9 @@ export const ExportSnapshotLayout = ({
   const showPostHandover = inputs.hasPostHandoverPlan;
   const showMortgage = mortgageInputs.enabled;
 
+  // Count visible cards for dynamic grid
+  const visibleCardCount = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
+
   // Determine if we have a long payment plan
   const isLongPaymentPlan = (inputs.additionalPayments || []).length > 12;
 
@@ -144,11 +147,11 @@ export const ExportSnapshotLayout = ({
             />
           </div>
           
-          {/* Insight Cards - horizontal grid */}
+          {/* Insight Cards - dynamic grid based on visible card count */}
           <div 
             style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(4, 1fr)', 
+              gridTemplateColumns: `repeat(${visibleCardCount}, 1fr)`, 
               gap: '12px' 
             }}
           >

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
@@ -86,6 +86,26 @@ export const SnapshotContent = ({
   const showPostHandover = inputs.hasPostHandoverPlan;
   const showMortgage = mortgageInputs.enabled;
 
+  // Count visible cards and generate dynamic grid class
+  const visibleCardCount = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
+  const cardGridClass = useMemo(() => {
+    switch (visibleCardCount) {
+      case 1: return 'grid grid-cols-1 gap-3';
+      case 2: return 'grid grid-cols-1 md:grid-cols-2 gap-3';
+      case 3: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3';
+      case 4: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3';
+      default: return 'grid grid-cols-1 gap-3';
+    }
+  }, [visibleCardCount]);
+
+  // Determine column count for payment table (3 columns for very long plans)
+  const paymentColumnCount = useMemo(() => {
+    const payments = inputs.additionalPayments || [];
+    if (payments.length >= 21) return 3;
+    if (payments.length > 12) return 2;
+    return 2;
+  }, [inputs.additionalPayments]);
+
   return (
     <div className="min-h-full flex flex-col bg-theme-bg max-w-[1600px] mx-auto w-full">
       {/* Hero - fixed height */}
@@ -137,8 +157,8 @@ export const SnapshotContent = ({
               twoColumnMode="auto"
             />
             
-            {/* Insight Cards - horizontal grid on desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {/* Insight Cards - dynamic grid based on visible card count */}
+            <div className={cardGridClass}>
               {/* Rent Card with Wealth Projection Button */}
               {showRent && (
                 <CompactRentCard
