@@ -30,6 +30,7 @@ interface ExtractedPaymentPlan {
     hasPostHandover: boolean;
     handoverQuarter?: number;
     handoverYear?: number;
+    handoverMonthFromBooking?: number;
     onHandoverPercent?: number;
     postHandoverPercent?: number;
   };
@@ -43,54 +44,72 @@ const systemPrompt = `You are a Dubai real estate payment plan analyzer. Extract
 EXTRACTION PRIORITIES (in order):
 1. Property info (developer, project name, unit details, price, currency) - ALWAYS extract if visible
 2. Payment percentages (MUST sum to 100%)
-3. Payment triggers (month number or construction milestone)
-4. Dates (handover quarter/year)
+3. Payment triggers (month number, construction milestone, or post-handover timing)
+4. Handover timing (detect from last pre-handover payment month OR explicit date)
 
 CURRENCY DETECTION:
 - Default to AED (Dubai Dirhams) if no currency is explicitly shown
 - Look for: "AED", "درهم", "$", "USD", "€", "EUR", "£", "GBP"
 - Price formats: "2,500,000 AED", "AED 2.5M", "2.5 Million", etc.
 
-PAYMENT FORMATS TO RECOGNIZE:
-1. TIME-BASED: "Month 1", "Month 6", "12 months", "6 months post-booking", "On Booking", "Booking", "Down Payment"
-2. CONSTRUCTION-BASED: "On completion of 30%", "At 50% construction", "Ground floor", "Foundation Complete"
-3. HANDOVER-BASED: "On handover", "At completion", "Key handover", "On Completion", "Upon Handover"
-4. POST-HANDOVER: "48 months post-handover", "2 years after completion", "5 years post-delivery", "post completion", "after handover"
+=== HANDOVER MONTH DETECTION - HIGHEST PRIORITY ===
+- Find the LAST pre-handover payment's month = handoverMonthFromBooking
+- Example: "In 24 months", "In 25 months", "In 26 months" then "Completion" → handoverMonthFromBooking = 26
+- If explicit date shown (e.g., "Q3 2027" with booking Jan 2025), calculate months from booking
+- This is MORE RELIABLE than trying to extract explicit quarter/year
+- ALWAYS set handoverMonthFromBooking when you can detect the handover timing
 
-MULTI-PAGE HANDLING:
-- When given multiple images, treat them as pages of the SAME document
-- Look for continuation patterns (page numbers, "continued...")
-- Combine information from all pages into a single coherent output
-- If data appears on multiple pages, prefer the most detailed version
+=== DATE FORMAT NORMALIZATION - ALL to absolute months from booking ===
+1. "In X months" / "Month X" / "After X months" → triggerValue = X
+2. "X days after booking" → triggerValue = Math.round(X / 30)
+3. "60 days" → 2 months, "90 days" → 3 months, "120 days" → 4 months
+4. "February 2026" with booking Jan 2025 → Calculate: (2026-2025)*12 + (2-1) = 13
+5. "Q3 2027" → Mid-quarter month (Aug = month 8), calculate offset from booking
+6. If no booking context provided, assume current date as booking reference
 
-SPLIT DETECTION AND CALCULATION:
-- Look for explicit patterns: "40/60", "50:50", "30-70", "During Construction/On Handover"
-- If no explicit split, CALCULATE from the data:
-  - Pre-handover total = booking + all installments BEFORE handover
-  - Post-handover total = all installments AFTER handover
-  - The split is: preHandoverTotal / postHandoverTotal (e.g., "30/70")
-- Common Dubai splits: 20/80, 30/70, 40/60, 50/50, 60/40, 80/20
+=== CONSTRUCTION MILESTONE DETECTION - CRITICAL ===
+- Keywords: "% complete", "completion", "built", "structure", "foundation", "roof", "topping"
+- "On 30% completion" → type: "construction", triggerValue: 30
+- "At foundation" → type: "construction", triggerValue: 10 (estimate)
+- "Topping out" / "Structure complete" → type: "construction", triggerValue: 70
+- "Superstructure" → type: "construction", triggerValue: 50
+- Construction milestones are ALWAYS pre-handover
+- These will be converted to estimated dates using S-curve construction model
 
-POST-HANDOVER DETECTION - CRITICAL:
-- Keywords: "post-handover", "after completion", "after delivery", "post-possession", "post completion"
-- Set hasPostHandover = TRUE if ANY payments are scheduled AFTER handover/completion date
-- Mark ALL payments after handover as type "post-handover"
-- Calculate postHandoverPercent = sum of all post-handover installment percentages
-- If document shows installments continuing for years after handover (e.g., "3 years post-handover"), this IS a post-handover plan
+=== POST-HANDOVER ABSOLUTE TRIGGER VALUES - CRITICAL ===
+- For "4th Month after Completion" with handoverMonthFromBooking = 26:
+  - triggerValue = 26 + 4 = 30 (ABSOLUTE from booking)
+- For "2 years post-handover" with handover at month 26:
+  - triggerValue = 26 + 24 = 50
+- For "1st month after handover" with handover at month 26:
+  - triggerValue = 27
+- ALL post-handover installments must use ABSOLUTE months from booking
+- The receiving system determines post-handover status by comparing dates
 
-INSTALLMENT CATEGORIZATION:
+=== SPLIT SEMANTICS - TWO MODES ===
+1. STANDARD PLANS: "30/70" = 30% during construction, 70% lump sum ON handover
+   - hasPostHandover = false
+   - All payments before handover total 30%
+   - Handover payment is 70%
+
+2. POST-HANDOVER PLANS: "30/70" = 30% during construction, 70% ON + AFTER handover combined
+   - hasPostHandover = true
+   - The 70% includes BOTH the completion payment AND all post-handover installments
+   - Example: 30% construction + 10% on handover + 60% over 60 months after = 30/70 post-handover plan
+
+=== INSTALLMENT OUTPUT FORMAT ===
 - type "time" + triggerValue 0 = On Booking / Downpayment
-- type "time" + triggerValue > 0 = Monthly installments during construction
-- type "construction" = Milestone-based payments (e.g., "30% complete")
-- type "handover" = Payment due ON handover date (use triggerValue 0)
-- type "post-handover" = ANY payment AFTER handover (use triggerValue = months AFTER handover)
+- type "time" + triggerValue > 0 = Monthly installments (use ABSOLUTE months from booking for ALL)
+- type "construction" = Milestone-based payments (triggerValue = completion percentage like 30, 50, 70)
+- type "handover" = Payment due ON handover date (use triggerValue = handoverMonthFromBooking)
+- type "post-handover" = ANY payment AFTER handover (triggerValue = ABSOLUTE months from booking)
 
-IMPORTANT RULES:
+=== IMPORTANT RULES ===
 - All percentages MUST add up to exactly 100%
 - First payment is typically "On Booking" or "Down Payment" at Month 0
 - If you see "X% monthly for Y months", expand to individual monthly payments
 - Handover payment is usually the largest single payment (often 40-60%) UNLESS it's a post-handover plan
-- In post-handover plans, handover payment may be 0% with remaining balance spread across post-handover installments
+- In post-handover plans, handover payment may be 0% or small with remaining balance spread across post-handover installments
 - Confidence score: 90+ for clear text, 70-89 for partially visible, below 70 for inferred data
 
 UNIT TYPE MAPPING:
@@ -142,24 +161,28 @@ const extractionTool = {
             },
             hasPostHandover: { 
               type: "boolean", 
-              description: "Whether there are payments scheduled after handover/completion" 
+              description: "Whether there are payments scheduled after handover/completion. Set TRUE if any installments exist AFTER the handover date." 
+            },
+            handoverMonthFromBooking: {
+              type: "number",
+              description: "Month number from booking when handover occurs. Calculate from the LAST pre-handover payment's month number (e.g., 'In 26 months' = 26), or from explicit completion date relative to booking."
             },
             handoverQuarter: { 
               type: "number", 
               enum: [1, 2, 3, 4],
-              description: "Expected handover quarter (Q1=1, Q2=2, Q3=3, Q4=4)" 
+              description: "Expected handover quarter (Q1=1, Q2=2, Q3=3, Q4=4) - extract if explicitly stated" 
             },
             handoverYear: { 
               type: "number", 
-              description: "Expected handover year (e.g., 2027)" 
+              description: "Expected handover year (e.g., 2027) - extract if explicitly stated" 
             },
             onHandoverPercent: {
               type: "number",
-              description: "Percentage due on handover (if explicitly stated)"
+              description: "Percentage due on handover (if explicitly stated, or 0 if post-handover plan with no completion payment)"
             },
             postHandoverPercent: {
               type: "number",
-              description: "Total percentage due after handover (if post-handover plan exists)"
+              description: "Total percentage due after handover (sum of all post-handover installments)"
             }
           }
         },
@@ -172,11 +195,11 @@ const extractionTool = {
               type: { 
                 type: "string", 
                 enum: ["time", "construction", "handover", "post-handover"],
-                description: "Type of trigger: time (months from booking), construction (% complete), handover (on completion), post-handover (after handover)"
+                description: "time = months from booking (ABSOLUTE), construction = % complete milestone, handover = on completion, post-handover = after handover (use ABSOLUTE months from booking, NOT relative)"
               },
               triggerValue: { 
                 type: "number", 
-                description: "For time: months from booking (0 = on booking). For construction: completion percentage. For handover/post-handover: months after handover (0 = on handover)"
+                description: "For time: ABSOLUTE months from booking (0 = on booking). For construction: completion percentage (e.g., 30, 50, 70). For handover: use handoverMonthFromBooking. For post-handover: ABSOLUTE months from booking (e.g., if handover at month 26, '4th after' = 30)"
               },
               paymentPercent: { 
                 type: "number", 
@@ -184,7 +207,7 @@ const extractionTool = {
               },
               label: { 
                 type: "string", 
-                description: "Original label from document (e.g., 'On Booking', '30% Complete', 'On Handover')" 
+                description: "Original label from document (e.g., 'On Booking', '30% Complete', 'On Handover', '4th Month after Completion')" 
               },
               confidence: { 
                 type: "number", 
@@ -232,7 +255,11 @@ serve(async (req) => {
     // Build the content array with all images
     const contentParts: any[] = [];
     
-    // Add instruction text first
+    // Add instruction text first with detailed booking context
+    const bookingContext = bookingDate?.month && bookingDate?.year 
+      ? `Booking/reference date: ${bookingDate.month}/${bookingDate.year} (Month ${bookingDate.month}, Year ${bookingDate.year})`
+      : 'Booking date: Not specified - use document date or assume current month';
+    
     contentParts.push({
       type: "text",
       text: `Analyze the following ${images.length > 1 ? 'pages of a ' : ''}payment plan document and extract all payment information.
@@ -240,10 +267,17 @@ serve(async (req) => {
 ${images.length > 1 ? 'These images are pages from the SAME document - combine all information.' : ''}
 
 Context:
-- Booking/reference date: ${bookingDate?.month || 'Not specified'}/${bookingDate?.year || 'Not specified'}
+- ${bookingContext}
 - This is likely a Dubai real estate payment plan
 
-Extract ALL payment milestones ensuring they sum to exactly 100%. Call the extract_payment_plan function with your findings.`
+CRITICAL INSTRUCTIONS:
+1. Find the LAST pre-handover payment month and set it as handoverMonthFromBooking
+2. Convert ALL dates (days, calendar dates, quarters) to ABSOLUTE months from booking
+3. For post-handover payments, calculate ABSOLUTE months from booking (handoverMonth + relative months)
+4. For construction milestones (30% complete, foundation, etc.), use type: "construction" with triggerValue as percentage
+5. Ensure all percentages sum to exactly 100%
+
+Call the extract_payment_plan function with your findings.`
     });
 
     // Add each image
@@ -263,7 +297,6 @@ Extract ALL payment milestones ensuring they sum to exactly 100%. Call the extra
       }
       
       // Use image_url format for ALL files (images AND PDFs)
-      // The Lovable AI Gateway only supports image_url content type
       contentParts.push({
         type: "image_url",
         image_url: {
@@ -355,11 +388,15 @@ Extract ALL payment milestones ensuring they sum to exactly 100%. Call the extra
       isPostHandover: inst.type === 'post-handover'
     }));
 
+    // Log extraction details for debugging
     console.log("Extraction successful:", {
       installmentsCount: extractedData.installments.length,
       totalPercent,
       confidence: extractedData.overallConfidence,
-      hasPostHandover: extractedData.paymentStructure.hasPostHandover
+      hasPostHandover: extractedData.paymentStructure.hasPostHandover,
+      handoverMonthFromBooking: extractedData.paymentStructure.handoverMonthFromBooking,
+      constructionInstallments: extractedData.installments.filter(i => i.type === 'construction').length,
+      postHandoverInstallments: extractedData.installments.filter(i => i.type === 'post-handover').length,
     });
 
     return new Response(

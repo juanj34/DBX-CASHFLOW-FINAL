@@ -15,6 +15,7 @@ export interface ExtractedPaymentStructure {
   hasPostHandover: boolean;
   handoverQuarter?: 1 | 2 | 3 | 4;
   handoverYear?: number;
+  handoverMonthFromBooking?: number; // Month number from booking when handover occurs (e.g., 26)
   onHandoverPercent?: number;
   postHandoverPercent?: number;
 }

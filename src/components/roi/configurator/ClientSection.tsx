@@ -222,60 +222,82 @@ export const ClientSection = ({
     });
     
     // 2. Update payment inputs if setInputs is provided
-    if (setInputs && inputs) {
-      // Find downpayment (month 0 or "On Booking")
-      const downpayment = extractedData.installments.find(
-        i => i.type === 'time' && i.triggerValue === 0
-      );
-      const downpaymentPercent = downpayment?.paymentPercent || 0;
-      
-      // Categorize installments by pre/post handover
-      const preHandoverInstallments = extractedData.installments.filter(i => 
-        i.type !== 'post-handover' && i.type !== 'handover'
-      );
-      const postHandoverInstallments = extractedData.installments.filter(i => 
-        i.type === 'post-handover'
-      );
-      
-      // Calculate totals
-      const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-      const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-      
-      // Determine pre-handover percent from split or calculation
-      let preHandoverPercent = preHandoverTotal;
-      if (extractedData.paymentStructure.paymentSplit) {
-        const [pre] = extractedData.paymentStructure.paymentSplit.split('/').map(Number);
-        if (!isNaN(pre)) preHandoverPercent = pre;
-      }
-      
-      // Convert installments to PaymentMilestone format
-      // EXCLUDE: downpayment (month 0) and explicit handover markers
-      const additionalPayments = extractedData.installments
-        .filter(i => {
-          if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
-          if (i.type === 'handover') return false; // Skip handover markers
-          return true;
-        })
-        .map((inst, idx) => ({
-          id: inst.id || `ai-${Date.now()}-${idx}`,
-          type: inst.type === 'post-handover' ? 'time' as const : inst.type as 'time' | 'construction',
-          triggerValue: inst.triggerValue,
-          paymentPercent: inst.paymentPercent,
-        }));
-      
-      // Update inputs with proper structure
-      setInputs(prev => ({
-        ...prev,
-        basePrice: extractedData.property?.basePrice || prev.basePrice,
-        downpaymentPercent,
-        preHandoverPercent,
-        additionalPayments,
-        hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0,
-        postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
-        handoverQuarter: extractedData.paymentStructure.handoverQuarter || prev.handoverQuarter,
-        handoverYear: extractedData.paymentStructure.handoverYear || prev.handoverYear,
-      }));
+    if (!setInputs || !inputs) {
+      toast.success('Property data imported!');
+      setShowAIExtractor(false);
+      return;
     }
+    
+    // === STEP 1: Calculate handover Q/Y from handoverMonthFromBooking ===
+    let handoverQuarter = extractedData.paymentStructure.handoverQuarter || inputs.handoverQuarter;
+    let handoverYear = extractedData.paymentStructure.handoverYear || inputs.handoverYear;
+    
+    if (extractedData.paymentStructure.handoverMonthFromBooking) {
+      const handoverMonths = extractedData.paymentStructure.handoverMonthFromBooking;
+      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      const handoverDate = new Date(bookingDate);
+      handoverDate.setMonth(handoverDate.getMonth() + handoverMonths);
+      
+      handoverYear = handoverDate.getFullYear();
+      handoverQuarter = (Math.floor(handoverDate.getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+    }
+    
+    // === STEP 2: Find special installments ===
+    // Downpayment (month 0)
+    const downpayment = extractedData.installments.find(
+      i => i.type === 'time' && i.triggerValue === 0
+    );
+    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
+    
+    // Explicit handover payment
+    const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
+    const onHandoverPercent = handoverPayment?.paymentPercent || 0;
+    
+    // === STEP 3: Calculate totals for validation ===
+    const postHandoverInstallments = extractedData.installments.filter(i => 
+      i.type === 'post-handover'
+    );
+    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    
+    // === STEP 4: Determine pre-handover percent from split ===
+    let preHandoverPercent = inputs.preHandoverPercent;
+    if (extractedData.paymentStructure.paymentSplit) {
+      const [pre] = extractedData.paymentStructure.paymentSplit.split('/').map(Number);
+      if (!isNaN(pre)) preHandoverPercent = pre;
+    }
+    
+    // === STEP 5: Convert ALL installments to configurator format ===
+    // Keep construction type as-is, convert post-handover to time (configurator derives from date)
+    const additionalPayments = extractedData.installments
+      .filter(i => {
+        if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
+        if (i.type === 'handover') return false; // Skip explicit handover marker
+        return true;
+      })
+      .map((inst, idx) => ({
+        id: inst.id || `ai-${Date.now()}-${idx}`,
+        // KEEP construction type, convert post-handover to time
+        type: inst.type === 'construction' 
+          ? 'construction' as const 
+          : 'time' as const,
+        triggerValue: inst.triggerValue, // Already absolute from AI
+        paymentPercent: inst.paymentPercent,
+      }))
+      .sort((a, b) => a.triggerValue - b.triggerValue);
+    
+    // === STEP 6: Update inputs with complete structure ===
+    setInputs(prev => ({
+      ...prev,
+      basePrice: extractedData.property?.basePrice || prev.basePrice,
+      downpaymentPercent,
+      preHandoverPercent,
+      onHandoverPercent,
+      additionalPayments,
+      hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0,
+      postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
+      handoverQuarter,
+      handoverYear,
+    }));
     
     toast.success('Quote data imported from AI extraction!');
     setShowAIExtractor(false);
