@@ -48,10 +48,11 @@ export const ComparisonKeyInsights = ({
     ? (secondaryWealth10 + metrics.secondaryCapitalDay1) / metrics.secondaryCapitalDay1
     : 0;
 
-  // Total Wealth = Property Value at Year 10 + Cumulative Net Rent (already calculated in metrics)
-  // DO NOT add capital again - metrics.offPlanWealthYear10 already = propertyValue + cumulativeRent
-  const offPlanTotalWealth10 = metrics.offPlanWealthYear10;
-  const secondaryTotalWealth10 = secondaryWealth10;
+  // Total Wealth (Gross/Total Assets) = Property Value at Year 10 + Cumulative Net Rent
+  // The metrics.offPlanWealthYear10 = propertyValue + cumulativeRent - capital
+  // To get Gross Wealth, we add capital back: grossWealth = netWealth + capital
+  const offPlanTotalWealth10 = metrics.offPlanWealthYear10 + metrics.offPlanCapitalDay1;
+  const secondaryTotalWealth10 = secondaryWealth10 + metrics.secondaryCashCapital;
 
   const formatValue = (value: number): string => {
     // Handle NaN and invalid values
