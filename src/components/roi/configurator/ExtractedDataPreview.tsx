@@ -50,7 +50,13 @@ export const ExtractedDataPreview = ({
   onApply,
   onBack,
 }: ExtractedDataPreviewProps) => {
-  const [showPropertyInfo, setShowPropertyInfo] = useState(!!data.property?.developer || !!data.property?.projectName);
+  // Open property section by default if any property data was extracted
+  const [showPropertyInfo, setShowPropertyInfo] = useState(
+    !!data.property?.developer || 
+    !!data.property?.projectName ||
+    !!data.property?.basePrice ||
+    !!data.property?.unitNumber
+  );
 
   // Calculate totals
   const totalPercent = useMemo(() => {
