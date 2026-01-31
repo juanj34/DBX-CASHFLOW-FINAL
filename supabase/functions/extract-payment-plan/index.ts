@@ -266,6 +266,13 @@ serve(async (req) => {
     }
 
     console.log(`Processing ${images.length} file(s) for payment plan extraction`);
+    console.log(`Image data types:`, images.map((img: any, i: number) => ({ 
+      index: i, 
+      type: typeof img, 
+      isString: typeof img === 'string',
+      length: typeof img === 'string' ? img.length : 0,
+      startsWithData: typeof img === 'string' ? img.startsWith('data:') : false
+    })));
     console.log(`Booking date context:`, bookingDate);
 
     // Build the content array with all images

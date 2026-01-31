@@ -92,13 +92,20 @@ export const PaymentPlanExtractor = ({
     setExtractedData(null);
 
     try {
-      // Convert files to base64
-      const imagePromises = files.map(f => f.preview);
-      const images = imagePromises;
+      // Get base64 data URLs from file previews
+      const images = files.map(f => f.preview).filter(Boolean);
+      
+      if (images.length === 0) {
+        setError("No valid files to process");
+        return;
+      }
       
       const bookingDate = getBookingDate();
       
-      console.log(`Sending ${images.length} images for extraction`);
+      console.log(`Sending ${images.length} images for extraction`, { 
+        types: files.map(f => f.type),
+        previewLengths: images.map(p => p?.length || 0)
+      });
 
       const { data, error: fnError } = await supabase.functions.invoke<ExtractionResponse>(
         'extract-payment-plan',
