@@ -3,6 +3,7 @@ import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { Trophy, TrendingUp, TrendingDown, Home, Banknote } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface CashflowKPIComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -54,7 +55,7 @@ export const CashflowKPIComparison = ({
       
       return {
         quoteId: quote.id,
-        title: quote.title || quote.projectName || 'Quote',
+        title: getQuoteDisplayName(quote.title, quote.projectName),
         monthlyMortgage,
         monthlyRent,
         netCashflow,

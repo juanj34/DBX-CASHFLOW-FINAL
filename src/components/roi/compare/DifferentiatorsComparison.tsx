@@ -6,6 +6,7 @@ import {
   DifferentiatorCategory 
 } from '@/components/roi/valueDifferentiators';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface DifferentiatorsComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -61,7 +62,7 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
             className="text-sm font-medium truncate text-center"
             style={{ color: colors[idx % colors.length] }}
           >
-            {quote.title || quote.projectName || 'Quote'}
+            {getQuoteDisplayName(quote.title, quote.projectName)}
           </div>
         ))}
       </div>

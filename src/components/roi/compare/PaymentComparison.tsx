@@ -2,6 +2,7 @@ import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface PaymentComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -89,7 +90,7 @@ export const PaymentComparison = ({
                   className="text-sm font-medium truncate"
                   style={{ color }}
                 >
-                  {quote.title || quote.projectName || 'Quote'}
+                  {getQuoteDisplayName(quote.title, quote.projectName)}
                 </span>
                 <span 
                   className="text-xs px-2 py-0.5 rounded-full font-bold"

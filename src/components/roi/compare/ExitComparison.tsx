@@ -2,6 +2,7 @@ import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { calculateExitScenario } from '@/components/roi/constructionProgress';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface ExitComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -76,7 +77,7 @@ export const ExitComparison = ({
                   className="text-left py-3 px-2 text-sm font-medium"
                   style={{ color: colors[idx % colors.length] }}
                 >
-                  {item.quote.title || item.quote.projectName || `Quote ${idx + 1}`}
+                  {getQuoteDisplayName(item.quote.title, item.quote.projectName, null, `Quote ${idx + 1}`)}
                 </th>
               ))}
             </tr>
