@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
@@ -74,6 +74,18 @@ export const SnapshotContent = ({
   const constructionYears = Math.ceil(calculations.totalMonths / 12);
   const handoverYear = inputs.bookingYear + constructionYears;
 
+  // Determine if we have a long payment plan (triggers adaptive 2-column layout)
+  const isLongPaymentPlan = useMemo(() => {
+    const payments = inputs.additionalPayments || [];
+    return payments.length > 12;
+  }, [inputs.additionalPayments]);
+
+  // Check visibility conditions for cards
+  const showRent = inputs.rentalYieldPercent > 0;
+  const showExits = inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0;
+  const showPostHandover = inputs.hasPostHandoverPlan;
+  const showMortgage = mortgageInputs.enabled;
+
   return (
     <div className="min-h-full flex flex-col bg-theme-bg max-w-[1600px] mx-auto w-full">
       {/* Hero - fixed height */}
@@ -110,9 +122,10 @@ export const SnapshotContent = ({
 
       {/* Main content - flows naturally with single scroll */}
       <div className="flex-1 px-4 pb-4" data-export-layout="expand">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left Column: Payment (with Value Differentiators integrated) */}
-          <div className="flex flex-col">
+        {isLongPaymentPlan ? (
+          /* STACKED LAYOUT for long payment plans: Payment full width, then cards in horizontal grid */
+          <div className="flex flex-col gap-4">
+            {/* Payment Table - Full Width with internal 2-column layout */}
             <CompactPaymentTable
               inputs={inputs}
               clientInfo={clientInfo}
@@ -121,57 +134,123 @@ export const SnapshotContent = ({
               currency={currency}
               rate={rate}
               totalMonths={calculations.totalMonths}
+              twoColumnMode="auto"
             />
+            
+            {/* Insight Cards - horizontal grid on desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {/* Rent Card with Wealth Projection Button */}
+              {showRent && (
+                <CompactRentCard
+                  inputs={inputs}
+                  currency={currency}
+                  rate={rate}
+                  onViewWealthProjection={() => setWealthModalOpen(true)}
+                />
+              )}
+              
+              {/* All Exits Card */}
+              {showExits && (
+                <CompactAllExitsCard
+                  inputs={inputs}
+                  calculations={calculations}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                  onClick={() => setExitModalOpen(true)}
+                />
+              )}
+              
+              {/* Post-Handover Coverage Card */}
+              {showPostHandover && (
+                <CompactPostHandoverCard
+                  inputs={inputs}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+              
+              {/* Mortgage Card */}
+              {showMortgage && (
+                <CompactMortgageCard
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </div>
           </div>
+        ) : (
+          /* ORIGINAL LAYOUT for short payment plans: 2 columns side by side */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Left Column: Payment */}
+            <div className="flex flex-col">
+              <CompactPaymentTable
+                inputs={inputs}
+                clientInfo={clientInfo}
+                valueDifferentiators={valueDifferentiators}
+                appreciationBonus={appreciationBonus}
+                currency={currency}
+                rate={rate}
+                totalMonths={calculations.totalMonths}
+                twoColumnMode="never"
+              />
+            </div>
 
-          {/* Right Column: Rent + Exits + Mortgage */}
-          <div className="flex flex-col gap-3">
-            {/* Rent Card with Wealth Projection Button */}
-            {inputs.rentalYieldPercent > 0 && (
-              <CompactRentCard
-                inputs={inputs}
-                currency={currency}
-                rate={rate}
-                onViewWealthProjection={() => setWealthModalOpen(true)}
-              />
-            )}
-            
-            {/* All Exits Card - only show if exitStrategy is enabled AND we have valid data */}
-            {inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0 && (
-              <CompactAllExitsCard
-                inputs={inputs}
-                calculations={calculations}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-                onClick={() => setExitModalOpen(true)}
-              />
-            )}
-            
-            {/* Post-Handover Coverage Card - only show if hasPostHandoverPlan */}
-            {inputs.hasPostHandoverPlan && (
-              <CompactPostHandoverCard
-                inputs={inputs}
-                monthlyRent={monthlyRent}
-                rentGrowthRate={inputs.rentGrowthRate || 4}
-                currency={currency}
-                rate={rate}
-              />
-            )}
-            
-            {/* Mortgage Card */}
-            {mortgageInputs.enabled && (
-              <CompactMortgageCard
-                mortgageInputs={mortgageInputs}
-                mortgageAnalysis={mortgageAnalysis}
-                monthlyRent={monthlyRent}
-                rentGrowthRate={inputs.rentGrowthRate || 4}
-                currency={currency}
-                rate={rate}
-              />
-            )}
+            {/* Right Column: Rent + Exits + Mortgage */}
+            <div className="flex flex-col gap-3">
+              {/* Rent Card with Wealth Projection Button */}
+              {showRent && (
+                <CompactRentCard
+                  inputs={inputs}
+                  currency={currency}
+                  rate={rate}
+                  onViewWealthProjection={() => setWealthModalOpen(true)}
+                />
+              )}
+              
+              {/* All Exits Card */}
+              {showExits && (
+                <CompactAllExitsCard
+                  inputs={inputs}
+                  calculations={calculations}
+                  exitScenarios={exitScenarios}
+                  currency={currency}
+                  rate={rate}
+                  onClick={() => setExitModalOpen(true)}
+                />
+              )}
+              
+              {/* Post-Handover Coverage Card */}
+              {showPostHandover && (
+                <CompactPostHandoverCard
+                  inputs={inputs}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+              
+              {/* Mortgage Card */}
+              {showMortgage && (
+                <CompactMortgageCard
+                  mortgageInputs={mortgageInputs}
+                  mortgageAnalysis={mortgageAnalysis}
+                  monthlyRent={monthlyRent}
+                  rentGrowthRate={inputs.rentGrowthRate || 4}
+                  currency={currency}
+                  rate={rate}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Floor Plan Lightbox */}

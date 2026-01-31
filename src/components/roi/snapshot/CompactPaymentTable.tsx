@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { CreditCard, ArrowRight, Users, Sparkles, Key, Wallet, Info } from 'lucide-react';
 import { OIInputs, PaymentMilestone } from '../useOICalculations';
 import { ClientUnitData } from '../ClientUnitInfo';
@@ -20,6 +20,8 @@ interface CompactPaymentTableProps {
   currency: Currency;
   rate: number;
   totalMonths: number;
+  /** Control 2-column layout for journey section: 'auto' (>12 payments), 'always', or 'never'. Default: 'auto' */
+  twoColumnMode?: 'auto' | 'always' | 'never';
 }
 
 const monthToDateString = (month: number, year: number, language: string): string => {
@@ -91,6 +93,7 @@ export const CompactPaymentTable = ({
   currency,
   rate,
   totalMonths,
+  twoColumnMode = 'auto',
 }: CompactPaymentTableProps) => {
   const { language, t } = useLanguage();
   const [splitModalOpen, setSplitModalOpen] = useState(false);
@@ -232,6 +235,39 @@ export const CompactPaymentTable = ({
   const journeyPercent = preHandoverPayments.reduce(
     (sum, p) => sum + p.paymentPercent, 0
   );
+
+  // Determine if we should use 2-column layout for journey section
+  const useTwoColumns = useMemo(() => {
+    if (twoColumnMode === 'never') return false;
+    if (twoColumnMode === 'always') return true;
+    // Auto: trigger when total payments > 12
+    const totalPayments = preHandoverPayments.length + derivedPostHandoverPayments.length;
+    return totalPayments > 12;
+  }, [twoColumnMode, preHandoverPayments.length, derivedPostHandoverPayments.length]);
+
+  // Split journey payments into left/right columns for 2-column mode
+  const splitJourneyPayments = useMemo(() => {
+    if (!useTwoColumns || preHandoverPayments.length === 0) {
+      return { left: preHandoverPayments, right: [] };
+    }
+    const midpoint = Math.ceil(preHandoverPayments.length / 2);
+    return {
+      left: preHandoverPayments.slice(0, midpoint),
+      right: preHandoverPayments.slice(midpoint),
+    };
+  }, [useTwoColumns, preHandoverPayments]);
+
+  // Split post-handover payments too if in 2-column mode
+  const splitPostHandoverPayments = useMemo(() => {
+    if (!useTwoColumns || derivedPostHandoverPayments.length === 0) {
+      return { left: derivedPostHandoverPayments, right: [] };
+    }
+    const midpoint = Math.ceil(derivedPostHandoverPayments.length / 2);
+    return {
+      left: derivedPostHandoverPayments.slice(0, midpoint),
+      right: derivedPostHandoverPayments.slice(midpoint),
+    };
+  }, [useTwoColumns, derivedPostHandoverPayments]);
 
   // Total Cash Until Handover = Entry + Journey + On Handover (for grand total)
   const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
@@ -402,21 +438,23 @@ export const CompactPaymentTable = ({
             </div>
           </div>
 
-          {/* Section: The Journey (Pre-Handover) */}
+          {/* Section: The Journey (Pre-Handover) - with optional 2-column layout */}
           {preHandoverPayments.length > 0 && (
             <div>
               <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">
                 {t('theJourneyLabel')} ({totalMonths}{t('moShort')})
               </div>
-              <div className="space-y-1">
-                {preHandoverPayments.map((payment, index) => {
+              
+              {/* Render payment row - extracted for reuse */}
+              {(() => {
+                const renderPaymentRow = (payment: PaymentMilestone, index: number, originalIndex: number) => {
                   const amount = basePrice * (payment.paymentPercent / 100);
                   const dateStr = getPaymentDate(payment);
                   const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
                   
                   // Check for handover indicators - highlight payments in handover quarter
                   // BUT NOT for post-handover plans, which have an explicit handover section
-                  const isHandoverQuarter = !hasPostHandoverPlan && payment.type === 'time' && isPaymentInHandoverQuarter(
+                  const isHandoverQuarterPayment = !hasPostHandoverPlan && payment.type === 'time' && isPaymentInHandoverQuarter(
                     payment.triggerValue,
                     bookingMonth,
                     bookingYear,
@@ -424,28 +462,31 @@ export const CompactPaymentTable = ({
                     handoverYear
                   );
                   
-                  // Check if this is the LAST payment in the handover quarter
-                  const isLastHandoverQuarterPayment = isHandoverQuarter && 
-                    !preHandoverPayments.slice(index + 1).some(p => 
+                  // Check if this is the LAST payment in the handover quarter (for cumulative total display)
+                  // Only show in single-column mode - in 2-column we show subtotal at end
+                  const isLastHandoverQuarterPayment = !useTwoColumns && isHandoverQuarterPayment && 
+                    !preHandoverPayments.slice(originalIndex + 1).some(p => 
                       p.type === 'time' && isPaymentInHandoverQuarter(p.triggerValue, bookingMonth, bookingYear, handoverQuarter, handoverYear)
                     );
                   
-                  const paymentId = `journey-${index}`;
+                  const paymentId = `journey-${originalIndex}`;
                   const isSelected = selectedPayments.has(paymentId);
                   
                   return (
-                    <div key={index}>
+                    <div key={originalIndex}>
                       <div 
                         onMouseDown={(e) => handleMouseDown(e, paymentId, amount)}
                         onMouseEnter={() => handleMouseEnter(paymentId, amount)}
                         className={cn(
                           "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors select-none",
-                          isHandoverQuarter && "bg-green-500/10 px-1 py-0.5 -mx-1 border-l-2 border-green-400",
+                          isHandoverQuarterPayment && "bg-green-500/10 px-1 py-0.5 -mx-1 border-l-2 border-green-400",
                           isSelected && "ring-1 ring-theme-accent/40 bg-theme-accent/20"
                         )}
                       >
                         <div className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs text-theme-text-muted truncate">{payment.paymentPercent}% · {labelWithDate}</span>
+                          <span className={cn("text-xs text-theme-text-muted", useTwoColumns ? "truncate text-[11px]" : "truncate")}>
+                            {payment.paymentPercent}% · {labelWithDate}
+                          </span>
                           {isConstructionPayment(payment) && (
                             <TooltipProvider>
                               <Tooltip>
@@ -458,22 +499,22 @@ export const CompactPaymentTable = ({
                               </Tooltip>
                             </TooltipProvider>
                           )}
-                          {isHandoverQuarter && (
+                          {isHandoverQuarterPayment && !useTwoColumns && (
                             <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                               <Key className="w-2.5 h-2.5" />
                               {t('handoverBadge')}
                             </span>
                           )}
                         </div>
-                        <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                        <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[11px]")}>
                           {getDualValue(amount).primary}
-                          {currency !== 'AED' && (
+                          {currency !== 'AED' && !useTwoColumns && (
                             <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
                           )}
                         </span>
                       </div>
                       
-                      {/* Show cumulative total right after the last handover quarter payment */}
+                      {/* Show cumulative total right after the last handover quarter payment - single column only */}
                       {isLastHandoverQuarterPayment && (
                         <div className="mt-2 pt-1.5 border-t border-dashed border-theme-border/50">
                           <div className="flex items-center justify-between text-[10px]">
@@ -492,21 +533,48 @@ export const CompactPaymentTable = ({
                       )}
                     </div>
                   );
-                })}
-                
-                {/* Journey Subtotal */}
-                {preHandoverPayments.length > 0 && (
-                  <div className="pt-1 border-t border-theme-border mt-1">
-                    <DottedRow 
-                      label={`${t('subtotalLabel')} (${journeyPercent}%)`}
-                      value={getDualValue(journeyTotal).primary}
-                      secondaryValue={getDualValue(journeyTotal).secondary}
-                      bold
-                      valueClassName="text-cyan-400"
-                    />
+                };
+
+                // Two-column layout
+                if (useTwoColumns) {
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        {splitJourneyPayments.left.map((payment, index) => {
+                          const originalIndex = preHandoverPayments.indexOf(payment);
+                          return renderPaymentRow(payment, index, originalIndex);
+                        })}
+                      </div>
+                      <div className="space-y-1">
+                        {splitJourneyPayments.right.map((payment, index) => {
+                          const originalIndex = preHandoverPayments.indexOf(payment);
+                          return renderPaymentRow(payment, index, originalIndex);
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Single-column layout (original)
+                return (
+                  <div className="space-y-1">
+                    {preHandoverPayments.map((payment, index) => renderPaymentRow(payment, index, index))}
                   </div>
-                )}
-              </div>
+                );
+              })()}
+              
+              {/* Journey Subtotal */}
+              {preHandoverPayments.length > 0 && (
+                <div className="pt-1 border-t border-theme-border mt-2">
+                  <DottedRow 
+                    label={`${t('subtotalLabel')} (${journeyPercent}%)`}
+                    value={getDualValue(journeyTotal).primary}
+                    secondaryValue={getDualValue(journeyTotal).secondary}
+                    bold
+                    valueClassName="text-cyan-400"
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -570,15 +638,14 @@ export const CompactPaymentTable = ({
               <div className="text-[10px] uppercase tracking-wide text-purple-400 font-semibold mb-2">
                 {t('postHandoverLabel')} ({(derivedPostHandoverPayments.reduce((sum, p) => sum + p.paymentPercent, 0)).toFixed(0)}%)
               </div>
-              <div className="space-y-1">
-                {derivedPostHandoverPayments.map((payment, index) => {
+              {(() => {
+                const renderPostHandoverRow = (payment: PaymentMilestone, index: number) => {
                   const amount = basePrice * (payment.paymentPercent / 100);
                   const dateStr = getPaymentDate(payment);
                   const label = `${getPaymentLabel(payment)} (${dateStr})`;
                   const paymentId = `posthandover-${index}`;
                   const isSelected = selectedPayments.has(paymentId);
                   
-                  // Post-handover payments don't get handover highlighting - they're already past handover
                   return (
                     <div 
                       key={index} 
@@ -589,17 +656,39 @@ export const CompactPaymentTable = ({
                         isSelected && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                       )}
                     >
-                      <span className="text-xs text-theme-text-muted truncate">{label}</span>
-                      <span className="text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0">
+                      <span className={cn("text-xs text-theme-text-muted truncate", useTwoColumns && "text-[11px]")}>{label}</span>
+                      <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[11px]")}>
                         {getDualValue(amount).primary}
-                        {currency !== 'AED' && (
+                        {currency !== 'AED' && !useTwoColumns && (
                           <span className="text-theme-text-muted ml-1">({getDualValue(amount).secondary})</span>
                         )}
                       </span>
                     </div>
                   );
-                })}
-              </div>
+                };
+
+                if (useTwoColumns && derivedPostHandoverPayments.length > 2) {
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        {splitPostHandoverPayments.left.map((payment, index) => renderPostHandoverRow(payment, index))}
+                      </div>
+                      <div className="space-y-1">
+                        {splitPostHandoverPayments.right.map((payment, index) => {
+                          const originalIndex = splitPostHandoverPayments.left.length + index;
+                          return renderPostHandoverRow(payment, originalIndex);
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-1">
+                    {derivedPostHandoverPayments.map((payment, index) => renderPostHandoverRow(payment, index))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
