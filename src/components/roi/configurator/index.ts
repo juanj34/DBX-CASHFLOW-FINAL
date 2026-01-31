@@ -9,4 +9,8 @@ export { ValueSection } from './ValueSection';
 export { IncomeSection } from './IncomeSection';
 export { AppreciationSection } from './AppreciationSection';
 export { MortgageSection } from './MortgageSection';
+// New combined sections (4-step wizard)
+export { InvestmentSection } from './InvestmentSection';
+export { ReturnsSection } from './ReturnsSection';
+export { ExtrasSection } from './ExtrasSection';
 export * from './types';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Check, Loader2, Sparkles, FileText, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Loader2, Sparkles, FileText, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
@@ -8,16 +8,12 @@ import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS, SAMPLE_CLI
 import { toast } from "sonner";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
 import { ClientSection } from "./ClientSection";
-import { PropertySection } from "./PropertySection";
-import { PaymentSection } from "./PaymentSection";
-import { ValueSection } from "./ValueSection";
-import { AppreciationSection } from "./AppreciationSection";
-import { ExitsSection } from "./ExitsSection";
-import { RentSection } from "./RentSection";
-import { MortgageSection } from "./MortgageSection";
-import { ImagesSection } from "./ImagesSection";
+import { InvestmentSection } from "./InvestmentSection";
+import { ReturnsSection } from "./ReturnsSection";
+import { ExtrasSection } from "./ExtrasSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -57,7 +53,7 @@ interface ConfiguratorLayoutProps {
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'images', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
+const SECTIONS: ConfiguratorSection[] = ['project', 'investment', 'returns', 'extras'];
 
 // Confetti particle component
 const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) => (
@@ -145,7 +141,7 @@ export const ConfiguratorLayout = ({
   const setShowLogoOverlay = onShowLogoOverlayChange || setInternalShowLogoOverlay;
   
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
-    savedState?.activeSection || 'client'  // Start from client section
+    savedState?.activeSection || 'project'  // Start from project section
   );
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
@@ -204,28 +200,17 @@ export const ConfiguratorLayout = ({
     const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (section) {
-      case 'client':
-        // Client is complete when there's a zone selected (stored in clientInfo)
+      case 'project':
+        // Project is complete when there's a zone selected (stored in clientInfo)
         return Boolean(clientInfo.zoneId);
-      case 'property':
-        return inputs.basePrice > 0;
-      case 'images':
-        // Media is optional - always complete when visited
-        return true;
-      case 'payment':
-        // Must have valid payment plan adding up to 100%
-        return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
-      case 'value':
-        // Value is optional - complete when visited
-        return true;
-      case 'appreciation':
+      case 'investment':
+        // Investment complete when price and valid payment plan
+        return inputs.basePrice > 0 && inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
+      case 'returns':
+        // Returns complete when appreciation is configured
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-      case 'exits':
-        return inputs._exitScenarios && inputs._exitScenarios.length > 0;
-      case 'rent':
-        return inputs.rentalYieldPercent > 0;
-      case 'mortgage':
-        // Mortgage is optional - complete when visited
+      case 'extras':
+        // Extras is optional - always complete when visited
         return true;
       default:
         return false;
@@ -297,24 +282,16 @@ export const ConfiguratorLayout = ({
     const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (activeSection) {
-      case 'client':
-        // Client section requires zone selection (stored in clientInfo, not inputs)
+      case 'project':
+        // Project section requires zone selection (stored in clientInfo, not inputs)
         return Boolean(clientInfo.zoneId);
-      case 'property':
-        return inputs.basePrice > 0;
-      case 'payment':
-        return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
-      case 'appreciation':
+      case 'investment':
+        // Must have valid payment plan adding up to 100%
+        return inputs.basePrice > 0 && inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
+      case 'returns':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-      case 'rent':
-        return inputs.rentalYieldPercent > 0;
-      case 'exits':
-        // Allow proceeding if exits are disabled OR if there are exit scenarios
-        return !inputs.enabledSections?.exitStrategy || (inputs._exitScenarios && inputs._exitScenarios.length > 0);
-      // Optional sections
-      case 'value':
-      case 'mortgage':
-      case 'images':
+      case 'extras':
+        // Optional section - always can proceed
         return true;
       default:
         return true;
@@ -518,7 +495,7 @@ export const ConfiguratorLayout = ({
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'client':
+      case 'project':
         return (
           <ClientSection
             clientInfo={clientInfo}
@@ -528,29 +505,30 @@ export const ConfiguratorLayout = ({
             setInputs={setInputs}
           />
         );
-      case 'property':
+      case 'investment':
         return (
-          <PropertySection 
+          <InvestmentSection 
             inputs={inputs} 
             setInputs={setInputs} 
             currency={currency}
           />
         );
-      case 'payment':
-        return <PaymentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'value':
-        return <ValueSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'appreciation':
-        return <AppreciationSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'exits':
-        return <ExitsSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'rent':
-        return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'mortgage':
-        return <MortgageSection inputs={inputs} setInputs={setInputs} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />;
-      case 'images':
+      case 'returns':
         return (
-          <ImagesSection
+          <ReturnsSection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency}
+          />
+        );
+      case 'extras':
+        return (
+          <ExtrasSection
+            inputs={inputs}
+            setInputs={setInputs}
+            currency={currency}
+            mortgageInputs={mortgageInputs}
+            setMortgageInputs={setMortgageInputs}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
             heroImageUrl={heroImageUrl}
@@ -685,26 +663,41 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Footer Navigation - Compact Single Row */}
+      {/* Footer Navigation - Compact Single Row with Hotkey Hints */}
       <div className="shrink-0 border-t border-theme-border bg-theme-bg-alt">
         <div className="flex items-center justify-between px-4 py-2.5">
-          {/* Previous button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToPreviousSection}
-            disabled={!canGoBack}
-            className="border-theme-border !bg-transparent text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30"
-          >
-            <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-            Back
-          </Button>
+          {/* Left: Back button + Hotkey hints */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPreviousSection}
+              disabled={!canGoBack}
+              className="border-theme-border !bg-transparent text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+              Back
+            </Button>
+            
+            {/* Hotkey hints - desktop only */}
+            <div className="hidden md:flex items-center gap-2 text-[10px] text-theme-text-muted/60">
+              <span className="flex items-center gap-0.5">
+                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">←</kbd>
+                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">→</kbd>
+              </span>
+              <span className="flex items-center gap-0.5">
+                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">1</kbd>
+                <span>-</span>
+                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">4</kbd>
+              </span>
+            </div>
+          </div>
 
-          {/* Center: Inline Step indicators */}
-          <div className="flex items-center gap-1">
+          {/* Center: Inline Step indicators - Simple numbers, no checkmarks */}
+          <div className="flex items-center gap-1.5">
             {SECTIONS.map((section, index) => {
-              const isComplete = isSectionComplete(section);
               const isActive = section === activeSection;
+              const isPast = index < currentIndex;
               
               return (
                 <Tooltip key={section}>
@@ -713,20 +706,15 @@ export const ConfiguratorLayout = ({
                       onClick={() => navigateToSection(section)}
                       className="group"
                     >
-                      <div className={`
-                        w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all duration-200
-                        ${isActive 
-                          ? 'bg-theme-accent text-theme-bg scale-110' 
-                          : isComplete 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-theme-bg-alt border border-theme-border text-theme-text-muted group-hover:border-theme-accent group-hover:text-theme-text'
-                        }
-                      `}>
-                        {isComplete && !isActive ? (
-                          <Check className="w-2.5 h-2.5" />
-                        ) : (
-                          index + 1
-                        )}
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200",
+                        isActive 
+                          ? "bg-theme-accent text-theme-bg scale-110 ring-2 ring-theme-accent/30" 
+                          : isPast
+                            ? "bg-theme-accent/20 text-theme-accent"
+                            : "bg-theme-bg-alt border border-theme-border text-theme-text-muted group-hover:border-theme-accent group-hover:text-theme-text"
+                      )}>
+                        {index + 1}
                       </div>
                     </button>
                   </TooltipTrigger>
@@ -738,15 +726,11 @@ export const ConfiguratorLayout = ({
             })}
           </div>
 
-          {/* Right: Progress text + Next/Apply button */}
+          {/* Right: Next/Apply button */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-theme-text-muted hidden sm:block">
               {currentIndex + 1}/{SECTIONS.length}
             </span>
-            
-            {!canProceedFromCurrentSection && activeSection === 'payment' && (
-              <span className="text-xs text-amber-400 hidden md:block">Must equal 100%</span>
-            )}
             
             {isLastSection ? (
               <Button
