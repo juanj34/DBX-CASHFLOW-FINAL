@@ -204,11 +204,11 @@ export const ClientSection = ({
     }
   };
 
-  // Handle AI extraction results
+  // Handle AI extraction results - comprehensive mapping to configurator state
   const handleAIExtraction = (extractedData: ExtractedPaymentPlan) => {
-    // Update client info with extracted property details
     const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2 * 10) / 10;
     
+    // 1. Update client info with extracted property details
     onClientInfoChange({
       ...clientInfo,
       developer: extractedData.property?.developer || clientInfo.developer,
@@ -221,45 +221,59 @@ export const ClientSection = ({
         : clientInfo.unitSizeM2,
     });
     
-    // Update inputs if setInputs is provided
+    // 2. Update payment inputs if setInputs is provided
     if (setInputs && inputs) {
-      // Calculate pre-handover percent from non-post-handover installments
-      const preHandoverInstallments = extractedData.installments.filter(i => i.type !== 'post-handover');
-      const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
-      const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-      
-      // Find downpayment (first time-based payment at month 0 or on booking)
+      // Find downpayment (month 0 or "On Booking")
       const downpayment = extractedData.installments.find(
         i => i.type === 'time' && i.triggerValue === 0
       );
       const downpaymentPercent = downpayment?.paymentPercent || 0;
       
-      // Additional payments exclude downpayment and handover
+      // Categorize installments by pre/post handover
+      const preHandoverInstallments = extractedData.installments.filter(i => 
+        i.type !== 'post-handover' && i.type !== 'handover'
+      );
+      const postHandoverInstallments = extractedData.installments.filter(i => 
+        i.type === 'post-handover'
+      );
+      
+      // Calculate totals
+      const preHandoverTotal = preHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+      const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+      
+      // Determine pre-handover percent from split or calculation
+      let preHandoverPercent = preHandoverTotal;
+      if (extractedData.paymentStructure.paymentSplit) {
+        const [pre] = extractedData.paymentStructure.paymentSplit.split('/').map(Number);
+        if (!isNaN(pre)) preHandoverPercent = pre;
+      }
+      
+      // Convert installments to PaymentMilestone format
+      // EXCLUDE: downpayment (month 0) and explicit handover markers
       const additionalPayments = extractedData.installments
         .filter(i => {
-          if (i.type === 'time' && i.triggerValue === 0) return false; // Exclude downpayment
-          if (i.type === 'handover') return false; // Exclude handover (calculated as balance)
+          if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
+          if (i.type === 'handover') return false; // Skip handover markers
           return true;
         })
         .map((inst, idx) => ({
-          id: inst.id || `extracted-${idx}`,
-          type: (inst.type === 'handover' ? 'time' : inst.type) as 'time' | 'construction' | 'post-handover',
+          id: inst.id || `ai-${Date.now()}-${idx}`,
+          type: inst.type === 'post-handover' ? 'time' as const : inst.type as 'time' | 'construction',
           triggerValue: inst.triggerValue,
           paymentPercent: inst.paymentPercent,
-          label: inst.label || `Installment ${idx + 1}`,
         }));
       
+      // Update inputs with proper structure
       setInputs(prev => ({
         ...prev,
         basePrice: extractedData.property?.basePrice || prev.basePrice,
         downpaymentPercent,
-        preHandoverPercent: Math.round(preHandoverTotal),
+        preHandoverPercent,
         additionalPayments,
+        hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0,
+        postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
         handoverQuarter: extractedData.paymentStructure.handoverQuarter || prev.handoverQuarter,
         handoverYear: extractedData.paymentStructure.handoverYear || prev.handoverYear,
-        hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover,
-        postHandoverPercent: extractedData.paymentStructure.postHandoverPercent || 
-          postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0),
       }));
     }
     

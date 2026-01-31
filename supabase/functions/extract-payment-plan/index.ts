@@ -63,21 +63,34 @@ MULTI-PAGE HANDLING:
 - Combine information from all pages into a single coherent output
 - If data appears on multiple pages, prefer the most detailed version
 
-SPLIT DETECTION:
+SPLIT DETECTION AND CALCULATION:
 - Look for explicit patterns: "40/60", "50:50", "30-70", "During Construction/On Handover"
-- Calculate from downpayment + installments if not explicitly stated
+- If no explicit split, CALCULATE from the data:
+  - Pre-handover total = booking + all installments BEFORE handover
+  - Post-handover total = all installments AFTER handover
+  - The split is: preHandoverTotal / postHandoverTotal (e.g., "30/70")
 - Common Dubai splits: 20/80, 30/70, 40/60, 50/50, 60/40, 80/20
 
-POST-HANDOVER DETECTION:
+POST-HANDOVER DETECTION - CRITICAL:
 - Keywords: "post-handover", "after completion", "after delivery", "post-possession", "post completion"
-- Payment schedules extending beyond handover date
-- Multiple years of payments after key handover (e.g., "3 years post-handover")
+- Set hasPostHandover = TRUE if ANY payments are scheduled AFTER handover/completion date
+- Mark ALL payments after handover as type "post-handover"
+- Calculate postHandoverPercent = sum of all post-handover installment percentages
+- If document shows installments continuing for years after handover (e.g., "3 years post-handover"), this IS a post-handover plan
+
+INSTALLMENT CATEGORIZATION:
+- type "time" + triggerValue 0 = On Booking / Downpayment
+- type "time" + triggerValue > 0 = Monthly installments during construction
+- type "construction" = Milestone-based payments (e.g., "30% complete")
+- type "handover" = Payment due ON handover date (use triggerValue 0)
+- type "post-handover" = ANY payment AFTER handover (use triggerValue = months AFTER handover)
 
 IMPORTANT RULES:
 - All percentages MUST add up to exactly 100%
 - First payment is typically "On Booking" or "Down Payment" at Month 0
 - If you see "X% monthly for Y months", expand to individual monthly payments
-- Handover payment is usually the largest single payment (often 40-60%)
+- Handover payment is usually the largest single payment (often 40-60%) UNLESS it's a post-handover plan
+- In post-handover plans, handover payment may be 0% with remaining balance spread across post-handover installments
 - Confidence score: 90+ for clear text, 70-89 for partially visible, below 70 for inferred data
 
 UNIT TYPE MAPPING:
