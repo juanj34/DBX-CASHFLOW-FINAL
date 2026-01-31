@@ -726,7 +726,7 @@ const OffPlanVsSecondary = () => {
           <YearByYearWealthTable
             offPlanProjections={offPlanCalcs.yearlyProjections}
             secondaryProjections={secondaryCalcs.yearlyProjections}
-            offPlanCapitalInvested={comparisonMetrics.offPlanCapitalDay1}
+            offPlanCapitalInvested={offPlanTotalCapitalAtHandover}
             secondaryCapitalInvested={secondaryCalcs.totalCapitalDay1}
             handoverYearIndex={handoverYearIndex}
             rentalMode={rentalMode}
