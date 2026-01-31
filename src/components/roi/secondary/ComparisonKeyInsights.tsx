@@ -12,14 +12,17 @@ interface ComparisonKeyInsightsProps {
   rate: number;
   language: 'en' | 'es';
   appreciationDuringConstruction: number;
-  // Props for Monthly Cashflow card
-  secondaryMonthlyCashflow: number;
   // Property values at Year 10
   offPlanPropertyValue10Y: number;
   secondaryPropertyValue10Y: number;
   // Total Assets at Year 10 (Value + Cumulative Rent - matches table exactly)
   offPlanTotalAssets10Y: number;
   secondaryTotalAssets10Y: number;
+  // Year 5 monthly rent for both (meaningful comparison after handover)
+  offPlanMonthlyRent5Y: number;
+  secondaryMonthlyRent5Y: number;
+  // Total rent Secondary earns during construction period
+  secondaryRentDuringConstruction: number;
 }
 
 export const ComparisonKeyInsights = ({
@@ -30,11 +33,13 @@ export const ComparisonKeyInsights = ({
   rate,
   language,
   appreciationDuringConstruction,
-  secondaryMonthlyCashflow,
   offPlanPropertyValue10Y,
   secondaryPropertyValue10Y,
   offPlanTotalAssets10Y,
   secondaryTotalAssets10Y,
+  offPlanMonthlyRent5Y,
+  secondaryMonthlyRent5Y,
+  secondaryRentDuringConstruction,
 }: ComparisonKeyInsightsProps) => {
   // Off-plan multiplier: use total capital at handover (realistic cash deployed)
   const offPlanTotalCapital = metrics.offPlanTotalCapitalAtHandover || metrics.offPlanCapitalDay1;
@@ -78,33 +83,31 @@ export const ComparisonKeyInsights = ({
     totalWealthSubtitle: 'Valor + Renta 10 años',
     moneyMultiplier: 'Multiplicador de Valor',
     moneyMultiplierSubtitle: 'Crecimiento del Inmueble (10 años)',
-    monthlyCashflow: 'Cashflow Mensual',
-    monthlyCashflowSubtitle: 'Durante construcción',
-    constructionBonus: 'Bonus Construcción',
-    constructionDescription: 'Apreciación "gratis" durante obra',
+    monthlyRent5Y: 'Renta Mensual (Año 5)',
+    monthlyRent5YSubtitle: 'Ingreso a madurez',
+    constructionTradeoff: 'Período Construcción',
+    constructionTradeoffSubtitle: 'Qué ganas mientras esperas',
     noData: 'N/A',
-    freeEquity: '¡Equity gratis!',
     offPlan: 'Off-Plan',
     secondary: 'Secundaria',
-    positive: 'Positivo',
-    negative: 'Negativo',
     propertyValue: 'Valor propiedad',
+    valueGrowth: '📈 Valor',
+    rentEarned: '💰 Renta',
   } : {
     totalWealth: 'Total Wealth',
     totalWealthSubtitle: 'Value + Rent at 10Y',
     moneyMultiplier: 'Value Multiplier',
     moneyMultiplierSubtitle: 'Property Value Growth (10Y)',
-    monthlyCashflow: 'Monthly Cashflow',
-    monthlyCashflowSubtitle: 'During construction',
-    constructionBonus: 'Construction Bonus',
-    constructionDescription: '"Free" appreciation during build',
+    monthlyRent5Y: 'Monthly Rent (Year 5)',
+    monthlyRent5YSubtitle: 'Rental at maturity',
+    constructionTradeoff: 'Construction Period',
+    constructionTradeoffSubtitle: 'What you gain while waiting',
     noData: 'N/A',
-    freeEquity: 'Free equity!',
     offPlan: 'Off-Plan',
     secondary: 'Secondary',
-    positive: 'Positive',
-    negative: 'Negative',
     propertyValue: 'Property value',
+    valueGrowth: '📈 Value',
+    rentEarned: '💰 Rent',
   };
 
   const cards = [
@@ -116,8 +119,6 @@ export const ComparisonKeyInsights = ({
       showComparison: true,
       offPlanValue: formatValue(offPlanTotalWealth10),
       secondaryValue: formatValue(secondaryTotalWealth10),
-      badge: null,
-      badgeColor: null,
       winner: offPlanTotalWealth10 > secondaryTotalWealth10 ? 'offplan' : 'secondary',
     },
     {
@@ -130,30 +131,29 @@ export const ComparisonKeyInsights = ({
       offPlanSubValue: `→ ${formatPropertyValue(offPlanPropertyValue10Y)}`,
       secondaryValue: `${secondaryMultiplier.toFixed(1)}x`,
       secondarySubValue: `→ ${formatPropertyValue(secondaryPropertyValue10Y)}`,
-      badge: null,
-      badgeColor: null,
       winner: offPlanMultiplier > secondaryMultiplier ? 'offplan' : 'secondary',
     },
     {
-      key: 'cashflow',
-      title: t.monthlyCashflow,
-      subtitle: t.monthlyCashflowSubtitle,
+      key: 'rent5y',
+      title: t.monthlyRent5Y,
+      subtitle: t.monthlyRent5YSubtitle,
       icon: Coins,
       showComparison: true,
-      offPlanValue: 'AED 0',
-      secondaryValue: formatValue(secondaryMonthlyCashflow),
-      badge: secondaryMonthlyCashflow > 0 ? t.positive : t.negative,
-      badgeColor: secondaryMonthlyCashflow > 0 ? 'emerald' : 'amber',
-      winner: 'secondary', // Secondary always wins during construction
+      offPlanValue: formatValue(offPlanMonthlyRent5Y),
+      secondaryValue: formatValue(secondaryMonthlyRent5Y),
+      winner: offPlanMonthlyRent5Y > secondaryMonthlyRent5Y ? 'offplan' : 'secondary',
     },
     {
-      key: 'bonus',
-      title: t.constructionBonus,
+      key: 'tradeoff',
+      title: t.constructionTradeoff,
+      subtitle: t.constructionTradeoffSubtitle,
       icon: Building2,
-      showComparison: false,
-      singleValue: `+${formatValue(appreciationDuringConstruction)}`,
-      description: t.constructionDescription,
-      isPositive: appreciationDuringConstruction > 0,
+      showComparison: true,
+      offPlanValue: `+${formatValue(appreciationDuringConstruction)}`,
+      offPlanSubValue: t.valueGrowth,
+      secondaryValue: `+${formatValue(secondaryRentDuringConstruction)}`,
+      secondarySubValue: t.rentEarned,
+      winner: appreciationDuringConstruction > secondaryRentDuringConstruction ? 'offplan' : 'secondary',
     },
   ];
 
@@ -170,20 +170,8 @@ export const ComparisonKeyInsights = ({
           >
             {/* Header */}
             <div className="flex items-center gap-2 mb-3">
-              <div className={`p-1.5 rounded-lg ${
-                card.isPositive !== undefined
-                  ? card.isPositive 
-                    ? 'bg-emerald-500/10' 
-                    : 'bg-theme-border/50'
-                  : 'bg-theme-accent/10'
-              }`}>
-                <Icon className={`w-4 h-4 ${
-                  card.isPositive !== undefined
-                    ? card.isPositive 
-                      ? 'text-emerald-500' 
-                      : 'text-theme-text-muted'
-                    : 'text-theme-accent'
-                }`} />
+              <div className="p-1.5 rounded-lg bg-theme-accent/10">
+                <Icon className="w-4 h-4 text-theme-accent" />
               </div>
               <div>
                 <span className="text-sm font-medium text-theme-text block leading-tight">
@@ -198,7 +186,7 @@ export const ComparisonKeyInsights = ({
             </div>
 
             {/* Content */}
-            {card.showComparison ? (
+            {card.showComparison && (
               <div className="space-y-2">
                 {/* Off-Plan Row */}
                 <div className="flex items-center justify-between">
@@ -255,37 +243,6 @@ export const ComparisonKeyInsights = ({
                     )}
                   </div>
                 </div>
-                
-                {/* Badge */}
-                {card.badge && (
-                  <div className="pt-1">
-                    <Badge className={`text-[10px] w-full justify-center ${
-                      card.badgeColor === 'emerald'
-                        ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'
-                        : card.badgeColor === 'cyan'
-                        ? 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30'
-                        : 'bg-amber-500/20 text-amber-500 border-amber-500/30'
-                    }`}>
-                      ✨ {card.badge}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center">
-                <p className={`text-2xl font-bold ${
-                  card.isPositive ? 'text-emerald-500' : 'text-theme-text'
-                }`}>
-                  {card.singleValue}
-                </p>
-                <p className="text-[10px] text-theme-text-muted mt-1">
-                  {card.description}
-                </p>
-                {card.isPositive && card.key === 'bonus' && (
-                  <Badge className="mt-2 bg-emerald-500/20 text-emerald-500 text-[10px]">
-                    {t.freeEquity}
-                  </Badge>
-                )}
               </div>
             )}
           </Card>
