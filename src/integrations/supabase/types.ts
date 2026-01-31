@@ -89,6 +89,13 @@ export type Database = {
             referencedRelation: "cashflow_quotes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cashflow_images_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cashflow_quotes: {
@@ -956,6 +963,13 @@ export type Database = {
             referencedRelation: "cashflow_quotes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quote_versions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       quote_views: {
@@ -1013,6 +1027,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_views_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1105,6 +1126,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secondary_comparisons_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1316,7 +1344,102 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cashflow_quotes_public: {
+        Row: {
+          archived_at: string | null
+          broker_id: string | null
+          client_id: string | null
+          created_at: string | null
+          developer: string | null
+          first_viewed_at: string | null
+          id: string | null
+          inputs: Json | null
+          is_archived: boolean | null
+          last_viewed_at: string | null
+          negotiation_started_at: string | null
+          presented_at: string | null
+          project_name: string | null
+          share_token: string | null
+          sold_at: string | null
+          status: string | null
+          status_changed_at: string | null
+          title: string | null
+          unit: string | null
+          unit_size_m2: number | null
+          unit_size_sqf: number | null
+          unit_type: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          broker_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          developer?: string | null
+          first_viewed_at?: string | null
+          id?: string | null
+          inputs?: Json | null
+          is_archived?: boolean | null
+          last_viewed_at?: string | null
+          negotiation_started_at?: string | null
+          presented_at?: string | null
+          project_name?: string | null
+          share_token?: string | null
+          sold_at?: string | null
+          status?: string | null
+          status_changed_at?: string | null
+          title?: string | null
+          unit?: string | null
+          unit_size_m2?: number | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          archived_at?: string | null
+          broker_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          developer?: string | null
+          first_viewed_at?: string | null
+          id?: string | null
+          inputs?: Json | null
+          is_archived?: boolean | null
+          last_viewed_at?: string | null
+          negotiation_started_at?: string | null
+          presented_at?: string | null
+          project_name?: string | null
+          share_token?: string | null
+          sold_at?: string | null
+          status?: string | null
+          status_changed_at?: string | null
+          title?: string | null
+          unit?: string | null
+          unit_size_m2?: number | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflow_quotes_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashflow_quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {

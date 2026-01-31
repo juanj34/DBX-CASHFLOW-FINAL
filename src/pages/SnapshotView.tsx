@@ -96,16 +96,27 @@ const SnapshotViewContent = () => {
         return;
       }
 
+      // Use public view for shared quotes to protect sensitive client data
       const { data, error: fetchError } = await supabase
-        .from('cashflow_quotes')
+        .from('cashflow_quotes_public')
         .select(`
-          id, broker_id, share_token, client_name, client_country, client_email,
+          id, broker_id, share_token,
           project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
-          inputs, created_at, view_count,
-          profiles:broker_id (full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code)
+          inputs, created_at, view_count
         `)
         .eq('share_token', shareToken)
         .single();
+      
+      // Fetch broker profile separately (allowed by RLS)
+      let brokerProfileData = null;
+      if (data?.broker_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code')
+          .eq('id', data.broker_id)
+          .single();
+        brokerProfileData = profileData;
+      }
 
       if (fetchError || !data) {
         setError('Quote not found or has been deleted');
@@ -135,16 +146,17 @@ const SnapshotViewContent = () => {
       
       const savedClients = savedInputs._clients;
       const savedClientInfo = savedInputs._clientInfo;
+      // For public views, client info comes from inputs._clients (embedded in JSON)
+      // The sensitive fields (client_name, client_email, client_country) are no longer 
+      // exposed through the public view
       const clients = savedClients && savedClients.length > 0
         ? savedClients
-        : data.client_name 
-          ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
-          : [];
+        : [];
           
       setClientInfo({
         developer: savedClientInfo?.developer || data.developer || '',
         clients,
-        brokerName: savedClientInfo?.brokerName || (data.profiles as any)?.full_name || '',
+        brokerName: savedClientInfo?.brokerName || brokerProfileData?.full_name || '',
         projectName: savedClientInfo?.projectName || data.project_name || '',
         unit: savedClientInfo?.unit || data.unit || '',
         unitSizeSqf: savedClientInfo?.unitSizeSqf || data.unit_size_sqf || 0,
@@ -158,14 +170,13 @@ const SnapshotViewContent = () => {
         setMortgageInputs(savedInputs._mortgageInputs);
       }
       
-      // Set broker profile with contact info
-      const profile = data.profiles as any;
+      // Set broker profile with contact info from separately fetched data
       setBrokerProfile({
-        fullName: profile?.full_name || null,
-        avatarUrl: profile?.avatar_url || null,
-        businessEmail: profile?.business_email || null,
-        whatsappNumber: profile?.whatsapp_number || null,
-        whatsappCountryCode: profile?.whatsapp_country_code || null,
+        fullName: brokerProfileData?.full_name || null,
+        avatarUrl: brokerProfileData?.avatar_url || null,
+        businessEmail: brokerProfileData?.business_email || null,
+        whatsappNumber: brokerProfileData?.whatsapp_number || null,
+        whatsappCountryCode: brokerProfileData?.whatsapp_country_code || null,
       });
       
       // Set quote info

@@ -71,18 +71,29 @@ const CashflowViewContent = () => {
         return;
       }
 
+      // Use public view for shared quotes to protect sensitive client data
       const { data, error: fetchError } = await supabase
-        .from('cashflow_quotes')
+        .from('cashflow_quotes_public')
         .select(`
-          id, broker_id, share_token, client_name, client_country, client_email,
+          id, broker_id, share_token,
           project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
           inputs, title, created_at, updated_at, status, status_changed_at,
           presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
-          is_archived, archived_at, last_viewed_at,
-          profiles:broker_id (full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code)
+          is_archived, archived_at, last_viewed_at
         `)
         .eq('share_token', shareToken)
         .single();
+      
+      // Fetch broker profile separately (allowed by RLS)
+      let brokerProfileData = null;
+      if (data?.broker_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code')
+          .eq('id', data.broker_id)
+          .single();
+        brokerProfileData = profileData;
+      }
 
       if (fetchError || !data) {
         setError(t('quoteDeletedOrNotFound'));
@@ -119,20 +130,19 @@ const CashflowViewContent = () => {
         unitSizeSqf: data.unit_size_sqf || savedInputs.unitSizeSqf || 0,
       } as OIInputs);
       
-      // Extract clients from _clients (new format) or fallback to single client (legacy)
+      // Extract clients from _clients (new format) - sensitive client_name/email/country 
+      // are no longer exposed in public view
       const savedClients = savedInputs._clients;
       const savedClientInfo = savedInputs._clientInfo;
       
       const clients = savedClients && savedClients.length > 0
         ? savedClients
-        : data.client_name 
-          ? [{ id: '1', name: data.client_name, country: data.client_country || '' }]
-          : [];
+        : [];
           
       setClientInfo({
         developer: savedClientInfo?.developer || data.developer || '',
         clients,
-        brokerName: savedClientInfo?.brokerName || (data.profiles as any)?.full_name || '',
+        brokerName: savedClientInfo?.brokerName || brokerProfileData?.full_name || '',
         projectName: savedClientInfo?.projectName || data.project_name || '',
         unit: savedClientInfo?.unit || data.unit || '',
         unitSizeSqf: savedClientInfo?.unitSizeSqf || data.unit_size_sqf || 0,
@@ -148,12 +158,13 @@ const CashflowViewContent = () => {
         setMortgageInputs(savedMortgageInputs);
       }
       
+      // Set advisor profile from separately fetched broker data
       setAdvisorProfile({
-        full_name: (data.profiles as any)?.full_name || null,
-        avatar_url: (data.profiles as any)?.avatar_url || null,
-        business_email: (data.profiles as any)?.business_email || null,
-        whatsapp_number: (data.profiles as any)?.whatsapp_number || null,
-        whatsapp_country_code: (data.profiles as any)?.whatsapp_country_code || '+971',
+        full_name: brokerProfileData?.full_name || null,
+        avatar_url: brokerProfileData?.avatar_url || null,
+        business_email: brokerProfileData?.business_email || null,
+        whatsapp_number: brokerProfileData?.whatsapp_number || null,
+        whatsapp_country_code: brokerProfileData?.whatsapp_country_code || '+971',
       });
       
       // Fetch quote images
