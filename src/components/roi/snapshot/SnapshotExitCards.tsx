@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrendingUp, Calendar, Trophy, Building2 } from 'lucide-react';
+import { TrendingUp, Calendar, Trophy, Building2, Rocket, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Currency, formatCurrency } from '../currencyUtils';
 import { OIInputs } from '../useOICalculations';
@@ -42,6 +42,35 @@ const getRoeBadge = (annualizedROE: number): { label: string; className: string 
   return { label: 'Low', className: 'bg-red-500/20 text-red-400 border-red-500/30' };
 };
 
+// Get phase label for post-handover exits
+const getPostHandoverPhase = (monthsAfterHandover: number, growthPeriodYears: number): { 
+  icon: React.ReactNode; 
+  label: string; 
+  color: string;
+} => {
+  const yearsAfter = monthsAfterHandover / 12;
+  if (yearsAfter <= growthPeriodYears) {
+    return { 
+      icon: <Rocket className="w-3.5 h-3.5" />, 
+      label: 'Growth', 
+      color: 'text-green-400'
+    };
+  }
+  return { 
+    icon: <Shield className="w-3.5 h-3.5" />, 
+    label: 'Mature', 
+    color: 'text-blue-400'
+  };
+};
+
+// Format post-handover offset
+const formatPostHandoverOffset = (monthsAfterHandover: number): string => {
+  if (monthsAfterHandover >= 12 && monthsAfterHandover % 12 === 0) {
+    return `+${monthsAfterHandover / 12}yr`;
+  }
+  return `+${monthsAfterHandover}mo`;
+};
+
 export const SnapshotExitCards = ({
   inputs,
   exitScenarios,
@@ -57,14 +86,20 @@ export const SnapshotExitCards = ({
   const scenarios = exitScenarios.map(exitMonths => {
     const result = calculateExitScenario(exitMonths, basePrice, totalMonths, inputs, totalEntryCosts);
     const constructionPercent = monthToConstruction(exitMonths, totalMonths);
-    const isHandover = exitMonths >= totalMonths;
+    const isPostHandover = exitMonths > totalMonths;
+    const monthsAfterHandover = isPostHandover ? exitMonths - totalMonths : 0;
     const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear);
+    const phase = isPostHandover 
+      ? getPostHandoverPhase(monthsAfterHandover, inputs.growthPeriodYears || 5)
+      : null;
     
     return {
       exitMonths,
       ...result,
       constructionPercent,
-      isHandover,
+      isPostHandover,
+      monthsAfterHandover,
+      phase,
       dateStr,
     };
   });
@@ -142,15 +177,28 @@ export const SnapshotExitCards = ({
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-theme-text-muted" />
                       <span className="text-base font-semibold text-theme-text">
-                        {scenario.isHandover ? 'Handover' : scenario.dateStr}
+                        {scenario.isPostHandover 
+                          ? formatPostHandoverOffset(scenario.monthsAfterHandover)
+                          : scenario.dateStr
+                        }
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-theme-text-muted">
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span>{Math.round(scenario.constructionPercent)}% built</span>
-                      <span className="text-theme-border">•</span>
-                      <span>{formatMonths(scenario.exitMonths)}</span>
-                    </div>
+                    {/* Show phase for post-handover, construction % for pre-handover */}
+                    {scenario.isPostHandover && scenario.phase ? (
+                      <div className={cn("flex items-center gap-2 text-xs", scenario.phase.color)}>
+                        {scenario.phase.icon}
+                        <span>{scenario.phase.label} Phase</span>
+                        <span className="text-theme-border">•</span>
+                        <span>{formatMonths(scenario.exitMonths)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-theme-text-muted">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>{Math.round(scenario.constructionPercent)}% built</span>
+                        <span className="text-theme-border">•</span>
+                        <span>{formatMonths(scenario.exitMonths)}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Property Value */}

@@ -105,6 +105,31 @@ const getConstructionMilestone = (progressPercent: number): { icon: React.ReactN
   return { icon: <Rocket className="w-3 h-3" />, label: 'Handover Ready', color: 'text-green-400 bg-green-400/10' };
 };
 
+// Get phase label for post-handover exits
+const getPostHandoverPhase = (monthsAfterHandover: number, growthPeriodYears: number): { icon: React.ReactNode; label: string; color: string } => {
+  const yearsAfter = monthsAfterHandover / 12;
+  if (yearsAfter <= growthPeriodYears) {
+    return { 
+      icon: <Rocket className="w-3 h-3" />, 
+      label: 'Growth Phase', 
+      color: 'text-green-400 bg-green-400/10' 
+    };
+  }
+  return { 
+    icon: <Shield className="w-3 h-3" />, 
+    label: 'Mature Phase', 
+    color: 'text-blue-400 bg-blue-400/10' 
+  };
+};
+
+// Format post-handover offset nicely
+const formatPostHandoverOffset = (monthsAfterHandover: number): string => {
+  if (monthsAfterHandover >= 12 && monthsAfterHandover % 12 === 0) {
+    return `+${monthsAfterHandover / 12}yr`;
+  }
+  return `+${monthsAfterHandover}mo`;
+};
+
 export const ExitScenariosCards = ({ 
   inputs, 
   currency, 
@@ -136,10 +161,13 @@ export const ExitScenariosCards = ({
     });
   };
 
+  // Max exit month includes 5 years post-handover
+  const maxExitMonth = totalMonths + 60;
+
   const handleAddExit = () => {
     if (exitScenarios.length >= 5 || !setExitScenarios || readOnly) return;
     const lastExit = exitScenarios[exitScenarios.length - 1] || Math.round(totalMonths * 0.5);
-    const newExit = Math.min(lastExit + 6, totalMonths - 3);
+    const newExit = Math.min(lastExit + 6, maxExitMonth - 3);
     setExitScenarios([...exitScenarios, newExit]);
   };
 
@@ -206,12 +234,23 @@ export const ExitScenariosCards = ({
           const displayReturn = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
           const displayAnnualizedReturn = scenario.exitCosts > 0 ? scenario.netAnnualizedROE : scenario.annualizedROE;
           const displayProfit = scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit;
+          
+          // Determine if post-handover and calculate phase
+          const exitMonth = exitScenarios[index];
+          const isPostHandover = exitMonth > totalMonths;
+          const monthsAfterHandover = isPostHandover ? exitMonth - totalMonths : 0;
+          
           // Use S-curve to calculate actual construction progress (not linear timeline)
-          const constructionProgress = monthToConstruction(exitScenarios[index], totalMonths);
+          const constructionProgress = monthToConstruction(exitMonth, totalMonths);
           const progressPercent = Math.round(constructionProgress);
           const returnBadge = getReturnBadgeStyle(displayReturn);
-          const milestone = getConstructionMilestone(progressPercent);
-          const dateInfo = monthsToDate(exitScenarios[index], inputs.bookingMonth, inputs.bookingYear, language);
+          
+          // Get phase or milestone based on timing
+          const phaseOrMilestone = isPostHandover 
+            ? getPostHandoverPhase(monthsAfterHandover, inputs.growthPeriodYears || 5)
+            : getConstructionMilestone(progressPercent);
+          
+          const dateInfo = monthsToDate(exitMonth, inputs.bookingMonth, inputs.bookingYear, language);
           const isHighlighted = highlightedIndex === index;
           const isExpanded = expandedCards.has(index);
           
@@ -222,21 +261,29 @@ export const ExitScenariosCards = ({
                 "rounded-xl border transition-all bg-[#0d1117] overflow-hidden",
                 isHighlighted 
                   ? "border-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.3)] scale-[1.02]" 
-                  : "border-[#2a3142] hover:border-[#CCFF00]/30"
+                  : isPostHandover
+                    ? "border-green-500/30 hover:border-green-500/50"
+                    : "border-[#2a3142] hover:border-[#CCFF00]/30"
               )}
               onMouseEnter={() => onCardHover?.(index)}
               onMouseLeave={() => onCardHover?.(null)}
             >
-              {/* Card Header - Redesigned with milestone and date primary */}
+              {/* Card Header - Redesigned with milestone/phase and date primary */}
               <div className="p-3 bg-[#1a1f2e] border-b border-[#2a3142]">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-[#CCFF00]">{t('exitNumber')}{index + 1}</span>
-                    {/* Construction Milestone Tag */}
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${milestone.color}`}>
-                      {milestone.icon}
-                      {milestone.label}
+                    {/* Phase/Milestone Tag */}
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${phaseOrMilestone.color}`}>
+                      {phaseOrMilestone.icon}
+                      {phaseOrMilestone.label}
                     </span>
+                    {/* Post-handover offset badge */}
+                    {isPostHandover && (
+                      <span className="text-[10px] font-mono text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                        {formatPostHandoverOffset(monthsAfterHandover)}
+                      </span>
+                    )}
                   </div>
                   {!readOnly && (
                     <div className="flex items-center gap-1">
@@ -269,30 +316,42 @@ export const ExitScenariosCards = ({
                     <span className="text-sm font-semibold text-white">{dateInfo.date}</span>
                     <span className="text-xs text-gray-500 font-mono">· {dateInfo.monthsLabel}</span>
                   </div>
-                  <span className="text-[10px] text-gray-500 bg-[#0d1117] px-1.5 py-0.5 rounded">
-                    {progressPercent}% built
-                  </span>
+                  {isPostHandover ? (
+                    <span className="text-[10px] text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                      Post-Handover
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-gray-500 bg-[#0d1117] px-1.5 py-0.5 rounded">
+                      {progressPercent}% built
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Edit Slider */}
+              {/* Edit Slider - Extended for post-handover */}
               {!readOnly && editingIndex === index && (
                 <div className="p-3 bg-[#1a1f2e]/50 border-b border-[#CCFF00]/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-gray-400">{t('exitAfter')}</span>
-                    <span className="text-sm font-bold text-[#CCFF00]">{exitScenarios[index]} {t('months')}</span>
+                    <span className="text-sm font-bold text-[#CCFF00]">
+                      {isPostHandover 
+                        ? formatPostHandoverOffset(monthsAfterHandover)
+                        : `${exitMonth} ${t('months')}`
+                      }
+                    </span>
                   </div>
                   <Slider
-                    value={[exitScenarios[index]]}
+                    value={[exitMonth]}
                     onValueChange={([v]) => handleUpdateExitMonths(index, v)}
                     min={6}
-                    max={totalMonths - 1}
+                    max={maxExitMonth}
                     step={1}
                     className="roi-slider-lime"
                   />
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
                     <span>6{t('mo')}</span>
-                    <span>{totalMonths - 1}{t('mo')}</span>
+                    <span className="text-[#CCFF00]">Handover ({totalMonths}{t('mo')})</span>
+                    <span className="text-green-400">+5yr</span>
                   </div>
                 </div>
               )}

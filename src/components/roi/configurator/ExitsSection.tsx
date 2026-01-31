@@ -75,14 +75,18 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     }
   };
 
+  // Maximum exit is 5 years post-handover
+  const maxExitMonth = totalMonths + 60;
+
   const handleAddExit = () => {
     let newMonth = Math.round(totalMonths * 0.5);
     
-    while (exits.some(e => e.monthsFromBooking === newMonth) && newMonth < totalMonths - 1) {
+    // Find an available slot, now allowing post-handover
+    while (exits.some(e => e.monthsFromBooking === newMonth) && newMonth < maxExitMonth) {
       newMonth++;
     }
     
-    if (newMonth > 0 && newMonth < totalMonths) {
+    if (newMonth > 0 && newMonth <= maxExitMonth) {
       const newExit: ExitScenario = {
         id: `exit-${Date.now()}`,
         monthsFromBooking: newMonth,
@@ -94,7 +98,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   };
 
   const handleAddExitAtMonth = (month: number) => {
-    if (month > 0 && month < totalMonths && !exits.some(e => e.monthsFromBooking === month)) {
+    // Allow exits up to 5 years post-handover
+    if (month > 0 && month <= maxExitMonth && !exits.some(e => e.monthsFromBooking === month)) {
       const newExit: ExitScenario = {
         id: `exit-${Date.now()}`,
         monthsFromBooking: month,
@@ -112,7 +117,8 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   };
 
   const handleUpdateExitMonth = (exitId: string, newMonth: number) => {
-    if (newMonth > 0 && newMonth < totalMonths) {
+    // Allow updates up to 5 years post-handover
+    if (newMonth > 0 && newMonth <= maxExitMonth) {
       const exists = exits.some((e) => e.id !== exitId && e.monthsFromBooking === newMonth);
       if (!exists) {
         const newExits = exits.map((e) =>
@@ -122,6 +128,28 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
         syncExitsToInputs(newExits);
       }
     }
+  };
+
+  // Get phase label for post-handover exits
+  const getPhaseLabel = (month: number): { label: string; color: string } => {
+    if (month <= totalMonths) {
+      return { label: 'Construction', color: 'text-orange-400' };
+    }
+    const monthsAfterHandover = month - totalMonths;
+    const growthPeriodMonths = (inputs.growthPeriodYears || 5) * 12;
+    if (monthsAfterHandover <= growthPeriodMonths) {
+      return { label: 'Growth', color: 'text-green-400' };
+    }
+    return { label: 'Mature', color: 'text-blue-400' };
+  };
+
+  // Format post-handover offset
+  const formatPostHandoverOffset = (month: number): string => {
+    const offset = month - totalMonths;
+    if (offset >= 12 && offset % 12 === 0) {
+      return `+${offset / 12}yr`;
+    }
+    return `+${offset}mo`;
   };
 
   const getExitDate = (monthsFromBooking: number): string => {
@@ -227,6 +255,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               </div>
             </div>
             <div className="flex flex-wrap gap-1">
+              {/* Pre-handover shortcuts */}
               {[18, 24, 30].map(month => (
                 <Button
                   key={month}
@@ -257,12 +286,34 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleAddExitAtMonth(totalMonths - 1)}
-                disabled={exits.some(e => e.monthsFromBooking === totalMonths - 1)}
+                onClick={() => handleAddExitAtMonth(totalMonths)}
+                disabled={exits.some(e => e.monthsFromBooking === totalMonths)}
                 className="h-6 text-[10px] px-2 border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
               >
                 Handover
               </Button>
+              
+              {/* Divider */}
+              <div className="w-px h-6 bg-theme-border/50" />
+              
+              {/* Post-handover shortcuts */}
+              {[6, 12, 24, 36].map(offset => {
+                const month = totalMonths + offset;
+                const label = offset >= 12 ? `+${offset / 12}yr` : `+${offset}mo`;
+                return (
+                  <Button
+                    key={`post-${offset}`}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddExitAtMonth(month)}
+                    disabled={exits.some(e => e.monthsFromBooking === month)}
+                    className="h-6 text-[10px] px-2 border-green-500/30 text-green-400/70 hover:text-green-400 hover:border-green-500/50 disabled:opacity-30"
+                  >
+                    {label}
+                  </Button>
+                );
+              })}
+              
               <Button
                 size="sm"
                 onClick={handleAddExit}
@@ -278,17 +329,36 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
             {exits.map((exit, index) => {
               const details = getExitDetails(exit.monthsFromBooking);
               const displayROE = getDisplayROE(details);
+              const isPostHandover = exit.monthsFromBooking > totalMonths;
+              const phase = getPhaseLabel(exit.monthsFromBooking);
               
               return (
                 <div
                   key={exit.id}
-                  className={`p-3 rounded-lg border bg-theme-card ${!details.isThresholdMet ? 'border-amber-500/50' : 'border-theme-border'}`}
+                  className={`p-3 rounded-lg border bg-theme-card ${
+                    !details.isThresholdMet 
+                      ? 'border-amber-500/50' 
+                      : isPostHandover 
+                        ? 'border-green-500/30' 
+                        : 'border-theme-border'
+                  }`}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-theme-accent">Exit {index + 1}</span>
-                      <span className="text-[10px] text-theme-text-muted">{getExitDate(exit.monthsFromBooking)}</span>
+                      {isPostHandover ? (
+                        <>
+                          <span className={`text-[10px] font-medium ${phase.color}`}>
+                            {formatPostHandoverOffset(exit.monthsFromBooking)}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded ${phase.color} bg-current/10`}>
+                            {phase.label}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-theme-text-muted">{getExitDate(exit.monthsFromBooking)}</span>
+                      )}
                     </div>
                     <Button 
                       variant="ghost" 
@@ -300,20 +370,33 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                     </Button>
                   </div>
 
-                  {/* Month Slider - Compact */}
+                  {/* Month Slider - Extended for post-handover */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] text-theme-text-muted">Month</span>
-                      <span className="text-xs font-mono text-theme-text">{exit.monthsFromBooking}mo</span>
+                      <span className="text-[10px] text-theme-text-muted">
+                        {isPostHandover ? 'Post-Handover' : 'Month'}
+                      </span>
+                      <span className="text-xs font-mono text-theme-text">
+                        {isPostHandover 
+                          ? formatPostHandoverOffset(exit.monthsFromBooking)
+                          : `${exit.monthsFromBooking}mo`
+                        }
+                      </span>
                     </div>
                     <Slider
                       value={[exit.monthsFromBooking]}
                       onValueChange={([v]) => handleUpdateExitMonth(exit.id, v)}
                       min={6}
-                      max={totalMonths - 1}
+                      max={maxExitMonth}
                       step={1}
                       className="w-full"
                     />
+                    {/* Handover marker indicator */}
+                    <div className="flex justify-between text-[8px] text-theme-text-muted mt-0.5">
+                      <span>6mo</span>
+                      <span className="text-theme-accent">Handover ({totalMonths}mo)</span>
+                      <span className="text-green-400">+5yr</span>
+                    </div>
                   </div>
 
                   {/* Metrics - Compact Grid */}
