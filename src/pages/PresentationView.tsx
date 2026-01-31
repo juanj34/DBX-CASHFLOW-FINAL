@@ -130,12 +130,12 @@ const PresentationView = () => {
           }
         }
 
-        // Fetch all quotes with explicit columns
+        // Fetch all quotes using public view (protects sensitive client data)
         if (quoteIds.size > 0) {
           const { data: quotesData } = await supabase
-            .from('cashflow_quotes')
+            .from('cashflow_quotes_public')
             .select(`
-              id, broker_id, share_token, client_name, client_country, client_email,
+              id, broker_id, share_token,
               project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
               inputs, title, created_at, updated_at, status, status_changed_at,
               presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
@@ -148,6 +148,10 @@ const PresentationView = () => {
             const typedQuotes = quotesData.map(q => ({
               ...q,
               inputs: q.inputs as unknown as import('@/components/roi/useOICalculations').OIInputs,
+              // These fields are no longer in public view, set to null
+              client_name: null,
+              client_country: null,
+              client_email: null,
             })) as CashflowQuote[];
             setAllQuotes(typedQuotes);
           }
