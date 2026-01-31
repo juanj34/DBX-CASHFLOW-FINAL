@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
@@ -9,6 +9,7 @@ import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
 import { CompactAllExitsCard } from './CompactAllExitsCard';
+import { CompactPostHandoverCard } from './CompactPostHandoverCard';
 import { WealthProjectionTimeline } from './WealthProjectionTimeline';
 
 interface SnapshotPrintContentProps {
@@ -65,6 +66,23 @@ export const SnapshotPrintContent = ({
     return payments.length > 12;
   }, [inputs.additionalPayments]);
 
+  // Check visibility conditions for cards
+  const showRent = inputs.rentalYieldPercent > 0;
+  const showExits = inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0;
+  const showPostHandover = inputs.hasPostHandoverPlan;
+  const showMortgage = mortgageInputs.enabled;
+
+  // Count visible cards and generate dynamic grid class
+  const visibleCardCount = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
+  const getCardGridStyle = useCallback(() => {
+    // For print, use exact column count based on visible cards
+    return { 
+      display: 'grid', 
+      gridTemplateColumns: `repeat(${visibleCardCount}, 1fr)`, 
+      gap: '16px' 
+    };
+  }, [visibleCardCount]);
+
   return (
     <div 
       className="snapshot-print-content bg-theme-bg min-h-screen"
@@ -117,10 +135,10 @@ export const SnapshotPrintContent = ({
               twoColumnMode="always"
             />
             
-            {/* Insight Cards - 4-column grid for print */}
-            <div className="grid grid-cols-4 gap-4">
+            {/* Insight Cards - dynamic grid for print */}
+            <div style={getCardGridStyle()}>
               {/* Rent Card */}
-              {inputs.rentalYieldPercent > 0 && (
+              {showRent && (
                 <CompactRentCard
                   inputs={inputs}
                   currency={currency}
@@ -142,7 +160,7 @@ export const SnapshotPrintContent = ({
               )}
               
               {/* Mortgage Card */}
-              {mortgageInputs.enabled && (
+              {showMortgage && (
                 <CompactMortgageCard
                   mortgageInputs={mortgageInputs}
                   mortgageAnalysis={mortgageAnalysis}

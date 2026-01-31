@@ -148,7 +148,7 @@ export const CompactPostHandoverCard = ({
   };
 
   return (
-    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
+    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden min-w-0">
       {/* Header */}
       <div className="p-3 border-b border-theme-border flex items-center justify-between">
         <div className="flex items-center gap-2">

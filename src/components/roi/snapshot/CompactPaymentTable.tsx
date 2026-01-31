@@ -20,8 +20,10 @@ interface CompactPaymentTableProps {
   currency: Currency;
   rate: number;
   totalMonths: number;
-  /** Control 2-column layout for journey section: 'auto' (>12 payments), 'always', or 'never'. Default: 'auto' */
+  /** Control multi-column layout for journey section: 'auto' (>12 payments), 'always', or 'never'. Default: 'auto' */
   twoColumnMode?: 'auto' | 'always' | 'never';
+  /** Number of columns to use when multi-column is enabled (2 or 3). Default: 2 */
+  columnCount?: 2 | 3;
 }
 
 const monthToDateString = (month: number, year: number, language: string): string => {
@@ -94,6 +96,7 @@ export const CompactPaymentTable = ({
   rate,
   totalMonths,
   twoColumnMode = 'auto',
+  columnCount = 2,
 }: CompactPaymentTableProps) => {
   const { language, t } = useLanguage();
   const [splitModalOpen, setSplitModalOpen] = useState(false);
@@ -236,8 +239,8 @@ export const CompactPaymentTable = ({
     (sum, p) => sum + p.paymentPercent, 0
   );
 
-  // Determine if we should use 2-column layout for journey section
-  const useTwoColumns = useMemo(() => {
+  // Determine if we should use multi-column layout for journey section
+  const useMultiColumn = useMemo(() => {
     if (twoColumnMode === 'never') return false;
     if (twoColumnMode === 'always') return true;
     // Auto: trigger when total payments > 12
@@ -245,29 +248,40 @@ export const CompactPaymentTable = ({
     return totalPayments > 12;
   }, [twoColumnMode, preHandoverPayments.length, derivedPostHandoverPayments.length]);
 
-  // Split journey payments into left/right columns for 2-column mode
-  const splitJourneyPayments = useMemo(() => {
-    if (!useTwoColumns || preHandoverPayments.length === 0) {
-      return { left: preHandoverPayments, right: [] };
-    }
-    const midpoint = Math.ceil(preHandoverPayments.length / 2);
-    return {
-      left: preHandoverPayments.slice(0, midpoint),
-      right: preHandoverPayments.slice(midpoint),
-    };
-  }, [useTwoColumns, preHandoverPayments]);
+  // Determine actual column count based on payment count
+  const actualColumnCount = useMemo(() => {
+    if (!useMultiColumn) return 1;
+    // If explicit columnCount prop is provided and valid, use it
+    if (columnCount === 3) return 3;
+    // Auto-upgrade to 3 columns for very long plans
+    const totalPayments = preHandoverPayments.length + derivedPostHandoverPayments.length;
+    if (totalPayments >= 21) return 3;
+    return 2;
+  }, [useMultiColumn, columnCount, preHandoverPayments.length, derivedPostHandoverPayments.length]);
 
-  // Split post-handover payments too if in 2-column mode
-  const splitPostHandoverPayments = useMemo(() => {
-    if (!useTwoColumns || derivedPostHandoverPayments.length === 0) {
-      return { left: derivedPostHandoverPayments, right: [] };
+  // Helper to split payments into N columns
+  const splitIntoColumns = useCallback((payments: PaymentMilestone[], numColumns: number) => {
+    if (numColumns <= 1 || payments.length === 0) {
+      return [payments];
     }
-    const midpoint = Math.ceil(derivedPostHandoverPayments.length / 2);
-    return {
-      left: derivedPostHandoverPayments.slice(0, midpoint),
-      right: derivedPostHandoverPayments.slice(midpoint),
-    };
-  }, [useTwoColumns, derivedPostHandoverPayments]);
+    const itemsPerColumn = Math.ceil(payments.length / numColumns);
+    return Array.from({ length: numColumns }, (_, i) =>
+      payments.slice(i * itemsPerColumn, (i + 1) * itemsPerColumn)
+    );
+  }, []);
+
+  // Split journey payments into columns
+  const splitJourneyPayments = useMemo(() => {
+    return splitIntoColumns(preHandoverPayments, actualColumnCount);
+  }, [preHandoverPayments, actualColumnCount, splitIntoColumns]);
+
+  // Split post-handover payments into columns
+  const splitPostHandoverPayments = useMemo(() => {
+    return splitIntoColumns(derivedPostHandoverPayments, actualColumnCount);
+  }, [derivedPostHandoverPayments, actualColumnCount, splitIntoColumns]);
+
+  // Legacy compatibility aliases
+  const useTwoColumns = useMultiColumn;
 
   // Total Cash Until Handover = Entry + Journey + On Handover (for grand total)
   const totalUntilHandover = entryTotal + journeyTotal + handoverAmount;
@@ -535,22 +549,19 @@ export const CompactPaymentTable = ({
                   );
                 };
 
-                // Two-column layout
+                // Multi-column layout
                 if (useTwoColumns) {
+                  const gridColsClass = actualColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2';
                   return (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        {splitJourneyPayments.left.map((payment, index) => {
-                          const originalIndex = preHandoverPayments.indexOf(payment);
-                          return renderPaymentRow(payment, index, originalIndex);
-                        })}
-                      </div>
-                      <div className="space-y-1">
-                        {splitJourneyPayments.right.map((payment, index) => {
-                          const originalIndex = preHandoverPayments.indexOf(payment);
-                          return renderPaymentRow(payment, index, originalIndex);
-                        })}
-                      </div>
+                    <div className={cn("grid gap-4", gridColsClass)}>
+                      {splitJourneyPayments.map((columnPayments, colIndex) => (
+                        <div key={colIndex} className="space-y-1">
+                          {columnPayments.map((payment, index) => {
+                            const originalIndex = preHandoverPayments.indexOf(payment);
+                            return renderPaymentRow(payment, index, originalIndex);
+                          })}
+                        </div>
+                      ))}
                     </div>
                   );
                 }
@@ -668,17 +679,18 @@ export const CompactPaymentTable = ({
                 };
 
                 if (useTwoColumns && derivedPostHandoverPayments.length > 2) {
+                  const gridColsClass = actualColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2';
+                  let runningIndex = 0;
                   return (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        {splitPostHandoverPayments.left.map((payment, index) => renderPostHandoverRow(payment, index))}
-                      </div>
-                      <div className="space-y-1">
-                        {splitPostHandoverPayments.right.map((payment, index) => {
-                          const originalIndex = splitPostHandoverPayments.left.length + index;
-                          return renderPostHandoverRow(payment, originalIndex);
-                        })}
-                      </div>
+                    <div className={cn("grid gap-4", gridColsClass)}>
+                      {splitPostHandoverPayments.map((columnPayments, colIndex) => (
+                        <div key={colIndex} className="space-y-1">
+                          {columnPayments.map((payment) => {
+                            const idx = runningIndex++;
+                            return renderPostHandoverRow(payment, idx);
+                          })}
+                        </div>
+                      ))}
                     </div>
                   );
                 }

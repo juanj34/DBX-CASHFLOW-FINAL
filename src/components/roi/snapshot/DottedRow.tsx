@@ -36,14 +36,14 @@ export const DottedRow = ({
       <span className="flex-1 border-b border-dotted border-theme-border/50 mx-1 min-w-4" />
       <span 
         className={cn(
-          'font-mono tabular-nums text-theme-text whitespace-nowrap text-sm',
+          'font-mono tabular-nums text-theme-text text-sm min-w-0',
           bold && 'font-semibold',
           valueClassName
         )}
       >
-        {value}
+        <span className="truncate">{value}</span>
         {secondaryValue && (
-          <span className="text-theme-text-muted text-xs ml-1">
+          <span className="text-theme-text-muted text-xs ml-1 truncate">
             ({secondaryValue})
           </span>
         )}
