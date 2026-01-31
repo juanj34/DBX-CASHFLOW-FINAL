@@ -27,16 +27,22 @@ export const GrowthComparisonChart = ({
   const colors = getQuoteColors(isLightTheme);
   const { t } = useLanguage();
 
-  // Build chart data combining all quotes
+  // Build chart data combining all quotes - start from Year 0 (purchase price)
   const maxYears = 10;
   const chartData = Array.from({ length: maxYears + 1 }, (_, i) => {
     const dataPoint: any = { year: i };
     
     quotesWithCalcs.forEach((item, idx) => {
-      const projection = item.calculations.yearlyProjections.find(p => p.year === i);
-      if (projection) {
-        dataPoint[`quote${idx}`] = projection.propertyValue;
+      // Year 0 = base price (purchase day value)
+      if (i === 0) {
+        dataPoint[`quote${idx}`] = item.quote.inputs.basePrice;
         dataPoint[`quote${idx}Name`] = getQuoteDisplayName(item.quote.title, item.quote.projectName, null, `Quote ${idx + 1}`);
+      } else {
+        const projection = item.calculations.yearlyProjections.find(p => p.year === i);
+        if (projection) {
+          dataPoint[`quote${idx}`] = projection.propertyValue;
+          dataPoint[`quote${idx}Name`] = getQuoteDisplayName(item.quote.title, item.quote.projectName, null, `Quote ${idx + 1}`);
+        }
       }
     });
 
