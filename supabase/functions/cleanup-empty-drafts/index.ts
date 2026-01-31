@@ -26,10 +26,12 @@ Deno.serve(async (req) => {
     
     // Delete empty drafts older than 24 hours
     // Empty = no client_name, no project_name, and no meaningful inputs
+    // IMPORTANT: Skip 'working_draft' status - these are active user sessions
     const { data: deletedDrafts, error } = await supabase
       .from('cashflow_quotes')
       .delete()
       .eq('status', 'draft')
+      .neq('status', 'working_draft')
       .is('client_name', null)
       .is('project_name', null)
       .lt('created_at', twentyFourHoursAgo)

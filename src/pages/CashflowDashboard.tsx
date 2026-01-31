@@ -15,7 +15,7 @@ import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations"
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
-import { useCashflowQuote } from "@/hooks/useCashflowQuote";
+import { useCashflowQuote, hasWorkingDraftContent } from "@/hooks/useCashflowQuote";
 import { useQuoteVersions } from "@/hooks/useQuoteVersions";
 import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent, PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
+import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -51,8 +52,13 @@ const CashflowDashboardContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft, promoteWorkingDraft, clearWorkingDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
+  
+  // Unsaved draft dialog state
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'new' | 'load' | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs,
@@ -235,12 +241,75 @@ const CashflowDashboardContent = () => {
     }
   }, [quoteId, navigate]);
 
+  // Check if current quote is a working draft with content
+  const isWorkingDraftWithContent = useMemo(() => {
+    return quote?.status === 'working_draft' && hasWorkingDraftContent(quote);
+  }, [quote]);
+
+  // Handle load quote with unsaved draft check
+  const handleLoadQuote = useCallback(() => {
+    if (isWorkingDraftWithContent) {
+      setPendingAction('load');
+      setShowUnsavedDialog(true);
+      return;
+    }
+    setLoadQuoteModalOpen(true);
+  }, [isWorkingDraftWithContent]);
+
+  // Handle save draft (promote working draft to real draft)
+  const handleSaveWorkingDraft = useCallback(async () => {
+    if (!quote?.id) return;
+    
+    setIsSavingDraft(true);
+    
+    const exitScenarios = inputs._exitScenarios || [];
+    await saveQuote(inputs, clientInfo, quote.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
+    const success = await promoteWorkingDraft(quote.id);
+    
+    setIsSavingDraft(false);
+    setShowUnsavedDialog(false);
+    
+    if (success) {
+      toast.success("Draft saved successfully!");
+      if (pendingAction === 'load') {
+        setLoadQuoteModalOpen(true);
+      }
+    }
+    setPendingAction(null);
+  }, [quote, inputs, clientInfo, mortgageInputs, quoteImagesPayload, saveQuote, promoteWorkingDraft, pendingAction]);
+
+  // Handle discard working draft
+  const handleDiscardWorkingDraft = useCallback(async () => {
+    await clearWorkingDraft();
+    setShowUnsavedDialog(false);
+    
+    if (pendingAction === 'load') {
+      setLoadQuoteModalOpen(true);
+    }
+    setPendingAction(null);
+  }, [clearWorkingDraft, pendingAction]);
+
+  // Handle cancel dialog
+  const handleCancelDialog = useCallback(() => {
+    setShowUnsavedDialog(false);
+    setPendingAction(null);
+  }, []);
+
   if (quoteLoading && quoteId) {
     return <CashflowSkeleton />;
   }
 
   return (
     <CashflowErrorBoundary>
+      {/* Unsaved Draft Dialog */}
+      <UnsavedDraftDialog
+        open={showUnsavedDialog}
+        onSave={handleSaveWorkingDraft}
+        onDiscard={handleDiscardWorkingDraft}
+        onCancel={handleCancelDialog}
+        isSaving={isSavingDraft}
+      />
+
       <div className="min-h-screen bg-theme-bg">
         {/* Save status is now shown in the sidebar */}
 
@@ -290,7 +359,7 @@ const CashflowDashboardContent = () => {
           profile={profile}
           isAdmin={isAdmin}
           onConfigure={() => setModalOpen(true)}
-          onLoadQuote={() => setLoadQuoteModalOpen(true)}
+          onLoadQuote={handleLoadQuote}
           onViewHistory={() => setVersionHistoryOpen(true)}
           onShare={async () => {
             const url = await handleShare();

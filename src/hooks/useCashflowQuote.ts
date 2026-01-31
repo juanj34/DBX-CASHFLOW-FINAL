@@ -41,6 +41,18 @@ export interface QuoteImages {
   showLogoOverlay: boolean;
 }
 
+// Helper function to check if a quote has meaningful content
+export const hasWorkingDraftContent = (quote: CashflowQuote | null): boolean => {
+  if (!quote) return false;
+  const inputs = quote.inputs as any;
+  return Boolean(
+    quote.client_name ||
+    quote.project_name ||
+    quote.developer ||
+    (inputs?.basePrice && inputs.basePrice > 0)
+  );
+};
+
 export const useCashflowQuote = (quoteId?: string) => {
   const [quote, setQuote] = useState<CashflowQuote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,23 +135,15 @@ export const useCashflowQuote = (quoteId?: string) => {
   const lastDraftCreatedAt = useRef<number>(0);
   const draftCreationInProgress = useRef<boolean>(false);
 
-  // Create a new draft immediately in the database
-  const createDraft = useCallback(async (): Promise<string | null> => {
+  // Get or create user's single working draft
+  const getOrCreateWorkingDraft = useCallback(async (): Promise<string | null> => {
     // Prevent concurrent draft creation
     if (draftCreationInProgress.current) {
       console.warn('Draft creation already in progress');
       return null;
     }
     
-    // Rate limit: prevent creating drafts more than once per 10 seconds
-    const now = Date.now();
-    if (now - lastDraftCreatedAt.current < 10000) {
-      console.warn('Rate limited: Draft creation attempted too soon');
-      return null;
-    }
-    
     draftCreationInProgress.current = true;
-    lastDraftCreatedAt.current = now;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -148,48 +152,92 @@ export const useCashflowQuote = (quoteId?: string) => {
         return null;
       }
 
-      // Check if user already has an empty draft from the last 5 minutes
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Try to find existing working draft
       const { data: existingDraft } = await supabase
         .from('cashflow_quotes')
         .select('id')
         .eq('broker_id', user.id)
-        .eq('status', 'draft')
-        .is('client_name', null)
-        .is('project_name', null)
-        .gte('created_at', fiveMinutesAgo)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('status', 'working_draft')
         .maybeSingle();
 
       if (existingDraft) {
-        console.log('Reusing existing recent empty draft:', existingDraft.id);
+        console.log('Found existing working draft:', existingDraft.id);
         return existingDraft.id;
       }
 
+      // Create new working draft
       const { data, error } = await supabase
         .from('cashflow_quotes')
         .insert({
           broker_id: user.id,
           inputs: {} as any,
-          status: 'draft',
-          title: 'New Draft',
+          status: 'working_draft',
+          title: null,
         })
         .select('id')
         .single();
 
       if (error) {
-        console.error('Failed to create draft:', error);
+        console.error('Failed to create working draft:', error);
         toast({ title: 'Failed to create draft', variant: 'destructive' });
         return null;
       }
 
-      console.log('Created new draft:', data.id);
+      console.log('Created new working draft:', data.id);
       return data.id;
     } finally {
       draftCreationInProgress.current = false;
     }
   }, [toast]);
+
+  // Promote working draft to a real draft (when user explicitly saves)
+  const promoteWorkingDraft = useCallback(async (workingDraftId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('cashflow_quotes')
+      .update({ status: 'draft' })
+      .eq('id', workingDraftId)
+      .eq('status', 'working_draft');
+
+    if (error) {
+      console.error('Failed to promote working draft:', error);
+      return false;
+    }
+    
+    console.log('Promoted working draft to draft:', workingDraftId);
+    return true;
+  }, []);
+
+  // Clear working draft content (reset for new quote)
+  const clearWorkingDraft = useCallback(async (): Promise<void> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('cashflow_quotes')
+      .update({
+        inputs: {} as any,
+        client_name: null,
+        client_id: null,
+        client_country: null,
+        client_email: null,
+        project_name: null,
+        developer: null,
+        unit: null,
+        unit_type: null,
+        unit_size_sqf: null,
+        unit_size_m2: null,
+        title: null,
+      })
+      .eq('broker_id', user.id)
+      .eq('status', 'working_draft');
+    
+    console.log('Cleared working draft content');
+  }, []);
+
+  // Legacy createDraft - now uses working draft system
+  const createDraft = useCallback(async (): Promise<string | null> => {
+    return getOrCreateWorkingDraft();
+  }, [getOrCreateWorkingDraft]);
 
   // Removed: saveDraft localStorage function - now using immediate database persistence
 
@@ -442,6 +490,9 @@ export const useCashflowQuote = (quoteId?: string) => {
     scheduleAutoSave,
     generateShareToken,
     createDraft,
+    getOrCreateWorkingDraft,
+    promoteWorkingDraft,
+    clearWorkingDraft,
   };
 };
 
@@ -468,6 +519,7 @@ export const useQuotesList = () => {
           is_archived, archived_at, last_viewed_at
         `)
         .eq('broker_id', user.id)
+        .neq('status', 'working_draft') // Filter out working drafts from the list
         .or('is_archived.is.null,is_archived.eq.false')
         .order('updated_at', { ascending: false });
 

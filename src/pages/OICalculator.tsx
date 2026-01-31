@@ -18,7 +18,7 @@ import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations"
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { Currency } from "@/components/roi/currencyUtils";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
-import { useCashflowQuote } from "@/hooks/useCashflowQuote";
+import { useCashflowQuote, hasWorkingDraftContent } from "@/hooks/useCashflowQuote";
 import { useQuoteVersions } from "@/hooks/useQuoteVersions";
 import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { SnapshotContent } from "@/components/roi/snapshot";
 import { ExportModal } from "@/components/roi/ExportModal";
+import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -65,8 +66,13 @@ const OICalculatorContent = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
   const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft, promoteWorkingDraft, clearWorkingDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
+  
+  // Unsaved draft dialog state
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'new' | 'load' | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs,
@@ -214,15 +220,98 @@ const OICalculatorContent = () => {
     }
   }, [navigate, modalOpen]);
 
-  // Handle new quote creation - clears state and navigates to generator
+  // Check if current quote is a working draft with content
+  const isWorkingDraftWithContent = useMemo(() => {
+    return quote?.status === 'working_draft' && hasWorkingDraftContent(quote);
+  }, [quote]);
+
+  // Handle new quote creation with unsaved draft check
   const handleNewQuote = useCallback(() => {
+    // If current quote is a working draft with content, show dialog
+    if (isWorkingDraftWithContent) {
+      setPendingAction('new');
+      setShowUnsavedDialog(true);
+      return;
+    }
+    
     // Clear configurator localStorage state for fresh start
     localStorage.removeItem('cashflow-configurator-state');
     localStorage.removeItem('cashflow_configurator_open');
     
     // Navigate to generator without a quoteId, opening configurator immediately
     navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
-  }, [navigate]);
+  }, [navigate, isWorkingDraftWithContent]);
+
+  // Handle load quote with unsaved draft check
+  const handleLoadQuote = useCallback(() => {
+    // If current quote is a working draft with content, show dialog
+    if (isWorkingDraftWithContent) {
+      setPendingAction('load');
+      setShowUnsavedDialog(true);
+      return;
+    }
+    
+    setLoadQuoteModalOpen(true);
+  }, [isWorkingDraftWithContent]);
+
+  // Handle save draft (promote working draft to real draft)
+  const handleSaveWorkingDraft = useCallback(async () => {
+    if (!quote?.id) return;
+    
+    setIsSavingDraft(true);
+    
+    // First save current state
+    const exitScenarios = inputs._exitScenarios || [];
+    await saveQuote(inputs, clientInfo, quote.id, exitScenarios, mortgageInputs, undefined, {
+      floorPlanUrl: quoteImages.floorPlanUrl,
+      buildingRenderUrl: quoteImages.buildingRenderUrl,
+      heroImageUrl: quoteImages.heroImageUrl,
+    });
+    
+    // Then promote the working draft to a real draft
+    const success = await promoteWorkingDraft(quote.id);
+    
+    setIsSavingDraft(false);
+    setShowUnsavedDialog(false);
+    
+    if (success) {
+      toast.success("Draft saved successfully!");
+      
+      // Proceed with pending action
+      if (pendingAction === 'new') {
+        localStorage.removeItem('cashflow-configurator-state');
+        localStorage.removeItem('cashflow_configurator_open');
+        navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+      } else if (pendingAction === 'load') {
+        setLoadQuoteModalOpen(true);
+      }
+    }
+    
+    setPendingAction(null);
+  }, [quote, inputs, clientInfo, mortgageInputs, quoteImages, saveQuote, promoteWorkingDraft, navigate, pendingAction]);
+
+  // Handle discard working draft
+  const handleDiscardWorkingDraft = useCallback(async () => {
+    await clearWorkingDraft();
+    setShowUnsavedDialog(false);
+    
+    // Proceed with pending action
+    if (pendingAction === 'new') {
+      localStorage.removeItem('cashflow-configurator-state');
+      localStorage.removeItem('cashflow_configurator_open');
+      navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+    } else if (pendingAction === 'load') {
+      setLoadQuoteModalOpen(true);
+    }
+    
+    setPendingAction(null);
+  }, [clearWorkingDraft, navigate, pendingAction]);
+
+  // Handle cancel dialog
+  const handleCancelDialog = useCallback(() => {
+    setShowUnsavedDialog(false);
+    setPendingAction(null);
+  }, []);
 
   // Keep configurator open when navigating to new quote (via navigation state)
   useEffect(() => {
@@ -330,6 +419,15 @@ const OICalculatorContent = () => {
 
   return (
     <CashflowErrorBoundary>
+        {/* Unsaved Draft Dialog */}
+        <UnsavedDraftDialog
+          open={showUnsavedDialog}
+          onSave={handleSaveWorkingDraft}
+          onDiscard={handleDiscardWorkingDraft}
+          onCancel={handleCancelDialog}
+          isSaving={isSavingDraft}
+        />
+
         <DashboardLayout
         inputs={inputs}
         mortgageInputs={mortgageInputs}
@@ -337,7 +435,7 @@ const OICalculatorContent = () => {
         profile={profile}
         isAdmin={isAdmin}
         onConfigure={() => setModalOpen(true)}
-        onLoadQuote={() => setLoadQuoteModalOpen(true)}
+        onLoadQuote={handleLoadQuote}
         onViewHistory={() => setVersionHistoryOpen(true)}
         onShare={handleShare}
         onNewQuote={handleNewQuote}
