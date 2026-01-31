@@ -31,15 +31,15 @@ export const AppLogo = ({
   const logoContent = (
     <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5", className)}>
       <div className="relative flex-shrink-0">
-        {/* Logo container - clean border on light, gradient on dark */}
+        {/* Logo container - black bg with gold icon on light, gradient border on dark */}
         <div className={cn(
           sizes.container,
-          "rounded-lg p-[1.5px]",
+          "rounded-lg flex items-center justify-center",
           isLightTheme 
-            ? "bg-theme-accent" 
-            : "bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent"
+            ? "bg-gray-900" 
+            : "bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent p-[1.5px]"
         )}>
-          <div className="w-full h-full rounded-[6px] bg-theme-card flex items-center justify-center">
+          {isLightTheme ? (
             <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
               <path 
                 d="M12 2L2 7L12 12L22 7L12 2Z" 
@@ -66,7 +66,36 @@ export const AppLogo = ({
                 strokeLinejoin="round"
               />
             </svg>
-          </div>
+          ) : (
+            <div className="w-full h-full rounded-[6px] bg-theme-card flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
+                <path 
+                  d="M12 2L2 7L12 12L22 7L12 2Z" 
+                  stroke="currentColor" 
+                  className="text-theme-accent"
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+                <path 
+                  d="M2 17L12 22L22 17" 
+                  stroke="currentColor" 
+                  className="text-theme-accent"
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+                <path 
+                  d="M2 12L12 17L22 12" 
+                  stroke="currentColor" 
+                  className="text-theme-accent"
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          )}
         </div>
         {showGlow && !isLightTheme && (
           <div className="absolute -inset-1 bg-theme-accent rounded-lg blur opacity-20" />
