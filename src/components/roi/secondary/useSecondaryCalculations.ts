@@ -104,8 +104,8 @@ export const useSecondaryCalculations = (inputs: SecondaryInputs): SecondaryCalc
     const currentYear = new Date().getFullYear();
 
     for (let year = 1; year <= 10; year++) {
-      // Property appreciation
-      const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year);
+      // Property appreciation: Year 1 = purchase price, Year 2 = +1 year appreciation, etc.
+      const propertyValue = purchasePrice * Math.pow(1 + appreciationRate / 100, year - 1);
       
       // Rent growth
       const yearRentLT = grossAnnualRentLT * Math.pow(1 + rentGrowthRate / 100, year - 1);
