@@ -295,7 +295,7 @@ export const ExtractedDataPreview = ({
             />
             <Label className="text-xs">Post-Handover Plan</Label>
           </div>
-          <div>
+          <div className="col-span-2">
             <Label className="text-xs flex items-center gap-1">
               Handover Month (from booking)
               <TooltipProvider>
@@ -304,7 +304,7 @@ export const ExtractedDataPreview = ({
                     <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[200px]">
-                    <p className="text-xs">Auto-detected from last pre-handover payment. Used to calculate handover Q/Y from booking date.</p>
+                    <p className="text-xs">Auto-detected from last pre-handover payment. Handover Q/Y will be calculated from your booking date when applied.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -313,39 +313,12 @@ export const ExtractedDataPreview = ({
               type="number"
               value={data.paymentStructure.handoverMonthFromBooking || ''}
               onChange={(e) => updateStructure('handoverMonthFromBooking', parseInt(e.target.value) || undefined)}
-              placeholder="e.g., 26"
+              placeholder="e.g., 27"
               className="h-8 text-sm font-mono"
             />
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              Auto-calculated from last pre-HO payment
+              Handover quarter & year will be calculated from your booking date
             </p>
-          </div>
-          <div>
-            <Label className="text-xs">Handover Quarter</Label>
-            <Select
-              value={data.paymentStructure.handoverQuarter?.toString() || ''}
-              onValueChange={(v) => updateStructure('handoverQuarter', parseInt(v))}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="Quarter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
-                <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
-                <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
-                <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Handover Year</Label>
-            <Input
-              type="number"
-              value={data.paymentStructure.handoverYear || ''}
-              onChange={(e) => updateStructure('handoverYear', parseInt(e.target.value) || 0)}
-              placeholder="e.g., 2027"
-              className="h-8 text-sm font-mono"
-            />
           </div>
         </div>
       </div>
