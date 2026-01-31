@@ -1,320 +1,207 @@
 
-# Simplify Developer & Project Selection to Manual Mode
+# Adaptive 2-Column Payment Layout for Long Quotes
 
-## Overview
+## Problem Analysis
 
-This plan removes database dependencies for developers and projects, replacing them with:
-1. **Static Developer List** - 200+ Dubai developers with searchable autocomplete
-2. **Manual Project Entry** - Text input with localStorage-based recent projects
-3. **Simplified Showcase Cards** - Display name only without database lookups
-4. **Hidden Admin Tabs** - Remove developers/projects tabs from Dashboard config
+Looking at the screenshot, I can see a 28-month payment plan creating a payment breakdown that's **extremely long vertically** (30+ rows), pushing the important insight cards (Rental Income, Exit Scenarios, Post-Handover Coverage) far down the page. This creates a poor reading experience where:
 
-## Architecture Change
+1. Clients have to scroll excessively to see key metrics
+2. The right column is underutilized (it only has 3-4 small cards)
+3. Visual balance is lost - left column is 3x taller than right
+
+## Proposed Solution: Adaptive Payment Layout
+
+When payment count exceeds a threshold (e.g., 15 installments), automatically switch to a **2-column payment layout** with insight cards flowing underneath in a consistent grid.
 
 ```text
-BEFORE (Database-Driven)
+CURRENT LAYOUT (Long quotes)
 ─────────────────────────────────────────────────────────
-DeveloperSelect   → supabase.from('developers')
-ProjectSelect     → supabase.from('projects')  
-ShowcaseDeveloperCard → DB lookup for logo, metrics
-ShowcaseProjectCard   → DB lookup for status, logo
-DeveloperInfoModal    → Trust scores, radar charts
-DashboardLayout       → Projects + Developers tabs
+┌─────────────────────────────┐ ┌──────────────────────┐
+│                             │ │  Rental Income       │
+│                             │ └──────────────────────┘
+│                             │ ┌──────────────────────┐
+│     PAYMENT BREAKDOWN       │ │  Exit Scenarios      │
+│     (30+ rows)              │ └──────────────────────┘
+│     Scrolls forever...      │ ┌──────────────────────┐
+│                             │ │  Post-HO Coverage    │
+│                             │ └──────────────────────┘
+│                             │ ┌──────────────────────┐
+│                             │ │  Mortgage            │
+│                             │ └──────────────────────┘
+│                             │
+│                             │       ← Empty space
+│                             │
+└─────────────────────────────┘
 
-AFTER (Static + LocalStorage)
+NEW ADAPTIVE LAYOUT (Long quotes)
 ─────────────────────────────────────────────────────────
-DeveloperSelect   → Static DEVELOPERS array (searchable)
-ProjectSelect     → Text input + localStorage recents
-ShowcaseDeveloperCard → Display name + icon (no DB)
-ShowcaseProjectCard   → Display name + icon (no DB)
-DeveloperInfoModal    → DISABLED (no metrics)
-DashboardLayout       → Remove Projects + Developers tabs
+┌───────────────────────────────────────────────────────┐
+│                 PAYMENT BREAKDOWN                     │
+│ ┌─────────────────────────┐ ┌───────────────────────┐ │
+│ │ ENTRY                   │ │ JOURNEY (Months 13-28)│ │
+│ │ EOI, Downpayment, DLD   │ │ 1% Month 13           │ │
+│ │                         │ │ 1% Month 14           │ │
+│ │ JOURNEY (Months 1-12)   │ │ ...                   │ │
+│ │ 5% Month 2              │ │ 8% Month 24           │ │
+│ │ 10% Month 3             │ │                       │ │
+│ │ 1% Month 4              │ │ POST-HANDOVER         │ │
+│ │ ...                     │ │ 1% Month +1           │ │
+│ │ 1% Month 12             │ │ 1% Month +2...        │ │
+│ └─────────────────────────┘ └───────────────────────┘ │
+│                    [ TOTAL INVESTMENT ]               │
+└───────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────┐
+│   RENTAL INCOME   │   EXIT SCENARIOS   │  POST-HO    │
+│   ┌───────────┐   │   ┌───────────┐    │ ┌─────────┐ │
+│   │  Gross    │   │   │ #1 18m    │    │ │Coverage │ │
+│   │  Net/Year │   │   │ #2 24m    │    │ │ Matrix  │ │
+│   └───────────┘   │   └───────────┘    │ └─────────┘ │
+└───────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────┐
+│                   MORTGAGE ANALYSIS                   │
+└───────────────────────────────────────────────────────┘
 ```
 
-## Files to Create
+## Technical Approach
 
-### 1. `src/data/developers.ts` - Static Developer List
+### 1. Update `CompactPaymentTable.tsx`
 
-Comprehensive list of 200+ Dubai developers alphabetically sorted:
-
-```typescript
-export const DEVELOPERS = [
-  "A&A Real Estate",
-  "Aark Developers",
-  "Abyaar",
-  "AG Properties",
-  "Al Barari",
-  "Al Futtaim Properties",
-  "Al Ghurair Properties",
-  "Al Habtoor Group",
-  "Al Khail Ventures",
-  "Al Seeb Real Estate",
-  // ... (207 total developers listed in previous research)
-].sort();
-```
-
-### 2. `src/hooks/useRecentProjects.ts` - Recent Projects Hook
-
-Manages localStorage for recently used project names:
+Add a **compact 2-column mode** prop that:
+- Splits payment rows into 2 columns when `journeyPayments.length > 12`
+- Places Entry section in left column header
+- Distributes Journey payments evenly between columns
+- Places On-Handover / Post-Handover at bottom spanning both columns
 
 ```typescript
-interface RecentProject {
-  name: string;
-  developer: string;
-  usedAt: string;  // ISO date
+interface CompactPaymentTableProps {
+  // ...existing props
+  twoColumnMode?: 'auto' | 'always' | 'never';  // Default: 'auto'
 }
 
-export const useRecentProjects = () => {
-  const [recents, setRecents] = useState<RecentProject[]>([]);
-  
-  const addRecent = (name: string, developer?: string) => { ... };
-  const getRecents = (filterByDeveloper?: string) => { ... };
-  const clearRecents = () => { ... };
-  
-  return { recents, addRecent, getRecents, clearRecents };
-};
+// Inside component:
+const useTwoColumns = useMemo(() => {
+  if (twoColumnMode === 'never') return false;
+  if (twoColumnMode === 'always') return true;
+  // Auto: trigger when pre-handover + post-handover payments > 12
+  const totalPayments = preHandoverPayments.length + derivedPostHandoverPayments.length;
+  return totalPayments > 12;
+}, [twoColumnMode, preHandoverPayments, derivedPostHandoverPayments]);
 ```
 
-- Max 10 projects stored
-- Filters by developer when provided
-- Auto-removes duplicates (updates timestamp instead)
+### 2. Column Split Logic
+
+Split payments into left/right columns:
+
+```typescript
+const splitPayments = useMemo(() => {
+  if (!useTwoColumns) return { left: preHandoverPayments, right: [] };
+  
+  const midpoint = Math.ceil(preHandoverPayments.length / 2);
+  return {
+    left: preHandoverPayments.slice(0, midpoint),
+    right: preHandoverPayments.slice(midpoint),
+  };
+}, [useTwoColumns, preHandoverPayments]);
+```
+
+### 3. Update `SnapshotContent.tsx` Layout
+
+Change from fixed 2-column grid to **adaptive stacked layout**:
+
+```typescript
+// Determine if we have a long payment schedule
+const isLongPaymentPlan = useMemo(() => {
+  const payments = inputs.additionalPayments || [];
+  return payments.length > 12;
+}, [inputs.additionalPayments]);
+
+// Render layout:
+{isLongPaymentPlan ? (
+  // STACKED LAYOUT: Payment full width, then 3-column cards below
+  <div className="flex flex-col gap-4">
+    {/* Payment Table - Full Width with 2 internal columns */}
+    <CompactPaymentTable
+      {...props}
+      twoColumnMode="auto"
+    />
+    
+    {/* Insight Cards - 3 columns on desktop, 1 on mobile */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {showRent && <CompactRentCard {...} />}
+      {showExits && <CompactAllExitsCard {...} />}
+      {showPostHandover && <CompactPostHandoverCard {...} />}
+      {showMortgage && <CompactMortgageCard {...} />}
+    </div>
+  </div>
+) : (
+  // ORIGINAL LAYOUT: 2 columns side by side
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <CompactPaymentTable {...props} />
+    <div className="flex flex-col gap-3">
+      {/* Cards stacked */}
+    </div>
+  </div>
+)}
+```
+
+### 4. Internal Payment Table Styling
+
+For 2-column mode within the payment card:
+
+```typescript
+// Section: The Journey - 2-column layout
+{useTwoColumns && preHandoverPayments.length > 0 && (
+  <div>
+    <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">
+      {t('theJourneyLabel')} ({totalMonths}{t('moShort')})
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      {/* Left Column */}
+      <div className="space-y-1">
+        {splitPayments.left.map((payment, index) => (
+          <PaymentRow key={index} payment={payment} />
+        ))}
+      </div>
+      {/* Right Column */}
+      <div className="space-y-1">
+        {splitPayments.right.map((payment, index) => (
+          <PaymentRow key={index} payment={payment} />
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+```
 
 ## Files to Modify
 
-### 3. `src/components/roi/configurator/DeveloperSelect.tsx` - REWRITE
+| File | Changes |
+|------|---------|
+| `CompactPaymentTable.tsx` | Add `twoColumnMode` prop, split logic, 2-column grid for Journey section |
+| `SnapshotContent.tsx` | Adaptive layout based on payment count |
+| `CashflowView.tsx` | Same adaptive logic for consistency |
+| `ExportSnapshotLayout.tsx` | Ensure export respects 2-column mode |
 
-Remove all Supabase imports and use static list:
+## Visual Benefits
 
-**Key Changes:**
-- Remove `useEffect` fetching from database
-- Import `DEVELOPERS` from static data file
-- Remove `Developer` interface (no more IDs/logos)
-- Simplify `onValueChange` to just pass string name
-- Keep search/filter functionality
-- Keep ability to type custom developer name
+1. **Reduced scroll depth** - Payment fits in ~50% of current height
+2. **Better balance** - Content is horizontally distributed
+3. **Cards at eye level** - Key metrics (exits, rent) are immediately visible
+4. **Consistent reading flow** - Natural left-to-right, top-to-bottom
 
-**New Interface:**
-```typescript
-interface DeveloperSelectProps {
-  value: string;  // Just the name now
-  onValueChange: (name: string) => void;
-  className?: string;
-}
-```
+## Threshold Configuration
 
-### 4. `src/components/roi/configurator/ProjectSelect.tsx` - REWRITE
+The auto-switch threshold (12 payments) can be tuned:
+- **12 payments**: Typical monthly plans for 1-year construction
+- **15 payments**: More conservative, only for very long plans
+- **8 payments**: Aggressive, switches sooner
 
-Convert to manual text input with recent projects dropdown:
+## Edge Cases
 
-**Key Changes:**
-- Remove all Supabase imports
-- Use `useRecentProjects` hook
-- Replace Command/Popover with Input + recent dropdown
-- Developer prop becomes optional (for filtering recents)
+- **Short plans (< 12 payments)**: Original side-by-side layout
+- **Post-handover plans**: Post-HO payments flow into right column
+- **Export mode**: Always use 2-column for consistency
+- **Mobile**: Single column stacked regardless of payment count
 
-**New Interface:**
-```typescript
-interface ProjectSelectProps {
-  value: string;
-  developer?: string;  // For filtering recents
-  onValueChange: (name: string) => void;
-  onAddRecent?: (name: string) => void;
-  className?: string;
-}
-```
-
-### 5. `src/components/roi/configurator/ClientSection.tsx` - UPDATE
-
-Simplify the developer/project selection integration:
-
-**Key Changes (around lines 360-490):**
-- Remove `selectedDeveloperId` and `selectedProjectId` state
-- Remove `manualDeveloper` and `manualProject` toggle logic
-- Simplify `handleDeveloperSelect` to just update `clientInfo.developer`
-- Simplify `handleProjectSelect` to just update `clientInfo.projectName`
-- Remove the "Add new developer" admin buttons
-- Remove zone auto-population from project selection
-
-### 6. `src/components/dashboard/DashboardLayout.tsx` - UPDATE
-
-Remove developers and projects tabs from admin navigation:
-
-**Key Changes:**
-- Remove `"projects"` and `"developers"` from `ActiveTab` type
-- Remove NavButton components for Projects and Developers
-- Remove content rendering for these tabs
-- Keep imports but don't use (for potential future re-enablement)
-
-**Lines to modify:**
-- Line 23: Remove from `ActiveTab` type
-- Lines 101-102: Remove NavButton calls
-- Lines 164-165: Remove content rendering
-
-### 7. `src/components/roi/showcase/ShowcaseDeveloperCard.tsx` - SIMPLIFY
-
-Remove database lookup, just display name:
-
-**Key Changes:**
-- Remove Supabase import and useEffect fetch
-- Remove `Developer` type import from developerTrustScore
-- Remove `TrustScoreRing` component usage
-- Just display developer name with Building icon
-- Keep styling for consistency
-
-### 8. `src/components/roi/showcase/ShowcaseProjectCard.tsx` - SIMPLIFY
-
-Remove database lookup, just display name:
-
-**Key Changes:**
-- Remove Supabase import and useEffect fetch
-- Remove construction status badge (no data source)
-- Just display project name with Building2 icon
-- Keep styling for consistency
-
-### 9. Additional Components to Update
-
-These components currently fetch developer/project data for display. Update them to:
-- Remove database lookups
-- Display only the name provided via props
-- Skip any metrics/ratings display
-
-| Component | Current Behavior | New Behavior |
-|-----------|------------------|--------------|
-| `PropertyShowcase.tsx` | Fetches dev/project data | Display names only |
-| `PropertyHeroCard.tsx` | Fetches dev/project data | Display names only |
-| `PropertyTabContent.tsx` | React Query for dev/project | Skip queries, use props |
-| `ClientUnitInfo.tsx` | Fetches dev/project data | Display names only |
-| `DeveloperCard.tsx` | Fetches dev data | Display name + icon |
-| `ProjectCard.tsx` | Fetches project data | Display name + icon |
-| `BuildingRenderCard.tsx` | Fetches dev logo | Display name + icon |
-| `DeveloperInfoModal.tsx` | Full modal with metrics | Disable/don't render |
-
-## Developer List (207 Developers)
-
-```text
-A&A Real Estate, Aark Developers, Abyaar, AG Properties, Al Barari,
-Al Futtaim Properties, Al Ghurair Properties, Al Habtoor Group,
-Al Khail Ventures, Al Seeb Real Estate, Al Shirawi, Al Waleed,
-Alef Group, Almal Real Estate, Aman Developments, Arada, ARY Properties,
-Azizi Developments, Banke International, Bermuda, Binghatti,
-Bloom Properties, Brix Developments, Buroj Oasis, Cayan Group,
-Condor Developers, Conqueror, Crescent Bay, Damas, DAMAC Properties,
-Danube Properties, Dar Al Arkan, Devmark Real Estate, Deyaar,
-District One, Dubai Asset Group, Dubai Creek Harbour, Dubai Holding,
-Dubai Properties, Dutco, Ellington Properties, Emaar Properties,
-Empire Properties, Enso Group, ER Properties, Esnaad, Exclusive Links,
-F&M Properties, Fam Properties, First Group, Five Holdings, G&Co,
-Gemini Property Developers, GGICO Properties, Global Developers,
-Golden Sands, Green Valley, Gulf Land, Huawei Real Estate, Hussain Sajwani,
-IGO, Iman Developers, Imtiaz Developments, Inspired Living, Investcorp,
-IrithM, ISG, Jade Property Development, Jebel Ali, JRP Group, Just Cavalli,
-Kaloti Real Estate, Kleindienst Group, KOA Canvas, L&H Real Estate,
-Leos Developments, Limitless, Living Legends, London Gate, Luxhabitat,
-Luxurious Properties, LWK Partners, MAG Property Development, Majid Al Futtaim,
-Majan Real Estate, MARM, Master Baker Developers, Maysan Properties,
-Meerane, Meraas, Meydan Group, Miami Properties, MJM Real Estate,
-Monsoon, Movenpick, MRE Development, Murano, Nakheel, Najibi Property,
-Naturel, Nesuto, New York Developers, Next Level, Niche Solutions,
-Nikki Beach Residences, Northacre, Object 1, Octa Properties, Okeanos,
-Omniyat, One Developments, Orion Real Estate, Palace Developers,
-Palma Development, Palm Investments, Paramount, Peninsula, Piedmont,
-Pinnacle, PNRR, Power of 3, Prescott, Prime Development, Prime Living,
-Prime Residential, Primo Capital, Prism, Provident, Pure Gold Living,
-Purvanchal, Q Properties, Qube, R&F Properties, Rad Developments,
-RAK Properties, Ranjit Developers, RDK, Re/Max, Regal, Regent Properties,
-Reliance Group, Remix Investments, Renaissance, Reportage Properties,
-Rethink Real Estate, Rixos, Rohan, Royal Park, RSG, S&S Properties,
-Saadiyat, Sabeel, Samana Developers, Sanctuary Falls, Sansara, Sata,
-Savills, Schon Properties, SCS Developers, Sean Property, Select Group,
-Seven Tides, Shaikhani, Shapoorji Pallonji, Sillage, Siniya Island,
-Sky View Properties, Smart Development, Sobha Realty, Soho Properties,
-Sorouh Real Estate, South City, SPF Realty, Stella Maris, Subscribe,
-Sukh, Sun and Sand, Sun Developments, Sunrise Bay, Swank Developments,
-Synergy Real Estate, Taaleem Properties, Tasweek, TDIC, The First Group,
-The One, Tiger Properties, Time Oak, Top Homes, TownX, Trident,
-Trilith, True Living, Trump Organization, UNA, Union Properties,
-Unique Properties, Urbana, URC Holdings, Viceroy, Villanova,
-VincentHRD, Vincitore, Wasl Properties, Westar Properties, Whitbread,
-WHK Properties, Woods & Waller, Wyndham, XS Real Estate, Zabeel,
-Zaya, ZED Developments
-```
-
-## UI Changes Summary
-
-### DeveloperSelect (Before → After)
-
-```text
-BEFORE:
-┌─────────────────────────────────────────────┐
-│ 🏢 [Logo] Emaar Properties            ▼    │  ← DB logo
-│ Loading developers from database...         │  ← Network request
-└─────────────────────────────────────────────┘
-
-AFTER:
-┌─────────────────────────────────────────────┐
-│ 🏢 Emaar Properties                   ▼    │  ← No logo
-│ 207 developers • Instant search             │  ← Static list
-└─────────────────────────────────────────────┘
-```
-
-### ProjectSelect (Before → After)
-
-```text
-BEFORE:
-┌─────────────────────────────────────────────┐
-│ 🏠 [Logo] Dubai Creek Harbour         ▼    │  ← DB lookup
-│ ZONE: Dubai Creek                           │  ← Zone data
-└─────────────────────────────────────────────┘
-
-AFTER:
-┌─────────────────────────────────────────────┐
-│ 🏠 Type project name...               ▼    │  ← Manual input
-│ RECENT: The Valley, Lagoons Phase 2...      │  ← localStorage
-└─────────────────────────────────────────────┘
-```
-
-### Dashboard Config (Before → After)
-
-```text
-BEFORE:                          AFTER:
-├── Zones                        ├── Zones
-├── Appreciation Presets         ├── Appreciation Presets
-├── Hotspots                     ├── Hotspots
-├── Projects  ← REMOVE           ├── Landmarks
-├── Developers ← REMOVE
-├── Landmarks
-```
-
-## Technical Summary
-
-| File | Action | Lines Changed (approx) |
-|------|--------|------------------------|
-| `src/data/developers.ts` | CREATE | ~220 lines |
-| `src/hooks/useRecentProjects.ts` | CREATE | ~60 lines |
-| `DeveloperSelect.tsx` | REWRITE | ~100 lines |
-| `ProjectSelect.tsx` | REWRITE | ~120 lines |
-| `ClientSection.tsx` | UPDATE | ~80 lines changed |
-| `DashboardLayout.tsx` | UPDATE | ~15 lines removed |
-| `ShowcaseDeveloperCard.tsx` | SIMPLIFY | ~30 lines |
-| `ShowcaseProjectCard.tsx` | SIMPLIFY | ~30 lines |
-| `PropertyShowcase.tsx` | UPDATE | ~40 lines |
-| `PropertyHeroCard.tsx` | UPDATE | ~40 lines |
-| `PropertyTabContent.tsx` | UPDATE | ~30 lines |
-| `ClientUnitInfo.tsx` | UPDATE | ~40 lines |
-| `DeveloperCard.tsx` | SIMPLIFY | ~50 lines |
-| `ProjectCard.tsx` | SIMPLIFY | ~40 lines |
-| `BuildingRenderCard.tsx` | UPDATE | ~20 lines |
-| `DeveloperInfoModal.tsx` | DISABLE | Return null |
-
-## Benefits
-
-1. **No Database Dependency** - Instant, offline-capable developer selection
-2. **Faster UX** - No loading states, immediate search results
-3. **Simpler Code** - Remove complex DB integration
-4. **Easy Updates** - Add developers by editing static array
-5. **Recent Projects** - Quick access to frequently used entries
-6. **Future-Proof** - Can re-add database integration when ready
-
-## Note on Existing Data
-
-Existing quotes already store `developer` and `projectName` as string fields in `clientInfo` / `inputs`. No database migration needed - the static list just provides convenient selection without changing how data is stored.
