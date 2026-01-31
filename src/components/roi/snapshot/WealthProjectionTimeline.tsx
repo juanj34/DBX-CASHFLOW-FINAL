@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Currency, formatCurrencyShort } from '../currencyUtils';
+import { calculateExitPrice } from '../constructionProgress';
 import { cn } from '@/lib/utils';
 
 interface WealthProjectionTimelineProps {
@@ -13,16 +14,32 @@ interface WealthProjectionTimelineProps {
   bookingYear: number;
   currency: Currency;
   rate: number;
+  // Handover props
+  handoverQuarter?: number;
+  handoverYear?: number;
+  bookingMonth?: number;
 }
 
-type Phase = 'construction' | 'growth' | 'mature';
+type Phase = 'construction' | 'growth' | 'mature' | 'handover';
 
 interface YearProjection {
   year: number;
   value: number;
   phase: Phase;
   appreciation: number;
+  isHandover?: boolean;
+  label?: string;
 }
+
+const quarterToMonth = (quarter: number): number => {
+  switch (quarter) {
+    case 1: return 2;
+    case 2: return 5;
+    case 3: return 8;
+    case 4: return 11;
+    default: return 11;
+  }
+};
 
 export const WealthProjectionTimeline = ({
   basePrice,
@@ -34,14 +51,35 @@ export const WealthProjectionTimeline = ({
   bookingYear,
   currency,
   rate,
+  handoverQuarter,
+  handoverYear: propHandoverYear,
+  bookingMonth = 1,
 }: WealthProjectionTimelineProps) => {
-  // Generate 7 years of projections
+  // Generate projections with handover milestone
   const projections = useMemo((): YearProjection[] => {
     const data: YearProjection[] = [];
     let currentValue = basePrice;
     const constructionYears = Math.ceil(constructionMonths / 12);
     
-    for (let year = 0; year < 7; year++) {
+    // Calculate handover details
+    const handoverYear = propHandoverYear || (bookingYear + constructionYears);
+    const handoverMonth = handoverQuarter ? quarterToMonth(handoverQuarter) : 11;
+    const bookingDate = new Date(bookingYear, bookingMonth - 1);
+    const handoverDate = new Date(handoverYear, handoverMonth - 1);
+    const monthsToHandover = Math.max(0, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+    
+    const handoverValue = calculateExitPrice(
+      monthsToHandover,
+      basePrice,
+      constructionMonths,
+      { constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears }
+    );
+    
+    let handoverInserted = false;
+    const maxYears = handoverQuarter ? 6 : 7; // Show 6 years + handover, or 7 years without
+    
+    for (let year = 0; year < maxYears; year++) {
+      const calendarYear = bookingYear + year;
       let phase: Phase;
       let appreciation: number;
       
@@ -61,22 +99,40 @@ export const WealthProjectionTimeline = ({
       }
       
       data.push({
-        year: bookingYear + year,
+        year: calendarYear,
         value: currentValue,
         phase,
         appreciation,
       });
+      
+      // Insert handover column after the handover year
+      if (!handoverInserted && calendarYear === handoverYear && handoverQuarter) {
+        const quarterLabel = `Q${handoverQuarter}'${String(handoverYear).slice(-2)}`;
+        data.push({
+          year: handoverYear,
+          value: handoverValue,
+          phase: 'handover',
+          appreciation: 0,
+          isHandover: true,
+          label: `🔑 ${quarterLabel}`,
+        });
+        handoverInserted = true;
+      }
     }
     return data;
-  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear]);
+  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, handoverQuarter, propHandoverYear, bookingMonth]);
   
-  const totalGrowth = ((projections[6].value - basePrice) / basePrice * 100).toFixed(0);
+  const regularData = projections.filter(d => !d.isHandover);
+  const totalGrowth = regularData.length > 1
+    ? ((regularData[regularData.length - 1].value - basePrice) / basePrice * 100).toFixed(0)
+    : '0';
   
   const getPhaseColor = (phase: Phase) => {
     switch (phase) {
       case 'construction': return 'text-orange-400';
       case 'growth': return 'text-green-400';
       case 'mature': return 'text-cyan-400';
+      case 'handover': return 'text-green-500';
     }
   };
   
@@ -85,16 +141,22 @@ export const WealthProjectionTimeline = ({
       case 'construction': return 'bg-orange-400';
       case 'growth': return 'bg-green-400';
       case 'mature': return 'bg-cyan-400';
+      case 'handover': return 'bg-green-500';
     }
   };
 
-  const getPhaseLabel = (phase: Phase) => {
+  const getPhaseLabel = (phase: Phase, isHandover?: boolean) => {
+    if (isHandover) return 'Handover';
     switch (phase) {
       case 'construction': return 'Constr';
       case 'growth': return 'Growth';
       case 'mature': return 'Mature';
+      case 'handover': return 'Handover';
     }
   };
+
+  const numColumns = projections.length;
+  const hasHandover = projections.some(p => p.isHandover);
 
   return (
     <div className="bg-theme-card border border-theme-border rounded-xl p-4">
@@ -107,26 +169,39 @@ export const WealthProjectionTimeline = ({
           </span>
         </div>
         <span className="text-sm font-bold text-green-400">
-          +{totalGrowth}% in 7 years
+          +{totalGrowth}% in {regularData.length - 1} years
         </span>
       </div>
       
-      {/* Timeline Grid - 7 columns */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-2">
+      {/* Timeline Grid - Dynamic columns */}
+      <div 
+        className="grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${numColumns}, 1fr)` }}
+      >
         {projections.map((proj, i) => (
-          <div key={proj.year} className="text-center relative">
-            {/* Year */}
-            <div className="text-[10px] sm:text-xs text-theme-text-muted mb-1">
-              {proj.year}
+          <div 
+            key={proj.isHandover ? `handover-${proj.year}` : proj.year} 
+            className={cn(
+              "text-center relative",
+              proj.isHandover && "bg-green-500/10 rounded-lg py-1 -my-1"
+            )}
+          >
+            {/* Year or Handover Label */}
+            <div className={cn(
+              "text-[10px] sm:text-xs mb-1",
+              proj.isHandover ? "text-green-500 font-bold" : "text-theme-text-muted"
+            )}>
+              {proj.isHandover ? proj.label : proj.year}
             </div>
             
-            {/* Value - AED primary + reference currency below */}
+            {/* Value */}
             <div className="mb-2 flex flex-col items-center">
-              {/* AED siempre primero */}
-              <div className="text-[10px] sm:text-xs font-mono font-bold text-theme-text">
+              <div className={cn(
+                "text-[10px] sm:text-xs font-mono font-bold",
+                proj.isHandover ? "text-green-500" : "text-theme-text"
+              )}>
                 {formatCurrencyShort(proj.value, 'AED', 1)}
               </div>
-              {/* Moneda de referencia debajo (si no es AED) */}
               {currency !== 'AED' && (
                 <div className="text-[8px] sm:text-[10px] font-mono text-theme-text-muted">
                   {formatCurrencyShort(proj.value, currency, rate)}
@@ -136,28 +211,26 @@ export const WealthProjectionTimeline = ({
             
             {/* Timeline dot + line */}
             <div className="relative flex items-center justify-center h-4">
-              {/* Connecting line - before dot */}
               {i > 0 && (
                 <div className="absolute right-1/2 w-full h-0.5 bg-theme-border -z-10" />
               )}
-              {/* Connecting line - after dot */}
-              {i < 6 && (
+              {i < numColumns - 1 && (
                 <div className="absolute left-1/2 w-full h-0.5 bg-theme-border -z-10" />
               )}
-              {/* Dot */}
               <div className={cn(
-                "w-3 h-3 rounded-full z-10 border-2 border-theme-bg",
-                getPhaseBgColor(proj.phase)
+                "rounded-full z-10 border-2 border-theme-bg",
+                getPhaseBgColor(proj.phase),
+                proj.isHandover ? "w-4 h-4 ring-2 ring-green-500/30" : "w-3 h-3"
               )} />
             </div>
             
-            {/* Phase label only */}
+            {/* Phase label */}
             <div className="mt-2">
               <div className={cn(
                 "text-[10px] sm:text-xs font-semibold",
                 getPhaseColor(proj.phase)
               )}>
-                {getPhaseLabel(proj.phase)}
+                {getPhaseLabel(proj.phase, proj.isHandover)}
               </div>
             </div>
           </div>
@@ -165,11 +238,17 @@ export const WealthProjectionTimeline = ({
       </div>
       
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-theme-border">
+      <div className="flex items-center justify-center gap-3 sm:gap-4 mt-4 pt-3 border-t border-theme-border">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-orange-400" />
           <span className="text-[10px] text-theme-text-muted">Construction</span>
         </div>
+        {hasHandover && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-500/30" />
+            <span className="text-[10px] text-green-500 font-medium">Handover</span>
+          </div>
+        )}
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-green-400" />
           <span className="text-[10px] text-theme-text-muted">Growth</span>

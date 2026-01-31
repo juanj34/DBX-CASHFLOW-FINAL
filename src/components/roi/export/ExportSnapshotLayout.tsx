@@ -209,6 +209,9 @@ export const ExportSnapshotLayout = ({
           bookingYear={inputs.bookingYear}
           currency={currency}
           rate={rate}
+          handoverQuarter={(inputs as any).handoverQuarter}
+          handoverYear={(inputs as any).handoverYear}
+          bookingMonth={(inputs as any).bookingMonth}
         />
       </div>
 

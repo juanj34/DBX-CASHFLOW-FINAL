@@ -17,6 +17,10 @@ interface WealthProjectionModalProps {
   rentGrowthRate: number;
   currency: Currency;
   rate: number;
+  // Handover props
+  handoverQuarter?: number;
+  handoverYear?: number;
+  bookingMonth?: number;
 }
 
 export const WealthProjectionModal = ({
@@ -33,6 +37,9 @@ export const WealthProjectionModal = ({
   rentGrowthRate,
   currency,
   rate,
+  handoverQuarter,
+  handoverYear,
+  bookingMonth,
 }: WealthProjectionModalProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -56,6 +63,9 @@ export const WealthProjectionModal = ({
           rentGrowthRate={rentGrowthRate}
           currency={currency}
           rate={rate}
+          handoverQuarter={handoverQuarter}
+          handoverYear={handoverYear}
+          bookingMonth={bookingMonth}
         />
       </DialogContent>
     </Dialog>
