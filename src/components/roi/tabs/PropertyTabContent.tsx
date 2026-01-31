@@ -432,8 +432,7 @@ export const PropertyTabContent = ({
             <div className="relative h-full min-h-0 overflow-hidden rounded-2xl bg-theme-card border border-theme-border">
               <BuildingRenderCard
                 imageUrl={buildingRenderUrl}
-                developerId={developerId}
-                showLogoOverlay={showLogoOverlay}
+                developerName={clientInfo?.developer}
                 className="absolute inset-0"
               />
             </div>

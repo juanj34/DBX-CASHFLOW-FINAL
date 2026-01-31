@@ -6,11 +6,6 @@ import { Currency, formatCurrency } from './currencyUtils';
 import { Building, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ValueDifferentiator, VALUE_DIFFERENTIATORS } from './valueDifferentiators';
-import { calculateTrustScore, getTierInfo, Developer } from './developerTrustScore';
-import { TrustScoreRing } from './showcase/TrustScoreRing';
-import { Badge } from '@/components/ui/badge';
-import { DeveloperInfoModal } from './DeveloperInfoModal';
-import { ProjectInfoModal } from './ProjectInfoModal';
 
 interface ClientInfo {
   clients?: { id: string; name: string; country?: string }[];
@@ -35,45 +30,12 @@ const formatClientNames = (clientInfo: ClientInfo): string => {
   return clientInfo.clientName?.toUpperCase() || '';
 };
 
-// Helper to get maturity badge info
-const getMaturityBadge = (level: number | null, label: string | null) => {
-  if (level === null) return { emoji: '📍', color: 'bg-white/20 text-white/70' };
-  if (level <= 25) return { emoji: '🌱', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' };
-  if (level <= 50) return { emoji: '📈', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' };
-  if (level <= 75) return { emoji: '🏗️', color: 'bg-green-500/20 text-green-300 border-green-500/30' };
-  if (level <= 90) return { emoji: '🏢', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' };
-  return { emoji: '🏛️', color: 'bg-slate-400/20 text-slate-300 border-slate-400/30' };
-};
-
 interface Zone {
   id: string;
   name: string;
   maturity_level: number | null;
   maturity_label: string | null;
   investment_focus: string | null;
-}
-
-interface Project {
-  id: string;
-  name: string | null;
-  image_url: string | null;
-  hero_image_url: string | null;
-  logo_url: string | null;
-  description?: string | null;
-  total_units?: number | null;
-  total_towers?: number | null;
-  total_villas?: number | null;
-  phases?: number | null;
-  is_masterplan?: boolean | null;
-  launch_date?: string | null;
-  delivery_date?: string | null;
-  construction_status?: 'off_plan' | 'under_construction' | 'ready' | null;
-  starting_price?: number | null;
-  price_per_sqft?: number | null;
-  areas_from?: number | null;
-  unit_types?: string[] | null;
-  zone_id?: string | null;
-  updated_at?: string;
 }
 
 interface PropertyShowcaseProps {
@@ -84,8 +46,6 @@ interface PropertyShowcaseProps {
   rate: number;
   heroImageUrl?: string | null;
   buildingRenderUrl?: string | null;
-  developerId?: string;
-  projectId?: string;
   zoneId?: string;
   customDifferentiators?: ValueDifferentiator[];
   className?: string;
@@ -102,33 +62,13 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
   rate,
   heroImageUrl,
   buildingRenderUrl,
-  developerId,
-  projectId,
   zoneId,
   customDifferentiators = [],
   className,
 }) => {
-  const [developer, setDeveloper] = useState<Developer | null>(null);
   const [zone, setZone] = useState<Zone | null>(null);
-  const [project, setProject] = useState<Project | null>(null);
-  const [developerModalOpen, setDeveloperModalOpen] = useState(false);
-  const [projectModalOpen, setProjectModalOpen] = useState(false);
 
-  // Fetch developer data
-  useEffect(() => {
-    const fetchDeveloper = async () => {
-      if (developerId) {
-        const { data } = await supabase.from('developers').select('*').eq('id', developerId).maybeSingle();
-        if (data) setDeveloper(data);
-      } else if (clientInfo.developer) {
-        const { data } = await supabase.from('developers').select('*').ilike('name', `%${clientInfo.developer}%`).maybeSingle();
-        if (data) setDeveloper(data);
-      }
-    };
-    fetchDeveloper();
-  }, [developerId, clientInfo.developer]);
-
-  // Fetch zone data
+  // Fetch zone data (zones are still database-driven)
   useEffect(() => {
     const fetchZone = async () => {
       const id = zoneId || clientInfo.zoneId || inputs.zoneId;
@@ -143,28 +83,10 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
     fetchZone();
   }, [zoneId, clientInfo.zoneId, inputs.zoneId, clientInfo.zoneName]);
 
-  // Fetch project data
-  useEffect(() => {
-    const fetchProject = async () => {
-      if (projectId) {
-        const { data } = await supabase.from('projects').select('*').eq('id', projectId).maybeSingle();
-        if (data) setProject(data);
-      } else if (clientInfo.projectName) {
-        const { data } = await supabase.from('projects').select('*').ilike('name', clientInfo.projectName).maybeSingle();
-        if (data) setProject(data);
-      }
-    };
-    fetchProject();
-  }, [projectId, clientInfo.projectName]);
+  // Use hero image from props
+  const displayImage = heroImageUrl || buildingRenderUrl;
 
-  // Use project image from DB first, then fallback to props
-  const displayImage = project?.hero_image_url || project?.image_url || heroImageUrl || buildingRenderUrl;
-
-  // Calculate trust score
-  const trustScore = developer ? calculateTrustScore(developer) : null;
-  const tierInfo = trustScore ? getTierInfo(trustScore) : null;
-
-  // Get selected differentiators details (no appreciation bonus calculation)
+  // Get selected differentiators details
   const allDifferentiators = [...VALUE_DIFFERENTIATORS, ...customDifferentiators];
   const selectedDifferentiators = inputs.valueDifferentiators
     ? allDifferentiators.filter(d => inputs.valueDifferentiators?.includes(d.id))
@@ -172,9 +94,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
 
   // Format all client names
   const allClientNames = formatClientNames(clientInfo);
-  
-  // Get maturity badge
-  const maturityBadge = getMaturityBadge(zone?.maturity_level ?? null, zone?.maturity_label ?? null);
   
   // Format unit details with meters
   const unitSizeSqft = inputs.unitSizeSqf;
@@ -200,7 +119,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
             {clientInfo.projectName || 'Property Investment'}
           </h1>
 
-          {/* Zone + Maturity Badge */}
+          {/* Zone */}
           {(zone || clientInfo.zoneName) && (
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5">
@@ -213,21 +132,12 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
           )}
 
           {/* Developer Row */}
-          {(developer || clientInfo.developer) && (
+          {clientInfo.developer && (
             <div className="flex items-center gap-3">
-              {developer?.white_logo_url ? (
-                <img src={developer.white_logo_url} alt="" className="w-8 h-8 rounded-lg object-contain" />
-              ) : developer?.logo_url ? (
-                <img src={developer.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain filter brightness-0 invert opacity-90" />
-              ) : (
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <Building className="w-4 h-4 text-emerald-400" />
-                </div>
-              )}
-              <span className="text-sm text-white font-medium">{developer?.name || clientInfo.developer}</span>
-              {trustScore && (
-                <TrustScoreRing score={trustScore} size={32} className="ml-auto" />
-              )}
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <Building className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span className="text-sm text-white font-medium">{clientInfo.developer}</span>
             </div>
           )}
 
@@ -245,7 +155,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
             </p>
           </div>
 
-          {/* Key Features (renamed from Asset Uniqueness) */}
+          {/* Key Features */}
           {selectedDifferentiators.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs text-white/40 uppercase tracking-wide">Key Features</p>
@@ -318,16 +228,12 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               {allClientNames ? `Prepared for ${allClientNames}` : 'Investment Opportunity'}
             </motion.p>
 
-            {/* Project Title - Larger, amber color, Clickable */}
+            {/* Project Title - Larger, amber color */}
             <motion.h1 
-              className={cn(
-                "text-5xl lg:text-6xl xl:text-7xl font-bold text-amber-400 leading-tight drop-shadow-lg",
-                project && "cursor-pointer hover:text-amber-300 transition-colors"
-              )}
+              className="text-5xl lg:text-6xl xl:text-7xl font-bold text-amber-400 leading-tight drop-shadow-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              onClick={() => project && setProjectModalOpen(true)}
             >
               {clientInfo.projectName || 'Property Investment'}
             </motion.h1>
@@ -362,32 +268,20 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               </div>
             </motion.div>
 
-            {/* Developer Trust Row - Clickable */}
-            <motion.div 
-              className={cn(
-                "flex items-center gap-3 py-2 px-3 -mx-3 rounded-lg transition-colors",
-                developer && "cursor-pointer hover:bg-white/5"
-              )}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-              onClick={() => developer && setDeveloperModalOpen(true)}
-            >
-              {developer?.white_logo_url ? (
-                <img src={developer.white_logo_url} alt="" className="w-9 h-9 rounded-lg object-contain" />
-              ) : developer?.logo_url ? (
-                <img src={developer.logo_url} alt="" className="w-9 h-9 rounded-lg object-contain filter brightness-0 invert opacity-90" />
-              ) : (clientInfo.developer || developer) && (
+            {/* Developer Row */}
+            {clientInfo.developer && (
+              <motion.div 
+                className="flex items-center gap-3 py-2 px-3 -mx-3 rounded-lg"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
                 <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                   <Building className="w-4 h-4 text-emerald-400" />
                 </div>
-              )}
-              <span className="text-sm text-white font-medium">{developer?.name || clientInfo.developer}</span>
-              
-              {trustScore && (
-                <TrustScoreRing score={trustScore} size={36} />
-              )}
-            </motion.div>
+                <span className="text-sm text-white font-medium">{clientInfo.developer}</span>
+              </motion.div>
+            )}
 
             {/* Unit Details Row */}
             <motion.div 
@@ -405,7 +299,7 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
               </p>
             </motion.div>
 
-            {/* Key Features (renamed from Asset Uniqueness) */}
+            {/* Key Features */}
             {selectedDifferentiators.length > 0 && (
               <motion.div 
                 className="space-y-3"
@@ -432,42 +326,6 @@ export const PropertyShowcase: React.FC<PropertyShowcaseProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Developer Info Modal */}
-      <DeveloperInfoModal
-        developerId={developer?.id || null}
-        open={developerModalOpen}
-        onOpenChange={setDeveloperModalOpen}
-      />
-
-      {/* Project Info Modal */}
-      <ProjectInfoModal
-        project={project ? {
-          id: project.id,
-          name: project.name,
-          logo_url: project.logo_url,
-          image_url: project.image_url || project.hero_image_url,
-          description: project.description,
-          developer: clientInfo.developer,
-          total_units: project.total_units,
-          total_towers: project.total_towers,
-          total_villas: project.total_villas,
-          phases: project.phases,
-          is_masterplan: project.is_masterplan,
-          launch_date: project.launch_date,
-          delivery_date: project.delivery_date,
-          construction_status: project.construction_status,
-          starting_price: project.starting_price,
-          price_per_sqft: project.price_per_sqft,
-          areas_from: project.areas_from,
-          unit_types: project.unit_types,
-          zone_id: project.zone_id || zoneId,
-          updated_at: project.updated_at,
-        } : null}
-        zoneName={zone?.name || clientInfo.zoneName}
-        open={projectModalOpen}
-        onOpenChange={setProjectModalOpen}
-      />
     </div>
   );
 };
