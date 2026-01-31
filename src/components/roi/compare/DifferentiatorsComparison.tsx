@@ -5,13 +5,22 @@ import {
   CATEGORY_LABELS,
   DifferentiatorCategory 
 } from '@/components/roi/valueDifferentiators';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface DifferentiatorsComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
 }
 
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+
 export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsComparisonProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
   
   // Get all unique selected differentiators across all quotes
   const allSelectedIds = new Set<string>();
@@ -34,14 +43,18 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
 
   const categories = Object.keys(categorizedDifferentiators) as DifferentiatorCategory[];
 
+  // Badge color for appreciation bonus
+  const bonusBgColor = isLightTheme ? 'rgba(184, 134, 11, 0.2)' : 'rgba(204, 255, 0, 0.2)';
+  const bonusTextColor = isLightTheme ? '#B8860B' : '#CCFF00';
+
   return (
     <div className="space-y-4">
       {/* Header with quote names */}
       <div 
-        className="grid gap-4 mb-4 pb-3 border-b border-[#2a3142]"
+        className="grid gap-4 mb-4 pb-3 border-b border-theme-border"
         style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, 1fr)` }}
       >
-        <div className="text-sm text-gray-500">Feature</div>
+        <div className="text-sm text-theme-text-muted">Feature</div>
         {quotesWithCalcs.map(({ quote }, idx) => (
           <div 
             key={quote.id}
@@ -58,7 +71,7 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
         {categories.map(category => (
           <div key={category}>
             {/* Category header */}
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+            <div className="text-xs text-theme-text-muted uppercase tracking-wide mb-2">
               {CATEGORY_LABELS[category]?.en || category}
             </div>
             
@@ -69,15 +82,18 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
                 return (
                   <div 
                     key={diff.id}
-                    className="grid gap-4 py-2 hover:bg-[#0f172a]/50 rounded-lg px-2 -mx-2"
+                    className="grid gap-4 py-2 hover:bg-theme-bg-alt/50 rounded-lg px-2 -mx-2"
                     style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, 1fr)` }}
                   >
                     {/* Feature name */}
                     <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-300">{diff.name}</span>
+                      <Icon className="w-4 h-4 text-theme-text-muted" />
+                      <span className="text-sm text-theme-text">{diff.name}</span>
                       {diff.impactsAppreciation && (
-                        <span className="text-[10px] px-1 py-0.5 bg-[#CCFF00]/20 text-[#CCFF00] rounded">
+                        <span 
+                          className="text-[10px] px-1 py-0.5 rounded"
+                          style={{ backgroundColor: bonusBgColor, color: bonusTextColor }}
+                        >
                           +{diff.appreciationBonus}%
                         </span>
                       )}
@@ -98,8 +114,8 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
                               <Check className="w-4 h-4" style={{ color }} />
                             </div>
                           ) : (
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#0f172a]">
-                              <X className="w-4 h-4 text-gray-600" />
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center bg-theme-bg-alt">
+                              <X className="w-4 h-4 text-theme-text-muted/50" />
                             </div>
                           )}
                         </div>
@@ -115,10 +131,10 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
 
       {/* Appreciation bonus summary */}
       <div 
-        className="grid gap-4 mt-4 pt-3 border-t border-[#2a3142]"
+        className="grid gap-4 mt-4 pt-3 border-t border-theme-border"
         style={{ gridTemplateColumns: `180px repeat(${quotesWithCalcs.length}, 1fr)` }}
       >
-        <div className="text-sm text-gray-400">Total Appreciation Bonus</div>
+        <div className="text-sm text-theme-text-muted">Total Appreciation Bonus</div>
         {quotesWithCalcs.map(({ quote }, idx) => {
           const selectedIds = quote.inputs.valueDifferentiators || [];
           const bonus = VALUE_DIFFERENTIATORS
@@ -130,7 +146,7 @@ export const DifferentiatorsComparison = ({ quotesWithCalcs }: DifferentiatorsCo
             <div 
               key={quote.id}
               className="text-center font-semibold"
-              style={{ color: bonus > 0 ? color : '#6b7280' }}
+              style={{ color: bonus > 0 ? color : 'var(--theme-text-muted)' }}
             >
               {bonus > 0 ? `+${Math.min(bonus, 2).toFixed(1)}%` : '-'}
             </div>

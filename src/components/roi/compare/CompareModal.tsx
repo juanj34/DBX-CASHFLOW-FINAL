@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { useQuotesComparison, computeComparisonMetrics, QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { useOICalculations } from '@/components/roi/useOICalculations';
@@ -27,6 +28,12 @@ import { LoadComparisonModal } from './LoadComparisonModal';
 import { ShareComparisonButton } from './ShareComparisonButton';
 import { ExportComparisonButton } from './ExportComparisonButton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
 
 // Wrapper component to calculate for a single quote
 const QuoteCalculator = ({ 
@@ -55,6 +62,9 @@ interface CompareModalProps {
 
 export const CompareModal = ({ open, onClose, selectedIds }: CompareModalProps) => {
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
   const [calculationsMap, setCalculationsMap] = useState<Record<string, any>>({});
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedFocus, setSelectedFocus] = useState<InvestmentFocus | null>(null);
@@ -113,7 +123,7 @@ export const CompareModal = ({ open, onClose, selectedIds }: CompareModalProps) 
     }
   }, [open, selectedIds.join(',')]);
 
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500'];
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

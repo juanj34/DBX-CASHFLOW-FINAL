@@ -1,6 +1,7 @@
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface PaymentComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -8,12 +9,20 @@ interface PaymentComparisonProps {
   exchangeRate?: number;
 }
 
+// Theme-aware colors for quotes
+const getQuoteColors = (isLightTheme: boolean) => 
+  isLightTheme 
+    ? ['#B8860B', '#1e40af', '#7c3aed', '#c2410c', '#0f766e', '#be185d']
+    : ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+
 export const PaymentComparison = ({ 
   quotesWithCalcs,
   currency = 'AED',
   exchangeRate = 1,
 }: PaymentComparisonProps) => {
-  const colors = ['#CCFF00', '#00EAFF', '#FF00FF', '#FFA500', '#FF6B6B', '#4ECDC4'];
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  const colors = getQuoteColors(isLightTheme);
   const { t } = useLanguage();
 
   return (
@@ -36,7 +45,6 @@ export const PaymentComparison = ({
           
           if (hasPostHandover) {
             onHandover = quote.inputs.onHandoverPercent || 0;
-            // Use stored postHandoverPercent directly
             postHandoverPercent = quote.inputs.postHandoverPercent || 0;
           } else {
             onHandover = 100 - preHandoverTotal;
@@ -95,10 +103,11 @@ export const PaymentComparison = ({
               <div className="h-8 rounded-lg overflow-hidden flex">
                 {/* Downpayment */}
                 <div 
-                  className="flex items-center justify-center text-xs font-medium text-black"
+                  className="flex items-center justify-center text-xs font-medium"
                   style={{ 
                     width: `${downpayment}%`,
                     backgroundColor: color,
+                    color: isLightTheme ? '#fff' : '#000',
                   }}
                 >
                   {downpayment > 8 ? `${Math.round(downpayment)}%` : ''}
@@ -106,11 +115,10 @@ export const PaymentComparison = ({
                 {/* Pre-handover installments */}
                 {preHandoverInstallments > 0 && (
                   <div 
-                    className="flex items-center justify-center text-xs font-medium"
+                    className="flex items-center justify-center text-xs font-medium text-white"
                     style={{ 
                       width: `${preHandoverInstallments}%`,
                       backgroundColor: `${color}80`,
-                      color: '#fff',
                     }}
                   >
                     {preHandoverInstallments > 8 ? `${Math.round(preHandoverInstallments)}%` : ''}
@@ -118,7 +126,7 @@ export const PaymentComparison = ({
                 )}
                 {/* On Handover */}
                 <div 
-                  className="flex items-center justify-center text-xs font-medium bg-[#0f172a] text-theme-text-muted"
+                  className="flex items-center justify-center text-xs font-medium bg-theme-bg-alt text-theme-text-muted"
                   style={{ width: `${onHandover}%` }}
                 >
                   {onHandover > 8 ? `${Math.round(onHandover)}%` : ''}
@@ -126,11 +134,10 @@ export const PaymentComparison = ({
                 {/* Post-handover (if applicable) */}
                 {hasPostHandover && postHandoverPercent > 0 && (
                   <div 
-                    className="flex items-center justify-center text-xs font-medium"
+                    className="flex items-center justify-center text-xs font-medium text-white"
                     style={{ 
                       width: `${postHandoverPercent}%`,
                       background: `repeating-linear-gradient(45deg, ${color}40, ${color}40 2px, ${color}20 2px, ${color}20 4px)`,
-                      color: '#fff',
                     }}
                   >
                     {postHandoverPercent > 8 ? `${Math.round(postHandoverPercent)}%` : ''}
@@ -145,7 +152,7 @@ export const PaymentComparison = ({
                     <span className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
                     <span className="text-theme-text-muted">{t('downpayment')}</span>
                   </span>
-                  <span className="text-white font-medium">
+                  <span className="text-theme-text font-medium">
                     {formatCurrency(downpaymentAmount, currency, exchangeRate)}
                   </span>
                 </div>
@@ -155,17 +162,17 @@ export const PaymentComparison = ({
                       <span className="w-3 h-3 rounded" style={{ backgroundColor: `${color}80` }} />
                       <span className="text-theme-text-muted">{t('preHandover') || 'Pre-Handover'}</span>
                     </span>
-                    <span className="text-white font-medium">
+                    <span className="text-theme-text font-medium">
                       {formatCurrency(preHandoverInstallmentsAmount, currency, exchangeRate)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-[#0f172a] border border-[#2a3142]" />
+                    <span className="w-3 h-3 rounded bg-theme-bg-alt border border-theme-border" />
                     <span className="text-theme-text-muted">{t('onHandover') || 'On Handover'}</span>
                   </span>
-                  <span className="text-white font-medium">
+                  <span className="text-theme-text font-medium">
                     {formatCurrency(onHandoverAmount, currency, exchangeRate)}
                   </span>
                 </div>
@@ -179,7 +186,7 @@ export const PaymentComparison = ({
                         />
                         <span className="text-theme-text-muted">{t('postHandover') || 'Post-Handover'}</span>
                       </span>
-                      <span className="text-white font-medium">
+                      <span className="text-theme-text font-medium">
                         {formatCurrency(postHandoverAmount, currency, exchangeRate)}
                       </span>
                     </div>
@@ -196,7 +203,7 @@ export const PaymentComparison = ({
 
               {/* Monthly payment during construction */}
               {avgMonthlyPayment > 0 && (
-                <div className="pt-2 border-t border-[#2a3142]">
+                <div className="pt-2 border-t border-theme-border">
                   <div className="flex justify-between text-xs">
                     <span className="text-theme-text-muted">{t('monthlyAvgConstruction') || 'Monthly avg (construction)'}</span>
                     <span className="text-theme-text-muted font-medium">
@@ -207,7 +214,7 @@ export const PaymentComparison = ({
               )}
 
               {/* Entry costs */}
-              <div className="pt-3 border-t border-[#2a3142]">
+              <div className="pt-3 border-t border-theme-border">
                 <div className="flex justify-between text-xs">
                   <span className="text-theme-text-muted">{t('entryCosts') || 'Entry Costs (DLD, etc.)'}</span>
                   <span className="text-theme-text-muted">
@@ -216,7 +223,7 @@ export const PaymentComparison = ({
                 </div>
                 <div className="flex justify-between text-xs mt-1">
                   <span className="text-theme-text-muted">{t('totalCapitalRequired') || 'Total Capital Required'}</span>
-                  <span className="text-white font-medium">
+                  <span className="text-theme-text font-medium">
                     {formatCurrency(calculations.holdAnalysis.totalCapitalInvested, currency, exchangeRate)}
                   </span>
                 </div>
