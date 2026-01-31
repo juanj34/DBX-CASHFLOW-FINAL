@@ -3,6 +3,10 @@ import { OIInputs, PaymentMilestone, ShortTermRentalConfig } from './useOICalcul
 // Schema version tracking
 export const CURRENT_SCHEMA_VERSION = 2;
 
+// Dynamic date helpers
+const getCurrentMonth = () => new Date().getMonth() + 1;
+const getCurrentYear = () => new Date().getFullYear();
+
 // Default values for all fields (used for migration fallbacks)
 const DEFAULT_SHORT_TERM_RENTAL: ShortTermRentalConfig = {
   averageDailyRate: 800,
@@ -15,10 +19,10 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   basePrice: 800000,
   rentalYieldPercent: 8.5,
   appreciationRate: 10,
-  bookingMonth: 1,
-  bookingYear: 2025,
+  bookingMonth: getCurrentMonth(),
+  bookingYear: getCurrentYear(),
   handoverQuarter: 4,
-  handoverYear: 2027,
+  handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
   preHandoverPercent: 20,
   additionalPayments: [],

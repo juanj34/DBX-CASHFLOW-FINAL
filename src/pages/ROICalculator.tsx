@@ -21,10 +21,10 @@ const ROICalculator = () => {
     basePrice: 800000,
     rentalYieldPercent: 8.5,
     appreciationRate: 10,
-    bookingMonth: 1,
-    bookingYear: 2025,
+    bookingMonth: new Date().getMonth() + 1,
+    bookingYear: new Date().getFullYear(),
     handoverMonth: 6,
-    handoverYear: 2028,
+    handoverYear: new Date().getFullYear() + 3,
     resaleThresholdPercent: 40,
     oiHoldingMonths: 30,
   });
