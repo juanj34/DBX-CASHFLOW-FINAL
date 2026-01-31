@@ -92,11 +92,13 @@ export const PaymentPlanExtractor = ({
     setExtractedData(null);
 
     try {
-      // Get base64 data URLs from file previews
-      const images = files.map(f => f.preview).filter(Boolean);
+      // Get base64 data URLs from file previews - ensure they are valid strings
+      const images = files
+        .map(f => f.preview)
+        .filter((p): p is string => typeof p === 'string' && p.length > 0 && p.startsWith('data:'));
       
       if (images.length === 0) {
-        setError("No valid files to process");
+        setError("No valid files to process. Please re-upload your files.");
         return;
       }
       
@@ -104,7 +106,8 @@ export const PaymentPlanExtractor = ({
       
       console.log(`Sending ${images.length} images for extraction`, { 
         types: files.map(f => f.type),
-        previewLengths: images.map(p => p?.length || 0)
+        previewLengths: images.map(p => p.length),
+        previewPrefixes: images.map(p => p.substring(0, 50))
       });
 
       const { data, error: fnError } = await supabase.functions.invoke<ExtractionResponse>(
