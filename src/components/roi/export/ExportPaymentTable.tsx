@@ -335,6 +335,19 @@ export const ExportPaymentTable = ({
                 )}
               </span>
             </div>
+            
+            {/* Total Paid to Date: Entry + Journey */}
+            <div style={{ ...rowStyle, borderTop: '1px dashed hsl(var(--theme-border) / 0.5)', marginTop: '4px', paddingTop: '8px' }}>
+              <span style={{ ...labelStyle, fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                💰 {language === 'es' ? 'Total Pagado (Entrada + Camino)' : 'Total Paid (Entry + Journey)'}
+              </span>
+              <span style={{ ...valueStyle, fontWeight: 600, color: 'hsl(var(--theme-accent))' }}>
+                {getDualValue(entryTotal + journeyTotal).primary}
+                {getDualValue(entryTotal + journeyTotal).secondary && (
+                  <span style={{ color: 'hsl(var(--theme-text-muted))', marginLeft: '4px', fontWeight: 400 }}>({getDualValue(entryTotal + journeyTotal).secondary})</span>
+                )}
+              </span>
+            </div>
           </div>
         )}
 
