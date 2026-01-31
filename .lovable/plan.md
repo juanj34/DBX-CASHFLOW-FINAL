@@ -1,78 +1,219 @@
 
+# Fix AI Payment Plan Extractor & Move to First Configurator Step
 
-# Fix Booking Date Default to Today's Date
+## Problem Summary
 
-## Problem
-
-When loading the configurator for a new quote, the booking date defaults to **January 2025** instead of **today's date**. This happens because the migration defaults in `inputMigration.ts` use hardcoded values, not dynamic date functions.
+1. **Edge Function 400 Error**: The AI gateway returns "Invalid content" because PDFs are being sent in an unsupported format (`type: "file"`)
+2. **Wrong Position**: The AI extractor is currently in the Payment section (step 4), but should be in the Client section (step 1) to auto-fill ALL fields early
+3. **Missing Currency Detection**: The AI doesn't extract currency information (usually AED)
 
 ---
 
 ## Root Cause Analysis
 
-| File | Current Value | Should Be |
-|------|---------------|-----------|
-| `inputMigration.ts` line 18 | `bookingMonth: 1` | `new Date().getMonth() + 1` |
-| `inputMigration.ts` line 19 | `bookingYear: 2025` | `new Date().getFullYear()` |
-| `ROICalculator.tsx` line 24-25 | `bookingMonth: 1, bookingYear: 2025` | Dynamic today's date |
+### Error: "Invalid content"
 
-The `types.ts` file already has the correct pattern with `getCurrentMonth()` and `getCurrentYear()` helper functions, but `inputMigration.ts` (which handles loading/migration of saved quotes) uses hardcoded static values.
+Looking at the edge function code (lines 243-258):
+
+```typescript
+// Check if it's a PDF
+if (mediaType === "application/pdf") {
+  contentParts.push({
+    type: "file",  // ❌ NOT SUPPORTED by Lovable AI Gateway
+    file: {
+      filename: `page_${i + 1}.pdf`,
+      file_data: base64Data,
+    }
+  });
+}
+```
+
+The Lovable AI Gateway only supports `image_url` content type for vision models, not `file`. PDFs need to be either:
+- Converted to images first (render each page as PNG)
+- OR sent as inline PDF using the proper format
+
+**Solution**: For PDFs, we need to use `image_url` with the data URL format since Gemini models can process inline PDFs via the vision API.
 
 ---
 
-## Solution
+## Changes Required
 
-### 1. Update `inputMigration.ts`
+### 1. Fix Edge Function (`supabase/functions/extract-payment-plan/index.ts`)
 
-Add dynamic date functions and use them in `DEFAULT_INPUT_VALUES`:
-
+**Fix PDF handling to use proper format:**
 ```typescript
-// Add at top of file (after imports)
-const getCurrentMonth = () => new Date().getMonth() + 1;
-const getCurrentYear = () => new Date().getFullYear();
-
-const DEFAULT_INPUT_VALUES: OIInputs = {
-  // ... other fields ...
-  bookingMonth: getCurrentMonth(),  // Was: 1
-  bookingYear: getCurrentYear(),    // Was: 2025
-  handoverQuarter: 4,
-  handoverYear: getCurrentYear() + 2,  // Was: 2027
-  // ... rest unchanged ...
-};
-```
-
-### 2. Update `ROICalculator.tsx`
-
-Fix the initial state to use dynamic dates:
-
-```typescript
-const [inputs, setInputs] = useState<ROIInputs>({
-  basePrice: 800000,
-  rentalYieldPercent: 8.5,
-  appreciationRate: 10,
-  bookingMonth: new Date().getMonth() + 1,  // Was: 1
-  bookingYear: new Date().getFullYear(),    // Was: 2025
-  handoverMonth: 6,
-  handoverYear: new Date().getFullYear() + 3,  // Was: 2028
-  resaleThresholdPercent: 40,
-  oiHoldingMonths: 30,
+// For ALL files (images AND PDFs), use image_url format
+contentParts.push({
+  type: "image_url",
+  image_url: {
+    url: imageData.startsWith("data:") ? imageData : `data:${mediaType};base64,${base64Data}`
+  }
 });
 ```
 
+**Add currency extraction to the tool schema:**
+```typescript
+// In property extraction
+currency: { 
+  type: "string", 
+  enum: ["AED", "USD", "EUR", "GBP"],
+  description: "Currency detected in the document (default: AED)" 
+}
+```
+
+**Update system prompt to prioritize property info extraction:**
+```
+EXTRACTION PRIORITIES (in order):
+1. Property info (developer, project name, unit details, price, currency)
+2. Payment percentages (MUST sum to 100%)
+3. Payment triggers (month number or construction milestone)
+4. Dates (handover quarter/year)
+```
+
 ---
 
-## Files to Modify
+### 2. Update Types (`src/lib/paymentPlanTypes.ts`)
 
-| File | Change |
-|------|--------|
-| `src/components/roi/inputMigration.ts` | Replace hardcoded dates with dynamic `getCurrentMonth()`/`getCurrentYear()` |
-| `src/pages/ROICalculator.tsx` | Update initial state to use `new Date()` for booking/handover dates |
+Add currency to `ExtractedProperty`:
+```typescript
+export interface ExtractedProperty {
+  developer?: string;
+  projectName?: string;
+  unitNumber?: string;
+  unitType?: string;
+  unitSizeSqft?: number;
+  basePrice?: number;
+  currency?: 'AED' | 'USD' | 'EUR' | 'GBP';  // NEW
+}
+```
 
 ---
 
-## Result
+### 3. Move AI Extractor to Client Section
 
-- New quotes will always start with **today's date** as the booking date
-- Handover year will default to **current year + 2** (or +3 for ROI calculator)
-- Existing saved quotes will continue to work (their saved values won't be overwritten)
+**Current flow:**
+```
+Client → Property → Images → Payment (AI Extractor here) → ...
+```
 
+**New flow:**
+```
+Client (AI Extractor at top) → Property → Images → Payment → ...
+```
+
+**Files to modify:**
+
+#### `src/components/roi/configurator/ClientSection.tsx`
+- Add AI Import button at the top
+- Import `PaymentPlanExtractor`
+- Handle extraction results to populate:
+  - Developer name
+  - Project name
+  - Unit number
+  - Unit type
+  - Unit size
+  - Base price
+  - Payment plan
+  - Handover dates
+  - Currency
+
+#### `src/components/roi/configurator/PaymentSection.tsx`
+- Keep the AI Import button as a secondary option
+- But primary use case will be from Client section
+
+---
+
+### 4. Update Extraction Handler
+
+Create a comprehensive handler that populates ALL fields from extraction:
+
+```typescript
+const handleAIExtraction = (data: ExtractedPaymentPlan) => {
+  // Update client info
+  if (setClientInfo) {
+    setClientInfo(prev => ({
+      ...prev,
+      developer: data.property?.developer || prev.developer,
+      projectName: data.property?.projectName || prev.projectName,
+      unit: data.property?.unitNumber || prev.unit,
+      unitType: data.property?.unitType || prev.unitType,
+      unitSizeSqf: data.property?.unitSizeSqft || prev.unitSizeSqf,
+      unitSizeM2: data.property?.unitSizeSqft ? Math.round(data.property.unitSizeSqft * 0.0929) : prev.unitSizeM2,
+    }));
+  }
+  
+  // Update inputs (property, payment, dates)
+  setInputs(prev => ({
+    ...prev,
+    basePrice: data.property?.basePrice || prev.basePrice,
+    downpaymentPercent: /* extracted */,
+    preHandoverPercent: /* from split */,
+    additionalPayments: /* converted installments */,
+    handoverQuarter: data.paymentStructure.handoverQuarter || prev.handoverQuarter,
+    handoverYear: data.paymentStructure.handoverYear || prev.handoverYear,
+    hasPostHandoverPlan: data.paymentStructure.hasPostHandover,
+  }));
+  
+  // Navigate to next section or show success
+};
+```
+
+---
+
+### 5. Update ExtractedDataPreview
+
+The preview already allows editing property info, but ensure it's prominently displayed when detected.
+
+Make Property Info section **open by default** when data is detected:
+```typescript
+const [showPropertyInfo, setShowPropertyInfo] = useState(
+  !!data.property?.developer || 
+  !!data.property?.projectName ||
+  !!data.property?.basePrice  // NEW: Also open if price detected
+);
+```
+
+---
+
+## File Summary
+
+| File | Changes |
+|------|---------|
+| `supabase/functions/extract-payment-plan/index.ts` | Fix PDF format, add currency extraction, improve prompts |
+| `src/lib/paymentPlanTypes.ts` | Add `currency` to `ExtractedProperty` |
+| `src/components/roi/configurator/ClientSection.tsx` | Add AI Import button and handler |
+| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Pass `setClientInfo` to ClientSection for AI updates |
+| `src/components/roi/configurator/ExtractedDataPreview.tsx` | Open property section by default when data exists |
+
+---
+
+## Visual Layout Change
+
+**Client Section (NEW):**
+```
+┌──────────────────────────────────────────────────────────┐
+│ Client Details                          [🪄 AI Import]   │
+├──────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────┐  │
+│ │ Upload a brochure or payment plan to auto-fill all  │  │
+│ │ quote details including developer, unit info, and   │  │
+│ │ payment schedule.                                   │  │
+│ └─────────────────────────────────────────────────────┘  │
+│                                                          │
+│ Developer:  [                    ]                       │
+│ Project:    [                    ]                       │
+│ Unit Type:  [Select...]     Zone: [Select...]           │
+│ ...                                                      │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Implementation Order
+
+1. Fix edge function PDF handling (critical - currently broken)
+2. Add currency to types and extraction schema
+3. Update extraction system prompt
+4. Move AI Import button to ClientSection
+5. Update ConfiguratorLayout to pass setClientInfo
+6. Test with PDF upload
