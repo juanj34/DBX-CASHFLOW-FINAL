@@ -76,10 +76,11 @@ export const ExportPaymentTable = ({
   // Separate pre-handover and post-handover payments
   let preHandoverPayments = [...(additionalPayments || [])];
   
+  // Calculate total percentage from all payments to detect 100% allocation
+  const totalAdditionalPercent = (additionalPayments || []).reduce((sum, p) => sum + p.paymentPercent, 0);
+  const totalAllocatedPercent = downpaymentPercent + totalAdditionalPercent;
+  
   if (hasPostHandoverPlan) {
-    handoverPercent = inputs.onHandoverPercent || 0;
-    handoverAmount = basePrice * handoverPercent / 100;
-    
     // If no dedicated postHandoverPayments, derive from additionalPayments
     if (postHandoverPaymentsToUse.length === 0 && additionalPayments?.length > 0) {
       postHandoverPaymentsToUse = additionalPayments.filter(p => {
@@ -97,6 +98,18 @@ export const ExportPaymentTable = ({
     postHandoverTotal = postHandoverPaymentsToUse.reduce(
       (sum, p) => sum + (basePrice * p.paymentPercent / 100), 0
     );
+    
+    // Check if payments already sum to 100% - if so, handover is already included
+    // and we should NOT add an extra onHandoverPercent
+    if (Math.abs(totalAllocatedPercent - 100) < 0.5) {
+      // All payments are in additionalPayments, no separate handover payment
+      handoverPercent = 0;
+      handoverAmount = 0;
+    } else {
+      // Use configured onHandoverPercent for explicit handover payment
+      handoverPercent = inputs.onHandoverPercent || 0;
+      handoverAmount = basePrice * handoverPercent / 100;
+    }
   } else {
     handoverPercent = 100 - inputs.preHandoverPercent;
     handoverAmount = basePrice * handoverPercent / 100;

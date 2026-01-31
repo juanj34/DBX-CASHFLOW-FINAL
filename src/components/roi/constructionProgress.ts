@@ -201,10 +201,16 @@ export const calculateEquityAtExitWithDetails = (
   });
   
   // 3. Handover payment logic
+  // Calculate if payments already sum to 100% (no separate handover payment needed)
+  const totalAdditionalPercent = inputs.additionalPayments.reduce((sum, p) => sum + p.paymentPercent, 0);
+  const totalAllocatedPercent = inputs.downpaymentPercent + totalAdditionalPercent;
+  const paymentsAlreadyComplete = Math.abs(totalAllocatedPercent - 100) < 0.5;
+  
   if (inputs.hasPostHandoverPlan) {
     // With post-handover plan: on-handover is a specific percentage
-    if (exitMonths >= totalMonths) {
-      planEquity += basePrice * inputs.onHandoverPercent / 100;
+    // BUT only add it if payments don't already sum to 100%
+    if (exitMonths >= totalMonths && !paymentsAlreadyComplete) {
+      planEquity += basePrice * (inputs.onHandoverPercent || 0) / 100;
     }
     
     // 4. Post-handover payments - check each one
@@ -343,12 +349,19 @@ export const getMonthWhenThresholdMet = (
   });
   
   // Add handover payment
+  // Calculate if payments already sum to 100% (no separate handover payment needed)
+  const totalAdditionalPercent = inputs.additionalPayments.reduce((sum, p) => sum + p.paymentPercent, 0);
+  const totalAllocatedPercent = inputs.downpaymentPercent + totalAdditionalPercent;
+  const paymentsAlreadyComplete = Math.abs(totalAllocatedPercent - 100) < 0.5;
+  
   if (inputs.hasPostHandoverPlan) {
-    // On-handover payment
-    paymentEvents.push({
-      month: totalMonths,
-      amount: basePrice * inputs.onHandoverPercent / 100,
-    });
+    // On-handover payment - only add if payments don't already sum to 100%
+    if (!paymentsAlreadyComplete) {
+      paymentEvents.push({
+        month: totalMonths,
+        amount: basePrice * (inputs.onHandoverPercent || 0) / 100,
+      });
+    }
     
     // Post-handover payments
     if (inputs.postHandoverPayments) {
