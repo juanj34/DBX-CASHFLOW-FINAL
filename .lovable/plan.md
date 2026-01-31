@@ -1,142 +1,63 @@
 
-# Fix AI Payment Plan Extractor: Apply Booking Date to Configurator
+# Fix "Untitled Quote" Display in Comparison View
 
-## Problem Analysis
+## Problem Identified
 
-When using the AI Payment Plan Extractor:
-1. User selects a booking date (today, existing, or custom) in the extraction sheet
-2. This date is sent to the AI for calculating payment timelines
-3. AI extracts handover timing correctly (e.g., "Month 23 from booking")
-4. **BUT**: When clicking "Apply to Configurator", the booking date chosen in the extractor is **never applied** to the configurator's Property section
+When a quote has its `title` set to the default placeholder `"Untitled Quote"` (instead of `null`), the comparison view shows "Untitled Quote" rather than the more useful `projectName` like "Zenith Residences".
 
-As a result:
-- The "Booking Date" dropdown in PropertySection still shows the old/default value (January 2026 in your screenshot)
-- The "Handover Date" doesn't update correctly because it's derived from the booking date + offset
-- User expects these fields to auto-fill based on their AI extraction choices
+**Root cause:** The pattern `quote.title || quote.projectName` treats `"Untitled Quote"` as a valid title because it's a truthy string, so it never falls back to showing the project name.
 
-## Root Cause
-
-In `PaymentSection.tsx` → `handleAIExtraction()`:
-
-```typescript
-setInputs(prev => ({
-  ...prev,
-  downpaymentPercent,
-  preHandoverPercent,
-  // ...
-  handoverMonth,
-  handoverQuarter,
-  handoverYear,
-  // basePrice is applied if extracted
-  ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
-  // ❌ MISSING: bookingMonth and bookingYear are NOT being applied
-}));
-```
-
-The booking date selected in the extractor sheet (`getBookingDate()`) is only used for API calculation but never flows back to the configurator state.
+**Database evidence:**
+- The Zenith quote has `title = 'Untitled Quote'` and `project_name = 'Zenith Residences'`
+- The current logic shows "Untitled Quote" instead of "Zenith Residences"
 
 ## Solution
 
-### 1. Add `bookingDate` to the extraction data flow
-
-Currently, `PaymentPlanExtractor` passes `bookingDate` to the edge function but doesn't include it in the `onApply` callback data. We need to:
-
-**Option A (Preferred - No type changes):** Track the booking date in the extractor and pass it with the extracted data
-- Store the selected booking date in the extractor component
-- Include it in the `handleApply` call alongside the extracted data
-
-**Option B:** Extend `ExtractedPaymentPlan` type to include booking date (requires type file changes)
-
-### 2. Update `handleAIExtraction` to apply booking date
-
-When the extraction is applied, set:
-- `bookingMonth` from the extractor's selected booking date
-- `bookingYear` from the extractor's selected booking date
-
-## Implementation Plan
-
-### Step 1: Modify `PaymentPlanExtractor.tsx`
-
-Update the component to pass the booking date alongside the extracted data:
+Create a helper function that treats `"Untitled Quote"` as equivalent to having no title, allowing the fallback chain to work properly:
 
 ```typescript
-// Change the onApply signature to include booking date
-interface PaymentPlanExtractorProps {
-  // ...existing props
-  onApply: (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => void;
-}
-
-// In handleApply:
-const handleApply = (data: ExtractedPaymentPlan) => {
-  const booking = getBookingDate();
-  onApply(data, { month: booking.month!, year: booking.year! });
-  // ...rest
+// Helper to get display name for a quote
+const getQuoteDisplayName = (
+  title: string | null, 
+  projectName: string | null, 
+  clientName?: string | null,
+  fallback = 'Quote'
+): string => {
+  // Treat "Untitled Quote" as if there's no title
+  const effectiveTitle = title && title !== 'Untitled Quote' ? title : null;
+  return effectiveTitle || projectName || clientName || fallback;
 };
 ```
 
-### Step 2: Update `PaymentSection.tsx`
+## Files to Update
 
-Modify `handleAIExtraction` to:
-1. Accept the booking date parameter
-2. Apply `bookingMonth` and `bookingYear` to inputs
+| File | Current Pattern | Change |
+|------|-----------------|--------|
+| `MetricsTable.tsx` | `q.quote.title \|\| q.quote.projectName \|\| 'Quote'` | Use helper function |
+| `CompareHeader.tsx` | `quote.title \|\| 'Untitled Quote'` | Use helper function |
+| `PaymentComparison.tsx` | `quote.title \|\| quote.projectName \|\| 'Quote'` | Use helper function |
+| `DifferentiatorsComparison.tsx` | `quote.title \|\| quote.projectName \|\| 'Quote'` | Use helper function |
+| `ExitComparison.tsx` | `item.quote.title \|\| item.quote.projectName` | Use helper function |
+| `MortgageComparison.tsx` | `q.quote.title \|\| q.quote.projectName \|\| 'Quote'` | Use helper function |
+| `GrowthComparisonChart.tsx` | `item.quote.title \|\| item.quote.projectName` | Use helper function |
+| `CashflowKPIComparison.tsx` | `quote.title \|\| quote.projectName \|\| 'Quote'` | Use helper function |
+| `RentalYieldComparison.tsx` | `quote.title \|\| quote.projectName \|\| 'Quote'` | Use helper function |
 
-```typescript
-const handleAIExtraction = (
-  data: ExtractedPaymentPlan, 
-  bookingDate: { month: number; year: number }
-) => {
-  // Existing logic for deriving handover...
-  
-  setInputs(prev => ({
-    ...prev,
-    // NEW: Apply the booking date from extractor
-    bookingMonth: bookingDate.month,
-    bookingYear: bookingDate.year,
-    // Existing fields
-    downpaymentPercent,
-    preHandoverPercent,
-    handoverQuarter,
-    handoverYear,
-    // ...etc
-  }));
-};
-```
+## Implementation Approach
 
-### Step 3: Recalculate Handover from New Booking Date
+**Option 1 (Inline):** Add the helper function to each file that needs it
+- Pros: Self-contained, no cross-file dependencies
+- Cons: Repeated code
 
-Since handover is calculated as an offset from booking, ensure the calculation uses the applied booking date:
+**Option 2 (Shared utility):** Create a shared utility function in a common file
+- Pros: DRY, single source of truth
+- Cons: One more import
 
-```typescript
-// When applying extraction:
-const bookingDate = new Date(selectedBookingYear, selectedBookingMonth - 1);
-const handoverDate = new Date(bookingDate);
-handoverDate.setMonth(handoverDate.getMonth() + handoverMonthFromBooking);
+**Recommended: Option 2** - Create the helper in a shared location (e.g., `src/components/roi/compare/utils.ts`) and import it in all affected files.
 
-const handoverMonth = handoverDate.getMonth() + 1;
-const handoverYear = handoverDate.getFullYear();
-const handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
-```
+## Expected Result
 
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/roi/configurator/PaymentPlanExtractor.tsx` | Update `onApply` to include booking date parameter |
-| `src/components/roi/configurator/PaymentSection.tsx` | Update `handleAIExtraction` to accept and apply booking date |
-
-## Expected Outcome
-
-After applying an AI-extracted payment plan:
-1. **Booking Date** in PropertySection updates to match the extractor selection (e.g., "January 2026" if user chose today's date)
-2. **Handover Date** updates to the correctly calculated Q/Year based on booking + offset
-3. All payment milestones align with the correct timeline
-4. Footer shows accurate totals (100%)
-
-## Additional Property Fields (Bonus)
-
-The AI already extracts other property fields that could also be applied:
-- `property.developer` → Could update client info
-- `property.projectName` → Could update client info
-- `property.unitSizeSqft` → Could update `unitSizeSqf` in inputs
-
-These could be added as optional enhancements in the same change.
+After fix:
+- Quotes with `title = 'Untitled Quote'` will display their `projectName` instead
+- Quotes with custom titles (e.g., "Sera Gardens - Hugo") continue to show those titles
+- The fallback chain becomes: **Real Title → Project Name → Client Name → "Quote"**
