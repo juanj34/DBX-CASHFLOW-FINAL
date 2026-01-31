@@ -241,23 +241,47 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
   // Handle AI extraction result - comprehensive mapping to configurator state
   const handleAIExtraction = (data: ExtractedPaymentPlan) => {
-    // === STEP 1: Calculate handoverMonth and handoverYear from handoverMonthFromBooking ===
-    let handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
-    let handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
-    let handoverMonth: number | undefined = undefined;
+    // === STEP 1: Find handover payment first to derive handover timing (most accurate source) ===
+    const handoverPayment = data.installments.find(i => i.type === 'handover');
     
-    if (data.paymentStructure.handoverMonthFromBooking) {
+    let handoverMonth: number | undefined = undefined;
+    let handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
+    let handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
+    
+    // PRIORITY 1: Derive from handover payment's triggerValue (most accurate)
+    if (handoverPayment && handoverPayment.triggerValue > 0) {
+      const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      const handoverDate = new Date(bookingDate);
+      handoverDate.setMonth(handoverDate.getMonth() + handoverPayment.triggerValue);
+      
+      handoverMonth = handoverDate.getMonth() + 1;
+      handoverYear = handoverDate.getFullYear();
+      handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
+      
+      console.log('Handover derived from completion payment:', { 
+        triggerValue: handoverPayment.triggerValue, 
+        handoverMonth, 
+        handoverYear, 
+        handoverQuarter 
+      });
+    }
+    // PRIORITY 2: Fall back to handoverMonthFromBooking
+    else if (data.paymentStructure.handoverMonthFromBooking) {
       const handoverMonths = data.paymentStructure.handoverMonthFromBooking;
       const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
       const handoverDate = new Date(bookingDate);
       handoverDate.setMonth(handoverDate.getMonth() + handoverMonths);
       
-      // Store actual month (1-12) for accurate scheduling
       handoverMonth = handoverDate.getMonth() + 1;
       handoverYear = handoverDate.getFullYear();
-      
-      // Derive quarter from month for display
       handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
+    }
+    // PRIORITY 3: Use explicit quarter/year if provided
+    else if (data.paymentStructure.handoverQuarter || data.paymentStructure.handoverYear) {
+      handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
+      handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
+      // Derive month from quarter start
+      handoverMonth = (handoverQuarter - 1) * 3 + 1;
     }
     
     // === STEP 2: Find special installments ===
@@ -267,8 +291,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     );
     const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
     
-    // Explicit handover payment - get the percentage but DO NOT filter it out
-    const handoverPayment = data.installments.find(i => i.type === 'handover');
+    // Get handover percentage (already found above)
     const onHandoverPercent = handoverPayment?.paymentPercent || 0;
     
     // === STEP 3: Calculate totals for validation ===
@@ -285,8 +308,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     }
     
     // === STEP 5: Convert ALL installments to configurator format ===
-    // INCLUDE handover payment as a regular time-based installment (don't filter it out)
-    // This ensures the 5% Completion payment shows in the installment list
+    // INCLUDE handover payment with isHandover flag for explicit marking
     const additionalPayments = data.installments
       .filter(i => {
         // Skip downpayment (Month 0) - it's handled separately
@@ -311,6 +333,8 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
           : 'time' as const,
         triggerValue: inst.triggerValue, // Already absolute from AI
         paymentPercent: inst.paymentPercent,
+        // NEW: Preserve isHandover flag for explicit completion payment marking
+        isHandover: inst.type === 'handover',
       }))
       .sort((a, b) => a.triggerValue - b.triggerValue);
     
@@ -323,7 +347,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       additionalPayments,
       hasPostHandoverPlan: data.paymentStructure.hasPostHandover || postHandoverTotal > 0,
       postHandoverPercent: postHandoverTotal || data.paymentStructure.postHandoverPercent || 0,
-      handoverMonth, // NEW: Store the actual month (1-12)
+      handoverMonth, // Actual month (1-12) from completion payment
       handoverQuarter,
       handoverYear,
       // Update property price if extracted
@@ -607,11 +631,16 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                         inputs.handoverYear
                       );
                       
+                      // NEW: Explicit handover flag has priority over quarter-based detection
+                      const isExplicitHandover = payment.isHandover === true;
+                      const showHandoverBadge = isExplicitHandover || isHandoverQuarter;
+                      
                       return (
                         <div 
                           key={payment.id} 
                           className={cn(
                             "flex items-center gap-1.5 p-1.5 rounded-lg",
+                            isExplicitHandover ? "bg-green-500/15 border border-green-500/40" :
                             isHandoverQuarter ? "bg-green-500/10 border border-green-500/30" :
                             isPostHO ? "bg-purple-500/10 border border-purple-500/30" : 
                             "bg-theme-bg"
@@ -619,6 +648,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                         >
                           <div className={cn(
                             "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0",
+                            isExplicitHandover ? "bg-green-500/40 text-green-300" :
                             isHandoverQuarter ? "bg-green-500/30 text-green-400" :
                             isPostHO ? "bg-purple-500/30 text-purple-400" :
                             "bg-theme-border text-theme-text-muted"
@@ -724,12 +754,18 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                               <span className="text-[9px] text-theme-text-muted font-mono">
                                 M{payment.triggerValue}
                               </span>
-                              {isHandoverQuarter && (
-                                <span className="text-[9px] px-1 py-0.5 bg-green-500/20 text-green-400 rounded flex items-center gap-0.5">
+                              {showHandoverBadge && (
+                                <span className={cn(
+                                  "text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5",
+                                  isExplicitHandover 
+                                    ? "bg-green-500/30 text-green-300 font-medium" 
+                                    : "bg-green-500/20 text-green-400"
+                                )}>
                                   <Key className="w-2.5 h-2.5" />
+                                  {isExplicitHandover && "HO"}
                                 </span>
                               )}
-                              {isPostHO && !isHandoverQuarter && (
+                              {isPostHO && !showHandoverBadge && (
                                 <span className="text-[9px] px-1 py-0.5 bg-purple-500/20 text-purple-400 rounded">
                                   PH
                                 </span>

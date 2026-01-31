@@ -4,6 +4,7 @@ export interface PaymentMilestone {
   triggerValue: number; // months if time, % if construction, months-after-handover if post-handover
   paymentPercent: number;
   label?: string;
+  isHandover?: boolean; // Explicitly marks this as the completion/handover payment
 }
 
 export interface ShortTermRentalConfig {
