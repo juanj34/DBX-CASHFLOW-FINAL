@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface AppLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -16,6 +17,9 @@ export const AppLogo = ({
   showGlow = false,
   className 
 }: AppLogoProps) => {
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'consultant';
+  
   const sizeClasses = {
     sm: { container: 'w-7 h-7', icon: 'w-3.5 h-3.5', text: 'text-sm' },
     md: { container: 'w-8 h-8', icon: 'w-4 h-4', text: 'text-sm' },
@@ -27,10 +31,13 @@ export const AppLogo = ({
   const logoContent = (
     <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5", className)}>
       <div className="relative flex-shrink-0">
-        {/* Logo container with gradient border - no shadow on light themes */}
+        {/* Logo container - clean border on light, gradient on dark */}
         <div className={cn(
           sizes.container,
-          "rounded-lg bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent p-[1.5px]"
+          "rounded-lg p-[1.5px]",
+          isLightTheme 
+            ? "bg-theme-accent" 
+            : "bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent"
         )}>
           <div className="w-full h-full rounded-[6px] bg-theme-card flex items-center justify-center">
             <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
@@ -61,8 +68,8 @@ export const AppLogo = ({
             </svg>
           </div>
         </div>
-        {showGlow && (
-          <div className="absolute -inset-1 bg-theme-accent rounded-lg blur opacity-20 dark:opacity-20 opacity-10" />
+        {showGlow && !isLightTheme && (
+          <div className="absolute -inset-1 bg-theme-accent rounded-lg blur opacity-20" />
         )}
       </div>
       {!collapsed && (
