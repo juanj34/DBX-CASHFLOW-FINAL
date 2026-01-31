@@ -79,7 +79,20 @@ const loadConfiguratorState = (): ConfiguratorState | null => {
   try {
     const saved = localStorage.getItem(CONFIGURATOR_STATE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const state = JSON.parse(saved);
+      // Validate that saved section exists in current SECTIONS array
+      if (state.activeSection && !SECTIONS.includes(state.activeSection)) {
+        // Old section name from previous implementation - clear and start fresh
+        localStorage.removeItem(CONFIGURATOR_STATE_KEY);
+        return null;
+      }
+      // Filter visitedSections to only include valid sections
+      if (state.visitedSections) {
+        state.visitedSections = state.visitedSections.filter(
+          (s: string) => SECTIONS.includes(s as ConfiguratorSection)
+        );
+      }
+      return state;
     }
   } catch (e) {
     console.error('Error loading configurator state:', e);
@@ -146,9 +159,12 @@ export const ConfiguratorLayout = ({
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
-  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
-    new Set(savedState?.visitedSections || [])
-  );
+  const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(() => {
+    const saved = savedState?.visitedSections || [];
+    // Always include the starting section in visited
+    const startSection = savedState?.activeSection || 'project';
+    return new Set([...saved, startSection]);
+  });
   
   // Clear localStorage when starting a new quote (no quoteId)
   useEffect(() => {
