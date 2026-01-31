@@ -381,7 +381,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                   type="text"
                   inputMode="decimal"
                   value={paymentPercent}
-                  onChange={(e) => setPaymentPercent(Math.min(50, Math.max(0.5, parseFloat(e.target.value) || 0.5)))}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0.5 : parseFloat(e.target.value);
+                    if (!isNaN(val)) {
+                      setPaymentPercent(Math.min(50, Math.max(0.1, val)));
+                    }
+                  }}
                   className="w-12 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-xs"
                 />
                 <span className="text-[10px] text-theme-text-muted">%</span>
@@ -401,7 +406,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               </div>
               
               <span className="text-[10px] text-theme-text-muted">=</span>
-              <span className="text-xs text-theme-accent font-mono font-medium">{(numPayments * paymentPercent).toFixed(0)}%</span>
+              <span className="text-xs text-theme-accent font-mono font-medium">{(numPayments * paymentPercent).toFixed(1)}%</span>
               
               <Button
                 type="button"
