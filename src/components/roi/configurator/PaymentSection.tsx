@@ -289,8 +289,17 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     // This ensures the 5% Completion payment shows in the installment list
     const additionalPayments = data.installments
       .filter(i => {
-        if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment only
-        // INCLUDE handover as a regular installment (converted to time type)
+        // Skip downpayment (Month 0) - it's handled separately
+        if (i.type === 'time' && i.triggerValue === 0) return false;
+        
+        // Also skip any Month 1 installment that has the exact same percentage as downpayment
+        // This prevents AI from duplicating the downpayment as "Month 1"
+        if (i.type === 'time' && i.triggerValue === 1 && 
+            downpayment && i.paymentPercent === downpayment.paymentPercent) {
+          console.warn('Skipping duplicate: Month 1 has same % as downpayment');
+          return false;
+        }
+        
         return true;
       })
       .map((inst, idx) => ({

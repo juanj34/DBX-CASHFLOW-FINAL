@@ -108,16 +108,22 @@ CURRENCY DETECTION:
    - Example: 30% construction + 10% on handover + 60% over 60 months after = 30/70 post-handover plan
 
 === INSTALLMENT OUTPUT FORMAT ===
-- type "time" + triggerValue 0 = On Booking / Downpayment
-- type "time" + triggerValue > 0 = Monthly installments (use ABSOLUTE months from booking for ALL)
+- type "time" + triggerValue 0 = On Booking / Downpayment (ONLY output this ONCE for the initial payment)
+- type "time" + triggerValue > 0 = Monthly installments starting from Month 1 onwards
 - type "construction" = Milestone-based payments (triggerValue = completion percentage like 30, 50, 70)
 - type "handover" = Payment due ON handover date (use triggerValue = handoverMonthFromBooking)
 - type "post-handover" = ANY payment AFTER handover (triggerValue = ABSOLUTE months from booking)
 
+=== CRITICAL: AVOID DUPLICATE DOWNPAYMENT ===
+- The "On Booking" / "Downpayment" / "Booking Fee" is output ONCE with triggerValue = 0
+- DO NOT output it again as Month 1 or any other installment
+- Subsequent installments should be at Month 1, Month 2, etc. OR at construction milestones
+- If you see "20% on booking + monthly installments", output ONE installment at Month 0 for 20%, then separate installments for Month 1, 2, 3...
+
 === IMPORTANT RULES ===
 - All percentages MUST add up to exactly 100%
-- First payment is typically "On Booking" or "Down Payment" at Month 0
-- If you see "X% monthly for Y months", expand to individual monthly payments
+- First payment is typically "On Booking" or "Down Payment" at Month 0 - DO NOT DUPLICATE IT
+- If you see "X% monthly for Y months", expand to individual monthly payments starting from Month 1 (not Month 0)
 - Handover payment is usually the largest single payment (often 40-60%) UNLESS it's a post-handover plan
 - In post-handover plans, handover payment may be 0% or small with remaining balance spread across post-handover installments
 - Confidence score: 90+ for clear text, 70-89 for partially visible, below 70 for inferred data
