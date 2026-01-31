@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ComparisonQuote } from '@/hooks/useQuotesComparison';
 import { formatCurrency } from '@/components/roi/currencyUtils';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface CompareHeaderProps {
   quotes: ComparisonQuote[];
@@ -86,7 +87,7 @@ export const CompareHeader = ({ quotes, onRemove }: CompareHeaderProps) => {
             <div className="space-y-3">
               <div>
                 <h3 className="font-semibold text-theme-text truncate pr-8">
-                  {quote.title || 'Untitled Quote'}
+                  {getQuoteDisplayName(quote.title, quote.projectName)}
                 </h3>
                 {quote.projectName && (
                   <p className="text-sm text-theme-text-muted flex items-center gap-1 mt-1">

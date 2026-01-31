@@ -4,6 +4,7 @@ import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { MortgageInputs } from '@/components/roi/useMortgageCalculations';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 // Theme-aware colors for quotes
 const getQuoteColors = (isLightTheme: boolean) => 
@@ -180,7 +181,7 @@ export const MortgageComparison = ({
               className="text-xs font-medium truncate px-2"
               style={{ color: colors[i % colors.length] }}
             >
-              {q.quote.title || q.quote.projectName || 'Quote'}
+              {getQuoteDisplayName(q.quote.title, q.quote.projectName)}
             </div>
           </div>
         ))}

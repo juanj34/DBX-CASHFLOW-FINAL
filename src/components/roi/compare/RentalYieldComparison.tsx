@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Check } from 'lucide-react';
 import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { getQuoteDisplayName } from './utils';
 
 interface RentalYieldComparisonProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -24,7 +25,7 @@ export const RentalYieldComparison = ({
 
       return {
         quoteId: quote.id,
-        title: quote.title || quote.projectName || 'Quote',
+        title: getQuoteDisplayName(quote.title, quote.projectName),
         grossYield,
         netYield,
         netAnnual,

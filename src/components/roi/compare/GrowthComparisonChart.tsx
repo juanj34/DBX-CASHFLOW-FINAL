@@ -3,6 +3,7 @@ import { QuoteWithCalculations } from '@/hooks/useQuotesComparison';
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface GrowthComparisonChartProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -35,7 +36,7 @@ export const GrowthComparisonChart = ({
       const projection = item.calculations.yearlyProjections.find(p => p.year === i);
       if (projection) {
         dataPoint[`quote${idx}`] = projection.propertyValue;
-        dataPoint[`quote${idx}Name`] = item.quote.title || item.quote.projectName || `Quote ${idx + 1}`;
+        dataPoint[`quote${idx}Name`] = getQuoteDisplayName(item.quote.title, item.quote.projectName, null, `Quote ${idx + 1}`);
       }
     });
 
@@ -92,7 +93,7 @@ export const GrowthComparisonChart = ({
               formatter={(value) => {
                 const idx = parseInt(value.replace('quote', ''));
                 const quote = quotesWithCalcs[idx]?.quote;
-                return <span className="text-theme-text-muted text-sm">{quote?.title || quote?.projectName || `Quote ${idx + 1}`}</span>;
+                return <span className="text-theme-text-muted text-sm">{getQuoteDisplayName(quote?.title, quote?.projectName, null, `Quote ${idx + 1}`)}</span>;
               }}
             />
             

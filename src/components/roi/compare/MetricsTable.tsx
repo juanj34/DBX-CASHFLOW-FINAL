@@ -2,6 +2,7 @@ import { QuoteWithCalculations, ComparisonMetrics } from '@/hooks/useQuotesCompa
 import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getQuoteDisplayName } from './utils';
 
 interface MetricsTableProps {
   quotesWithCalcs: QuoteWithCalculations[];
@@ -114,7 +115,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
             className="font-medium text-sm truncate pr-2"
             style={{ color: colors[idx % colors.length] }}
           >
-            {q.quote.title || q.quote.projectName || 'Quote'}
+            {getQuoteDisplayName(q.quote.title, q.quote.projectName)}
           </span>
         ))}
       </div>
