@@ -64,6 +64,7 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   appreciationRate: 10,
   bookingMonth: getCurrentMonth(),
   bookingYear: getCurrentYear(),
+  handoverMonth: undefined, // Will be calculated from AI extraction or derived from quarter
   handoverQuarter: 4,
   handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
@@ -142,6 +143,7 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   appreciationRate: 0,
   bookingMonth: getCurrentMonth(),
   bookingYear: getCurrentYear(),
+  handoverMonth: undefined, // Will be calculated from AI extraction or derived from quarter
   handoverQuarter: 4,
   handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,

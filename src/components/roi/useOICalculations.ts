@@ -19,7 +19,10 @@ export interface OIInputs {
   appreciationRate: number; // Legacy - kept for backward compatibility
   bookingMonth: number; // 1-12
   bookingYear: number;
-  handoverQuarter: number; // 1, 2, 3, 4 (Q1, Q2, Q3, Q4)
+  
+  // Handover timing - month-based for accurate payment scheduling
+  handoverMonth?: number; // 1-12 (actual month of handover, calculated from AI extraction)
+  handoverQuarter: number; // 1, 2, 3, 4 (Q1, Q2, Q3, Q4) - derived from handoverMonth if available
   handoverYear: number;
   
   // NEW: Restructured Payment Plan

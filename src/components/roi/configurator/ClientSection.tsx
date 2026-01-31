@@ -228,9 +228,10 @@ export const ClientSection = ({
       return;
     }
     
-    // === STEP 1: Calculate handover Q/Y from handoverMonthFromBooking ===
+    // === STEP 1: Calculate handoverMonth and handoverYear from handoverMonthFromBooking ===
     let handoverQuarter = extractedData.paymentStructure.handoverQuarter || inputs.handoverQuarter;
     let handoverYear = extractedData.paymentStructure.handoverYear || inputs.handoverYear;
+    let handoverMonth: number | undefined = undefined;
     
     if (extractedData.paymentStructure.handoverMonthFromBooking) {
       const handoverMonths = extractedData.paymentStructure.handoverMonthFromBooking;
@@ -238,8 +239,12 @@ export const ClientSection = ({
       const handoverDate = new Date(bookingDate);
       handoverDate.setMonth(handoverDate.getMonth() + handoverMonths);
       
+      // Store actual month (1-12) for accurate scheduling
+      handoverMonth = handoverDate.getMonth() + 1;
       handoverYear = handoverDate.getFullYear();
-      handoverQuarter = (Math.floor(handoverDate.getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+      
+      // Derive quarter from month for display
+      handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
     }
     
     // === STEP 2: Find special installments ===
@@ -249,7 +254,7 @@ export const ClientSection = ({
     );
     const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
     
-    // Explicit handover payment
+    // Explicit handover payment - get the percentage but DO NOT filter it out
     const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
     const onHandoverPercent = handoverPayment?.paymentPercent || 0;
     
@@ -267,16 +272,18 @@ export const ClientSection = ({
     }
     
     // === STEP 5: Convert ALL installments to configurator format ===
-    // Keep construction type as-is, convert post-handover to time (configurator derives from date)
+    // INCLUDE handover payment as a regular time-based installment (don't filter it out)
+    // This ensures the 5% Completion payment shows in the installment list
     const additionalPayments = extractedData.installments
       .filter(i => {
-        if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
-        if (i.type === 'handover') return false; // Skip explicit handover marker
+        if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment only
+        // INCLUDE handover as a regular installment (converted to time type)
         return true;
       })
       .map((inst, idx) => ({
         id: inst.id || `ai-${Date.now()}-${idx}`,
-        // KEEP construction type, convert post-handover to time
+        // Convert handover and post-handover to time (they have absolute months)
+        // Only keep construction type as-is
         type: inst.type === 'construction' 
           ? 'construction' as const 
           : 'time' as const,
@@ -295,6 +302,7 @@ export const ClientSection = ({
       additionalPayments,
       hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0,
       postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
+      handoverMonth, // NEW: Store the actual month (1-12)
       handoverQuarter,
       handoverYear,
     }));

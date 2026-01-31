@@ -8,11 +8,13 @@ const corsHeaders = {
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 interface ExtractedInstallment {
+  id?: string;
   type: 'time' | 'construction' | 'handover' | 'post-handover';
   triggerValue: number;
   paymentPercent: number;
   label?: string;
   confidence: number;
+  isPostHandover?: boolean;
 }
 
 interface ExtractedPaymentPlan {
@@ -41,6 +43,14 @@ interface ExtractedPaymentPlan {
 
 const systemPrompt = `You are a Dubai real estate payment plan analyzer. Extract structured payment data from marketing materials with HIGH PRECISION.
 
+=== CRITICAL REQUIRED OUTPUTS ===
+These fields MUST always be set:
+1. hasPostHandover - MUST be true if ANY payments exist after handover, false otherwise
+2. handoverMonthFromBooking - MUST be set to the month number when handover occurs
+   - Calculate from the LAST "In X months" payment before post-handover section
+   - Example: If payments go "In 24 months", "In 25 months", "In 26 months" then "Completion", set handoverMonthFromBooking = 27
+   - The "Completion" payment is the HANDOVER, so handover month = last pre-handover month + 1
+
 EXTRACTION PRIORITIES (in order):
 1. Property info (developer, project name, unit details, price, currency) - ALWAYS extract if visible
 2. Payment percentages (MUST sum to 100%)
@@ -53,10 +63,10 @@ CURRENCY DETECTION:
 - Price formats: "2,500,000 AED", "AED 2.5M", "2.5 Million", etc.
 
 === HANDOVER MONTH DETECTION - HIGHEST PRIORITY ===
-- Find the LAST pre-handover payment's month = handoverMonthFromBooking
-- Example: "In 24 months", "In 25 months", "In 26 months" then "Completion" → handoverMonthFromBooking = 26
+- Find the LAST pre-handover payment's month number
+- The "Completion" or "On Handover" payment is ONE MONTH AFTER the last pre-handover
+- Example: "In 24 months", "In 25 months", "In 26 months" then "Completion" → handoverMonthFromBooking = 27
 - If explicit date shown (e.g., "Q3 2027" with booking Jan 2025), calculate months from booking
-- This is MORE RELIABLE than trying to extract explicit quarter/year
 - ALWAYS set handoverMonthFromBooking when you can detect the handover timing
 
 === DATE FORMAT NORMALIZATION - ALL to absolute months from booking ===
@@ -77,12 +87,12 @@ CURRENCY DETECTION:
 - These will be converted to estimated dates using S-curve construction model
 
 === POST-HANDOVER ABSOLUTE TRIGGER VALUES - CRITICAL ===
-- For "4th Month after Completion" with handoverMonthFromBooking = 26:
-  - triggerValue = 26 + 4 = 30 (ABSOLUTE from booking)
-- For "2 years post-handover" with handover at month 26:
-  - triggerValue = 26 + 24 = 50
-- For "1st month after handover" with handover at month 26:
-  - triggerValue = 27
+- For "4th Month after Completion" with handoverMonthFromBooking = 27:
+  - triggerValue = 27 + 4 = 31 (ABSOLUTE from booking)
+- For "2 years post-handover" with handover at month 27:
+  - triggerValue = 27 + 24 = 51
+- For "1st month after handover" with handover at month 27:
+  - triggerValue = 28
 - ALL post-handover installments must use ABSOLUTE months from booking
 - The receiving system determines post-handover status by comparing dates
 
@@ -154,6 +164,7 @@ const extractionTool = {
         paymentStructure: {
           type: "object",
           description: "Overall payment structure information",
+          required: ["hasPostHandover"],
           properties: {
             paymentSplit: { 
               type: "string", 
@@ -161,11 +172,11 @@ const extractionTool = {
             },
             hasPostHandover: { 
               type: "boolean", 
-              description: "Whether there are payments scheduled after handover/completion. Set TRUE if any installments exist AFTER the handover date." 
+              description: "REQUIRED: Whether there are payments scheduled after handover/completion. Set TRUE if any installments exist AFTER the handover date." 
             },
             handoverMonthFromBooking: {
               type: "number",
-              description: "Month number from booking when handover occurs. Calculate from the LAST pre-handover payment's month number (e.g., 'In 26 months' = 26), or from explicit completion date relative to booking."
+              description: "CRITICAL: Month number from booking when handover occurs. For 'Completion' after 'In 26 months', set to 27 (completion is NEXT month). Always calculate this from the payment schedule."
             },
             handoverQuarter: { 
               type: "number", 
@@ -178,7 +189,7 @@ const extractionTool = {
             },
             onHandoverPercent: {
               type: "number",
-              description: "Percentage due on handover (if explicitly stated, or 0 if post-handover plan with no completion payment)"
+              description: "Percentage due on handover (the 'Completion' payment percentage)"
             },
             postHandoverPercent: {
               type: "number",
@@ -199,7 +210,7 @@ const extractionTool = {
               },
               triggerValue: { 
                 type: "number", 
-                description: "For time: ABSOLUTE months from booking (0 = on booking). For construction: completion percentage (e.g., 30, 50, 70). For handover: use handoverMonthFromBooking. For post-handover: ABSOLUTE months from booking (e.g., if handover at month 26, '4th after' = 30)"
+                description: "For time: ABSOLUTE months from booking (0 = on booking). For construction: completion percentage (e.g., 30, 50, 70). For handover: use handoverMonthFromBooking. For post-handover: ABSOLUTE months from booking (e.g., if handover at month 27, '4th after' = 31)"
               },
               paymentPercent: { 
                 type: "number", 
@@ -271,11 +282,15 @@ Context:
 - This is likely a Dubai real estate payment plan
 
 CRITICAL INSTRUCTIONS:
-1. Find the LAST pre-handover payment month and set it as handoverMonthFromBooking
+1. Find the LAST pre-handover payment month and calculate handoverMonthFromBooking = lastPreHandoverMonth + 1
+   - Example: If last pre-handover is "In 26 months", then handoverMonthFromBooking = 27
 2. Convert ALL dates (days, calendar dates, quarters) to ABSOLUTE months from booking
 3. For post-handover payments, calculate ABSOLUTE months from booking (handoverMonth + relative months)
+   - Example: "4th Month after Completion" with handover at month 27 = triggerValue 31 (27 + 4)
 4. For construction milestones (30% complete, foundation, etc.), use type: "construction" with triggerValue as percentage
-5. Ensure all percentages sum to exactly 100%
+5. Include the "Completion" payment with type: "handover" - DO NOT skip it
+6. Ensure all percentages sum to exactly 100%
+7. Set hasPostHandover = true if there are any payments after the Completion payment
 
 Call the extract_payment_plan function with your findings.`
     });
@@ -369,6 +384,71 @@ Call the extract_payment_plan function with your findings.`
       throw new Error("Failed to parse extraction results");
     }
 
+    // === POST-PROCESSING: Fallback logic for missing critical fields ===
+    
+    // Fallback 1: Calculate handoverMonthFromBooking from installments if not extracted
+    if (!extractedData.paymentStructure.handoverMonthFromBooking) {
+      console.log("handoverMonthFromBooking not extracted, calculating from installments...");
+      
+      // Find handover-type installment first
+      const handoverInst = extractedData.installments.find(i => i.type === 'handover');
+      if (handoverInst && handoverInst.triggerValue > 0) {
+        extractedData.paymentStructure.handoverMonthFromBooking = handoverInst.triggerValue;
+        console.log(`Set handoverMonthFromBooking from handover installment: ${handoverInst.triggerValue}`);
+      } else {
+        // Find the boundary between pre-handover (time) and post-handover installments
+        const postHandoverInsts = extractedData.installments.filter(i => i.type === 'post-handover');
+        const timeInsts = extractedData.installments.filter(i => i.type === 'time');
+        
+        if (postHandoverInsts.length > 0) {
+          // The lowest post-handover trigger value
+          const firstPostHO = Math.min(...postHandoverInsts.map(i => i.triggerValue));
+          // Last pre-handover would be just before the first post-handover
+          const lastPreHO = timeInsts
+            .filter(i => i.triggerValue < firstPostHO)
+            .sort((a, b) => b.triggerValue - a.triggerValue)[0];
+          
+          if (lastPreHO) {
+            // Handover is one month after the last pre-handover installment
+            extractedData.paymentStructure.handoverMonthFromBooking = lastPreHO.triggerValue + 1;
+            console.log(`Calculated handoverMonthFromBooking from boundary: ${lastPreHO.triggerValue + 1}`);
+          }
+        } else if (timeInsts.length > 0) {
+          // No post-handover, use the last time installment + 1
+          const lastTime = timeInsts.sort((a, b) => b.triggerValue - a.triggerValue)[0];
+          extractedData.paymentStructure.handoverMonthFromBooking = lastTime.triggerValue + 1;
+          console.log(`Set handoverMonthFromBooking from last time installment: ${lastTime.triggerValue + 1}`);
+        }
+      }
+    }
+    
+    // Fallback 2: Set hasPostHandover based on installment types
+    if (extractedData.paymentStructure.hasPostHandover === undefined) {
+      extractedData.paymentStructure.hasPostHandover = 
+        extractedData.installments.some(i => i.type === 'post-handover');
+      console.log(`Set hasPostHandover from installments: ${extractedData.paymentStructure.hasPostHandover}`);
+    }
+    
+    // Fallback 3: Calculate postHandoverPercent if not set but we have post-handover installments
+    if (!extractedData.paymentStructure.postHandoverPercent) {
+      const postHOTotal = extractedData.installments
+        .filter(i => i.type === 'post-handover')
+        .reduce((sum, i) => sum + i.paymentPercent, 0);
+      if (postHOTotal > 0) {
+        extractedData.paymentStructure.postHandoverPercent = postHOTotal;
+        console.log(`Calculated postHandoverPercent: ${postHOTotal}`);
+      }
+    }
+    
+    // Fallback 4: Calculate onHandoverPercent from handover installment if not set
+    if (!extractedData.paymentStructure.onHandoverPercent) {
+      const handoverInst = extractedData.installments.find(i => i.type === 'handover');
+      if (handoverInst) {
+        extractedData.paymentStructure.onHandoverPercent = handoverInst.paymentPercent;
+        console.log(`Set onHandoverPercent from handover installment: ${handoverInst.paymentPercent}`);
+      }
+    }
+
     // Validate that percentages sum to 100
     const totalPercent = extractedData.installments.reduce(
       (sum, inst) => sum + inst.paymentPercent, 
@@ -395,7 +475,10 @@ Call the extract_payment_plan function with your findings.`
       confidence: extractedData.overallConfidence,
       hasPostHandover: extractedData.paymentStructure.hasPostHandover,
       handoverMonthFromBooking: extractedData.paymentStructure.handoverMonthFromBooking,
+      onHandoverPercent: extractedData.paymentStructure.onHandoverPercent,
+      postHandoverPercent: extractedData.paymentStructure.postHandoverPercent,
       constructionInstallments: extractedData.installments.filter(i => i.type === 'construction').length,
+      handoverInstallments: extractedData.installments.filter(i => i.type === 'handover').length,
       postHandoverInstallments: extractedData.installments.filter(i => i.type === 'post-handover').length,
     });
 
