@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { X, ChevronLeft, ChevronRight, Check, RotateCcw, TrendingUp, Home, Wallet, LogOut, Building2, FileText } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, RotateCcw, Wallet, FileText } from "lucide-react";
 
 // Haptic feedback utility for tactile response on mobile devices
 const triggerHapticFeedback = (pattern: number | number[] = 10) => {
@@ -18,19 +18,15 @@ import { OIInputs } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
 import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS, SAMPLE_CLIENT_INFO, SAMPLE_MORTGAGE_INPUTS } from "./types";
-import { PropertySection } from "./PropertySection";
-import { PaymentSection } from "./PaymentSection";
-import { ValueSection } from "./ValueSection";
-import { AppreciationSection } from "./AppreciationSection";
-import { ExitsSection } from "./ExitsSection";
-import { RentSection } from "./RentSection";
-import { MortgageSection } from "./MortgageSection";
 import { ClientSection } from "./ClientSection";
-import { ImagesSection } from "./ImagesSection";
+import { InvestmentSection } from "./InvestmentSection";
+import { ReturnsSection } from "./ReturnsSection";
+import { ExtrasSection } from "./ExtrasSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface MobileConfiguratorSheetProps {
   open: boolean;
@@ -45,18 +41,13 @@ interface MobileConfiguratorSheetProps {
   quoteId?: string;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['client', 'property', 'images', 'payment', 'value', 'appreciation', 'exits', 'rent', 'mortgage'];
+const SECTIONS: ConfiguratorSection[] = ['project', 'investment', 'returns', 'extras'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
-  client: 'Client',
-  property: 'Property',
-  images: 'Media',
-  payment: 'Payment',
-  value: 'Value',
-  appreciation: 'Growth',
-  exits: 'Exits',
-  rent: 'Rent',
-  mortgage: 'Mortgage',
+  project: 'Project',
+  investment: 'Investment',
+  returns: 'Returns',
+  extras: 'More',
 };
 
 // Mini preview strip component with mortgage toggle
@@ -78,35 +69,9 @@ const MiniPreviewStrip = ({
       <div className="flex items-center gap-1.5 min-w-0">
         <Wallet className="w-3.5 h-3.5 text-theme-accent flex-shrink-0" />
         <span className="text-[10px] text-theme-text-muted truncate">
-          {formatCurrency(inputs.basePrice, currency)}
+          {formatCurrency(inputs.basePrice, currency)} • {paymentSplit}
         </span>
       </div>
-      <div className="w-px h-4 bg-theme-border" />
-      <div className="flex items-center gap-1.5 min-w-0">
-        <Home className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-        <span className="text-[10px] text-theme-text-muted truncate">
-          {paymentSplit}
-        </span>
-      </div>
-      <div className="w-px h-4 bg-theme-border" />
-      <div className="flex items-center gap-1.5 min-w-0">
-        <TrendingUp className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-        <span className="text-[10px] text-theme-text-muted truncate">
-          {inputs.rentalYieldPercent}% yield
-        </span>
-      </div>
-      <div className="w-px h-4 bg-theme-border" />
-      <button
-        onClick={onToggleMortgage}
-        className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
-          mortgageEnabled 
-            ? 'bg-blue-500/20 text-blue-400' 
-            : 'bg-theme-card-alt text-theme-text-muted'
-        }`}
-      >
-        <Building2 className="w-3 h-3 flex-shrink-0" />
-        <span className="text-[9px] font-medium">{mortgageEnabled ? 'ON' : 'OFF'}</span>
-      </button>
     </div>
   );
 };
@@ -124,7 +89,7 @@ export const MobileConfiguratorSheet = ({
   quoteId,
 }: MobileConfiguratorSheetProps) => {
   const { t } = useLanguage();
-  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('client');
+  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('project');
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(new Set());
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [showSampleFlash, setShowSampleFlash] = useState(false);
@@ -132,6 +97,7 @@ export const MobileConfiguratorSheet = ({
   // Image upload state
   const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
   const [buildingRenderUrl, setBuildingRenderUrl] = useState<string | null>(null);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [showLogoOverlay, setShowLogoOverlay] = useState(false);
   
   // Internal client info state if not provided externally
@@ -221,31 +187,59 @@ export const MobileConfiguratorSheet = ({
     }
   };
 
+  const handleHeroImageUpload = async (file: File | null) => {
+    if (!file) {
+      setHeroImageUrl(null);
+      return;
+    }
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${quoteId || 'temp'}/hero-image-${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('quote-images')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('quote-images')
+        .getPublicUrl(data.path);
+      
+      setHeroImageUrl(urlData.publicUrl);
+      toast.success('Hero image uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload hero image');
+    }
+  };
+
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
     // Must be visited first AND have actual data
     if (!visitedSections.has(section)) return false;
     
+    // Calculate payment validity
+    const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
+    const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
+    let totalPayment: number;
+    if (hasPostHandoverPlan) {
+      totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
+    } else {
+      const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+      totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+    }
+    const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
+    
     switch (section) {
-      case 'client':
+      case 'project':
         return Boolean(inputs.zoneId) || inputs.basePrice > 0;
-      case 'property':
-        return inputs.basePrice > 0;
-      case 'images':
-        // Media is optional - complete when visited
-        return true;
-      case 'payment':
-        return inputs.downpaymentPercent > 0 && inputs.preHandoverPercent >= 0;
-      case 'value':
-        // Value is optional - complete when visited
-        return true;
-      case 'appreciation':
+      case 'investment':
+        return inputs.basePrice > 0 && isPaymentValid;
+      case 'returns':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-      case 'exits':
-        return inputs._exitScenarios && inputs._exitScenarios.length > 0;
-      case 'rent':
-        return inputs.rentalYieldPercent > 0;
-      case 'mortgage':
-        // Mortgage is optional - complete when visited
+      case 'extras':
+        // Optional - complete when visited
         return true;
       default:
         return false;
@@ -259,39 +253,36 @@ export const MobileConfiguratorSheet = ({
     const newIndex = SECTIONS.indexOf(newSection);
     const oldIndex = SECTIONS.indexOf(activeSection);
     
-    if (direction) {
-      setAnimationDirection(direction);
-    } else if (newIndex > oldIndex) {
-      setAnimationDirection('right');
-    } else if (newIndex < oldIndex) {
-      setAnimationDirection('left');
+    if (!direction) {
+      direction = newIndex > oldIndex ? 'right' : 'left';
     }
     
-    // Trigger haptic feedback on section navigation
-    triggerHapticFeedback(15);
-    
+    setAnimationDirection(direction);
     setActiveSection(newSection);
-    setVisitedSections(prev => new Set(prev).add(newSection));
     
-    // Reset animation after transition
-    setTimeout(() => setAnimationDirection(null), 300);
+    // Mark section as visited
+    setVisitedSections(prev => {
+      const newSet = new Set(prev);
+      newSet.add(newSection);
+      return newSet;
+    });
+    
+    triggerHapticFeedback();
   }, [activeSection]);
 
   const goToNextSection = useCallback(() => {
     if (canGoForward) {
-      triggerHapticFeedback(10);
       navigateToSection(SECTIONS[currentIndex + 1], 'right');
     }
   }, [canGoForward, currentIndex, navigateToSection]);
 
   const goToPreviousSection = useCallback(() => {
     if (canGoBack) {
-      triggerHapticFeedback(10);
       navigateToSection(SECTIONS[currentIndex - 1], 'left');
     }
   }, [canGoBack, currentIndex, navigateToSection]);
 
-  // Touch handlers for swipe gestures
+  // Swipe handling
   const onTouchStart = (e: React.TouchEvent) => {
     touchEndX.current = null;
     touchStartX.current = e.targetTouches[0].clientX;
@@ -309,12 +300,9 @@ export const MobileConfiguratorSheet = ({
     const isRightSwipe = distance < -minSwipeDistance;
     
     if (isLeftSwipe && canGoForward) {
-      // Haptic feedback on successful swipe
-      triggerHapticFeedback(10);
       goToNextSection();
-    } else if (isRightSwipe && canGoBack) {
-      // Haptic feedback on successful swipe
-      triggerHapticFeedback(10);
+    }
+    if (isRightSwipe && canGoBack) {
       goToPreviousSection();
     }
     
@@ -322,34 +310,33 @@ export const MobileConfiguratorSheet = ({
     touchEndX.current = null;
   };
 
-  const handleReset = () => {
-    setInputs(NEW_QUOTE_OI_INPUTS);
-    setVisitedSections(new Set());
-  };
-
   const handleLoadSample = () => {
-    // Set all OI inputs with sample data
-    setInputs(DEFAULT_OI_INPUTS);
+    setInputs({
+      ...DEFAULT_OI_INPUTS,
+      basePrice: DEFAULT_OI_INPUTS.basePrice || 2000000,
+    });
     
-    // Set client info with sample data
-    effectiveSetClientInfo(SAMPLE_CLIENT_INFO);
+    if (effectiveSetClientInfo) {
+      effectiveSetClientInfo({
+        ...SAMPLE_CLIENT_INFO,
+        developer: SAMPLE_CLIENT_INFO.developer || 'Sample Developer',
+        projectName: SAMPLE_CLIENT_INFO.projectName || 'Sample Project',
+      });
+    }
     
-    // Set mortgage inputs with sample data
     setMortgageInputs(SAMPLE_MORTGAGE_INPUTS);
-    
-    // Mark all sections as visited
     setVisitedSections(new Set(SECTIONS));
     
-    // Trigger flash animation
     setShowSampleFlash(true);
     setTimeout(() => setShowSampleFlash(false), 1500);
     
-    // Show toast notification
-    toast.success('Sample data loaded! Explore all sections.');
+    toast.success('Sample data loaded!');
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
+  const handleReset = () => {
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setVisitedSections(new Set());
+    toast.info('Configuration reset');
   };
 
   const getAnimationClass = () => {
@@ -359,41 +346,46 @@ export const MobileConfiguratorSheet = ({
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'client':
+      case 'project':
         return (
           <ClientSection
             clientInfo={effectiveClientInfo}
             onClientInfoChange={effectiveSetClientInfo}
             quoteId={quoteId}
+            inputs={inputs}
+            setInputs={setInputs}
           />
         );
-      case 'property':
+      case 'investment':
         return (
-          <PropertySection 
+          <InvestmentSection 
             inputs={inputs} 
             setInputs={setInputs} 
             currency={currency}
           />
         );
-      case 'payment':
-        return <PaymentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'value':
-        return <ValueSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'appreciation':
-        return <AppreciationSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'exits':
-        return <ExitsSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'rent':
-        return <RentSection inputs={inputs} setInputs={setInputs} currency={currency} />;
-      case 'mortgage':
-        return <MortgageSection inputs={inputs} setInputs={setInputs} currency={currency} mortgageInputs={mortgageInputs} setMortgageInputs={setMortgageInputs} />;
-      case 'images':
+      case 'returns':
         return (
-          <ImagesSection
+          <ReturnsSection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency}
+          />
+        );
+      case 'extras':
+        return (
+          <ExtrasSection
+            inputs={inputs}
+            setInputs={setInputs}
+            currency={currency}
+            mortgageInputs={mortgageInputs}
+            setMortgageInputs={setMortgageInputs}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
+            heroImageUrl={heroImageUrl}
             onFloorPlanChange={handleFloorPlanUpload}
             onBuildingRenderChange={handleBuildingRenderUpload}
+            onHeroImageChange={handleHeroImageUpload}
             showLogoOverlay={showLogoOverlay}
             onShowLogoOverlayChange={setShowLogoOverlay}
           />
@@ -419,133 +411,122 @@ export const MobileConfiguratorSheet = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleLoadSample}
-                    className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt h-8 px-2"
+                    className="h-8 w-8 p-0 text-theme-text-muted hover:text-theme-text"
                   >
                     <FileText className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  <p className="font-medium mb-1">Load demo scenario:</p>
-                  <ul className="text-xs space-y-0.5 text-muted-foreground">
-                    <li>• AED 800,000 property</li>
-                    <li>• 20/80 payment split</li>
-                    <li>• 8.5% rental yield</li>
-                  </ul>
-                </TooltipContent>
+                <TooltipContent>Load sample data</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleReset}
+                    className="h-8 w-8 p-0 text-theme-text-muted hover:text-theme-text"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset</TooltipContent>
               </Tooltip>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleReset}
-                className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt h-8 px-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClose}
-                className="text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt h-8 w-8"
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8 p-0 text-theme-text-muted hover:text-theme-text"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
-
-          {/* Mini Preview Strip */}
-          <MiniPreviewStrip 
-            inputs={inputs} 
-            currency={currency} 
-            mortgageEnabled={mortgageInputs.enabled}
-            onToggleMortgage={() => setMortgageInputs(prev => ({ ...prev, enabled: !prev.enabled }))}
-          />
-
-          {/* Section Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+          
+          {/* Step indicators */}
+          <div className="flex items-center justify-center gap-2">
             {SECTIONS.map((section, index) => {
               const isActive = section === activeSection;
-              const isComplete = isSectionComplete(section);
+              const isPast = index < currentIndex;
               
               return (
                 <button
                   key={section}
                   onClick={() => navigateToSection(section)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                    isActive
-                      ? 'bg-theme-accent text-black'
-                      : isComplete
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-theme-card-alt text-theme-text-muted'
-                  }`}
+                  className="group"
                 >
-                  {isComplete && !isActive && <Check className="w-3 h-3" />}
-                  <span>{index + 1}. {SECTION_LABELS[section]}</span>
+                  <div className={cn(
+                    "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200",
+                    isActive 
+                      ? "bg-theme-accent text-theme-bg scale-110 ring-2 ring-theme-accent/30" 
+                      : isPast
+                        ? "bg-theme-accent/20 text-theme-accent"
+                        : "bg-theme-bg-alt border border-theme-border text-theme-text-muted"
+                  )}>
+                    {index + 1}
+                  </div>
                 </button>
               );
             })}
           </div>
-
-          {/* Progress Bar */}
-          <div>
-            <div className="flex items-center justify-between text-xs text-theme-text-muted mb-1">
-              <span className="flex items-center gap-1">
-                <ChevronLeft className="w-3 h-3" />
-                <span>{t('swipeToNavigate') || 'Swipe to navigate'}</span>
-                <ChevronRight className="w-3 h-3" />
-              </span>
-              <span>{progressPercent}%</span>
-            </div>
-            <div className="h-1 bg-[#2a3142] rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-[#CCFF00] to-green-400 rounded-full transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
+          
+          {/* Mini preview */}
+          <MiniPreviewStrip 
+            inputs={inputs} 
+            currency={currency}
+            mortgageEnabled={mortgageInputs.enabled}
+            onToggleMortgage={() => setMortgageInputs(prev => ({ ...prev, enabled: !prev.enabled }))}
+          />
         </DrawerHeader>
-
-        {/* Content - Scrollable with swipe gestures */}
+        
+        {/* Content */}
         <div 
           ref={contentRef}
-          className={`flex-1 overflow-y-auto p-4 max-h-[50vh] transition-all duration-300 ${
-            showSampleFlash ? 'bg-[#CCFF00]/5 ring-2 ring-[#CCFF00]/30 ring-inset' : ''
-          }`}
+          className={cn(
+            "flex-1 overflow-y-auto p-4",
+            showSampleFlash && "bg-theme-accent/5"
+          )}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          <div className={`transition-transform duration-300 ${getAnimationClass()} ${showSampleFlash ? 'animate-pulse' : ''}`}>
+          <div className={getAnimationClass()}>
             {renderSection()}
           </div>
         </div>
-
-        {/* Footer Navigation */}
-        <DrawerFooter className="border-t border-[#2a3142] pt-3 pb-4">
-          <div className="flex items-center justify-between gap-3">
+        
+        {/* Footer */}
+        <DrawerFooter className="border-t border-theme-border pt-3">
+          <div className="flex items-center justify-between">
             <Button
               variant="outline"
+              size="sm"
               onClick={goToPreviousSection}
               disabled={!canGoBack}
-              className="flex-1 border-[#2a3142] bg-transparent text-gray-300 hover:bg-[#2a3142] hover:text-white disabled:opacity-30"
+              className="border-theme-border text-theme-text-muted disabled:opacity-30"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
-              {t('previous') || 'Previous'}
+              Back
             </Button>
-
+            
+            <span className="text-xs text-theme-text-muted">
+              {currentIndex + 1} / {SECTIONS.length}
+            </span>
+            
             {isLastSection ? (
               <Button
-                onClick={handleClose}
-                className="flex-1 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
               >
-                {t('applyClose') || 'Apply & Close'}
+                Apply & Close
               </Button>
             ) : (
               <Button
+                size="sm"
                 onClick={goToNextSection}
-                disabled={!canGoForward}
-                className="flex-1 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-semibold disabled:opacity-30"
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
               >
-                {t('next') || 'Next'}
+                Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             )}

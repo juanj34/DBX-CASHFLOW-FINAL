@@ -1,8 +1,7 @@
-import { Building2, CreditCard, Sparkles, Home, TrendingUp, Check, AlertCircle, LogOut, Users, Image } from "lucide-react";
+import { Building2, Sparkles, TrendingUp, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfiguratorSection, SectionStatus } from "./types";
 import { OIInputs } from "../useOICalculations";
-import { calculateAppreciationBonus } from "../valueDifferentiators";
 
 interface ConfiguratorSidebarProps {
   activeSection: ConfiguratorSection;
@@ -19,83 +18,46 @@ export const ConfiguratorSidebar = ({
 }: ConfiguratorSidebarProps) => {
   // Calculate section completion status
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
-  const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
-  const totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
-  const isPaymentValid = Math.abs(totalPayment - 100) < 0.01;
+  const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
   
-  const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-  const handoverQuarterMonth = (inputs.handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
-  const isDateValid = handoverDate > bookingDate;
-
-  const appreciationBonus = calculateAppreciationBonus(inputs.valueDifferentiators || []);
-
-  // Only show complete if section has ACTUAL DATA (not just visited)
+  let totalPayment: number;
+  if (hasPostHandoverPlan) {
+    totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
+  } else {
+    const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
+    totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
+  }
+  const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
+  
   const hasAppreciationData = inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-  const hasExitData = inputs._exitScenarios && inputs._exitScenarios.length > 0;
-  const hasRentData = inputs.rentalYieldPercent > 0;
-  const hasValueData = inputs.valueDifferentiators && inputs.valueDifferentiators.length > 0;
   
+  // 4 consolidated sections
   const sections: SectionStatus[] = [
     {
-      id: 'client',
-      label: 'Client',
+      id: 'project',
+      label: 'Project',
       icon: Users,
-      // Must be visited AND have zone selected
-      isComplete: visitedSections.has('client') && Boolean(inputs.zoneId),
+      isComplete: visitedSections.has('project') && Boolean(inputs.zoneId),
     },
     {
-      id: 'property',
-      label: 'Property',
+      id: 'investment',
+      label: 'Investment',
       icon: Building2,
-      isComplete: visitedSections.has('property') && inputs.basePrice > 0 && isDateValid,
-      hasWarning: visitedSections.has('property') && inputs.basePrice > 0 && !isDateValid,
+      isComplete: visitedSections.has('investment') && inputs.basePrice > 0 && isPaymentValid,
+      hasWarning: visitedSections.has('investment') && inputs.basePrice > 0 && !isPaymentValid,
     },
     {
-      id: 'images',
-      label: 'Media',
-      icon: Image,
-      // Media is optional - mark complete when visited
-      isComplete: visitedSections.has('images'),
-    },
-    {
-      id: 'payment',
-      label: 'Payment',
-      icon: CreditCard,
-      isComplete: visitedSections.has('payment') && inputs.downpaymentPercent > 0 && inputs.preHandoverPercent > 0 && isPaymentValid,
-      hasWarning: visitedSections.has('payment') && inputs.preHandoverPercent > 0 && !isPaymentValid,
-    },
-    {
-      id: 'value',
-      label: 'Value',
-      icon: Sparkles,
-      // Value is optional - show complete if visited
-      isComplete: visitedSections.has('value'),
-    },
-    {
-      id: 'appreciation',
-      label: 'Growth',
+      id: 'returns',
+      label: 'Returns',
       icon: TrendingUp,
-      isComplete: visitedSections.has('appreciation') && hasAppreciationData,
+      isComplete: visitedSections.has('returns') && hasAppreciationData,
     },
     {
-      id: 'exits',
-      label: 'Exits',
-      icon: LogOut,
-      isComplete: visitedSections.has('exits') && hasExitData,
-    },
-    {
-      id: 'rent',
-      label: 'Rent',
-      icon: Home,
-      isComplete: visitedSections.has('rent') && hasRentData,
-    },
-    {
-      id: 'mortgage',
-      label: 'Mortgage',
-      icon: Building2,
-      // Mortgage is truly optional - mark complete when visited
-      isComplete: visitedSections.has('mortgage'),
+      id: 'extras',
+      label: 'More',
+      icon: Sparkles,
+      // Extras is optional - complete when visited
+      isComplete: visitedSections.has('extras'),
     },
   ];
 
@@ -105,23 +67,12 @@ export const ConfiguratorSidebar = ({
         {sections.map((section, index) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
-          const isVisited = visitedSections.has(section.id);
+          const isPast = index < sections.findIndex(s => s.id === activeSection);
           
           return (
             <button
               key={section.id}
-              onClick={() => {
-                // Allow navigation to previous sections or current section
-                const currentIndex = sections.findIndex(s => s.id === activeSection);
-                const targetIndex = index;
-                // Allow going back or staying, warn if skipping forward without completing
-                if (targetIndex <= currentIndex || section.isComplete || visitedSections.has(section.id)) {
-                  onSectionChange(section.id);
-                } else {
-                  // Still allow but will be blocked by Next button validation
-                  onSectionChange(section.id);
-                }
-              }}
+              onClick={() => onSectionChange(section.id)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                 isActive 
@@ -131,27 +82,16 @@ export const ConfiguratorSidebar = ({
             >
               <div className={cn(
                 "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                section.isComplete && !section.hasWarning
-                  ? "bg-green-500/20 text-green-400"
-                  : section.hasWarning
-                    ? "bg-amber-500/20 text-amber-400"
-                    : isActive
-                      ? "bg-theme-accent/30 text-theme-accent"
-                      : "bg-theme-card-alt text-theme-text-muted"
+                isActive
+                  ? "bg-theme-accent text-theme-bg scale-110 ring-2 ring-theme-accent/30"
+                  : isPast
+                    ? "bg-theme-accent/20 text-theme-accent"
+                    : "bg-theme-card-alt text-theme-text-muted"
               )}>
-                {section.isComplete && !section.hasWarning ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : section.hasWarning ? (
-                  <AlertCircle className="w-3.5 h-3.5" />
-                ) : (
-                  index + 1
-                )}
+                {index + 1}
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-medium truncate">{section.label}</span>
-                {section.id === 'value' && appreciationBonus > 0 && isVisited && (
-                  <span className="text-[10px] text-theme-accent">+{appreciationBonus.toFixed(1)}% bonus</span>
-                )}
               </div>
             </button>
           );
@@ -163,7 +103,7 @@ export const ConfiguratorSidebar = ({
         <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
-            <span className="font-mono">1-9</span>
+            <span className="font-mono">1-4</span>
           </div>
           <div className="flex justify-between">
             <span>Next/Prev</span>
