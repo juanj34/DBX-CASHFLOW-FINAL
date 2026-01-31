@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TopNavbar } from '@/components/layout/TopNavbar';
-import { TrendingUp, Settings2, Home, Palmtree, Coins, FolderOpen, Check, Loader2, Cloud } from 'lucide-react';
+import { TrendingUp, Settings2, Home, Palmtree, Coins, FolderOpen, Check, Loader2, Cloud, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,9 +34,11 @@ import {
   LoadSecondaryComparisonModal,
   MortgageCoverageCard,
   RentalComparisonAtHandover,
+  ExportComparisonModal,
 } from '@/components/roi/secondary';
 import { useSecondaryComparisons, SecondaryComparison } from '@/hooks/useSecondaryComparisons';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useComparisonExport } from '@/hooks/useComparisonExport';
 
 const OffPlanVsSecondary = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -45,9 +47,13 @@ const OffPlanVsSecondary = () => {
   // Modal state
   const [configuratorOpen, setConfiguratorOpen] = useState(false);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
   const [currentComparisonId, setCurrentComparisonId] = useState<string | null>(null);
   const [currentComparisonTitle, setCurrentComparisonTitle] = useState<string>('');
+  
+  // Export hook
+  const { exporting, exportComparison } = useComparisonExport();
   
   // Auto-save state
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -708,6 +714,16 @@ const OffPlanVsSecondary = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setExportModalOpen(true)}
+              className="border-theme-border text-theme-text"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setLoadModalOpen(true)}
               className="border-theme-border text-theme-text"
             >
@@ -883,10 +899,8 @@ const OffPlanVsSecondary = () => {
         handoverMonths={handoverMonths}
         currency={currency}
         rate={rate}
-        language={language}
       />
-
-      {/* Load Modal */}
+      
       <LoadSecondaryComparisonModal
         open={loadModalOpen}
         onOpenChange={setLoadModalOpen}
@@ -895,6 +909,52 @@ const OffPlanVsSecondary = () => {
         onLoad={handleLoadComparison}
         onDelete={deleteComparison}
         language={language}
+      />
+
+      <ExportComparisonModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+        isExporting={exporting}
+        language={language}
+        onExport={async (format) => {
+          await exportComparison({
+            offPlanInputs: safeOffPlanInputs,
+            offPlanProjectName: projectName,
+            offPlanProjections: offPlanCalcs.yearlyProjections,
+            offPlanBasePrice: safeOffPlanInputs.basePrice,
+            offPlanTotalMonths: offPlanCalcs.totalMonths,
+            offPlanEntryCosts: offPlanCalcs.totalEntryCosts,
+            offPlanTotalCapitalAtHandover,
+            secondaryInputs,
+            secondaryCalcs,
+            metrics: comparisonMetrics,
+            handoverYearIndex,
+            exitMonths,
+            rentalMode,
+            offPlanTotalAssets10Y,
+            secondaryTotalAssets10Y,
+            offPlanPropertyValue10Y,
+            secondaryPropertyValue10Y,
+            offPlanMonthlyRent5Y,
+            secondaryMonthlyRent5Y,
+            appreciationDuringConstruction,
+            secondaryRentDuringConstruction,
+            offPlanMonthlyRentAtHandover,
+            secondaryMonthlyRentAtHandover,
+            showMortgageCoverage: secondaryInputs.useMortgage && secondaryCalcs.monthlyMortgagePayment > 0,
+            secondaryMonthlyRent: rentalMode === 'long-term' ? secondaryCalcs.monthlyRentLT : secondaryCalcs.monthlyRentST,
+            secondaryMonthlyMortgage: secondaryCalcs.monthlyMortgagePayment,
+            secondaryNetCashflow: rentalMode === 'long-term' ? secondaryCalcs.monthlyCashflowLT : secondaryCalcs.monthlyCashflowST,
+            secondaryCoveragePercent: secondaryCalcs.monthlyMortgagePayment > 0
+              ? ((rentalMode === 'long-term' ? secondaryCalcs.monthlyRentLT : secondaryCalcs.monthlyRentST) / secondaryCalcs.monthlyMortgagePayment) * 100
+              : 100,
+            secondaryLoanAmount: secondaryCalcs.loanAmount,
+            secondaryPrincipalPaid10Y: secondaryPrincipalPaid10Y,
+            currency,
+            rate,
+            language,
+          }, format, `comparison-${projectName.toLowerCase().replace(/\s+/g, '-')}`);
+        }}
       />
     </div>
   );
