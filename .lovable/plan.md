@@ -1,132 +1,140 @@
 
-# Adaptive Payment Layout Improvements
+# Fix Exit Chart: Handover Value vs Exit Scenarios
 
-## Problem Summary
+## Problem
 
-Looking at the screenshot, I can identify three issues:
+The chart currently shows confusing overlapping markers when an exit scenario is set exactly at the handover month:
 
-1. **Bottom cards use fixed 4-column grid** - Even when only 3 cards are visible (Rental Income, Exit Scenarios, Post-Handover Coverage), the layout uses 4 columns leaving empty space
-2. **Text overflow in Post-Handover Coverage card** - Values like "AED 349,36..." are being truncated
-3. **Vertical height still excessive** - User wants to explore 3-column payment breakdown instead of 2-column to further reduce scroll depth
+```text
+Before:
+                    ↓ Exit #3 (€297K)
+                    ↓ Handover (€297K)
+                    •←── Same point, two markers!
+```
+
+This is confusing because:
+1. Handover is a **milestone** (when you get the keys), not necessarily a sale
+2. Having both "Exit #3" and "Handover" at the same spot creates visual noise
+3. Users don't understand which value to trust
 
 ---
 
-## Technical Solution
+## Solution
 
-### 1. Dynamic Column Grid for Bottom Cards
+### 1. Filter Exit Scenarios at Handover Month
 
-**Current Code (SnapshotContent.tsx line 141):**
-```typescript
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-```
-
-**Problem:** Always uses 4 columns on xl screens regardless of how many cards are visible.
-
-**Solution:** Count visible cards and apply dynamic grid classes:
+In `OIGrowthCurve.tsx`, exclude any exit that falls exactly on `totalMonths` from the exit markers:
 
 ```typescript
-// Count visible cards
-const visibleCards = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
-
-// Dynamic grid based on card count
-const cardGridClass = useMemo(() => {
-  switch (visibleCards) {
-    case 1: return 'grid grid-cols-1';
-    case 2: return 'grid grid-cols-1 md:grid-cols-2';
-    case 3: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-    case 4: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-    default: return 'grid grid-cols-1';
-  }
-}, [visibleCards]);
+// Filter out exit scenarios that fall exactly on handover month
+const exitMarkersData = useMemo(() => {
+  return exitScenarios
+    .filter(month => month !== totalMonths) // ← NEW: Skip handover-month exits
+    .map((month, index) => {
+      const scenario = calculateExitScenario(month, basePrice, totalMonths, inputs, totalEntryCosts);
+      return {
+        scenario,
+        exitMonth: month,
+        originalIndex: exitScenarios.indexOf(month), // Keep original numbering
+      };
+    });
+}, [exitScenarios, basePrice, totalMonths, inputs, totalEntryCosts]);
 ```
 
-This ensures:
-- 3 cards → 3 columns (fills the row completely)
-- 2 cards → 2 columns
-- 4 cards → 4 columns
+### 2. Show "Handover Value" as a Dedicated Marker
+
+Change the handover marker label from "Handover" to "🔑 Handover Value" and remove the ROE display (since it's not an exit):
+
+```typescript
+{/* Handover marker - now just showing property value, not exit */}
+<g style={{ ... }}>
+  {/* Handover label */}
+  <text x={xScale(totalMonths)} y={yScale(handoverPrice) - 24}
+        fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
+    🔑 Handover Value
+  </text>
+  
+  {/* Handover price - just the property value at completion */}
+  <text x={xScale(totalMonths)} y={yScale(handoverPrice) - 10}
+        fill="#ffffff" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+    {formatCurrencyShort(handoverPrice, currency, rate)}
+  </text>
+  
+  {/* NO ROE shown - handover is a milestone, not an exit */}
+  
+  {/* Marker circles */}
+  <circle cx={xScale(totalMonths)} cy={yScale(handoverPrice)}
+          r="8" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+  <circle cx={xScale(totalMonths)} cy={yScale(handoverPrice)}
+          r="4" fill="#ffffff" />
+</g>
+```
+
+### 3. Calculate `handoverPrice` Instead of Full Scenario
+
+Since we're not treating handover as an exit, just calculate the property value:
+
+```typescript
+// Just the price at handover (not a full exit scenario)
+const handoverPrice = useMemo(() => {
+  return calculateExitPrice(totalMonths, basePrice, totalMonths, inputs);
+}, [totalMonths, basePrice, inputs]);
+```
+
+### 4. Keep Exit Numbering Consistent
+
+When filtering out handover-month exits, maintain original numbering so users still see "Exit #1, #2, #4" (skipping #3 if that was at handover):
+
+```typescript
+// Original index tracking
+const exitMarkersData = useMemo(() => {
+  let exitNumber = 0;
+  return exitScenarios
+    .map((month, originalIndex) => {
+      // Skip handover-month exits
+      if (month === totalMonths) return null;
+      
+      exitNumber++;
+      const scenario = calculateExitScenario(month, basePrice, totalMonths, inputs, totalEntryCosts);
+      return {
+        scenario,
+        exitMonth: month,
+        label: `Exit ${exitNumber}`,
+        exitNumber,
+      };
+    })
+    .filter(Boolean);
+}, [exitScenarios, basePrice, totalMonths, inputs, totalEntryCosts]);
+```
 
 ---
 
-### 2. Fix Text Overflow in Cards
+## Visual Result
 
-**Identified Issues:**
+```text
+Before (Confusing):
+────────────────────────────────
+                    Exit #3 (€297K) ← Redundant
+                    Handover (€297K) ← Overlapping
+                    •
+────────────────────────────────
 
-In `CompactPostHandoverCard.tsx`:
-- Values like "AED 349,368" are truncating due to insufficient space
-- The DottedRow component uses `whitespace-nowrap` which prevents wrapping
-
-**Solution:** Add `truncate` and `min-w-0` to value containers, or use responsive text sizing:
-
-```typescript
-// In DottedRow.tsx - ensure proper truncation
-<span className={cn(
-  'font-mono tabular-nums text-theme-text text-sm',
-  'truncate min-w-0',  // Add truncation safety
-  bold && 'font-semibold',
-  valueClassName
-)}>
+After (Clear):
+────────────────────────────────
+                    Exit #3 (+6mo, €320K)
+                    🔑 Handover Value (€297K) ← Milestone only
+                    •
+────────────────────────────────
 ```
-
-For the Post-Handover card specifically, reduce font size on smaller containers:
-```typescript
-// In CompactPostHandoverCard.tsx - use slightly smaller text in tight layouts
-<DottedRow 
-  label={...}
-  value={...}
-  className="text-xs"  // Smaller text to prevent overflow
-/>
-```
-
-Also add `overflow-hidden` to the card container and ensure values have room to breathe.
 
 ---
 
-### 3. Three-Column Payment Breakdown Option
+## Edge Cases
 
-**Current:** Journey payments split into 2 columns
-**Proposed:** Add support for 3 columns to further reduce height
-
-**Implementation:**
-
-Modify `CompactPaymentTable.tsx` to support a `threeColumnMode` or extend `twoColumnMode` to `'auto' | 'two' | 'three' | 'never'`:
-
-```typescript
-interface CompactPaymentTableProps {
-  // ... existing props
-  twoColumnMode?: 'auto' | 'always' | 'never';
-  columnCount?: 2 | 3;  // New prop for explicit control
-}
-```
-
-**Column splitting logic:**
-```typescript
-const splitIntoColumns = (payments: PaymentMilestone[], numColumns: number) => {
-  const itemsPerColumn = Math.ceil(payments.length / numColumns);
-  return Array.from({ length: numColumns }, (_, i) => 
-    payments.slice(i * itemsPerColumn, (i + 1) * itemsPerColumn)
-  );
-};
-```
-
-**Rendering:**
-```typescript
-{useTwoColumns && (
-  <div className={cn(
-    "grid gap-4",
-    columnCount === 3 ? "grid-cols-3" : "grid-cols-2"
-  )}>
-    {splitColumns.map((columnPayments, colIndex) => (
-      <div key={colIndex} className="space-y-1">
-        {columnPayments.map((payment, index) => renderPaymentRow(...))}
-      </div>
-    ))}
-  </div>
-)}
-```
-
-**Threshold Logic:**
-- 12-20 payments → 2 columns
-- 21+ payments → 3 columns (optional auto-upgrade)
+1. **All exits after handover**: Chart works normally, shows Handover Value + post-handover exits
+2. **All exits before handover**: Chart shows construction-phase exits + Handover Value milestone
+3. **Mixed exits**: Pre-handover, handover milestone, post-handover exits all render correctly
+4. **Exit exactly at handover removed from user selection**: The exit won't appear as a marker, but Handover Value will
 
 ---
 
@@ -134,53 +142,14 @@ const splitIntoColumns = (payments: PaymentMilestone[], numColumns: number) => {
 
 | File | Changes |
 |------|---------|
-| `src/components/roi/snapshot/SnapshotContent.tsx` | Dynamic grid class based on visible card count |
-| `src/components/roi/snapshot/SnapshotPrintContent.tsx` | Same dynamic grid logic |
-| `src/components/roi/export/ExportSnapshotLayout.tsx` | Dynamic grid for export layout |
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Add 3-column support, fix text sizing |
-| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Fix text overflow with smaller fonts |
-| `src/components/roi/snapshot/DottedRow.tsx` | Add truncation safety classes |
+| `src/components/roi/OIGrowthCurve.tsx` | Filter handover-month exits, change handover marker to "Handover Value" without ROE |
 
 ---
 
-## Visual Result
+## Technical Details
 
-**Before (Current):**
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Rental Income │ Exit Scenarios │ Post-Handover │   EMPTY   │
-│     CARD      │      CARD      │     CARD      │   SPACE   │
-└─────────────────────────────────────────────────────────────┘
-```
+The key change is separating two concepts:
+- **Handover**: When you receive the property (milestone marker with property value)
+- **Exit**: When you sell the property (actionable scenario with ROE calculation)
 
-**After (Fixed):**
-```
-┌───────────────────────────────────────────────────────────┐
-│   Rental Income   │   Exit Scenarios   │   Post-Handover │
-│        CARD       │        CARD        │       CARD      │
-└───────────────────────────────────────────────────────────┘
-```
-
-**3-Column Payment Breakdown (Optional):**
-```
-┌───────────────────────────────────────────────────────────┐
-│ ENTRY              │ JOURNEY (cont.)    │ JOURNEY (cont.) │
-│ Booking Fee        │ Month 15           │ Month 30        │
-│ Downpayment        │ Month 16           │ Month 31        │
-│ DLD + Oqood        │ Month 17           │ POST-HANDOVER   │
-│                    │ ...                │ Month +1        │
-│ JOURNEY (start)    │                    │ Month +2...     │
-│ Month 1            │                    │                 │
-│ Month 14           │                    │                 │
-├───────────────────────────────────────────────────────────┤
-│ Total Investment                              AED 1,093K  │
-└───────────────────────────────────────────────────────────┘
-```
-
----
-
-## Implementation Priority
-
-1. **Dynamic card grid** - Quick fix, high impact
-2. **Text overflow fixes** - Critical for readability
-3. **3-column payment layout** - Enhanced feature, optional
+The `calculateExitPrice()` function calculates the property value at any month, while `calculateExitScenario()` calculates the full exit metrics (capital deployed, profit, ROE). We use only `calculateExitPrice()` for the handover marker.
