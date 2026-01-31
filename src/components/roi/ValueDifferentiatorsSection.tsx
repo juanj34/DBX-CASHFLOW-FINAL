@@ -88,17 +88,17 @@ export const ValueDifferentiatorsSection = ({
         className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
           isSelected
             ? 'border-theme-accent/50 bg-theme-accent/10'
-            : 'border-[#2a3142] bg-[#0d1117] hover:border-[#3a4152]'
+            : 'border-theme-border bg-theme-bg hover:border-theme-border-alt'
         }`}
       >
         <label className="flex items-center gap-2 flex-1 cursor-pointer">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => toggleDifferentiator(diff.id)}
-            className="border-[#3a4152] data-[state=checked]:bg-theme-accent data-[state=checked]:border-theme-accent"
+            className="border-theme-border data-[state=checked]:bg-theme-accent data-[state=checked]:border-theme-accent"
           />
-          <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-theme-accent' : 'text-gray-500'}`} />
-          <span className={`text-xs flex-1 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+          <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
+          <span className={`text-xs flex-1 ${isSelected ? 'text-theme-text' : 'text-theme-text-muted'}`}>
             {language === 'es' ? diff.nameEs : diff.name}
           </span>
         </label>
@@ -108,9 +108,9 @@ export const ValueDifferentiatorsSection = ({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="w-3 h-3 text-gray-500 hover:text-gray-300 cursor-help flex-shrink-0" />
+                <Info className="w-3 h-3 text-theme-text-muted hover:text-theme-text cursor-help flex-shrink-0" />
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[250px] bg-[#1a1f2e] border-[#2a3142] text-gray-200 text-xs">
+              <TooltipContent side="top" className="max-w-[250px] bg-theme-card border-theme-border text-theme-text text-xs">
                 <p>{tooltip}</p>
               </TooltipContent>
             </Tooltip>
@@ -134,7 +134,7 @@ export const ValueDifferentiatorsSection = ({
               e.stopPropagation();
               handleDeleteCustom(diff.id);
             }}
-            className="h-5 w-5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 flex-shrink-0"
+            className="h-5 w-5 text-theme-text-muted hover:text-red-400 hover:bg-red-400/10 flex-shrink-0"
             disabled={saving}
           >
             <Trash2 className="w-3 h-3" />
@@ -152,25 +152,25 @@ export const ValueDifferentiatorsSection = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-theme-accent" />
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-theme-text">
                 {language === 'es' ? 'Diferenciadores de Valor' : 'Value Differentiators'}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-theme-text-muted">
                 {language === 'es' ? 'Bonus' : 'Bonus'}:
               </span>
-              <Badge variant="outline" className={`text-xs font-mono ${totalBonus > 0 ? 'bg-theme-accent/20 text-theme-accent border-theme-accent/30' : 'text-gray-400'}`}>
+              <Badge variant="outline" className={`text-xs font-mono ${totalBonus > 0 ? 'bg-theme-accent/20 text-theme-accent border-theme-accent/30' : 'text-theme-text-muted'}`}>
                 +{totalBonus.toFixed(1)}%
               </Badge>
-              <span className="text-xs text-gray-500">/ {APPRECIATION_BONUS_CAP}%</span>
+              <span className="text-xs text-theme-text-muted">/ {APPRECIATION_BONUS_CAP}%</span>
             </div>
           </div>
 
           {/* Progress bar */}
           <div className="space-y-1">
-            <Progress value={bonusProgress} className="h-1.5 bg-[#2a3142]" />
-            <p className="text-[10px] text-gray-500 text-right">
+            <Progress value={bonusProgress} className="h-1.5 bg-theme-border" />
+            <p className="text-[10px] text-theme-text-muted text-right">
               {language === 'es' 
                 ? `Aplicado a todas las fases de apreciación (construcción, crecimiento, madurez)`
                 : `Applied to all appreciation phases (construction, growth, mature)`}
@@ -191,7 +191,7 @@ export const ValueDifferentiatorsSection = ({
 
           return (
             <div key={category} className="space-y-2">
-              <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <h4 className="text-xs font-medium text-theme-text-muted uppercase tracking-wider">
                 {language === 'es' ? CATEGORY_LABELS[category].es : CATEGORY_LABELS[category].en}
               </h4>
               
@@ -207,7 +207,7 @@ export const ValueDifferentiatorsSection = ({
                 <>
                   {loading ? (
                     <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-theme-text-muted" />
                     </div>
                   ) : (
                     <>
@@ -219,16 +219,16 @@ export const ValueDifferentiatorsSection = ({
 
                       {/* Add Custom Form */}
                       {showAddForm ? (
-                        <div className="p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142] space-y-3">
+                        <div className="p-3 bg-theme-card rounded-lg border border-theme-border space-y-3">
                           <Input
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             placeholder={language === 'es' ? 'Nombre del diferenciador' : 'Differentiator name'}
-                            className="h-8 text-xs bg-[#0d1117] border-[#2a3142] text-white"
+                            className="h-8 text-xs bg-theme-bg border-theme-border text-theme-text"
                           />
                           
                           <div className="flex items-center justify-between">
-                            <label className="text-xs text-gray-400 flex items-center gap-2">
+                            <label className="text-xs text-theme-text-muted flex items-center gap-2">
                               <Switch
                                 checked={newImpacts}
                                 onCheckedChange={setNewImpacts}
@@ -239,7 +239,7 @@ export const ValueDifferentiatorsSection = ({
                             
                             {newImpacts && (
                               <div className="flex items-center gap-1">
-                                <span className="text-xs text-gray-500">+</span>
+                                <span className="text-xs text-theme-text-muted">+</span>
                                 <Input
                                   type="number"
                                   value={newBonus}
@@ -247,9 +247,9 @@ export const ValueDifferentiatorsSection = ({
                                   step="0.1"
                                   min="0.1"
                                   max="0.5"
-                                  className="w-16 h-6 text-xs text-center bg-[#0d1117] border-[#2a3142] text-theme-accent font-mono"
+                                  className="w-16 h-6 text-xs text-center bg-theme-bg border-theme-border text-theme-accent font-mono"
                                 />
-                                <span className="text-xs text-gray-500">%</span>
+                                <span className="text-xs text-theme-text-muted">%</span>
                               </div>
                             )}
                           </div>
@@ -259,7 +259,7 @@ export const ValueDifferentiatorsSection = ({
                               variant="ghost"
                               size="sm"
                               onClick={() => setShowAddForm(false)}
-                              className="flex-1 h-7 text-xs text-gray-400"
+                              className="flex-1 h-7 text-xs text-theme-text-muted"
                             >
                               {language === 'es' ? 'Cancelar' : 'Cancel'}
                             </Button>
@@ -278,7 +278,7 @@ export const ValueDifferentiatorsSection = ({
                           variant="outline"
                           size="sm"
                           onClick={() => setShowAddForm(true)}
-                          className="w-full h-8 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white"
+                          className="w-full h-8 text-xs border-dashed border-theme-border text-theme-text-muted hover:bg-theme-card hover:text-theme-text"
                         >
                           <Plus className="w-3.5 h-3.5 mr-1" />
                           {language === 'es' ? 'Agregar diferenciador personalizado' : 'Add custom differentiator'}

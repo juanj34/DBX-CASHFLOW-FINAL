@@ -46,7 +46,7 @@ export const ClientSelector = ({
           role="combobox"
           aria-expanded={open}
           disabled={disabled || loading}
-          className="w-full justify-between bg-[#0d1117] border-[#2a3142] text-white h-9 hover:bg-[#161b22]"
+          className="w-full justify-between bg-theme-bg border-theme-border text-theme-text h-9 hover:bg-theme-card"
         >
           <span className="flex items-center gap-2 truncate">
             <User className="w-4 h-4 text-theme-text-muted shrink-0" />
@@ -59,9 +59,9 @@ export const ClientSelector = ({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 bg-[#1a1f2e] border-[#2a3142]" align="start">
+      <PopoverContent className="w-[300px] p-0 bg-theme-card border-theme-border" align="start">
         <Command className="bg-transparent">
-          <CommandInput placeholder="Search clients..." className="text-white" />
+          <CommandInput placeholder="Search clients..." className="text-theme-text" />
           <CommandList>
             <CommandEmpty className="py-4 text-center text-sm text-theme-text-muted">
               No clients found.
@@ -75,12 +75,12 @@ export const ClientSelector = ({
                     onValueChange(client.id === value ? null : client.id, client.id === value ? null : client);
                     setOpen(false);
                   }}
-                  className="text-white hover:bg-[#2a3142] cursor-pointer"
+                  className="text-theme-text hover:bg-theme-border cursor-pointer"
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === client.id ? "opacity-100 text-[#CCFF00]" : "opacity-0"
+                      value === client.id ? "opacity-100 text-theme-accent" : "opacity-0"
                     )}
                   />
                   <div className="flex flex-col">
@@ -94,14 +94,14 @@ export const ClientSelector = ({
             </CommandGroup>
             {onCreateNew && (
               <>
-                <CommandSeparator className="bg-[#2a3142]" />
+                <CommandSeparator className="bg-theme-border" />
                 <CommandGroup>
                   <CommandItem
                     onSelect={() => {
                       setOpen(false);
                       onCreateNew();
                     }}
-                    className="text-[#CCFF00] hover:bg-[#2a3142] cursor-pointer"
+                    className="text-theme-accent hover:bg-theme-border cursor-pointer"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Create new client

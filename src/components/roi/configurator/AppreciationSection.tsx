@@ -430,7 +430,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span className="text-gray-500">
+            <span className="text-theme-text-muted">
               {language === 'es' ? 'Crecimiento' : 'Growth'}
               <span className="text-green-400 ml-1">({growthPeriodYears}y)</span>
             </span>
@@ -443,43 +443,43 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
       </div>
 
       {/* Key Metrics - Compact Single Row */}
-      <div className="flex items-center justify-between p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+      <div className="flex items-center justify-between p-3 bg-theme-card rounded-lg border border-theme-border">
         <div className="text-center flex-1">
-          <p className="text-[9px] text-gray-500 uppercase">
+          <p className="text-[9px] text-theme-text-muted uppercase">
             {language === 'es' ? '3 Años' : '3Y Value'}
           </p>
-          <p className="text-xs font-bold text-white">
+          <p className="text-xs font-bold text-theme-text">
             {currency} {(value3Y / 1000000).toFixed(2)}M
           </p>
         </div>
         
-        <div className="h-8 w-px bg-[#2a3142]" />
+        <div className="h-8 w-px bg-theme-border" />
         
         <div className="text-center flex-1">
-          <p className="text-[9px] text-gray-500 uppercase">
+          <p className="text-[9px] text-theme-text-muted uppercase">
             {language === 'es' ? '7 Años' : '7Y Value'}
           </p>
-          <p className="text-xs font-bold text-[#CCFF00]">
+          <p className="text-xs font-bold text-theme-accent">
             {currency} {(value7Y / 1000000).toFixed(2)}M
           </p>
         </div>
         
-        <div className="h-8 w-px bg-[#2a3142]" />
+        <div className="h-8 w-px bg-theme-border" />
         
         <div className="text-center flex-1">
-          <p className="text-[9px] text-gray-500 uppercase">
+          <p className="text-[9px] text-theme-text-muted uppercase">
             {language === 'es' ? 'Crecimiento' : 'Growth'}
           </p>
           <p className="text-xs font-bold text-green-400">+{totalGrowth.toFixed(0)}%</p>
         </div>
         
-        <div className="h-8 w-px bg-[#2a3142]" />
+        <div className="h-8 w-px bg-theme-border" />
         
         <div className="text-center flex-1">
-          <p className="text-[9px] text-gray-500 uppercase">
+          <p className="text-[9px] text-theme-text-muted uppercase">
             {language === 'es' ? 'PSF 7Y' : '7Y PSF'}
           </p>
-          <p className="text-xs font-bold text-white">
+          <p className="text-xs font-bold text-theme-text">
             {currency} {psf7Y.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
@@ -487,21 +487,21 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
 
       {/* Customize Collapsible */}
       <Collapsible open={customOpen} onOpenChange={setCustomOpen}>
-        <CollapsibleTrigger className="w-full flex items-center justify-between p-3 bg-[#1a1f2e] rounded-xl border border-[#2a3142] hover:border-gray-600 transition-colors">
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-3 bg-theme-card rounded-xl border border-theme-border hover:border-theme-border-alt transition-colors">
           <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-300">
+            <Settings className="w-4 h-4 text-theme-text-muted" />
+            <span className="text-sm text-theme-text">
               {language === 'es' ? 'Personalizar apreciación' : 'Customize appreciation'}
             </span>
           </div>
-          <ChevronDown className={cn("w-4 h-4 text-gray-400 transition-transform", customOpen && "rotate-180")} />
+          <ChevronDown className={cn("w-4 h-4 text-theme-text-muted transition-transform", customOpen && "rotate-180")} />
         </CollapsibleTrigger>
         
         <CollapsibleContent className="pt-3">
-          <div className="space-y-4 p-4 bg-[#1a1f2e] rounded-xl border border-[#2a3142]">
+          <div className="space-y-4 p-4 bg-theme-card rounded-xl border border-theme-border">
             {/* Explanation */}
-            <div className="p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
-              <p className="text-xs text-gray-400">
+            <div className="p-3 bg-theme-bg rounded-lg border border-theme-border">
+              <p className="text-xs text-theme-text-muted">
                 {language === 'es' 
                   ? 'La apreciación se divide en 3 fases: Construcción (antes de entrega), Crecimiento (primeros años post-entrega) y Madurez (largo plazo). Ajusta cada fase según tu análisis del mercado.'
                   : 'Appreciation is divided into 3 phases: Construction (before handover), Growth (first years post-handover), and Mature (long term). Adjust each phase based on your market analysis.'}
@@ -512,7 +512,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">
+                  <label className="text-xs text-theme-text-muted">
                     {language === 'es' ? 'Fase Construcción' : 'Construction Phase'}
                   </label>
                   <InfoTooltip translationKey="tooltipConstructionAppreciation" />
@@ -521,8 +521,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                   <span className="text-xs text-orange-400 font-mono">{inputs.constructionAppreciation ?? 12}%</span>
                   {appreciationBonus > 0 && (
                     <>
-                      <span className="text-xs text-gray-500">→</span>
-                      <span className="text-xs text-[#CCFF00] font-mono font-bold">
+                      <span className="text-xs text-theme-text-muted">→</span>
+                      <span className="text-xs text-theme-accent font-mono font-bold">
                         {((inputs.constructionAppreciation ?? 12) + appreciationBonus).toFixed(1)}%
                       </span>
                     </>
@@ -543,7 +543,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">
+                  <label className="text-xs text-theme-text-muted">
                     {language === 'es' ? `Fase Crecimiento (${inputs.growthPeriodYears ?? 5}a)` : `Growth Phase (${inputs.growthPeriodYears ?? 5}y)`}
                   </label>
                   <InfoTooltip translationKey="tooltipGrowthAppreciation" />
@@ -552,8 +552,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                   <span className="text-xs text-green-400 font-mono">{inputs.growthAppreciation ?? 8}%</span>
                   {appreciationBonus > 0 && (
                     <>
-                      <span className="text-xs text-gray-500">→</span>
-                      <span className="text-xs text-[#CCFF00] font-mono font-bold">
+                      <span className="text-xs text-theme-text-muted">→</span>
+                      <span className="text-xs text-theme-accent font-mono font-bold">
                         {((inputs.growthAppreciation ?? 8) + appreciationBonus).toFixed(1)}%
                       </span>
                     </>
@@ -574,12 +574,12 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">
+                  <label className="text-xs text-theme-text-muted">
                     {language === 'es' ? 'Duración Crecimiento' : 'Growth Duration'}
                   </label>
                   <InfoTooltip translationKey="tooltipGrowthYears" />
                 </div>
-                <span className="text-xs text-white font-mono">
+                <span className="text-xs text-theme-text font-mono">
                   {inputs.growthPeriodYears ?? 5} {language === 'es' ? 'años' : 'years'}
                 </span>
               </div>
@@ -597,7 +597,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
-                  <label className="text-xs text-gray-400">
+                  <label className="text-xs text-theme-text-muted">
                     {language === 'es' ? 'Fase Madurez' : 'Mature Phase'}
                   </label>
                   <InfoTooltip translationKey="tooltipMatureAppreciation" />
@@ -606,8 +606,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                   <span className="text-xs text-blue-400 font-mono">{inputs.matureAppreciation ?? 4}%</span>
                   {appreciationBonus > 0 && (
                     <>
-                      <span className="text-xs text-gray-500">→</span>
-                      <span className="text-xs text-[#CCFF00] font-mono font-bold">
+                      <span className="text-xs text-theme-text-muted">→</span>
+                      <span className="text-xs text-theme-accent font-mono font-bold">
                         {((inputs.matureAppreciation ?? 4) + appreciationBonus).toFixed(1)}%
                       </span>
                     </>
@@ -626,8 +626,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
 
             {/* Saved Presets */}
             {presets.length > 0 && (
-              <div className="pt-3 border-t border-[#2a3142]">
-                <label className="text-xs text-gray-400 mb-2 block">
+              <div className="pt-3 border-t border-theme-border">
+                <label className="text-xs text-theme-text-muted mb-2 block">
                   {language === 'es' ? 'Presets Guardados' : 'Saved Presets'}
                 </label>
                 <div className="space-y-1">
@@ -646,10 +646,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                             growthPeriodYears: values.growthPeriodYears,
                           }));
                         }}
-                        className="flex-1 justify-start text-xs text-gray-300 hover:text-white h-7"
+                        className="flex-1 justify-start text-xs text-theme-text hover:text-theme-text h-7"
                       >
                         {preset.name}
-                        <span className="ml-auto text-[10px] text-gray-500 font-mono">
+                        <span className="ml-auto text-[10px] text-theme-text-muted font-mono">
                           {preset.construction_appreciation}%→{preset.growth_appreciation}%→{preset.mature_appreciation}%
                         </span>
                       </Button>
@@ -668,8 +668,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
             )}
 
             {/* Save New Preset */}
-            <div className="pt-3 border-t border-[#2a3142]">
-              <label className="text-xs text-gray-400 mb-2 block">
+            <div className="pt-3 border-t border-theme-border">
+              <label className="text-xs text-theme-text-muted mb-2 block">
                 {language === 'es' ? 'Guardar como Preset' : 'Save as Preset'}
               </label>
               <div className="flex gap-2">
@@ -677,7 +677,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                   placeholder={language === 'es' ? 'Nombre del preset...' : 'Preset name...'}
                   value={presetName}
                   onChange={(e) => setPresetName(e.target.value)}
-                  className="flex-1 h-8 text-xs bg-[#0d1117] border-[#2a3142]"
+                  className="flex-1 h-8 text-xs bg-theme-bg border-theme-border"
                 />
                 <Button
                   size="sm"
@@ -693,7 +693,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                     }
                   }}
                   disabled={!presetName.trim() || saving}
-                  className="h-8 px-3 bg-[#CCFF00] text-black hover:bg-[#b8e600] text-xs"
+                  className="h-8 px-3 bg-theme-accent text-black hover:bg-theme-accent/90 text-xs"
                 >
                   <Save className="w-3 h-3 mr-1" />
                   {language === 'es' ? 'Guardar' : 'Save'}

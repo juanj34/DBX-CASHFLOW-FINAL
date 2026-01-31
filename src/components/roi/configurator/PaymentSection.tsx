@@ -531,16 +531,16 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
           {/* Installments List - Only show if there are payments */}
           {inputs.additionalPayments.length > 0 && (
-            <div className="space-y-2 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+            <div className="space-y-2 p-3 bg-theme-card rounded-lg border border-theme-border">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-300 font-medium">Installments</label>
-                  <span className="text-xs text-gray-500">({inputs.additionalPayments.length})</span>
+                  <label className="text-sm text-theme-text font-medium">Installments</label>
+                  <span className="text-xs text-theme-text-muted">({inputs.additionalPayments.length})</span>
                   <Button
                     type="button"
                     onClick={addAdditionalPayment}
                     size="sm"
-                    className="h-5 px-1.5 bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 text-[9px]"
+                    className="h-5 px-1.5 bg-theme-accent text-black hover:bg-theme-accent/90 text-[9px]"
                   >
                     <Plus className="w-2.5 h-2.5 mr-0.5" /> Add
                   </Button>
@@ -569,7 +569,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowInstallments(!showInstallments)}
-                    className="h-5 px-1 text-gray-400"
+                    className="h-5 px-1 text-theme-text-muted"
                   >
                     {showInstallments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </Button>
@@ -578,7 +578,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
               {showInstallments && (
                 <>
-                  <div className="space-y-1 max-h-[50vh] overflow-y-auto pt-1.5 border-t border-[#2a3142]">
+                  <div className="space-y-1 max-h-[50vh] overflow-y-auto pt-1.5 border-t border-theme-border">
                     {inputs.additionalPayments.map((payment, index) => {
                       const paymentDate = payment.type === 'time' 
                         ? getPaymentDate(payment.triggerValue, inputs.bookingMonth, inputs.bookingYear)
@@ -605,14 +605,14 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                             "flex items-center gap-1.5 p-1.5 rounded-lg",
                             isHandoverQuarter ? "bg-green-500/10 border border-green-500/30" :
                             isPostHO ? "bg-purple-500/10 border border-purple-500/30" : 
-                            "bg-[#0d1117]"
+                            "bg-theme-bg"
                           )}
                         >
                           <div className={cn(
                             "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0",
                             isHandoverQuarter ? "bg-green-500/30 text-green-400" :
                             isPostHO ? "bg-purple-500/30 text-purple-400" :
-                            "bg-[#2a3142] text-gray-400"
+                            "bg-theme-border text-theme-text-muted"
                           )}>
                             {index + 1}
                           </div>
@@ -621,17 +621,17 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                             value={payment.type}
                             onValueChange={(value: 'time' | 'construction') => updateAdditionalPayment(payment.id, 'type', value)}
                           >
-                            <SelectTrigger className="w-[60px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1.5">
+                            <SelectTrigger className="w-[60px] h-6 text-[10px] bg-theme-card border-theme-border px-1.5">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50">
-                              <SelectItem value="time" className="text-white hover:bg-[#2a3142] text-xs">
+                            <SelectContent className="bg-theme-card border-theme-border z-50">
+                              <SelectItem value="time" className="text-theme-text hover:bg-theme-border text-xs">
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
                                   <span>Time</span>
                                 </div>
                               </SelectItem>
-                              <SelectItem value="construction" className="text-white hover:bg-[#2a3142] text-xs">
+                              <SelectItem value="construction" className="text-theme-text hover:bg-theme-border text-xs">
                                 <div className="flex items-center gap-1">
                                   <Building2 className="w-3 h-3" />
                                   <span>Build</span>
@@ -656,12 +656,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                   updateAdditionalPayment(payment.id, 'triggerValue', Math.max(1, monthsDiff));
                                 }}
                               >
-                                <SelectTrigger className="w-[52px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1">
+                                <SelectTrigger className="w-[52px] h-6 text-[10px] bg-theme-card border-theme-border px-1">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50 max-h-[200px]">
+                                <SelectContent className="bg-theme-card border-theme-border z-50 max-h-[200px]">
                                   {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
-                                    <SelectItem key={i} value={String(i + 1)} className="text-white hover:bg-[#2a3142] text-xs">
+                                    <SelectItem key={i} value={String(i + 1)} className="text-theme-text hover:bg-theme-border text-xs">
                                       {m}
                                     </SelectItem>
                                   ))}
@@ -680,12 +680,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                   updateAdditionalPayment(payment.id, 'triggerValue', Math.max(1, monthsDiff));
                                 }}
                               >
-                                <SelectTrigger className="w-[58px] h-6 text-[10px] bg-[#1a1f2e] border-[#2a3142] px-1">
+                                <SelectTrigger className="w-[58px] h-6 text-[10px] bg-theme-card border-theme-border px-1">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-[#1a1f2e] border-[#2a3142] z-50 max-h-[200px]">
+                                <SelectContent className="bg-theme-card border-theme-border z-50 max-h-[200px]">
                                   {Array.from({ length: 12 }, (_, i) => inputs.bookingYear + i).map((year) => (
-                                    <SelectItem key={year} value={String(year)} className="text-white hover:bg-[#2a3142] text-xs">
+                                    <SelectItem key={year} value={String(year)} className="text-theme-text hover:bg-theme-border text-xs">
                                       {year}
                                     </SelectItem>
                                   ))}
@@ -703,16 +703,16 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                   const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                   updateAdditionalPayment(payment.id, 'triggerValue', Math.max(0, val));
                                 }}
-                                className="w-10 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-white font-mono text-[10px]"
+                                className="w-10 h-6 text-center bg-theme-card border-theme-border text-theme-text font-mono text-[10px]"
                               />
-                              <span className="text-[10px] text-gray-500">%</span>
+                              <span className="text-[10px] text-theme-text-muted">%</span>
                             </div>
                           )}
 
                           {/* Show month count and status badges for time-based payments */}
                           {payment.type === 'time' && (
                             <div className="flex items-center gap-1">
-                              <span className="text-[9px] text-gray-500 font-mono">
+                              <span className="text-[9px] text-theme-text-muted font-mono">
                                 M{payment.triggerValue}
                               </span>
                               {isHandoverQuarter && (
@@ -737,9 +737,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                                 const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
                                 updateAdditionalPayment(payment.id, 'paymentPercent', Math.min(100, Math.max(0, val)));
                               }}
-                              className="w-12 h-6 text-center bg-[#1a1f2e] border-[#2a3142] text-[#CCFF00] font-mono text-[10px]"
+                              className="w-12 h-6 text-center bg-theme-card border-theme-border text-theme-accent font-mono text-[10px]"
                             />
-                            <span className="text-[10px] text-gray-400">%</span>
+                            <span className="text-[10px] text-theme-text-muted">%</span>
                           </div>
 
                           <Button
@@ -747,7 +747,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                             variant="ghost"
                             size="icon"
                             onClick={() => removeAdditionalPayment(payment.id)}
-                            className="h-5 w-5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 shrink-0"
+                            className="h-5 w-5 text-theme-text-muted hover:text-red-400 hover:bg-red-400/10 shrink-0"
                           >
                             <Trash2 className="w-2.5 h-2.5" />
                           </Button>
@@ -761,7 +761,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                     variant="outline"
                     size="sm"
                     onClick={addAdditionalPayment}
-                    className="w-full h-7 text-xs border-dashed border-[#2a3142] text-gray-400 hover:bg-[#2a3142] hover:text-white mt-2"
+                    className="w-full h-7 text-xs border-dashed border-theme-border text-theme-text-muted hover:bg-theme-card hover:text-theme-text mt-2"
                   >
                     <Plus className="w-3 h-3 mr-1" />
                     Add
@@ -775,31 +775,31 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
 
       {/* Footer - Total Summary (Static, not sticky) */}
-      <div className="mt-4 p-3 bg-[#1a1f2e] rounded-lg border border-[#2a3142]">
+      <div className="mt-4 p-3 bg-theme-card rounded-lg border border-theme-border">
         {/* Standard 3-column layout for non-post-handover */}
         {!hasPostHandoverPlan && (
           <div className="flex items-center gap-3">
             {/* Pre-Handover */}
             <div className="flex-1 flex items-center gap-2 min-w-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#CCFF00] shrink-0" />
-              <span className="text-[10px] text-gray-500 uppercase truncate">Pre-HO</span>
-              <span className="text-sm font-mono text-white font-semibold ml-auto">
+              <div className="w-2.5 h-2.5 rounded-full bg-theme-accent shrink-0" />
+              <span className="text-[10px] text-theme-text-muted uppercase truncate">Pre-HO</span>
+              <span className="text-sm font-mono text-theme-text font-semibold ml-auto">
                 {preHandoverTotal.toFixed(0)}%
               </span>
             </div>
             
-            <div className="h-6 w-px bg-[#2a3142]" />
+            <div className="h-6 w-px bg-theme-border" />
             
             {/* Handover */}
             <div className="flex-1 flex items-center gap-2 min-w-0">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0" />
-              <span className="text-[10px] text-gray-500 uppercase truncate">Handover</span>
-              <span className="text-sm font-mono text-white font-semibold ml-auto">
+              <span className="text-[10px] text-theme-text-muted uppercase truncate">Handover</span>
+              <span className="text-sm font-mono text-theme-text font-semibold ml-auto">
                 {handoverPercent}%
               </span>
             </div>
             
-            <div className="h-6 w-px bg-[#2a3142]" />
+            <div className="h-6 w-px bg-theme-border" />
             
             {/* Total */}
             <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -808,7 +808,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               ) : (
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
               )}
-              <span className="text-[10px] text-gray-500 uppercase truncate">Total</span>
+              <span className="text-[10px] text-theme-text-muted uppercase truncate">Total</span>
               <span className={`text-sm font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
                 {totalPayment.toFixed(0)}%
               </span>
@@ -821,30 +821,30 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
           <div className="flex items-center gap-2">
             {/* Pre-HO */}
             <div className="flex-1 flex items-center gap-1.5 min-w-0">
-              <div className="w-2 h-2 rounded-full bg-[#CCFF00] shrink-0" />
-              <span className="text-[10px] text-gray-500 uppercase truncate">Pre</span>
-              <span className="text-xs font-mono text-white ml-auto">{preHandoverTotal.toFixed(0)}%</span>
+              <div className="w-2 h-2 rounded-full bg-theme-accent shrink-0" />
+              <span className="text-[10px] text-theme-text-muted uppercase truncate">Pre</span>
+              <span className="text-xs font-mono text-theme-text ml-auto">{preHandoverTotal.toFixed(0)}%</span>
             </div>
             
-            <div className="h-5 w-px bg-[#2a3142]" />
+            <div className="h-5 w-px bg-theme-border" />
             
             {/* On Handover (always 0 in post-handover mode) */}
             <div className="flex-1 flex items-center gap-1.5 min-w-0">
               <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
-              <span className="text-[10px] text-gray-500 uppercase truncate">On-HO</span>
-              <span className="text-xs font-mono text-gray-400 ml-auto">0%</span>
+              <span className="text-[10px] text-theme-text-muted uppercase truncate">On-HO</span>
+              <span className="text-xs font-mono text-theme-text-muted ml-auto">0%</span>
             </div>
             
-            <div className="h-5 w-px bg-[#2a3142]" />
+            <div className="h-5 w-px bg-theme-border" />
             
             {/* Post-Handover */}
             <div className="flex-1 flex items-center gap-1.5 min-w-0">
               <div className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
-              <span className="text-[10px] text-gray-500 uppercase truncate">Post</span>
+              <span className="text-[10px] text-theme-text-muted uppercase truncate">Post</span>
               <span className="text-xs font-mono text-purple-400 ml-auto">{postHandoverTotal.toFixed(0)}%</span>
             </div>
             
-            <div className="h-5 w-px bg-[#2a3142]" />
+            <div className="h-5 w-px bg-theme-border" />
             
             {/* Total */}
             <div className="flex-1 flex items-center gap-1.5 min-w-0">
@@ -853,7 +853,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               ) : (
                 <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
               )}
-              <span className="text-[10px] text-gray-500 uppercase">Tot</span>
+              <span className="text-[10px] text-theme-text-muted uppercase">Tot</span>
               <span className={`text-xs font-mono font-bold ml-auto ${isValidTotal ? 'text-green-400' : 'text-red-400'}`}>
                 {totalPayment.toFixed(0)}%
               </span>
