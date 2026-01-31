@@ -44,7 +44,7 @@ export const quarters = [
 
 export const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
-export const presetSplits = ['30/70', '40/60', '50/50', '60/40', '70/30', '80/20'];
+export const presetSplits = ['20/80', '30/70', '40/60', '50/50', '60/40', '70/30', '80/20'];
 
 export const DEFAULT_SHORT_TERM_RENTAL = {
   averageDailyRate: 800,
