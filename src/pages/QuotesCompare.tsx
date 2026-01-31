@@ -365,8 +365,8 @@ const QuotesCompare = () => {
               defaultOpen={allExpanded}
             >
               <div className="space-y-6">
-                <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
                 <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
+                <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={exchangeRate.rate} />
               </div>
             </CollapsibleSection>
 

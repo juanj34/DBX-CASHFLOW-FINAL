@@ -482,8 +482,8 @@ const ComparisonPreview = ({
             defaultOpen={true}
           >
             <div className="space-y-6">
-              <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
               <GrowthComparisonChart quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
+              <PaymentComparison quotesWithCalcs={quotesWithCalcs} currency={currency} exchangeRate={rate} />
             </div>
           </CollapsibleSection>
 
