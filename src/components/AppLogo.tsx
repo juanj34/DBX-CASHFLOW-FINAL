@@ -27,10 +27,10 @@ export const AppLogo = ({
   const logoContent = (
     <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5", className)}>
       <div className="relative flex-shrink-0">
-        {/* Logo container with gradient border */}
+        {/* Logo container with gradient border - no shadow on light themes */}
         <div className={cn(
           sizes.container,
-          "rounded-lg bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent p-[1.5px] shadow-sm"
+          "rounded-lg bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent p-[1.5px]"
         )}>
           <div className="w-full h-full rounded-[6px] bg-theme-card flex items-center justify-center">
             <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
@@ -62,7 +62,7 @@ export const AppLogo = ({
           </div>
         </div>
         {showGlow && (
-          <div className="absolute -inset-1 bg-theme-accent rounded-lg blur opacity-20" />
+          <div className="absolute -inset-1 bg-theme-accent rounded-lg blur opacity-20 dark:opacity-20 opacity-10" />
         )}
       </div>
       {!collapsed && (
