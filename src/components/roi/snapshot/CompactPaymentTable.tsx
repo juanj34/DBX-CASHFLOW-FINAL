@@ -590,7 +590,7 @@ export const CompactPaymentTable = ({
               
               {/* Journey Subtotal */}
               {preHandoverPayments.length > 0 && (
-                <div className="pt-1 border-t border-theme-border mt-2">
+                <div className="pt-1 border-t border-theme-border mt-2 space-y-1.5">
                   <DottedRow 
                     label={`${t('subtotalLabel')} (${journeyPercent}%)`}
                     value={getDualValue(journeyTotal).primary}
@@ -598,6 +598,22 @@ export const CompactPaymentTable = ({
                     bold
                     valueClassName="text-cyan-400"
                   />
+                  
+                  {/* Total Paid to Date: Entry + Journey - inline cumulative */}
+                  <div className="pt-1.5 border-t border-dashed border-theme-border/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-theme-text-muted flex items-center gap-1">
+                        <Wallet className="w-3 h-3" />
+                        {language === 'es' ? 'Total Pagado (Entrada + Camino)' : 'Total Paid (Entry + Journey)'}
+                      </span>
+                      <span className="text-xs font-mono text-theme-accent font-semibold">
+                        {getDualValue(entryTotal + journeyTotal).primary}
+                        {currency !== 'AED' && (
+                          <span className="text-theme-text-muted ml-1 font-normal">({getDualValue(entryTotal + journeyTotal).secondary})</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
