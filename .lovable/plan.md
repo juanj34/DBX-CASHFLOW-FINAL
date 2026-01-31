@@ -1,210 +1,176 @@
 
 
-# Fix AI Extractor Errors & Add Excel Import Support
+# Fix AI Extractor: Set Handover Date from Completion Payment
 
-## Issues Identified
+## Problem Analysis
 
-### Issue 1: PNG Causing AI Gateway 500 Error
-The logs show:
+When importing from Excel:
+1. The AI correctly identifies "Completion" (row 33, 7.0%, 8/1/2028) as `type: "handover"`
+2. But the configurator converts it to `type: "time"` losing the semantic meaning
+3. The handover date should be **set FROM** the completion payment, not calculated separately from `handoverMonthFromBooking`
+
+**Current Flow:**
 ```
-AI Response received: {"error":{"message":"Internal Server Error","code":500}}
-Payment plan extraction error: Error: AI did not return structured extraction data
-```
-
-**Root Cause**: The AI Gateway returned an internal server error (500), which could be due to:
-1. Image too large (even after base64 encoding)
-2. Temporary gateway issue
-3. Model struggling with the image format
-
-**Current Problem**: The edge function treats this as a successful response and tries to parse the error object as tool call data, failing silently.
-
-### Issue 2: No Excel Support
-Currently `FileUploadZone.tsx` only accepts:
-```typescript
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+Excel: "Completion 7% 8/1/2028" 
+→ AI outputs: { type: "handover", triggerValue: 33, paymentPercent: 7 }
+→ Configurator: converts to { type: "time", triggerValue: 33, paymentPercent: 7 }
+→ Handover date: calculated from handoverMonthFromBooking (may be wrong or missing)
 ```
 
-Excel files (`.xls`, `.xlsx`) are rejected before upload.
+**Expected Flow:**
+```
+Excel: "Completion 7% 8/1/2028"
+→ AI outputs: { type: "handover", triggerValue: 33, paymentPercent: 7 }
+→ Configurator: 
+   1. SETS handoverMonth = 8, handoverYear = 2028 (from trigger value)
+   2. Marks payment with isHandover = true
+   3. Stores as { type: "time", triggerValue: 33, isHandover: true }
+```
 
 ---
 
 ## Solution
 
-### Part 1: Better Error Handling for AI Gateway Failures
+### Part 1: Add `isHandover` flag to PaymentMilestone interface
 
-**File: `supabase/functions/extract-payment-plan/index.ts`**
+**File: `src/components/roi/useOICalculations.ts`**
 
-After receiving the AI response, add a check for error responses before processing:
-
+Update the interface:
 ```typescript
-const aiResponse = await response.json();
-console.log("AI Response received:", JSON.stringify(aiResponse).slice(0, 500));
-
-// NEW: Check if the AI gateway returned an error object
-if (aiResponse.error) {
-  console.error("AI Gateway returned error:", aiResponse.error);
-  throw new Error(
-    aiResponse.error.message === "Internal Server Error"
-      ? "The AI service encountered an issue processing your image. Please try with a smaller or different image."
-      : aiResponse.error.message || "AI processing failed"
-  );
-}
-
-// Continue with existing tool call extraction...
-```
-
-Also add image size validation and optimization:
-- Resize large images before sending (max 1500px width/height)
-- Convert PNG to JPEG for smaller payload
-- Add explicit error messages for image processing failures
-
-### Part 2: Add Excel Import Support
-
-#### Step 2a: Update Frontend to Accept Excel Files
-
-**File: `src/components/dashboard/FileUploadZone.tsx`**
-
-```typescript
-const ACCEPTED_TYPES = [
-  "image/jpeg", 
-  "image/png", 
-  "image/webp", 
-  "application/pdf",
-  "application/vnd.ms-excel",                                    // .xls
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"  // .xlsx
-];
-```
-
-Update the `FileWithPreview` type:
-```typescript
-export interface FileWithPreview {
-  file: File;
-  preview: string;
-  type: "image" | "pdf" | "excel";
+export interface PaymentMilestone {
+  id: string;
+  type: 'time' | 'construction' | 'post-handover';
+  triggerValue: number;
+  paymentPercent: number;
+  label?: string;
+  isHandover?: boolean; // NEW: Explicitly marks this as the completion payment
 }
 ```
 
-Update `processFiles`:
+### Part 2: Update AI extraction handler to derive handover date from completion payment
+
+**File: `src/components/roi/configurator/PaymentSection.tsx`**
+
+In `handleAIExtraction`:
+
 ```typescript
-const isImage = file.type.startsWith("image/");
-const isPdf = file.type === "application/pdf";
-const isExcel = file.type.includes("spreadsheet") || file.type.includes("excel");
-
-// For Excel, we send to a different parsing flow
-if (isExcel) {
-  newFiles.push({
-    file,
-    preview,
-    type: "excel",
-  });
-}
-```
-
-#### Step 2b: Create Excel Parser in Edge Function
-
-**File: `supabase/functions/extract-payment-plan/index.ts`**
-
-Add SheetJS for parsing Excel:
-```typescript
-// @deno-types="https://cdn.sheetjs.com/xlsx-0.20.3/package/types/index.d.ts"
-import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
-```
-
-Add Excel processing before AI call:
-```typescript
-// Process Excel files - convert to structured text for AI analysis
-const processedContent: any[] = [];
-let excelTextContext = "";
-
-for (const item of images) {
-  // Check if it's an Excel file (base64 starts with specific headers)
-  if (item.startsWith("data:application/vnd.") && 
-      (item.includes("spreadsheet") || item.includes("excel"))) {
+const handleAIExtraction = (data: ExtractedPaymentPlan) => {
+  // === STEP 1: Find handover payment first to derive handover timing ===
+  const handoverPayment = data.installments.find(i => i.type === 'handover');
+  
+  let handoverMonth: number | undefined;
+  let handoverYear: number | undefined;
+  let handoverQuarter: 1 | 2 | 3 | 4 | undefined;
+  
+  // PRIORITY 1: Derive from handover payment's triggerValue (most accurate)
+  if (handoverPayment && handoverPayment.triggerValue > 0) {
+    const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+    const handoverDate = new Date(bookingDate);
+    handoverDate.setMonth(handoverDate.getMonth() + handoverPayment.triggerValue);
     
-    // Extract base64 data
-    const base64Data = item.split(",")[1];
-    const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-    
-    // Parse with SheetJS
-    const workbook = XLSX.read(binaryData, { type: "array" });
-    
-    // Convert all sheets to text
-    for (const sheetName of workbook.SheetNames) {
-      const sheet = workbook.Sheets[sheetName];
-      const csv = XLSX.utils.sheet_to_csv(sheet);
-      excelTextContext += `\n=== Sheet: ${sheetName} ===\n${csv}\n`;
-    }
-  } else {
-    // Image or PDF - pass to vision model
-    processedContent.push(item);
+    handoverMonth = handoverDate.getMonth() + 1;
+    handoverYear = handoverDate.getFullYear();
+    handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
   }
-}
-
-// If we have Excel data, add it as text context to the prompt
-if (excelTextContext) {
-  contentParts.push({
-    type: "text",
-    text: `\n\nEXCEL PAYMENT SCHEDULE DATA:\n${excelTextContext}`
-  });
-}
+  // PRIORITY 2: Fall back to handoverMonthFromBooking if no explicit handover payment
+  else if (data.paymentStructure.handoverMonthFromBooking) {
+    const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+    const handoverDate = new Date(bookingDate);
+    handoverDate.setMonth(handoverDate.getMonth() + data.paymentStructure.handoverMonthFromBooking);
+    
+    handoverMonth = handoverDate.getMonth() + 1;
+    handoverYear = handoverDate.getFullYear();
+    handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
+  }
+  // PRIORITY 3: Use explicit quarter/year if provided
+  else {
+    handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
+    handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
+    handoverMonth = handoverQuarter ? (handoverQuarter - 1) * 3 + 1 : undefined;
+  }
+  
+  // ... rest of function ...
+  
+  // === STEP 5: Convert installments, preserving isHandover flag ===
+  const additionalPayments = data.installments
+    .filter(i => {
+      if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment
+      // ... other filters ...
+      return true;
+    })
+    .map((inst, idx) => ({
+      id: inst.id || `ai-${Date.now()}-${idx}`,
+      type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
+      triggerValue: inst.triggerValue,
+      paymentPercent: inst.paymentPercent,
+      isHandover: inst.type === 'handover', // NEW: Preserve handover flag
+    }))
+    .sort((a, b) => a.triggerValue - b.triggerValue);
 ```
 
-#### Step 2c: Update UI for Excel Files
+### Part 3: Update configurator UI to show handover badge for flagged payments
 
-**File: `src/components/dashboard/FileUploadZone.tsx`**
+**File: `src/components/roi/configurator/PaymentSection.tsx`**
 
-Add Excel icon and display:
+In the installment rendering, add check for explicit `isHandover` flag:
+
 ```typescript
-import { Upload, X, FileText, Loader2, FileSpreadsheet } from "lucide-react";
-
-// In the file preview section:
-{f.type === "excel" ? (
-  <FileSpreadsheet className="h-8 w-8 text-green-600" />
-) : f.type === "pdf" ? (
-  <FileText className="h-8 w-8 text-red-500" />
-) : (
-  <img ... />
-)}
-```
-
-Update help text:
-```typescript
-<p className="text-xs text-muted-foreground">
-  PDF, Images, Excel (máx 25MB) • Ctrl+V para pegar
-</p>
+{inputs.additionalPayments.map((payment, index) => {
+  const isPostHO = payment.type === 'time' && isPaymentPostHandover(...);
+  const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(...);
+  
+  // NEW: Explicit handover payment has priority
+  const isExplicitHandover = payment.isHandover === true;
+  const showHandoverBadge = isExplicitHandover || isHandoverQuarter;
+  
+  return (
+    <div className={cn(
+      "flex items-center gap-1.5 p-1.5 rounded-lg",
+      isExplicitHandover ? "bg-green-500/15 border border-green-500/40" : // Stronger for explicit
+      isHandoverQuarter ? "bg-green-500/10 border border-green-500/30" :
+      isPostHO ? "bg-purple-500/10 border border-purple-500/30" : 
+      "bg-theme-bg"
+    )}>
+      {/* ... */}
+      {showHandoverBadge && (
+        <span className="text-[9px] px-1 py-0.5 bg-green-500/20 text-green-400 rounded flex items-center gap-0.5">
+          <Key className="w-2.5 h-2.5" />
+          {isExplicitHandover && "HO"}
+        </span>
+      )}
+    </div>
+  );
+})}
 ```
 
 ---
 
-## Summary of Changes
+## Summary
 
-| File | Changes |
-|------|---------|
-| `supabase/functions/extract-payment-plan/index.ts` | Add error response detection, add SheetJS Excel parsing |
-| `src/components/dashboard/FileUploadZone.tsx` | Accept Excel MIME types, add "excel" file type, show spreadsheet icon |
+| File | Change |
+|------|--------|
+| `src/components/roi/useOICalculations.ts` | Add `isHandover?: boolean` to `PaymentMilestone` interface |
+| `src/components/roi/configurator/PaymentSection.tsx` | Derive handover date from completion payment's triggerValue; preserve `isHandover` flag when mapping |
 
 ---
 
-## Technical Notes
+## Technical Flow After Fix
 
-### Excel Flow
-```
-User uploads .xlsx
-    ↓
-Frontend creates base64 FileWithPreview (type: "excel")
-    ↓
-Edge function receives base64
-    ↓
-SheetJS parses to CSV/JSON
-    ↓
-CSV text added to AI prompt as context
-    ↓
-AI extracts payment plan from structured data
-```
+```text
+1. AI extracts "Completion 7% 8/1/2028" as:
+   { type: "handover", triggerValue: 33, paymentPercent: 7 }
 
-### Error Handling Improvement
-```
-Before: AI Gateway 500 → Parse as success → Fail on missing tool_calls
-After:  AI Gateway 500 → Detect error object → Throw user-friendly message
+2. handleAIExtraction processes:
+   - Finds handoverPayment (type === 'handover')
+   - Calculates: triggerValue 33 → August 2028 (Q3 2028)
+   - Sets: handoverMonth = 8, handoverYear = 2028, handoverQuarter = 3
+
+3. Converts to additionalPayments:
+   { type: "time", triggerValue: 33, paymentPercent: 7, isHandover: true }
+
+4. UI displays:
+   - Green background + border for this payment
+   - "HO" badge with key icon
+   - Handover date picker auto-set to August 2028
 ```
 
