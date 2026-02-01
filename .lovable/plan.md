@@ -1,54 +1,63 @@
 
-# Dual Currency Display & Year 5 Metrics for Comparison Tables
+# Performance Optimization + Real-time Quote Sync for Portal & Presentations
 
-## Overview
+## Problems Identified
 
-This plan addresses two enhancements to the comparison view:
+### Problem 1: Stale Quote Data in Presentations
+**Root Cause**: When you edit a quote in tab A (Cashflow Generator) and switch to the Presentation Builder in tab B, the presentation still shows old values (e.g., breakeven 9.5 years instead of 11 years).
 
-1. **Dual Currency Display**: When currency is changed from AED, show both AED (primary) and converted value (secondary) side-by-side instead of overwriting
-2. **New Year 5 Metrics**: Add "Rent at Year 5" and "Property Value at Year 5" to the key metrics table
+This happens because:
+1. `PresentationBuilder.tsx` calls `useQuotesList()` which fetches quotes **once** on mount (line 207)
+2. The hook has no auto-refresh mechanism - it fetches once and stores in local state
+3. When you edit a quote in another tab, the `useQuotesList` state in the presentation tab is never updated
+4. `PresentationPreview.tsx` uses the stale `quotes` array passed from the parent (line 45)
 
----
-
-## Current Behavior
-
-### Currency Display
-Currently, the `ComparisonTable` uses a simple `fmt()` function that formats in the selected currency only:
-```
-const fmt = (v: number) => formatCurrency(v, currency, exchangeRate);
-```
-
-This overwrites values entirely when switching currency, losing the AED reference.
-
-### Missing Metrics
-The comparison table does not show Year 5 projections - it only shows current values and Year 1 rental income.
+### Problem 2: Multiple Redundant API Calls in Portal
+**Root Cause**: The Client Portal makes 4+ duplicate queries to resolve the same `portal_token`:
+1. `useClientPortfolio(portalToken)` → queries `clients` table
+2. `useClientComparisons({ portalToken })` → queries `clients` table again
+3. `getClientByPortalToken(portalToken)` → queries `clients` table again
+4. Sequential data fetching (not parallel)
 
 ---
 
-## Solution
+## Solution Architecture
 
-### 1. Dual Currency Display Pattern
+### Fix 1: Add Visibility-Based Refresh for Quote Data
 
-Use the existing `formatDualCurrency` utility (already used throughout the codebase) to show both currencies inline:
+When the browser tab regains focus, automatically refetch quote data to ensure the presentation always shows the latest values.
 
-**Before:** `AED 890,000` → `$242,370` (when switching to USD)
+**Implementation Pattern:**
+```typescript
+// Add to useQuotesList hook
+const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-**After:** `AED 890,000 ($242K)` (always shows AED as reference)
+// Refetch when tab becomes visible
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      // Refetch if last fetch was more than 5 seconds ago
+      if (!lastFetched || Date.now() - lastFetched.getTime() > 5000) {
+        refetch();
+      }
+    }
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [lastFetched]);
+```
 
-This follows the established pattern from the memory notes:
-> "Dual Currency Display: AED 10,000 ($2,700)" format for international clarity
+### Fix 2: Add Manual Refresh Button to Presentation Builder
 
-### 2. Year 5 Metrics Calculation
+Add a visual indicator and refresh button so users can manually sync quote data.
 
-Derive from the existing `yearlyProjections` array in `OICalculations`:
+### Fix 3: Create Unified Portal Data Hook
 
-**Property Value (Year 5):**
-- Find the projection at Year 5 (index 5 in the yearlyProjections array, accounting for booking year as Year 0)
-- This already includes phased appreciation (Construction → Growth → Mature)
-
-**Rent at Year 5:**
-- Find the projection at Year 5
-- Use `annualRent` from that projection (already includes rent growth compounding)
+Consolidate all portal data fetching into a single hook that:
+1. Resolves `portal_token` **once**
+2. Fetches all data in **parallel** using `Promise.all`
+3. Returns everything the portal needs in one call
 
 ---
 
@@ -56,128 +65,213 @@ Derive from the existing `yearlyProjections` array in `OICalculations`:
 
 | File | Changes |
 |------|---------|
-| `src/components/roi/compare/ComparisonTable.tsx` | Add dual currency formatting + Year 5 metrics rows |
-| `src/components/roi/compare/MetricsTable.tsx` | Add dual currency formatting + Year 5 metrics rows |
-| `src/components/portal/CompareSection.tsx` | Add dual currency formatting + Year 5 metrics rows |
+| `src/hooks/useCashflowQuote.ts` | Add visibility-based auto-refresh + timestamp tracking to `useQuotesList` |
+| `src/pages/PresentationBuilder.tsx` | Add refresh indicator + button, use refetch from hook |
+| `src/pages/ClientPortal.tsx` | Consolidate data fetching, use parallel Promise.all |
+| `src/hooks/usePortfolio.ts` | Accept optional `clientId` parameter to avoid duplicate resolution |
+| `src/hooks/useClientComparisons.ts` | Accept optional `clientId` parameter to avoid duplicate resolution |
 
 ---
 
-## Implementation Details
+## Detailed Implementation
 
-### ComparisonTable.tsx Changes
+### 1. Update useQuotesList Hook
 
-**1. Update formatting helper:**
 ```typescript
-// Replace simple fmt() with dual currency formatter
-const getDualValue = (value: number): { primary: string; secondary: string | null } => {
-  const dual = formatDualCurrency(value, currency, exchangeRate);
-  return dual;
-};
+export const useQuotesList = () => {
+  const [quotes, setQuotes] = useState<CashflowQuote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-// For inline display
-const formatWithDual = (value: number): React.ReactNode => {
-  const { primary, secondary } = getDualValue(value);
-  if (!secondary) return primary;
-  return (
-    <span>
-      {primary}
-      <span className="text-theme-text-muted text-xs ml-1">({secondary})</span>
+  const fetchQuotes = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('cashflow_quotes')
+      .select(/* ... */)
+      .eq('broker_id', user.id)
+      .neq('status', 'working_draft')
+      .or('is_archived.is.null,is_archived.eq.false')
+      .order('updated_at', { ascending: false });
+
+    if (!error && data) {
+      setQuotes(data.map(q => ({ ...q, inputs: q.inputs as OIInputs })));
+      setLastFetched(new Date());
+    }
+    setLoading(false);
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchQuotes();
+  }, []);
+
+  // Auto-refresh when tab regains focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && lastFetched) {
+        const timeSinceLastFetch = Date.now() - lastFetched.getTime();
+        // Refresh if more than 3 seconds have passed
+        if (timeSinceLastFetch > 3000) {
+          fetchQuotes();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [lastFetched, fetchQuotes]);
+
+  // Also refresh on window focus (covers more cases)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (lastFetched) {
+        const timeSinceLastFetch = Date.now() - lastFetched.getTime();
+        if (timeSinceLastFetch > 3000) {
+          fetchQuotes();
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [lastFetched, fetchQuotes]);
+
+  return { 
+    quotes, 
+    setQuotes, 
+    loading, 
+    lastFetched,
+    refetch: fetchQuotes,
+    deleteQuote, 
+    archiveQuote, 
+    duplicateQuote 
+  };
+};
+```
+
+### 2. Update PresentationBuilder.tsx
+
+Add a refresh indicator in the header:
+
+```typescript
+const { quotes, loading: quotesLoading, refetch: refetchQuotes, lastFetched } = useQuotesList();
+
+// Add refresh button in header
+<Button
+  variant="ghost"
+  size="sm"
+  onClick={refetchQuotes}
+  disabled={quotesLoading}
+  className="text-theme-text-muted hover:text-theme-text"
+>
+  <RefreshCw className={cn("w-4 h-4", quotesLoading && "animate-spin")} />
+  {lastFetched && (
+    <span className="ml-1 text-xs">
+      {formatDistanceToNow(lastFetched, { addSuffix: true })}
     </span>
-  );
-};
+  )}
+</Button>
 ```
 
-**2. Update all monetary value cells:**
-- Property Value row
-- Price/sqft row
-- Rental Income row
-- Pre-Handover row
-- Post-Handover row
-- Rent Coverage row
+### 3. Consolidate Portal Data Fetching
 
-**3. Add new Year 5 metrics rows:**
+Update ClientPortal to fetch all data in parallel:
+
 ```typescript
-// After Rental Income row
+useEffect(() => {
+  const fetchData = async () => {
+    if (!portalToken) {
+      setError("Invalid portal link");
+      setLoading(false);
+      return;
+    }
 
-{/* Rent at Year 5 */}
-<DataRow
-  label="Rent (Year 5)"
-  values={orderedQuotes.map(q => {
-    // Find Year 5 projection (booking year + 5)
-    const year5Proj = q.calculations.yearlyProjections.find(
-      p => p.year === 5 && !p.isConstruction
-    );
-    const rentY5 = year5Proj?.annualRent || null;
-    return { value: rentY5 ? formatWithDual(rentY5) : '—' };
-  })}
-/>
+    try {
+      // Step 1: Resolve client (single query)
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('portal_token', portalToken)
+        .eq('portal_enabled', true)
+        .single();
 
-{/* Value at Year 5 */}
-<DataRow
-  label="Value (Year 5)"
-  values={orderedQuotes.map(q => {
-    const year5Proj = q.calculations.yearlyProjections[5];
-    const valueY5 = year5Proj?.propertyValue || null;
-    return { value: valueY5 ? formatWithDual(valueY5) : '—' };
-  })}
-/>
+      if (clientError || !clientData) {
+        setError("Portal not found or access disabled");
+        setLoading(false);
+        return;
+      }
+
+      setClient(clientData);
+
+      // Step 2: Fetch ALL related data in PARALLEL
+      const [
+        advisorResult,
+        quotesResult,
+        presentationsResult,
+        propertiesResult,
+        savedCompResult,
+        secondaryCompResult
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', clientData.broker_id).single(),
+        supabase.from('cashflow_quotes').select('*').eq('client_id', clientData.id),
+        supabase.from('presentations').select('*').eq('client_id', clientData.id),
+        supabase.from('acquired_properties').select('*').eq('client_id', clientData.id),
+        supabase.from('saved_comparisons').select('*').eq('client_id', clientData.id),
+        supabase.from('secondary_comparisons').select('*').eq('client_id', clientData.id),
+      ]);
+
+      setAdvisor(advisorResult.data);
+      setQuotes(quotesResult.data || []);
+      setPresentations(presentationsResult.data || []);
+      setPortfolioProperties(propertiesResult.data || []);
+      setSavedComparisons(savedCompResult.data || []);
+      setSecondaryComparisons(secondaryCompResult.data || []);
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error:', err);
+      setError("Failed to load portal");
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [portalToken]);
 ```
 
-### MetricsTable.tsx Changes
+### 4. Remove Duplicate Hook Calls
 
-Same pattern - update all monetary cells to use dual currency format and add Year 5 rows.
+Currently the portal uses:
+- `useClientPortfolio(portalToken)` - queries clients table
+- `useClientComparisons({ portalToken })` - queries clients table again
+- Manual `getClientByPortalToken()` - queries clients table a third time
 
-### CompareSection.tsx (Portal) Changes
-
-Update the portal comparison table to match - this component has its own simple formatting function that needs updating to use `formatDualCurrency`.
-
----
-
-## Visual Result
-
-### Metrics Table (After)
-
-| Metric | Property A | Property B |
-|--------|------------|------------|
-| Property Value | AED 890,000 ($242K) | AED 998,195 ($272K) |
-| Price/sqft | AED 1,413 ($385) | AED 1,103 ($300) |
-| Rental Income | AED 71,200 (8%) | AED 89,838 (9%) |
-| **Rent (Year 5)** | **AED 83,200 ($22.6K)** | **AED 104,900 ($28.5K)** |
-| **Value (Year 5)** | **AED 1.2M ($327K)** | **AED 1.35M ($368K)** |
-| Handover | Q1 2028 (2y) | Q2 2028 (2y 3m) |
-| Pre-Handover | AED 218,600 ($59K) | AED 344,386 ($94K) |
+After consolidation, we fetch everything in one place and pass data down, eliminating the need for these hooks to resolve the token separately.
 
 ---
 
-## Technical Notes
+## Expected Performance Improvement
 
-### Year 5 Projection Logic
-
-The `yearlyProjections` array is indexed from Year 1:
-- `yearlyProjections[0]` = Year 1 (booking year)
-- `yearlyProjections[4]` = Year 5
-
-However, for properties still in construction, Year 5 from booking might still be in construction phase. The display will correctly show "—" if no rent data exists for that year.
-
-For accuracy, Year 5 is calculated as:
-- **5 years from booking date** (consistent with the growth curve chart)
-- If handover is in Year 2, then Year 5 = 3rd full year of rental income
-
-### Currency Reference Pattern
-
-Following the established memory pattern for inline display:
-> "AED 10,000 ($2,700)" format optimizes vertical space in lists and cards
-
-The secondary currency appears in parentheses with smaller, muted text.
+| Metric | Before | After |
+|--------|--------|-------|
+| Client table queries per portal load | 4+ | 1 |
+| Data fetch pattern | Sequential | Parallel |
+| Quote sync between tabs | Never | On focus/visibility |
+| User awareness of data freshness | None | Timestamp indicator |
 
 ---
 
 ## Testing Checklist
 
 After implementation:
-- [ ] Switch currency to USD/EUR and verify both values appear
-- [ ] Verify AED shows alone when currency is set to AED
-- [ ] Rent (Year 5) shows correct grown rent value
-- [ ] Value (Year 5) matches the projection chart
-- [ ] Portal comparison section also shows dual currency
-- [ ] All three comparison contexts work (QuotesCompare, CompareView, PresentationPreview)
+- [ ] Edit a quote in the Cashflow Generator, switch to Presentation Builder - values should update on tab focus
+- [ ] Client Portal should load faster with consolidated queries
+- [ ] Refresh button in Presentation Builder should manually sync quote data
+- [ ] No more "stale breakeven" values between tabs
+- [ ] Tab timestamp shows when data was last synced
