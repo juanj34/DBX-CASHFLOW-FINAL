@@ -305,14 +305,20 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     );
     const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
     
-    // Get handover percentage (already found above)
-    const onHandoverPercent = handoverPayment?.paymentPercent || 0;
-    
     // === STEP 3: Calculate totals for validation ===
     const postHandoverInstallments = data.installments.filter(i => 
       i.type === 'post-handover'
     );
     const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    
+    // Determine if this is a post-handover plan BEFORE setting onHandoverPercent
+    const hasPostHandover = data.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+    
+    // CRITICAL FIX: Only set onHandoverPercent for post-handover plans
+    // For standard plans, handover = 100 - preHandoverPercent (derived)
+    const onHandoverPercent = hasPostHandover 
+      ? (handoverPayment?.paymentPercent || data.paymentStructure.onHandoverPercent || 0)
+      : 0;
     
     // === STEP 4: Determine pre-handover percent from split ===
     // Priority 1: Use AI-extracted paymentSplit
