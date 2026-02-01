@@ -370,12 +370,11 @@ export const ComparisonTable = ({
               }))}
             />
             
-            {/* Pre-Handover Spend (everything paid until handover) */}
+            {/* Pre-Handover Spend (portion of property price paid before/at handover) */}
             <DataRow
               label={t('preHandoverSpend') || 'Pre-Handover'}
               values={orderedQuotes.map(q => {
                 const basePrice = q.quote.inputs.basePrice;
-                const entryCosts = q.calculations.totalEntryCosts || 0;
                 
                 if (q.quote.inputs.hasPostHandoverPlan) {
                   // Post-handover plan: Pre-handover = downpayment + pre-handover installments + on-handover
@@ -383,10 +382,10 @@ export const ComparisonTable = ({
                   const preHandoverPercent = q.quote.inputs.preHandoverPercent || 0;
                   const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
                   const preAmount = basePrice * ((downpaymentPercent + preHandoverPercent + onHandoverPercent) / 100);
-                  return { value: fmtDual(preAmount + entryCosts) };
+                  return { value: fmtDual(preAmount) };
                 } else {
-                  // Standard plan: Everything is paid by handover (100% + fees)
-                  return { value: fmtDual(basePrice + entryCosts) };
+                  // Standard plan: 100% of property is paid by handover
+                  return { value: fmtDual(basePrice) };
                 }
               })}
             />
