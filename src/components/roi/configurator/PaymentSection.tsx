@@ -331,6 +331,17 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     
     // === STEP 5: Convert installments to configurator format ===
     // CRITICAL: Exclude handover payment - it's handled by preHandoverPercent/handoverPercent
+    
+    // Type-aware sorting helper: converts construction % to estimated months
+    const sortingTotalMonths = data.paymentStructure.handoverMonthFromBooking || handoverPayment?.triggerValue || 36;
+    const getEstimatedMonth = (inst: { type: string; triggerValue: number }, totalMonths: number): number => {
+      if (inst.type === 'time') return inst.triggerValue;
+      if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
+      if (inst.type === 'handover') return totalMonths;
+      if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
+      return inst.triggerValue;
+    };
+    
     const additionalPayments = data.installments
       .filter(i => {
         // Skip downpayment (Month 0) - handled by downpaymentPercent
@@ -361,7 +372,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         triggerValue: inst.triggerValue, // Already absolute from AI
         paymentPercent: inst.paymentPercent,
       }))
-      .sort((a, b) => a.triggerValue - b.triggerValue);
+      .sort((a, b) => {
+        // Type-aware sorting: convert construction % to estimated months
+        const aMonth = getEstimatedMonth(a, sortingTotalMonths);
+        const bMonth = getEstimatedMonth(b, sortingTotalMonths);
+        return aMonth - bMonth;
+      });
     
     // === STEP 6: Update inputs with complete structure (including booking date) ===
     setInputs(prev => ({

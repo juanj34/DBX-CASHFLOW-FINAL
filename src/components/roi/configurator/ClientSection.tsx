@@ -238,25 +238,46 @@ export const ClientSection = ({
     }
     
     // === STEP 5: Convert ALL installments to configurator format ===
-    // INCLUDE handover payment as a regular time-based installment (don't filter it out)
-    // This ensures the 5% Completion payment shows in the installment list
+    // CRITICAL: Exclude handover payment - it's handled by onHandoverPercent
+    
+    // Type-aware sorting helper: converts construction % to estimated months
+    const sortingTotalMonths = extractedData.paymentStructure.handoverMonthFromBooking || 36;
+    const getEstimatedMonth = (inst: { type: string; triggerValue: number }, totalMonths: number): number => {
+      if (inst.type === 'time') return inst.triggerValue;
+      if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
+      if (inst.type === 'handover') return totalMonths;
+      if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
+      return inst.triggerValue;
+    };
+    
     const additionalPayments = extractedData.installments
       .filter(i => {
-        if (i.type === 'time' && i.triggerValue === 0) return false; // Skip downpayment only
-        // INCLUDE handover as a regular installment (converted to time type)
+        // Skip downpayment (Month 0) - handled by downpaymentPercent
+        if (i.type === 'time' && i.triggerValue === 0) return false;
+        
+        // CRITICAL: Skip handover payment - it's the completion lump sum handled by onHandoverPercent
+        if (i.type === 'handover') {
+          console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
+          return false;
+        }
+        
         return true;
       })
       .map((inst, idx) => ({
         id: inst.id || `ai-${Date.now()}-${idx}`,
-        // Convert handover and post-handover to time (they have absolute months)
-        // Only keep construction type as-is
+        // Only keep construction type as-is, everything else becomes time
         type: inst.type === 'construction' 
           ? 'construction' as const 
           : 'time' as const,
         triggerValue: inst.triggerValue, // Already absolute from AI
         paymentPercent: inst.paymentPercent,
       }))
-      .sort((a, b) => a.triggerValue - b.triggerValue);
+      .sort((a, b) => {
+        // Type-aware sorting: convert construction % to estimated months
+        const aMonth = getEstimatedMonth(a, sortingTotalMonths);
+        const bMonth = getEstimatedMonth(b, sortingTotalMonths);
+        return aMonth - bMonth;
+      });
     
     // === STEP 6: Update inputs with complete structure ===
     setInputs(prev => ({

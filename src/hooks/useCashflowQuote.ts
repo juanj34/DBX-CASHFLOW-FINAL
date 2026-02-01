@@ -254,6 +254,14 @@ export const useCashflowQuote = (quoteId?: string) => {
     ) => {
       setSaving(true);
 
+      // Safety check: Prevent saving with mismatched quote IDs to avoid data corruption
+      if (existingId && quote?.id && existingId !== quote.id) {
+        console.warn('Quote ID mismatch detected - aborting save to prevent data corruption');
+        console.warn('Attempted to save to:', existingId, 'but current quote is:', quote.id);
+        setSaving(false);
+        return null;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -403,7 +411,7 @@ export const useCashflowQuote = (quoteId?: string) => {
 
       return result.data;
     },
-    [toast]
+    [toast, quote?.id]
   );
 
   // Auto-save with debounce - creates quote on first meaningful change (lazy creation)
