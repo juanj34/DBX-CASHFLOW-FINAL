@@ -472,6 +472,7 @@ const ClientPortfolioView = () => {
                 metrics={portfolioMetrics}
                 currency={currency}
                 rate={rate}
+                onViewAnalysis={(quoteId) => navigate(`/cashflow/${quoteId}`)}
               />
             </TabsContent>
           )}
