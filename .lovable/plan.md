@@ -1,134 +1,242 @@
 
-# Fix Quote Creation Flow - Database Constraint & UX Issues
 
-## Root Cause Analysis
+# Fix AI Payment Plan Extraction & Auto-Save Logic
 
-### Issue 1: "Failed to create draft" Error
-**Found:** Database constraint violation in logs:
-```
-new row for relation "cashflow_quotes" violates check constraint "cashflow_quotes_status_check"
-```
+## Issues Identified
 
-**Cause:** The code in `useCashflowQuote.ts` tries to insert quotes with `status: 'working_draft'`, but the database has a CHECK constraint that only allows:
-```sql
-CHECK ((status = ANY (ARRAY['draft'::text, 'presented'::text, 'negotiating'::text, 'sold'::text])))
-```
+### Issue 1: Inconsistent Handover Payment Handling
+**PaymentSection.tsx** correctly excludes the handover payment from `additionalPayments` (lines 339-344), but **ClientSection.tsx** includes it (lines 241-248). This causes:
+- Double-counting when extraction happens from ClientSection
+- Totals exceeding 100% in some flows
 
-The `working_draft` status was never added to the constraint!
-
-### Issue 2: Page Refreshes on New Quote
-**Cause:** When "Start Configuration" is clicked:
-1. `createDraft()` is called which tries to insert a `working_draft` (fails silently)
-2. Falls back to navigation with `navigate(`/cashflow/${newId}`)` - but `newId` is null
-3. Auto-save kicks in and creates a new quote via `saveQuote()`, then calls `handleNewQuoteCreated`
-4. This triggers another navigation to `/cashflow/${newId}` causing a page reload
-5. Loading state flickers between navigations
-
-### Issue 3: QuotesDropdown uses `window.location.reload()`
-**Found in `QuotesDropdown.tsx`:**
+### Issue 2: Construction Milestone Sorting Bug
+Both files sort installments by `triggerValue` directly:
 ```typescript
-const handleNewQuote = () => {
-  if (onNewQuote) {
-    onNewQuote();
-  } else {
-    localStorage.removeItem('cashflow_quote_draft');
-    navigate('/cashflow-generator');
-    window.location.reload(); // <-- Forces full page reload!
-  }
-};
+.sort((a, b) => a.triggerValue - b.triggerValue)
 ```
 
-This is a fallback that causes a hard refresh.
+But `triggerValue` means different things:
+- **`type: 'time'`** → months from booking (e.g., 6, 12, 18)
+- **`type: 'construction'`** → completion percentage (e.g., 30, 50, 70)
+- **`type: 'handover'`** → month number (e.g., 27)
+
+This causes "30% Construction" to appear AFTER "Month 27" because 30 > 27.
+
+### Issue 3: Save Logic Race Conditions
+The `scheduleAutoSave` function has potential issues:
+1. No check for `quote?.id` matching `existingQuoteId` before saving in the lazy creation path
+2. The 500ms debounce for new quotes can still race with state updates
 
 ## Solution
 
-### Step 1: Update Database Constraint
-Add `working_draft` to the allowed status values:
+### Part 1: Unify Handover Handling in ClientSection.tsx
 
-```sql
-ALTER TABLE cashflow_quotes 
-DROP CONSTRAINT cashflow_quotes_status_check;
+Make ClientSection.tsx match PaymentSection.tsx by excluding handover payments:
 
-ALTER TABLE cashflow_quotes 
-ADD CONSTRAINT cashflow_quotes_status_check 
-CHECK (status = ANY (ARRAY['draft', 'presented', 'negotiating', 'sold', 'working_draft']));
-```
-
-### Step 2: Simplify Quote Creation Flow
-Instead of the complex working draft system, use a simpler approach:
-
-1. **Remove immediate draft creation** - Don't create a database record until meaningful data exists
-2. **Use navigation state** to pass `openConfigurator: true` flag
-3. **Let auto-save create the quote** on first meaningful change
-
-The current `handleNewQuote` in `OICalculator.tsx` already does this correctly - just navigate with state:
 ```typescript
-navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+// In ClientSection.tsx handleAIExtraction (around line 243-248)
+.filter(i => {
+  // Skip downpayment (Month 0) - handled by downpaymentPercent
+  if (i.type === 'time' && i.triggerValue === 0) return false;
+  
+  // CRITICAL: Skip handover payment - it's handled by onHandoverPercent
+  if (i.type === 'handover') {
+    console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
+    return false;
+  }
+  
+  return true;
+})
 ```
 
-### Step 3: Remove `window.location.reload()` from QuotesDropdown
-Update the fallback handler to use the proper navigation pattern without forcing a reload.
+### Part 2: Fix Construction Milestone Sorting
 
-### Step 4: Prevent Race Conditions in Auto-Save
-Add a small delay or debounce when navigating to a new quote to prevent:
-1. State reset triggering auto-save check
-2. Auto-save finding "isQuoteConfigured" true from stale data
-3. Creating a quote and navigating again
+Create a type-aware sorting function that converts construction percentages to estimated months:
+
+```typescript
+// Helper function - add before the sort
+const getEstimatedMonth = (payment: ExtractedInstallment, totalMonths: number): number => {
+  switch (payment.type) {
+    case 'time':
+      return payment.triggerValue; // Already in months
+    case 'construction':
+      // Convert construction % to estimated month
+      // e.g., 30% complete ≈ 30% of totalMonths
+      return Math.round((payment.triggerValue / 100) * totalMonths);
+    case 'handover':
+      return totalMonths; // Handover is at the end
+    case 'post-handover':
+      return totalMonths + payment.triggerValue; // After handover
+    default:
+      return payment.triggerValue;
+  }
+};
+
+// Use handover months from extraction for sorting
+const sortingTotalMonths = data.paymentStructure.handoverMonthFromBooking || 36;
+
+.sort((a, b) => {
+  const aMonth = getEstimatedMonth(a, sortingTotalMonths);
+  const bMonth = getEstimatedMonth(b, sortingTotalMonths);
+  return aMonth - bMonth;
+})
+```
+
+### Part 3: Improve Save Logic Safety
+
+Add additional guards in `scheduleAutoSave` to prevent race conditions:
+
+```typescript
+// In useCashflowQuote.ts scheduleAutoSave
+if (!existingQuoteId && isQuoteConfigured) {
+  autoSaveTimeout.current = setTimeout(async () => {
+    // Double-check we still don't have a quote ID (could have been created by another path)
+    if (existingQuoteId) {
+      console.log('Quote already exists, skipping lazy creation');
+      return;
+    }
+    
+    console.log('Creating new quote on first meaningful change...');
+    // ... rest of creation logic
+  }, 500);
+  return;
+}
+```
+
+Also add validation in `saveQuote` to prevent saving with mismatched IDs:
+
+```typescript
+// Add at start of saveQuote, before the update/insert logic
+if (existingId && quote?.id && existingId !== quote.id) {
+  console.warn('Quote ID mismatch - aborting save to prevent data corruption');
+  console.warn('existingId:', existingId, 'quote.id:', quote.id);
+  setSaving(false);
+  return null;
+}
+```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| Database migration | Add `working_draft` to status check constraint |
-| `src/components/roi/QuotesDropdown.tsx` | Remove `window.location.reload()` fallback |
-| `src/hooks/useCashflowQuote.ts` | Ensure working draft creation handles constraint properly |
+| `src/components/roi/configurator/PaymentSection.tsx` | Add type-aware sorting with `getEstimatedMonth` helper |
+| `src/components/roi/configurator/ClientSection.tsx` | 1. Exclude handover from installments, 2. Add type-aware sorting |
+| `src/hooks/useCashflowQuote.ts` | Add save guards for ID mismatch and race condition prevention |
 
-## Technical Details
+## Detailed Code Changes
 
-### Database Migration
-```sql
--- Drop existing constraint
-ALTER TABLE cashflow_quotes DROP CONSTRAINT IF EXISTS cashflow_quotes_status_check;
+### PaymentSection.tsx (lines ~355-365)
 
--- Add updated constraint with working_draft
-ALTER TABLE cashflow_quotes ADD CONSTRAINT cashflow_quotes_status_check 
-CHECK (status = ANY (ARRAY['draft', 'presented', 'negotiating', 'sold', 'working_draft']));
-```
-
-### QuotesDropdown Fix
 ```typescript
-const handleNewQuote = () => {
-  if (onNewQuote) {
-    onNewQuote();
-  } else {
-    // Clear local storage for fresh start
-    localStorage.removeItem('cashflow_quote_draft');
-    localStorage.removeItem('cashflow-configurator-state');
-    // Navigate without reload - let React handle the state reset
-    navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
-  }
+// Add helper before the filter/map chain
+const sortingTotalMonths = data.paymentStructure.handoverMonthFromBooking || 36;
+
+const getEstimatedMonth = (inst: typeof data.installments[0], totalMonths: number): number => {
+  if (inst.type === 'time') return inst.triggerValue;
+  if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
+  if (inst.type === 'handover') return totalMonths;
+  if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
+  return inst.triggerValue;
 };
+
+// Update the sort to use type-aware comparison
+.sort((a, b) => {
+  const aMonth = getEstimatedMonth(a, sortingTotalMonths);
+  const bMonth = getEstimatedMonth(b, sortingTotalMonths);
+  return aMonth - bMonth;
+})
 ```
 
-### Improve justResetRef timing
-Increase the timeout from 150ms to 500ms to ensure state is fully settled before auto-save kicks in:
+### ClientSection.tsx (lines ~243-260)
+
 ```typescript
-setTimeout(() => { justResetRef.current = false; }, 500);
+// Add helper
+const sortingTotalMonths = extractedData.paymentStructure.handoverMonthFromBooking || 36;
+
+const getEstimatedMonth = (inst: typeof extractedData.installments[0], totalMonths: number): number => {
+  if (inst.type === 'time') return inst.triggerValue;
+  if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
+  if (inst.type === 'handover') return totalMonths;
+  if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
+  return inst.triggerValue;
+};
+
+// Fix the filter to exclude handover (match PaymentSection.tsx)
+const additionalPayments = extractedData.installments
+  .filter(i => {
+    if (i.type === 'time' && i.triggerValue === 0) return false;
+    // CRITICAL: Exclude handover - handled by onHandoverPercent
+    if (i.type === 'handover') {
+      console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
+      return false;
+    }
+    return true;
+  })
+  .map((inst, idx) => ({
+    id: inst.id || `ai-${Date.now()}-${idx}`,
+    type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
+    triggerValue: inst.triggerValue,
+    paymentPercent: inst.paymentPercent,
+  }))
+  .sort((a, b) => {
+    const aMonth = getEstimatedMonth(a, sortingTotalMonths);
+    const bMonth = getEstimatedMonth(b, sortingTotalMonths);
+    return aMonth - bMonth;
+  });
 ```
 
-## Expected Result After Fix
+### useCashflowQuote.ts (saveQuote function ~lines 244-260)
 
-1. No more "Failed to create draft" errors
-2. Clicking "New Quote" immediately opens configurator without page reload
-3. Quote is created in database only when user adds meaningful content
-4. Smooth navigation without flicker or multiple loads
-5. Working draft system functions correctly with database support
+```typescript
+const saveQuote = useCallback(
+  async (
+    inputs: OIInputs,
+    clientInfo: ClientUnitData,
+    existingId?: string,
+    // ... other params
+  ) => {
+    setSaving(true);
 
-## Summary
+    // Safety check: Prevent saving with mismatched quote IDs
+    if (existingId && quote?.id && existingId !== quote.id) {
+      console.warn('Quote ID mismatch detected - aborting save');
+      console.warn('Attempted to save to:', existingId, 'but current quote is:', quote.id);
+      setSaving(false);
+      return null;
+    }
 
-| Before | After |
-|--------|-------|
-| Database rejects `working_draft` status | Constraint updated to allow it |
-| New quote triggers page reload | Smooth React navigation |
-| Multiple navigations cause flicker | Single navigation with state |
-| 150ms delay too short for state reset | 500ms buffer prevents race condition |
+    // ... rest of existing code
+  },
+  [toast, quote?.id] // Add quote?.id to dependencies
+);
+```
+
+## Expected Behavior After Fix
+
+```text
+Before (broken):
+1. On Booking - 10%
+2. 30% Construction - 10%  ← Wrong position (30 > 27)
+3. 50% Construction - 10%  ← Wrong position (50 > 27)
+4. Month 6 - 5%
+5. Month 27 Handover - 50% ← Duplicated as installment
+
+After (fixed):
+1. On Booking - 10%
+2. Month 6 - 5%
+3. 30% Construction (~Month 9) - 10%  ← Correct position
+4. 50% Construction (~Month 14) - 10% ← Correct position
+5. [Handover is NOT in list - handled by onHandoverPercent = 50%]
+```
+
+## Save Logic Flow After Fix
+
+```text
+1. User makes change → scheduleAutoSave called
+2. Check: existingQuoteId present? 
+   - Yes → Wait 1.5s, verify quote.id matches, then save
+   - No + isQuoteConfigured → Wait 500ms, create new quote
+3. Before actual save: Verify no ID mismatch
+4. Save executes safely
+```
+
