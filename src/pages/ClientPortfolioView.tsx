@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
-import { User, Mail, MessageCircle, Globe, Languages, Building, FileText, Presentation, BarChart3, Scale } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { 
+  User, Mail, Phone, MapPin, Globe, Languages, Building, FileText, 
+  Presentation, BarChart3, Scale, ArrowLeft, Plus, ExternalLink 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AppLogo } from "@/components/AppLogo";
+import { Badge } from "@/components/ui/badge";
 import { useClients, Client } from "@/hooks/useClients";
-import { useClientPortfolio } from "@/hooks/usePortfolio";
+import { usePortfolio } from "@/hooks/usePortfolio";
 import { useClientComparisons } from "@/hooks/useClientComparisons";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -24,7 +27,6 @@ import { PresentationsSection } from "@/components/portal/PresentationsSection";
 import { ComparisonsSection } from "@/components/portal/ComparisonsSection";
 import { CompareSection } from "@/components/portal/CompareSection";
 import { SnapshotModal } from "@/components/portal/SnapshotModal";
-import { PortalEmptyState } from "@/components/portal/PortalEmptyState";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,26 +57,18 @@ interface PresentationData {
   updated_at: string;
 }
 
-interface AdvisorProfile {
-  full_name: string | null;
-  avatar_url: string | null;
-  business_email: string | null;
-  whatsapp_number: string | null;
-  whatsapp_country_code: string | null;
-}
-
-const ClientPortal = () => {
-  const { portalToken } = useParams<{ portalToken: string }>();
-  const { getClientByPortalToken } = useClients();
-  const { properties: portfolioProperties, loading: portfolioLoading, metrics: portfolioMetrics } = useClientPortfolio(portalToken || '');
-  const { savedComparisons, secondaryComparisons, totalComparisons, loading: comparisonsLoading } = useClientComparisons({ portalToken: portalToken || '' });
+const ClientPortfolioView = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const navigate = useNavigate();
+  const { clients, loading: clientsLoading } = useClients();
+  
+  const { properties: portfolioProperties, loading: portfolioLoading, metrics: portfolioMetrics } = usePortfolio(clientId);
+  const { savedComparisons, secondaryComparisons, totalComparisons, loading: comparisonsLoading } = useClientComparisons({ clientId });
   
   const [client, setClient] = useState<Client | null>(null);
-  const [advisor, setAdvisor] = useState<AdvisorProfile | null>(null);
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
   const [presentations, setPresentations] = useState<PresentationData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Currency and language state
   const [currency, setCurrency] = useState<Currency>('AED');
@@ -108,43 +102,31 @@ const ClientPortal = () => {
     }
   }, [isInvestor, loading, portfolioLoading]);
 
-  useDocumentTitle(client?.name ? `${client.name} - Portal` : "Client Portal");
+  useDocumentTitle(client?.name ? `${client.name} - Portfolio` : "Client Portfolio");
 
+  // Find client from loaded clients
+  useEffect(() => {
+    if (!clientsLoading && clientId) {
+      const found = clients.find(c => c.id === clientId);
+      setClient(found || null);
+    }
+  }, [clients, clientId, clientsLoading]);
+
+  // Fetch quotes and presentations for this client
   useEffect(() => {
     const fetchData = async () => {
-      if (!portalToken) {
-        setError("Invalid portal link");
+      if (!clientId) {
         setLoading(false);
         return;
       }
 
       try {
-        const clientData = await getClientByPortalToken(portalToken);
-        
-        if (!clientData) {
-          setError("Portal not found or access disabled");
-          setLoading(false);
-          return;
-        }
-
-        setClient(clientData);
-
-        // Fetch advisor profile
-        const { data: advisorData } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code')
-          .eq('id', clientData.broker_id)
-          .single();
-
-        if (advisorData) {
-          setAdvisor(advisorData);
-        }
-
         // Fetch quotes for this client
         const { data: quotesData } = await supabase
           .from('cashflow_quotes')
           .select('id, project_name, developer, unit, unit_type, share_token, inputs, updated_at, client_name, client_country, unit_size_sqf')
-          .eq('client_id', clientData.id)
+          .eq('client_id', clientId)
+          .or('is_archived.is.null,is_archived.eq.false')
           .order('updated_at', { ascending: false });
 
         if (quotesData) {
@@ -155,7 +137,7 @@ const ClientPortal = () => {
         const { data: presentationsData } = await supabase
           .from('presentations')
           .select('id, title, description, share_token, items, updated_at')
-          .eq('client_id', clientData.id)
+          .eq('client_id', clientId)
           .order('updated_at', { ascending: false });
 
         if (presentationsData) {
@@ -164,31 +146,22 @@ const ClientPortal = () => {
 
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching portal data:', err);
-        setError("Failed to load portal");
+        console.error('Error fetching client data:', err);
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [portalToken, getClientByPortalToken]);
-
-  const handleEmailAdvisor = () => {
-    if (advisor?.business_email) {
-      window.open(`mailto:${advisor.business_email}`, '_blank');
-    }
-  };
-
-  const handleWhatsAppAdvisor = () => {
-    if (advisor?.whatsapp_number) {
-      const number = `${advisor.whatsapp_country_code || '+971'}${advisor.whatsapp_number}`.replace(/\D/g, '');
-      window.open(`https://wa.me/${number}`, '_blank');
-    }
-  };
+  }, [clientId]);
 
   const handleDownloadQuote = (quoteId: string) => {
     setExportQuoteId(quoteId);
     setExportModalOpen(true);
+  };
+
+  const handleViewSnapshot = (quoteId: string) => {
+    setSnapshotQuoteId(quoteId);
+    setSnapshotModalOpen(true);
   };
 
   const handleCompare = (quoteIds: string[]) => {
@@ -200,6 +173,18 @@ const ClientPortal = () => {
   const handleBackFromCompare = () => {
     setShowCompare(false);
     setActiveTab("opportunities");
+  };
+
+  const handleCreateQuote = () => {
+    if (client) {
+      localStorage.setItem('preselected_client', JSON.stringify({
+        dbClientId: client.id,
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientCountry: client.country || ''
+      }));
+      navigate('/cashflow-generator');
+    }
   };
 
   const currencyOptions: { value: Currency; label: string }[] = [
@@ -261,7 +246,7 @@ const ClientPortal = () => {
     };
   }, [exportInputs]);
 
-  const isLoadingAll = loading || portfolioLoading || comparisonsLoading;
+  const isLoadingAll = loading || portfolioLoading || clientsLoading || comparisonsLoading;
 
   if (isLoadingAll) {
     return (
@@ -271,13 +256,17 @@ const ClientPortal = () => {
     );
   }
 
-  if (error || !client) {
+  if (!client) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <User className="w-12 h-12 text-theme-text-muted mx-auto mb-4" />
-          <h1 className="text-2xl text-theme-text mb-2">Portal Not Available</h1>
-          <p className="text-theme-text-muted">{error || 'This portal may have been disabled or the link is invalid.'}</p>
+          <h1 className="text-2xl text-theme-text mb-2">Client Not Found</h1>
+          <p className="text-theme-text-muted mb-4">This client may have been deleted or you don't have access.</p>
+          <Button onClick={() => navigate('/clients')} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Clients
+          </Button>
         </div>
       </div>
     );
@@ -287,11 +276,58 @@ const ClientPortal = () => {
     <div className="min-h-screen bg-theme-bg">
       {/* Header */}
       <header className="bg-theme-card border-b border-theme-border sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <AppLogo size="md" />
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/clients')}
+              className="text-theme-text-muted hover:text-theme-text"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold text-theme-text">{client.name}</h1>
+              <div className="flex items-center gap-3 text-sm text-theme-text-muted">
+                {client.email && <span>{client.email}</span>}
+                {client.country && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {client.country}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
           
-          {/* Currency/Language selectors */}
           <div className="flex items-center gap-2">
+            {/* Create Quote Button */}
+            <Button
+              size="sm"
+              onClick={handleCreateQuote}
+              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Quote
+            </Button>
+
+            {/* Preview Portal Button */}
+            {client.portal_token && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/portal/${client.portal_token}`, '_blank')}
+                className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
+              >
+                <ExternalLink className="w-4 h-4 mr-1.5" />
+                Preview Portal
+              </Button>
+            )}
+
+            {/* Currency/Language selectors */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80">
@@ -338,186 +374,147 @@ const ClientPortal = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-theme-text mb-1">
-            Welcome{isInvestor ? ' back' : ''}, {client.name}
-          </h1>
-          <p className="text-theme-text-muted">
-            {isInvestor 
-              ? "Track your investment performance and explore new opportunities"
-              : "Explore your personalized investment opportunities"
-            }
-          </p>
-        </div>
-
-        {/* Advisor Card */}
-        {advisor && (
-          <Card className="bg-theme-card border-theme-border mb-6">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {advisor.avatar_url ? (
-                  <img 
-                    src={advisor.avatar_url} 
-                    alt={advisor.full_name || 'Advisor'} 
-                    className="w-14 h-14 rounded-full object-cover border-2 border-theme-accent/30" 
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-theme-bg flex items-center justify-center text-xl font-medium text-theme-text border-2 border-theme-accent/30">
-                    {advisor.full_name ? advisor.full_name.charAt(0).toUpperCase() : <User className="w-6 h-6 text-theme-text-muted" />}
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="font-medium text-theme-text">{advisor.full_name || 'Your Advisor'}</p>
-                  <p className="text-sm text-theme-accent">Wealth Advisor</p>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  {advisor.business_email && (
-                    <Button 
-                      onClick={handleEmailAdvisor}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 sm:flex-initial border-theme-border bg-theme-bg text-theme-text hover:bg-theme-bg/80"
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Email
-                    </Button>
-                  )}
-                  {advisor.whatsapp_number && (
-                    <Button 
-                      onClick={handleWhatsAppAdvisor}
-                      size="sm"
-                      className="flex-1 sm:flex-initial bg-green-500 text-white hover:bg-green-600"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      WhatsApp
-                    </Button>
-                  )}
-                </div>
-              </div>
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <Card className="bg-theme-card border-theme-border">
+            <CardContent className="p-4 text-center">
+              <Building className="w-5 h-5 text-theme-accent mx-auto mb-2" />
+              <p className="text-2xl font-bold text-theme-text">{portfolioProperties.length}</p>
+              <p className="text-xs text-theme-text-muted">Properties</p>
             </CardContent>
           </Card>
-        )}
-
-        {/* Empty State - No content at all */}
-        {!hasContent && <PortalEmptyState type="all" />}
+          <Card className="bg-theme-card border-theme-border">
+            <CardContent className="p-4 text-center">
+              <FileText className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-cyan-400">{quotes.length}</p>
+              <p className="text-xs text-theme-text-muted">Quotes</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-theme-card border-theme-border">
+            <CardContent className="p-4 text-center">
+              <Presentation className="w-5 h-5 text-purple-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-purple-400">{presentations.length}</p>
+              <p className="text-xs text-theme-text-muted">Presentations</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-theme-card border-theme-border">
+            <CardContent className="p-4 text-center">
+              <Scale className="w-5 h-5 text-orange-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-orange-400">{totalComparisons}</p>
+              <p className="text-xs text-theme-text-muted">Comparisons</p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Main Content with Tabs */}
-        {hasContent && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-theme-card border border-theme-border p-1 h-auto flex-wrap">
-              {isInvestor && (
-                <TabsTrigger 
-                  value="portfolio" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
-                >
-                  <Building className="w-4 h-4" />
-                  <span className="hidden sm:inline">My Portfolio</span>
-                  <span className="sm:hidden">Portfolio</span>
-                </TabsTrigger>
-              )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-theme-card border border-theme-border p-1 h-auto flex-wrap">
+            {isInvestor && (
               <TabsTrigger 
-                value="opportunities" 
+                value="portfolio" 
                 className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
               >
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">{isInvestor ? 'New Opportunities' : 'Opportunities'}</span>
-                <span className="sm:hidden">Quotes</span>
-                {quotes.length > 0 && (
-                  <span className="text-xs bg-theme-bg px-1.5 py-0.5 rounded-full">{quotes.length}</span>
-                )}
+                <Building className="w-4 h-4" />
+                <span className="hidden sm:inline">Portfolio</span>
+                <span className="sm:hidden">Props</span>
               </TabsTrigger>
-              {presentations.length > 0 && (
-                <TabsTrigger 
-                  value="presentations" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
-                >
-                  <Presentation className="w-4 h-4" />
-                  <span className="hidden sm:inline">Presentations</span>
-                  <span className="sm:hidden">Decks</span>
-                  <span className="text-xs bg-theme-bg px-1.5 py-0.5 rounded-full">{presentations.length}</span>
-                </TabsTrigger>
-              )}
-              {totalComparisons > 0 && (
-                <TabsTrigger 
-                  value="comparisons" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
-                >
-                  <Scale className="w-4 h-4" />
-                  <span className="hidden sm:inline">Comparisons</span>
-                  <span className="sm:hidden">Compare</span>
-                  <span className="text-xs bg-theme-bg px-1.5 py-0.5 rounded-full">{totalComparisons}</span>
-                </TabsTrigger>
-              )}
-              {showCompare && (
-                <TabsTrigger 
-                  value="compare" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Side by Side
-                </TabsTrigger>
-              )}
-            </TabsList>
-
-            {/* Portfolio Tab */}
-            {isInvestor && (
-              <TabsContent value="portfolio" className="mt-6">
-                <PortfolioSection 
-                  properties={portfolioProperties}
-                  metrics={portfolioMetrics}
-                  currency={currency}
-                  rate={rate}
-                />
-              </TabsContent>
             )}
-
-            {/* Opportunities Tab */}
-            <TabsContent value="opportunities" className="mt-6">
-              {!isInvestor && portfolioProperties.length === 0 && (
-                <div className="mb-6">
-                  <PortalEmptyState type="portfolio" />
-                </div>
+            <TabsTrigger 
+              value="opportunities" 
+              className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Quotes</span>
+              <span className="sm:hidden">Quotes</span>
+              {quotes.length > 0 && (
+                <span className="text-xs bg-theme-bg px-1.5 py-0.5 rounded-full">{quotes.length}</span>
               )}
-              <OpportunitiesSection 
-                quotes={quotes}
-                currency={currency}
-                language={language}
-                onDownload={handleDownloadQuote}
-                onCompare={handleCompare}
-              />
-            </TabsContent>
-
-            {/* Presentations Tab */}
-            <TabsContent value="presentations" className="mt-6">
-              <PresentationsSection presentations={presentations} />
-            </TabsContent>
-
-            {/* Comparisons Tab */}
-            <TabsContent value="comparisons" className="mt-6">
-              <ComparisonsSection 
-                savedComparisons={savedComparisons}
-                secondaryComparisons={secondaryComparisons}
-                currency={currency}
-                language={language}
-              />
-            </TabsContent>
-
-            {/* Compare Tab */}
+            </TabsTrigger>
+            {presentations.length > 0 && (
+              <TabsTrigger 
+                value="presentations" 
+                className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+              >
+                <Presentation className="w-4 h-4" />
+                <span className="hidden sm:inline">Presentations</span>
+                <span className="sm:hidden">Decks</span>
+                <span className="text-xs bg-theme-bg px-1.5 py-0.5 rounded-full">{presentations.length}</span>
+              </TabsTrigger>
+            )}
+            {totalComparisons > 0 && (
+              <TabsTrigger 
+                value="comparisons" 
+                className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+              >
+                <Scale className="w-4 h-4" />
+                <span className="hidden sm:inline">Comparisons</span>
+                <span className="sm:hidden">Compare</span>
+                <span className="text-xs bg-theme-bg px-1.5 py-0.5 rounded-full">{totalComparisons}</span>
+              </TabsTrigger>
+            )}
             {showCompare && (
-              <TabsContent value="compare" className="mt-6">
-                <CompareSection 
-                  quotes={quotes}
-                  selectedIds={compareIds}
-                  currency={currency}
-                  rate={rate}
-                  onBack={handleBackFromCompare}
-                />
-              </TabsContent>
+              <TabsTrigger 
+                value="compare" 
+                className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Compare
+              </TabsTrigger>
             )}
-          </Tabs>
-        )}
+          </TabsList>
+
+          {/* Portfolio Tab */}
+          {isInvestor && (
+            <TabsContent value="portfolio" className="mt-6">
+              <PortfolioSection 
+                properties={portfolioProperties}
+                metrics={portfolioMetrics}
+                currency={currency}
+                rate={rate}
+              />
+            </TabsContent>
+          )}
+
+          {/* Opportunities Tab */}
+          <TabsContent value="opportunities" className="mt-6">
+            <OpportunitiesSection 
+              quotes={quotes}
+              currency={currency}
+              language={language}
+              onDownload={handleDownloadQuote}
+              onCompare={handleCompare}
+            />
+          </TabsContent>
+
+          {/* Presentations Tab */}
+          <TabsContent value="presentations" className="mt-6">
+            <PresentationsSection presentations={presentations} />
+          </TabsContent>
+
+          {/* Comparisons Tab */}
+          <TabsContent value="comparisons" className="mt-6">
+            <ComparisonsSection 
+              savedComparisons={savedComparisons}
+              secondaryComparisons={secondaryComparisons}
+              currency={currency}
+              language={language}
+            />
+          </TabsContent>
+
+          {/* Compare Tab */}
+          {showCompare && (
+            <TabsContent value="compare" className="mt-6">
+              <CompareSection 
+                quotes={quotes}
+                selectedIds={compareIds}
+                currency={currency}
+                rate={rate}
+                onBack={handleBackFromCompare}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
       </main>
 
       {/* Snapshot Modal */}
@@ -553,4 +550,4 @@ const ClientPortal = () => {
   );
 };
 
-export default ClientPortal;
+export default ClientPortfolioView;

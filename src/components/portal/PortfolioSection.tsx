@@ -1,6 +1,7 @@
-import { Building, TrendingUp, DollarSign, PiggyBank, Wallet, Home, Percent } from "lucide-react";
+import { Building, TrendingUp, DollarSign, PiggyBank, Wallet, Home, Percent, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { AcquiredProperty, PortfolioMetrics } from "@/hooks/usePortfolio";
 import { format } from "date-fns";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -10,6 +11,8 @@ interface PortfolioSectionProps {
   metrics: PortfolioMetrics;
   currency: Currency;
   rate: number;
+  language?: 'en' | 'es';
+  onViewAnalysis?: (quoteId: string) => void;
 }
 
 const formatCurrency = (value: number, currency: Currency, rate: number) => {
@@ -21,7 +24,7 @@ const formatCurrency = (value: number, currency: Currency, rate: number) => {
   }).format(converted);
 };
 
-export const PortfolioSection = ({ properties, metrics, currency, rate }: PortfolioSectionProps) => {
+export const PortfolioSection = ({ properties, metrics, currency, rate, language = 'en', onViewAnalysis }: PortfolioSectionProps) => {
   const appreciationPositive = metrics.totalAppreciation >= 0;
   const cashflowPositive = metrics.netMonthlyCashflow >= 0;
 
@@ -137,7 +140,7 @@ export const PortfolioSection = ({ properties, metrics, currency, rate }: Portfo
                       </div>
 
                       {/* Status Badges */}
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         {property.is_rented && (
                           <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">
                             <Home className="w-3 h-3 mr-1" />
@@ -149,6 +152,17 @@ export const PortfolioSection = ({ properties, metrics, currency, rate }: Portfo
                             <Percent className="w-3 h-3 mr-1" />
                             Mortgage: {formatCurrency(property.monthly_mortgage_payment || 0, currency, rate)}/mo
                           </Badge>
+                        )}
+                        {property.source_quote_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onViewAnalysis?.(property.source_quote_id!)}
+                            className="ml-auto h-7 px-2 text-xs text-theme-accent hover:text-theme-accent/80 hover:bg-theme-accent/10"
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Original Analysis
+                          </Button>
                         )}
                       </div>
                     </div>
