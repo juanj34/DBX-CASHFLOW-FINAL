@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, MapPin, Phone, MoreVertical, ExternalLink, Pencil, Trash2, Link2, FileText, Eye, ChevronDown, ChevronUp, Plus, Presentation } from "lucide-react";
+import { User, MapPin, Phone, MoreVertical, ExternalLink, Pencil, Trash2, Link2, FileText, Eye, ChevronDown, ChevronUp, Plus, Presentation, FolderOpen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -160,7 +160,14 @@ export const ClientCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-theme-card border-theme-border">
-              <DropdownMenuItem onClick={handleCreateQuote} className="text-theme-accent hover:bg-theme-bg cursor-pointer">
+              <DropdownMenuItem 
+                onClick={() => navigate(`/clients/${client.id}/portfolio`)} 
+                className="text-theme-accent hover:bg-theme-bg cursor-pointer"
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                View Portfolio
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCreateQuote} className="text-cyan-400 hover:bg-theme-bg cursor-pointer">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Quote
               </DropdownMenuItem>

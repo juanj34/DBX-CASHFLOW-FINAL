@@ -1150,6 +1150,7 @@ export type Database = {
       saved_comparisons: {
         Row: {
           broker_id: string
+          client_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -1163,6 +1164,7 @@ export type Database = {
         }
         Insert: {
           broker_id: string
+          client_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1176,6 +1178,7 @@ export type Database = {
         }
         Update: {
           broker_id?: string
+          client_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1187,11 +1190,20 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "saved_comparisons_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       secondary_comparisons: {
         Row: {
           broker_id: string
+          client_id: string | null
           created_at: string | null
           exit_months: Json
           id: string
@@ -1205,6 +1217,7 @@ export type Database = {
         }
         Insert: {
           broker_id: string
+          client_id?: string | null
           created_at?: string | null
           exit_months?: Json
           id?: string
@@ -1218,6 +1231,7 @@ export type Database = {
         }
         Update: {
           broker_id?: string
+          client_id?: string | null
           created_at?: string | null
           exit_months?: Json
           id?: string
@@ -1230,6 +1244,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "secondary_comparisons_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "secondary_comparisons_quote_id_fkey"
             columns: ["quote_id"]
