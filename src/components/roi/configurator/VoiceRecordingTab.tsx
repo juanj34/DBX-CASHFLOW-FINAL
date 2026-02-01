@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Mic, Square, Loader2, MessageCircle, Send, RotateCcw } from "lucide-react";
+import { Mic, Square, Loader2, MessageCircle, Send, RotateCcw, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
   isAudio?: boolean;
+  audioUrl?: string;
 }
 
 type RecordingState = 'idle' | 'recording' | 'processing' | 'clarifying' | 'extracted';
@@ -27,13 +28,50 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
   const [userInput, setUserInput] = useState('');
   const [extractedData, setExtractedData] = useState<ExtractedPaymentPlan | null>(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playAudioResponse = useCallback((audioDataUrl: string) => {
+    if (!audioDataUrl) return;
+    
+    setIsPlayingAudio(true);
+    const audio = new Audio(audioDataUrl);
+    audioRef.current = audio;
+    
+    audio.onended = () => {
+      setIsPlayingAudio(false);
+      audioRef.current = null;
+    };
+    
+    audio.onerror = (e) => {
+      console.error('Error playing audio:', e);
+      setIsPlayingAudio(false);
+      audioRef.current = null;
+    };
+    
+    audio.play().catch(err => {
+      console.error('Failed to play audio:', err);
+      setIsPlayingAudio(false);
+    });
+  }, []);
+
+  const stopAudioPlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setIsPlayingAudio(false);
+    }
+  }, []);
 
   const startRecording = useCallback(async () => {
+    // Stop any playing audio first
+    stopAudioPlayback();
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -71,7 +109,7 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
       console.error('Error accessing microphone:', error);
       toast.error('Could not access microphone. Please check permissions.');
     }
-  }, []);
+  }, [stopAudioPlayback]);
 
   const stopRecording = useCallback(async () => {
     if (!mediaRecorderRef.current) return;
@@ -132,21 +170,49 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
       
       if (error) throw error;
       
+      // Update user message with transcription if available
+      if (data.userTranscription) {
+        setMessages(prev => {
+          const updated = [...prev];
+          // Find the last user message with isAudio flag
+          for (let i = updated.length - 1; i >= 0; i--) {
+            if (updated[i].role === 'user' && updated[i].isAudio) {
+              updated[i].content = `🎤 "${data.userTranscription}"`;
+              break;
+            }
+          }
+          return updated;
+        });
+      }
+      
       if (data.needsClarification) {
         // AI needs more info
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: data.question 
+          content: data.question,
+          audioUrl: data.responseAudio
         }]);
         setState('clarifying');
+        
+        // Play the audio response
+        if (data.responseAudio) {
+          playAudioResponse(data.responseAudio);
+        }
       } else if (data.success && data.data) {
         // Got extracted data
+        const responseText = data.responseText || `✅ I've extracted the payment plan:\n\n${formatExtractedSummary(data.data)}`;
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `✅ I've extracted the payment plan:\n\n${formatExtractedSummary(data.data)}` 
+          content: responseText,
+          audioUrl: data.responseAudio
         }]);
         setExtractedData(data.data);
         setState('extracted');
+        
+        // Play the confirmation audio
+        if (data.responseAudio) {
+          playAudioResponse(data.responseAudio);
+        }
       } else {
         throw new Error(data.error || 'Failed to process voice note');
       }
@@ -156,7 +222,7 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
       toast.error(error instanceof Error ? error.message : 'Failed to process voice note');
       setState('idle');
     }
-  }, [bookingDate, messages, recordingDuration]);
+  }, [bookingDate, messages, recordingDuration, playAudioResponse]);
 
   const handleStopRecording = useCallback(async () => {
     const audioBlob = await stopRecording();
@@ -191,15 +257,31 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
       if (error) throw error;
       
       if (data.needsClarification) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.question }]);
-        setState('clarifying');
-      } else if (data.success && data.data) {
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `✅ I've extracted the payment plan:\n\n${formatExtractedSummary(data.data)}` 
+          content: data.question,
+          audioUrl: data.responseAudio
+        }]);
+        setState('clarifying');
+        
+        // Play the audio response
+        if (data.responseAudio) {
+          playAudioResponse(data.responseAudio);
+        }
+      } else if (data.success && data.data) {
+        const responseText = data.responseText || `✅ I've extracted the payment plan:\n\n${formatExtractedSummary(data.data)}`;
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: responseText,
+          audioUrl: data.responseAudio
         }]);
         setExtractedData(data.data);
         setState('extracted');
+        
+        // Play the confirmation audio
+        if (data.responseAudio) {
+          playAudioResponse(data.responseAudio);
+        }
       } else {
         throw new Error(data.error || 'Failed to process response');
       }
@@ -209,7 +291,7 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
       toast.error('Failed to send message');
       setState('clarifying');
     }
-  }, [userInput, bookingDate, messages]);
+  }, [userInput, bookingDate, messages, playAudioResponse]);
 
   const handleApply = useCallback(() => {
     if (extractedData) {
@@ -218,12 +300,20 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
   }, [extractedData, onExtracted]);
 
   const handleReset = useCallback(() => {
+    stopAudioPlayback();
     setState('idle');
     setMessages([]);
     setExtractedData(null);
     setUserInput('');
     setRecordingDuration(0);
-  }, []);
+  }, [stopAudioPlayback]);
+
+  const replayLastAudio = useCallback(() => {
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.audioUrl);
+    if (lastAssistantMsg?.audioUrl) {
+      playAudioResponse(lastAssistantMsg.audioUrl);
+    }
+  }, [messages, playAudioResponse]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -250,6 +340,8 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
     
     return parts.join('\n');
   };
+
+  const hasAudioToReplay = messages.some(m => m.role === 'assistant' && m.audioUrl);
 
   return (
     <div className="space-y-4">
@@ -316,11 +408,35 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
               )}
             >
               {msg.role === 'assistant' && (
-                <MessageCircle className="h-4 w-4 mb-1 text-muted-foreground" />
+                <div className="flex items-center gap-2 mb-1">
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                  {msg.audioUrl && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={() => playAudioResponse(msg.audioUrl!)}
+                      disabled={isPlayingAudio}
+                    >
+                      <Volume2 className={cn("h-3 w-3", isPlayingAudio && "animate-pulse")} />
+                    </Button>
+                  )}
+                </div>
               )}
               <p className="whitespace-pre-wrap">{msg.content}</p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Audio playing indicator */}
+      {isPlayingAudio && (
+        <div className="flex items-center justify-center gap-2 py-2 text-primary">
+          <Volume2 className="h-4 w-4 animate-pulse" />
+          <span className="text-sm">AI is speaking...</span>
+          <Button variant="ghost" size="sm" onClick={stopAudioPlayback}>
+            Stop
+          </Button>
         </div>
       )}
 
@@ -330,7 +446,7 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
           <Textarea
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your answer..."
+            placeholder="Type your answer or record another voice note..."
             className="min-h-[60px] resize-none"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -346,6 +462,11 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
             <Button onClick={startRecording} size="icon" variant="outline" title="Record another voice note">
               <Mic className="h-4 w-4" />
             </Button>
+            {hasAudioToReplay && (
+              <Button onClick={replayLastAudio} size="icon" variant="ghost" title="Replay last response" disabled={isPlayingAudio}>
+                <Volume2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       )}
