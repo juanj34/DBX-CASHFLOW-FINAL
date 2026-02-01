@@ -1,125 +1,129 @@
 
-# Fix Pre-Handover Payment Counting for Standard Plans
+# Fix AI Extraction Handlers for Standard Payment Plans
 
-## Problem Analysis
+## Problem
 
-When a user adds an installment that falls in the handover quarter (e.g., a 5% payment in the same month as handover), the current logic incorrectly excludes it from the pre-handover total because:
+The AI extraction handlers (`handleAIExtraction`) in both `PaymentSection.tsx` and `ClientSection.tsx` currently set `onHandoverPercent` from the extracted handover payment regardless of whether it's a standard or post-handover plan.
 
-1. `isPaymentPostHandover()` uses `>=` comparison, so payments **on** the handover date are treated as "post-handover"
-2. This causes the pre-handover sum to miss these payments
-3. The total doesn't add up to 100%, blocking the "Next" button
+This causes:
+1. Redundant data storage (handover % stored when it should be derived)
+2. Potential calculation conflicts with the fix we just made
+3. Inconsistent behavior between manual entry and AI extraction
 
-### Current (Broken) Logic
+## Current Code (Both Files)
 
-```
-User adds: 20% booking + 75% installments + 5% @ Month 27 (handover month)
-preHandoverPercent = 100 (from split selector)
-
-isPaymentPostHandover(Month 27) = TRUE (5% excluded!)
-preHandoverInstallmentsTotal = 75% (missing the 5%)
-preHandoverTotal = 20% + 75% = 95%
-handoverPercent = 100 - 100 = 0%
-totalPayment = 95% + 0% = 95% ← INVALID!
+```typescript
+// Line 309 in PaymentSection.tsx
+// Line 225 in ClientSection.tsx
+const onHandoverPercent = handoverPayment?.paymentPercent || 0;
 ```
 
-### Expected Logic
-
-For **standard plans** (no post-handover toggle):
-- ALL installments in `additionalPayments` are pre-handover by definition
-- The handover payment is simply `100 - preHandoverPercent` (a derived balance)
-- We should NOT filter installments by date for standard plans
-
-```
-User adds: 20% booking + 75% installments + 5% @ Month 27
-preHandoverPercent = 100 (from split selector)
-
-Standard mode: ALL additionalPayments count as pre-handover
-preHandoverInstallmentsTotal = 75% + 5% = 80%
-preHandoverTotal = 20% + 80% = 100%
-handoverPercent = 100 - 100 = 0%
-totalPayment = 100% + 0% = 100% ← VALID!
-```
+This sets `onHandoverPercent` **unconditionally** for all plans.
 
 ## Solution
 
-### Files to Modify
+Apply the same conditional logic from the manual payment fix:
 
-| File | Change |
-|------|--------|
-| `src/components/roi/configurator/PaymentSection.tsx` | For standard plans, don't filter installments by date - all are pre-handover |
-| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Ensure validation matches the same logic |
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Apply same fix for display consistency |
+**For standard plans**: `onHandoverPercent = 0` (handover is derived as `100 - preHandoverPercent`)
 
-### Code Changes
+**For post-handover plans**: `onHandoverPercent = handoverPayment?.paymentPercent` (explicit payment)
 
-#### 1. PaymentSection.tsx - Fix Pre-Handover Calculation (lines 60-72)
+## Files to Modify
+
+| File | Location | Change |
+|------|----------|--------|
+| `src/components/roi/configurator/PaymentSection.tsx` | ~lines 309-315 | Conditionally set `onHandoverPercent` based on `hasPostHandover` |
+| `src/components/roi/configurator/ClientSection.tsx` | ~lines 224-232 | Same fix |
+
+## Code Changes
+
+### PaymentSection.tsx (lines 301-315)
 
 ```typescript
-// Calculate pre-handover vs post-handover totals
-// CRITICAL FIX: For standard plans (no post-handover toggle), 
-// ALL installments are pre-handover by definition.
-// Only filter by date when hasPostHandoverPlan = true.
-const preHandoverPayments = hasPostHandoverPlan 
-  ? inputs.additionalPayments.filter(p => {
-      if (p.type !== 'time') return true; // construction milestones = pre-handover
-      return !isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
-    })
-  : inputs.additionalPayments; // Standard mode: ALL are pre-handover
+// === STEP 2: Find special installments ===
+const downpayment = data.installments.find(
+  i => i.type === 'time' && i.triggerValue === 0
+);
+const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
 
-const postHandoverPayments = hasPostHandoverPlan
-  ? inputs.additionalPayments.filter(p => {
-      if (p.type !== 'time') return false;
-      return isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
-    })
-  : []; // Standard mode: NO post-handover payments
+// === STEP 3: Calculate totals for validation ===
+const postHandoverInstallments = data.installments.filter(i => 
+  i.type === 'post-handover'
+);
+const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+
+// Determine if this is a post-handover plan BEFORE setting onHandoverPercent
+const hasPostHandover = data.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+
+// CRITICAL FIX: Only set onHandoverPercent for post-handover plans
+// For standard plans, handover = 100 - preHandoverPercent (derived)
+const onHandoverPercent = hasPostHandover 
+  ? (handoverPayment?.paymentPercent || data.paymentStructure.onHandoverPercent || 0)
+  : 0;
 ```
 
-#### 2. CompactPaymentTable.tsx - Match the Same Logic
+### ClientSection.tsx (lines 216-232)
 
-Apply the same conditional filtering in the snapshot view so payment display is consistent.
+```typescript
+// === STEP 2: Find special installments ===
+const downpayment = extractedData.installments.find(
+  i => i.type === 'time' && i.triggerValue === 0
+);
+const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
 
-#### 3. Validation Consistency
+// Explicit handover payment - used for timing and post-handover plans only
+const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
 
-The validation in `ConfiguratorLayout.tsx` already uses `additionalPaymentsTotal` for all installments, which is correct. The fix in `PaymentSection.tsx` will align the display with the validation.
+// === STEP 3: Calculate totals for validation ===
+const postHandoverInstallments = extractedData.installments.filter(i => 
+  i.type === 'post-handover'
+);
+const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+
+// Determine if this is a post-handover plan
+const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+
+// CRITICAL FIX: Only set onHandoverPercent for post-handover plans
+const onHandoverPercent = hasPostHandover 
+  ? (handoverPayment?.paymentPercent || 0)
+  : 0;
+```
 
 ## Expected Behavior After Fix
 
-**Standard Plan (100/0 with 5% in handover month):**
+**AI Extraction - Standard Plan (30/70):**
 ```
-Installments: 20% booking + 75% during construction + 5% @ handover month
-preHandoverPercent = 100
+AI extracts: 20% booking, 10% @ Month 3, 70% on completion
+hasPostHandover = false
 
-preHandoverInstallmentsTotal = 80% (ALL installments)
-preHandoverTotal = 20% + 80% = 100%
-handoverPercent = 100 - 100 = 0%
-totalPayment = 100% ✓
-```
+Result:
+  - downpaymentPercent = 20
+  - preHandoverPercent = 30 (from split)
+  - onHandoverPercent = 0 (NOT stored for standard plans)
+  - additionalPayments = [10% @ Month 3]
+  - hasPostHandoverPlan = false
 
-**Standard Plan (30/70 with 5% in handover month):**
-```
-Installments: 10% booking + 15% during construction + 5% @ handover month
-preHandoverPercent = 30
-
-preHandoverInstallmentsTotal = 20% (ALL installments)
-preHandoverTotal = 10% + 20% = 30%
-handoverPercent = 100 - 30 = 70%
-totalPayment = 30% + 70% = 100% ✓
+Display: Handover = 100 - 30 = 70% ✓
 ```
 
-**Post-Handover Plan (Date filtering still applies):**
+**AI Extraction - Post-Handover Plan (30/70 split with 5yr payment):**
 ```
-Toggle: hasPostHandoverPlan = true
-Installments: 10% booking + 10% during construction + 5% @ handover month + 75% over 5 years
+AI extracts: 20% booking, 10% installments, 10% on completion, 60% over 5 years
+hasPostHandover = true
 
-preHandoverPayments = 10% (filtered: only pre-handover date)
-postHandoverPayments = 5% + 75% = 80% (filtered: handover+ dates)
-totalPayment = 10% + 10% + 80% = 100% ✓
+Result:
+  - downpaymentPercent = 20
+  - preHandoverPercent = 30
+  - onHandoverPercent = 10 (explicit handover payment stored)
+  - additionalPayments = [10% pre-HO, 60% post-HO installments]
+  - hasPostHandoverPlan = true
+  - postHandoverPercent = 60
+
+Display: Pre-HO = 30%, On-HO = 10%, Post-HO = 60% ✓
 ```
 
-## Key Insight
+## Summary
 
-The fundamental rule is:
-- **Standard plans**: "Handover payment" = the remaining balance (100 - preHandoverPercent), NOT a tracked installment
-- **Post-handover plans**: Date-based filtering matters because there's an explicit split between pre/on/post handover payments
-
-By only applying date filtering when `hasPostHandoverPlan = true`, we ensure standard plans correctly count all installments as pre-handover.
+This fix ensures AI extraction follows the **same logic** as manual entry:
+- Standard plans: All installments are pre-handover, handover amount is derived
+- Post-handover plans: Explicit on-handover and post-handover tracking applies
