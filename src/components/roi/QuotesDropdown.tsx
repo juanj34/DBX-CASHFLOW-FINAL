@@ -52,10 +52,11 @@ export const QuotesDropdown = ({
     if (onNewQuote) {
       onNewQuote();
     } else {
-      // Clear local storage and navigate to fresh generator
+      // Clear local storage for fresh start
       localStorage.removeItem('cashflow_quote_draft');
-      navigate('/cashflow-generator');
-      window.location.reload();
+      localStorage.removeItem('cashflow-configurator-state');
+      // Navigate without reload - let React handle the state reset
+      navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
     }
   };
 
