@@ -605,14 +605,25 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     });
   }
 
+  // Helper function to calculate years with rent growth using geometric series
+  const calculateYearsWithGrowth = (principal: number, annualRent: number, growthRate: number): number => {
+    if (annualRent <= 0) return 999;
+    if (growthRate <= 0) return principal / annualRent; // Simple division when no growth
+    
+    const g = growthRate / 100;
+    // Using geometric series: Years = ln(1 + (P × g) / R) / ln(1 + g)
+    const yearsNeeded = Math.log(1 + (principal * g) / annualRent) / Math.log(1 + g);
+    return yearsNeeded;
+  };
+
   // Hold Analysis - always calculate long-term, optionally calculate Airbnb
   const totalCapitalInvested = basePrice + totalEntryCosts;
   
   // Long-term rent at handover (first year net)
   const netAnnualRent = initialAnnualRent - annualServiceCharges;
   const rentalYieldOnInvestment = (netAnnualRent / totalCapitalInvested) * 100;
-  const yearsToBreakEven = netAnnualRent > 0 ? totalCapitalInvested / netAnnualRent : 999;
-  const yearsToPayOff = netAnnualRent > 0 ? basePrice / netAnnualRent : 999;
+  const yearsToBreakEven = calculateYearsWithGrowth(totalCapitalInvested, netAnnualRent, inputs.rentGrowthRate);
+  const yearsToPayOff = calculateYearsWithGrowth(basePrice, netAnnualRent, inputs.rentGrowthRate);
   
   // Airbnb rent (optional)
   let airbnbAnnualRent: number | undefined;
@@ -623,8 +634,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     const airbnbGross = shortTermRental.averageDailyRate * 365 * (shortTermRental.occupancyPercent / 100);
     const airbnbOperatingExpenses = airbnbGross * ((shortTermRental.operatingExpensePercent + shortTermRental.managementFeePercent) / 100);
     airbnbAnnualRent = airbnbGross - airbnbOperatingExpenses - annualServiceCharges;
-    airbnbYearsToBreakEven = airbnbAnnualRent > 0 ? totalCapitalInvested / airbnbAnnualRent : 999;
-    airbnbYearsToPayOff = airbnbAnnualRent > 0 ? basePrice / airbnbAnnualRent : 999;
+    airbnbYearsToBreakEven = calculateYearsWithGrowth(totalCapitalInvested, airbnbAnnualRent, adrGrowthRate);
+    airbnbYearsToPayOff = calculateYearsWithGrowth(basePrice, airbnbAnnualRent, adrGrowthRate);
   }
 
   const holdAnalysis: OIHoldAnalysis = {
