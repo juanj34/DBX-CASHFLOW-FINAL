@@ -5,8 +5,9 @@ import {
   FileText, GitCompare, ChevronDown, ChevronUp, GripVertical,
   Settings, Layers, Eye, TrendingUp, BarChart3,
   ChevronLeft, ChevronRight, FolderOpen, Pencil, LayoutDashboard,
-  LayoutGrid, Presentation, Sparkles, DollarSign, Globe
+  LayoutGrid, Presentation, Sparkles, DollarSign, Globe, RefreshCw
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -204,7 +205,7 @@ const PresentationBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { presentations, updatePresentation, generateShareToken } = usePresentations();
-  const { quotes, loading: quotesLoading } = useQuotesList();
+  const { quotes, loading: quotesLoading, refetch: refetchQuotes, lastFetched } = useQuotesList();
   const { profile } = useProfile();
   
   const [presentation, setPresentation] = useState<PresentationType | null>(null);
@@ -672,6 +673,22 @@ const PresentationBuilder = () => {
                     </TooltipTrigger>
                     <TooltipContent side="right">Create Comparison</TooltipContent>
                   </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={refetchQuotes}
+                        disabled={quotesLoading}
+                        className="w-10 h-10 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+                      >
+                        <RefreshCw className={cn("w-4 h-4", quotesLoading && "animate-spin")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      Refresh Quotes {lastFetched && `(${formatDistanceToNow(lastFetched, { addSuffix: true })})`}
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               ) : (
                 <>
@@ -693,6 +710,29 @@ const PresentationBuilder = () => {
                     <GitCompare className="w-3.5 h-3.5 mr-1" />
                     <span className="text-xs">Compare</span>
                   </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={refetchQuotes}
+                        disabled={quotesLoading}
+                        className="h-8 px-2 text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50"
+                      >
+                        <RefreshCw className={cn("w-3.5 h-3.5", quotesLoading && "animate-spin")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <div className="text-center">
+                        <p>Refresh Quotes</p>
+                        {lastFetched && (
+                          <p className="text-xs text-muted-foreground">
+                            Last synced {formatDistanceToNow(lastFetched, { addSuffix: true })}
+                          </p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               )}
             </div>

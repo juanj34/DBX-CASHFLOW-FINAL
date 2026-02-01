@@ -500,37 +500,72 @@ export const useCashflowQuote = (quoteId?: string) => {
 export const useQuotesList = () => {
   const [quotes, setQuotes] = useState<CashflowQuote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-  useEffect(() => {
-    const fetchQuotes = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('cashflow_quotes')
-        .select(`
-          id, broker_id, share_token, client_name, client_country, client_email,
-          project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
-          inputs, title, created_at, updated_at, status, status_changed_at,
-          presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
-          is_archived, archived_at, last_viewed_at
-        `)
-        .eq('broker_id', user.id)
-        .neq('status', 'working_draft') // Filter out working drafts from the list
-        .or('is_archived.is.null,is_archived.eq.false')
-        .order('updated_at', { ascending: false });
-
-      if (!error && data) {
-        setQuotes(data.map(q => ({ ...q, inputs: q.inputs as unknown as OIInputs })));
-      }
+  const fetchQuotes = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('cashflow_quotes')
+      .select(`
+        id, broker_id, share_token, client_name, client_country, client_email,
+        project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+        inputs, title, created_at, updated_at, status, status_changed_at,
+        presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+        is_archived, archived_at, last_viewed_at
+      `)
+      .eq('broker_id', user.id)
+      .neq('status', 'working_draft') // Filter out working drafts from the list
+      .or('is_archived.is.null,is_archived.eq.false')
+      .order('updated_at', { ascending: false });
+
+    if (!error && data) {
+      setQuotes(data.map(q => ({ ...q, inputs: q.inputs as unknown as OIInputs })));
+      setLastFetched(new Date());
+    }
+    setLoading(false);
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchQuotes();
+  }, [fetchQuotes]);
+
+  // Auto-refresh when tab regains visibility (syncs changes from other tabs)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && lastFetched) {
+        const timeSinceLastFetch = Date.now() - lastFetched.getTime();
+        // Refresh if more than 3 seconds have passed
+        if (timeSinceLastFetch > 3000) {
+          fetchQuotes();
+        }
+      }
     };
 
-    fetchQuotes();
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [lastFetched, fetchQuotes]);
+
+  // Also refresh on window focus (covers more edge cases)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (lastFetched) {
+        const timeSinceLastFetch = Date.now() - lastFetched.getTime();
+        if (timeSinceLastFetch > 3000) {
+          fetchQuotes();
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [lastFetched, fetchQuotes]);
 
   const deleteQuote = async (id: string) => {
     const { error } = await supabase
@@ -630,5 +665,5 @@ export const useQuotesList = () => {
     return { newId: newQuote.id, error: null };
   };
 
-  return { quotes, setQuotes, loading, deleteQuote, archiveQuote, duplicateQuote, refetch: () => setLoading(true) };
+  return { quotes, setQuotes, loading, lastFetched, refetch: fetchQuotes, deleteQuote, archiveQuote, duplicateQuote };
 };
