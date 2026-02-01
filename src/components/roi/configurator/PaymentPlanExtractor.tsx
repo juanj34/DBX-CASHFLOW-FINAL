@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Sparkles, Loader2, AlertCircle, Calendar, Upload, Mic } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, Calendar, Upload, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FileUploadZone, { FileWithPreview } from "@/components/dashboard/FileUploadZone";
 import { ExtractedDataPreview } from "./ExtractedDataPreview";
-import { VoiceRecordingTab } from "./VoiceRecordingTab";
+import { TextExtractionTab } from "./TextExtractionTab";
 import { ExtractedPaymentPlan, BookingDateOption, ExtractionResponse } from "@/lib/paymentPlanTypes";
 
 interface PaymentPlanExtractorProps {
@@ -186,8 +186,8 @@ export const PaymentPlanExtractor = ({
                   Upload
                 </TabsTrigger>
                 <TabsTrigger value="voice" className="flex items-center gap-2">
-                  <Mic className="w-4 h-4" />
-                  Voice
+                  <MessageSquare className="w-4 h-4" />
+                  Describe
                 </TabsTrigger>
               </TabsList>
               
@@ -314,9 +314,9 @@ export const PaymentPlanExtractor = ({
                 </Button>
               </TabsContent>
 
-              {/* Voice Tab Content */}
+              {/* Text/Chat Tab Content */}
               <TabsContent value="voice" className="mt-4">
-                <VoiceRecordingTab
+                <TextExtractionTab
                   bookingDate={getBookingDate()}
                   onExtracted={handleApply}
                   disabled={isExtracting}
