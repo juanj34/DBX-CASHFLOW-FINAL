@@ -64,7 +64,8 @@ export const ConvertToPropertyModal = ({
   const purchasePrice = quote.inputs?.basePrice || 0;
   const unitSize = quote.inputs?.unitSizeSqf || 0;
   const rentalYield = quote.inputs?.rentalYieldPercent || 7;
-  const projectedMonthlyRent = (purchasePrice * (rentalYield / 100)) / 12;
+  const projectedYearlyRent = purchasePrice * (rentalYield / 100);
+  const projectedMonthlyRent = projectedYearlyRent / 12;
 
   const handleSkip = () => {
     onOpenChange(false);
@@ -163,12 +164,16 @@ export const ConvertToPropertyModal = ({
                   {unitSize > 0 && <span>• {unitSize.toLocaleString()} sqft</span>}
                 </div>
               )}
-              <div className="flex items-center gap-2 text-sm">
-                <DollarSign className="w-4 h-4 text-green-400" />
-                <span className="font-semibold text-green-400">{formatAED(purchasePrice)}</span>
-                <span className="text-theme-text-muted">
-                  → Est. Rent: ~{formatAED(projectedMonthlyRent)}/mo
-                </span>
+              <div className="flex flex-col gap-1 text-sm">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-green-400" />
+                  <span className="font-semibold text-green-400">{formatAED(purchasePrice)}</span>
+                </div>
+                <div className="flex items-center gap-2 ml-6 text-theme-text-muted">
+                  <span>Est. Rent:</span>
+                  <span className="font-medium text-theme-text">{formatAED(projectedYearlyRent)}/yr</span>
+                  <span className="text-xs opacity-70">({formatAED(projectedMonthlyRent)}/mo)</span>
+                </div>
               </div>
             </div>
 
