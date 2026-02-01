@@ -40,8 +40,8 @@ export const PropertyForm = ({ open, onClose, onSubmit, initialData, clients, mo
     acquisition_fees: initialData?.acquisition_fees || 0,
     current_value: initialData?.current_value || undefined,
     client_id: initialData?.client_id || undefined,
-    is_rented: initialData?.is_rented || false,
-    monthly_rent: initialData?.monthly_rent || undefined,
+    is_rented: false,
+    monthly_rent: undefined,
     has_mortgage: initialData?.has_mortgage || false,
     mortgage_amount: initialData?.mortgage_amount || undefined,
     mortgage_balance: initialData?.mortgage_balance || undefined,
@@ -203,43 +203,11 @@ export const PropertyForm = ({ open, onClose, onSubmit, initialData, clients, mo
             </div>
           </div>
 
-          {/* Rental Details */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-theme-accent">Rental</h3>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="is_rented" className="text-xs text-theme-text-muted">Property is rented</Label>
-                <Switch
-                  id="is_rented"
-                  checked={formData.is_rented}
-                  onCheckedChange={(v) => handleChange("is_rented", v)}
-                />
-              </div>
-            </div>
-            {formData.is_rented && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="monthly_rent">Monthly Rent (AED)</Label>
-                  <Input
-                    id="monthly_rent"
-                    type="number"
-                    value={formData.monthly_rent || ""}
-                    onChange={(e) => handleChange("monthly_rent", parseFloat(e.target.value) || undefined)}
-                    className="bg-theme-bg border-theme-border"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rental_start_date">Rental Start Date</Label>
-                  <Input
-                    id="rental_start_date"
-                    type="date"
-                    value={formData.rental_start_date || ""}
-                    onChange={(e) => handleChange("rental_start_date", e.target.value)}
-                    className="bg-theme-bg border-theme-border"
-                  />
-                </div>
-              </div>
-            )}
+          {/* Note about rental projections */}
+          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <p className="text-xs text-blue-400">
+              💡 Rental income is automatically projected from the original analysis. No manual entry needed.
+            </p>
           </div>
 
           {/* Mortgage Details */}
