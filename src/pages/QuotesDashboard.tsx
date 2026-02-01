@@ -49,6 +49,7 @@ import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 import { QuoteAnalyticsPopover } from '@/components/analytics/QuoteAnalyticsPopover';
 import { ShareIconButton } from '@/components/roi/ShareIconButton';
 import { CompareModal } from '@/components/roi/compare/CompareModal';
+import { ConvertToPropertyModal } from '@/components/portfolio/ConvertToPropertyModal';
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -75,6 +76,7 @@ const QuotesDashboard = () => {
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [convertingQuote, setConvertingQuote] = useState<CashflowQuote | null>(null);
   const [chartCollapsed, setChartCollapsed] = useState(() => {
     const saved = localStorage.getItem('quotes_chart_collapsed');
     // Default to collapsed (true) if no saved preference
@@ -267,6 +269,11 @@ const QuotesDashboard = () => {
     
     if (status === 'sold') {
       sonnerToast.success("🎉 " + t("dealClosed"));
+      
+      // Open the conversion modal to add to portfolio
+      if (quote) {
+        setConvertingQuote(quote);
+      }
       
       if (profile?.email && quote) {
         try {
@@ -909,6 +916,13 @@ const QuotesDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Convert to Property Modal */}
+      <ConvertToPropertyModal
+        open={!!convertingQuote}
+        onOpenChange={(open) => !open && setConvertingQuote(null)}
+        quote={convertingQuote}
+      />
     </div>
   );
 };
