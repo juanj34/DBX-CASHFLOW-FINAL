@@ -90,7 +90,7 @@ export const useCashflowQuote = (quoteId?: string) => {
               project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
               inputs, title, created_at, updated_at, status, status_changed_at,
               presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
-              is_archived, archived_at, last_viewed_at
+              is_archived, archived_at, last_viewed_at, client_id
             `)
             .eq('id', quoteId)
             .maybeSingle();

@@ -23,6 +23,7 @@ interface ClientQuote {
   developer: string | null;
   status: string | null;
   updated_at: string;
+  share_token: string | null;
 }
 
 interface ClientPresentation {
@@ -66,7 +67,7 @@ export const ClientCard = ({
         setLoadingQuotes(true);
         const { data } = await supabase
           .from('cashflow_quotes')
-          .select('id, title, project_name, developer, status, updated_at')
+          .select('id, title, project_name, developer, status, updated_at, share_token')
           .eq('client_id', client.id)
           .or('is_archived.is.null,is_archived.eq.false')
           .order('updated_at', { ascending: false })
@@ -289,7 +290,7 @@ export const ClientCard = ({
                         <Pencil className="w-3 h-3" />
                       </Button>
                     </Link>
-                    <Link to={`/cashflow/${quote.id}/snapshot`}>
+                    <Link to={quote.share_token ? `/view/${quote.share_token}` : `/cashflow/${quote.id}`}>
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-theme-text-muted hover:text-cyan-400">
                         <Eye className="w-3 h-3" />
                       </Button>
@@ -339,7 +340,7 @@ export const ClientCard = ({
                       </Button>
                     </Link>
                     {presentation.share_token && (
-                      <Link to={`/presentation/${presentation.share_token}`} target="_blank">
+                      <Link to={`/present/${presentation.share_token}`} target="_blank">
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-theme-text-muted hover:text-theme-accent">
                           <Eye className="w-3 h-3" />
                         </Button>

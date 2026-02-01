@@ -142,6 +142,7 @@ const OICalculatorContent = () => {
         clientShares: savedClientInfo.clientShares || [],
         zoneId: savedClientInfo.zoneId || '',
         zoneName: savedClientInfo.zoneName || '',
+        dbClientId: savedClientInfo.dbClientId || (quote as any).client_id || undefined,
       });
       if (savedMortgageInputs) {
         // Merge saved values over defaults to ensure all fields exist

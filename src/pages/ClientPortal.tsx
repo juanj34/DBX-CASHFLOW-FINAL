@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { 
   User, FileText, Presentation, Mail, MessageCircle, 
-  Building2, ExternalLink, Eye, Calendar, DollarSign, Download, Globe, Languages
+  Building2, ExternalLink, Eye, Calendar, DollarSign, Download, Globe, Languages, Building, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppLogo } from "@/components/AppLogo";
 import { useClients, Client } from "@/hooks/useClients";
+import { useClientPortfolio } from "@/hooks/usePortfolio";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { format } from "date-fns";
@@ -20,6 +21,8 @@ import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from
 import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
+import { PortfolioMetricsCard } from "@/components/portfolio/PortfolioMetricsCard";
+import { PropertyCard } from "@/components/portfolio/PropertyCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +64,7 @@ interface AdvisorProfile {
 const ClientPortal = () => {
   const { portalToken } = useParams<{ portalToken: string }>();
   const { getClientByPortalToken } = useClients();
+  const { properties: portfolioProperties, loading: portfolioLoading, metrics: portfolioMetrics } = useClientPortfolio(portalToken || '');
   
   const [client, setClient] = useState<Client | null>(null);
   const [advisor, setAdvisor] = useState<AdvisorProfile | null>(null);
@@ -514,8 +518,34 @@ const ClientPortal = () => {
           </section>
         )}
 
+        {/* Portfolio Section */}
+        {portfolioProperties.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-theme-text mb-4 flex items-center gap-2">
+              <Building className="w-5 h-5 text-green-400" />
+              My Portfolio ({portfolioProperties.length})
+            </h2>
+            
+            {/* Portfolio Metrics */}
+            <div className="mb-6">
+              <PortfolioMetricsCard metrics={portfolioMetrics} currency={currency} />
+            </div>
+            
+            {/* Properties Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {portfolioProperties.map(property => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  showActions={false}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Empty State */}
-        {quotes.length === 0 && presentations.length === 0 && (
+        {quotes.length === 0 && presentations.length === 0 && portfolioProperties.length === 0 && (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 mx-auto text-theme-text-muted mb-4" />
             <h3 className="text-lg text-theme-text mb-2">No content yet</h3>

@@ -39,6 +39,7 @@ import CashflowPrint from "./pages/CashflowPrint";
 import ClientsManager from "./pages/ClientsManager";
 import ClientPortal from "./pages/ClientPortal";
 import OffPlanVsSecondary from "./pages/OffPlanVsSecondary";
+import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ function App() {
                 <Route path="/presentations" element={<ProtectedRoute><PresentationsHub /></ProtectedRoute>} />
                 <Route path="/presentations/:id" element={<ProtectedRoute><PresentationBuilder /></ProtectedRoute>} />
                 <Route path="/clients" element={<ProtectedRoute><ClientsManager /></ProtectedRoute>} />
+                <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
                 <Route path="/portal/:portalToken" element={<ClientPortal />} />
                 <Route path="/color-test" element={<ProtectedRoute><ColorTest /></ProtectedRoute>} />
                 
