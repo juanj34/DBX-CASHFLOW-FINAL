@@ -220,15 +220,23 @@ export const ClientSection = ({
     );
     const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
     
-    // Explicit handover payment - get the percentage but DO NOT filter it out
+    // Explicit handover payment - used for timing and post-handover plans only
     const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
-    const onHandoverPercent = handoverPayment?.paymentPercent || 0;
     
     // === STEP 3: Calculate totals for validation ===
     const postHandoverInstallments = extractedData.installments.filter(i => 
       i.type === 'post-handover'
     );
     const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    
+    // Determine if this is a post-handover plan
+    const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+    
+    // CRITICAL FIX: Only set onHandoverPercent for post-handover plans
+    // For standard plans, handover = 100 - preHandoverPercent (derived)
+    const onHandoverPercent = hasPostHandover 
+      ? (handoverPayment?.paymentPercent || 0)
+      : 0;
     
     // === STEP 4: Determine pre-handover percent from split ===
     let preHandoverPercent = inputs.preHandoverPercent;
