@@ -31,11 +31,21 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
   } = inputs;
 
   // Rental yields are calculated on PURCHASE PRICE (rent compression principle)
-  const { basePrice } = inputs;
+  const { basePrice, rentGrowthRate = 4 } = inputs;
   const grossAnnualRent = basePrice * (rentalYieldPercent / 100);
   const annualServiceCharges = unitSizeSqf * serviceChargePerSqft;
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
   const netYieldPercent = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
+
+  // Calculate 7-year average rent (with compounding growth)
+  const PROJECTION_YEARS = 7;
+  const growthRate = rentGrowthRate / 100;
+  let totalRent7Years = 0;
+  for (let year = 0; year < PROJECTION_YEARS; year++) {
+    totalRent7Years += netAnnualRent * Math.pow(1 + growthRate, year);
+  }
+  const avgAnnualRent7Years = totalRent7Years / PROJECTION_YEARS;
+  const avgMonthlyRent7Years = avgAnnualRent7Years / 12;
 
   // Short-term calculations (if enabled)
   const adrValue = shortTermRental?.averageDailyRate || 800;
@@ -124,14 +134,28 @@ export const RentSnapshot = ({ inputs, currency, rate, holdAnalysis, onOccupancy
           {/* Divider */}
           <div className="border-t border-[#2a3142] pt-2"></div>
 
-          {/* Net Annual Rent - HERO NUMBER */}
+          {/* 7-Year Average Rent - HERO NUMBER */}
           <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none">
-            <div className="flex items-center gap-2">
-              <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
-              <span className="text-sm text-gray-300 font-medium">{t('netAnnualRent')}</span>
-              <InfoTooltip translationKey="tooltipNetRent" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <Equal className="w-3.5 h-3.5 text-[#CCFF00]" />
+                <span className="text-sm text-gray-300 font-medium">{t('avgAnnualRent7Years') || 'Avg. Annual Rent'}</span>
+                <InfoTooltip translationKey="tooltipNetRent" />
+              </div>
+              <span className="text-[10px] text-gray-500 ml-5">{t('over7YearsWithGrowth') || `7-year avg. @ ${rentGrowthRate}%/yr growth`}</span>
             </div>
-            <span className="text-xl font-bold text-[#CCFF00] font-mono">{formatCurrency(netAnnualRent, currency, rate)}</span>
+            <div className="text-right">
+              <span className="text-xl font-bold text-[#CCFF00] font-mono">{formatCurrency(avgAnnualRent7Years, currency, rate)}<span className="text-sm text-gray-400">/{t('yearShort')}</span></span>
+              <div className="text-[10px] text-gray-500">{formatCurrency(avgMonthlyRent7Years, currency, rate)}/{t('moShort')}</div>
+            </div>
+          </div>
+
+          {/* Year 1 Reference */}
+          <div className="flex items-center justify-between gap-4 max-w-xl xl:max-w-none text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500 ml-5">{t('year1Label') || 'Year 1'}:</span>
+            </div>
+            <span className="text-gray-400 font-mono">{formatCurrency(netAnnualRent, currency, rate)}/{t('yearShort')} ({formatCurrency(netAnnualRent / 12, currency, rate)}/{t('moShort')})</span>
           </div>
 
           {/* Yield Summary */}
