@@ -20,6 +20,27 @@ interface ConversationMessage {
 
 type ExtractionState = 'idle' | 'processing' | 'clarifying' | 'extracted';
 
+// Helper function moved outside component to avoid hoisting issues
+const formatExtractedSummary = (data: ExtractedPaymentPlan): string => {
+  const parts: string[] = [];
+  
+  if (data.property?.developer || data.property?.projectName) {
+    parts.push(`**Propiedad:** ${[data.property.developer, data.property.projectName].filter(Boolean).join(' - ')}`);
+  }
+  if (data.property?.basePrice) {
+    parts.push(`**Precio:** ${data.property.basePrice.toLocaleString()} ${data.property.currency || 'AED'}`);
+  }
+  if (data.paymentStructure.paymentSplit) {
+    parts.push(`**División:** ${data.paymentStructure.paymentSplit}`);
+  }
+  parts.push(`**Cuotas:** ${data.installments.length} pagos`);
+  if (data.paymentStructure.hasPostHandover) {
+    parts.push(`**Post-handover:** Sí`);
+  }
+  
+  return parts.join('\n');
+};
+
 export const TextExtractionTab = ({ bookingDate, onExtracted, disabled }: TextExtractionTabProps) => {
   const [state, setState] = useState<ExtractionState>('idle');
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -88,26 +109,6 @@ export const TextExtractionTab = ({ bookingDate, onExtracted, disabled }: TextEx
     setExtractedData(null);
     setUserInput('');
   }, []);
-
-  const formatExtractedSummary = (data: ExtractedPaymentPlan) => {
-    const parts: string[] = [];
-    
-    if (data.property?.developer || data.property?.projectName) {
-      parts.push(`**Propiedad:** ${[data.property.developer, data.property.projectName].filter(Boolean).join(' - ')}`);
-    }
-    if (data.property?.basePrice) {
-      parts.push(`**Precio:** ${data.property.basePrice.toLocaleString()} ${data.property.currency || 'AED'}`);
-    }
-    if (data.paymentStructure.paymentSplit) {
-      parts.push(`**División:** ${data.paymentStructure.paymentSplit}`);
-    }
-    parts.push(`**Cuotas:** ${data.installments.length} pagos`);
-    if (data.paymentStructure.hasPostHandover) {
-      parts.push(`**Post-handover:** Sí`);
-    }
-    
-    return parts.join('\n');
-  };
 
   return (
     <div className="space-y-4">
