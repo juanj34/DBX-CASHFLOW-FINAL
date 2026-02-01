@@ -102,34 +102,15 @@ export const PropertySection = ({
 
   return (
     <div className="space-y-3">
-      {/* Key Metrics Row - Price, Price/sqft, Service Charge/sqft */}
-      <div className="flex items-center justify-between gap-2 p-2 bg-theme-bg/30 rounded-lg border border-theme-border/30">
-        <div className="flex items-center gap-3 text-[10px]">
-          {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
-            <div className="flex items-center gap-1 text-theme-text-muted">
-              <span className="text-theme-text font-mono font-medium">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
-              <span>/sqft</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1 text-theme-text-muted">
-            <DollarSign className="w-3 h-3" />
-            <span className="text-cyan-400 font-mono font-medium">{inputs.serviceChargePerSqft || 18}</span>
-            <span>AED/sqft</span>
-            <InfoTooltip translationKey="tooltipServiceCharges" />
+      {/* Key Metrics Row - Price/sqft (if unit size is set) */}
+      {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
+        <div className="flex items-center gap-2 p-2 bg-theme-bg/30 rounded-lg border border-theme-border/30">
+          <div className="flex items-center gap-1 text-[10px] text-theme-text-muted">
+            <span className="text-theme-text font-mono font-medium">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
+            <span>/sqft</span>
           </div>
         </div>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={inputs.serviceChargePerSqft || ''}
-          onChange={(e) => {
-            const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
-            setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
-          }}
-          placeholder="18"
-          className="w-12 h-6 text-right bg-theme-bg border-theme-border text-cyan-400 font-mono text-xs"
-        />
-      </div>
+      )}
 
       {/* Base Price - Inline */}
       <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
