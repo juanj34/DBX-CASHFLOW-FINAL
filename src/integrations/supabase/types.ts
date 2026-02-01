@@ -215,6 +215,7 @@ export type Database = {
           client_email: string | null
           client_id: string | null
           client_name: string | null
+          converted_to_property_id: string | null
           created_at: string | null
           developer: string | null
           first_viewed_at: string | null
@@ -244,6 +245,7 @@ export type Database = {
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
+          converted_to_property_id?: string | null
           created_at?: string | null
           developer?: string | null
           first_viewed_at?: string | null
@@ -273,6 +275,7 @@ export type Database = {
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
+          converted_to_property_id?: string | null
           created_at?: string | null
           developer?: string | null
           first_viewed_at?: string | null
@@ -308,6 +311,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashflow_quotes_converted_to_property_id_fkey"
+            columns: ["converted_to_property_id"]
+            isOneToOne: false
+            referencedRelation: "acquired_properties"
             referencedColumns: ["id"]
           },
         ]

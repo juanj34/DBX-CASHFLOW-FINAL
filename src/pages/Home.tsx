@@ -36,6 +36,7 @@ import { RecentComparisons } from "@/components/dashboard/RecentComparisons";
 import { RecentPresentations } from "@/components/dashboard/RecentPresentations";
 import { ShareIconButton } from "@/components/roi/ShareIconButton";
 import { QuoteAnalyticsPopover } from "@/components/analytics/QuoteAnalyticsPopover";
+import { ConvertToPropertyModal } from "@/components/portfolio/ConvertToPropertyModal";
 
 type QuoteStatus = "draft" | "presented" | "negotiating" | "sold";
 type SortField = 'date' | 'value' | 'developer' | 'status';
@@ -72,6 +73,7 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [convertingQuote, setConvertingQuote] = useState<QuoteWithDetails | null>(null);
 
   // Get commission rate from profile
   const commissionRate = profile?.commission_rate ?? 2;
@@ -335,6 +337,11 @@ const Home = () => {
     
     if (status === 'sold') {
       toast.success("🎉 " + t("dealClosed"));
+      
+      // Open the conversion modal to add to portfolio
+      if (quote) {
+        setConvertingQuote(quote);
+      }
       
       // Send email notification
       if (profile?.email && quote) {
@@ -736,6 +743,13 @@ const Home = () => {
           </div>
         </div>
       </footer>
+      
+      {/* Convert to Property Modal */}
+      <ConvertToPropertyModal
+        open={!!convertingQuote}
+        onOpenChange={(open) => !open && setConvertingQuote(null)}
+        quote={convertingQuote}
+      />
     </div>
   );
 };
