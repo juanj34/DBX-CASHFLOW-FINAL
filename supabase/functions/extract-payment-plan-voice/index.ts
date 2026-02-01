@@ -222,10 +222,92 @@ async function generateTTSAudio(text: string): Promise<string | null> {
   }
 }
 
-// Transcribe audio using Gemini's native audio understanding
-async function transcribeAudio(audioBase64: string, audioFormat: string): Promise<string> {
-  console.log("Transcribing audio with Gemini...");
-  console.log("Audio format:", audioFormat);
+// Transcribe audio using ElevenLabs Scribe (more accurate for speech)
+async function transcribeAudio(audioBase64: string, mimeType: string): Promise<string> {
+  console.log("Transcribing audio with ElevenLabs Scribe...");
+  console.log("MIME type:", mimeType);
+  
+  if (!ELEVENLABS_API_KEY) {
+    console.log("No ElevenLabs API key, falling back to Gemini");
+    return transcribeWithGemini(audioBase64, mimeType);
+  }
+
+  try {
+    // Convert base64 to binary
+    const binaryString = atob(audioBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // Determine file extension from mime type
+    let extension = "webm";
+    if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
+      extension = "mp4";
+    } else if (mimeType.includes("mp3") || mimeType.includes("mpeg")) {
+      extension = "mp3";
+    } else if (mimeType.includes("wav")) {
+      extension = "wav";
+    } else if (mimeType.includes("ogg")) {
+      extension = "ogg";
+    }
+    
+    // Create form data with the audio file
+    const formData = new FormData();
+    const audioBlob = new Blob([bytes], { type: mimeType });
+    formData.append("file", audioBlob, `recording.${extension}`);
+    formData.append("model_id", "scribe_v2");
+    // Don't specify language - let it auto-detect for Spanish/English
+    
+    console.log("Sending to ElevenLabs Scribe API...");
+    const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST",
+      headers: {
+        "xi-api-key": ELEVENLABS_API_KEY,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("ElevenLabs Scribe error:", response.status, errorText);
+      // Fall back to Gemini if ElevenLabs fails
+      console.log("Falling back to Gemini transcription...");
+      return transcribeWithGemini(audioBase64, mimeType);
+    }
+
+    const result = await response.json();
+    const transcription = result.text || "";
+    console.log("ElevenLabs transcription result:", transcription);
+    
+    if (!transcription || transcription.trim().length === 0) {
+      console.log("Empty transcription from ElevenLabs, trying Gemini...");
+      return transcribeWithGemini(audioBase64, mimeType);
+    }
+    
+    return transcription;
+  } catch (error) {
+    console.error("Error in ElevenLabs transcription:", error);
+    // Fall back to Gemini
+    return transcribeWithGemini(audioBase64, mimeType);
+  }
+}
+
+// Fallback transcription using Gemini
+async function transcribeWithGemini(audioBase64: string, mimeType: string): Promise<string> {
+  console.log("Transcribing audio with Gemini (fallback)...");
+  
+  // Map mime type to Gemini audio format
+  let audioFormat = "wav";
+  if (mimeType.includes("webm")) {
+    audioFormat = "webm";
+  } else if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
+    audioFormat = "mp4";
+  } else if (mimeType.includes("mpeg") || mimeType.includes("mp3")) {
+    audioFormat = "mp3";
+  } else if (mimeType.includes("ogg")) {
+    audioFormat = "ogg";
+  }
   
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -258,13 +340,13 @@ async function transcribeAudio(audioBase64: string, audioFormat: string): Promis
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Transcription error:", response.status, errorText);
-    throw new Error(`Failed to transcribe audio: ${response.status} - ${errorText}`);
+    console.error("Gemini transcription error:", response.status, errorText);
+    throw new Error(`Failed to transcribe audio: ${response.status}`);
   }
 
   const result = await response.json();
   const transcription = result.choices?.[0]?.message?.content || "";
-  console.log("Transcription result:", transcription);
+  console.log("Gemini transcription result:", transcription);
   return transcription;
 }
 
@@ -349,16 +431,19 @@ serve(async (req) => {
         audioFormat = "ogg";
       }
       
-      console.log("Using audio format for Gemini:", audioFormat);
+      console.log("Using audio format for transcription:", mimeType);
       
-      // Transcribe the audio first
+      // Transcribe the audio using ElevenLabs Scribe (primary) or Gemini (fallback)
       try {
-        userTranscription = await transcribeAudio(base64Data, audioFormat);
+        userTranscription = await transcribeAudio(base64Data, mimeType);
         console.log("Transcription successful:", userTranscription.substring(0, 100));
+        
+        if (!userTranscription || userTranscription.trim().length === 0) {
+          throw new Error("Transcription returned empty - please speak clearly and try again");
+        }
       } catch (transcribeError) {
         console.error("Transcription failed:", transcribeError);
-        // Fallback: try to process without transcription
-        userTranscription = "[Audio message - transcription unavailable]";
+        throw new Error("Could not understand the audio - please speak clearly and try again");
       }
       
       // Add the transcription as a text message
