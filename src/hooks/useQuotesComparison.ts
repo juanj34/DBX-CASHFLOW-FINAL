@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { OIInputs, OICalculations, useOICalculations } from '@/components/roi/useOICalculations';
@@ -38,8 +38,19 @@ export const useQuotesComparison = (quoteIds: string[]) => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // Use a ref to track current quoteIds for ordering during refetch
+  const currentOrderRef = useRef<string[]>(quoteIds);
+  
+  // Keep ref in sync with prop
+  useEffect(() => {
+    currentOrderRef.current = quoteIds;
+  }, [quoteIds]);
+
   const fetchQuotes = async () => {
-    if (quoteIds.length === 0) {
+    // Use the current order ref, not the prop directly (for focus refetch)
+    const idsToFetch = currentOrderRef.current;
+    
+    if (idsToFetch.length === 0) {
       setQuotes([]);
       return;
     }
@@ -57,7 +68,7 @@ export const useQuotesComparison = (quoteIds: string[]) => {
           presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
           is_archived, archived_at, last_viewed_at
         `)
-        .in('id', quoteIds);
+        .in('id', idsToFetch);
 
       if (fetchError) throw fetchError;
 
@@ -82,8 +93,8 @@ export const useQuotesComparison = (quoteIds: string[]) => {
         };
       });
 
-      // Maintain order from quoteIds
-      const orderedQuotes = quoteIds
+      // Maintain order from current ref (respects user reordering)
+      const orderedQuotes = currentOrderRef.current
         .map(id => mappedQuotes.find(q => q.id === id))
         .filter((q): q is ComparisonQuote => q !== undefined);
 
@@ -95,21 +106,22 @@ export const useQuotesComparison = (quoteIds: string[]) => {
     }
   };
 
+  // Fetch when quoteIds change
   useEffect(() => {
     fetchQuotes();
   }, [quoteIds.join(',')]);
 
-  // Refetch when window regains focus
+  // Refetch when window regains focus (uses currentOrderRef for correct order)
   useEffect(() => {
     const handleFocus = () => {
-      if (quoteIds.length > 0) {
+      if (currentOrderRef.current.length > 0) {
         fetchQuotes();
       }
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [quoteIds.join(',')]);
+  }, []);
 
   return { quotes, loading, error, refetch: fetchQuotes };
 };
