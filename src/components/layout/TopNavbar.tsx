@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FileText, Scale, Presentation, BarChart3, Map, Users, 
-  Sparkles, TrendingUp, Plus, Settings, LogOut, Menu, Globe, ChevronDown
+  Sparkles, TrendingUp, Plus, Settings, LogOut, Menu, Globe, ChevronDown, Building
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/AppLogo';
@@ -41,6 +41,7 @@ const navItems: NavItem[] = [
   { label: 'Analytics', href: '/quotes-analytics', icon: BarChart3 },
   { label: 'Map', href: '/map', icon: Map },
   { label: 'Clients', href: '/clients', icon: Users },
+  { label: 'Portfolio', href: '/portfolio', icon: Building },
 ];
 
 interface TopNavbarProps {

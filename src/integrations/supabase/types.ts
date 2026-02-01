@@ -14,6 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
+      acquired_properties: {
+        Row: {
+          acquisition_fees: number | null
+          broker_id: string
+          client_id: string | null
+          created_at: string | null
+          current_value: number | null
+          developer: string | null
+          has_mortgage: boolean | null
+          id: string
+          is_rented: boolean | null
+          last_valuation_date: string | null
+          monthly_mortgage_payment: number | null
+          monthly_rent: number | null
+          mortgage_amount: number | null
+          mortgage_balance: number | null
+          mortgage_interest_rate: number | null
+          mortgage_term_years: number | null
+          notes: string | null
+          project_name: string
+          purchase_date: string
+          purchase_price: number
+          rental_start_date: string | null
+          source_quote_id: string | null
+          unit: string | null
+          unit_size_sqf: number | null
+          unit_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acquisition_fees?: number | null
+          broker_id: string
+          client_id?: string | null
+          created_at?: string | null
+          current_value?: number | null
+          developer?: string | null
+          has_mortgage?: boolean | null
+          id?: string
+          is_rented?: boolean | null
+          last_valuation_date?: string | null
+          monthly_mortgage_payment?: number | null
+          monthly_rent?: number | null
+          mortgage_amount?: number | null
+          mortgage_balance?: number | null
+          mortgage_interest_rate?: number | null
+          mortgage_term_years?: number | null
+          notes?: string | null
+          project_name: string
+          purchase_date: string
+          purchase_price: number
+          rental_start_date?: string | null
+          source_quote_id?: string | null
+          unit?: string | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acquisition_fees?: number | null
+          broker_id?: string
+          client_id?: string | null
+          created_at?: string | null
+          current_value?: number | null
+          developer?: string | null
+          has_mortgage?: boolean | null
+          id?: string
+          is_rented?: boolean | null
+          last_valuation_date?: string | null
+          monthly_mortgage_payment?: number | null
+          monthly_rent?: number | null
+          mortgage_amount?: number | null
+          mortgage_balance?: number | null
+          mortgage_interest_rate?: number | null
+          mortgage_term_years?: number | null
+          notes?: string | null
+          project_name?: string
+          purchase_date?: string
+          purchase_price?: number
+          rental_start_date?: string | null
+          source_quote_id?: string | null
+          unit?: string | null
+          unit_size_sqf?: number | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acquired_properties_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acquired_properties_source_quote_id_fkey"
+            columns: ["source_quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acquired_properties_source_quote_id_fkey"
+            columns: ["source_quote_id"]
+            isOneToOne: false
+            referencedRelation: "cashflow_quotes_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appreciation_presets: {
         Row: {
           builtin_key: string | null
