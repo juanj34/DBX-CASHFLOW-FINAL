@@ -1,14 +1,16 @@
 import { useState, useCallback } from "react";
-import { Sparkles, Loader2, AlertCircle, Calendar } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, Calendar, Upload, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FileUploadZone, { FileWithPreview } from "@/components/dashboard/FileUploadZone";
 import { ExtractedDataPreview } from "./ExtractedDataPreview";
+import { VoiceRecordingTab } from "./VoiceRecordingTab";
 import { ExtractedPaymentPlan, BookingDateOption, ExtractionResponse } from "@/lib/paymentPlanTypes";
 
 interface PaymentPlanExtractorProps {
@@ -171,30 +173,26 @@ export const PaymentPlanExtractor = ({
             AI Payment Plan Extractor
           </SheetTitle>
           <SheetDescription>
-            Upload payment plan images or PDFs to automatically extract the payment schedule
+            Extract payment plans from documents or voice notes
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
           {!extractedData ? (
-            <>
-              {/* Upload Zone */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Upload Payment Plan</Label>
-                <p className="text-xs text-muted-foreground">
-                  Supports multiple pages • Drag & drop, paste (Ctrl+V), or click
-                </p>
-                <FileUploadZone
-                  files={files}
-                  onFilesSelected={handleFilesSelected}
-                  onRemoveFile={handleRemoveFile}
-                  disabled={isExtracting}
-                  acceptPaste={true}
-                />
-              </div>
-
-              {/* Booking Date Selection */}
-              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+            <Tabs defaultValue="upload" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </TabsTrigger>
+                <TabsTrigger value="voice" className="flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Voice
+                </TabsTrigger>
+              </TabsList>
+              
+              {/* Booking Date Selection - shared by both tabs */}
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border mt-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-sm font-medium">Booking Date Reference</Label>
@@ -271,34 +269,60 @@ export const PaymentPlanExtractor = ({
                 )}
               </div>
 
-              {/* Error Display */}
-              {error && (
-                <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
+              {/* Upload Tab Content */}
+              <TabsContent value="upload" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Upload Payment Plan</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Supports multiple pages • Drag & drop, paste (Ctrl+V), or click
+                  </p>
+                  <FileUploadZone
+                    files={files}
+                    onFilesSelected={handleFilesSelected}
+                    onRemoveFile={handleRemoveFile}
+                    disabled={isExtracting}
+                    acceptPaste={true}
+                  />
                 </div>
-              )}
 
-              {/* Extract Button */}
-              <Button
-                onClick={handleExtract}
-                disabled={files.length === 0 || isExtracting}
-                className="w-full"
-                size="lg"
-              >
-                {isExtracting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing with AI...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Extract Payment Plan
-                  </>
+                {/* Error Display */}
+                {error && (
+                  <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
                 )}
-              </Button>
-            </>
+
+                {/* Extract Button */}
+                <Button
+                  onClick={handleExtract}
+                  disabled={files.length === 0 || isExtracting}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isExtracting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Extract Payment Plan
+                    </>
+                  )}
+                </Button>
+              </TabsContent>
+
+              {/* Voice Tab Content */}
+              <TabsContent value="voice" className="mt-4">
+                <VoiceRecordingTab
+                  bookingDate={getBookingDate()}
+                  onExtracted={handleApply}
+                  disabled={isExtracting}
+                />
+              </TabsContent>
+            </Tabs>
           ) : (
             <ExtractedDataPreview
               data={extractedData}
