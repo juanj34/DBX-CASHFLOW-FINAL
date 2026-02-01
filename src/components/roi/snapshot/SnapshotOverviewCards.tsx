@@ -93,7 +93,7 @@ export const SnapshotOverviewCards = ({
           </div>
         </motion.div>
 
-        {/* Card 2: Rental Income */}
+        {/* Card 2: Rental Income - Year 1 */}
         <motion.div 
           custom={1}
           initial="hidden"
@@ -104,13 +104,13 @@ export const SnapshotOverviewCards = ({
           <div className="flex items-center gap-1.5 mb-1">
             <Home className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('rentalIncome')}</span>
-            <span className="ml-auto text-[9px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
+            <span className="ml-auto text-[8px] text-cyan-400/70 bg-cyan-500/10 px-1.5 py-0.5 rounded">{t('year1Label')}</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
-              {monthlyRentDual.primary}<span className="text-[10px] text-theme-text-muted">/{t('moShort')}</span>
+              {netAnnualRentDual.primary}<span className="text-[10px] text-theme-text-muted">/{t('yearShort')}</span>
             </div>
-            <span className="text-[10px] text-theme-text-muted">{netAnnualRentDual.primary}/{t('yearShort')}</span>
+            <span className="text-[10px] text-theme-text-muted">{monthlyRentDual.primary}/{t('moShort')} • {netYieldPercent.toFixed(1)}% {t('yieldShort')}</span>
           </div>
         </motion.div>
 
