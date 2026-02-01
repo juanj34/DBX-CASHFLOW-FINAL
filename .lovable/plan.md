@@ -1,242 +1,125 @@
 
+# Fix Pre-Handover Payment Counting for Standard Plans
 
-# Fix AI Payment Plan Extraction & Auto-Save Logic
+## Problem Analysis
 
-## Issues Identified
+When a user adds an installment that falls in the handover quarter (e.g., a 5% payment in the same month as handover), the current logic incorrectly excludes it from the pre-handover total because:
 
-### Issue 1: Inconsistent Handover Payment Handling
-**PaymentSection.tsx** correctly excludes the handover payment from `additionalPayments` (lines 339-344), but **ClientSection.tsx** includes it (lines 241-248). This causes:
-- Double-counting when extraction happens from ClientSection
-- Totals exceeding 100% in some flows
+1. `isPaymentPostHandover()` uses `>=` comparison, so payments **on** the handover date are treated as "post-handover"
+2. This causes the pre-handover sum to miss these payments
+3. The total doesn't add up to 100%, blocking the "Next" button
 
-### Issue 2: Construction Milestone Sorting Bug
-Both files sort installments by `triggerValue` directly:
-```typescript
-.sort((a, b) => a.triggerValue - b.triggerValue)
+### Current (Broken) Logic
+
+```
+User adds: 20% booking + 75% installments + 5% @ Month 27 (handover month)
+preHandoverPercent = 100 (from split selector)
+
+isPaymentPostHandover(Month 27) = TRUE (5% excluded!)
+preHandoverInstallmentsTotal = 75% (missing the 5%)
+preHandoverTotal = 20% + 75% = 95%
+handoverPercent = 100 - 100 = 0%
+totalPayment = 95% + 0% = 95% ← INVALID!
 ```
 
-But `triggerValue` means different things:
-- **`type: 'time'`** → months from booking (e.g., 6, 12, 18)
-- **`type: 'construction'`** → completion percentage (e.g., 30, 50, 70)
-- **`type: 'handover'`** → month number (e.g., 27)
+### Expected Logic
 
-This causes "30% Construction" to appear AFTER "Month 27" because 30 > 27.
+For **standard plans** (no post-handover toggle):
+- ALL installments in `additionalPayments` are pre-handover by definition
+- The handover payment is simply `100 - preHandoverPercent` (a derived balance)
+- We should NOT filter installments by date for standard plans
 
-### Issue 3: Save Logic Race Conditions
-The `scheduleAutoSave` function has potential issues:
-1. No check for `quote?.id` matching `existingQuoteId` before saving in the lazy creation path
-2. The 500ms debounce for new quotes can still race with state updates
+```
+User adds: 20% booking + 75% installments + 5% @ Month 27
+preHandoverPercent = 100 (from split selector)
+
+Standard mode: ALL additionalPayments count as pre-handover
+preHandoverInstallmentsTotal = 75% + 5% = 80%
+preHandoverTotal = 20% + 80% = 100%
+handoverPercent = 100 - 100 = 0%
+totalPayment = 100% + 0% = 100% ← VALID!
+```
 
 ## Solution
 
-### Part 1: Unify Handover Handling in ClientSection.tsx
+### Files to Modify
 
-Make ClientSection.tsx match PaymentSection.tsx by excluding handover payments:
+| File | Change |
+|------|--------|
+| `src/components/roi/configurator/PaymentSection.tsx` | For standard plans, don't filter installments by date - all are pre-handover |
+| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Ensure validation matches the same logic |
+| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Apply same fix for display consistency |
 
-```typescript
-// In ClientSection.tsx handleAIExtraction (around line 243-248)
-.filter(i => {
-  // Skip downpayment (Month 0) - handled by downpaymentPercent
-  if (i.type === 'time' && i.triggerValue === 0) return false;
-  
-  // CRITICAL: Skip handover payment - it's handled by onHandoverPercent
-  if (i.type === 'handover') {
-    console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
-    return false;
-  }
-  
-  return true;
-})
-```
+### Code Changes
 
-### Part 2: Fix Construction Milestone Sorting
-
-Create a type-aware sorting function that converts construction percentages to estimated months:
+#### 1. PaymentSection.tsx - Fix Pre-Handover Calculation (lines 60-72)
 
 ```typescript
-// Helper function - add before the sort
-const getEstimatedMonth = (payment: ExtractedInstallment, totalMonths: number): number => {
-  switch (payment.type) {
-    case 'time':
-      return payment.triggerValue; // Already in months
-    case 'construction':
-      // Convert construction % to estimated month
-      // e.g., 30% complete ≈ 30% of totalMonths
-      return Math.round((payment.triggerValue / 100) * totalMonths);
-    case 'handover':
-      return totalMonths; // Handover is at the end
-    case 'post-handover':
-      return totalMonths + payment.triggerValue; // After handover
-    default:
-      return payment.triggerValue;
-  }
-};
+// Calculate pre-handover vs post-handover totals
+// CRITICAL FIX: For standard plans (no post-handover toggle), 
+// ALL installments are pre-handover by definition.
+// Only filter by date when hasPostHandoverPlan = true.
+const preHandoverPayments = hasPostHandoverPlan 
+  ? inputs.additionalPayments.filter(p => {
+      if (p.type !== 'time') return true; // construction milestones = pre-handover
+      return !isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
+    })
+  : inputs.additionalPayments; // Standard mode: ALL are pre-handover
 
-// Use handover months from extraction for sorting
-const sortingTotalMonths = data.paymentStructure.handoverMonthFromBooking || 36;
-
-.sort((a, b) => {
-  const aMonth = getEstimatedMonth(a, sortingTotalMonths);
-  const bMonth = getEstimatedMonth(b, sortingTotalMonths);
-  return aMonth - bMonth;
-})
+const postHandoverPayments = hasPostHandoverPlan
+  ? inputs.additionalPayments.filter(p => {
+      if (p.type !== 'time') return false;
+      return isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
+    })
+  : []; // Standard mode: NO post-handover payments
 ```
 
-### Part 3: Improve Save Logic Safety
+#### 2. CompactPaymentTable.tsx - Match the Same Logic
 
-Add additional guards in `scheduleAutoSave` to prevent race conditions:
+Apply the same conditional filtering in the snapshot view so payment display is consistent.
 
-```typescript
-// In useCashflowQuote.ts scheduleAutoSave
-if (!existingQuoteId && isQuoteConfigured) {
-  autoSaveTimeout.current = setTimeout(async () => {
-    // Double-check we still don't have a quote ID (could have been created by another path)
-    if (existingQuoteId) {
-      console.log('Quote already exists, skipping lazy creation');
-      return;
-    }
-    
-    console.log('Creating new quote on first meaningful change...');
-    // ... rest of creation logic
-  }, 500);
-  return;
-}
-```
+#### 3. Validation Consistency
 
-Also add validation in `saveQuote` to prevent saving with mismatched IDs:
-
-```typescript
-// Add at start of saveQuote, before the update/insert logic
-if (existingId && quote?.id && existingId !== quote.id) {
-  console.warn('Quote ID mismatch - aborting save to prevent data corruption');
-  console.warn('existingId:', existingId, 'quote.id:', quote.id);
-  setSaving(false);
-  return null;
-}
-```
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/roi/configurator/PaymentSection.tsx` | Add type-aware sorting with `getEstimatedMonth` helper |
-| `src/components/roi/configurator/ClientSection.tsx` | 1. Exclude handover from installments, 2. Add type-aware sorting |
-| `src/hooks/useCashflowQuote.ts` | Add save guards for ID mismatch and race condition prevention |
-
-## Detailed Code Changes
-
-### PaymentSection.tsx (lines ~355-365)
-
-```typescript
-// Add helper before the filter/map chain
-const sortingTotalMonths = data.paymentStructure.handoverMonthFromBooking || 36;
-
-const getEstimatedMonth = (inst: typeof data.installments[0], totalMonths: number): number => {
-  if (inst.type === 'time') return inst.triggerValue;
-  if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
-  if (inst.type === 'handover') return totalMonths;
-  if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
-  return inst.triggerValue;
-};
-
-// Update the sort to use type-aware comparison
-.sort((a, b) => {
-  const aMonth = getEstimatedMonth(a, sortingTotalMonths);
-  const bMonth = getEstimatedMonth(b, sortingTotalMonths);
-  return aMonth - bMonth;
-})
-```
-
-### ClientSection.tsx (lines ~243-260)
-
-```typescript
-// Add helper
-const sortingTotalMonths = extractedData.paymentStructure.handoverMonthFromBooking || 36;
-
-const getEstimatedMonth = (inst: typeof extractedData.installments[0], totalMonths: number): number => {
-  if (inst.type === 'time') return inst.triggerValue;
-  if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
-  if (inst.type === 'handover') return totalMonths;
-  if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
-  return inst.triggerValue;
-};
-
-// Fix the filter to exclude handover (match PaymentSection.tsx)
-const additionalPayments = extractedData.installments
-  .filter(i => {
-    if (i.type === 'time' && i.triggerValue === 0) return false;
-    // CRITICAL: Exclude handover - handled by onHandoverPercent
-    if (i.type === 'handover') {
-      console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
-      return false;
-    }
-    return true;
-  })
-  .map((inst, idx) => ({
-    id: inst.id || `ai-${Date.now()}-${idx}`,
-    type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
-    triggerValue: inst.triggerValue,
-    paymentPercent: inst.paymentPercent,
-  }))
-  .sort((a, b) => {
-    const aMonth = getEstimatedMonth(a, sortingTotalMonths);
-    const bMonth = getEstimatedMonth(b, sortingTotalMonths);
-    return aMonth - bMonth;
-  });
-```
-
-### useCashflowQuote.ts (saveQuote function ~lines 244-260)
-
-```typescript
-const saveQuote = useCallback(
-  async (
-    inputs: OIInputs,
-    clientInfo: ClientUnitData,
-    existingId?: string,
-    // ... other params
-  ) => {
-    setSaving(true);
-
-    // Safety check: Prevent saving with mismatched quote IDs
-    if (existingId && quote?.id && existingId !== quote.id) {
-      console.warn('Quote ID mismatch detected - aborting save');
-      console.warn('Attempted to save to:', existingId, 'but current quote is:', quote.id);
-      setSaving(false);
-      return null;
-    }
-
-    // ... rest of existing code
-  },
-  [toast, quote?.id] // Add quote?.id to dependencies
-);
-```
+The validation in `ConfiguratorLayout.tsx` already uses `additionalPaymentsTotal` for all installments, which is correct. The fix in `PaymentSection.tsx` will align the display with the validation.
 
 ## Expected Behavior After Fix
 
-```text
-Before (broken):
-1. On Booking - 10%
-2. 30% Construction - 10%  ← Wrong position (30 > 27)
-3. 50% Construction - 10%  ← Wrong position (50 > 27)
-4. Month 6 - 5%
-5. Month 27 Handover - 50% ← Duplicated as installment
+**Standard Plan (100/0 with 5% in handover month):**
+```
+Installments: 20% booking + 75% during construction + 5% @ handover month
+preHandoverPercent = 100
 
-After (fixed):
-1. On Booking - 10%
-2. Month 6 - 5%
-3. 30% Construction (~Month 9) - 10%  ← Correct position
-4. 50% Construction (~Month 14) - 10% ← Correct position
-5. [Handover is NOT in list - handled by onHandoverPercent = 50%]
+preHandoverInstallmentsTotal = 80% (ALL installments)
+preHandoverTotal = 20% + 80% = 100%
+handoverPercent = 100 - 100 = 0%
+totalPayment = 100% ✓
 ```
 
-## Save Logic Flow After Fix
+**Standard Plan (30/70 with 5% in handover month):**
+```
+Installments: 10% booking + 15% during construction + 5% @ handover month
+preHandoverPercent = 30
 
-```text
-1. User makes change → scheduleAutoSave called
-2. Check: existingQuoteId present? 
-   - Yes → Wait 1.5s, verify quote.id matches, then save
-   - No + isQuoteConfigured → Wait 500ms, create new quote
-3. Before actual save: Verify no ID mismatch
-4. Save executes safely
+preHandoverInstallmentsTotal = 20% (ALL installments)
+preHandoverTotal = 10% + 20% = 30%
+handoverPercent = 100 - 30 = 70%
+totalPayment = 30% + 70% = 100% ✓
 ```
 
+**Post-Handover Plan (Date filtering still applies):**
+```
+Toggle: hasPostHandoverPlan = true
+Installments: 10% booking + 10% during construction + 5% @ handover month + 75% over 5 years
+
+preHandoverPayments = 10% (filtered: only pre-handover date)
+postHandoverPayments = 5% + 75% = 80% (filtered: handover+ dates)
+totalPayment = 10% + 10% + 80% = 100% ✓
+```
+
+## Key Insight
+
+The fundamental rule is:
+- **Standard plans**: "Handover payment" = the remaining balance (100 - preHandoverPercent), NOT a tracked installment
+- **Post-handover plans**: Date-based filtering matters because there's an explicit split between pre/on/post handover payments
+
+By only applying date filtering when `hasPostHandoverPlan = true`, we ensure standard plans correctly count all installments as pre-handover.
