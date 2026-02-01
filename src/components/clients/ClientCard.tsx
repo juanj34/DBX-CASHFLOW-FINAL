@@ -171,13 +171,13 @@ export const ClientCard = ({
               </DropdownMenuItem>
               {client.portal_token ? (
                 <>
+                  <DropdownMenuItem onClick={handleOpenPortal} className="text-cyan-400 hover:bg-theme-bg cursor-pointer">
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview Portal
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleCopyPortalLink} className="text-theme-text hover:bg-theme-bg cursor-pointer">
                     <Link2 className="w-4 h-4 mr-2" />
                     Copy Portal Link
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleOpenPortal} className="text-theme-text hover:bg-theme-bg cursor-pointer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Portal
                   </DropdownMenuItem>
                 </>
               ) : (
