@@ -1,153 +1,157 @@
 
-# Fix Quote-Client Linking & Add Portal Preview
+# Create Test Client with Full Portfolio Flow
 
-## Problem Analysis
+## Overview
 
-### Issue 1: Quotes Not Linking to Clients
-
-**Root Cause Found:** Race condition in `OICalculator.tsx`
-
-When a broker clicks "+ Quote" from a client card:
-1. `handleCreateQuote` stores client data in `localStorage.preselected_client` (including `dbClientId`)
-2. Navigation to `/cashflow-generator` triggers two effects:
-   - Effect at line 159: Reads localStorage and sets `dbClientId` ✓
-   - Effect at line 189: Resets ALL state to defaults (runs after, overwrites `dbClientId`) ✗
-
-The reset effect at line 189-210 runs **after** the preselected client effect, overwriting the `dbClientId`.
-
-**Evidence:** Database shows 20+ quotes with `client_name: "Hugo"` but ALL have `client_id: null`.
-
-### Issue 2: No Way to Preview Portal from Client Manager
-
-The broker has no easy way to see what the client's portal looks like. Currently they can only:
-- Copy the portal link
-- Open in new tab
-
-They should be able to preview how the portal appears from within the client management interface.
+I'll create a complete test scenario with a new client, 5 investment quotes, and convert them into portfolio properties. This will allow you to verify the entire flow end-to-end: Client Management → Quotes → Portfolio → Client Portal.
 
 ---
 
-## Solution
+## Test Data to Create
 
-### Fix 1: Correct the Effect Order in OICalculator
+### Step 1: Create Test Client
 
-Merge the preselected client logic INTO the reset effect, so it runs in the correct order:
+**Client: "Maria Santos"**
+- Email: maria.santos@test.com
+- Phone: +971 50 999 8888
+- Country: Colombia
+- Portal Enabled: Yes (with portal token)
 
-```typescript
-// Reset ALL state when navigating to new quote (no quoteId)
-useEffect(() => {
-  if (!quoteId) {
-    // First, reset all state for a fresh start
-    setInputs(NEW_QUOTE_OI_INPUTS);
-    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
-    setQuoteImages({ ... });
-    setShareUrl(null);
-    
-    // Then check for preselected client (after reset, so it's not overwritten)
-    const preselectedClient = localStorage.getItem('preselected_client');
-    if (preselectedClient) {
-      try {
-        const clientData = JSON.parse(preselectedClient);
-        setClientInfo({
-          ...DEFAULT_CLIENT_INFO,
-          clients: [{ id: '1', name: clientData.clientName, country: clientData.clientCountry }],
-          dbClientId: clientData.dbClientId  // This will now persist!
-        });
-        localStorage.removeItem('preselected_client');
-        setModalOpen(true);
-      } catch (e) {
-        setClientInfo(DEFAULT_CLIENT_INFO);
-        localStorage.removeItem('preselected_client');
-      }
-    } else {
-      setClientInfo(DEFAULT_CLIENT_INFO);
-    }
-    
-    setDataLoaded(true);
-    justResetRef.current = true;
-    setTimeout(() => { justResetRef.current = false; }, 150);
-  } else {
-    setDataLoaded(false);
-  }
-}, [quoteId, setQuoteImages]);
-```
+### Step 2: Create 5 Quotes (Investment Proposals)
 
-This ensures `dbClientId` is set AFTER the reset, so it persists to the save.
+| # | Project Name | Developer | Unit | Type | Price (AED) | Status |
+|---|--------------|-----------|------|------|-------------|--------|
+| 1 | Marina Vista Tower | Emaar | 1204 | 2BR Apartment | 2,850,000 | draft |
+| 2 | Creek Harbour Residences | Emaar | 2508 | 3BR Apartment | 4,200,000 | draft |
+| 3 | Downtown Edge | Sobha | 1605 | 1BR Apartment | 1,680,000 | sold |
+| 4 | Palm Beach Towers | Nakheel | 801 | 2BR Apartment | 3,100,000 | sold |
+| 5 | Business Bay Central | Damac | 2212 | Studio | 890,000 | sold |
 
-### Fix 2: Add Portal Preview Button to Client Card
+### Step 3: Convert 3 Quotes to Portfolio Properties
 
-Add a new action in the ClientCard dropdown menu:
+Properties 3, 4, and 5 will be converted to acquired properties with:
+- Purchase dates in the past (2022-2024)
+- Current values showing appreciation
+- Some with rental income
+- Some with mortgages
 
-```typescript
-<DropdownMenuItem onClick={handleOpenPortal} className="text-theme-text hover:bg-theme-bg cursor-pointer">
-  <Eye className="w-4 h-4 mr-2" />
-  Preview Portal
-</DropdownMenuItem>
-```
+| Property | Purchase Date | Purchase Price | Current Value | Appreciation | Rented | Rent/mo | Mortgage |
+|----------|---------------|----------------|---------------|--------------|--------|---------|----------|
+| Downtown Edge | 2023-03-15 | 1,680,000 | 1,950,000 | +16% | Yes | 9,500 | No |
+| Palm Beach Towers | 2022-08-20 | 3,100,000 | 3,800,000 | +23% | Yes | 15,000 | Yes (1.2M balance) |
+| Business Bay Central | 2024-01-10 | 890,000 | 920,000 | +3% | No | - | Yes (500K balance) |
 
-The `handleOpenPortal` function already exists at line 114-118 - it opens the portal in a new tab. This is sufficient for preview purposes.
+---
 
-### Fix 3: Add Migration to Link Existing Quotes
+## Expected Portal Views After Setup
 
-Create a one-time migration function to link existing quotes that have `client_name` matching a client but no `client_id`:
+### Maria's Portal as Investor
 
-```sql
--- Link existing quotes to clients based on matching name + broker_id
-UPDATE cashflow_quotes q
-SET client_id = c.id
-FROM clients c
-WHERE q.client_id IS NULL
-  AND q.client_name IS NOT NULL
-  AND q.broker_id = c.broker_id
-  AND LOWER(q.client_name) = LOWER(c.name);
-```
+Since Maria has 3 acquired properties:
+
+1. **Default Tab: Portfolio**
+   - Total Portfolio Value: ~AED 6.67M
+   - Total Appreciation: ~AED 1.0M (+17.6%)
+   - Monthly Rental Income: AED 24,500
+   - Mortgage Payments: ~AED 9,500/mo
+   - Net Cashflow: ~AED 15,000/mo
+
+2. **Opportunities Tab (2 remaining quotes)**
+   - Marina Vista Tower - AED 2.85M
+   - Creek Harbour Residences - AED 4.2M
+
+3. **Compare Feature**
+   - Can compare the 2 opportunity quotes side by side
+
+### Hugo's Portal as Prospect
+
+Hugo has 21 quotes but 0 properties:
+
+1. **Default Tab: Opportunities**
+   - Shows all 21 investment proposals
+   - Compare feature available
+
+2. **Portfolio Tab**
+   - Shows empty state with teaser message
+
+---
+
+## Implementation Steps
+
+### Database Operations
+
+1. **Insert Client Record**
+   ```sql
+   INSERT INTO clients (broker_id, name, email, phone, country, portal_token, portal_enabled)
+   VALUES ('c02581d8-d1ec-4be6-aea0-242b424f172f', 'Maria Santos', 
+           'maria.santos@test.com', '+971509998888', 'Colombia', 
+           'test_maria_2024', true);
+   ```
+
+2. **Insert 5 Quotes**
+   - Each quote linked to Maria's client_id
+   - Proper inputs JSON with basePrice, rental yield, etc.
+   - 3 marked as 'sold', 2 as 'draft'
+
+3. **Insert 3 Acquired Properties**
+   - Linked to Maria's client_id
+   - Linked to source quotes via source_quote_id
+   - Include current valuations, rental info, and mortgages
+
+### Verification Checklist
+
+After implementation, you can verify:
+
+- [ ] **Clients Manager**: Maria appears with "3 Properties" and "5 Quotes" count
+- [ ] **Preview Portal**: Click "Preview Portal" on Maria's card
+- [ ] **Portfolio Tab**: Shows total value ~6.67M, 3 property cards
+- [ ] **Opportunities Tab**: Shows 2 remaining quotes
+- [ ] **Compare Tool**: Select both quotes and compare
+- [ ] **Hugo's Portal**: Still shows Opportunities first (no properties)
 
 ---
 
 ## Files to Modify
 
-### 1. `src/pages/OICalculator.tsx`
-
-**Changes:**
-- Remove separate preselected client effect (lines 158-185)
-- Merge preselected client logic into the reset effect (lines 187-210)
-- Ensure `dbClientId` is set AFTER the base reset
-
-### 2. Database Migration
-
-**Create migration to backfill existing quotes:**
-- Update all quotes with matching `client_name` and `broker_id` to link `client_id`
-- This fixes Hugo's 20+ quotes
-
----
-
-## Verification Steps
-
-After implementation:
-1. Go to Clients Manager
-2. Click "+ Quote" on Hugo's card
-3. Fill in property details and save
-4. Check database: the new quote should have `client_id` set
-5. Check Hugo's card: should show the new quote in the count
-6. Expand Hugo's quotes section: should list the quote
-7. Open Hugo's portal: should show the quote in Opportunities
+No code changes needed - only database inserts to create the test data.
 
 ---
 
 ## Technical Notes
 
-### Why This Happened
+### Quote Inputs Structure
 
-React effects run in order of declaration, but both effects had `[quoteId]` (or similar) as dependencies. When navigating to `/cashflow-generator`, both effects triggered. The reset effect ran last because it was declared later in the file, overwriting the `dbClientId` that was just set.
+The quotes will include proper `inputs` JSON structure:
+```json
+{
+  "basePrice": 2850000,
+  "rentalYieldPercent": 6.5,
+  "constructionAppreciation": 12,
+  "growthAppreciation": 8,
+  "matureAppreciation": 4,
+  "growthPeriodYears": 5,
+  "preHandoverPercent": 20,
+  "postHandoverPercent": 80,
+  "serviceChargePerSqft": 22
+}
+```
 
-### The Fix Guarantees
+### Property Linkage
 
-By consolidating into a single effect:
-1. Reset happens first (clean slate)
-2. Preselected client is applied after (if present)
-3. `dbClientId` is preserved in state
-4. Auto-save includes `client_id` in the database insert/update
+The `acquired_properties` table has:
+- `client_id` → Links to Maria's client record
+- `source_quote_id` → Links to the original quote (for audit trail)
+- `broker_id` → Links to your broker account
 
-### Portal Preview
+This creates a complete paper trail from quote analysis to acquired investment.
 
-The existing "Open Portal" button in the dropdown menu serves as the preview mechanism. When brokers click it, they see exactly what their client will see. No additional UI needed since the portal is already fully functional.
+---
+
+## Portal Access URLs
+
+After setup, you can access:
+
+- **Maria's Portal**: `/portal/test_maria_2024` (Investor view)
+- **Hugo's Portal**: `/portal/1ee00850fe4a4ebb` (Prospect view)
+
+This will demonstrate both portal experiences side-by-side.
