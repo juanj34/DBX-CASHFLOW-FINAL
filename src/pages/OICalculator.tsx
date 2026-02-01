@@ -155,42 +155,13 @@ const OICalculatorContent = () => {
     }
   }, [quote, quoteId, dataLoaded]);
 
-  // Check for preselected client from ClientCard navigation
-  useEffect(() => {
-    if (quoteId) return; // Only for new quotes
-    
-    const preselectedClient = localStorage.getItem('preselected_client');
-    if (preselectedClient) {
-      try {
-        const clientData = JSON.parse(preselectedClient);
-        setClientInfo(prev => ({
-          ...prev,
-          clients: [{
-            id: '1',
-            name: clientData.clientName || '',
-            country: clientData.clientCountry || '',
-            email: clientData.clientEmail || ''
-          }],
-          dbClientId: clientData.dbClientId || undefined
-        }));
-        // Clear the localStorage after use
-        localStorage.removeItem('preselected_client');
-        // Open configurator so user can continue setting up
-        setModalOpen(true);
-      } catch (e) {
-        console.error('Failed to parse preselected client:', e);
-        localStorage.removeItem('preselected_client');
-      }
-    }
-  }, [quoteId]);
-
   // Reset ALL state when navigating to new quote (no quoteId)
   // This prevents duplicating the previous quote's data
+  // MERGED: Preselected client logic is handled HERE to prevent race condition
   useEffect(() => {
     if (!quoteId) {
-      // Reset all state for a fresh start
+      // First, reset all state for a fresh start
       setInputs(NEW_QUOTE_OI_INPUTS);
-      setClientInfo(DEFAULT_CLIENT_INFO);
       setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
       setQuoteImages({
         floorPlanUrl: null,
@@ -199,6 +170,35 @@ const OICalculatorContent = () => {
         showLogoOverlay: true,
       });
       setShareUrl(null);
+      
+      // Then check for preselected client (AFTER reset, so it's not overwritten)
+      const preselectedClient = localStorage.getItem('preselected_client');
+      if (preselectedClient) {
+        try {
+          const clientData = JSON.parse(preselectedClient);
+          setClientInfo({
+            ...DEFAULT_CLIENT_INFO,
+            clients: [{
+              id: '1',
+              name: clientData.clientName || '',
+              country: clientData.clientCountry || '',
+              email: clientData.clientEmail || ''
+            }],
+            dbClientId: clientData.dbClientId || undefined
+          });
+          // Clear the localStorage after use
+          localStorage.removeItem('preselected_client');
+          // Open configurator so user can continue setting up
+          setModalOpen(true);
+        } catch (e) {
+          console.error('Failed to parse preselected client:', e);
+          setClientInfo(DEFAULT_CLIENT_INFO);
+          localStorage.removeItem('preselected_client');
+        }
+      } else {
+        setClientInfo(DEFAULT_CLIENT_INFO);
+      }
+      
       setDataLoaded(true); // Ready immediately for new quotes
       justResetRef.current = true;
       // Clear the flag after a tick to allow normal auto-save operation
