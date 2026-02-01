@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Plane, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
+import { Home, Plane, ArrowUp, ArrowDown, ChevronDown, ChevronUp, DollarSign } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
   const shortTermRental = inputs.shortTermRental || DEFAULT_SHORT_TERM_RENTAL;
   const longTermEnabled = inputs.enabledSections?.longTermHold ?? true;
   const airbnbEnabled = inputs.showAirbnbComparison ?? false;
-  const [showAdvancedLongTerm, setShowAdvancedLongTerm] = useState(false);
   const [showAdvancedAirbnb, setShowAdvancedAirbnb] = useState(false);
 
   // Calculate projected incomes
@@ -102,6 +101,52 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               />
             </div>
 
+            {/* Rent Growth + Service Charge - Inline Secondary Row */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Rent Growth */}
+              <div className="p-2 bg-theme-bg-alt rounded-lg">
+                <div className="flex items-center gap-1 mb-1.5">
+                  <ArrowUp className="w-3 h-3 text-green-400" />
+                  <span className="text-[10px] text-theme-text-muted">Growth</span>
+                  <InfoTooltip translationKey="tooltipRentGrowth" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Slider
+                    value={[inputs.rentGrowthRate ?? 4]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: value }))}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    className="flex-1 roi-slider-lime"
+                  />
+                  <span className="text-xs text-green-400 font-mono w-8 text-right">{inputs.rentGrowthRate ?? 4}%</span>
+                </div>
+              </div>
+
+              {/* Service Charge */}
+              <div className="p-2 bg-theme-bg-alt rounded-lg">
+                <div className="flex items-center gap-1 mb-1.5">
+                  <DollarSign className="w-3 h-3 text-cyan-400" />
+                  <span className="text-[10px] text-theme-text-muted">Svc Charge</span>
+                  <InfoTooltip translationKey="tooltipServiceCharges" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={inputs.serviceChargePerSqft || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                      setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
+                    }}
+                    placeholder="18"
+                    className="flex-1 h-6 text-right bg-theme-bg border-theme-border text-cyan-400 font-mono text-xs"
+                  />
+                  <span className="text-[10px] text-theme-text-muted">/sqft</span>
+                </div>
+              </div>
+            </div>
+
             {/* Annual Income Display */}
             <div className="p-2.5 bg-theme-bg-alt rounded-lg border border-theme-accent/20">
               <div className="flex justify-between items-center">
@@ -114,40 +159,6 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                 {formatCurrency(annualLongTermRent / 12, currency)}/month
               </div>
             </div>
-
-            {/* Advanced Settings - Collapsible */}
-            <Collapsible open={showAdvancedLongTerm} onOpenChange={setShowAdvancedLongTerm}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between h-7 px-2 text-theme-text-muted hover:text-theme-text text-xs">
-                  <span className="flex items-center gap-1">
-                    <Settings2 className="w-3 h-3" />
-                    Advanced
-                  </span>
-                  {showAdvancedLongTerm ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 pt-2">
-                {/* Rent Growth Rate */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <ArrowUp className="w-3 h-3 text-green-400" />
-                    <label className="text-xs text-theme-text-muted">Yearly Rent Growth</label>
-                    <InfoTooltip translationKey="tooltipRentGrowth" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Slider
-                      value={[inputs.rentGrowthRate ?? 4]}
-                      onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: value }))}
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      className="w-16 roi-slider-lime"
-                    />
-                    <span className="text-xs text-green-400 font-mono w-10 text-right">{inputs.rentGrowthRate ?? 4}%</span>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
           </div>
         )}
       </div>
