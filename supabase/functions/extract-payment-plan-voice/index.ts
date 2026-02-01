@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +7,7 @@ const corsHeaders = {
 };
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
 interface ConversationMessage {
   role: 'user' | 'assistant';
@@ -48,10 +50,12 @@ interface ExtractedPaymentPlan {
 
 const systemPrompt = `You are a Dubai real estate payment plan assistant. You help users describe their payment plans verbally and extract structured data from their descriptions.
 
+IMPORTANT: You are having a VOICE CONVERSATION. Keep your responses SHORT, CONVERSATIONAL, and NATURAL for spoken dialogue. Do not use markdown, bullet points, or long explanations.
+
 Your role:
 1. LISTEN to the user's voice transcription or text about a payment plan
 2. EXTRACT as much structured data as possible
-3. ASK CLARIFYING QUESTIONS if critical information is missing
+3. ASK CLARIFYING QUESTIONS if critical information is missing (one question at a time)
 4. CONFIRM and OUTPUT the structured payment plan when you have enough information
 
 === REQUIRED INFORMATION ===
@@ -69,7 +73,7 @@ Ask clarifying questions if:
 
 === RESPONSE FORMAT ===
 When you have enough information, call the extract_payment_plan function.
-When you need more information, call the ask_clarification function.
+When you need more information, call the ask_clarification function with a SHORT, SPOKEN question.
 
 === PAYMENT STRUCTURE RULES ===
 - All percentages MUST sum to 100%
@@ -80,10 +84,10 @@ When you need more information, call the ask_clarification function.
 - "X months after handover" with handover at month H = type "post-handover", triggerValue H + X
 
 === CONVERSATIONAL STYLE ===
-- Be friendly and helpful
+- Be friendly and speak naturally
+- Keep responses to 1-2 sentences MAX
 - Ask ONE question at a time
-- Confirm details when the user provides them
-- Guide them through any missing information`;
+- Confirm details briefly when the user provides them`;
 
 const tools = [
   {
@@ -137,9 +141,13 @@ const tools = [
             }
           },
           overallConfidence: { type: "number" },
-          warnings: { type: "array", items: { type: "string" } }
+          warnings: { type: "array", items: { type: "string" } },
+          confirmationMessage: { 
+            type: "string",
+            description: "A SHORT spoken confirmation message to tell the user (1-2 sentences max)"
+          }
         },
-        required: ["paymentStructure", "installments", "overallConfidence", "warnings"]
+        required: ["paymentStructure", "installments", "overallConfidence", "warnings", "confirmationMessage"]
       }
     }
   },
@@ -153,7 +161,7 @@ const tools = [
         properties: {
           question: { 
             type: "string",
-            description: "The clarifying question to ask the user"
+            description: "A SHORT, SPOKEN clarifying question (1-2 sentences max, no bullet points)"
           },
           missingFields: {
             type: "array",
@@ -166,6 +174,99 @@ const tools = [
     }
   }
 ];
+
+// Generate TTS audio using ElevenLabs
+async function generateTTSAudio(text: string): Promise<string | null> {
+  if (!ELEVENLABS_API_KEY) {
+    console.log("No ElevenLabs API key, skipping TTS");
+    return null;
+  }
+
+  try {
+    // Using voice "Sarah" - professional female voice
+    const voiceId = "EXAVITQu4vr4xnSDxMaL";
+    
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": ELEVENLABS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_turbo_v2_5",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.3,
+            use_speaker_boost: true,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("ElevenLabs TTS error:", response.status, errorText);
+      return null;
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    const base64Audio = base64Encode(audioBuffer);
+    return `data:audio/mpeg;base64,${base64Audio}`;
+  } catch (error) {
+    console.error("Error generating TTS:", error);
+    return null;
+  }
+}
+
+// Transcribe audio using Whisper via Lovable AI Gateway
+async function transcribeAudio(audioBase64: string, mimeType: string): Promise<string> {
+  console.log("Transcribing audio with Whisper...");
+  
+  // Use Gemini's native audio understanding
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Please transcribe this audio exactly as spoken. Only return the transcription, nothing else."
+            },
+            {
+              type: "input_audio",
+              input_audio: {
+                data: audioBase64,
+                format: mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : mimeType.includes('mpeg') ? 'mp3' : 'wav'
+              }
+            }
+          ]
+        }
+      ]
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Transcription error:", response.status, errorText);
+    throw new Error("Failed to transcribe audio");
+  }
+
+  const result = await response.json();
+  const transcription = result.choices?.[0]?.message?.content || "";
+  console.log("Transcription:", transcription);
+  return transcription;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -195,39 +296,44 @@ serve(async (req) => {
       ? `(Reference: Booking date is ${bookingDate.month}/${bookingDate.year})`
       : '';
     
-    // Handle audio input - Gemini supports audio natively
+    let userTranscription = "";
+    
+    // Handle audio input - transcribe first, then process
     if (audio && typeof audio === 'string') {
       console.log("Processing audio input...");
       
       // Extract MIME type and base64 data
       const matches = audio.match(/^data:([^;]+);base64,(.+)$/);
       if (!matches) {
-        throw new Error("Invalid audio format");
+        // Try to handle raw base64 without data URI prefix
+        console.log("Audio doesn't have data URI format, treating as raw base64");
+        throw new Error("Invalid audio format - please ensure audio is recorded correctly");
       }
       
       const mimeType = matches[1];
       const base64Data = matches[2];
       
-      // Build multimodal content with audio
+      console.log("Audio MIME type:", mimeType);
+      console.log("Audio base64 length:", base64Data.length);
+      
+      // Transcribe the audio first
+      try {
+        userTranscription = await transcribeAudio(base64Data, mimeType);
+      } catch (transcribeError) {
+        console.error("Transcription failed:", transcribeError);
+        // Fallback: try to process without transcription
+        userTranscription = "[Audio message - transcription unavailable]";
+      }
+      
+      // Add the transcription as a text message
       messages.push({
         role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Please listen to this voice note describing a payment plan and extract the information. ${bookingContext}\n\nIf you have enough information to create a complete payment plan (price, payment breakdown with percentages adding to 100%, and timing), call extract_payment_plan. Otherwise, call ask_clarification with a specific question about what's missing.`
-          },
-          {
-            type: "input_audio",
-            input_audio: {
-              data: base64Data,
-              format: mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : 'wav'
-            }
-          }
-        ]
+        content: `${userTranscription} ${bookingContext}\n\nBased on this information, if you have enough to create a complete payment plan (price, payment breakdown with percentages adding to 100%, and timing), call extract_payment_plan. Otherwise, call ask_clarification with a SHORT spoken question.`
       });
     } else if (textMessage) {
       // Handle text follow-up
       console.log("Processing text message:", textMessage.substring(0, 100));
+      userTranscription = textMessage;
       messages.push({
         role: "user",
         content: `${textMessage} ${bookingContext}\n\nBased on our conversation, if you now have enough information to create a complete payment plan, call extract_payment_plan. Otherwise, call ask_clarification.`
@@ -323,9 +429,17 @@ serve(async (req) => {
           warnings: args.warnings || []
         };
         
+        // Generate TTS for confirmation
+        const confirmationText = args.confirmationMessage || 
+          `Got it! I've extracted a ${paymentSplit || 'payment'} plan with ${installments.length} installments.`;
+        const audioResponse = await generateTTSAudio(confirmationText);
+        
         return new Response(JSON.stringify({
           success: true,
-          data: extractedPlan
+          data: extractedPlan,
+          responseText: confirmationText,
+          responseAudio: audioResponse,
+          userTranscription
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -333,11 +447,17 @@ serve(async (req) => {
       
       if (functionName === 'ask_clarification') {
         console.log("Needs clarification:", args.question);
+        
+        // Generate TTS for the question
+        const audioResponse = await generateTTSAudio(args.question);
+        
         return new Response(JSON.stringify({
           success: true,
           needsClarification: true,
           question: args.question,
-          missingFields: args.missingFields
+          missingFields: args.missingFields,
+          responseAudio: audioResponse,
+          userTranscription
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -347,10 +467,15 @@ serve(async (req) => {
     // If no tool call, the model provided a text response - treat as clarification
     const textContent = choice.message?.content || '';
     if (textContent) {
+      // Generate TTS for the response
+      const audioResponse = await generateTTSAudio(textContent);
+      
       return new Response(JSON.stringify({
         success: true,
         needsClarification: true,
-        question: textContent
+        question: textContent,
+        responseAudio: audioResponse,
+        userTranscription
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
