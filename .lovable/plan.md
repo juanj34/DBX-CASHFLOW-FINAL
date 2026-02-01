@@ -1,129 +1,120 @@
 
-# Fix AI Extraction Handlers for Standard Payment Plans
+# Show Rent Growth & Service Charges Next to Rental Yield
 
-## Problem
+## Current State
 
-The AI extraction handlers (`handleAIExtraction`) in both `PaymentSection.tsx` and `ClientSection.tsx` currently set `onHandoverPercent` from the extracted handover payment regardless of whether it's a standard or post-handover plan.
+In the configurator's **RentSection.tsx**:
+- **Rental Yield** slider is visible (primary control)
+- **Rent Growth Rate** is hidden inside an "Advanced" collapsible section
 
-This causes:
-1. Redundant data storage (handover % stored when it should be derived)
-2. Potential calculation conflicts with the fix we just made
-3. Inconsistent behavior between manual entry and AI extraction
+In **PropertySection.tsx**:
+- **Service Charge per sqft** is shown in the top metrics row
 
-## Current Code (Both Files)
+## Proposed Changes
 
-```typescript
-// Line 309 in PaymentSection.tsx
-// Line 225 in ClientSection.tsx
-const onHandoverPercent = handoverPayment?.paymentPercent || 0;
+Move both **Rent Growth Rate** and **Service Charge** to be displayed inline with Rental Yield in the Long-Term Rental section, creating a compact "triplet" of related rental inputs.
+
+### New Layout for Long-Term Rental Section
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🏠 Long-Term Rental                              [toggle]   │
+├──────────────────────────────────────────────────────────────┤
+│  Annual Rental Yield                              8%         │
+│  [═══════════════════════●══════════]                        │
+│                                                              │
+│  ┌─────────────────────┐ ┌─────────────────────┐             │
+│  │ Rent Growth   4%/yr │ │ Service    18 AED   │             │
+│  │ [══●═══]            │ │ Charge  [__18__]sqft│             │
+│  └─────────────────────┘ └─────────────────────┘             │
+│                                                              │
+│  Year 1 Rent                            AED 64,000           │
+│  AED 5,333/month                                             │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-This sets `onHandoverPercent` **unconditionally** for all plans.
+### Benefits
+1. All rental-related inputs grouped together logically
+2. No hidden controls - important parameters visible at a glance
+3. Service charges move from PropertySection header to where they contextually belong (affecting net rent)
+4. Removes the "Advanced" collapsible for Long-Term rental (since there's only one item in it)
 
-## Solution
+---
 
-Apply the same conditional logic from the manual payment fix:
+## Technical Implementation
 
-**For standard plans**: `onHandoverPercent = 0` (handover is derived as `100 - preHandoverPercent`)
+### File: `src/components/roi/configurator/RentSection.tsx`
 
-**For post-handover plans**: `onHandoverPercent = handoverPayment?.paymentPercent` (explicit payment)
+**Changes:**
+1. Remove the `Collapsible` wrapper for Long-Term Advanced settings
+2. Add Rent Growth slider inline (compact inline style with small slider + value)
+3. Add Service Charge input inline next to Rent Growth
+4. Create a compact 2-column grid for these secondary inputs
 
-## Files to Modify
+**Code structure (simplified):**
+```tsx
+{longTermEnabled && (
+  <div className="space-y-3 pt-2 border-t border-theme-border">
+    {/* Rental Yield - Primary */}
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-center">
+        <label>Annual Rental Yield</label>
+        <span>{inputs.rentalYieldPercent}%</span>
+      </div>
+      <Slider value={[inputs.rentalYieldPercent]} ... />
+    </div>
 
-| File | Location | Change |
-|------|----------|--------|
-| `src/components/roi/configurator/PaymentSection.tsx` | ~lines 309-315 | Conditionally set `onHandoverPercent` based on `hasPostHandover` |
-| `src/components/roi/configurator/ClientSection.tsx` | ~lines 224-232 | Same fix |
+    {/* NEW: Rent Growth + Service Charge - Secondary Row */}
+    <div className="grid grid-cols-2 gap-3">
+      {/* Rent Growth */}
+      <div className="flex items-center justify-between p-2 bg-theme-bg-alt rounded-lg">
+        <div className="flex items-center gap-1">
+          <ArrowUp className="w-3 h-3 text-green-400" />
+          <span className="text-xs text-theme-text-muted">Growth</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Slider value={[inputs.rentGrowthRate ?? 4]} min={0} max={10} ... />
+          <span className="text-xs text-green-400 font-mono">{inputs.rentGrowthRate ?? 4}%</span>
+        </div>
+      </div>
 
-## Code Changes
+      {/* Service Charge */}
+      <div className="flex items-center justify-between p-2 bg-theme-bg-alt rounded-lg">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-theme-text-muted">Svc Charge</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Input 
+            value={inputs.serviceChargePerSqft || ''} 
+            onChange={...}
+            className="w-12 h-6 text-right"
+          />
+          <span className="text-[10px] text-theme-text-muted">/sqft</span>
+        </div>
+      </div>
+    </div>
 
-### PaymentSection.tsx (lines 301-315)
-
-```typescript
-// === STEP 2: Find special installments ===
-const downpayment = data.installments.find(
-  i => i.type === 'time' && i.triggerValue === 0
-);
-const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
-
-// === STEP 3: Calculate totals for validation ===
-const postHandoverInstallments = data.installments.filter(i => 
-  i.type === 'post-handover'
-);
-const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-
-// Determine if this is a post-handover plan BEFORE setting onHandoverPercent
-const hasPostHandover = data.paymentStructure.hasPostHandover || postHandoverTotal > 0;
-
-// CRITICAL FIX: Only set onHandoverPercent for post-handover plans
-// For standard plans, handover = 100 - preHandoverPercent (derived)
-const onHandoverPercent = hasPostHandover 
-  ? (handoverPayment?.paymentPercent || data.paymentStructure.onHandoverPercent || 0)
-  : 0;
+    {/* Year 1 Rent Display */}
+    <div className="p-2.5 bg-theme-bg-alt rounded-lg border border-theme-accent/20">
+      ...
+    </div>
+  </div>
+)}
 ```
 
-### ClientSection.tsx (lines 216-232)
+### File: `src/components/roi/configurator/PropertySection.tsx`
 
-```typescript
-// === STEP 2: Find special installments ===
-const downpayment = extractedData.installments.find(
-  i => i.type === 'time' && i.triggerValue === 0
-);
-const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
+**Changes:**
+1. Remove the service charge input from the header metrics row (lines 106-131)
+2. Keep only price/sqft in the metrics row (if unit size is set)
 
-// Explicit handover payment - used for timing and post-handover plans only
-const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
+---
 
-// === STEP 3: Calculate totals for validation ===
-const postHandoverInstallments = extractedData.installments.filter(i => 
-  i.type === 'post-handover'
-);
-const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+## Summary of Changes
 
-// Determine if this is a post-handover plan
-const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+| File | Action |
+|------|--------|
+| `RentSection.tsx` | Add Rent Growth + Service Charge inline with Rental Yield, remove Advanced collapsible |
+| `PropertySection.tsx` | Remove service charge from header metrics row |
 
-// CRITICAL FIX: Only set onHandoverPercent for post-handover plans
-const onHandoverPercent = hasPostHandover 
-  ? (handoverPayment?.paymentPercent || 0)
-  : 0;
-```
-
-## Expected Behavior After Fix
-
-**AI Extraction - Standard Plan (30/70):**
-```
-AI extracts: 20% booking, 10% @ Month 3, 70% on completion
-hasPostHandover = false
-
-Result:
-  - downpaymentPercent = 20
-  - preHandoverPercent = 30 (from split)
-  - onHandoverPercent = 0 (NOT stored for standard plans)
-  - additionalPayments = [10% @ Month 3]
-  - hasPostHandoverPlan = false
-
-Display: Handover = 100 - 30 = 70% ✓
-```
-
-**AI Extraction - Post-Handover Plan (30/70 split with 5yr payment):**
-```
-AI extracts: 20% booking, 10% installments, 10% on completion, 60% over 5 years
-hasPostHandover = true
-
-Result:
-  - downpaymentPercent = 20
-  - preHandoverPercent = 30
-  - onHandoverPercent = 10 (explicit handover payment stored)
-  - additionalPayments = [10% pre-HO, 60% post-HO installments]
-  - hasPostHandoverPlan = true
-  - postHandoverPercent = 60
-
-Display: Pre-HO = 30%, On-HO = 10%, Post-HO = 60% ✓
-```
-
-## Summary
-
-This fix ensures AI extraction follows the **same logic** as manual entry:
-- Standard plans: All installments are pre-handover, handover amount is derived
-- Post-handover plans: Explicit on-handover and post-handover tracking applies
+This creates a cleaner UX where all rental income factors (yield, growth, service charges) are visible together in one section.
