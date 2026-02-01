@@ -41,7 +41,7 @@ const navItems: NavItem[] = [
   { label: 'Analytics', href: '/quotes-analytics', icon: BarChart3 },
   { label: 'Map', href: '/map', icon: Map },
   { label: 'Clients', href: '/clients', icon: Users },
-  { label: 'Portfolio', href: '/portfolio', icon: Building },
+  
 ];
 
 interface TopNavbarProps {

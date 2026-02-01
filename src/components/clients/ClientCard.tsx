@@ -255,15 +255,25 @@ export const ClientCard = ({
             </Badge>
           )}
           
-          {/* Create Quote Button */}
-          <Button
-            onClick={handleCreateQuote}
-            size="sm"
-            className="ml-auto h-6 px-2 text-xs bg-theme-accent/20 text-theme-accent hover:bg-theme-accent/30 border-0"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Quote
-          </Button>
+          {/* Action Buttons */}
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              onClick={handleCreateQuote}
+              size="sm"
+              className="h-6 px-2 text-xs bg-theme-accent/20 text-theme-accent hover:bg-theme-accent/30 border-0"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Quote
+            </Button>
+            <Button
+              onClick={() => navigate(`/clients/${client.id}/portfolio`)}
+              size="sm"
+              className="h-6 px-2 text-xs bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border-0"
+            >
+              <FolderOpen className="w-3 h-3 mr-1" />
+              Portfolio
+            </Button>
+          </div>
         </div>
 
         {/* Expandable Quotes List */}
