@@ -1,100 +1,183 @@
 
-# Fix: Years to Payoff Should Account for Rent Growth
+# Dual Currency Display & Year 5 Metrics for Comparison Tables
 
-## Problem Identified
+## Overview
 
-When you increase the **Yearly Rent Growth %**, the **Breakeven** time should decrease, but it stays at 12.6 years regardless of the growth rate.
+This plan addresses two enhancements to the comparison view:
 
-### Root Cause
-The calculation at line 615 in `useOICalculations.ts` uses:
-```
-yearsToPayOff = basePrice / netAnnualRent
-```
-
-This divides the property price by **Year 1 rent only** and ignores the `rentGrowthRate` setting entirely. Changing rent growth from 0% to 10% has **zero effect** on this number.
+1. **Dual Currency Display**: When currency is changed from AED, show both AED (primary) and converted value (secondary) side-by-side instead of overwriting
+2. **New Year 5 Metrics**: Add "Rent at Year 5" and "Property Value at Year 5" to the key metrics table
 
 ---
 
-## Current vs Expected Behavior
+## Current Behavior
 
-| Rent Growth | Current Output | Expected Output |
-|-------------|----------------|-----------------|
-| 0% | 12.6 years | 12.6 years |
-| 4% | 12.6 years | ~10.8 years |
-| 7% | 12.6 years | ~9.5 years |
-| 10% | 12.6 years | ~8.5 years |
+### Currency Display
+Currently, the `ComparisonTable` uses a simple `fmt()` function that formats in the selected currency only:
+```
+const fmt = (v: number) => formatCurrency(v, currency, exchangeRate);
+```
+
+This overwrites values entirely when switching currency, losing the AED reference.
+
+### Missing Metrics
+The comparison table does not show Year 5 projections - it only shows current values and Year 1 rental income.
 
 ---
 
-## The Fix
+## Solution
 
-Replace the simple division with a formula that accounts for compounding rent growth.
+### 1. Dual Currency Display Pattern
 
-### Mathematical Approach
+Use the existing `formatDualCurrency` utility (already used throughout the codebase) to show both currencies inline:
 
-If rent grows at rate `g` annually, cumulative rent after `n` years is a geometric series:
+**Before:** `AED 890,000` → `$242,370` (when switching to USD)
 
-**With growth (g > 0):**
-```
-Years = ln(1 + (Principal × g) / AnnualRent) / ln(1 + g)
-```
+**After:** `AED 890,000 ($242K)` (always shows AED as reference)
 
-**Without growth (g = 0):**
-```
-Years = Principal / AnnualRent
-```
+This follows the established pattern from the memory notes:
+> "Dual Currency Display: AED 10,000 ($2,700)" format for international clarity
 
-This correctly reduces the payback period as rent growth increases.
+### 2. Year 5 Metrics Calculation
+
+Derive from the existing `yearlyProjections` array in `OICalculations`:
+
+**Property Value (Year 5):**
+- Find the projection at Year 5 (index 5 in the yearlyProjections array, accounting for booking year as Year 0)
+- This already includes phased appreciation (Construction → Growth → Mature)
+
+**Rent at Year 5:**
+- Find the projection at Year 5
+- Use `annualRent` from that projection (already includes rent growth compounding)
 
 ---
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/components/roi/useOICalculations.ts` | Update `yearsToPayOff` and `yearsToBreakEven` calculations to use geometric series formula |
+| File | Changes |
+|------|---------|
+| `src/components/roi/compare/ComparisonTable.tsx` | Add dual currency formatting + Year 5 metrics rows |
+| `src/components/roi/compare/MetricsTable.tsx` | Add dual currency formatting + Year 5 metrics rows |
+| `src/components/portal/CompareSection.tsx` | Add dual currency formatting + Year 5 metrics rows |
 
 ---
 
-## Implementation
+## Implementation Details
 
-### Before (lines 614-615):
-```typescript
-const yearsToBreakEven = netAnnualRent > 0 ? totalCapitalInvested / netAnnualRent : 999;
-const yearsToPayOff = netAnnualRent > 0 ? basePrice / netAnnualRent : 999;
-```
+### ComparisonTable.tsx Changes
 
-### After:
+**1. Update formatting helper:**
 ```typescript
-// Helper function to calculate years with rent growth
-const calculateYearsWithGrowth = (principal: number, annualRent: number, growthRate: number): number => {
-  if (annualRent <= 0) return 999;
-  if (growthRate <= 0) return principal / annualRent; // Simple division when no growth
-  
-  const g = growthRate / 100;
-  // Using geometric series: Years = ln(1 + (P × g) / R) / ln(1 + g)
-  const yearsNeeded = Math.log(1 + (principal * g) / annualRent) / Math.log(1 + g);
-  return yearsNeeded;
+// Replace simple fmt() with dual currency formatter
+const getDualValue = (value: number): { primary: string; secondary: string | null } => {
+  const dual = formatDualCurrency(value, currency, exchangeRate);
+  return dual;
 };
 
-const yearsToBreakEven = calculateYearsWithGrowth(totalCapitalInvested, netAnnualRent, rentGrowthRate);
-const yearsToPayOff = calculateYearsWithGrowth(basePrice, netAnnualRent, rentGrowthRate);
+// For inline display
+const formatWithDual = (value: number): React.ReactNode => {
+  const { primary, secondary } = getDualValue(value);
+  if (!secondary) return primary;
+  return (
+    <span>
+      {primary}
+      <span className="text-theme-text-muted text-xs ml-1">({secondary})</span>
+    </span>
+  );
+};
 ```
 
-### Airbnb calculations (lines 626-627):
-Apply the same fix for Airbnb rent using `adrGrowthRate`.
+**2. Update all monetary value cells:**
+- Property Value row
+- Price/sqft row
+- Rental Income row
+- Pre-Handover row
+- Post-Handover row
+- Rent Coverage row
+
+**3. Add new Year 5 metrics rows:**
+```typescript
+// After Rental Income row
+
+{/* Rent at Year 5 */}
+<DataRow
+  label="Rent (Year 5)"
+  values={orderedQuotes.map(q => {
+    // Find Year 5 projection (booking year + 5)
+    const year5Proj = q.calculations.yearlyProjections.find(
+      p => p.year === 5 && !p.isConstruction
+    );
+    const rentY5 = year5Proj?.annualRent || null;
+    return { value: rentY5 ? formatWithDual(rentY5) : '—' };
+  })}
+/>
+
+{/* Value at Year 5 */}
+<DataRow
+  label="Value (Year 5)"
+  values={orderedQuotes.map(q => {
+    const year5Proj = q.calculations.yearlyProjections[5];
+    const valueY5 = year5Proj?.propertyValue || null;
+    return { value: valueY5 ? formatWithDual(valueY5) : '—' };
+  })}
+/>
+```
+
+### MetricsTable.tsx Changes
+
+Same pattern - update all monetary cells to use dual currency format and add Year 5 rows.
+
+### CompareSection.tsx (Portal) Changes
+
+Update the portal comparison table to match - this component has its own simple formatting function that needs updating to use `formatDualCurrency`.
 
 ---
 
-## Validation
+## Visual Result
 
-After the fix:
-- Setting **Rent Growth = 0%** should give the same result as before
-- Setting **Rent Growth = 4%** should reduce breakeven by ~15%
-- Setting **Rent Growth = 10%** should reduce breakeven by ~30%
+### Metrics Table (After)
+
+| Metric | Property A | Property B |
+|--------|------------|------------|
+| Property Value | AED 890,000 ($242K) | AED 998,195 ($272K) |
+| Price/sqft | AED 1,413 ($385) | AED 1,103 ($300) |
+| Rental Income | AED 71,200 (8%) | AED 89,838 (9%) |
+| **Rent (Year 5)** | **AED 83,200 ($22.6K)** | **AED 104,900 ($28.5K)** |
+| **Value (Year 5)** | **AED 1.2M ($327K)** | **AED 1.35M ($368K)** |
+| Handover | Q1 2028 (2y) | Q2 2028 (2y 3m) |
+| Pre-Handover | AED 218,600 ($59K) | AED 344,386 ($94K) |
 
 ---
 
-## Secondary Calculations
+## Technical Notes
 
-The same issue exists in `useSecondaryCalculations.ts` - the `yearsToPayOff` calculation there should also be updated to use the same formula for consistency.
+### Year 5 Projection Logic
+
+The `yearlyProjections` array is indexed from Year 1:
+- `yearlyProjections[0]` = Year 1 (booking year)
+- `yearlyProjections[4]` = Year 5
+
+However, for properties still in construction, Year 5 from booking might still be in construction phase. The display will correctly show "—" if no rent data exists for that year.
+
+For accuracy, Year 5 is calculated as:
+- **5 years from booking date** (consistent with the growth curve chart)
+- If handover is in Year 2, then Year 5 = 3rd full year of rental income
+
+### Currency Reference Pattern
+
+Following the established memory pattern for inline display:
+> "AED 10,000 ($2,700)" format optimizes vertical space in lists and cards
+
+The secondary currency appears in parentheses with smaller, muted text.
+
+---
+
+## Testing Checklist
+
+After implementation:
+- [ ] Switch currency to USD/EUR and verify both values appear
+- [ ] Verify AED shows alone when currency is set to AED
+- [ ] Rent (Year 5) shows correct grown rent value
+- [ ] Value (Year 5) matches the projection chart
+- [ ] Portal comparison section also shows dual currency
+- [ ] All three comparison contexts work (QuotesCompare, CompareView, PresentationPreview)
