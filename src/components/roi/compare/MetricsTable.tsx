@@ -170,12 +170,23 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
           values={metrics.totalInvestment}
           formatter={(v) => fmtDual(v)}
         />
-        {/* Pre-Handover Amount */}
+        {/* Pre-Handover Amount (everything paid until handover) */}
         <MetricRow
           label={t('preHandover') || 'Pre-Handover'}
-          values={quotesWithCalcs.map(q => ({ 
-            value: q.quote.inputs.basePrice * q.quote.inputs.preHandoverPercent / 100 
-          }))}
+          values={quotesWithCalcs.map(q => {
+            const basePrice = q.quote.inputs.basePrice;
+            
+            if (q.quote.inputs.hasPostHandoverPlan) {
+              // Post-handover plan: downpayment + pre-handover installments + on-handover
+              const downpaymentPercent = q.quote.inputs.downpaymentPercent || 0;
+              const preHandoverPercent = q.quote.inputs.preHandoverPercent || 0;
+              const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
+              return { value: basePrice * ((downpaymentPercent + preHandoverPercent + onHandoverPercent) / 100) };
+            } else {
+              // Standard plan: 100% is paid by handover
+              return { value: basePrice };
+            }
+          })}
           formatter={(v) => fmtDual(v)}
         />
         {/* On Handover Amount */}

@@ -370,13 +370,24 @@ export const ComparisonTable = ({
               }))}
             />
             
-            {/* Pre-Handover Spend */}
+            {/* Pre-Handover Spend (everything paid until handover) */}
             <DataRow
               label={t('preHandoverSpend') || 'Pre-Handover'}
               values={orderedQuotes.map(q => {
-                const preAmount = q.quote.inputs.basePrice * (q.quote.inputs.preHandoverPercent / 100);
+                const basePrice = q.quote.inputs.basePrice;
                 const entryCosts = q.calculations.totalEntryCosts || 0;
-                return { value: fmtDual(preAmount + entryCosts) };
+                
+                if (q.quote.inputs.hasPostHandoverPlan) {
+                  // Post-handover plan: Pre-handover = downpayment + pre-handover installments + on-handover
+                  const downpaymentPercent = q.quote.inputs.downpaymentPercent || 0;
+                  const preHandoverPercent = q.quote.inputs.preHandoverPercent || 0;
+                  const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
+                  const preAmount = basePrice * ((downpaymentPercent + preHandoverPercent + onHandoverPercent) / 100);
+                  return { value: fmtDual(preAmount + entryCosts) };
+                } else {
+                  // Standard plan: Everything is paid by handover (100% + fees)
+                  return { value: fmtDual(basePrice + entryCosts) };
+                }
               })}
             />
             
@@ -385,7 +396,9 @@ export const ComparisonTable = ({
               label={t('postHandoverSpend') || 'Post-Handover'}
               values={orderedQuotes.map(q => {
                 if (!q.quote.inputs.hasPostHandoverPlan) return { value: '—' };
-                const postAmount = q.quote.inputs.basePrice * ((q.quote.inputs.postHandoverPercent || 0) / 100);
+                // Use stored postHandoverPercent directly (per memory note)
+                const postPercent = q.quote.inputs.postHandoverPercent || 0;
+                const postAmount = q.quote.inputs.basePrice * (postPercent / 100);
                 return { value: postAmount > 0 ? fmtDual(postAmount) : '—' };
               })}
             />
