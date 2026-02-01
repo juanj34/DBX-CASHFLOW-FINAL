@@ -278,7 +278,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const { audio, textMessage, bookingDate, conversationHistory } = await req.json();
+    const { audio, audioMimeType, textMessage, bookingDate, conversationHistory } = await req.json();
     
     const messages: any[] = [
       { role: "system", content: systemPrompt }
@@ -304,7 +304,9 @@ serve(async (req) => {
       console.log("Audio string length:", audio.length);
       console.log("Audio starts with:", audio.substring(0, 50));
       
-      let mimeType = "audio/webm";
+      let mimeType = typeof audioMimeType === "string" && audioMimeType.length > 0
+        ? audioMimeType
+        : "audio/webm";
       let base64Data = "";
       
       // Try to extract MIME type and base64 data from data URI
@@ -323,14 +325,16 @@ serve(async (req) => {
           throw new Error("Invalid audio format - could not parse data URI");
         }
       } else {
-        // Assume raw base64 if no data: prefix
-        console.log("Audio appears to be raw base64, assuming webm format");
+        // Raw base64 (preferred from client). Use provided mimeType if available.
+        console.log("Audio appears to be raw base64");
+        console.log("Client-provided MIME type:", mimeType);
         base64Data = audio;
       }
       
-      if (!base64Data || base64Data.length < 100) {
+      // Note: very short recordings can still be valid, but usually indicate a failure to record.
+      if (!base64Data || base64Data.length < 50) {
         console.error("Base64 data too short:", base64Data.length);
-        throw new Error("Audio recording is too short or empty");
+        throw new Error("Invalid audio format - please ensure audio is recorded correctly");
       }
       
       // Determine audio format for Gemini

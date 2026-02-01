@@ -36,6 +36,22 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const parseDataUrlAudio = (dataUrl: string): { mimeType: string; base64Data: string } => {
+    // Expected shape: data:<mimeType>;base64,<data>
+    // Some browsers add extra params: data:audio/webm;codecs=opus;base64,<data>
+    const commaIndex = dataUrl.indexOf(",");
+    if (!dataUrl.startsWith("data:") || commaIndex === -1) {
+      return { mimeType: "audio/webm", base64Data: dataUrl };
+    }
+
+    const header = dataUrl.slice(5, commaIndex); // without "data:"
+    const base64Data = dataUrl.slice(commaIndex + 1);
+
+    // header like: audio/webm;codecs=opus;base64
+    const mimeType = header.split(";")[0] || "audio/webm";
+    return { mimeType, base64Data };
+  };
+
   const playAudioResponse = useCallback((audioDataUrl: string) => {
     if (!audioDataUrl) return;
     
@@ -71,6 +87,11 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
   const startRecording = useCallback(async () => {
     // Stop any playing audio first
     stopAudioPlayback();
+
+    if (typeof MediaRecorder === "undefined") {
+      toast.error("Voice recording isn't supported in this browser. Try Chrome/Safari, or type your answer.");
+      return;
+    }
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -150,6 +171,8 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
         reader.onerror = reject;
         reader.readAsDataURL(audioBlob);
       });
+
+      const { mimeType: audioMimeType, base64Data: audioBase64 } = parseDataUrlAudio(base64Audio);
       
       // Add user message showing they recorded
       const durationStr = formatDuration(recordingDuration);
@@ -162,7 +185,9 @@ export const VoiceRecordingTab = ({ bookingDate, onExtracted, disabled }: VoiceR
       // Send to edge function
       const { data, error } = await supabase.functions.invoke('extract-payment-plan-voice', {
         body: { 
-          audio: base64Audio,
+          // Send raw base64 + mime type (more robust than sending the full data URL)
+          audio: audioBase64,
+          audioMimeType,
           bookingDate,
           conversationHistory: messages.map(m => ({ role: m.role, content: m.content }))
         }
