@@ -201,8 +201,8 @@ const OICalculatorContent = () => {
       
       setDataLoaded(true); // Ready immediately for new quotes
       justResetRef.current = true;
-      // Clear the flag after a tick to allow normal auto-save operation
-      setTimeout(() => { justResetRef.current = false; }, 150);
+      // Clear the flag after sufficient delay to prevent race conditions with auto-save
+      setTimeout(() => { justResetRef.current = false; }, 500);
     } else {
       // Will load from DB
       setDataLoaded(false);
