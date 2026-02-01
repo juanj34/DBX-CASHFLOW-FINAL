@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLogo } from "@/components/AppLogo";
-import { useClients, Client } from "@/hooks/useClients";
-import { useClientPortfolio } from "@/hooks/usePortfolio";
-import { useClientComparisons } from "@/hooks/useClientComparisons";
+import { Client } from "@/hooks/useClients";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -65,14 +63,14 @@ interface AdvisorProfile {
 
 const ClientPortal = () => {
   const { portalToken } = useParams<{ portalToken: string }>();
-  const { getClientByPortalToken } = useClients();
-  const { properties: portfolioProperties, loading: portfolioLoading, metrics: portfolioMetrics } = useClientPortfolio(portalToken || '');
-  const { savedComparisons, secondaryComparisons, totalComparisons, loading: comparisonsLoading } = useClientComparisons({ portalToken: portalToken || '' });
   
   const [client, setClient] = useState<Client | null>(null);
   const [advisor, setAdvisor] = useState<AdvisorProfile | null>(null);
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
   const [presentations, setPresentations] = useState<PresentationData[]>([]);
+  const [portfolioProperties, setPortfolioProperties] = useState<any[]>([]);
+  const [savedComparisons, setSavedComparisons] = useState<any[]>([]);
+  const [secondaryComparisons, setSecondaryComparisons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,6 +93,7 @@ const ClientPortal = () => {
 
   // Determine if user is an investor (has properties) or prospect (only quotes)
   const isInvestor = portfolioProperties.length > 0;
+  const totalComparisons = savedComparisons.length + secondaryComparisons.length;
   const hasContent = quotes.length > 0 || presentations.length > 0 || isInvestor || totalComparisons > 0;
 
   // Default tab based on investor status
@@ -103,13 +102,14 @@ const ClientPortal = () => {
 
   // Update active tab when investor status changes
   useEffect(() => {
-    if (!loading && !portfolioLoading) {
+    if (!loading) {
       setActiveTab(isInvestor ? "portfolio" : "opportunities");
     }
-  }, [isInvestor, loading, portfolioLoading]);
+  }, [isInvestor, loading]);
 
   useDocumentTitle(client?.name ? `${client.name} - Portal` : "Client Portal");
 
+  // Consolidated data fetching - resolves client ONCE, then fetches ALL data in PARALLEL
   useEffect(() => {
     const fetchData = async () => {
       if (!portalToken) {
@@ -119,48 +119,72 @@ const ClientPortal = () => {
       }
 
       try {
-        const clientData = await getClientByPortalToken(portalToken);
+        // Step 1: Resolve client by portal token (SINGLE query)
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('portal_token', portalToken)
+          .eq('portal_enabled', true)
+          .single();
         
-        if (!clientData) {
+        if (clientError || !clientData) {
           setError("Portal not found or access disabled");
           setLoading(false);
           return;
         }
 
-        setClient(clientData);
+        setClient(clientData as Client);
 
-        // Fetch advisor profile
-        const { data: advisorData } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code')
-          .eq('id', clientData.broker_id)
-          .single();
+        // Step 2: Fetch ALL related data in PARALLEL using Promise.all
+        const [
+          advisorResult,
+          quotesResult,
+          presentationsResult,
+          propertiesResult,
+          savedCompResult,
+          secondaryCompResult
+        ] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('full_name, avatar_url, business_email, whatsapp_number, whatsapp_country_code')
+            .eq('id', clientData.broker_id)
+            .single(),
+          supabase
+            .from('cashflow_quotes')
+            .select('id, project_name, developer, unit, unit_type, share_token, inputs, updated_at, client_name, client_country, unit_size_sqf')
+            .eq('client_id', clientData.id)
+            .order('updated_at', { ascending: false }),
+          supabase
+            .from('presentations')
+            .select('id, title, description, share_token, items, updated_at')
+            .eq('client_id', clientData.id)
+            .order('updated_at', { ascending: false }),
+          supabase
+            .from('acquired_properties')
+            .select('*')
+            .eq('client_id', clientData.id)
+            .order('purchase_date', { ascending: false }),
+          supabase
+            .from('saved_comparisons')
+            .select('*')
+            .eq('client_id', clientData.id)
+            .order('updated_at', { ascending: false }),
+          supabase
+            .from('secondary_comparisons')
+            .select('*')
+            .eq('client_id', clientData.id)
+            .order('updated_at', { ascending: false }),
+        ]);
 
-        if (advisorData) {
-          setAdvisor(advisorData);
+        // Set all state at once
+        if (advisorResult.data) {
+          setAdvisor(advisorResult.data);
         }
-
-        // Fetch quotes for this client
-        const { data: quotesData } = await supabase
-          .from('cashflow_quotes')
-          .select('id, project_name, developer, unit, unit_type, share_token, inputs, updated_at, client_name, client_country, unit_size_sqf')
-          .eq('client_id', clientData.id)
-          .order('updated_at', { ascending: false });
-
-        if (quotesData) {
-          setQuotes(quotesData);
-        }
-
-        // Fetch presentations for this client
-        const { data: presentationsData } = await supabase
-          .from('presentations')
-          .select('id, title, description, share_token, items, updated_at')
-          .eq('client_id', clientData.id)
-          .order('updated_at', { ascending: false });
-
-        if (presentationsData) {
-          setPresentations(presentationsData as PresentationData[]);
-        }
+        setQuotes(quotesResult.data || []);
+        setPresentations((presentationsResult.data as PresentationData[]) || []);
+        setPortfolioProperties(propertiesResult.data || []);
+        setSavedComparisons(savedCompResult.data || []);
+        setSecondaryComparisons(secondaryCompResult.data || []);
 
         setLoading(false);
       } catch (err) {
@@ -171,7 +195,39 @@ const ClientPortal = () => {
     };
 
     fetchData();
-  }, [portalToken, getClientByPortalToken]);
+  }, [portalToken]);
+
+  // Calculate portfolio metrics
+  const portfolioMetrics = useMemo(() => {
+    return portfolioProperties.reduce((acc, p) => {
+      const currentValue = p.current_value || p.purchase_price;
+      const appreciation = currentValue - p.purchase_price;
+      
+      return {
+        totalProperties: acc.totalProperties + 1,
+        totalPurchaseValue: acc.totalPurchaseValue + p.purchase_price,
+        totalCurrentValue: acc.totalCurrentValue + currentValue,
+        totalAppreciation: acc.totalAppreciation + appreciation,
+        appreciationPercent: 0,
+        totalMonthlyRent: acc.totalMonthlyRent + (p.is_rented && p.monthly_rent ? p.monthly_rent : 0),
+        totalMortgageBalance: acc.totalMortgageBalance + (p.mortgage_balance || 0),
+        monthlyMortgagePayments: acc.monthlyMortgagePayments + (p.monthly_mortgage_payment || 0),
+        netMonthlyCashflow: 0,
+        totalEquity: 0,
+      };
+    }, {
+      totalProperties: 0,
+      totalPurchaseValue: 0,
+      totalCurrentValue: 0,
+      totalAppreciation: 0,
+      appreciationPercent: 0,
+      totalMonthlyRent: 0,
+      totalMortgageBalance: 0,
+      monthlyMortgagePayments: 0,
+      netMonthlyCashflow: 0,
+      totalEquity: 0,
+    });
+  }, [portfolioProperties]);
 
   const handleEmailAdvisor = () => {
     if (advisor?.business_email) {
@@ -261,9 +317,7 @@ const ClientPortal = () => {
     };
   }, [exportInputs]);
 
-  const isLoadingAll = loading || portfolioLoading || comparisonsLoading;
-
-  if (isLoadingAll) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-accent" />
