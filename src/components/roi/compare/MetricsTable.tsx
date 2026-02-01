@@ -1,5 +1,5 @@
 import { QuoteWithCalculations, ComparisonMetrics } from '@/hooks/useQuotesComparison';
-import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { formatCurrency, formatDualCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getQuoteDisplayName } from './utils';
@@ -46,7 +46,13 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
   const isLightTheme = theme === 'consultant';
   const colors = getQuoteColors(isLightTheme);
   const { t } = useLanguage();
-  const fmt = (v: number) => formatCurrency(v, currency, exchangeRate);
+  
+  // Dual currency formatting - shows AED primary with converted value in parentheses
+  const fmtDual = (v: number): string => {
+    const { primary, secondary } = formatDualCurrency(v, currency, exchangeRate);
+    if (!secondary) return primary;
+    return `${primary} (${secondary})`;
+  };
 
   // Format handover date as "Q# YYYY"
   const formatHandoverDate = (quote: QuoteWithCalculations['quote']) => {
@@ -138,12 +144,12 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         <MetricRow
           label={t('basePropertyPrice') || 'Base Price'}
           values={metrics.basePrice}
-          formatter={(v) => fmt(v)}
+          formatter={(v) => fmtDual(v)}
         />
         <MetricRow
           label={t('pricePerSqft')}
           values={metrics.pricePerSqft}
-          formatter={(v) => v !== null ? fmt(v) : 'N/A'}
+          formatter={(v) => v !== null ? fmtDual(v) : 'N/A'}
         />
         {/* Handover Date with time to completion */}
         <MetricRow
@@ -157,12 +163,12 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         <MetricRow
           label={t('monthlyBurn') || 'Monthly Burn'}
           values={quotesWithCalcs.map(q => ({ value: getMonthlyBurn(q) }))}
-          formatter={(v) => fmt(v)}
+          formatter={(v) => fmtDual(v)}
         />
         <MetricRow
           label={t('totalInvestmentLabel') || 'Total Investment'}
           values={metrics.totalInvestment}
-          formatter={(v) => fmt(v)}
+          formatter={(v) => fmtDual(v)}
         />
         {/* Pre-Handover Amount */}
         <MetricRow
@@ -170,7 +176,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
           values={quotesWithCalcs.map(q => ({ 
             value: q.quote.inputs.basePrice * q.quote.inputs.preHandoverPercent / 100 
           }))}
-          formatter={(v) => fmt(v)}
+          formatter={(v) => fmtDual(v)}
         />
         {/* On Handover Amount */}
         <MetricRow
@@ -197,7 +203,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
             const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
             return { value: q.quote.inputs.basePrice * onHandoverPercent / 100 };
           })}
-          formatter={(v) => v > 0 ? fmt(v) : '—'}
+          formatter={(v) => v > 0 ? fmtDual(v) : '—'}
         />
         {/* Post-Handover Amount - always show */}
         <MetricRow
@@ -207,7 +213,7 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
             const postPercent = q.quote.inputs.postHandoverPercent || 0;
             return { value: q.quote.inputs.basePrice * postPercent / 100 };
           })}
-          formatter={(v) => v > 0 ? fmt(v) : '—'}
+          formatter={(v) => v > 0 ? fmtDual(v) : '—'}
         />
         {/* Post-Handover Payments Count */}
         <MetricRow
@@ -225,7 +231,27 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
         <MetricRow
           label={t('y1RentIncome') || 'Y1 Rent Income'}
           values={quotesWithCalcs.map(q => ({ value: getY1RentIncome(q) }))}
-          formatter={(v) => v > 0 ? fmt(v) : 'N/A'}
+          formatter={(v) => v > 0 ? fmtDual(v) : 'N/A'}
+        />
+        {/* Rent at Year 5 */}
+        <MetricRow
+          label={t('rentYear5') || 'Rent (Year 5)'}
+          values={quotesWithCalcs.map(q => {
+            const year5Proj = q.calculations.yearlyProjections?.[4];
+            const rentY5 = year5Proj?.annualRent;
+            return { value: rentY5 && rentY5 > 0 ? rentY5 : null };
+          })}
+          formatter={(v) => v !== null ? fmtDual(v) : '—'}
+        />
+        {/* Value at Year 5 */}
+        <MetricRow
+          label={t('valueYear5') || 'Value (Year 5)'}
+          values={quotesWithCalcs.map(q => {
+            const year5Proj = q.calculations.yearlyProjections?.[4];
+            const valueY5 = year5Proj?.propertyValue;
+            return { value: valueY5 && valueY5 > 0 ? valueY5 : null };
+          })}
+          formatter={(v) => v !== null ? fmtDual(v) : '—'}
         />
         <MetricRow
           label={t('rentalYield')}

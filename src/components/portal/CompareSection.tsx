@@ -3,7 +3,7 @@ import { BarChart3, Building2, DollarSign, TrendingUp, Calendar, ArrowLeft } fro
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Currency } from "@/components/roi/currencyUtils";
+import { formatDualCurrency, Currency } from "@/components/roi/currencyUtils";
 
 interface QuoteData {
   id: string;
@@ -23,20 +23,55 @@ interface CompareSectionProps {
   onBack: () => void;
 }
 
-const formatCurrency = (value: number, currency: Currency, rate: number) => {
-  const converted = value * rate;
-  if (converted >= 1000000) {
-    return `${currency} ${(converted / 1000000).toFixed(2)}M`;
-  }
-  return new Intl.NumberFormat("en-AE", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(converted);
+// Dual currency formatting - shows AED primary with converted value in parentheses
+const fmtDual = (value: number, currency: Currency, rate: number): React.ReactNode => {
+  const { primary, secondary } = formatDualCurrency(value, currency, rate);
+  if (!secondary) return primary;
+  return (
+    <>
+      {primary}
+      <span className="text-theme-text-muted text-xs ml-1">({secondary})</span>
+    </>
+  );
 };
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat("en-AE").format(Math.round(value));
+};
+
+// Calculate Year 5 values from inputs
+const calculateYear5Values = (inputs: any, basePrice: number) => {
+  const handoverMonths = inputs.constructionMonths || 24;
+  const handoverYears = Math.ceil(handoverMonths / 12);
+  const growthYears = inputs.appreciationSettings?.growthPeriodYears || 5;
+  
+  // Appreciation rates
+  const constructionApp = inputs.appreciationSettings?.constructionAppreciation || inputs.constructionAppreciation || 10;
+  const growthApp = inputs.appreciationSettings?.growthAppreciation || inputs.growthAppreciation || 6;
+  const matureApp = inputs.appreciationSettings?.matureAppreciation || inputs.matureAppreciation || 3;
+  const rentGrowth = inputs.rentGrowthRate || 4;
+  
+  // Property value at Year 5 with phased appreciation
+  let propertyValue = basePrice;
+  for (let year = 1; year <= 5; year++) {
+    let appRate: number;
+    if (year <= handoverYears) {
+      appRate = constructionApp;
+    } else if (year <= handoverYears + growthYears) {
+      appRate = growthApp;
+    } else {
+      appRate = matureApp;
+    }
+    propertyValue = propertyValue * (1 + appRate / 100);
+  }
+  
+  // Rent at Year 5 with growth compounding (only post-handover)
+  const rentalYield = inputs.rentalYield || inputs.holdAnalysis?.rentalYield || 0;
+  const y1Rent = basePrice * (rentalYield / 100);
+  const yearsOfRent = Math.max(0, 5 - handoverYears);
+  const rentY5 = yearsOfRent > 0 ? y1Rent * Math.pow(1 + rentGrowth / 100, yearsOfRent - 1) : 0;
+  
+  return { propertyValue, rentY5 };
 };
 
 export const CompareSection = ({ quotes, selectedIds, currency, rate, onBack }: CompareSectionProps) => {
@@ -56,6 +91,9 @@ export const CompareSection = ({ quotes, selectedIds, currency, rate, onBack }: 
       const appreciation = inputs.constructionAppreciation || inputs.appreciationSettings?.constructionAppreciation || 0;
       const handoverMonths = inputs.constructionMonths || 0;
       
+      // Calculate Year 5 projections
+      const year5 = calculateYear5Values(inputs, basePrice);
+      
       return {
         id: quote.id,
         projectName: quote.project_name || 'Untitled',
@@ -68,6 +106,8 @@ export const CompareSection = ({ quotes, selectedIds, currency, rate, onBack }: 
         rentalYield,
         appreciation,
         handoverMonths,
+        rentYear5: year5.rentY5,
+        valueYear5: year5.propertyValue,
       };
     });
   }, [selectedQuotes]);
@@ -134,7 +174,7 @@ export const CompareSection = ({ quotes, selectedIds, currency, rate, onBack }: 
                   {metrics.map((m) => (
                     <td key={m.id} className="p-4">
                       <span className="text-lg font-semibold text-theme-text">
-                        {formatCurrency(m.price, currency, rate)}
+                        {fmtDual(m.price, currency, rate)}
                       </span>
                     </td>
                   ))}
@@ -167,7 +207,7 @@ export const CompareSection = ({ quotes, selectedIds, currency, rate, onBack }: 
                   <td className="p-4 text-sm text-theme-text-muted">Price/sqft</td>
                   {metrics.map((m) => (
                     <td key={m.id} className="p-4 text-theme-text">
-                      {m.pricePerSqft > 0 ? formatCurrency(m.pricePerSqft, currency, rate) : '-'}
+                      {m.pricePerSqft > 0 ? fmtDual(m.pricePerSqft, currency, rate) : '-'}
                     </td>
                   ))}
                 </tr>
@@ -197,6 +237,26 @@ export const CompareSection = ({ quotes, selectedIds, currency, rate, onBack }: 
                       <span className="text-theme-accent font-medium">
                         {m.appreciation > 0 ? `${m.appreciation}% p.a.` : '-'}
                       </span>
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Rent at Year 5 */}
+                <tr className="hover:bg-theme-bg/30">
+                  <td className="p-4 text-sm text-theme-text-muted">Rent (Year 5)</td>
+                  {metrics.map((m) => (
+                    <td key={m.id} className="p-4 text-theme-text">
+                      {m.rentYear5 > 0 ? fmtDual(m.rentYear5, currency, rate) : '-'}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Value at Year 5 */}
+                <tr className="hover:bg-theme-bg/30">
+                  <td className="p-4 text-sm text-theme-text-muted">Value (Year 5)</td>
+                  {metrics.map((m) => (
+                    <td key={m.id} className="p-4 text-theme-text font-medium">
+                      {m.valueYear5 > 0 ? fmtDual(m.valueYear5, currency, rate) : '-'}
                     </td>
                   ))}
                 </tr>
