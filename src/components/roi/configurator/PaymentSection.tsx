@@ -58,14 +58,22 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
   
   // Calculate pre-handover vs post-handover totals
-  const preHandoverPayments = inputs.additionalPayments.filter(p => {
-    if (p.type !== 'time') return true; // construction milestones go to pre-handover
-    return !isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
-  });
-  const postHandoverPayments = inputs.additionalPayments.filter(p => {
-    if (p.type !== 'time') return false;
-    return isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
-  });
+  // CRITICAL FIX: For standard plans (no post-handover toggle), 
+  // ALL installments are pre-handover by definition.
+  // Only filter by date when hasPostHandoverPlan = true.
+  const preHandoverPayments = hasPostHandoverPlan 
+    ? inputs.additionalPayments.filter(p => {
+        if (p.type !== 'time') return true; // construction milestones = pre-handover
+        return !isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
+      })
+    : inputs.additionalPayments; // Standard mode: ALL are pre-handover
+
+  const postHandoverPayments = hasPostHandoverPlan
+    ? inputs.additionalPayments.filter(p => {
+        if (p.type !== 'time') return false;
+        return isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
+      })
+    : []; // Standard mode: NO post-handover payments
   
   const preHandoverInstallmentsTotal = preHandoverPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
   const postHandoverTotal = postHandoverPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
