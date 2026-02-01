@@ -323,10 +323,9 @@ export const CompactPaymentTable = ({
     if (payment.type === 'time') {
       return estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language);
     }
+    // Construction payments: no date shown (percentage-based, not time-based)
     if (payment.type === 'construction') {
-      // S-curve estimation for construction milestones
-      const monthsForPercent = Math.round((payment.triggerValue / 100) * totalMonths);
-      return `~${estimateDateFromMonths(monthsForPercent, bookingMonth, bookingYear, language)}`;
+      return '';
     }
     return '';
   };
