@@ -222,11 +222,11 @@ async function generateTTSAudio(text: string): Promise<string | null> {
   }
 }
 
-// Transcribe audio using Whisper via Lovable AI Gateway
-async function transcribeAudio(audioBase64: string, mimeType: string): Promise<string> {
-  console.log("Transcribing audio with Whisper...");
+// Transcribe audio using Gemini's native audio understanding
+async function transcribeAudio(audioBase64: string, audioFormat: string): Promise<string> {
+  console.log("Transcribing audio with Gemini...");
+  console.log("Audio format:", audioFormat);
   
-  // Use Gemini's native audio understanding
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -241,13 +241,13 @@ async function transcribeAudio(audioBase64: string, mimeType: string): Promise<s
           content: [
             {
               type: "text",
-              text: "Please transcribe this audio exactly as spoken. Only return the transcription, nothing else."
+              text: "Please transcribe this audio exactly as spoken. Only return the transcription, nothing else. If the audio is in Spanish, transcribe in Spanish. If in English, transcribe in English."
             },
             {
               type: "input_audio",
               input_audio: {
                 data: audioBase64,
-                format: mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : mimeType.includes('mpeg') ? 'mp3' : 'wav'
+                format: audioFormat
               }
             }
           ]
@@ -259,12 +259,12 @@ async function transcribeAudio(audioBase64: string, mimeType: string): Promise<s
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Transcription error:", response.status, errorText);
-    throw new Error("Failed to transcribe audio");
+    throw new Error(`Failed to transcribe audio: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json();
   const transcription = result.choices?.[0]?.message?.content || "";
-  console.log("Transcription:", transcription);
+  console.log("Transcription result:", transcription);
   return transcription;
 }
 
@@ -301,24 +301,56 @@ serve(async (req) => {
     // Handle audio input - transcribe first, then process
     if (audio && typeof audio === 'string') {
       console.log("Processing audio input...");
+      console.log("Audio string length:", audio.length);
+      console.log("Audio starts with:", audio.substring(0, 50));
       
-      // Extract MIME type and base64 data
-      const matches = audio.match(/^data:([^;]+);base64,(.+)$/);
-      if (!matches) {
-        // Try to handle raw base64 without data URI prefix
-        console.log("Audio doesn't have data URI format, treating as raw base64");
-        throw new Error("Invalid audio format - please ensure audio is recorded correctly");
+      let mimeType = "audio/webm";
+      let base64Data = "";
+      
+      // Try to extract MIME type and base64 data from data URI
+      if (audio.startsWith("data:")) {
+        // Handle data URI format: data:audio/webm;base64,XXXX
+        const semicolonIndex = audio.indexOf(";");
+        const commaIndex = audio.indexOf(",");
+        
+        if (semicolonIndex > 5 && commaIndex > semicolonIndex) {
+          mimeType = audio.substring(5, semicolonIndex); // Extract MIME type after "data:"
+          base64Data = audio.substring(commaIndex + 1); // Extract base64 after comma
+          console.log("Extracted MIME type:", mimeType);
+          console.log("Base64 data length:", base64Data.length);
+        } else {
+          console.error("Unexpected data URI format");
+          throw new Error("Invalid audio format - could not parse data URI");
+        }
+      } else {
+        // Assume raw base64 if no data: prefix
+        console.log("Audio appears to be raw base64, assuming webm format");
+        base64Data = audio;
       }
       
-      const mimeType = matches[1];
-      const base64Data = matches[2];
+      if (!base64Data || base64Data.length < 100) {
+        console.error("Base64 data too short:", base64Data.length);
+        throw new Error("Audio recording is too short or empty");
+      }
       
-      console.log("Audio MIME type:", mimeType);
-      console.log("Audio base64 length:", base64Data.length);
+      // Determine audio format for Gemini
+      let audioFormat = "wav";
+      if (mimeType.includes("webm")) {
+        audioFormat = "webm";
+      } else if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
+        audioFormat = "mp4";
+      } else if (mimeType.includes("mpeg") || mimeType.includes("mp3")) {
+        audioFormat = "mp3";
+      } else if (mimeType.includes("ogg")) {
+        audioFormat = "ogg";
+      }
+      
+      console.log("Using audio format for Gemini:", audioFormat);
       
       // Transcribe the audio first
       try {
-        userTranscription = await transcribeAudio(base64Data, mimeType);
+        userTranscription = await transcribeAudio(base64Data, audioFormat);
+        console.log("Transcription successful:", userTranscription.substring(0, 100));
       } catch (transcribeError) {
         console.error("Transcription failed:", transcribeError);
         // Fallback: try to process without transcription
