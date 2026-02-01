@@ -1,248 +1,153 @@
 
-# Client-Centric Portfolio Manager Restructure
+# Fix Quote-Client Linking & Add Portal Preview
 
-## Understanding the Request
+## Problem Analysis
 
-The current implementation has a **broker-centric** portfolio view where brokers see all their managed properties. However, you need a **client-centric** portfolio system where:
+### Issue 1: Quotes Not Linking to Clients
 
-1. **Brokers** manage portfolios per client (add/edit properties, update valuations)
-2. **Clients** access their portal to see their investment progress over time
-3. Track growth metrics: appreciation, rental income, equity growth - month-to-month and year-to-year
+**Root Cause Found:** Race condition in `OICalculator.tsx`
+
+When a broker clicks "+ Quote" from a client card:
+1. `handleCreateQuote` stores client data in `localStorage.preselected_client` (including `dbClientId`)
+2. Navigation to `/cashflow-generator` triggers two effects:
+   - Effect at line 159: Reads localStorage and sets `dbClientId` ✓
+   - Effect at line 189: Resets ALL state to defaults (runs after, overwrites `dbClientId`) ✗
+
+The reset effect at line 189-210 runs **after** the preselected client effect, overwriting the `dbClientId`.
+
+**Evidence:** Database shows 20+ quotes with `client_name: "Hugo"` but ALL have `client_id: null`.
+
+### Issue 2: No Way to Preview Portal from Client Manager
+
+The broker has no easy way to see what the client's portal looks like. Currently they can only:
+- Copy the portal link
+- Open in new tab
+
+They should be able to preview how the portal appears from within the client management interface.
 
 ---
 
-## Current vs. Required Architecture
+## Solution
 
-### Current Flow
+### Fix 1: Correct the Effect Order in OICalculator
+
+Merge the preselected client logic INTO the reset effect, so it runs in the correct order:
+
+```typescript
+// Reset ALL state when navigating to new quote (no quoteId)
+useEffect(() => {
+  if (!quoteId) {
+    // First, reset all state for a fresh start
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+    setQuoteImages({ ... });
+    setShareUrl(null);
+    
+    // Then check for preselected client (after reset, so it's not overwritten)
+    const preselectedClient = localStorage.getItem('preselected_client');
+    if (preselectedClient) {
+      try {
+        const clientData = JSON.parse(preselectedClient);
+        setClientInfo({
+          ...DEFAULT_CLIENT_INFO,
+          clients: [{ id: '1', name: clientData.clientName, country: clientData.clientCountry }],
+          dbClientId: clientData.dbClientId  // This will now persist!
+        });
+        localStorage.removeItem('preselected_client');
+        setModalOpen(true);
+      } catch (e) {
+        setClientInfo(DEFAULT_CLIENT_INFO);
+        localStorage.removeItem('preselected_client');
+      }
+    } else {
+      setClientInfo(DEFAULT_CLIENT_INFO);
+    }
+    
+    setDataLoaded(true);
+    justResetRef.current = true;
+    setTimeout(() => { justResetRef.current = false; }, 150);
+  } else {
+    setDataLoaded(false);
+  }
+}, [quoteId, setQuoteImages]);
 ```
-Broker → /portfolio → See ALL properties (flat list)
-Client → /portal/:token → See quotes + presentations + properties (basic)
+
+This ensures `dbClientId` is set AFTER the reset, so it persists to the save.
+
+### Fix 2: Add Portal Preview Button to Client Card
+
+Add a new action in the ClientCard dropdown menu:
+
+```typescript
+<DropdownMenuItem onClick={handleOpenPortal} className="text-theme-text hover:bg-theme-bg cursor-pointer">
+  <Eye className="w-4 h-4 mr-2" />
+  Preview Portal
+</DropdownMenuItem>
 ```
 
-### Required Flow
-```
-Broker → /clients → Select Client → View/Manage Client's Portfolio
-Broker → /portfolio → Overview dashboard of ALL client portfolios
-Client → /portal/:token → See investment progress with growth tracking
-```
+The `handleOpenPortal` function already exists at line 114-118 - it opens the portal in a new tab. This is sufficient for preview purposes.
 
----
+### Fix 3: Add Migration to Link Existing Quotes
 
-## Implementation Plan
-
-### Phase 1: Enhanced Data Model for Growth Tracking
-
-**1.1 Add Property Valuations History Table**
-
-Create a new table to track property value changes over time:
+Create a one-time migration function to link existing quotes that have `client_name` matching a client but no `client_id`:
 
 ```sql
-CREATE TABLE property_valuations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  property_id uuid REFERENCES acquired_properties(id) ON DELETE CASCADE,
-  valuation_date date NOT NULL,
-  market_value numeric NOT NULL,
-  notes text,
-  created_at timestamptz DEFAULT now()
-);
-```
-
-This enables month-to-month and year-to-year tracking.
-
-**1.2 Add Rental Income History Table**
-
-Track rental payments over time:
-
-```sql
-CREATE TABLE rental_payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  property_id uuid REFERENCES acquired_properties(id) ON DELETE CASCADE,
-  payment_month date NOT NULL,
-  amount numeric NOT NULL,
-  is_paid boolean DEFAULT true,
-  created_at timestamptz DEFAULT now()
-);
+-- Link existing quotes to clients based on matching name + broker_id
+UPDATE cashflow_quotes q
+SET client_id = c.id
+FROM clients c
+WHERE q.client_id IS NULL
+  AND q.client_name IS NOT NULL
+  AND q.broker_id = c.broker_id
+  AND LOWER(q.client_name) = LOWER(c.name);
 ```
 
 ---
 
-### Phase 2: Restructure Portfolio Page for Brokers
+## Files to Modify
 
-**2.1 Client Portfolio Overview (`/portfolio`)**
+### 1. `src/pages/OICalculator.tsx`
 
-Transform the current flat list into a client-grouped dashboard:
+**Changes:**
+- Remove separate preselected client effect (lines 158-185)
+- Merge preselected client logic into the reset effect (lines 187-210)
+- Ensure `dbClientId` is set AFTER the base reset
 
-- **Summary Cards**: Total clients with properties, total portfolio value across all clients
-- **Client Portfolio List**: Each client card showing:
-  - Client name and contact
-  - Number of properties
-  - Total value and appreciation
-  - Quick actions: View portfolio, add property
-- **Drill-down**: Click client to see their full portfolio
+### 2. Database Migration
 
-**2.2 Individual Client Portfolio View**
-
-New route: `/portfolio/:clientId`
-
-- Client header with contact info
-- Portfolio metrics (value, equity, appreciation, cashflow)
-- Properties list with detailed cards
-- Growth charts (appreciation over time, rental income)
-- Add/edit/remove properties
+**Create migration to backfill existing quotes:**
+- Update all quotes with matching `client_name` and `broker_id` to link `client_id`
+- This fixes Hugo's 20+ quotes
 
 ---
 
-### Phase 3: Enhanced Client Portal Experience
+## Verification Steps
 
-**3.1 Portfolio Dashboard in Client Portal**
-
-Replace the simple property list with a comprehensive dashboard:
-
-**Investment Overview Section:**
-- Total portfolio value with appreciation badge
-- Total equity (value minus mortgages)
-- Total monthly rental income
-- Net monthly cashflow
-
-**Growth Visualization:**
-- Line chart showing portfolio value over time
-- Bar chart showing monthly rental income
-- Appreciation timeline per property
-
-**Property Cards (Enhanced):**
-- Current value vs purchase price
-- Appreciation percentage and amount
-- Monthly rent (if rented)
-- Mortgage status and balance
-- Time held (months/years since purchase)
-
-**3.2 Performance Metrics**
-
-Calculate and display:
-- **Total Return**: (Current Value + Total Rent Collected - Purchase Price) / Purchase Price
-- **Annual Yield**: Monthly rent * 12 / Current value
-- **Equity Growth Rate**: How equity has grown since purchase
-- **Cash-on-Cash Return**: Net cashflow / Total cash invested
+After implementation:
+1. Go to Clients Manager
+2. Click "+ Quote" on Hugo's card
+3. Fill in property details and save
+4. Check database: the new quote should have `client_id` set
+5. Check Hugo's card: should show the new quote in the count
+6. Expand Hugo's quotes section: should list the quote
+7. Open Hugo's portal: should show the quote in Opportunities
 
 ---
 
-### Phase 4: Integration Points
+## Technical Notes
 
-**4.1 Quote to Property Conversion**
+### Why This Happened
 
-When a quote status changes to "sold":
-- Show modal: "Convert to Portfolio Property?"
-- Pre-fill: Project name, developer, unit, price from quote
-- User adds: Actual purchase date, final price, mortgage details
-- Creates acquired_property linked to quote and client
+React effects run in order of declaration, but both effects had `[quoteId]` (or similar) as dependencies. When navigating to `/cashflow-generator`, both effects triggered. The reset effect ran last because it was declared later in the file, overwriting the `dbClientId` that was just set.
 
-**4.2 Client Manager Integration**
+### The Fix Guarantees
 
-In `/clients` (Clients Manager):
-- Add "Portfolio" tab to client card expansion
-- Show quick portfolio metrics
-- Button to view full portfolio
+By consolidating into a single effect:
+1. Reset happens first (clean slate)
+2. Preselected client is applied after (if present)
+3. `dbClientId` is preserved in state
+4. Auto-save includes `client_id` in the database insert/update
 
----
+### Portal Preview
 
-## User Interface Design
-
-### Broker: Client Portfolio View (`/portfolio/:clientId`)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ ← Back to Portfolios                        [Add Property]  │
-├─────────────────────────────────────────────────────────────┤
-│  👤 John Smith                                              │
-│  john@email.com • +971 50 123 4567                         │
-├─────────────────────────────────────────────────────────────┤
-│                    PORTFOLIO METRICS                        │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │Properties│ │  Value   │ │Apprecia. │ │  Equity  │       │
-│  │    3     │ │ 12.5M    │ │ +1.2M    │ │  8.5M    │       │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
-│  ┌──────────┐ ┌──────────┐ ┌─────────────────────┐         │
-│  │Rent/mo   │ │Mortgage  │ │   Net Cashflow/mo   │         │
-│  │ 45,000   │ │ 28,000   │ │     +17,000         │         │
-│  └──────────┘ └──────────┘ └─────────────────────┘         │
-├─────────────────────────────────────────────────────────────┤
-│                   GROWTH OVER TIME                          │
-│  [Portfolio Value Chart - Line graph]                       │
-│  [Monthly Rent Chart - Bar graph]                          │
-├─────────────────────────────────────────────────────────────┤
-│                      PROPERTIES                             │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │ 🏢 Marina Heights, Unit 1204                    [···]  │ │
-│  │    Emaar • 1BR • Purchased Mar 2024                    │ │
-│  │    Purchase: 1.8M → Current: 2.1M (+16.7%)            │ │
-│  │    🏠 Rented: 12,000/mo  🏦 Mortgage: 8,500/mo        │ │
-│  └───────────────────────────────────────────────────────┘ │
-│  [More property cards...]                                   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Client Portal: Enhanced Portfolio Section
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  📊 My Portfolio                                            │
-├─────────────────────────────────────────────────────────────┤
-│  Your Investment Performance                                │
-│                                                             │
-│  Portfolio Value          Appreciation          Equity      │
-│  ┌──────────────┐        ┌───────────┐        ┌─────────┐  │
-│  │   AED 12.5M  │        │ +1.2M     │        │  8.5M   │  │
-│  │              │        │ (+10.6%)  │        │         │  │
-│  └──────────────┘        └───────────┘        └─────────┘  │
-│                                                             │
-│  ─────────────────────────────────────────────────────────  │
-│                   Portfolio Growth                          │
-│  [Interactive line chart: Value over 24 months]            │
-│  ─────────────────────────────────────────────────────────  │
-│                                                             │
-│  Monthly Cashflow                                           │
-│  Rental Income:    +AED 45,000                             │
-│  Mortgage:         -AED 28,000                             │
-│  Net Cashflow:     +AED 17,000                             │
-│                                                             │
-│  ─────────────────────────────────────────────────────────  │
-│                      Your Properties                        │
-│  [Property cards with appreciation, rent status]           │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Files to Create/Modify
-
-### New Files
-1. `src/pages/ClientPortfolioView.tsx` - Broker's view of individual client portfolio
-2. `src/components/portfolio/PortfolioGrowthChart.tsx` - Recharts line chart for value over time
-3. `src/components/portfolio/RentalIncomeChart.tsx` - Bar chart for rental tracking
-4. `src/components/portfolio/ClientPortfolioHeader.tsx` - Client info header
-5. `src/hooks/usePropertyValuations.ts` - Hook for valuation history
-
-### Modified Files
-1. `src/pages/Portfolio.tsx` - Restructure to show client-grouped view
-2. `src/pages/ClientPortal.tsx` - Enhanced portfolio section with charts
-3. `src/components/clients/ClientCard.tsx` - Add portfolio tab/metrics
-4. `src/hooks/usePortfolio.ts` - Add functions for valuations and historical data
-5. `src/App.tsx` - Add route `/portfolio/:clientId`
-
-### Database Migrations
-1. Create `property_valuations` table
-2. Create `rental_payments` table
-3. Add RLS policies for both tables
-
----
-
-## Summary
-
-This restructure transforms the Portfolio Manager from a flat property list into a comprehensive investment tracking system:
-
-1. **Brokers** get a client-centric view to manage each client's portfolio
-2. **Clients** see their investment progress with growth charts and performance metrics
-3. **Historical tracking** enables month-to-month and year-to-year comparisons
-4. **Quote conversion** seamlessly turns closed deals into portfolio properties
-
-The client portal becomes a powerful tool for clients to track their wealth building journey, seeing exactly how their investments have performed over time.
+The existing "Open Portal" button in the dropdown menu serves as the preview mechanism. When brokers click it, they see exactly what their client will see. No additional UI needed since the portal is already fully functional.
