@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { GripVertical } from 'lucide-react';
 import { QuoteWithCalculations, ComparisonQuote } from '@/hooks/useQuotesComparison';
-import { formatCurrency, Currency } from '@/components/roi/currencyUtils';
+import { formatCurrency, formatDualCurrency, Currency } from '@/components/roi/currencyUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getQuoteDisplayName } from './utils';
@@ -169,7 +169,18 @@ export const ComparisonTable = ({
   const isLightTheme = theme === 'consultant';
   const colors = getQuoteColors(isLightTheme);
   const { t } = useLanguage();
-  const fmt = (v: number) => formatCurrency(v, currency, exchangeRate);
+  
+  // Dual currency formatting - shows AED primary with converted value in parentheses
+  const fmtDual = (v: number): React.ReactNode => {
+    const { primary, secondary } = formatDualCurrency(v, currency, exchangeRate);
+    if (!secondary) return primary;
+    return (
+      <span>
+        {primary}
+        <span className="text-theme-text-muted text-xs ml-1">({secondary})</span>
+      </span>
+    );
+  };
 
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
 
@@ -278,7 +289,7 @@ export const ComparisonTable = ({
             <DataRow
               label={t('propertyValue') || 'Property Value'}
               values={orderedQuotes.map(q => ({ 
-                value: fmt(q.quote.inputs.basePrice) 
+                value: fmtDual(q.quote.inputs.basePrice) 
               }))}
             />
             
@@ -288,7 +299,7 @@ export const ComparisonTable = ({
               values={orderedQuotes.map(q => {
                 const size = q.quote.unitSizeSqf || q.quote.inputs.unitSizeSqf || 0;
                 const pricePerSqft = size > 0 ? q.quote.inputs.basePrice / size : null;
-                return { value: pricePerSqft ? fmt(pricePerSqft) : '—' };
+                return { value: pricePerSqft ? fmtDual(pricePerSqft) : '—' };
               })}
             />
             
@@ -308,14 +319,39 @@ export const ComparisonTable = ({
                 const grossAnnualRent = q.quote.inputs.basePrice * (q.quote.inputs.rentalYieldPercent / 100);
                 const yieldPct = q.quote.inputs.rentalYieldPercent;
                 if (grossAnnualRent <= 0) return { value: '—' };
+                const { primary, secondary } = formatDualCurrency(grossAnnualRent, currency, exchangeRate);
                 return { 
                   value: (
                     <span>
-                      {fmt(grossAnnualRent)}
+                      {primary}
+                      {secondary && <span className="text-theme-text-muted text-xs ml-1">({secondary})</span>}
                       <span className="text-xs text-theme-text-muted ml-1">({yieldPct}%)</span>
                     </span>
                   )
                 };
+              })}
+            />
+            
+            {/* Rent at Year 5 */}
+            <DataRow
+              label={t('rentYear5') || 'Rent (Year 5)'}
+              values={orderedQuotes.map(q => {
+                // Find Year 5 projection (index 4 = 5th year from booking)
+                const year5Proj = q.calculations.yearlyProjections?.[4];
+                const rentY5 = year5Proj?.annualRent;
+                if (!rentY5 || rentY5 <= 0) return { value: '—' };
+                return { value: fmtDual(rentY5) };
+              })}
+            />
+            
+            {/* Value at Year 5 */}
+            <DataRow
+              label={t('valueYear5') || 'Value (Year 5)'}
+              values={orderedQuotes.map(q => {
+                const year5Proj = q.calculations.yearlyProjections?.[4];
+                const valueY5 = year5Proj?.propertyValue;
+                if (!valueY5 || valueY5 <= 0) return { value: '—' };
+                return { value: fmtDual(valueY5) };
               })}
             />
             
@@ -340,7 +376,7 @@ export const ComparisonTable = ({
               values={orderedQuotes.map(q => {
                 const preAmount = q.quote.inputs.basePrice * (q.quote.inputs.preHandoverPercent / 100);
                 const entryCosts = q.calculations.totalEntryCosts || 0;
-                return { value: fmt(preAmount + entryCosts) };
+                return { value: fmtDual(preAmount + entryCosts) };
               })}
             />
             
@@ -350,7 +386,7 @@ export const ComparisonTable = ({
               values={orderedQuotes.map(q => {
                 if (!q.quote.inputs.hasPostHandoverPlan) return { value: '—' };
                 const postAmount = q.quote.inputs.basePrice * ((q.quote.inputs.postHandoverPercent || 0) / 100);
-                return { value: postAmount > 0 ? fmt(postAmount) : '—' };
+                return { value: postAmount > 0 ? fmtDual(postAmount) : '—' };
               })}
             />
             
@@ -365,11 +401,13 @@ export const ComparisonTable = ({
                 const { cashflow, coveragePercent, isPositive } = coverage;
                 const prefix = isPositive ? '+' : '';
                 const colorClass = isPositive ? 'text-theme-positive' : 'text-destructive';
+                const { primary, secondary } = formatDualCurrency(Math.abs(cashflow), currency, exchangeRate);
                 
                 return { 
                   value: (
                     <span className={colorClass}>
-                      {prefix}{fmt(Math.abs(cashflow))}/mo
+                      {prefix}{primary}/mo
+                      {secondary && <span className="text-xs opacity-70 ml-1">({secondary})</span>}
                       <span className="text-xs opacity-70 ml-1">({Math.round(coveragePercent)}%)</span>
                     </span>
                   )
