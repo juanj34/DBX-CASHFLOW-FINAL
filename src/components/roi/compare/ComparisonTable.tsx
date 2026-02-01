@@ -182,12 +182,39 @@ export const ComparisonTable = ({
     );
   };
 
+  const incomingIds = useMemo(
+    () => quotesWithCalcs.map(q => q.quote.id),
+    [quotesWithCalcs]
+  );
+
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
 
-  // Sync order with incoming quotes
+  // IMPORTANT:
+  // Do NOT blindly reset local order on every refetch.
+  // Only reconcile when the *set* of quote IDs changes (added/removed).
   useEffect(() => {
-    setOrderedIds(quotesWithCalcs.map(q => q.quote.id));
-  }, [quotesWithCalcs.map(q => q.quote.id).join(',')]);
+    setOrderedIds((prev) => {
+      // First load
+      if (prev.length === 0) return incomingIds;
+
+      const prevSet = new Set(prev);
+      const incomingSet = new Set(incomingIds);
+
+      const sameLength = prev.length === incomingIds.length;
+      const sameMembers =
+        sameLength && prev.every((id) => incomingSet.has(id));
+
+      // If it's the same set of IDs, keep the user's order.
+      if (sameMembers) return prev;
+
+      // Otherwise, reconcile: keep existing order for remaining IDs, append new ones.
+      const next = prev.filter((id) => incomingSet.has(id));
+      for (const id of incomingIds) {
+        if (!prevSet.has(id)) next.push(id);
+      }
+      return next;
+    });
+  }, [incomingIds.join(',')]);
 
   const orderedQuotes = useMemo(() => {
     return orderedIds
