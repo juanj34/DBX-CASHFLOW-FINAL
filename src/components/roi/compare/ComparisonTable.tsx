@@ -404,11 +404,13 @@ export const ComparisonTable = ({
                 const basePrice = q.quote.inputs.basePrice;
                 
                 if (q.quote.inputs.hasPostHandoverPlan) {
-                  // Post-handover plan: Pre-handover = downpayment + pre-handover installments + on-handover
-                  const downpaymentPercent = q.quote.inputs.downpaymentPercent || 0;
-                  const preHandoverPercent = q.quote.inputs.preHandoverPercent || 0;
-                  const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
-                  const preAmount = basePrice * ((downpaymentPercent + preHandoverPercent + onHandoverPercent) / 100);
+                  // Post-handover plan: Pre = everything that's NOT post-handover.
+                  // We intentionally use the stored postHandoverPercent (source of truth) and derive Pre as remainder,
+                  // so Pre + Post always equals Property Value.
+                  const postPercentRaw = q.quote.inputs.postHandoverPercent || 0;
+                  const postPercent = Math.min(100, Math.max(0, postPercentRaw));
+                  const postAmount = basePrice * (postPercent / 100);
+                  const preAmount = basePrice - postAmount;
                   return { value: fmtDual(preAmount) };
                 } else {
                   // Standard plan: 100% of property is paid by handover
@@ -423,7 +425,8 @@ export const ComparisonTable = ({
               values={orderedQuotes.map(q => {
                 if (!q.quote.inputs.hasPostHandoverPlan) return { value: '—' };
                 // Use stored postHandoverPercent directly (per memory note)
-                const postPercent = q.quote.inputs.postHandoverPercent || 0;
+                const postPercentRaw = q.quote.inputs.postHandoverPercent || 0;
+                const postPercent = Math.min(100, Math.max(0, postPercentRaw));
                 const postAmount = q.quote.inputs.basePrice * (postPercent / 100);
                 return { value: postAmount > 0 ? fmtDual(postAmount) : '—' };
               })}

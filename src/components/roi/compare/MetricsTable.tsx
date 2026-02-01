@@ -177,11 +177,12 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
             const basePrice = q.quote.inputs.basePrice;
             
             if (q.quote.inputs.hasPostHandoverPlan) {
-              // Post-handover plan: downpayment + pre-handover installments + on-handover
-              const downpaymentPercent = q.quote.inputs.downpaymentPercent || 0;
-              const preHandoverPercent = q.quote.inputs.preHandoverPercent || 0;
-              const onHandoverPercent = q.quote.inputs.onHandoverPercent || 0;
-              return { value: basePrice * ((downpaymentPercent + preHandoverPercent + onHandoverPercent) / 100) };
+              // Post-handover plan: Pre = everything that's NOT post-handover.
+              // Use stored postHandoverPercent as source of truth and derive Pre as remainder.
+              const postPercentRaw = q.quote.inputs.postHandoverPercent || 0;
+              const postPercent = Math.min(100, Math.max(0, postPercentRaw));
+              const postAmount = basePrice * (postPercent / 100);
+              return { value: basePrice - postAmount };
             } else {
               // Standard plan: 100% is paid by handover
               return { value: basePrice };
@@ -221,7 +222,8 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
           label={t('postHandover') || 'Post-Handover'}
           values={quotesWithCalcs.map(q => {
             if (!q.quote.inputs.hasPostHandoverPlan) return { value: 0 };
-            const postPercent = q.quote.inputs.postHandoverPercent || 0;
+            const postPercentRaw = q.quote.inputs.postHandoverPercent || 0;
+            const postPercent = Math.min(100, Math.max(0, postPercentRaw));
             return { value: q.quote.inputs.basePrice * postPercent / 100 };
           })}
           formatter={(v) => v > 0 ? fmtDual(v) : '—'}
