@@ -62,7 +62,8 @@ export interface PortfolioMetrics {
   totalCurrentValue: number;
   totalAppreciation: number;
   appreciationPercent: number;
-  totalMonthlyRent: number;
+  totalMonthlyRent: number; // Now uses projected rent when actual not available
+  totalProjectedRent: number; // Always the projection
   totalMortgageBalance: number;
   monthlyMortgagePayments: number;
   netMonthlyCashflow: number;
@@ -177,10 +178,17 @@ export const usePortfolio = (clientId?: string) => {
     }
   }, []);
 
-  // Calculate portfolio metrics
+  // Calculate portfolio metrics with projected rent (default 7% yield if no quote data)
+  const DEFAULT_RENTAL_YIELD = 7; // Will be overridden by quote data when available
+  
   const metrics: PortfolioMetrics = properties.reduce((acc, p) => {
     const currentValue = p.current_value || p.purchase_price;
     const appreciation = currentValue - p.purchase_price;
+    
+    // Use actual rent if provided, otherwise use projected (from quote yield or default)
+    // Note: projectedMonthlyRent will be set by the component when quote data is available
+    const projectedRent = (p.purchase_price * (DEFAULT_RENTAL_YIELD / 100)) / 12;
+    const effectiveRent = p.monthly_rent && p.monthly_rent > 0 ? p.monthly_rent : projectedRent;
     
     return {
       totalProperties: acc.totalProperties + 1,
@@ -188,7 +196,8 @@ export const usePortfolio = (clientId?: string) => {
       totalCurrentValue: acc.totalCurrentValue + currentValue,
       totalAppreciation: acc.totalAppreciation + appreciation,
       appreciationPercent: 0, // Calculated below
-      totalMonthlyRent: acc.totalMonthlyRent + (p.is_rented && p.monthly_rent ? p.monthly_rent : 0),
+      totalMonthlyRent: acc.totalMonthlyRent + effectiveRent,
+      totalProjectedRent: acc.totalProjectedRent + projectedRent,
       totalMortgageBalance: acc.totalMortgageBalance + (p.mortgage_balance || 0),
       monthlyMortgagePayments: acc.monthlyMortgagePayments + (p.monthly_mortgage_payment || 0),
       netMonthlyCashflow: 0, // Calculated below
@@ -201,6 +210,7 @@ export const usePortfolio = (clientId?: string) => {
     totalAppreciation: 0,
     appreciationPercent: 0,
     totalMonthlyRent: 0,
+    totalProjectedRent: 0,
     totalMortgageBalance: 0,
     monthlyMortgagePayments: 0,
     netMonthlyCashflow: 0,
@@ -273,10 +283,15 @@ export const useClientPortfolio = (portalToken: string) => {
     fetchProperties();
   }, [fetchProperties]);
 
-  // Calculate portfolio metrics (same logic)
+  // Calculate portfolio metrics with projected rent
+  const DEFAULT_RENTAL_YIELD = 7;
+  
   const metrics: PortfolioMetrics = properties.reduce((acc, p) => {
     const currentValue = p.current_value || p.purchase_price;
     const appreciation = currentValue - p.purchase_price;
+    
+    const projectedRent = (p.purchase_price * (DEFAULT_RENTAL_YIELD / 100)) / 12;
+    const effectiveRent = p.monthly_rent && p.monthly_rent > 0 ? p.monthly_rent : projectedRent;
     
     return {
       totalProperties: acc.totalProperties + 1,
@@ -284,7 +299,8 @@ export const useClientPortfolio = (portalToken: string) => {
       totalCurrentValue: acc.totalCurrentValue + currentValue,
       totalAppreciation: acc.totalAppreciation + appreciation,
       appreciationPercent: 0,
-      totalMonthlyRent: acc.totalMonthlyRent + (p.is_rented && p.monthly_rent ? p.monthly_rent : 0),
+      totalMonthlyRent: acc.totalMonthlyRent + effectiveRent,
+      totalProjectedRent: acc.totalProjectedRent + projectedRent,
       totalMortgageBalance: acc.totalMortgageBalance + (p.mortgage_balance || 0),
       monthlyMortgagePayments: acc.monthlyMortgagePayments + (p.monthly_mortgage_payment || 0),
       netMonthlyCashflow: 0,
@@ -297,6 +313,7 @@ export const useClientPortfolio = (portalToken: string) => {
     totalAppreciation: 0,
     appreciationPercent: 0,
     totalMonthlyRent: 0,
+    totalProjectedRent: 0,
     totalMortgageBalance: 0,
     monthlyMortgagePayments: 0,
     netMonthlyCashflow: 0,

@@ -21,7 +21,7 @@ import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from
 import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { migrateInputs } from "@/components/roi/inputMigration";
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
-import { PortfolioSection } from "@/components/portal/PortfolioSection";
+import { PortfolioSection, PropertyWithProjections } from "@/components/portal/PortfolioSection";
 import { OpportunitiesSection } from "@/components/portal/OpportunitiesSection";
 import { PresentationsSection } from "@/components/portal/PresentationsSection";
 import { ComparisonsSection } from "@/components/portal/ComparisonsSection";
@@ -468,11 +468,35 @@ const ClientPortfolioView = () => {
           {isInvestor && (
             <TabsContent value="portfolio" className="mt-6">
               <PortfolioSection 
-                properties={portfolioProperties}
+                properties={(() => {
+                  // Enrich properties with projected rent from their linked quotes
+                  return portfolioProperties.map(prop => {
+                    // Find linked quote if exists
+                    const linkedQuote = prop.source_quote_id 
+                      ? quotes.find(q => q.id === prop.source_quote_id) 
+                      : null;
+                    
+                    // Extract rental yield from quote inputs
+                    const quoteInputs = linkedQuote?.inputs as any;
+                    const rentalYieldPercent = quoteInputs?.rentalYieldPercent;
+                    
+                    // Calculate projected monthly rent
+                    const projectedMonthlyRent = rentalYieldPercent 
+                      ? (prop.purchase_price * (rentalYieldPercent / 100)) / 12
+                      : undefined;
+                    
+                    return {
+                      ...prop,
+                      projectedMonthlyRent,
+                      rentalYieldPercent,
+                    } as PropertyWithProjections;
+                  });
+                })()}
                 metrics={portfolioMetrics}
                 currency={currency}
                 rate={rate}
                 onViewAnalysis={(quoteId) => navigate(`/cashflow/${quoteId}`)}
+                defaultRentalYield={7} // Could come from broker profile
               />
             </TabsContent>
           )}

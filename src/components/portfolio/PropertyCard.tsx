@@ -115,13 +115,25 @@ export const PropertyCard = ({ property, onEdit, onDelete, showActions = true }:
             </Badge>
           )}
           
-          {property.is_rented && (
-            <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs flex items-center gap-1">
-              <Home className="w-3 h-3" />
-              Rented: {formatCurrency(property.monthly_rent || 0)}/mo
-            </Badge>
-          )}
-          
+          {/* Auto-calculate projected rent (7% default if no quote data) */}
+          {(() => {
+            const projectedRent = (property.purchase_price * 0.07) / 12;
+            const hasActualRent = property.monthly_rent && property.monthly_rent > 0;
+            
+            return (
+              <>
+                <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs flex items-center gap-1">
+                  <Home className="w-3 h-3" />
+                  Est. Rent: ~{formatCurrency(projectedRent)}/mo
+                </Badge>
+                {hasActualRent && (
+                  <Badge className="bg-green-500/20 text-green-400 border-0 text-xs flex items-center gap-1">
+                    Actual: {formatCurrency(property.monthly_rent!)}/mo
+                  </Badge>
+                )}
+              </>
+            );
+          })()}
           {property.has_mortgage && (
             <Badge className="bg-amber-500/20 text-amber-400 border-0 text-xs flex items-center gap-1">
               <Landmark className="w-3 h-3" />

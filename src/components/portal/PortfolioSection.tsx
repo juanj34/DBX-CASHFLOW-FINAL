@@ -1,4 +1,4 @@
-import { Building, TrendingUp, DollarSign, PiggyBank, Wallet, Home, Percent, ExternalLink } from "lucide-react";
+import { Building, TrendingUp, DollarSign, PiggyBank, Wallet, Home, Percent, ExternalLink, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,13 +6,20 @@ import { AcquiredProperty, PortfolioMetrics } from "@/hooks/usePortfolio";
 import { format } from "date-fns";
 import { Currency } from "@/components/roi/currencyUtils";
 
+// Extended property with rental yield data from quote
+export interface PropertyWithProjections extends AcquiredProperty {
+  projectedMonthlyRent?: number;
+  rentalYieldPercent?: number;
+}
+
 interface PortfolioSectionProps {
-  properties: AcquiredProperty[];
+  properties: PropertyWithProjections[];
   metrics: PortfolioMetrics;
   currency: Currency;
   rate: number;
   language?: 'en' | 'es';
   onViewAnalysis?: (quoteId: string) => void;
+  defaultRentalYield?: number; // From broker profile, fallback for properties without quotes
 }
 
 const formatCurrency = (value: number, currency: Currency, rate: number) => {
@@ -24,7 +31,7 @@ const formatCurrency = (value: number, currency: Currency, rate: number) => {
   }).format(converted);
 };
 
-export const PortfolioSection = ({ properties, metrics, currency, rate, language = 'en', onViewAnalysis }: PortfolioSectionProps) => {
+export const PortfolioSection = ({ properties, metrics, currency, rate, language = 'en', onViewAnalysis, defaultRentalYield = 7 }: PortfolioSectionProps) => {
   const appreciationPositive = metrics.totalAppreciation >= 0;
   const cashflowPositive = metrics.netMonthlyCashflow >= 0;
 
@@ -139,14 +146,30 @@ export const PortfolioSection = ({ properties, metrics, currency, rate, language
                         </div>
                       </div>
 
-                      {/* Status Badges */}
+                      {/* Status Badges - Auto-calculated projections */}
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {property.is_rented && (
-                          <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">
-                            <Home className="w-3 h-3 mr-1" />
-                            Rented: {formatCurrency(property.monthly_rent || 0, currency, rate)}/mo
-                          </Badge>
-                        )}
+                        {(() => {
+                          // Calculate projected rent from quote's rental yield or use default
+                          const projectedRent = property.projectedMonthlyRent || 
+                            (property.purchase_price * (defaultRentalYield / 100) / 12);
+                          const hasActualRent = property.monthly_rent && property.monthly_rent > 0;
+                          
+                          return (
+                            <>
+                              {/* Always show projected/estimated rent */}
+                              <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">
+                                <Home className="w-3 h-3 mr-1" />
+                                Est. Rent: ~{formatCurrency(projectedRent, currency, rate)}/mo
+                              </Badge>
+                              {/* Show actual rent if manually entered (override) */}
+                              {hasActualRent && (
+                                <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">
+                                  Actual: {formatCurrency(property.monthly_rent!, currency, rate)}/mo
+                                </Badge>
+                              )}
+                            </>
+                          );
+                        })()}
                         {property.has_mortgage && (
                           <Badge className="bg-amber-500/20 text-amber-400 border-0 text-xs">
                             <Percent className="w-3 h-3 mr-1" />
