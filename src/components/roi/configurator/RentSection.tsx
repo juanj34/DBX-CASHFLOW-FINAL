@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Plane, DollarSign, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
+import { Home, Plane, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -127,28 +127,6 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 pt-2">
-                {/* Service Charges */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <DollarSign className="w-3 h-3 text-theme-text-muted" />
-                    <label className="text-xs text-theme-text-muted">Service Charges</label>
-                    <InfoTooltip translationKey="tooltipServiceCharges" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={inputs.serviceChargePerSqft || ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
-                        setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
-                      }}
-                      className="w-14 h-6 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs"
-                    />
-                    <span className="text-[10px] text-theme-text-muted">AED/sqft</span>
-                  </div>
-                </div>
-
                 {/* Rent Growth Rate */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1">

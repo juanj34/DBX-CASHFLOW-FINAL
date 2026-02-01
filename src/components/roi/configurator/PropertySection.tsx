@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfiguratorSectionProps, months, quarters, years } from "./types";
@@ -102,14 +102,33 @@ export const PropertySection = ({
 
   return (
     <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-theme-text">Property Details</h4>
-        {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
-          <span className="text-[10px] text-theme-text-muted">
-            {formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}/sqft
-          </span>
-        )}
+      {/* Key Metrics Row - Price, Price/sqft, Service Charge/sqft */}
+      <div className="flex items-center justify-between gap-2 p-2 bg-theme-bg/30 rounded-lg border border-theme-border/30">
+        <div className="flex items-center gap-3 text-[10px]">
+          {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
+            <div className="flex items-center gap-1 text-theme-text-muted">
+              <span className="text-theme-text font-mono font-medium">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
+              <span>/sqft</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1 text-theme-text-muted">
+            <DollarSign className="w-3 h-3" />
+            <span className="text-cyan-400 font-mono font-medium">{inputs.serviceChargePerSqft || 18}</span>
+            <span>AED/sqft</span>
+            <InfoTooltip translationKey="tooltipServiceCharges" />
+          </div>
+        </div>
+        <Input
+          type="text"
+          inputMode="numeric"
+          value={inputs.serviceChargePerSqft || ''}
+          onChange={(e) => {
+            const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+            setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
+          }}
+          placeholder="18"
+          className="w-12 h-6 text-right bg-theme-bg border-theme-border text-cyan-400 font-mono text-xs"
+        />
       </div>
 
       {/* Base Price - Inline */}
