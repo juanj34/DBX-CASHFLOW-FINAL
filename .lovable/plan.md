@@ -1,160 +1,74 @@
 
-# Plan: Handover Exit Card + Floating Edit Button
+# Plan: Fix Post-Handover Exit Scenarios Clamping Bug
 
-## Overview
-This plan covers two related features:
-1. **Handover Exit Scenario** - A specialized exit point at the handover date that displays property completion value and total appreciation earned, with distinct styling from regular "flip" exits
-2. **Floating Edit Button** - A bottom-right floating button on the SnapshotContent (configured state) that opens the configurator for quick edits
+## Problem Identified
+When creating an exit scenario beyond the handover date (e.g., +3 years post-handover), the Exit Scenarios tab shows incorrect values - displaying the property value at handover instead of the correct post-handover value.
 
----
+## Root Cause
+In both `CashflowDashboard.tsx` and `OICalculator.tsx`, the `exitScenarios` useMemo hook incorrectly clamps exit months to a maximum of `totalMonths`:
 
-## Feature 1: Handover Exit Scenario
-
-### What Makes Handover Different
-| Aspect | Regular Exit | Handover |
-|--------|-------------|----------|
-| Label | Exit #1, #2... | 🔑 Handover |
-| Capital | Partial (per payment plan) | 100% (all pre-handover paid) |
-| Icon | TrendingUp/Calendar | Key (🔑) |
-| Color | Theme accent/green | Cyan/white |
-| Context | "Flip opportunity" | "Completion milestone" |
-
-### Technical Changes
-
-#### 1. Helper Function in `constructionProgress.ts`
-Add a utility to detect if an exit is at handover:
 ```typescript
-export const isHandoverExit = (
-  exitMonths: number, 
-  totalMonths: number
-): boolean => {
-  // Within 1 month tolerance for handover
-  return Math.abs(exitMonths - totalMonths) <= 1;
-};
+// Current (BUGGY) code in both files:
+return saved
+  .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))  // <-- BUG!
+  ...
 ```
 
-#### 2. ExitsSection.tsx (Configurator)
-When an exit is at `totalMonths`:
-- Label changes from "Exit N" to "🔑 Handover"
-- Show "100% built" badge instead of construction percentage
-- Border color changes to cyan instead of theme accent
-- Slider is fixed at handover month (read-only)
-- Metrics focus on "Total Invested" and "Property Value at Completion"
+This means an exit at `totalMonths + 36` (3 years post-handover) gets clamped to just `totalMonths`, causing the display to show handover values instead of the correct post-handover appreciated values.
 
-#### 3. CompactAllExitsCard.tsx (Snapshot Card)
-For handover scenarios:
-- Badge shows "🔑" instead of "#N"
-- Row has cyan accent instead of theme accent
-- Label shows "Handover" instead of exit number
-- Shows "Completion" tag
+## Solution
+Update the clamping logic to allow exit scenarios up to 5 years (60 months) after handover, matching the configurator's limit:
 
-#### 4. SnapshotExitCards.tsx
-For handover tabs:
-- Tab icon shows 🔑 instead of number
-- Card header shows "Handover Delivery" label
-- Different color scheme (cyan tones)
-
----
-
-## Feature 2: Floating Edit Button
-
-### Visual Design
-A circular floating button in the bottom-right corner of the SnapshotContent view (when configured). Clicking it opens the configurator modal.
-
-```
-                                         ┌──────────────┐
-                                         │              │
-                                         │   [Edit ✎]   │
-                                         │   (FAB)      │
-                                         └──────────────┘
-                                              ↑
-                                     Fixed position, 
-                                     bottom-right corner
-```
-
-### Technical Changes
-
-#### 1. SnapshotContent.tsx
-Add new optional prop `onEditClick` to trigger opening the configurator:
 ```typescript
-interface SnapshotContentProps {
-  // ... existing props
-  onEditClick?: () => void; // NEW: Opens configurator
-}
+// Fixed code:
+const maxExitMonth = calculations.totalMonths + 60; // Allow up to 5 years post-handover
+return saved
+  .map((m: number) => Math.min(Math.max(1, m), maxExitMonth))
+  ...
 ```
-
-Add floating button at the end of the component (only when `onEditClick` is provided):
-```typescript
-{onEditClick && (
-  <div className="fixed bottom-6 right-6 z-50" data-export-hide="true">
-    <Button
-      size="icon"
-      onClick={onEditClick}
-      className="h-12 w-12 rounded-full bg-theme-accent text-theme-bg shadow-lg hover:bg-theme-accent/90"
-    >
-      <Settings className="w-5 h-5" />
-    </Button>
-  </div>
-)}
-```
-
-Key considerations:
-- `data-export-hide="true"` ensures the button is hidden during PDF/PNG exports
-- Uses `fixed` positioning to stay in place while scrolling
-- Matches the existing mobile menu button styling for consistency
-
-#### 2. OICalculator.tsx
-Pass the `onEditClick` handler to SnapshotContent:
-```typescript
-<SnapshotContent
-  // ... existing props
-  onEditClick={() => setModalOpen(true)}
-/>
-```
-
----
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/constructionProgress.ts` | Add `isHandoverExit()` helper |
-| `src/components/roi/configurator/ExitsSection.tsx` | Special handover card styling |
-| `src/components/roi/snapshot/CompactAllExitsCard.tsx` | Handover row styling |
-| `src/components/roi/snapshot/SnapshotExitCards.tsx` | Handover tab/card styling |
-| `src/components/roi/snapshot/SnapshotContent.tsx` | Add floating edit button |
-| `src/pages/OICalculator.tsx` | Pass `onEditClick` to SnapshotContent |
+| File | Line | Change |
+|------|------|--------|
+| `src/pages/CashflowDashboard.tsx` | 208 | Change `calculations.totalMonths` to `calculations.totalMonths + 60` |
+| `src/pages/OICalculator.tsx` | 352 | Change `calculations.totalMonths` to `calculations.totalMonths + 60` |
 
----
+## Implementation Details
 
-## Localization Keys to Add
-| Key | English | Spanish |
-|-----|---------|---------|
-| `handoverLabel` | Handover | Entrega |
-| `completionValueLabel` | Completion Value | Valor al Completar |
-| `totalInvestedLabel` | Total Invested | Total Invertido |
-| `appreciationEarnedLabel` | Appreciation Earned | Valorización Ganada |
+### 1. CashflowDashboard.tsx (lines 204-213)
+```typescript
+// Before:
+const exitScenarios = useMemo(() => {
+  const saved = inputs._exitScenarios;
+  if (saved && Array.isArray(saved) && saved.length > 0) {
+    return saved
+      .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))
+      ...
+  }
+  ...
+}, [inputs._exitScenarios, calculations.totalMonths]);
 
----
-
-## Visual Summary
-
-### Handover Card in Configurator
-```
-┌──────────────────────────────────────────────┐
-│  🔑 HANDOVER                     Q4 2027     │
-│  ─────────────────────────────────────────── │
-│  📅 Month 36 • Completion • 100% built       │
-│                                              │
-│  Property Value at Delivery                  │
-│  AED 2,450,000 (+22.5% appreciation)        │
-│                                              │
-│  ┌────────────────┬───────────────────────┐ │
-│  │ Total Invested │ Appreciation Earned    │ │
-│  │ AED 2,160,000  │ +AED 450,000           │ │
-│  └────────────────┴───────────────────────┘ │
-└──────────────────────────────────────────────┘
+// After:
+const exitScenarios = useMemo(() => {
+  const saved = inputs._exitScenarios;
+  const maxExitMonth = calculations.totalMonths + 60; // 5 years post-handover
+  if (saved && Array.isArray(saved) && saved.length > 0) {
+    return saved
+      .map((m: number) => Math.min(Math.max(1, m), maxExitMonth))
+      ...
+  }
+  ...
+}, [inputs._exitScenarios, calculations.totalMonths]);
 ```
 
-### Floating Edit Button
-Positioned at `bottom: 24px, right: 24px`, matches the existing mobile menu FAB style but uses the Settings icon.
+### 2. OICalculator.tsx (lines 348-357)
+Same change as above.
+
+## Testing
+After the fix:
+1. Create a quote with a handover date 36 months from booking
+2. Add an exit scenario at +3 years post-handover (month 72)
+3. Verify the Exit Scenarios tab shows the correct appreciated property value at month 72, not month 36
+4. Verify the OIGrowthCurve chart extends to show the post-handover exit
+5. Verify the exit card displays "Growth Phase" or "Mature Phase" label appropriately
