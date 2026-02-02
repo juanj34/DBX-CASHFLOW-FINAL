@@ -81,6 +81,7 @@ const translations: Translations = {
   exitAtLabel: { en: 'Exit at', es: 'Salida en' },
   completeLabel: { en: 'complete', es: 'completo' },
   cashInvestedLabel: { en: 'Cash Invested', es: 'Efectivo Invertido' },
+  cashInvestedTooltip: { en: 'Capital deployed before this exit point. Does not include payments due at or after exit.', es: 'Capital desplegado antes de este punto de salida. No incluye pagos pendientes en o después de la salida.' },
   totalROELabel: { en: 'Total ROE', es: 'ROE Total' },
   initialValueLabel: { en: 'Initial Value', es: 'Valor Inicial' },
   currentValueLabel: { en: 'Current Value', es: 'Valor Actual' },

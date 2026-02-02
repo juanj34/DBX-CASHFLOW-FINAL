@@ -61,6 +61,33 @@ const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: num
   return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
 };
 
+// Check if payment falls EXACTLY on the handover month (for completion badge in post-handover plans)
+const isPaymentOnCompletionMonth = (
+  monthsFromBooking: number, 
+  bookingMonth: number, 
+  bookingYear: number, 
+  handoverMonth: number | undefined,
+  handoverQuarter: number, 
+  handoverYear: number
+): boolean => {
+  const bookingDate = new Date(bookingYear, bookingMonth - 1);
+  const paymentDate = new Date(bookingDate);
+  paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
+  
+  // If we have the exact handover month, use it for precise detection
+  if (handoverMonth !== undefined) {
+    const handoverDate = new Date(handoverYear, handoverMonth - 1);
+    return paymentDate.getFullYear() === handoverDate.getFullYear() && 
+           paymentDate.getMonth() === handoverDate.getMonth();
+  }
+  
+  // Fallback: check if in handover quarter
+  const paymentYear = paymentDate.getFullYear();
+  const paymentMonthNum = paymentDate.getMonth() + 1;
+  const paymentQuarter = Math.ceil(paymentMonthNum / 3);
+  return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
+};
+
 // Check if payment is AFTER the handover month (month-based detection for accuracy)
 // Uses handoverMonth (1-12) if available, falls back to quarter-based detection
 const isPaymentAfterHandover = (
@@ -489,6 +516,11 @@ export const CompactPaymentTable = ({
                     handoverYear
                   );
                   
+                  // Check if this payment falls EXACTLY on the completion month (for post-handover plans)
+                  const isCompletionPayment = hasPostHandoverPlan && payment.type === 'time' && isPaymentOnCompletionMonth(
+                    payment.triggerValue, bookingMonth, bookingYear, handoverMonth, handoverQuarter, handoverYear
+                  );
+                  
                   // Check if this is the LAST payment in the handover quarter (for cumulative total display)
                   // Only show in single-column mode - in 2-column we show subtotal at end
                   const isLastHandoverQuarterPayment = !useTwoColumns && isHandoverQuarterPayment && 
@@ -507,6 +539,7 @@ export const CompactPaymentTable = ({
                         className={cn(
                           "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors select-none",
                           isHandoverQuarterPayment && "bg-green-500/10 px-1 py-0.5 -mx-1 border-l-2 border-green-400",
+                          isCompletionPayment && "bg-cyan-500/10 px-1 py-0.5 -mx-1 border-l-2 border-cyan-400",
                           isSelected && "ring-1 ring-theme-accent/40 bg-theme-accent/20"
                         )}
                       >
@@ -526,6 +559,14 @@ export const CompactPaymentTable = ({
                               </Tooltip>
                             </TooltipProvider>
                           )}
+                          {/* Completion badge for post-handover plans */}
+                          {isCompletionPayment && (
+                            <span className="text-[8px] px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/30 whitespace-nowrap flex items-center gap-0.5">
+                              <Key className="w-2.5 h-2.5" />
+                              {t('completionBadge')}
+                            </span>
+                          )}
+                          {/* Handover quarter badge for standard plans */}
                           {isHandoverQuarterPayment && !useTwoColumns && (
                             <span className="text-[8px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                               <Key className="w-2.5 h-2.5" />
