@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { PageHeader, defaultShortcuts } from "@/components/layout/PageHeader";
+import { TopNavbar } from "@/components/layout/TopNavbar";
 
 interface ClientStats {
   [clientId: string]: {
@@ -153,29 +153,9 @@ const ClientsManager = () => {
     }
   };
 
-  const shortcuts = defaultShortcuts.map(s => ({
-    ...s,
-    active: s.href === '/clients'
-  }));
-
   return (
     <div className="min-h-screen bg-theme-bg">
-      <PageHeader
-        title="Clients"
-        subtitle={`${clients.length} clients • Manage your client database and portal access`}
-        icon={<Users className="w-5 h-5 text-cyan-400" />}
-        backLink="/home"
-        shortcuts={shortcuts}
-        actions={
-          <Button 
-            onClick={() => setFormOpen(true)}
-            className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Client
-          </Button>
-        }
-      />
+      <TopNavbar />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
 

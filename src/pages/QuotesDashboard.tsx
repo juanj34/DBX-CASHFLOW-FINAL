@@ -45,7 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PipelineAnalyticsChart } from '@/components/dashboard/PipelineAnalyticsChart';
-import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
+import { TopNavbar } from '@/components/layout/TopNavbar';
 import { QuoteAnalyticsPopover } from '@/components/analytics/QuoteAnalyticsPopover';
 import { ShareIconButton } from '@/components/roi/ShareIconButton';
 import { CompareModal } from '@/components/roi/compare/CompareModal';
@@ -360,30 +360,9 @@ const QuotesDashboard = () => {
     );
   }
 
-  const shortcuts = defaultShortcuts.map(s => ({
-    ...s,
-    active: s.href === '/my-quotes'
-  }));
-
   return (
     <div className="min-h-screen bg-theme-bg">
-      <PageHeader
-        title={t('allOpportunities')}
-        subtitle={`${quotes.length} ${t('quotesSaved')}`}
-        icon={<FileText className="w-5 h-5" />}
-        backLink="/home"
-        shortcuts={shortcuts}
-        actions={
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/cashflow-generator">
-              <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2">
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('quotesNewQuote')}</span>
-              </Button>
-            </Link>
-          </div>
-        }
-      />
+      <TopNavbar />
         
       {/* Compare bar */}
       {compareMode && selectedForCompare.length > 0 && (

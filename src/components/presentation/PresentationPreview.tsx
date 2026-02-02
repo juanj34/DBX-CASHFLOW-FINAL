@@ -47,6 +47,8 @@ interface PresentationPreviewProps {
   currency?: Currency;
   language?: 'en' | 'es';
   rate?: number;
+  // Edit handler - passed from parent (authenticated views only)
+  onEditQuote?: (quoteId: string) => void;
 }
 
 interface QuoteData {
@@ -84,12 +86,14 @@ const QuotePreview = ({
   currency = 'AED',
   language = 'en',
   rate: propRate,
+  onEditClick,
 }: { 
   quoteData: QuoteData; 
   viewMode: 'snapshot' | 'vertical' | 'compact';
   currency?: Currency;
   language?: 'en' | 'es';
   rate?: number;
+  onEditClick?: () => void;
 }) => {
   const { rate: defaultRate } = useExchangeRate(currency);
   const rate = propRate ?? defaultRate;
@@ -144,6 +148,7 @@ const QuotePreview = ({
         language={language}
         setLanguage={undefined}
         rate={rate}
+        onEditClick={onEditClick}
       />
     );
   }
@@ -529,6 +534,7 @@ export const PresentationPreview = ({
   currency = 'AED',
   language = 'en',
   rate,
+  onEditQuote,
 }: PresentationPreviewProps) => {
   const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
@@ -703,6 +709,7 @@ export const PresentationPreview = ({
             currency={currency}
             language={language}
             rate={rate}
+            onEditClick={onEditQuote && currentItem ? () => onEditQuote(currentItem.id) : undefined}
           />
         )}
         {(currentItem?.type === 'comparison' || currentItem?.type === 'inline_comparison') && comparisonData && (

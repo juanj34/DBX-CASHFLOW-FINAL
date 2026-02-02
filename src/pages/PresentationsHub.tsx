@@ -27,7 +27,7 @@ import { CreatePresentationWizard, WizardQuote, WizardComparison } from "@/compo
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { PageHeader, defaultShortcuts } from "@/components/layout/PageHeader";
+import { TopNavbar } from "@/components/layout/TopNavbar";
 
 const PresentationsHub = () => {
   useDocumentTitle("Presentations");
@@ -84,29 +84,9 @@ const PresentationsHub = () => {
     toast.success("Share link copied to clipboard");
   };
 
-  const shortcuts = defaultShortcuts.map(s => ({
-    ...s,
-    active: s.href === '/presentations'
-  }));
-
   return (
     <div className="min-h-screen bg-theme-bg">
-      <PageHeader
-        title="Presentations"
-        subtitle={`${presentations.length} presentations`}
-        icon={<Presentation className="w-5 h-5 text-purple-400" />}
-        backLink="/home"
-        shortcuts={shortcuts}
-        actions={
-          <Button
-            onClick={() => setCreateWizardOpen(true)}
-            className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Presentation
-          </Button>
-        }
-      />
+      <TopNavbar />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
