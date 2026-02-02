@@ -1,0 +1,38 @@
+-- Add Dubai Islands zone for Cashflow Generator
+INSERT INTO public.zones (
+  name,
+  color,
+  polygon,
+  visible,
+  maturity_level,
+  maturity_label,
+  investment_focus,
+  construction_appreciation,
+  growth_appreciation,
+  mature_appreciation,
+  growth_period_years,
+  rent_growth_rate,
+  description,
+  tagline,
+  concept,
+  main_developer,
+  property_types
+) VALUES (
+  'Dubai Islands',
+  '#00CED1',
+  '{"type": "Polygon", "coordinates": [[[55.35, 25.28], [55.40, 25.28], [55.40, 25.32], [55.35, 25.32], [55.35, 25.28]]]}',
+  true,
+  15,
+  'EMERGING',
+  'Capital Growth',
+  18,
+  12,
+  5,
+  5,
+  8,
+  'Mega waterfront development formerly known as Deira Islands. Features luxury residences, hotels, retail destinations, and entertainment venues across five islands.',
+  'The Future of Waterfront Living',
+  'Mixed-use island destination',
+  'Nakheel',
+  'Apartments, Villas, Townhouses, Beachfront'
+);
