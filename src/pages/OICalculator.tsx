@@ -344,12 +344,13 @@ const OICalculatorContent = () => {
     );
   }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
 
-  // Exit scenarios
+  // Exit scenarios - allow up to 5 years (60 months) post-handover
   const exitScenarios = useMemo(() => {
     const saved = inputs._exitScenarios;
+    const maxExitMonth = calculations.totalMonths + 60; // 5 years post-handover
     if (saved && Array.isArray(saved) && saved.length > 0) {
       return saved
-        .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))
+        .map((m: number) => Math.min(Math.max(1, m), maxExitMonth))
         .filter((m: number, i: number, arr: number[]) => arr.indexOf(m) === i)
         .sort((a, b) => a - b);
     }
