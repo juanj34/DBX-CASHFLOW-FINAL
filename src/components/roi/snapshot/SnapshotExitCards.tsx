@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { TrendingUp, Calendar, Trophy, Building2, Rocket, Shield } from 'lucide-react';
+import { TrendingUp, Calendar, Trophy, Building2, Rocket, Shield, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Currency, formatCurrency } from '../currencyUtils';
 import { OIInputs } from '../useOICalculations';
-import { calculateExitScenario, monthToConstruction } from '../constructionProgress';
+import { calculateExitScenario, monthToConstruction, isHandoverExit } from '../constructionProgress';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
@@ -87,20 +87,26 @@ export const SnapshotExitCards = ({
     const result = calculateExitScenario(exitMonths, basePrice, totalMonths, inputs, totalEntryCosts);
     const constructionPercent = monthToConstruction(exitMonths, totalMonths);
     const isPostHandover = exitMonths > totalMonths;
+    const isHandover = isHandoverExit(exitMonths, totalMonths);
     const monthsAfterHandover = isPostHandover ? exitMonths - totalMonths : 0;
     const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear);
     const phase = isPostHandover 
       ? getPostHandoverPhase(monthsAfterHandover, inputs.growthPeriodYears || 5)
       : null;
     
+    // Calculate appreciation earned for handover display
+    const appreciationEarned = result.exitPrice - basePrice;
+    
     return {
       exitMonths,
       ...result,
       constructionPercent,
       isPostHandover,
+      isHandover,
       monthsAfterHandover,
       phase,
       dateStr,
+      appreciationEarned,
     };
   });
 
@@ -131,11 +137,16 @@ export const SnapshotExitCards = ({
                 value={String(index)}
                 className={cn(
                   "relative text-sm font-bold py-2 rounded-md transition-all data-[state=active]:bg-theme-card data-[state=active]:shadow-sm",
-                  isBest && "text-yellow-500"
+                  scenario.isHandover && "text-cyan-400",
+                  isBest && !scenario.isHandover && "text-yellow-500"
                 )}
               >
-                {index + 1}
-                {isBest && (
+                {scenario.isHandover ? (
+                  <Key className="w-4 h-4" />
+                ) : (
+                  index + 1
+                )}
+                {isBest && !scenario.isHandover && (
                   <Trophy className="w-3 h-3 absolute -top-1 -right-1 text-yellow-500" />
                 )}
               </TabsTrigger>
@@ -157,13 +168,22 @@ export const SnapshotExitCards = ({
                   transition={{ duration: 0.2 }}
                   className={cn(
                     "p-4 rounded-xl border",
-                    isBest 
-                      ? "bg-green-500/10 border-green-500/40" 
-                      : "bg-theme-card-alt border-theme-border"
+                    scenario.isHandover 
+                      ? "bg-cyan-500/10 border-cyan-500/40"
+                      : isBest 
+                        ? "bg-green-500/10 border-green-500/40" 
+                        : "bg-theme-card-alt border-theme-border"
                   )}
                 >
-                  {/* Best Badge */}
-                  {isBest && (
+                  {/* Handover or Best Badge */}
+                  {scenario.isHandover ? (
+                    <div className="flex items-center gap-2 mb-3">
+                      <Key className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wide">
+                        Handover Delivery
+                      </span>
+                    </div>
+                  ) : isBest && (
                     <div className="flex items-center gap-2 mb-3">
                       <Trophy className="w-4 h-4 text-yellow-500" />
                       <span className="text-xs font-semibold text-yellow-500 uppercase tracking-wide">
@@ -183,8 +203,14 @@ export const SnapshotExitCards = ({
                         }
                       </span>
                     </div>
-                    {/* Show phase for post-handover, construction % for pre-handover */}
-                    {scenario.isPostHandover && scenario.phase ? (
+                    {/* Show phase for post-handover, 100% for handover, construction % for pre-handover */}
+                    {scenario.isHandover ? (
+                      <div className="flex items-center gap-2 text-xs text-cyan-400">
+                        <span>100% Complete</span>
+                        <span className="text-theme-border">•</span>
+                        <span>{formatMonths(scenario.exitMonths)}</span>
+                      </div>
+                    ) : scenario.isPostHandover && scenario.phase ? (
                       <div className={cn("flex items-center gap-2 text-xs", scenario.phase.color)}>
                         {scenario.phase.icon}
                         <span>{scenario.phase.label} Phase</span>

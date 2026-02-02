@@ -1,17 +1,17 @@
 import { useState, useCallback, useMemo } from "react";
-import { LogOut, Plus, Trash2, Calendar, Sparkles, AlertTriangle, Info, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { LogOut, Plus, Trash2, Calendar, Sparkles, AlertTriangle, Info, HelpCircle, ChevronDown, ChevronUp, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ConfiguratorSectionProps } from "./types";
 import { formatCurrency } from "../currencyUtils";
-import { calculateExitScenario, ExitScenarioResult, constructionToMonth, monthToConstruction } from "../constructionProgress";
+import { calculateExitScenario, ExitScenarioResult, constructionToMonth, monthToConstruction, isHandoverExit } from "../constructionProgress";
 import { ROEBreakdownTooltip } from "../ROEBreakdownTooltip";
 import { InfoTooltip } from "../InfoTooltip";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
+import { cn } from "@/lib/utils";
 interface ExitScenario {
   id: string;
   monthsFromBooking: number;
@@ -330,34 +330,51 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               const details = getExitDetails(exit.monthsFromBooking);
               const displayROE = getDisplayROE(details);
               const isPostHandover = exit.monthsFromBooking > totalMonths;
+              const isHandover = isHandoverExit(exit.monthsFromBooking, totalMonths);
               const phase = getPhaseLabel(exit.monthsFromBooking);
+              
+              // Calculate appreciation earned for handover display
+              const appreciationEarned = details.exitPrice - inputs.basePrice;
               
               return (
                 <div
                   key={exit.id}
-                  className={`p-3 rounded-lg border bg-theme-card ${
-                    !details.isThresholdMet 
-                      ? 'border-amber-500/50' 
-                      : isPostHandover 
-                        ? 'border-green-500/30' 
-                        : 'border-theme-border'
-                  }`}
+                  className={cn(
+                    "p-3 rounded-lg border bg-theme-card",
+                    isHandover 
+                      ? 'border-cyan-500/50 bg-cyan-500/5' 
+                      : !details.isThresholdMet 
+                        ? 'border-amber-500/50' 
+                        : isPostHandover 
+                          ? 'border-green-500/30' 
+                          : 'border-theme-border'
+                  )}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-theme-accent">Exit {index + 1}</span>
-                      {isPostHandover ? (
+                      {isHandover ? (
                         <>
-                          <span className={`text-[10px] font-medium ${phase.color}`}>
-                            {formatPostHandoverOffset(exit.monthsFromBooking)}
-                          </span>
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded ${phase.color} bg-current/10`}>
-                            {phase.label}
-                          </span>
+                          <Key className="w-4 h-4 text-cyan-400" />
+                          <span className="text-sm font-semibold text-cyan-400">Handover</span>
+                          <span className="text-[10px] text-cyan-400/70">{getExitDate(exit.monthsFromBooking)}</span>
                         </>
                       ) : (
-                        <span className="text-[10px] text-theme-text-muted">{getExitDate(exit.monthsFromBooking)}</span>
+                        <>
+                          <span className="text-sm font-semibold text-theme-accent">Exit {index + 1}</span>
+                          {isPostHandover ? (
+                            <>
+                              <span className={`text-[10px] font-medium ${phase.color}`}>
+                                {formatPostHandoverOffset(exit.monthsFromBooking)}
+                              </span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded ${phase.color} bg-current/10`}>
+                                {phase.label}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-theme-text-muted">{getExitDate(exit.monthsFromBooking)}</span>
+                          )}
+                        </>
                       )}
                     </div>
                     <Button 
@@ -370,58 +387,81 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                     </Button>
                   </div>
 
-                  {/* Month Slider - Extended for post-handover */}
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] text-theme-text-muted">
-                        {isPostHandover ? 'Post-Handover' : 'Month'}
-                      </span>
-                      <span className="text-xs font-mono text-theme-text">
-                        {isPostHandover 
-                          ? formatPostHandoverOffset(exit.monthsFromBooking)
-                          : `${exit.monthsFromBooking}mo`
-                        }
+                  {/* Month Slider - Disabled for handover, extended for post-handover */}
+                  {isHandover ? (
+                    <div className="mb-3 flex items-center gap-2 text-xs text-cyan-400/80">
+                      <span className="px-2 py-1 rounded bg-cyan-500/10 font-medium">
+                        100% built • {totalMonths}mo
                       </span>
                     </div>
-                    <Slider
-                      value={[exit.monthsFromBooking]}
-                      onValueChange={([v]) => handleUpdateExitMonth(exit.id, v)}
-                      min={6}
-                      max={maxExitMonth}
-                      step={1}
-                      className="w-full"
-                    />
-                    {/* Handover marker indicator */}
-                    <div className="flex justify-between text-[8px] text-theme-text-muted mt-0.5">
-                      <span>6mo</span>
-                      <span className="text-theme-accent">Handover ({totalMonths}mo)</span>
-                      <span className="text-green-400">+5yr</span>
-                    </div>
-                  </div>
-
-                  {/* Metrics - Compact Grid */}
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className="bg-theme-bg-alt rounded p-1.5 text-center">
-                      <div className="text-xs font-mono text-theme-text font-semibold">{formatCurrency(details.exitPrice, currency)}</div>
-                      <div className="text-[9px] text-theme-text-muted">Value</div>
-                    </div>
-                    <div className="bg-theme-bg-alt rounded p-1.5 text-center">
-                      <div className="text-xs font-mono text-green-400 font-semibold">+{details.appreciationPercent.toFixed(1)}%</div>
-                      <div className="text-[9px] text-theme-text-muted">Appr.</div>
-                    </div>
-                    <ROEBreakdownTooltip scenario={details} currency={currency}>
-                      <div className="bg-theme-bg-alt rounded p-1.5 text-center cursor-help hover:bg-theme-accent/10 transition-colors">
-                        <div className="text-xs font-mono text-theme-accent font-semibold flex items-center justify-center gap-0.5">
-                          {displayROE.toFixed(0)}%
-                          <Info className="w-2.5 h-2.5 text-theme-text-muted" />
-                        </div>
-                        <div className="text-[9px] text-theme-text-muted">ROE</div>
+                  ) : (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-theme-text-muted">
+                          {isPostHandover ? 'Post-Handover' : 'Month'}
+                        </span>
+                        <span className="text-xs font-mono text-theme-text">
+                          {isPostHandover 
+                            ? formatPostHandoverOffset(exit.monthsFromBooking)
+                            : `${exit.monthsFromBooking}mo`
+                          }
+                        </span>
                       </div>
-                    </ROEBreakdownTooltip>
-                  </div>
+                      <Slider
+                        value={[exit.monthsFromBooking]}
+                        onValueChange={([v]) => handleUpdateExitMonth(exit.id, v)}
+                        min={6}
+                        max={maxExitMonth}
+                        step={1}
+                        className="w-full"
+                      />
+                      {/* Handover marker indicator */}
+                      <div className="flex justify-between text-[8px] text-theme-text-muted mt-0.5">
+                        <span>6mo</span>
+                        <span className="text-theme-accent">Handover ({totalMonths}mo)</span>
+                        <span className="text-green-400">+5yr</span>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Threshold warning */}
-                  {!details.isThresholdMet && (
+                  {/* Metrics - Different layout for handover vs regular exit */}
+                  {isHandover ? (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="bg-cyan-500/10 rounded p-2 text-center">
+                        <div className="text-xs font-mono text-theme-text font-semibold">{formatCurrency(details.exitPrice, currency)}</div>
+                        <div className="text-[9px] text-cyan-400/70">Property Value</div>
+                      </div>
+                      <div className="bg-cyan-500/10 rounded p-2 text-center">
+                        <div className="text-xs font-mono text-green-400 font-semibold">
+                          +{formatCurrency(appreciationEarned, currency)}
+                        </div>
+                        <div className="text-[9px] text-cyan-400/70">Appreciation ({details.appreciationPercent.toFixed(1)}%)</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="bg-theme-bg-alt rounded p-1.5 text-center">
+                        <div className="text-xs font-mono text-theme-text font-semibold">{formatCurrency(details.exitPrice, currency)}</div>
+                        <div className="text-[9px] text-theme-text-muted">Value</div>
+                      </div>
+                      <div className="bg-theme-bg-alt rounded p-1.5 text-center">
+                        <div className="text-xs font-mono text-green-400 font-semibold">+{details.appreciationPercent.toFixed(1)}%</div>
+                        <div className="text-[9px] text-theme-text-muted">Appr.</div>
+                      </div>
+                      <ROEBreakdownTooltip scenario={details} currency={currency}>
+                        <div className="bg-theme-bg-alt rounded p-1.5 text-center cursor-help hover:bg-theme-accent/10 transition-colors">
+                          <div className="text-xs font-mono text-theme-accent font-semibold flex items-center justify-center gap-0.5">
+                            {displayROE.toFixed(0)}%
+                            <Info className="w-2.5 h-2.5 text-theme-text-muted" />
+                          </div>
+                          <div className="text-[9px] text-theme-text-muted">ROE</div>
+                        </div>
+                      </ROEBreakdownTooltip>
+                    </div>
+                  )}
+
+                  {/* Threshold warning - not shown for handover */}
+                  {!isHandover && !details.isThresholdMet && (
                     <div className="mt-2 flex items-center gap-1 text-amber-400 text-[10px]">
                       <AlertTriangle className="w-3 h-3" />
                       <span>Below {inputs.minimumExitThreshold}% threshold</span>

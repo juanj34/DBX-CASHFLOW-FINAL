@@ -131,6 +131,17 @@ export const monthToConstruction = (month: number, totalMonths: number): number 
 };
 
 /**
+ * Check if an exit scenario is at the handover date
+ * Returns true if within 1 month tolerance of handover
+ */
+export const isHandoverExit = (
+  exitMonths: number, 
+  totalMonths: number
+): boolean => {
+  return Math.abs(exitMonths - totalMonths) <= 1;
+};
+
+/**
  * Result of calculating equity at exit with threshold consideration
  */
 export interface EquityAtExitResult {
