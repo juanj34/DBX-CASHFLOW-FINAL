@@ -30,7 +30,7 @@ import { SaveComparisonModal } from '@/components/roi/compare/SaveComparisonModa
 import { LoadComparisonModal } from '@/components/roi/compare/LoadComparisonModal';
 import { ShareComparisonButton } from '@/components/roi/compare/ShareComparisonButton';
 import { ExportComparisonButton } from '@/components/roi/compare/ExportComparisonButton';
-import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
+import { TopNavbar } from '@/components/layout/TopNavbar';
 
 // Wrapper component to calculate for a single quote
 const QuoteCalculator = ({ 
@@ -130,13 +130,10 @@ const QuotesCompare = () => {
     setCurrentShareToken(comparison.share_token);
   };
 
-  const shortcuts = defaultShortcuts.map(s => ({
-    ...s,
-    active: s.href === '/compare'
-  }));
-
   return (
     <div className="min-h-screen bg-theme-bg">
+      <TopNavbar />
+      
       {/* Hidden calculators */}
       {quotes.map(quote => (
         <QuoteCalculator 
@@ -146,13 +143,13 @@ const QuotesCompare = () => {
         />
       ))}
 
-      <PageHeader
-        title={currentComparisonTitle || 'Compare Quotes'}
-        subtitle={`${selectedIds.length} quotes selected`}
-        icon={<LayoutGrid className="w-5 h-5" />}
-        backLink="/my-quotes"
-        shortcuts={shortcuts}
-        actions={
+      {/* Page Title + Actions */}
+      <div className="container mx-auto px-6 py-4 border-b border-theme-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-theme-text">{currentComparisonTitle || 'Compare Quotes'}</h1>
+            <p className="text-sm text-theme-text-muted">{selectedIds.length} quotes selected</p>
+          </div>
           <div className="flex items-center gap-2">
             {/* File Actions Dropdown */}
             <DropdownMenu>
@@ -278,8 +275,8 @@ const QuotesCompare = () => {
               <span className="hidden sm:inline">Add</span>
             </Button>
           </div>
-        }
-      />
+        </div>
+      </div>
 
       <main className="container mx-auto px-6 py-8">
         {loading ? (

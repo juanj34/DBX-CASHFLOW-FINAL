@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
-import { BarChart3, Eye, Clock, Users, TrendingUp, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BarChart3, Eye, Clock, Users, TrendingUp } from "lucide-react";
 import { useQuoteAnalytics } from "@/hooks/useQuoteAnalytics";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,17 +8,12 @@ import { EngagementHeatmap } from "@/components/analytics/EngagementHeatmap";
 import { ConversionFunnel } from "@/components/analytics/ConversionFunnel";
 import { LocationBreakdown } from "@/components/analytics/LocationBreakdown";
 import { TopQuotesTable } from "@/components/analytics/TopQuotesTable";
-import { PageHeader, defaultShortcuts } from "@/components/layout/PageHeader";
+import { TopNavbar } from "@/components/layout/TopNavbar";
 
 const QuotesAnalytics = () => {
   useDocumentTitle("Analytics");
   const { analytics, loading } = useQuoteAnalytics();
   const { t } = useLanguage();
-
-  const shortcuts = defaultShortcuts.map(s => ({
-    ...s,
-    active: s.href === '/quotes-analytics'
-  }));
 
   if (loading) {
     return (
@@ -33,21 +26,7 @@ const QuotesAnalytics = () => {
   if (!analytics) {
     return (
       <div className="min-h-screen bg-theme-bg">
-        <PageHeader
-          title={t("analytics") || "Analytics"}
-          subtitle="View engagement and conversion metrics"
-          icon={<BarChart3 className="w-5 h-5" />}
-          backLink="/my-quotes"
-          shortcuts={shortcuts}
-          actions={
-            <Link to="/cashflow-generator">
-              <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2">
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New Quote</span>
-              </Button>
-            </Link>
-          }
-        />
+        <TopNavbar />
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <BarChart3 className="w-12 h-12 text-theme-text-muted mx-auto mb-4" />
@@ -61,21 +40,7 @@ const QuotesAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-theme-bg">
-      <PageHeader
-        title={t("analytics") || "Analytics"}
-        subtitle="View engagement and conversion metrics"
-        icon={<BarChart3 className="w-5 h-5" />}
-        backLink="/my-quotes"
-        shortcuts={shortcuts}
-        actions={
-          <Link to="/cashflow-generator">
-            <Button className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 gap-2">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Quote</span>
-            </Button>
-          </Link>
-        }
-      />
+      <TopNavbar />
 
       <main className="container mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Overview Cards */}

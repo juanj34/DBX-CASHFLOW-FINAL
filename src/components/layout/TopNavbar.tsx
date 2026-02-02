@@ -48,12 +48,14 @@ interface TopNavbarProps {
   showNewQuote?: boolean;
   currency?: Currency;
   setCurrency?: (currency: Currency) => void;
+  isPublicView?: boolean; // Hide user dropdown and new quote for public/shared views
 }
 
 export const TopNavbar = ({ 
   showNewQuote = true,
   currency,
   setCurrency,
+  isPublicView = false,
 }: TopNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -88,8 +90,8 @@ export const TopNavbar = ({
           <div className="flex items-center gap-4">
             <AppLogo size="sm" linkTo="/home" />
             
-            {/* New Quote Button - Desktop */}
-            {showNewQuote && (
+            {/* New Quote Button - Desktop (hide in public view) */}
+            {showNewQuote && !isPublicView && (
               <Link to="/cashflow-generator" className="hidden sm:block">
                 <Button 
                   size="sm"
@@ -102,29 +104,31 @@ export const TopNavbar = ({
             )}
           </div>
 
-          {/* Center - Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href);
-              return (
-                <Link key={item.href} to={item.href}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`gap-1.5 h-8 px-3 text-xs font-medium ${
-                      active 
-                        ? 'text-theme-accent bg-theme-accent/10' 
-                        : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {item.label}
-                  </Button>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Center - Navigation Links (Desktop) - hide in public view */}
+          {!isPublicView && (
+            <nav className="hidden lg:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+                return (
+                  <Link key={item.href} to={item.href}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`gap-1.5 h-8 px-3 text-xs font-medium ${
+                        active 
+                          ? 'text-theme-accent bg-theme-accent/10' 
+                          : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-card-alt'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {item.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right side - Controls + Avatar */}
           <div className="flex items-center gap-2">
@@ -223,44 +227,46 @@ export const TopNavbar = ({
               </SheetContent>
             </Sheet>
 
-            {/* User Dropdown - Desktop */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0">
-                  <Avatar className="h-8 w-8 border border-theme-border">
-                    <AvatarImage src={profile?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-theme-accent/20 text-theme-accent text-xs font-medium">
-                      {getInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-theme-card border-theme-border">
-                <div className="px-3 py-2">
-                  <p className="text-sm font-medium text-theme-text truncate">
-                    {profile?.full_name || 'User'}
-                  </p>
-                  <p className="text-xs text-theme-text-muted truncate">
-                    {profile?.email}
-                  </p>
-                </div>
-                <DropdownMenuSeparator className="bg-theme-border" />
-                <DropdownMenuItem asChild>
-                  <Link to="/account-settings" className="gap-2 cursor-pointer text-theme-text">
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-theme-border" />
-                <DropdownMenuItem 
-                  onClick={handleSignOut}
-                  className="gap-2 cursor-pointer text-theme-negative focus:text-theme-negative"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* User Dropdown - Desktop (hide in public view) */}
+            {!isPublicView && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0">
+                    <Avatar className="h-8 w-8 border border-theme-border">
+                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-theme-accent/20 text-theme-accent text-xs font-medium">
+                        {getInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-theme-card border-theme-border">
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium text-theme-text truncate">
+                      {profile?.full_name || 'User'}
+                    </p>
+                    <p className="text-xs text-theme-text-muted truncate">
+                      {profile?.email}
+                    </p>
+                  </div>
+                  <DropdownMenuSeparator className="bg-theme-border" />
+                  <DropdownMenuItem asChild>
+                    <Link to="/account-settings" className="gap-2 cursor-pointer text-theme-text">
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-theme-border" />
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    className="gap-2 cursor-pointer text-theme-negative focus:text-theme-negative"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>

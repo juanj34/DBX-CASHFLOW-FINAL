@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapContainer } from "@/components/map/MapContainer";
 import { Loader2 } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { TopNavbar } from "@/components/layout/TopNavbar";
 
 const Map = () => {
   useDocumentTitle("Investment Map");
@@ -49,8 +50,11 @@ const Map = () => {
   }
 
   return (
-    <div className="h-[100dvh] w-screen relative overflow-hidden">
-      <MapContainer userRole={userRole} />
+    <div className="h-[100dvh] w-screen flex flex-col overflow-hidden">
+      <TopNavbar showNewQuote={false} />
+      <div className="flex-1 relative overflow-hidden">
+        <MapContainer userRole={userRole} />
+      </div>
     </div>
   );
 };

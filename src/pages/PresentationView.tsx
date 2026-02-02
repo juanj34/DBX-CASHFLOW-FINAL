@@ -23,10 +23,13 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { ExportModal } from "@/components/roi/ExportModal";
+import { OIInputModal } from "@/components/roi/OIInputModal";
 import { useOICalculations, OIInputs } from "@/components/roi/useOICalculations";
 import { useMortgageCalculations, DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from "@/components/roi/useMortgageCalculations";
 import { ClientUnitData } from "@/components/roi/ClientUnitInfo";
 import { calculateAutoExitScenarios } from "@/components/roi/ExitScenariosCards";
+import { TopNavbar } from "@/components/layout/TopNavbar";
+import { toast } from "sonner";
 
 interface AdvisorProfile {
   full_name: string | null;
@@ -70,8 +73,96 @@ const PresentationView = () => {
   // Export modal state
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportQuoteId, setExportQuoteId] = useState<string | null>(null);
+  
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [editInputs, setEditInputs] = useState<OIInputs | null>(null);
+  const [editMortgageInputs, setEditMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
+  const [editClientInfo, setEditClientInfo] = useState<ClientUnitData>({ developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' });
+  const [editQuoteImages, setEditQuoteImages] = useState<{ floorPlanUrl: string | null; buildingRenderUrl: string | null; heroImageUrl: string | null; showLogoOverlay: boolean }>({ floorPlanUrl: null, buildingRenderUrl: null, heroImageUrl: null, showLogoOverlay: true });
+  const [isOwner, setIsOwner] = useState(false);
 
   useDocumentTitle(presentation?.title || "Presentation");
+
+  // Check if current user is the owner
+  useEffect(() => {
+    const checkOwnership = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && presentation) {
+        setIsOwner(session.user.id === presentation.broker_id);
+      }
+    };
+    if (presentation) checkOwnership();
+  }, [presentation]);
+
+  // Handle edit quote
+  const handleEditQuote = useCallback(async (quoteId: string) => {
+    const quote = allQuotes.find(q => q.id === quoteId);
+    if (!quote) return;
+    
+    const savedMortgage = (quote.inputs as any)?._mortgageInputs;
+    const savedClientInfo = (quote.inputs as any)?._clientInfo || {};
+    const savedClients = (quote.inputs as any)?._clients || [];
+    
+    setEditingQuoteId(quoteId);
+    setEditInputs(quote.inputs);
+    setEditMortgageInputs(savedMortgage ? { ...DEFAULT_MORTGAGE_INPUTS, ...savedMortgage } : DEFAULT_MORTGAGE_INPUTS);
+    setEditClientInfo({
+      developer: savedClientInfo.developer || quote.developer || '',
+      projectName: savedClientInfo.projectName || quote.project_name || '',
+      clients: savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [],
+      brokerName: savedClientInfo.brokerName || '',
+      unit: savedClientInfo.unit || quote.unit || '',
+      unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0,
+      unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0,
+      unitType: savedClientInfo.unitType || quote.unit_type || '',
+    });
+    
+    // Fetch images
+    const { data: imagesData } = await supabase
+      .from('cashflow_images')
+      .select('image_type, image_url')
+      .eq('quote_id', quoteId);
+    
+    setEditQuoteImages({
+      heroImageUrl: imagesData?.find(i => i.image_type === 'hero_image')?.image_url || null,
+      floorPlanUrl: imagesData?.find(i => i.image_type === 'floor_plan')?.image_url || null,
+      buildingRenderUrl: imagesData?.find(i => i.image_type === 'building_render')?.image_url || null,
+      showLogoOverlay: true,
+    });
+    
+    setEditModalOpen(true);
+  }, [allQuotes]);
+
+  // Save edited quote
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingQuoteId || !editInputs) return;
+    
+    const { error } = await supabase
+      .from('cashflow_quotes')
+      .update({
+        inputs: {
+          ...editInputs,
+          _mortgageInputs: editMortgageInputs,
+          _clientInfo: editClientInfo,
+          _clients: editClientInfo.clients,
+        },
+      })
+      .eq('id', editingQuoteId);
+    
+    if (!error) {
+      setAllQuotes(prev => prev.map(q => 
+        q.id === editingQuoteId 
+          ? { ...q, inputs: { ...editInputs, _mortgageInputs: editMortgageInputs, _clientInfo: editClientInfo } as any }
+          : q
+      ));
+      setEditModalOpen(false);
+      toast.success('Quote updated successfully');
+    } else {
+      toast.error('Failed to save changes');
+    }
+  }, [editingQuoteId, editInputs, editMortgageInputs, editClientInfo]);
 
   // Generate session ID on mount
   useEffect(() => {
