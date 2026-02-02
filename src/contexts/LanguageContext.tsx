@@ -39,6 +39,8 @@ const translations: Translations = {
   untilHandoverLabel: { en: 'Until handover', es: 'Hasta la entrega' },
   moShort: { en: 'mo', es: 'mes' },
   yearShort: { en: 'yr', es: 'año' },
+  yieldShort: { en: 'yield', es: 'rend.' },
+  year1Label: { en: 'Year 1', es: 'Año 1' },
   
   // Compact Payment Table
   paymentBreakdownHeader: { en: 'Payment Breakdown', es: 'Desglose de Pagos' },
