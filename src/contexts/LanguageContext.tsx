@@ -70,6 +70,10 @@ const translations: Translations = {
   monthlyLabel: { en: 'Monthly', es: 'Mensual' },
   netLabel: { en: 'Net', es: 'Neto' },
   sevenYearTable: { en: '7-Year Table', es: 'Tabla 7 Años' },
+  sevenYearAverageLabel: { en: '7-Year Average', es: 'Promedio 7 Años' },
+  sevenYearAvgShort: { en: '7Y Avg', es: 'Prom. 7A' },
+  includesGrowthLabel: { en: 'includes', es: 'incluye' },
+  completionBadge: { en: 'Completion', es: 'Entrega' },
   
   // Compact All Exits Card
   exitScenariosHeader: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },

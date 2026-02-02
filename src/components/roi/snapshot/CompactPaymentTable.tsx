@@ -455,7 +455,7 @@ export const CompactPaymentTable = ({
               </div>
               <div className="pt-1 border-t border-theme-border mt-1">
                 <DottedRow 
-                  label={t('totalEntryLabel')}
+                  label={`${t('totalEntryLabel')} (${downpaymentPercent}% + 4% DLD)`}
                   value={getDualValue(entryTotal).primary}
                   secondaryValue={getDualValue(entryTotal).secondary}
                   bold
