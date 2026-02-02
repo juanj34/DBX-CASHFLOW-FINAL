@@ -139,15 +139,17 @@ const PresentationView = () => {
   const handleSaveEdit = useCallback(async () => {
     if (!editingQuoteId || !editInputs) return;
     
+    const updatedInputs = {
+      ...editInputs,
+      _mortgageInputs: editMortgageInputs,
+      _clientInfo: editClientInfo,
+      _clients: editClientInfo.clients,
+    };
+    
     const { error } = await supabase
       .from('cashflow_quotes')
       .update({
-        inputs: {
-          ...editInputs,
-          _mortgageInputs: editMortgageInputs,
-          _clientInfo: editClientInfo,
-          _clients: editClientInfo.clients,
-        },
+        inputs: JSON.parse(JSON.stringify(updatedInputs)),
       })
       .eq('id', editingQuoteId);
     
