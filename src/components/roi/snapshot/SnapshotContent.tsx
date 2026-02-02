@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
@@ -34,6 +36,8 @@ interface SnapshotContentProps {
   // Snapshot title (editable headline)
   snapshotTitle?: string | null;
   onSnapshotTitleChange?: (title: string) => void;
+  // Floating edit button handler
+  onEditClick?: () => void;
 }
 
 export const SnapshotContent = ({
@@ -51,6 +55,7 @@ export const SnapshotContent = ({
   rate,
   snapshotTitle,
   onSnapshotTitleChange,
+  onEditClick,
 }: SnapshotContentProps) => {
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
   const [wealthModalOpen, setWealthModalOpen] = useState(false);
@@ -314,6 +319,19 @@ export const SnapshotContent = ({
         currency={currency}
         rate={rate}
       />
+
+      {/* Floating Edit Button */}
+      {onEditClick && (
+        <div className="fixed bottom-6 right-6 z-50" data-export-hide="true">
+          <Button
+            size="icon"
+            onClick={onEditClick}
+            className="h-12 w-12 rounded-full bg-theme-accent text-theme-bg shadow-lg hover:bg-theme-accent/90 transition-all hover:scale-105"
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

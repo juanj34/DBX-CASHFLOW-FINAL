@@ -1,7 +1,7 @@
-import { TrendingUp, Clock, ChevronRight, Hammer, Rocket, Shield } from 'lucide-react';
+import { TrendingUp, Clock, ChevronRight, Hammer, Rocket, Shield, Key } from 'lucide-react';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
-import { monthToConstruction, calculateExitScenario } from '../constructionProgress';
+import { monthToConstruction, calculateExitScenario, isHandoverExit } from '../constructionProgress';
 import {
   Tooltip,
   TooltipContent,
@@ -103,6 +103,7 @@ export const CompactAllExitsCard = ({
     );
     
     const isPostHandover = exitMonths > calculations.totalMonths;
+    const isHandover = isHandoverExit(exitMonths, calculations.totalMonths);
     const monthsAfterHandover = isPostHandover ? exitMonths - calculations.totalMonths : 0;
     const dateStr = getDateFromMonths(exitMonths, inputs.bookingMonth, inputs.bookingYear);
     const constructionPct = Math.min(100, monthToConstruction(exitMonths, calculations.totalMonths));
@@ -112,6 +113,9 @@ export const CompactAllExitsCard = ({
       ? getPostHandoverPhase(monthsAfterHandover, inputs.growthPeriodYears || 5)
       : null;
     
+    // Calculate appreciation earned for handover display
+    const appreciationEarned = scenarioResult.exitPrice - basePrice;
+    
     return {
       exitMonths,
       exitPrice: scenarioResult.exitPrice,
@@ -120,12 +124,15 @@ export const CompactAllExitsCard = ({
       trueROE: scenarioResult.trueROE,
       annualizedROE: scenarioResult.annualizedROE,
       isPostHandover,
+      isHandover,
       monthsAfterHandover,
       phaseInfo,
       dateStr,
       constructionPct,
       exitNumber: index + 1,
       initialValue: basePrice,
+      appreciationEarned,
+      appreciationPercent: scenarioResult.appreciationPercent,
     };
   });
   
@@ -162,18 +169,29 @@ export const CompactAllExitsCard = ({
               <TooltipTrigger asChild>
                 <div 
                   className={cn(
-                    "p-2.5 rounded-lg transition-colors border border-theme-border/30",
-                    scenario.isPostHandover 
-                      ? "bg-green-500/5 hover:bg-green-500/10" 
-                      : "bg-theme-bg/50 hover:bg-theme-border/30"
+                    "p-2.5 rounded-lg transition-colors border",
+                    scenario.isHandover 
+                      ? "bg-cyan-500/5 border-cyan-500/30 hover:bg-cyan-500/10"
+                      : scenario.isPostHandover 
+                        ? "bg-green-500/5 border-theme-border/30 hover:bg-green-500/10" 
+                        : "bg-theme-bg/50 border-theme-border/30 hover:bg-theme-border/30"
                   )}
                 >
-                  {/* Top Row: Exit Number, Months, Date, Phase/Construction % */}
+                  {/* Top Row: Exit Number/Handover, Months, Date, Phase/Construction % */}
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
-                        #{scenario.exitNumber}
-                      </span>
+                      {scenario.isHandover ? (
+                        <>
+                          <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <Key className="w-3 h-3" />
+                            Handover
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] font-bold text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
+                          #{scenario.exitNumber}
+                        </span>
+                      )}
                       <Clock className="w-3 h-3 text-theme-text-muted" />
                       <span className="text-sm font-medium text-theme-text">
                         {scenario.exitMonths}m
@@ -182,8 +200,12 @@ export const CompactAllExitsCard = ({
                         {scenario.dateStr}
                       </span>
                     </div>
-                    {/* Show phase for post-handover, construction % for pre-handover */}
-                    {scenario.isPostHandover && scenario.phaseInfo ? (
+                    {/* Show phase for post-handover, 100% for handover, construction % for pre-handover */}
+                    {scenario.isHandover ? (
+                      <div className="flex items-center gap-1 text-cyan-400">
+                        <span className="text-xs font-medium">100% Complete</span>
+                      </div>
+                    ) : scenario.isPostHandover && scenario.phaseInfo ? (
                       <div className={cn("flex items-center gap-1", scenario.phaseInfo.color)}>
                         {scenario.phaseInfo.icon}
                         <span className="text-xs font-medium">
