@@ -60,6 +60,8 @@ export const ExportOverviewCards = ({
     years: language === 'es' ? 'años' : 'years',
     fromRent: language === 'es' ? 'desde renta' : 'from rental income',
     untilHandover: language === 'es' ? 'hasta entrega' : 'until handover',
+    netYield: language === 'es' ? 'neto' : 'net yield',
+    year1: language === 'es' ? 'Año 1' : 'Year 1',
   };
 
   const cardStyle = {
@@ -118,14 +120,14 @@ export const ExportOverviewCards = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
           <span style={labelStyle}>{t.rentalIncome}</span>
           <span style={{ ...badgeBase, backgroundColor: 'rgba(34, 211, 238, 0.1)', color: 'rgb(34, 211, 238)' }}>
-            {netYieldPercent.toFixed(1)}%
+            {netYieldPercent.toFixed(1)}% {t.netYield}
           </span>
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={valueStyle}>
-            {monthlyRentDual.primary}<span style={{ fontSize: '10px', color: 'hsl(var(--theme-text-muted))' }}>/{t.mo}</span>
+            {netAnnualRentDual.primary}<span style={{ fontSize: '10px', color: 'hsl(var(--theme-text-muted))' }}>/{t.yr}</span>
           </div>
-          <span style={{ fontSize: '10px', color: 'hsl(var(--theme-text-muted))' }}>{netAnnualRentDual.primary}/{t.yr}</span>
+          <span style={{ fontSize: '10px', color: 'hsl(var(--theme-text-muted))' }}>{monthlyRentDual.primary}/{t.mo} • {t.year1}</span>
         </div>
       </div>
 
