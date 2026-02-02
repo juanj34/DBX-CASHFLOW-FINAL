@@ -1,74 +1,85 @@
 
-# Plan: Fix Post-Handover Exit Scenarios Clamping Bug
+# Plan: Fix Snapshot Overview Cards - Missing Translation & Metric Clarity
 
-## Problem Identified
-When creating an exit scenario beyond the handover date (e.g., +3 years post-handover), the Exit Scenarios tab shows incorrect values - displaying the property value at handover instead of the correct post-handover value.
+## Issues Identified
 
-## Root Cause
-In both `CashflowDashboard.tsx` and `OICalculator.tsx`, the `exitScenarios` useMemo hook incorrectly clamps exit months to a maximum of `totalMonths`:
+### 1. Missing Translation Key "yieldShort"
+**Problem**: In `SnapshotOverviewCards.tsx`, the text `{netYieldPercent.toFixed(1)}% {t('yieldShort')}` displays "8.6% yieldShort" literally because the translation key doesn't exist.
+
+**Solution**: Add the missing translation key and clarify that this is the "Net Yield" (already calculated from net rent / base price).
+
+### 2. Breakeven Already Uses Rent Growth ✅
+After reviewing the code, the breakeven calculation in `useOICalculations.ts` already uses the `calculateYearsWithGrowth` function which applies the geometric series formula to account for compounding annual rent growth. No changes needed here.
+
+---
+
+## Technical Changes
+
+### File 1: `src/contexts/LanguageContext.tsx`
+Add the missing translation key after line 41:
+
+| Line | Change |
+|------|--------|
+| ~41 | Add `yieldShort: { en: 'yield', es: 'rend.' }` after `yearShort` |
 
 ```typescript
-// Current (BUGGY) code in both files:
-return saved
-  .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))  // <-- BUG!
-  ...
+moShort: { en: 'mo', es: 'mes' },
+yearShort: { en: 'yr', es: 'año' },
+yieldShort: { en: 'yield', es: 'rend.' },  // NEW
 ```
 
-This means an exit at `totalMonths + 36` (3 years post-handover) gets clamped to just `totalMonths`, causing the display to show handover values instead of the correct post-handover appreciated values.
+### File 2: `src/components/roi/snapshot/SnapshotOverviewCards.tsx` (Optional Enhancement)
+Consider improving clarity by making the yield label more descriptive:
 
-## Solution
-Update the clamping logic to allow exit scenarios up to 5 years (60 months) after handover, matching the configurator's limit:
-
+**Current (line 113):**
 ```typescript
-// Fixed code:
-const maxExitMonth = calculations.totalMonths + 60; // Allow up to 5 years post-handover
-return saved
-  .map((m: number) => Math.min(Math.max(1, m), maxExitMonth))
-  ...
+<span className="text-[10px] text-theme-text-muted">
+  {monthlyRentDual.primary}/{t('moShort')} • {netYieldPercent.toFixed(1)}% {t('yieldShort')}
+</span>
 ```
+
+**Improved option:**
+```typescript
+<span className="text-[10px] text-theme-text-muted">
+  {monthlyRentDual.primary}/{t('moShort')} • {netYieldPercent.toFixed(1)}% {t('netLabel')} {t('yieldShort')}
+</span>
+```
+
+This would show "8.6% Net yield" instead of just "8.6% yield" - making it clear this is the net yield (after service charges), not gross.
+
+---
 
 ## Files to Modify
 
-| File | Line | Change |
-|------|------|--------|
-| `src/pages/CashflowDashboard.tsx` | 208 | Change `calculations.totalMonths` to `calculations.totalMonths + 60` |
-| `src/pages/OICalculator.tsx` | 352 | Change `calculations.totalMonths` to `calculations.totalMonths + 60` |
+| File | Changes |
+|------|---------|
+| `src/contexts/LanguageContext.tsx` | Add `yieldShort` translation key |
+| `src/components/roi/snapshot/SnapshotOverviewCards.tsx` | Optionally clarify with "Net yield" label |
+| `src/components/roi/export/ExportOverviewCards.tsx` | Mirror the same label fix for exports |
 
-## Implementation Details
+---
 
-### 1. CashflowDashboard.tsx (lines 204-213)
-```typescript
-// Before:
-const exitScenarios = useMemo(() => {
-  const saved = inputs._exitScenarios;
-  if (saved && Array.isArray(saved) && saved.length > 0) {
-    return saved
-      .map((m: number) => Math.min(Math.max(1, m), calculations.totalMonths))
-      ...
-  }
-  ...
-}, [inputs._exitScenarios, calculations.totalMonths]);
+## Visual Result
 
-// After:
-const exitScenarios = useMemo(() => {
-  const saved = inputs._exitScenarios;
-  const maxExitMonth = calculations.totalMonths + 60; // 5 years post-handover
-  if (saved && Array.isArray(saved) && saved.length > 0) {
-    return saved
-      .map((m: number) => Math.min(Math.max(1, m), maxExitMonth))
-      ...
-  }
-  ...
-}, [inputs._exitScenarios, calculations.totalMonths]);
+**Before:**
+```
+AED 158,000/yr
+AED 13,166/mo • 8.6% yieldShort   ← confusing literal text
 ```
 
-### 2. OICalculator.tsx (lines 348-357)
-Same change as above.
+**After:**
+```
+AED 158,000/yr
+AED 13,166/mo • 8.6% net yield   ← clear and descriptive
+```
 
-## Testing
-After the fix:
-1. Create a quote with a handover date 36 months from booking
-2. Add an exit scenario at +3 years post-handover (month 72)
-3. Verify the Exit Scenarios tab shows the correct appreciated property value at month 72, not month 36
-4. Verify the OIGrowthCurve chart extends to show the post-handover exit
-5. Verify the exit card displays "Growth Phase" or "Mature Phase" label appropriately
+---
+
+## Breakeven Note (No Changes Required)
+
+The breakeven card already uses the correct formula with rent growth:
+- Uses `calculateYearsWithGrowth(basePrice, netAnnualRent, inputs.rentGrowthRate)`
+- Formula: `Years = ln(1 + (Principal × g) / Rent) / ln(1 + g)`
+- This correctly reduces the payback period when rent growth is configured
+
+The badge showing the net yield % next to the breakeven time is informative - it helps users understand the relationship between yield and payback period.
