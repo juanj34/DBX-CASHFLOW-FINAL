@@ -18,10 +18,12 @@ import { OIInputs } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculations";
 import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS, SAMPLE_CLIENT_INFO, SAMPLE_MORTGAGE_INPUTS } from "./types";
-import { ClientSection } from "./ClientSection";
-import { InvestmentSection } from "./InvestmentSection";
-import { ReturnsSection } from "./ReturnsSection";
-import { ExtrasSection } from "./ExtrasSection";
+import { LocationSection } from "./LocationSection";
+import { PropertySection } from "./PropertySection";
+import { PaymentSection } from "./PaymentSection";
+import { AppreciationSection } from "./AppreciationSection";
+import { RentalSection } from "./RentalSection";
+import { ExitSection } from "./ExitSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,16 +43,19 @@ interface MobileConfiguratorSheetProps {
   quoteId?: string;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['project', 'investment', 'returns', 'extras'];
+// 6-step sections
+const SECTIONS: ConfiguratorSection[] = ['location', 'property', 'payment', 'appreciation', 'rental', 'exit'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
-  project: 'Project',
-  investment: 'Investment',
-  returns: 'Returns',
-  extras: 'More',
+  location: 'Location',
+  property: 'Property',
+  payment: 'Payment',
+  appreciation: 'Growth',
+  rental: 'Rental',
+  exit: 'Exit',
 };
 
-// Mini preview strip component with mortgage toggle
+// Mini preview strip component
 const MiniPreviewStrip = ({ 
   inputs, 
   currency, 
@@ -89,18 +94,12 @@ export const MobileConfiguratorSheet = ({
   quoteId,
 }: MobileConfiguratorSheetProps) => {
   const { t } = useLanguage();
-  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('project');
+  const [activeSection, setActiveSection] = useState<ConfiguratorSection>('location');
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(
-    new Set(['project']) // Always start with first section visited
+    new Set(['location'])
   );
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [showSampleFlash, setShowSampleFlash] = useState(false);
-  
-  // Image upload state
-  const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
-  const [buildingRenderUrl, setBuildingRenderUrl] = useState<string | null>(null);
-  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
-  const [showLogoOverlay, setShowLogoOverlay] = useState(false);
   
   // Internal client info state if not provided externally
   const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>({
@@ -132,96 +131,9 @@ export const MobileConfiguratorSheet = ({
   const canGoForward = currentIndex < SECTIONS.length - 1;
   const isLastSection = currentIndex === SECTIONS.length - 1;
 
-  // Image upload handlers
-  const handleFloorPlanUpload = async (file: File | null) => {
-    if (!file) {
-      setFloorPlanUrl(null);
-      return;
-    }
-    
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${quoteId || 'temp'}/floor-plan-${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('quote-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('quote-images')
-        .getPublicUrl(data.path);
-      
-      setFloorPlanUrl(urlData.publicUrl);
-      toast.success('Floor plan uploaded');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload floor plan');
-    }
-  };
-
-  const handleBuildingRenderUpload = async (file: File | null) => {
-    if (!file) {
-      setBuildingRenderUrl(null);
-      return;
-    }
-    
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${quoteId || 'temp'}/building-render-${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('quote-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('quote-images')
-        .getPublicUrl(data.path);
-      
-      setBuildingRenderUrl(urlData.publicUrl);
-      toast.success('Building render uploaded');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload building render');
-    }
-  };
-
-  const handleHeroImageUpload = async (file: File | null) => {
-    if (!file) {
-      setHeroImageUrl(null);
-      return;
-    }
-    
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${quoteId || 'temp'}/hero-image-${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('quote-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('quote-images')
-        .getPublicUrl(data.path);
-      
-      setHeroImageUrl(urlData.publicUrl);
-      toast.success('Hero image uploaded');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload hero image');
-    }
-  };
-
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
-    // Must be visited first AND have actual data
     if (!visitedSections.has(section)) return false;
     
-    // Calculate payment validity
     const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
     const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
     let totalPayment: number;
@@ -234,19 +146,22 @@ export const MobileConfiguratorSheet = ({
     const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (section) {
-      case 'project':
-        return Boolean(inputs.zoneId) || inputs.basePrice > 0;
-      case 'investment':
-        return inputs.basePrice > 0 && isPaymentValid;
-      case 'returns':
+      case 'location':
+        return Boolean(effectiveClientInfo.zoneId) || inputs.basePrice > 0;
+      case 'property':
+        return inputs.basePrice > 0;
+      case 'payment':
+        return isPaymentValid;
+      case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-      case 'extras':
-        // Optional - complete when visited
+      case 'rental':
+        return inputs.rentalYieldPercent > 0;
+      case 'exit':
         return true;
       default:
         return false;
     }
-  }, [visitedSections, inputs]);
+  }, [visitedSections, inputs, effectiveClientInfo.zoneId]);
 
   const completedCount = SECTIONS.filter(s => isSectionComplete(s)).length;
   const progressPercent = Math.round((completedCount / SECTIONS.length) * 100);
@@ -262,7 +177,6 @@ export const MobileConfiguratorSheet = ({
     setAnimationDirection(direction);
     setActiveSection(newSection);
     
-    // Mark section as visited
     setVisitedSections(prev => {
       const newSet = new Set(prev);
       newSet.add(newSection);
@@ -348,48 +262,73 @@ export const MobileConfiguratorSheet = ({
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'project':
+      case 'location':
         return (
-          <ClientSection
+          <LocationSection
             clientInfo={effectiveClientInfo}
             onClientInfoChange={effectiveSetClientInfo}
-            quoteId={quoteId}
             inputs={inputs}
             setInputs={setInputs}
           />
         );
-      case 'investment':
+      case 'property':
         return (
-          <InvestmentSection 
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
+              <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
+            </div>
+            <PropertySection 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              currency={currency}
+            />
+          </div>
+        );
+      case 'payment':
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-theme-text mb-1">Payment Plan</h3>
+              <p className="text-sm text-theme-text-muted">Configure payment split and installments</p>
+            </div>
+            <PaymentSection 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              currency={currency}
+            />
+          </div>
+        );
+      case 'appreciation':
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-theme-text mb-1">Appreciation Profile</h3>
+              <p className="text-sm text-theme-text-muted">Configure growth rates</p>
+            </div>
+            <AppreciationSection 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              currency={currency}
+            />
+          </div>
+        );
+      case 'rental':
+        return (
+          <RentalSection 
             inputs={inputs} 
             setInputs={setInputs} 
             currency={currency}
           />
         );
-      case 'returns':
+      case 'exit':
         return (
-          <ReturnsSection 
-            inputs={inputs} 
-            setInputs={setInputs} 
-            currency={currency}
-          />
-        );
-      case 'extras':
-        return (
-          <ExtrasSection
+          <ExitSection
             inputs={inputs}
             setInputs={setInputs}
             currency={currency}
             mortgageInputs={mortgageInputs}
             setMortgageInputs={setMortgageInputs}
-            floorPlanUrl={floorPlanUrl}
-            buildingRenderUrl={buildingRenderUrl}
-            heroImageUrl={heroImageUrl}
-            onFloorPlanChange={handleFloorPlanUpload}
-            onBuildingRenderChange={handleBuildingRenderUpload}
-            onHeroImageChange={handleHeroImageUpload}
-            showLogoOverlay={showLogoOverlay}
-            onShowLogoOverlayChange={setShowLogoOverlay}
           />
         );
       default:
@@ -498,20 +437,20 @@ export const MobileConfiguratorSheet = ({
         
         {/* Footer */}
         <DrawerFooter className="border-t border-theme-border pt-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={goToPreviousSection}
               disabled={!canGoBack}
-              className="border-theme-border text-theme-text-muted disabled:opacity-30"
+              className="border-theme-border text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
             
             <span className="text-xs text-theme-text-muted">
-              {currentIndex + 1} / {SECTIONS.length}
+              Step {currentIndex + 1} of {SECTIONS.length}
             </span>
             
             {isLastSection ? (

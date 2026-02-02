@@ -7,15 +7,15 @@ interface ValueDifferentiatorsBadgesProps {
 }
 
 const DIFFERENTIATOR_LABELS: Record<string, { label: string; color: string }> = {
-  'waterfront': { label: 'Waterfront', color: 'bg-blue-500/20 text-blue-500' },
-  'ocean-view': { label: 'Ocean View', color: 'bg-cyan-500/20 text-cyan-500' },
-  'master-community': { label: 'Master Community', color: 'bg-purple-500/20 text-purple-500' },
-  'emerging-zone': { label: 'Emerging Zone', color: 'bg-orange-500/20 text-orange-500' },
-  'corner-unit': { label: 'Corner Unit', color: 'bg-green-500/20 text-green-500' },
-  'top-floor': { label: 'Top Floor', color: 'bg-indigo-500/20 text-indigo-500' },
-  'skyline-view': { label: 'Skyline View', color: 'bg-pink-500/20 text-pink-500' },
-  'premium-developer': { label: 'Premium Developer', color: 'bg-yellow-500/20 text-yellow-600' },
-  'metro-adjacent': { label: 'Metro Adjacent', color: 'bg-red-500/20 text-red-500' },
+  'waterfront': { label: 'Waterfront', color: 'bg-theme-info/20 text-theme-info' },
+  'ocean-view': { label: 'Ocean View', color: 'bg-theme-rental/20 text-theme-rental' },
+  'master-community': { label: 'Master Community', color: 'bg-theme-exit/20 text-theme-exit' },
+  'emerging-zone': { label: 'Emerging Zone', color: 'bg-theme-warning/20 text-theme-warning' },
+  'corner-unit': { label: 'Corner Unit', color: 'bg-theme-positive/20 text-theme-positive' },
+  'top-floor': { label: 'Top Floor', color: 'bg-theme-accent-secondary/20 text-theme-accent-secondary' },
+  'skyline-view': { label: 'Skyline View', color: 'bg-theme-exit/20 text-theme-exit' },
+  'premium-developer': { label: 'Premium Developer', color: 'bg-theme-accent/20 text-theme-accent' },
+  'metro-adjacent': { label: 'Metro Adjacent', color: 'bg-theme-negative/20 text-theme-negative' },
 };
 
 export const ValueDifferentiatorsBadges = ({

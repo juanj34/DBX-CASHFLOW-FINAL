@@ -76,6 +76,15 @@ export default {
           "text-highlight": "hsl(var(--theme-text-highlight))",
           positive: "hsl(var(--theme-positive))",
           negative: "hsl(var(--theme-negative))",
+          // Semantic role colors
+          info: "hsl(var(--theme-info))",
+          warning: "hsl(var(--theme-warning))",
+          rental: "hsl(var(--theme-rental))",
+          exit: "hsl(var(--theme-exit))",
+          // Phase colors
+          "phase-construction": "hsl(var(--theme-phase-construction))",
+          "phase-growth": "hsl(var(--theme-phase-growth))",
+          "phase-mature": "hsl(var(--theme-phase-mature))",
         },
       },
       fontFamily: {

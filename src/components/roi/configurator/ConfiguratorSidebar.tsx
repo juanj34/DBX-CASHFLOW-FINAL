@@ -1,4 +1,4 @@
-import { Building2, Sparkles, TrendingUp, Users } from "lucide-react";
+import { Building2, MapPin, CreditCard, TrendingUp, Home, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfiguratorSection, SectionStatus } from "./types";
 import { OIInputs } from "../useOICalculations";
@@ -8,13 +8,15 @@ interface ConfiguratorSidebarProps {
   onSectionChange: (section: ConfiguratorSection) => void;
   inputs: OIInputs;
   visitedSections: Set<ConfiguratorSection>;
+  clientInfo?: { zoneId?: string };
 }
 
 export const ConfiguratorSidebar = ({ 
   activeSection, 
   onSectionChange,
   inputs,
-  visitedSections
+  visitedSections,
+  clientInfo
 }: ConfiguratorSidebarProps) => {
   // Calculate section completion status
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -31,33 +33,44 @@ export const ConfiguratorSidebar = ({
   
   const hasAppreciationData = inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
   
-  // 4 consolidated sections
+  // 6 focused sections
   const sections: SectionStatus[] = [
     {
-      id: 'project',
-      label: 'Project',
-      icon: Users,
-      isComplete: visitedSections.has('project') && Boolean(inputs.zoneId),
+      id: 'location',
+      label: 'Location',
+      icon: MapPin,
+      isComplete: visitedSections.has('location') && Boolean(clientInfo?.zoneId),
     },
     {
-      id: 'investment',
-      label: 'Investment',
+      id: 'property',
+      label: 'Property',
       icon: Building2,
-      isComplete: visitedSections.has('investment') && inputs.basePrice > 0 && isPaymentValid,
-      hasWarning: visitedSections.has('investment') && inputs.basePrice > 0 && !isPaymentValid,
+      isComplete: visitedSections.has('property') && inputs.basePrice > 0,
     },
     {
-      id: 'returns',
-      label: 'Returns',
+      id: 'payment',
+      label: 'Payment',
+      icon: CreditCard,
+      isComplete: visitedSections.has('payment') && isPaymentValid,
+      hasWarning: visitedSections.has('payment') && inputs.basePrice > 0 && !isPaymentValid,
+    },
+    {
+      id: 'appreciation',
+      label: 'Growth',
       icon: TrendingUp,
-      isComplete: visitedSections.has('returns') && hasAppreciationData,
+      isComplete: visitedSections.has('appreciation') && hasAppreciationData,
     },
     {
-      id: 'extras',
-      label: 'More',
-      icon: Sparkles,
-      // Extras is optional - complete when visited
-      isComplete: visitedSections.has('extras'),
+      id: 'rental',
+      label: 'Rental',
+      icon: Home,
+      isComplete: visitedSections.has('rental') && inputs.rentalYieldPercent > 0,
+    },
+    {
+      id: 'exit',
+      label: 'Exit',
+      icon: LogOut,
+      isComplete: visitedSections.has('exit'),
     },
   ];
 
@@ -103,7 +116,7 @@ export const ConfiguratorSidebar = ({
         <div className="text-[10px] text-theme-text-muted space-y-1">
           <div className="flex justify-between">
             <span>Navigate</span>
-            <span className="font-mono">1-4</span>
+            <span className="font-mono">1-6</span>
           </div>
           <div className="flex justify-between">
             <span>Next/Prev</span>
