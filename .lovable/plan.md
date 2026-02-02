@@ -1,207 +1,297 @@
 
-# Plan: Redesign del Configurator + Armonización de Colores
 
-## Resumen Ejecutivo
-Tu feedback señala dos problemas principales:
-1. **Configurador demasiado denso** - El wizard actual de 4 pasos comprime demasiada información en cada pantalla
-2. **Colores inconsistentes** - Uso de colores hardcodeados (cyan-400, orange-400, purple-400, etc.) que lucen mal en el tema claro
+# Plan: Floating Edit Button + TopNavbar en Todos los Módulos
 
-Este plan expande el configurador a 6-8 pasos más focalizados y unifica el sistema de colores para que funcione perfectamente en ambos temas.
+## Resumen
+
+Este plan aborda dos solicitudes:
+
+1. **Desbloquear el botón flotante de configuración** en las vistas de presentación para poder editar quotes directamente desde la presentación sin navegar a otra página
+2. **Agregar la barra de navegación superior (TopNavbar)** a todos los módulos de la aplicación para navegación consistente entre herramientas
 
 ---
 
-## Parte 1: Rediseño del Configurador
+## Parte 1: Botón Flotante de Edición en Presentaciones
 
 ### Problema Actual
-El configurador tiene 4 pasos densos:
-```text
-┌─────────────────────────────────────────────────────┐
-│  1.Project │ 2.Investment │ 3.Returns │ 4.Extras   │
-│     ↓            ↓             ↓            ↓      │
-│  [Dense]    [Dense]       [Dense]      [Dense]     │
-└─────────────────────────────────────────────────────┘
-```
+El botón flotante (Settings icon) solo aparece en `OICalculator.tsx`. En `PresentationView.tsx` y `PresentationPreview.tsx`, el botón está "bloqueado" porque:
+- No se pasa la prop `onEditClick` a `SnapshotContent`
+- No existe el `OIInputModal` en esas vistas
+- Los quotes se cargan desde `cashflow_quotes_public` (vista pública)
 
-### Nueva Estructura: 6 Pasos Focalizados
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│  ① Location  ② Property  ③ Payment  ④ Appreciation  ⑤ Rental  ⑥ Exit │
-└────────────────────────────────────────────────────────────────────┘
-```
+### Solución
 
-| Paso | Nombre | Contenido |
-|------|--------|-----------|
-| 1 | Location | Zone selector + project/developer names |
-| 2 | Property | Base price + dates + entry costs |
-| 3 | Payment | Payment split + installments + post-handover |
-| 4 | Appreciation | Growth profile + zone maturity + differentiators |
-| 5 | Rental | Yield + service charges + Airbnb comparison |
-| 6 | Exit | Exit scenarios + mortgage (optional) |
-
-### Nuevo Footer con Progreso Visual
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│  [← Back]    ① ② ③ ④ ⑤ ⑥    "Step 3 of 6: Payment"    [Next →] │
-│              ═══════░░░░░                                        │
-│              (progress bar)                                      │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-- **Indicadores numerados** (1-6) en el centro del footer
-- **Barra de progreso** debajo de los números
-- **Flechas de navegación** prominentes a los lados
-- **Etiqueta del paso actual** visible ("Step 3: Payment")
-
-### Cambios en Archivos
+#### 1. Agregar Estado de Edición a PresentationView.tsx
 
 | Archivo | Cambios |
 |---------|---------|
-| `src/components/roi/configurator/types.ts` | Expandir `ConfiguratorSection` a 6 tipos |
-| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Nuevo footer con barra de progreso + flechas prominentes |
-| `src/components/roi/configurator/LocationSection.tsx` | NUEVO - Solo zone + developer/project |
-| `src/components/roi/configurator/PropertySection.tsx` | Simplificar - Solo precio + fechas + entry costs |
-| `src/components/roi/configurator/PaymentSection.tsx` | Ya existe - mantener como step dedicado |
-| `src/components/roi/configurator/AppreciationSection.tsx` | Ya existe - step dedicado |
-| `src/components/roi/configurator/RentSection.tsx` | Ya existe - step dedicado |
-| `src/components/roi/configurator/ExitSection.tsx` | NUEVO - Combina exits + mortgage opcional |
+| `src/pages/PresentationView.tsx` | Importar `OIInputModal`, agregar estado para quote seleccionado, handler de edición |
 
----
+**Cambios principales:**
+```typescript
+// Nuevos imports
+import { OIInputModal } from "@/components/roi/OIInputModal";
 
-## Parte 2: Armonización del Sistema de Colores
+// Nuevos estados
+const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+const [editModalOpen, setEditModalOpen] = useState(false);
+const [editInputs, setEditInputs] = useState<OIInputs | null>(null);
+const [editMortgageInputs, setEditMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
 
-### Problema Actual
-El código usa colores hardcodeados que no se adaptan al tema:
-```tsx
-// ❌ Colores hardcodeados - se ven mal en tema claro
-<Home className="text-cyan-400" />
-<span className="bg-purple-500/10 text-purple-400">...</span>
-<div className="text-orange-400">Construction</div>
+// Handler para abrir edición
+const handleEditQuote = (quoteId: string) => {
+  const quote = allQuotes.find(q => q.id === quoteId);
+  if (quote) {
+    setEditingQuoteId(quoteId);
+    setEditInputs(quote.inputs);
+    // Cargar mortgage inputs si existen
+    const savedMortgage = (quote.inputs as any)?._mortgageInputs;
+    setEditMortgageInputs(savedMortgage || DEFAULT_MORTGAGE_INPUTS);
+    setEditModalOpen(true);
+  }
+};
 ```
 
-### Solución: Tokens Semánticos por Función
+#### 2. Modificar PresentationPreview.tsx
 
-Crear variables CSS que cambien según el tema:
+| Archivo | Cambios |
+|---------|---------|
+| `src/components/presentation/PresentationPreview.tsx` | Agregar prop `onEditQuote`, pasarla a `SnapshotContent` |
 
-```css
-/* En index.css */
-.theme-consultant {
-  --theme-accent-info: 213 94% 35%;      /* Deep blue for info */
-  --theme-accent-success: 160 84% 30%;   /* Forest green */
-  --theme-accent-warning: 38 92% 45%;    /* Rich amber */
-  --theme-accent-rental: 198 78% 35%;    /* Ocean teal */
-  --theme-accent-exit: 280 68% 40%;      /* Deep purple */
-}
-
-.theme-tech-dark {
-  --theme-accent-info: 187 100% 50%;     /* Bright cyan */
-  --theme-accent-success: 142 71% 45%;   /* Lime green */
-  --theme-accent-warning: 38 92% 50%;    /* Bright amber */
-  --theme-accent-rental: 187 100% 50%;   /* Cyan */
-  --theme-accent-exit: 280 100% 65%;     /* Neon purple */
+**Nueva prop en interfaz:**
+```typescript
+interface PresentationPreviewProps {
+  // ... existentes
+  onEditQuote?: (quoteId: string) => void; // NUEVO
 }
 ```
 
-### Mapeo de Colores por Concepto
-
-| Concepto | Tema Claro | Tema Oscuro |
-|----------|------------|-------------|
-| **Primary/Investment** | Gold (#B8860B) | Lime (#CCFF00) |
-| **Secondary/Info** | Navy (#1E3A5F) | Cyan (#00EAFF) |
-| **Rental/Income** | Teal (#0F766E) | Cyan (#22D3EE) |
-| **Exit/ROI** | Purple (#6D28D9) | Magenta (#FF00FF) |
-| **Warning** | Amber (#D97706) | Amber (#F59E0B) |
-| **Positive** | Emerald (#059669) | Green (#22C55E) |
-| **Negative** | Red (#DC2626) | Red (#EF4444) |
-| **Construction Phase** | Orange (#C2410C) | Orange (#F97316) |
-| **Growth Phase** | Green (#15803D) | Green (#4ADE80) |
-| **Mature Phase** | Blue (#1D4ED8) | Blue (#3B82F6) |
-
-### Componentes a Actualizar
-
-Archivos con colores hardcodeados a reemplazar:
-
-| Archivo | Colores Problemáticos |
-|---------|----------------------|
-| `SnapshotOverviewCards.tsx` | `text-cyan-400`, `text-purple-400`, `text-orange-400` |
-| `ExitScenariosCards.tsx` | `text-orange-400`, `bg-orange-400/10` |
-| `WealthProjectionTable.tsx` | `bg-orange-400`, `bg-green-400`, `bg-blue-400` |
-| `ValueDifferentiatorsBadges.tsx` | Multiple hardcoded badge colors |
-| `PropertyPaymentCards.tsx` | `bg-emerald-500/20`, `bg-cyan-500/20` |
-| `ProjectionDisclaimer.tsx` | `text-amber-400`, `bg-amber-500/10` |
-| `ZoneAppreciationIndicator.tsx` | `text-orange-400`, `text-green-400` |
-| `InvestmentSection.tsx` | `text-blue-400` |
-| `RentSection.tsx` | `text-cyan-400`, `text-orange-400` |
-
-### Estrategia de Migración
-
-```tsx
-// ANTES ❌
-<Home className="text-cyan-400" />
-<span className="bg-cyan-500/10 text-cyan-400">8.6% yield</span>
-
-// DESPUÉS ✅
-<Home className="text-theme-accent-secondary" />
-<span className="bg-theme-accent-secondary/10 text-theme-accent-secondary">8.6% yield</span>
+**Pasar a QuotePreview:**
+```typescript
+<QuotePreview 
+  quoteData={quoteData}
+  viewMode={viewMode}
+  currency={currency}
+  language={language}
+  rate={rate}
+  onEditClick={onEditQuote ? () => onEditQuote(currentItem.id) : undefined} // NUEVO
+/>
 ```
 
-Para colores de fase (Construction/Growth/Mature), crear clases utilitarias:
+#### 3. Modificar QuotePreview en PresentationPreview.tsx
 
-```tsx
-// ANTES ❌
-<span className="text-orange-400">Construction</span>
-<span className="text-green-400">Growth</span>
-<span className="text-blue-400">Mature</span>
+Agregar prop `onEditClick` y pasarla a `SnapshotContent`:
 
-// DESPUÉS ✅
-<span className="text-phase-construction">Construction</span>
-<span className="text-phase-growth">Growth</span>
-<span className="text-phase-mature">Mature</span>
+```typescript
+const QuotePreview = ({ 
+  quoteData, 
+  viewMode,
+  currency,
+  language,
+  rate,
+  onEditClick, // NUEVO
+}: { 
+  // ... tipos existentes
+  onEditClick?: () => void; // NUEVO
+}) => {
+  // ...
+  
+  if (viewMode === 'snapshot') {
+    return (
+      <SnapshotContent
+        // ... props existentes
+        onEditClick={onEditClick} // PASAR LA PROP
+      />
+    );
+  }
+  // ...
+};
+```
+
+#### 4. Guardar Cambios Desde la Presentación
+
+Cuando el usuario edite y guarde desde el modal en la presentación:
+
+```typescript
+// En PresentationView.tsx
+const handleSaveEdit = async () => {
+  if (!editingQuoteId || !editInputs) return;
+  
+  // Guardar en la base de datos
+  const { error } = await supabase
+    .from('cashflow_quotes')
+    .update({ 
+      inputs: {
+        ...editInputs,
+        _mortgageInputs: editMortgageInputs,
+      }
+    })
+    .eq('id', editingQuoteId);
+    
+  if (!error) {
+    // Actualizar el quote local
+    setAllQuotes(prev => prev.map(q => 
+      q.id === editingQuoteId 
+        ? { ...q, inputs: editInputs }
+        : q
+    ));
+    setEditModalOpen(false);
+    toast.success('Quote updated');
+  }
+};
 ```
 
 ---
 
-## Implementación por Fases
+## Parte 2: TopNavbar en Todos los Módulos
 
-### Fase 1: Variables CSS (index.css + tailwind.config.ts)
-- Añadir nuevas variables de color semánticas
-- Extender tailwind.config.ts con las nuevas clases
+### Situación Actual
 
-### Fase 2: Configurador - Nueva Estructura
-- Actualizar `types.ts` con 6 secciones
-- Crear `LocationSection.tsx`
-- Crear `ExitSection.tsx`
-- Actualizar `ConfiguratorLayout.tsx` con nuevo footer
+| Página | Tiene TopNavbar | Tipo de Layout |
+|--------|-----------------|----------------|
+| `Home.tsx` | ✅ Sí | TopNavbar directo |
+| `OffPlanVsSecondary.tsx` | ✅ Sí | TopNavbar directo |
+| `QuotesDashboard.tsx` | ❌ No | PageHeader |
+| `QuotesCompare.tsx` | ❌ No | PageHeader |
+| `QuotesAnalytics.tsx` | ❌ No | PageHeader |
+| `ClientsManager.tsx` | ❌ No | PageHeader |
+| `PresentationsHub.tsx` | ❌ No | Custom header |
+| `OICalculator.tsx` | ❌ No | DashboardLayout + sidebar |
+| `CashflowDashboard.tsx` | ❌ No | DashboardLayout + sidebar |
+| `PresentationView.tsx` | ❌ No | Custom sidebar |
+| `PresentationBuilder.tsx` | ❌ No | Custom sidebar |
 
-### Fase 3: Migración de Colores
-- Actualizar componentes de snapshot
-- Actualizar componentes de export
-- Actualizar componentes del configurador
+### Solución: Reemplazar PageHeader con TopNavbar
 
-### Fase 4: Testing Visual
-- Verificar tema Tech Dark
-- Verificar tema Consultant (claro)
-- Verificar tema Consultant Dark
+#### Estrategia
+1. **Páginas con PageHeader** → Reemplazar por `TopNavbar`
+2. **Páginas con DashboardLayout** → Agregar `TopNavbar` arriba del layout
+3. **Vistas de Presentación** → Agregar `TopNavbar` con modo "viewer" (sin opciones de perfil si es público)
+
+#### Archivos a Modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/pages/QuotesDashboard.tsx` | Importar `TopNavbar`, reemplazar `PageHeader` |
+| `src/pages/QuotesCompare.tsx` | Importar `TopNavbar`, reemplazar `PageHeader` |
+| `src/pages/QuotesAnalytics.tsx` | Importar `TopNavbar`, reemplazar `PageHeader` |
+| `src/pages/ClientsManager.tsx` | Importar `TopNavbar`, reemplazar `PageHeader` |
+| `src/pages/PresentationsHub.tsx` | Importar `TopNavbar`, agregar al layout |
+| `src/pages/OICalculator.tsx` | Agregar `TopNavbar` arriba de `DashboardLayout` |
+| `src/pages/CashflowDashboard.tsx` | Agregar `TopNavbar` arriba de `DashboardLayout` |
+| `src/pages/PresentationBuilder.tsx` | Agregar `TopNavbar` arriba del layout |
+| `src/pages/PresentationView.tsx` | Agregar `TopNavbar` con props para modo público |
+| `src/pages/Map.tsx` | Agregar `TopNavbar` |
+
+#### Ejemplo de Migración (QuotesDashboard.tsx)
+
+**Antes:**
+```tsx
+import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
+
+// En el return:
+<PageHeader 
+  title="All Opportunities"
+  shortcuts={defaultShortcuts}
+  // ...
+/>
+```
+
+**Después:**
+```tsx
+import { TopNavbar } from '@/components/layout/TopNavbar';
+
+// En el return:
+<div className="min-h-screen bg-theme-bg">
+  <TopNavbar />
+  <div className="container mx-auto px-4 py-6">
+    {/* contenido existente */}
+  </div>
+</div>
+```
+
+#### TopNavbar para Vistas Públicas (PresentationView)
+
+Agregar props opcionales para modo público:
+
+```typescript
+interface TopNavbarProps {
+  showNewQuote?: boolean;
+  currency?: Currency;
+  setCurrency?: (currency: Currency) => void;
+  isPublicView?: boolean; // NUEVO - oculta avatar y sign out
+  showBackButton?: boolean; // NUEVO - para navegación contextual
+}
+```
 
 ---
 
-## Nuevo Footer Propuesto (Visual)
+## Archivos a Crear/Modificar
+
+### Archivos a Modificar
+
+| Archivo | Descripción del Cambio |
+|---------|------------------------|
+| `src/components/layout/TopNavbar.tsx` | Agregar `isPublicView` prop para vistas sin auth |
+| `src/components/presentation/PresentationPreview.tsx` | Agregar `onEditQuote` prop, pasarla a SnapshotContent |
+| `src/pages/PresentationView.tsx` | Agregar TopNavbar, OIInputModal, handler de edición |
+| `src/pages/PresentationBuilder.tsx` | Agregar TopNavbar arriba del layout |
+| `src/pages/OICalculator.tsx` | Envolver con TopNavbar |
+| `src/pages/CashflowDashboard.tsx` | Envolver con TopNavbar |
+| `src/pages/QuotesDashboard.tsx` | Reemplazar PageHeader con TopNavbar |
+| `src/pages/QuotesCompare.tsx` | Reemplazar PageHeader con TopNavbar |
+| `src/pages/QuotesAnalytics.tsx` | Reemplazar PageHeader con TopNavbar |
+| `src/pages/ClientsManager.tsx` | Reemplazar PageHeader con TopNavbar |
+| `src/pages/PresentationsHub.tsx` | Agregar TopNavbar |
+| `src/pages/Map.tsx` | Agregar TopNavbar |
+
+---
+
+## Flujo de Edición desde Presentación
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
+│                            PresentationView                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐│
+│  │                          TopNavbar                                  ││
+│  │  [Logo] [Generator] [Quotes] [Compare] [Presentations] [...]        ││
+│  └─────────────────────────────────────────────────────────────────────┘│
 │                                                                         │
-│  ┌──────┐                                                   ┌────────┐ │
-│  │ ← Prev│   ①──②──●──④──⑤──⑥    Step 3 of 6: Payment     │ Next → │ │
-│  └──────┘                                                   └────────┘ │
-│               ════════════░░░░░░░░░░░░░                                │
-│               (50% progress)                                           │
-│                                                                        │
-│  [1-6] Jump to step    [←→] Navigate    [Esc] Close                   │
-│                                                                        │
+│  ┌────────────────┐  ┌────────────────────────────────────────────────┐│
+│  │   Sidebar      │  │              Quote Snapshot                    ││
+│  │   - Quote 1    │  │                                                ││
+│  │   - Quote 2    │  │                                                ││
+│  │   - Compare    │  │                                  ┌─────────┐   ││
+│  │                │  │                                  │⚙️ Edit  │   ││
+│  │                │  │                                  └─────────┘   ││
+│  └────────────────┘  └────────────────────────────────────────────────┘│
+│                                         ↓ Click Edit                    │
+│                            ┌─────────────────────────┐                 │
+│                            │   OIInputModal (6-step) │                 │
+│                            │   ┌─────────────────┐   │                 │
+│                            │   │ Edit all params │   │                 │
+│                            │   │ Save → DB update│   │                 │
+│                            │   └─────────────────┘   │                 │
+│                            └─────────────────────────┘                 │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-- Flechas grandes y prominentes
-- Indicador de progreso visual con barra
-- Step label descriptivo
-- Hotkey hints en la parte inferior
+---
+
+## Consideraciones de Seguridad
+
+1. **Permisos de Edición**: Solo el propietario del quote o el broker de la presentación puede editar
+2. **Verificación de Sesión**: Antes de mostrar el botón de editar, verificar que el usuario está autenticado
+3. **Actualización en Tiempo Real**: Después de guardar, el snapshot se actualiza con los nuevos valores
+
+---
+
+## Testing
+
+1. Abrir una presentación como broker autenticado
+2. Verificar que aparece el botón flotante de edición en cada quote
+3. Hacer clic → se abre el modal de configuración
+4. Modificar valores y guardar
+5. Verificar que el snapshot se actualiza con los nuevos valores
+6. Verificar que la TopNavbar aparece en todas las páginas y funciona la navegación
+
