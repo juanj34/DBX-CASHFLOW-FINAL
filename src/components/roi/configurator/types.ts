@@ -3,7 +3,7 @@ import { Currency } from "../currencyUtils";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { MortgageInputs } from "../useMortgageCalculations";
 
-export type ConfiguratorSection = 'project' | 'investment' | 'returns' | 'extras';
+export type ConfiguratorSection = 'location' | 'property' | 'payment' | 'appreciation' | 'rental' | 'exit';
 
 export interface ConfiguratorSectionProps {
   inputs: OIInputs;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Loader2, Sparkles, FileText, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PanelRightClose, PanelRight, Sparkles, FileText, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputs } from "../useOICalculations";
 import { Currency } from "../currencyUtils";
@@ -7,10 +7,12 @@ import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from "../useMortgageCalculati
 import { ConfiguratorSection, DEFAULT_OI_INPUTS, NEW_QUOTE_OI_INPUTS, SAMPLE_CLIENT_INFO, SAMPLE_MORTGAGE_INPUTS } from "./types";
 import { toast } from "sonner";
 import { ConfiguratorPreview } from "./ConfiguratorPreview";
-import { ClientSection } from "./ClientSection";
-import { InvestmentSection } from "./InvestmentSection";
-import { ReturnsSection } from "./ReturnsSection";
-import { ExtrasSection } from "./ExtrasSection";
+import { LocationSection } from "./LocationSection";
+import { PropertySection } from "./PropertySection";
+import { PaymentSection } from "./PaymentSection";
+import { AppreciationSection } from "./AppreciationSection";
+import { RentalSection } from "./RentalSection";
+import { ExitSection } from "./ExitSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -41,7 +43,7 @@ interface ConfiguratorLayoutProps {
   clientInfo?: ClientUnitData;
   setClientInfo?: React.Dispatch<React.SetStateAction<ClientUnitData>>;
   quoteId?: string;
-  isNewQuote?: boolean; // Flag to indicate this is a fresh quote (skip loading saved state)
+  isNewQuote?: boolean;
   // Image props
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
@@ -53,7 +55,17 @@ interface ConfiguratorLayoutProps {
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
-const SECTIONS: ConfiguratorSection[] = ['project', 'investment', 'returns', 'extras'];
+// New 6-step sections
+const SECTIONS: ConfiguratorSection[] = ['location', 'property', 'payment', 'appreciation', 'rental', 'exit'];
+
+const SECTION_LABELS: Record<ConfiguratorSection, string> = {
+  location: 'Location',
+  property: 'Property',
+  payment: 'Payment',
+  appreciation: 'Growth',
+  rental: 'Rental',
+  exit: 'Exit',
+};
 
 // Confetti particle component
 const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) => (
@@ -68,7 +80,7 @@ const ConfettiParticle = ({ delay, color }: { delay: number; color: string }) =>
 );
 
 // Storage key for configurator state
-const CONFIGURATOR_STATE_KEY = 'cashflow-configurator-state';
+const CONFIGURATOR_STATE_KEY = 'cashflow-configurator-state-v2';
 
 interface ConfiguratorState {
   activeSection: ConfiguratorSection;
@@ -80,13 +92,10 @@ const loadConfiguratorState = (): ConfiguratorState | null => {
     const saved = localStorage.getItem(CONFIGURATOR_STATE_KEY);
     if (saved) {
       const state = JSON.parse(saved);
-      // Validate that saved section exists in current SECTIONS array
       if (state.activeSection && !SECTIONS.includes(state.activeSection)) {
-        // Old section name from previous implementation - clear and start fresh
         localStorage.removeItem(CONFIGURATOR_STATE_KEY);
         return null;
       }
-      // Filter visitedSections to only include valid sections
       if (state.visitedSections) {
         state.visitedSections = state.visitedSections.filter(
           (s: string) => SECTIONS.includes(s as ConfiguratorSection)
@@ -128,16 +137,12 @@ export const ConfiguratorLayout = ({
   onHeroImageChange,
   onShowLogoOverlayChange,
 }: ConfiguratorLayoutProps) => {
-  // Only load saved state if we have a quoteId AND it's not a new quote
-  // For new quotes or when isNewQuote flag is set, always start fresh
   const savedState = (quoteId && !isNewQuote) ? loadConfiguratorState() : null;
   
-  // Internal client info state (used if external not provided)
   const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const clientInfo = externalClientInfo || internalClientInfo;
   const setClientInfo = externalSetClientInfo || setInternalClientInfo;
   
-  // Image state - use external if provided, otherwise internal
   const [internalFloorPlanUrl, setInternalFloorPlanUrl] = useState<string | null>(null);
   const [internalBuildingRenderUrl, setInternalBuildingRenderUrl] = useState<string | null>(null);
   const [internalHeroImageUrl, setInternalHeroImageUrl] = useState<string | null>(null);
@@ -154,40 +159,34 @@ export const ConfiguratorLayout = ({
   const setShowLogoOverlay = onShowLogoOverlayChange || setInternalShowLogoOverlay;
   
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
-    savedState?.activeSection || 'project'  // Start from project section
+    savedState?.activeSection || 'location'
   );
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
   const [visitedSections, setVisitedSections] = useState<Set<ConfiguratorSection>>(() => {
     const saved = savedState?.visitedSections || [];
-    // Always include the starting section in visited
-    const startSection = savedState?.activeSection || 'project';
+    const startSection = savedState?.activeSection || 'location';
     return new Set([...saved, startSection]);
   });
   
-  // Clear localStorage when starting a new quote (no quoteId)
   useEffect(() => {
     if (!quoteId) {
       localStorage.removeItem(CONFIGURATOR_STATE_KEY);
     }
   }, [quoteId]);
+  
   const previousSectionRef = useRef<ConfiguratorSection>(activeSection);
   const contentScrollRef = useRef<HTMLDivElement>(null);
   
-  // Auto-save indicator states
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastInputsRef = useRef<string>(JSON.stringify(inputs));
   
-  // Celebration state
   const [showCelebration, setShowCelebration] = useState(false);
   const hasShownCelebrationRef = useRef(false);
-  
-  // Sample data flash animation
   const [showSampleFlash, setShowSampleFlash] = useState(false);
 
-  // Persist configurator state to localStorage
   useEffect(() => {
     saveConfiguratorState({
       activeSection,
@@ -195,68 +194,57 @@ export const ConfiguratorLayout = ({
     });
   }, [activeSection, visitedSections]);
 
-  // Check if a specific section is complete (based on actual data AND visited)
   const isSectionComplete = useCallback((section: ConfiguratorSection): boolean => {
-    // ALL sections must be visited first to be complete
     if (!visitedSections.has(section)) return false;
     
-    // Calculate payment validation - must match PaymentSection logic
     const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
     const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
 
     let totalPayment: number;
     if (hasPostHandoverPlan) {
-      // Post-handover: downpayment + all installments = 100%
       totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
     } else {
-      // Standard: pre-handover + handover balance = 100%
       const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
       totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
     }
     const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (section) {
-      case 'project':
-        // Project is complete when there's a zone selected (stored in clientInfo)
+      case 'location':
         return Boolean(clientInfo.zoneId);
-      case 'investment':
-        // Investment complete when price and valid payment plan
-        return inputs.basePrice > 0 && inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
-      case 'returns':
-        // Returns complete when appreciation is configured
+      case 'property':
+        return inputs.basePrice > 0;
+      case 'payment':
+        return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
+      case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-      case 'extras':
-        // Extras is optional - always complete when visited
-        return true;
+      case 'rental':
+        return inputs.rentalYieldPercent > 0;
+      case 'exit':
+        return true; // Optional - complete when visited
       default:
         return false;
     }
   }, [visitedSections, inputs, clientInfo.zoneId]);
 
-  // Calculate completed sections count
   const completedSectionsCount = useMemo(() => {
     return SECTIONS.filter(section => isSectionComplete(section)).length;
   }, [isSectionComplete]);
 
-  // Progress based on COMPLETED sections, not just visited
   const progressPercent = Math.round((completedSectionsCount / SECTIONS.length) * 100);
 
-  // Auto-save effect - detect input changes
   useEffect(() => {
     const currentInputs = JSON.stringify(inputs);
     if (currentInputs !== lastInputsRef.current) {
       lastInputsRef.current = currentInputs;
       setSaveStatus('saving');
       
-      // Clear existing timeout
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       
-      // Simulate save delay (inputs are already being saved by parent)
       saveTimeoutRef.current = setTimeout(() => {
         setSaveStatus('saved');
-        // Reset to idle after showing "saved"
         saveTimeoutRef.current = setTimeout(() => {
           setSaveStatus('idle');
         }, 2000);
@@ -270,44 +258,36 @@ export const ConfiguratorLayout = ({
     };
   }, [inputs]);
 
-  // Celebration removed from progressPercent - will trigger on Apply & Close instead
-
   const currentIndex = SECTIONS.indexOf(activeSection);
   const canGoBack = currentIndex > 0;
   const isLastSection = currentIndex === SECTIONS.length - 1;
-  
-  // Progress for the visual bar - based on current section index position
-  // First step (index 0) = 0%, last step (index 8) = 100%
   const stepProgressPercent = (currentIndex / (SECTIONS.length - 1)) * 100;
 
-  // Validation for current section
   const canProceedFromCurrentSection = useMemo(() => {
-    // Calculate payment validation - must match PaymentSection logic
     const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
     const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
 
     let totalPayment: number;
     if (hasPostHandoverPlan) {
-      // Post-handover: downpayment + all installments = 100%
       totalPayment = inputs.downpaymentPercent + additionalPaymentsTotal;
     } else {
-      // Standard: pre-handover + handover balance = 100%
       const preHandoverTotal = inputs.downpaymentPercent + additionalPaymentsTotal;
       totalPayment = preHandoverTotal + (100 - inputs.preHandoverPercent);
     }
     const isPaymentValid = Math.abs(totalPayment - 100) < 0.5;
     
     switch (activeSection) {
-      case 'project':
-        // Project section requires zone selection (stored in clientInfo, not inputs)
+      case 'location':
         return Boolean(clientInfo.zoneId);
-      case 'investment':
-        // Must have valid payment plan adding up to 100%
-        return inputs.basePrice > 0 && inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
-      case 'returns':
+      case 'property':
+        return inputs.basePrice > 0;
+      case 'payment':
+        return inputs.preHandoverPercent > 0 && inputs.downpaymentPercent > 0 && isPaymentValid;
+      case 'appreciation':
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
-      case 'extras':
-        // Optional section - always can proceed
+      case 'rental':
+        return inputs.rentalYieldPercent > 0;
+      case 'exit':
         return true;
       default:
         return true;
@@ -332,14 +312,12 @@ export const ConfiguratorLayout = ({
     setAnimationKey(prev => prev + 1);
     setActiveSection(newSection);
     
-    // Mark section as visited
     setVisitedSections(prev => {
       const newSet = new Set(prev);
       newSet.add(newSection);
       return newSet;
     });
 
-    // Smooth scroll to top of content area
     contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -359,33 +337,27 @@ export const ConfiguratorLayout = ({
     setIsPreviewCollapsed(prev => !prev);
   }, []);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't handle if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
-      // Number keys 1-9 for section navigation
-      if (e.key >= '1' && e.key <= '9') {
+      if (e.key >= '1' && e.key <= '6') {
         const index = parseInt(e.key) - 1;
         if (index < SECTIONS.length) {
           navigateToSection(SECTIONS[index]);
         }
       }
-      // Arrow keys for next/prev
       if (e.key === 'ArrowRight' && canGoForward) {
         goToNextSection();
       }
       if (e.key === 'ArrowLeft' && canGoBack) {
         goToPreviousSection();
       }
-      // P key to toggle preview
       if (e.key.toLowerCase() === 'p') {
         togglePreview();
       }
-      // Escape to close
       if (e.key === 'Escape') {
         onClose();
       }
@@ -401,15 +373,12 @@ export const ConfiguratorLayout = ({
   };
 
   const handleLoadSample = () => {
-    // Set all OI inputs with sample data - ensure all required fields are set
     const sampleInputs = {
       ...DEFAULT_OI_INPUTS,
-      // Ensure these are set to trigger isQuoteConfigured
       basePrice: DEFAULT_OI_INPUTS.basePrice || 2000000,
     };
     setInputs(sampleInputs);
     
-    // Set client info with sample data - ensure developer and projectName are set
     const sampleClientInfo = {
       ...SAMPLE_CLIENT_INFO,
       developer: SAMPLE_CLIENT_INFO.developer || 'Sample Developer',
@@ -417,17 +386,12 @@ export const ConfiguratorLayout = ({
     };
     setClientInfo(sampleClientInfo);
     
-    // Set mortgage inputs with sample data
     setMortgageInputs(SAMPLE_MORTGAGE_INPUTS);
-    
-    // Mark all sections as visited
     setVisitedSections(new Set(SECTIONS));
     
-    // Trigger flash animation
     setShowSampleFlash(true);
     setTimeout(() => setShowSampleFlash(false), 1500);
     
-    // Show toast notification
     toast.success('Sample data loaded! Your quote will auto-save shortly.');
   };
 
@@ -436,123 +400,75 @@ export const ConfiguratorLayout = ({
     return animationDirection === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left';
   };
 
-  // Image upload handlers
-  const handleFloorPlanUpload = async (file: File | null) => {
-    if (!file) {
-      setFloorPlanUrl(null);
-      return;
-    }
-    
-    try {
-      const fileName = `floor-plan-${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from('quote-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('quote-images')
-        .getPublicUrl(data.path);
-      
-      setFloorPlanUrl(urlData.publicUrl);
-    } catch (error) {
-      console.error('Error uploading floor plan:', error);
-    }
-  };
-
-  const handleBuildingRenderUpload = async (file: File | null) => {
-    if (!file) {
-      setBuildingRenderUrl(null);
-      return;
-    }
-    
-    try {
-      const fileName = `building-render-${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from('quote-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('quote-images')
-        .getPublicUrl(data.path);
-      
-      setBuildingRenderUrl(urlData.publicUrl);
-    } catch (error) {
-      console.error('Error uploading building render:', error);
-    }
-  };
-
-  const handleHeroImageUpload = async (file: File | null) => {
-    if (!file) {
-      setHeroImageUrl(null);
-      return;
-    }
-    
-    try {
-      const fileName = `hero-image-${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from('quote-images')
-        .upload(fileName, file, { upsert: true });
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('quote-images')
-        .getPublicUrl(data.path);
-      
-      setHeroImageUrl(urlData.publicUrl);
-    } catch (error) {
-      console.error('Error uploading hero image:', error);
-    }
-  };
-
   const renderSection = () => {
     switch (activeSection) {
-      case 'project':
+      case 'location':
         return (
-          <ClientSection
+          <LocationSection
             clientInfo={clientInfo}
             onClientInfoChange={setClientInfo}
-            quoteId={quoteId}
             inputs={inputs}
             setInputs={setInputs}
           />
         );
-      case 'investment':
+      case 'property':
         return (
-          <InvestmentSection 
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
+              <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
+            </div>
+            <PropertySection 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              currency={currency}
+            />
+          </div>
+        );
+      case 'payment':
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-theme-text mb-1">Payment Plan</h3>
+              <p className="text-sm text-theme-text-muted">Configure payment split and installments</p>
+            </div>
+            <PaymentSection 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              currency={currency}
+            />
+          </div>
+        );
+      case 'appreciation':
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-theme-text mb-1">Appreciation Profile</h3>
+              <p className="text-sm text-theme-text-muted">Configure growth rates across construction and post-handover phases</p>
+            </div>
+            <AppreciationSection 
+              inputs={inputs} 
+              setInputs={setInputs} 
+              currency={currency}
+            />
+          </div>
+        );
+      case 'rental':
+        return (
+          <RentalSection 
             inputs={inputs} 
             setInputs={setInputs} 
             currency={currency}
           />
         );
-      case 'returns':
+      case 'exit':
         return (
-          <ReturnsSection 
-            inputs={inputs} 
-            setInputs={setInputs} 
-            currency={currency}
-          />
-        );
-      case 'extras':
-        return (
-          <ExtrasSection
+          <ExitSection
             inputs={inputs}
             setInputs={setInputs}
             currency={currency}
             mortgageInputs={mortgageInputs}
             setMortgageInputs={setMortgageInputs}
-            floorPlanUrl={floorPlanUrl}
-            buildingRenderUrl={buildingRenderUrl}
-            heroImageUrl={heroImageUrl}
-            onFloorPlanChange={handleFloorPlanUpload}
-            onBuildingRenderChange={handleBuildingRenderUpload}
-            onHeroImageChange={handleHeroImageUpload}
-            showLogoOverlay={showLogoOverlay}
-            onShowLogoOverlayChange={setShowLogoOverlay}
           />
         );
       default:
@@ -560,15 +476,12 @@ export const ConfiguratorLayout = ({
     }
   };
 
-  // Handle Apply & Close
   const handleApplyAndClose = useCallback(() => {
-    // Close immediately (no delay) so the modal always dismisses reliably.
     onClose();
   }, [onClose]);
 
   return (
     <div className="flex flex-col h-full bg-theme-card relative overflow-hidden">
-      {/* Celebration confetti overlay */}
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
           {Array.from({ length: 50 }).map((_, i) => (
@@ -588,7 +501,7 @@ export const ConfiguratorLayout = ({
         </div>
       )}
 
-      {/* Header - Fixed */}
+      {/* Header */}
       <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-theme-border bg-theme-bg-alt">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-theme-accent/20 rounded-lg">
@@ -596,7 +509,7 @@ export const ConfiguratorLayout = ({
           </div>
           <div>
             <h2 className="text-lg font-bold text-theme-text">Investment Builder</h2>
-            <p className="text-xs text-theme-text-muted">Configure your property investment</p>
+            <p className="text-xs text-theme-text-muted">Step {currentIndex + 1} of {SECTIONS.length}: {SECTION_LABELS[activeSection]}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -647,9 +560,9 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Middle Section - Content only, no sidebar */}
+      {/* Middle Section */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Content Area - Scrollable */}
+        {/* Content Area */}
         <div 
           ref={contentScrollRef} 
           className={`flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth transition-all duration-300 ${
@@ -664,7 +577,7 @@ export const ConfiguratorLayout = ({
           </div>
         </div>
 
-        {/* Preview Panel - Collapsible, own scroll */}
+        {/* Preview Panel */}
         <div 
           className={`shrink-0 border-l border-theme-border bg-theme-bg overflow-y-auto transition-all duration-300 ease-in-out ${
             isPreviewCollapsed ? 'w-14 p-2' : 'w-64 p-4'
@@ -679,23 +592,31 @@ export const ConfiguratorLayout = ({
         </div>
       </div>
 
-      {/* Footer Navigation - Compact Single Row with Hotkey Hints */}
+      {/* Footer Navigation - Enhanced with progress bar */}
       <div className="shrink-0 border-t border-theme-border bg-theme-bg-alt">
-        <div className="flex items-center justify-between px-4 py-2.5">
-          {/* Left: Back button + Hotkey hints */}
+        {/* Progress bar */}
+        <div className="h-1 bg-theme-bg">
+          <div 
+            className="h-full bg-theme-accent transition-all duration-300"
+            style={{ width: `${stepProgressPercent}%` }}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Back button */}
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={goToPreviousSection}
               disabled={!canGoBack}
-              className="border-theme-border !bg-transparent text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30"
+              className="border-theme-border !bg-transparent text-theme-text-muted hover:bg-theme-card-alt hover:text-theme-text disabled:opacity-30 gap-1"
             >
-              <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+              <ChevronLeft className="w-4 h-4" />
               Back
             </Button>
             
-            {/* Hotkey hints - desktop only */}
+            {/* Hotkey hints */}
             <div className="hidden md:flex items-center gap-2 text-[10px] text-theme-text-muted/60">
               <span className="flex items-center gap-0.5">
                 <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">←</kbd>
@@ -704,12 +625,12 @@ export const ConfiguratorLayout = ({
               <span className="flex items-center gap-0.5">
                 <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">1</kbd>
                 <span>-</span>
-                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">4</kbd>
+                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">6</kbd>
               </span>
             </div>
           </div>
 
-          {/* Center: Inline Step indicators - Simple numbers, no checkmarks */}
+          {/* Center: Step indicators */}
           <div className="flex items-center gap-1.5">
             {SECTIONS.map((section, index) => {
               const isActive = section === activeSection;
@@ -723,7 +644,7 @@ export const ConfiguratorLayout = ({
                       className="group"
                     >
                       <div className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200",
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200",
                         isActive 
                           ? "bg-theme-accent text-theme-bg scale-110 ring-2 ring-theme-accent/30" 
                           : isPast
@@ -735,7 +656,7 @@ export const ConfiguratorLayout = ({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">
-                    {section.charAt(0).toUpperCase() + section.slice(1)}
+                    {SECTION_LABELS[section]}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -744,15 +665,11 @@ export const ConfiguratorLayout = ({
 
           {/* Right: Next/Apply button */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-theme-text-muted hidden sm:block">
-              {currentIndex + 1}/{SECTIONS.length}
-            </span>
-            
             {isLastSection ? (
               <Button
                 size="sm"
                 onClick={handleApplyAndClose}
-                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold"
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold gap-1"
               >
                 Apply & Close
               </Button>
@@ -761,10 +678,10 @@ export const ConfiguratorLayout = ({
                 size="sm"
                 onClick={goToNextSection}
                 disabled={!canGoForward}
-                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
+                className="bg-theme-accent text-theme-bg hover:bg-theme-accent/90 font-semibold disabled:opacity-30 disabled:cursor-not-allowed gap-1"
               >
                 Next
-                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                <ChevronRight className="w-4 h-4" />
               </Button>
             )}
           </div>

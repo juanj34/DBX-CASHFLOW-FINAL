@@ -79,9 +79,9 @@ export const SnapshotOverviewCards = ({
           className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
         >
           <div className="flex items-center gap-1.5 mb-1">
-            <CreditCard className="w-3.5 h-3.5 text-primary" />
+            <CreditCard className="w-3.5 h-3.5 text-theme-accent" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('cashToStartLabel')}</span>
-            <span className="ml-auto text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">{preHandoverPercent}/{handoverPercent}</span>
+            <span className="ml-auto text-[9px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">{preHandoverPercent}/{handoverPercent}</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
@@ -102,9 +102,9 @@ export const SnapshotOverviewCards = ({
           className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
         >
         <div className="flex items-center gap-1.5 mb-1">
-            <Home className="w-3.5 h-3.5 text-cyan-400" />
+            <Home className="w-3.5 h-3.5 text-theme-rental" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('rentalIncome')}</span>
-            <span className="ml-auto text-[8px] text-cyan-400/70 bg-cyan-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}% {t('netLabel')} {t('yieldShort')}</span>
+            <span className="ml-auto text-[8px] text-theme-rental bg-theme-rental/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}% {t('netLabel')} {t('yieldShort')}</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
@@ -123,9 +123,9 @@ export const SnapshotOverviewCards = ({
           className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
         >
           <div className="flex items-center gap-1.5 mb-1">
-            <Clock className="w-3.5 h-3.5 text-purple-400" />
+            <Clock className="w-3.5 h-3.5 text-theme-exit" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('breakevenLabel')}</span>
-            <span className="ml-auto text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
+            <span className="ml-auto text-[9px] text-theme-exit bg-theme-exit/10 px-1.5 py-0.5 rounded">{netYieldPercent.toFixed(1)}%</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
@@ -144,9 +144,9 @@ export const SnapshotOverviewCards = ({
           className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
         >
           <div className="flex items-center gap-1.5 mb-1">
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
+            <Flame className="w-3.5 h-3.5 text-theme-warning" />
             <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('monthlyBurnLabel')}</span>
-            <span className="ml-auto text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded">{calculations.totalMonths}{t('moShort')}</span>
+            <span className="ml-auto text-[9px] text-theme-warning bg-theme-warning/10 px-1.5 py-0.5 rounded">{calculations.totalMonths}{t('moShort')}</span>
           </div>
           <div className="flex-1 flex flex-col justify-center">
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
