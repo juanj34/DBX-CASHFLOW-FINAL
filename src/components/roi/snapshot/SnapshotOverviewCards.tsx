@@ -32,7 +32,7 @@ export const SnapshotOverviewCards = ({
   rate,
 }: SnapshotOverviewCardsProps) => {
   const { t } = useLanguage();
-  const { basePrice, downpaymentPercent, preHandoverPercent, oqoodFee, rentalYieldPercent, serviceChargePerSqft = 18, unitSizeSqf = 0 } = inputs;
+  const { basePrice, downpaymentPercent, preHandoverPercent, oqoodFee, rentalYieldPercent, serviceChargePerSqft = 18, unitSizeSqf = 0, rentGrowthRate = 4 } = inputs;
   
   // Calculate Cash to Start
   const downpaymentAmount = basePrice * (downpaymentPercent / 100);
@@ -45,6 +45,18 @@ export const SnapshotOverviewCards = ({
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
   const monthlyRent = netAnnualRent / 12;
   const netYieldPercent = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
+  
+  // Calculate 7-year average rent with growth (for breakeven context)
+  const calculate7YearAverageRent = (yearOneRent: number, growthRate: number): number => {
+    let totalRent = 0;
+    let currentRent = yearOneRent;
+    for (let year = 1; year <= 7; year++) {
+      totalRent += currentRent;
+      currentRent *= (1 + growthRate / 100);
+    }
+    return totalRent / 7;
+  };
+  const averageAnnualRent = calculate7YearAverageRent(netAnnualRent, rentGrowthRate);
   
   // Calculate Breakeven
   const yearsToBreakeven = calculations.holdAnalysis?.yearsToPayOff || 0;
@@ -110,7 +122,10 @@ export const SnapshotOverviewCards = ({
             <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
               {netAnnualRentDual.primary}<span className="text-[10px] text-theme-text-muted">/{t('yearShort')}</span>
             </div>
-            <span className="text-[10px] text-theme-text-muted">{monthlyRentDual.primary}/{t('moShort')} • {t('year1Label')}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-theme-text-muted">{monthlyRentDual.primary}/{t('moShort')} • {t('year1Label')}</span>
+              <span className="text-[9px] text-green-400">📈 {t('sevenYearAvgShort')}: {formatDualCurrency(averageAnnualRent, currency, rate).primary}</span>
+            </div>
           </div>
         </motion.div>
 

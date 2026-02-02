@@ -25,7 +25,8 @@ export const CompactRentCard = ({
     serviceChargePerSqft = 18,
     unitSizeSqf = 0,
     showAirbnbComparison,
-    shortTermRental
+    shortTermRental,
+    rentGrowthRate = 4
   } = inputs;
   
   // Long-term calculations
@@ -35,6 +36,18 @@ export const CompactRentCard = ({
   const monthlyRent = netAnnualRent / 12;
   const grossYield = rentalYieldPercent;
   const netYield = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
+  
+  // Calculate 7-year average rent with growth
+  const calculate7YearAverageRent = (yearOneRent: number, growthRate: number): number => {
+    let totalRent = 0;
+    let currentRent = yearOneRent;
+    for (let year = 1; year <= 7; year++) {
+      totalRent += currentRent;
+      currentRent *= (1 + growthRate / 100);
+    }
+    return totalRent / 7;
+  };
+  const averageAnnualRent = calculate7YearAverageRent(netAnnualRent, rentGrowthRate);
   
   // Short-term calculations
   const adrValue = shortTermRental?.averageDailyRate || 800;
@@ -125,6 +138,19 @@ export const CompactRentCard = ({
             secondaryValue={getDualValue(monthlyRent).secondary}
             valueClassName="text-cyan-400"
           />
+          
+          {/* 7-Year Average Section */}
+          <div className="mt-2 pt-2 border-t border-theme-border/50">
+            <DottedRow 
+              label={t('sevenYearAverageLabel')}
+              value={getDualValue(averageAnnualRent).primary}
+              secondaryValue={getDualValue(averageAnnualRent).secondary}
+              valueClassName="text-green-400"
+            />
+            <span className="text-[9px] text-theme-text-muted">
+              ({t('includesGrowthLabel')} {rentGrowthRate}%/{t('yearShort')})
+            </span>
+          </div>
           
           <div className="flex items-center gap-2 pt-1">
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
