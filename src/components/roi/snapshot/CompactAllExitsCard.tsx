@@ -224,9 +224,20 @@ export const CompactAllExitsCard = ({
                   
                   {/* Clear labeled metrics */}
                   <div className="space-y-1 text-xs">
-                    {/* Row 1: Capital Invested */}
+                    {/* Row 1: Capital Invested with tooltip */}
                     <div className="flex items-center justify-between">
-                      <span className="text-theme-text-muted">{t('cashInvestedLabel')}:</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-theme-text-muted cursor-help border-b border-dashed border-theme-text-muted/50">
+                            {t('cashInvestedLabel')}:
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[220px] bg-theme-card border-theme-border">
+                          <p className="text-xs text-theme-text">
+                            {t('cashInvestedTooltip')}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
                       <span className="text-theme-text font-mono">
                         {getDualValue(scenario.totalCapitalDeployed).primary}
                         {currency !== 'AED' && getDualValue(scenario.totalCapitalDeployed).secondary && (
