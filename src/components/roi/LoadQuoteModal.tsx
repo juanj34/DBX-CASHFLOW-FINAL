@@ -41,22 +41,30 @@ export const LoadQuoteModal = ({ open, onOpenChange }: LoadQuoteModalProps) => {
 
   const fetchQuotes = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('cashflow_quotes')
+        .select('id, project_name, client_name, developer, created_at, updated_at, status, inputs')
+        .eq('broker_id', user.id)
+        .neq('status', 'working_draft')
+        .or('is_archived.is.null,is_archived.eq.false')
+        .order('updated_at', { ascending: false })
+        .limit(100);
+
+      if (!error && data) {
+        setQuotes(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch quotes:', err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { data, error } = await supabase
-      .from('cashflow_quotes')
-      .select('id, project_name, client_name, developer, created_at, updated_at, status, inputs')
-      .eq('broker_id', user.id)
-      .order('updated_at', { ascending: false });
-
-    if (!error && data) {
-      setQuotes(data);
-    }
-    setLoading(false);
   };
 
   const filteredQuotes = useMemo(() => {

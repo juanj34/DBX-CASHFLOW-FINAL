@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Plus, X, Building2, User, Calendar, FolderOpen, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, X, Building2, User, Calendar, FolderOpen, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -126,7 +126,7 @@ export const QuoteSelector = ({
         <div className="flex-1 overflow-y-auto space-y-2 mt-4 min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-theme-accent" />
+              <Loader2 className="h-6 w-6 animate-spin text-theme-accent" />
             </div>
           ) : filteredQuotes.length === 0 ? (
             <div className="text-center py-8 text-theme-text-muted">
