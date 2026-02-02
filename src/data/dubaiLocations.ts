@@ -129,5 +129,15 @@ export const dubaiLocations: DubaiLocation[] = [
     bearing: 0,
     icon: "💻",
     description: "Tech hub"
+  },
+  {
+    id: "dubai-islands",
+    name: "Dubai Islands",
+    coordinates: [55.3700, 25.2900],
+    zoom: 13,
+    pitch: 45,
+    bearing: -20,
+    icon: "🏝️",
+    description: "Waterfront mega-project"
   }
 ];
