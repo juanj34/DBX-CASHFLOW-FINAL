@@ -518,25 +518,33 @@ export const useQuotesList = () => {
     }
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('cashflow_quotes')
-      .select(`
-        id, broker_id, share_token, client_name, client_country, client_email,
-        project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
-        inputs, title, created_at, updated_at, status, status_changed_at,
-        presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
-        is_archived, archived_at, last_viewed_at
-      `)
-      .eq('broker_id', user.id)
-      .neq('status', 'working_draft') // Filter out working drafts from the list
-      .or('is_archived.is.null,is_archived.eq.false')
-      .order('updated_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('cashflow_quotes')
+        .select(`
+          id, broker_id, share_token, client_name, client_country, client_email,
+          project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+          inputs, title, created_at, updated_at, status, status_changed_at,
+          presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+          is_archived, archived_at, last_viewed_at
+        `)
+        .eq('broker_id', user.id)
+        .neq('status', 'working_draft')
+        .or('is_archived.is.null,is_archived.eq.false')
+        .order('updated_at', { ascending: false })
+        .limit(150);
 
-    if (!error && data) {
-      setQuotes(data.map(q => ({ ...q, inputs: q.inputs as unknown as OIInputs })));
-      setLastFetched(new Date());
+      if (!error && data) {
+        setQuotes(data.map(q => ({ ...q, inputs: q.inputs as unknown as OIInputs })));
+        setLastFetched(new Date());
+      } else if (error) {
+        console.error('Failed to fetch quotes:', error);
+      }
+    } catch (err) {
+      console.error('Failed to fetch quotes:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   // Initial fetch

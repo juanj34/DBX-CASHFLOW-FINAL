@@ -64,10 +64,19 @@ CURRENCY DETECTION:
 
 === HANDOVER MONTH DETECTION - HIGHEST PRIORITY ===
 - Find the LAST pre-handover payment's month number
-- The "Completion" or "On Handover" payment is ONE MONTH AFTER the last pre-handover
+- The "Completion" or "On Handover" or "At the Handover" payment is ONE MONTH AFTER the last pre-handover
 - Example: "In 24 months", "In 25 months", "In 26 months" then "Completion" → handoverMonthFromBooking = 27
-- If explicit date shown (e.g., "Q3 2027" with booking Jan 2025), calculate months from booking
+- If explicit date shown (e.g., "30-Dec-2026" with booking Jan 2026), calculate months from booking:
+  - Example: Booking "29-Jan-2026", Handover "30-Dec-2026" = 11 months from booking
 - ALWAYS set handoverMonthFromBooking when you can detect the handover timing
+
+=== HANDOVER PAYMENT DETECTION KEYWORDS ===
+Look for these patterns to identify the handover/completion payment:
+- "At the Handover" / "On Handover" / "Upon Handover"
+- "Completion" / "On Completion" / "At Completion" 
+- "Final Payment" / "Balance Payment"
+- "Handover Payment"
+This payment should have type: "handover" and be included in the installments array
 
 === DATE FORMAT NORMALIZATION - ALL to absolute months from booking ===
 1. "In X months" / "Month X" / "After X months" → triggerValue = X
