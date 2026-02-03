@@ -163,7 +163,7 @@ export const CompactPostHandoverCard = ({
       </div>
 
       {/* Content */}
-      <div className="p-3 space-y-1.5">
+      <div className="p-3 space-y-1.5 min-w-0 overflow-hidden">
         {/* Post-HO Total */}
         <DottedRow 
           label={`${t('postHandoverPayments')} (${Math.round(postHandoverPercent)}%)`}

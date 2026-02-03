@@ -105,7 +105,7 @@ export const CompactRentCard = ({
       {/* Content */}
       <div className={showAirbnbComparison ? "grid grid-cols-2" : ""}>
         {/* Long-Term Section */}
-        <div className="p-3 space-y-1.5">
+        <div className="p-3 space-y-1.5 min-w-0 overflow-hidden">
           <div className="text-[10px] uppercase tracking-wide text-cyan-400 font-semibold mb-2">{t('longTermLabel')}</div>
           
           <DottedRow 
