@@ -1,274 +1,213 @@
 
-# Plan: Mejoras de Claridad en Payment Breakdown, Rental Income y Exit Scenarios
+# Plan: Fixes for Snapshot Card Overflow, Quote Loading Lag, and AI Extractor Missing 10% Completion
 
-## Resumen de Problemas Identificados
+## Summary of Issues
 
-Basándome en tus imágenes y feedback:
+Based on your screenshot and the PDF document:
 
-1. **Payment Breakdown - Falta de porcentajes claros**
-   - La entrada debería mostrar "20% + 4% DLD = 24%"
-   - Subtotal del journey con porcentaje
-   - Pago final con porcentaje
-   - Todo debe sumar 100% del precio base
-
-2. **Exit Scenarios - Handover muestra 100% Complete**
-   - Cuando es handover, se ha pagado el 100% del plan
-   - El card ya muestra "100% Complete" correctamente (según tu imagen)
-
-3. **Rental Income Card - Falta indicador de promedio 7 años**
-   - Actualmente muestra "Year 1" pero debería indicar que el breakeven usa el promedio de 7 años
-   - El cálculo de breakeven YA usa `rentGrowthRate` (verificado en `calculateYearsWithGrowth`)
-
-4. **Completion Payment Badge**
-   - Para planes post-handover, el pago de "completion" necesita un badge distintivo
-   - No confundir handover (la entrega) con el pago final
+1. **Card Number Overflow** - Values in the POST-HANDOVER COVERAGE card are being cut off (e.g., "AED 8..." instead of full amounts)
+2. **Quote Loading Lag** - "Load Quotes" modal sometimes experiences long delays with quotes not loading
+3. **AI Extractor Missing 10% Completion** - The PDF shows a clear "At the Handover - 40%" payment but the AI is not extracting it correctly
 
 ---
 
-## Parte 1: Payment Breakdown - Porcentajes Claros
+## Issue 1: Card Number Overflow Fix
 
-### Archivo: `src/components/roi/snapshot/CompactPaymentTable.tsx`
+### Root Cause
+The `CompactPostHandoverCard.tsx` and `DottedRow.tsx` components don't handle long currency values properly when dual currency is enabled. The card has `min-w-0` but the parent containers aren't constraining overflow.
 
-| Sección | Cambio |
-|---------|--------|
-| **The Entry** | Mostrar `{downpaymentPercent}% + 4% DLD` en el label del total |
-| **Subtotal Entry** | Calcular porcentaje total = `downpaymentPercent + 4` (DLD) |
-| **The Journey** | Ya muestra `({journeyPercent}%)` - mantener |
-| **Final Payment** | Ya muestra `({handoverPercent}%)` - mantener |
-| **Grand Total** | Añadir validación visual que suma = 100% |
+### Files to Modify
 
-### Cambios Específicos
+| File | Changes |
+|------|---------|
+| `src/components/roi/snapshot/DottedRow.tsx` | Add `overflow-hidden` and proper `text-right` alignment to value container |
+| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Add `min-w-0` to parent containers, constrain card width |
+| `src/components/roi/snapshot/CompactRentCard.tsx` | Same overflow fixes |
+| `src/components/roi/snapshot/CompactAllExitsCard.tsx` | Add `text-right` and `whitespace-nowrap` to prevent wrapping |
 
-**1. Total Entry Label (línea ~456-463):**
+### Specific Changes
+
+**DottedRow.tsx:**
 ```typescript
-// ANTES:
-<DottedRow 
-  label={t('totalEntryLabel')}
+// Current: value container can overflow
+<span 
+  className={cn(
+    'font-mono tabular-nums text-theme-text text-sm min-w-0',
+    ...
+  )}
+>
+  <span className="truncate">{value}</span>
   ...
-/>
+</span>
 
-// DESPUÉS:
-const entryPercent = downpaymentPercent + 4; // downpayment + DLD
-<DottedRow 
-  label={`${t('totalEntryLabel')} (${downpaymentPercent}% + 4% DLD)`}
+// Fixed: proper overflow handling
+<span 
+  className={cn(
+    'font-mono tabular-nums text-theme-text text-sm shrink-0 text-right whitespace-nowrap',
+    ...
+  )}
+>
+  {value}
   ...
-/>
+</span>
 ```
 
-**2. Añadir subtotal con porcentaje después de downpayment:**
-Actualmente existe un subtotal cuando hay EOI, pero no muestra que la entrada completa (con DLD+Oqood) es más que el downpayment %.
-
-### Estructura Final del Payment Table
-
-```text
-┌──────────────────────────────────────────────────────┐
-│ LA ENTRADA                                           │
-│   EOI / Cuota de Reserva ..................... 50,000│
-│   Saldo de Enganche .......................... 87,600│
-│   ─────────────────────────────────────────────────  │
-│   Subtotal (20%) ............................ 137,600│
-│   Tarifa DLD (4%) ............................ 27,520│
-│   Oqood / Tarifa Admin ....................... 3,250 │
-│   ─────────────────────────────────────────────────  │
-│   Total Entrada (20% + 4% DLD) .............. 168,370│  ← NUEVO label
-├──────────────────────────────────────────────────────┤
-│ EL CAMINO (24 MES)                                   │
-│   2.5% @ Month 2 (Abr 2026) .................. 17,200│
-│   2.5% @ Month 5 (Jul 2026) .................. 17,200│
-│   ...                                                │
-│   ─────────────────────────────────────────────────  │
-│   Subtotal (10%) ............................. 68,800│
-│   Total Pagado (Entrada + Camino) ........... 237,170│  ← Ya existe
-├──────────────────────────────────────────────────────┤
-│ ENTREGA (70%)                                        │
-│   Pago Final ................................ 481,600│
-├──────────────────────────────────────────────────────┤
-│ Precio Base de Propiedad .................... 688,000│
-│ Tarifas (DLD + Oqood) ........................ 30,770│
-│ ═══════════════════════════════════════════════════  │
-│ Inversión Total ............................. 718,770│
-└──────────────────────────────────────────────────────┘
+**CompactPostHandoverCard.tsx:**
+```typescript
+// Add min-w-0 to inner content container to allow text truncation
+<div className="p-3 space-y-1.5 min-w-0 overflow-hidden">
 ```
 
 ---
 
-## Parte 2: Exit Scenario - Efectivo Invertido en Handover
+## Issue 2: Quote Loading Lag Fix
 
-### Archivo: `src/components/roi/snapshot/SnapshotExitCards.tsx`
+### Root Cause
+The `useQuotesList` hook in `useCashflowQuote.ts` (line 521-533) doesn't have:
+1. A `.limit()` clause to prevent loading too many quotes
+2. Error handling / timeout protection
+3. A try-catch block
 
-El card de handover ya muestra "100% Complete" (según tu imagen). El "Efectivo Invertido" de AED 237,170 es **correcto** - esto es el capital desplegado antes del handover (Entry + Journey), no incluye el pago final porque ese se paga AL momento del handover.
+This causes issues when users have many quotes or network is slow.
 
-**Clarificación en UI:**
-- Añadir tooltip o nota que explique: "Capital deployed = payments made before this exit point"
-- El pago de handover (70%) se hace en el momento de la entrega, por lo que no cuenta como "capital desplegado" hasta ese punto
+### Files to Modify
 
-### Posible Mejora (Opcional)
+| File | Changes |
+|------|---------|
+| `src/hooks/useCashflowQuote.ts` | Add `.limit(150)`, try-catch, timeout handling |
+| `src/components/roi/compare/QuoteSelector.tsx` | Add loading states with timeout fallback |
 
-En el card de handover, mostrar:
-- "Cash Invested Until Handover: XXX" (lo que se ha pagado)
-- "+ Final Payment at Handover: XXX" (lo que se paga en el momento)
+### Specific Changes
 
----
-
-## Parte 3: Rental Income - Indicador de 7-Year Average
-
-### Archivo: `src/components/roi/snapshot/SnapshotOverviewCards.tsx`
-
-**Problema:** El card muestra "Year 1" pero el breakeven usa crecimiento compuesto.
-
-**Solución:** 
-1. Calcular el promedio de 7 años de renta neta
-2. Mostrar ambos: Year 1 y 7-Year Average
-3. Indicar claramente que el breakeven usa el crecimiento
-
-### Cálculo del Promedio 7 Años
-
+**useCashflowQuote.ts - useQuotesList (line 513-540):**
 ```typescript
-// Calcular 7-year average rent con growth
-const calculate7YearAverageRent = (yearOneRent: number, growthRate: number): number => {
-  let totalRent = 0;
-  let currentRent = yearOneRent;
-  for (let year = 1; year <= 7; year++) {
-    totalRent += currentRent;
-    currentRent *= (1 + growthRate / 100);
+const fetchQuotes = useCallback(async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    setLoading(false);
+    return;
   }
-  return totalRent / 7;
-};
 
-const averageAnnualRent = calculate7YearAverageRent(netAnnualRent, inputs.rentGrowthRate);
+  setLoading(true);
+  
+  try {
+    const { data, error } = await supabase
+      .from('cashflow_quotes')
+      .select(`
+        id, broker_id, share_token, client_name, client_country, client_email,
+        project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
+        inputs, title, created_at, updated_at, status, status_changed_at,
+        presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
+        is_archived, archived_at, last_viewed_at
+      `)
+      .eq('broker_id', user.id)
+      .neq('status', 'working_draft')
+      .or('is_archived.is.null,is_archived.eq.false')
+      .order('updated_at', { ascending: false })
+      .limit(150); // ADD LIMIT
+
+    if (!error && data) {
+      setQuotes(data.map(q => ({ ...q, inputs: q.inputs as unknown as OIInputs })));
+      setLastFetched(new Date());
+    } else if (error) {
+      console.error('Failed to fetch quotes:', error);
+    }
+  } catch (err) {
+    console.error('Failed to fetch quotes:', err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 ```
 
-### Nuevo Label
+---
 
+## Issue 3: AI Extractor Missing 10% Completion Payment
+
+### Analysis of the PDF
+
+The PDF shows this payment schedule:
 ```text
-┌────────────────────────────────────────────────┐
-│ 🏠 RENTAL INCOME             8.2% net yield    │
-│                                                │
-│   AED 56,208/yr                                │
-│   AED 4,684/mo • Year 1                        │
-│                                                │
-│   📈 7-Year Average: AED 62,340/yr             │  ← NUEVO
-│   (includes 4% annual growth)                  │  ← NUEVO
-└────────────────────────────────────────────────┘
+| Payment Type                 | Amount    | Date        |
+| Booking Amount (Today) - 10% | 78,497.00 | 29-Jan-2026 |
+| First Installment - 10%      | 78,497.00 | 01-Mar-2026 |
+| 2nd Installment - 10%        | 78,497.00 | 01-May-2026 |
+| 3rd Installment - 10%        | 78,497.00 | 01-Jul-2026 |
+| 4th Installment - 10%        | 78,497.00 | 01-Sep-2026 |
+| 5th Installment - 10%        | 78,497.00 | 01-Nov-2026 |
+| At the Handover - 40%        | 313,986.00| 30-Dec-2026 |
 ```
 
-### Archivo: `src/components/roi/snapshot/CompactRentCard.tsx`
+**Total: 60% before handover + 40% on handover = 100%**
 
-Añadir sección de promedio 7 años:
+This is a **60/40 standard plan** (no post-handover). The issue is that the AI extractor may be:
+1. Missing the "At the Handover - 40%" payment from page 2
+2. Not correctly calculating that handover happens at Dec-2026 (11 months from booking)
+
+### Root Cause
+The system prompt in the edge function mentions "completion" keywords but the PDF says "At the Handover" which should also trigger handover detection.
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `supabase/functions/extract-payment-plan/index.ts` | Enhance handover detection keywords to include "At the Handover", "On Handover", "Upon Handover" |
+
+### Specific Changes
+
+**extract-payment-plan/index.ts - System Prompt Enhancement (around line 66-71):**
+
+Current prompt mentions "Completion" detection. Need to add explicit "At the Handover" pattern:
 
 ```typescript
-// Después de Monthly row
-<div className="mt-2 pt-2 border-t border-theme-border/50">
-  <DottedRow 
-    label={t('sevenYearAverageLabel')}
-    value={getDualValue(averageAnnualRent).primary}
-    valueClassName="text-green-400"
-  />
-  <span className="text-[9px] text-theme-text-muted">
-    ({t('includesGrowthLabel')} {inputs.rentGrowthRate}%/yr)
-  </span>
-</div>
+// Add to HANDOVER MONTH DETECTION section
+=== HANDOVER PAYMENT DETECTION ===
+- Look for these patterns to identify the handover/completion payment:
+  - "At the Handover" / "On Handover" / "Upon Handover"
+  - "Completion" / "On Completion" / "At Completion"
+  - "Final Payment" / "Balance Payment"
+  - "Handover Payment"
+- This payment should have type: "handover"
+- Calculate handoverMonthFromBooking from the date if provided (e.g., "30-Dec-2026" with booking Jan 2026 = 12 months)
 ```
 
----
-
-## Parte 4: Completion Payment Badge
-
-### Archivo: `src/components/roi/snapshot/CompactPaymentTable.tsx`
-
-Para planes con pagos post-handover, el pago que cae en el mes de completion necesita un badge:
-
-**Lógica de Detección:**
-
+**Add explicit date parsing guidance:**
 ```typescript
-// Check if this payment is the completion/handover payment
-const isCompletionPayment = (payment: PaymentMilestone): boolean => {
-  if (payment.type !== 'time') return false;
-  
-  // Calculate payment date
-  const paymentDate = new Date(bookingYear, bookingMonth - 1);
-  paymentDate.setMonth(paymentDate.getMonth() + payment.triggerValue);
-  
-  // Calculate handover date
-  const handoverDate = handoverMonth 
-    ? new Date(handoverYear, handoverMonth - 1)
-    : new Date(handoverYear, (handoverQuarter - 1) * 3 + 1);
-  
-  // Check if payment falls in the same month as handover
-  return paymentDate.getFullYear() === handoverDate.getFullYear() && 
-         paymentDate.getMonth() === handoverDate.getMonth();
-};
+=== DATE PARSING FROM PAYMENT SCHEDULE ===
+- When you see explicit dates like "01-Mar-2026", "30-Dec-2026":
+  - Calculate months from the booking date (e.g., Jan 2026)
+  - "01-Mar-2026" from "29-Jan-2026" = 2 months
+  - "30-Dec-2026" from "29-Jan-2026" = 11 months
+- The "At the Handover" or "Completion" payment defines handoverMonthFromBooking
 ```
 
-**Badge Visual:**
-
-```tsx
-{isCompletionPayment(payment) && (
-  <span className="text-[8px] px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded border border-cyan-500/30">
-    🔑 Completion
-  </span>
-)}
-```
+**Also update the extractionTool description** to include "At the Handover" as a recognized label pattern.
 
 ---
 
-## Archivos a Modificar
+## Files Summary
 
-| Archivo | Cambios |
-|---------|---------|
-| `src/components/roi/snapshot/CompactPaymentTable.tsx` | Entry label con porcentajes, completion badge |
-| `src/components/roi/snapshot/SnapshotOverviewCards.tsx` | Añadir 7-year average rent indicator |
-| `src/components/roi/snapshot/CompactRentCard.tsx` | Añadir sección de promedio 7 años |
-| `src/contexts/translations.ts` | Nuevas traducciones para labels |
-
----
-
-## Traducciones Nuevas
-
-```typescript
-// EN
-sevenYearAverageLabel: '7-Year Average',
-includesGrowthLabel: 'includes',
-completionBadge: 'Completion',
-
-// ES
-sevenYearAverageLabel: 'Promedio 7 Años',
-includesGrowthLabel: 'incluye',
-completionBadge: 'Entrega',
-```
+| File | Issue | Change Type |
+|------|-------|-------------|
+| `src/components/roi/snapshot/DottedRow.tsx` | Overflow | Fix value alignment and prevent overflow |
+| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Overflow | Add min-w-0 to containers |
+| `src/components/roi/snapshot/CompactRentCard.tsx` | Overflow | Add min-w-0 to containers |
+| `src/hooks/useCashflowQuote.ts` | Loading Lag | Add .limit(150), try-catch, error handling |
+| `supabase/functions/extract-payment-plan/index.ts` | AI Extraction | Enhance handover keyword detection, add date parsing guidance |
 
 ---
 
-## Verificación de Break-Even
+## Expected Results
 
-El cálculo de break-even **YA está correcto** en `useOICalculations.ts`:
-
-```typescript
-const calculateYearsWithGrowth = (principal: number, annualRent: number, growthRate: number): number => {
-  if (annualRent <= 0) return 999;
-  if (growthRate <= 0) return principal / annualRent;
-  
-  const g = growthRate / 100;
-  // Using geometric series: Years = ln(1 + (P × g) / R) / ln(1 + g)
-  const yearsNeeded = Math.log(1 + (principal * g) / annualRent) / Math.log(1 + g);
-  return yearsNeeded;
-};
-```
-
-Esta fórmula de serie geométrica **correctamente incluye** el crecimiento compuesto de la renta en todos los años. No requiere cambios.
+1. **Card Overflow**: Numbers like "AED 8,500" will display fully without being cut off
+2. **Loading Lag**: Quotes will load faster with the 150 limit and won't hang on network issues
+3. **AI Extraction**: The "At the Handover - 40%" payment will be correctly extracted and the handoverMonthFromBooking will be set to 11 (or 12 depending on exact calculation)
 
 ---
 
-## Resultado Esperado
+## Testing Notes
 
-1. **Payment Table:** Porcentajes claros que suman 100%
-   - Entry: "20% + 4% DLD"
-   - Journey: "10%"
-   - Handover: "70%"
-   - Total: 100% ✓
-
-2. **Exit Cards:** Handover muestra "100% Complete" (ya funciona)
-
-3. **Rental Income:** Muestra Year 1 + "7-Year Average" con nota de crecimiento
-
-4. **Completion Badge:** Pagos en el mes de completion tienen badge distintivo
+After implementation:
+1. Test the POST-HANDOVER COVERAGE card with dual currency enabled to verify numbers don't overflow
+2. Test Load Quotes with many quotes to verify it loads quickly
+3. Re-upload the XENIA PDF and verify all 7 payments are extracted correctly (6 installments + handover = 100%)
