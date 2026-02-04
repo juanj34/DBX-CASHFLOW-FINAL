@@ -48,7 +48,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
   const formatWithCommas = (num: number) => num.toLocaleString();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Section Header */}
       <div>
         <h3 className="text-lg font-semibold text-theme-text">Rental Strategy</h3>
@@ -56,8 +56,8 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
       </div>
 
       {/* Long-Term Rental */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">
             <Home className="w-4 h-4 text-theme-accent" />
             <span className="text-sm text-theme-text font-medium">Long-Term Rental</span>
@@ -70,75 +70,74 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         </div>
 
         {longTermEnabled && (
-          <div className="space-y-4 pl-6 border-l-2 border-theme-accent/20">
+          <div className="space-y-3 pl-4 border-l-2 border-theme-accent/30">
             {/* Rental Yield */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <label className="text-xs text-theme-text-muted">Annual Rental Yield</label>
-                  <InfoTooltip translationKey="tooltipRentalYield" />
-                </div>
-                <span className="text-sm text-theme-accent font-mono font-bold">{inputs.rentalYieldPercent}%</span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-theme-text-muted">Annual Yield</label>
+                <InfoTooltip translationKey="tooltipRentalYield" />
               </div>
-              <Slider
-                value={[inputs.rentalYieldPercent]}
-                onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
-                min={3}
-                max={15}
-                step={0.5}
-                className="roi-slider-lime"
-              />
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[inputs.rentalYieldPercent]}
+                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
+                  min={3}
+                  max={15}
+                  step={0.5}
+                  className="w-24 roi-slider-lime"
+                />
+                <span className="text-sm text-theme-accent font-mono font-bold w-10 text-right">{inputs.rentalYieldPercent}%</span>
+              </div>
             </div>
 
-            {/* Rent Growth + Service Charge */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <ArrowUp className="w-3 h-3 text-green-500" />
-                  <span className="text-[11px] text-theme-text-muted">Rent Growth</span>
-                  <InfoTooltip translationKey="tooltipRentGrowth" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[inputs.rentGrowthRate ?? 4]}
-                    onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: value }))}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    className="flex-1 roi-slider-lime"
-                  />
-                  <span className="text-xs text-green-500 font-mono w-8 text-right">{inputs.rentGrowthRate ?? 4}%</span>
-                </div>
+            {/* Rent Growth */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1">
+                <ArrowUp className="w-3 h-3 text-green-500" />
+                <span className="text-xs text-theme-text-muted">Rent Growth</span>
+                <InfoTooltip translationKey="tooltipRentGrowth" />
               </div>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[inputs.rentGrowthRate ?? 4]}
+                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: value }))}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-24 roi-slider-lime"
+                />
+                <span className="text-xs text-green-500 font-mono w-10 text-right">{inputs.rentGrowthRate ?? 4}%</span>
+              </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3 text-theme-text-muted" />
-                  <span className="text-[11px] text-theme-text-muted">Service Charge</span>
-                  <InfoTooltip translationKey="tooltipServiceCharges" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={inputs.serviceChargePerSqft || ''}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
-                      setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
-                    }}
-                    placeholder="18"
-                    className="flex-1 h-7 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs"
-                  />
-                  <span className="text-[10px] text-theme-text-muted">/sqft</span>
-                </div>
+            {/* Service Charge */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1">
+                <DollarSign className="w-3 h-3 text-theme-text-muted" />
+                <span className="text-xs text-theme-text-muted">Service Charge</span>
+                <InfoTooltip translationKey="tooltipServiceCharges" />
+              </div>
+              <div className="flex items-center gap-1">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={inputs.serviceChargePerSqft || ''}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                    setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
+                  }}
+                  placeholder="18"
+                  className="w-16 h-7 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs"
+                />
+                <span className="text-[10px] text-theme-text-muted">/sqft</span>
               </div>
             </div>
 
             {/* Year 1 Rent Display */}
-            <div className="flex justify-between items-center py-2 border-t border-theme-border/30">
+            <div className="flex justify-between items-center pt-2 border-t border-theme-border/20">
               <span className="text-xs text-theme-text-muted">Year 1 Rent</span>
               <div className="text-right">
-                <span className="text-base font-mono text-theme-accent font-bold">
+                <span className="text-sm font-mono text-theme-accent font-bold">
                   {formatCurrency(annualLongTermRent, currency)}
                 </span>
                 <span className="text-[10px] text-theme-text-muted ml-1">
@@ -151,14 +150,14 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
       </div>
 
       {/* Divider */}
-      <div className="border-t border-theme-border/50" />
+      <div className="border-t border-theme-border/30" />
 
       {/* Short-Term Comparison */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">
             <Plane className="w-4 h-4 text-orange-400" />
-            <span className="text-sm text-theme-text font-medium">Short-Term Comparison</span>
+            <span className="text-sm text-theme-text font-medium">Short-Term (Airbnb)</span>
           </div>
           <Switch
             checked={airbnbEnabled}
@@ -168,44 +167,42 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         </div>
 
         {airbnbEnabled && (
-          <div className="space-y-4 pl-6 border-l-2 border-orange-400/20">
+          <div className="space-y-3 pl-4 border-l-2 border-orange-400/30">
             {/* ADR - Main visible control */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <label className="text-xs text-theme-text-muted">Average Daily Rate (ADR)</label>
-                  <InfoTooltip translationKey="tooltipADR" />
-                </div>
-                <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-theme-text-muted text-[10px]">
-                    {currency === 'USD' ? '$' : 'AED'}
-                  </span>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={shortTermRental.averageDailyRate ? formatWithCommas(shortTermRental.averageDailyRate) : ''}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
-                      setInputs(prev => ({
-                        ...prev,
-                        shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), averageDailyRate: val }
-                      }));
-                    }}
-                    className="w-24 h-8 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-sm pl-8"
-                  />
-                </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-theme-text-muted">Daily Rate (ADR)</label>
+                <InfoTooltip translationKey="tooltipADR" />
+              </div>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-theme-text-muted text-[10px]">
+                  {currency === 'USD' ? '$' : 'AED'}
+                </span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={shortTermRental.averageDailyRate ? formatWithCommas(shortTermRental.averageDailyRate) : ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+                    setInputs(prev => ({
+                      ...prev,
+                      shortTermRental: { ...(prev.shortTermRental || DEFAULT_SHORT_TERM_RENTAL), averageDailyRate: val }
+                    }));
+                  }}
+                  className="w-24 h-8 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-sm pl-8"
+                />
               </div>
             </div>
 
             {/* Advanced Settings - Collapsible */}
             <Collapsible open={showAdvancedAirbnb} onOpenChange={setShowAdvancedAirbnb}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between h-7 px-0 text-theme-text-muted hover:text-theme-text hover:bg-transparent text-xs">
+                <Button variant="ghost" className="w-full justify-between h-6 px-0 text-theme-text-muted hover:text-theme-text hover:bg-transparent text-[11px]">
                   <span>Advanced Settings</span>
-                  {showAdvancedAirbnb ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  {showAdvancedAirbnb ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-3 pt-2">
+              <CollapsibleContent className="space-y-2 pt-2">
                 {/* Occupancy */}
                 <div className="flex items-center justify-between">
                   <label className="text-xs text-theme-text-muted">Occupancy</label>
@@ -219,7 +216,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                       min={30}
                       max={95}
                       step={5}
-                      className="w-24 roi-slider-lime"
+                      className="w-20 roi-slider-lime"
                     />
                     <span className="text-xs text-theme-text font-mono w-10 text-right">{shortTermRental.occupancyPercent}%</span>
                   </div>
@@ -238,7 +235,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                       min={10}
                       max={50}
                       step={5}
-                      className="w-24 roi-slider-lime"
+                      className="w-20 roi-slider-lime"
                     />
                     <span className="text-xs text-red-400 font-mono w-10 text-right">{shortTermRental.operatingExpensePercent}%</span>
                   </div>
@@ -257,7 +254,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                       min={0}
                       max={30}
                       step={5}
-                      className="w-24 roi-slider-lime"
+                      className="w-20 roi-slider-lime"
                     />
                     <span className="text-xs text-amber-400 font-mono w-10 text-right">{shortTermRental.managementFeePercent}%</span>
                   </div>
@@ -266,7 +263,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
             </Collapsible>
 
             {/* Short-Term Income Summary */}
-            <div className="space-y-2 py-2 border-t border-theme-border/30">
+            <div className="space-y-1.5 pt-2 border-t border-theme-border/20">
               <div className="flex justify-between text-xs">
                 <span className="text-theme-text-muted">Gross</span>
                 <span className="text-theme-text font-mono">{formatCurrency(grossAirbnbIncome, currency)}</span>
@@ -275,7 +272,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                 <span className="text-theme-text-muted">Expenses</span>
                 <span className="text-red-400 font-mono">-{formatCurrency(airbnbExpenses, currency)}</span>
               </div>
-              <div className="flex justify-between text-sm pt-1 border-t border-theme-border/30">
+              <div className="flex justify-between text-sm pt-1 border-t border-theme-border/20">
                 <span className="text-orange-400 font-medium">Net</span>
                 <span className="text-theme-accent font-mono font-bold">{formatCurrency(netAirbnbIncome, currency)}</span>
               </div>

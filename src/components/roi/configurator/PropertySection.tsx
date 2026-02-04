@@ -101,58 +101,60 @@ export const PropertySection = ({
   const isHandoverBeforeBooking = handoverDate <= bookingDate;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Section Header */}
       <div>
         <h3 className="text-lg font-semibold text-theme-text">Property Details</h3>
         <p className="text-sm text-theme-text-muted">Base price, dates, and entry costs</p>
       </div>
       
-      {/* Base Price */}
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-1">
+      {/* Base Price Row */}
+      <div className="flex items-center justify-between gap-4 py-2">
+        <div className="flex items-center gap-1 shrink-0">
           <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
-            Base Property Price
+            Base Price
           </label>
           <InfoTooltip translationKey="tooltipBasePrice" />
         </div>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm">
-            {currency === 'USD' ? '$' : 'AED'}
-          </span>
-          <Input
-            type="text"
-            value={basePriceInput}
-            onChange={(e) => {
-              isEditingRef.current = true;
-              setBasePriceInput(e.target.value.replace(/,/g, ''));
-            }}
-            onBlur={() => {
-              isEditingRef.current = false;
-              handleBasePriceBlur();
-            }}
-            className="h-10 text-right bg-theme-bg border-theme-border text-theme-accent font-mono text-base pl-12 pr-3"
-          />
-        </div>
-        {/* Price per sqft indicator */}
-        {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
-          <div className="text-xs text-theme-text-muted">
-            <span className="text-theme-accent font-mono">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
-            <span> per sqft</span>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm">
+              {currency === 'USD' ? '$' : 'AED'}
+            </span>
+            <Input
+              type="text"
+              value={basePriceInput}
+              onChange={(e) => {
+                isEditingRef.current = true;
+                setBasePriceInput(e.target.value.replace(/,/g, ''));
+              }}
+              onBlur={() => {
+                isEditingRef.current = false;
+                handleBasePriceBlur();
+              }}
+              className="h-9 w-40 text-right bg-theme-bg border-theme-border text-theme-accent font-mono text-base pl-12 pr-3"
+            />
           </div>
-        )}
+          {/* Price per sqft indicator */}
+          {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
+            <span className="text-xs text-theme-text-muted">
+              <span className="text-theme-accent font-mono">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
+              <span>/sqft</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Divider */}
-      <div className="border-t border-theme-border/50" />
+      <div className="border-t border-theme-border/30" />
 
-      {/* Dates Row */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Dates - Compact Inline */}
+      <div className="space-y-2">
         {/* Booking Date */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-4 py-1">
+          <div className="flex items-center gap-1 shrink-0">
             <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
-              Booking Date
+              Booking
             </label>
             <InfoTooltip translationKey="tooltipBookingDate" />
           </div>
@@ -161,12 +163,12 @@ export const PropertySection = ({
               value={String(inputs.bookingMonth)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, bookingMonth: parseInt(value) }))}
             >
-              <SelectTrigger className="flex-1 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="w-20 h-8 text-xs bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {months.map(m => (
-                  <SelectItem key={m.value} value={String(m.value)} className="text-sm text-theme-text hover:bg-theme-border">
+                  <SelectItem key={m.value} value={String(m.value)} className="text-xs text-theme-text hover:bg-theme-border">
                     {m.label}
                   </SelectItem>
                 ))}
@@ -176,12 +178,12 @@ export const PropertySection = ({
               value={String(inputs.bookingYear)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, bookingYear: parseInt(value) }))}
             >
-              <SelectTrigger className="w-20 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="w-16 h-8 text-xs bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {years.map(y => (
-                  <SelectItem key={y} value={String(y)} className="text-sm text-theme-text hover:bg-theme-border">
+                  <SelectItem key={y} value={String(y)} className="text-xs text-theme-text hover:bg-theme-border">
                     {y}
                   </SelectItem>
                 ))}
@@ -191,10 +193,10 @@ export const PropertySection = ({
         </div>
 
         {/* Handover Date */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-4 py-1">
+          <div className="flex items-center gap-1 shrink-0">
             <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
-              Handover Date
+              Handover
             </label>
             <InfoTooltip translationKey="tooltipHandoverDate" />
           </div>
@@ -203,12 +205,12 @@ export const PropertySection = ({
               value={String(inputs.handoverQuarter)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, handoverQuarter: parseInt(value) }))}
             >
-              <SelectTrigger className="w-16 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="w-14 h-8 text-xs bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Q" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {quarters.map(q => (
-                  <SelectItem key={q.value} value={String(q.value)} className="text-sm text-theme-text hover:bg-theme-border">
+                  <SelectItem key={q.value} value={String(q.value)} className="text-xs text-theme-text hover:bg-theme-border">
                     {q.label}
                   </SelectItem>
                 ))}
@@ -218,12 +220,12 @@ export const PropertySection = ({
               value={String(inputs.handoverYear)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, handoverYear: parseInt(value) }))}
             >
-              <SelectTrigger className="flex-1 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="w-16 h-8 text-xs bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {years.map(y => (
-                  <SelectItem key={y} value={String(y)} className="text-sm text-theme-text hover:bg-theme-border">
+                  <SelectItem key={y} value={String(y)} className="text-xs text-theme-text hover:bg-theme-border">
                     {y}
                   </SelectItem>
                 ))}
@@ -231,30 +233,30 @@ export const PropertySection = ({
             </Select>
           </div>
         </div>
+
+        {/* Date validation warning */}
+        {isHandoverBeforeBooking && (
+          <div className="flex items-center gap-2 text-amber-500 text-xs py-1">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>Handover must be after booking</span>
+          </div>
+        )}
       </div>
 
-      {/* Date validation warning */}
-      {isHandoverBeforeBooking && (
-        <div className="flex items-center gap-2 text-amber-500 text-xs">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          <span>Handover must be after booking</span>
-        </div>
-      )}
-
       {/* Divider */}
-      <div className="border-t border-theme-border/50" />
+      <div className="border-t border-theme-border/30" />
 
-      {/* Entry Costs */}
-      <div className="space-y-3">
+      {/* Entry Costs - Compact Row */}
+      <div className="space-y-2">
         <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
-          Entry Costs (At Booking)
+          Entry Costs
         </label>
         
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex items-center gap-3">
           {/* EOI Fee */}
-          <div className="space-y-1">
+          <div className="flex-1 space-y-0.5">
             <div className="flex items-center gap-0.5">
-              <span className="text-[11px] text-theme-text-muted">EOI / Booking</span>
+              <span className="text-[10px] text-theme-text-muted">EOI</span>
               <InfoTooltip translationKey="tooltipEoiFee" />
             </div>
             <div className="relative">
@@ -272,20 +274,20 @@ export const PropertySection = ({
           </div>
 
           {/* DLD Fee */}
-          <div className="space-y-1">
+          <div className="flex-1 space-y-0.5">
             <div className="flex items-center gap-0.5">
-              <span className="text-[11px] text-theme-text-muted">DLD (4%)</span>
+              <span className="text-[10px] text-theme-text-muted">DLD 4%</span>
               <InfoTooltip translationKey="tooltipDldFee" />
             </div>
-            <div className="h-8 px-2 bg-theme-bg border border-theme-border rounded-md flex items-center justify-end">
+            <div className="h-8 px-2 bg-theme-bg/50 border border-theme-border/50 rounded-md flex items-center justify-end">
               <span className="text-xs text-theme-text font-mono">{formatCurrency(inputs.basePrice * 0.04, currency)}</span>
             </div>
           </div>
           
           {/* Oqood Fee */}
-          <div className="space-y-1">
+          <div className="flex-1 space-y-0.5">
             <div className="flex items-center gap-0.5">
-              <span className="text-[11px] text-theme-text-muted">Oqood</span>
+              <span className="text-[10px] text-theme-text-muted">Oqood</span>
               <InfoTooltip translationKey="tooltipOqoodFee" />
             </div>
             <div className="relative">
@@ -304,8 +306,8 @@ export const PropertySection = ({
         </div>
 
         {/* Total Entry Cost */}
-        <div className="flex justify-between items-center pt-2 border-t border-theme-border/30">
-          <span className="text-xs text-theme-text-muted">Total Entry Cost</span>
+        <div className="flex justify-between items-center pt-2 border-t border-theme-border/20">
+          <span className="text-xs text-theme-text-muted">Total Entry</span>
           <span className="text-sm font-mono text-theme-accent font-semibold">
             {formatCurrency(inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee, currency)}
           </span>

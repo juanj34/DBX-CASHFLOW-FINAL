@@ -152,7 +152,7 @@ export const LocationSection = ({
         onApply={handleAIExtraction}
       />
       
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* Section Header with AI Import */}
         <div className="flex items-start justify-between">
           <div>
@@ -163,54 +163,59 @@ export const LocationSection = ({
             onClick={() => setShowAIExtractor(true)}
             variant="ghost"
             size="sm"
-            className="text-theme-accent hover:bg-theme-accent/10 h-8 gap-1.5"
+            className="text-purple-400 hover:bg-purple-500/10 h-7 gap-1.5 px-2"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span className="text-xs">AI Import</span>
           </Button>
         </div>
 
-        {/* Zone */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+        {/* Zone Row */}
+        <div className="flex items-center justify-between gap-4 py-2">
+          <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide shrink-0">
             {language === 'es' ? 'Zona' : 'Zone'}
           </label>
           <ZoneSelect
             value={clientInfo.zoneId}
             onValueChange={handleZoneChange}
-            className="w-full"
+            className="flex-1 max-w-[280px]"
           />
         </div>
 
-        {/* Developer & Project - Side by Side */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+        {/* Divider */}
+        <div className="border-t border-theme-border/30" />
+
+        {/* Developer & Project Rows */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-4 py-1">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide shrink-0">
               {t('developer')}
             </label>
             <DeveloperSelect
               value={clientInfo.developer || ''}
               onValueChange={(name) => handleChange('developer', name)}
+              className="flex-1 max-w-[280px]"
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+          <div className="flex items-center justify-between gap-4 py-1">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide shrink-0">
               {t('projectName')}
             </label>
             <ProjectSelect
               value={clientInfo.projectName || ''}
               developer={clientInfo.developer}
               onValueChange={(name) => handleChange('projectName', name)}
+              className="flex-1 max-w-[280px]"
             />
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-theme-border/50" />
+        <div className="border-t border-theme-border/30" />
 
-        {/* Unit Details - Grid */}
+        {/* Unit Details Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('unit')}
             </label>
@@ -222,7 +227,7 @@ export const LocationSection = ({
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('unitType')}
             </label>
@@ -246,7 +251,7 @@ export const LocationSection = ({
 
           {/* Bedroom Count - only for villa/townhouse */}
           {(clientInfo.unitType === 'villa' || clientInfo.unitType === 'townhouse') && (
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1 col-span-2">
               <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
                 {language === 'es' ? 'Habitaciones' : 'Bedrooms'}
               </label>
@@ -268,7 +273,7 @@ export const LocationSection = ({
             </div>
           )}
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('unitSizeSqf')}
             </label>
@@ -281,7 +286,7 @@ export const LocationSection = ({
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
               {t('unitSizeM2')}
             </label>
