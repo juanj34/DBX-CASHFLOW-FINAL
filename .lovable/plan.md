@@ -1,208 +1,226 @@
 
-# Plan: Fix Configurator UX/UI - Remove Duplicate Headers and Improve Consistency
+# Plan: Streamline LocationSection UX - Remove Visual Clutter
 
 ## Problem Analysis
 
-The configurator wizard has **multiple UX issues** where headers are duplicated and inconsistent across sections:
+The LocationSection feels "clunky" because it uses a **heavy card-per-group pattern** that other sections don't follow:
 
-### Issue 1: Duplicate "Payment Plan" Headers
-The `ConfiguratorLayout.tsx` wraps `PaymentSection` with its own header:
-```tsx
-// ConfiguratorLayout.tsx (lines 446-455)
-case 'payment':
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3>Payment Plan</h3>               // <-- Header #1
-        <p>Configure payment split and installments</p>
-      </div>
-      <PaymentSection />
-    </div>
-  );
+```text
+Current Layout (Cluttered):
+┌─────────────────────────────────────────┐
+│ 📍 Investment Zone                      │  ← Separate card with icon header
+│    Select where the property is located │
+│    [Zone Dropdown]                      │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│ 🏢 Developer & Project                  │  ← Another card with icon header
+│    Who is building the property         │
+│    Developer: [Dropdown]                │
+│    Project Name: [Dropdown]             │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│ 🏗️ Unit Details                         │  ← Third card with icon header
+│    Specific unit information            │
+│    [Unit] [Type]                        │
+│    [Size sqf] [Size m²]                 │
+└─────────────────────────────────────────┘
 ```
 
-But `PaymentSection.tsx` also has its own header inside:
-```tsx
-// PaymentSection.tsx (lines 422-426)
-<div>
-  <h3>Payment Plan</h3>                    // <-- Header #2 (DUPLICATE!)
-  <p>Configure your payment schedule</p>
-</div>
-```
-
-**Result:** User sees "Payment Plan" TWICE as shown in the screenshot.
-
-### Issue 2: Similar Duplicate in Rental Section
-`RentalSection.tsx` adds a header wrapper:
-```tsx
-<h3>Rental Strategy</h3>
-<p>Configure yield, service charges...</p>
-```
-
-Then `RentSection.tsx` inside also has:
-```tsx
-<h3>Rental Strategy</h3>
-<p>Configure rental income projections</p>
-```
-
-### Issue 3: Inconsistent Section Header Patterns
-Some sections have their OWN headers (internal), while the layout ALSO adds headers:
-
-| Section | Layout Header | Internal Header | Result |
-|---------|---------------|-----------------|--------|
-| Location | None | Yes | OK |
-| Property | Yes | None | OK |
-| Payment | Yes | Yes | DUPLICATE |
-| Appreciation | Yes | Yes | DUPLICATE (Different text) |
-| Rental | Yes (wrapper) | Yes (RentSection) | DUPLICATE |
-| Exit | None | Yes | OK |
+**Issues:**
+1. **3 bordered cards** create excessive visual separation
+2. **Icon header blocks** (icon + title + subtitle) repeat and take ~40px height each
+3. **Redundant subtitles** - "Select where the property is located" is obvious
+4. **Inconsistent with PropertySection** which uses compact inline rows
 
 ---
 
-## Solution
+## Solution: Flatten to Compact Inline Rows
 
-Adopt a **single source of truth** pattern: Let each section component own its header internally, and remove the wrapper headers from `ConfiguratorLayout.tsx`.
+Adopt the same pattern used in PropertySection and RentSection:
+- Single container or minimal grouping
+- Inline label + control pairs
+- Remove icon boxes (or use inline icons)
+- Remove redundant subtitles
 
-### Changes Required
-
-#### 1. `ConfiguratorLayout.tsx` - Remove Wrapper Headers (lines 430-478)
-**Before:**
-```tsx
-case 'property':
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3>Property Details</h3>
-        <p>Base price, booking date, and entry costs</p>
-      </div>
-      <PropertySection />
-    </div>
-  );
-case 'payment':
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3>Payment Plan</h3>
-        <p>Configure payment split and installments</p>
-      </div>
-      <PaymentSection />
-    </div>
-  );
-case 'appreciation':
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3>Appreciation Profile</h3>
-        <p>Configure growth rates...</p>
-      </div>
-      <AppreciationSection />
-    </div>
-  );
+```text
+Target Layout (Streamlined):
+┌─────────────────────────────────────────┐
+│ Location & Property                     │
+│ Select the zone and enter property info │
+│                                         │
+│ [AI Import Banner - compact]            │
+│                                         │
+│ Zone    [Al Barari ▼]                   │  ← Inline row
+│                                         │
+│ Developer [NYX Properties ▼]            │  ← Inline row
+│ Project   [Xenia Residence ▼]           │  ← Inline row
+│                                         │
+│ ┌──────────────┐ ┌──────────────┐       │
+│ │ Unit: 202    │ │ Type: Studio │       │  ← 2-column grid
+│ └──────────────┘ └──────────────┘       │
+│ ┌──────────────┐ ┌──────────────┐       │
+│ │ Size: 560.69 │ │ Size: 52.1   │       │
+│ │     sqft     │ │     m²       │       │
+│ └──────────────┘ └──────────────┘       │
+└─────────────────────────────────────────┘
 ```
 
-**After:**
-```tsx
-case 'property':
-  return <PropertySection />;
-case 'payment':
-  return <PaymentSection />;
-case 'appreciation':
-  return <AppreciationSection />;
-```
+---
 
-#### 2. `PropertySection.tsx` - Add Internal Header
-Currently missing a header. Add one for consistency:
+## Detailed Changes
+
+### File: `src/components/roi/configurator/LocationSection.tsx`
+
+#### 1. Remove Icon Header Blocks
+Replace this pattern:
 ```tsx
-return (
-  <div className="space-y-4">
+<div className="p-4 rounded-xl border border-theme-border bg-theme-card">
+  <div className="flex items-center gap-2 mb-3">
+    <div className="p-2 rounded-lg bg-theme-accent/10">
+      <MapPin className="w-4 h-4 text-theme-accent" />
+    </div>
     <div>
-      <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
-      <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
-    </div>
-    {/* ...existing content... */}
-  </div>
-);
-```
-
-#### 3. `RentalSection.tsx` - Remove Duplicate Wrapping
-**Before:**
-```tsx
-return (
-  <div className="space-y-4">
-    <div>
-      <h3>Rental Strategy</h3>  // Wrapper header
-      <p>Configure yield, service charges...</p>
-    </div>
-    <div className="border...">
-      <div className="flex items-center...">
-        <h4>Long-Term & Short-Term Rental</h4>  // Sub-header
-        <p>Configure rental income projections</p>
-      </div>
-      <RentSection />
+      <h4 className="text-sm font-semibold text-theme-text">Investment Zone</h4>
+      <p className="text-xs text-theme-text-muted">Select where...</p>
     </div>
   </div>
-);
-```
-
-**After:** Remove the outer header since `RentSection` has its own, OR remove the header from `RentSection` and keep only the wrapper.
-
-#### 4. `RentSection.tsx` - Remove Internal Header
-Since it's embedded inside `RentalSection`, remove its own header:
-```tsx
-// Remove lines 63-67
-<div>
-  <h3 className="text-lg font-semibold text-theme-text mb-1">Rental Strategy</h3>
-  <p className="text-sm text-theme-text-muted">Configure rental income projections</p>
+  <ZoneSelect ... />
 </div>
 ```
 
-#### 5. `MobileConfiguratorSheet.tsx` - Apply Same Fixes (lines 274-320)
-The mobile version has the same duplicate header issue. Apply identical fixes.
+With simple inline rows:
+```tsx
+<div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
+  <span className="text-xs text-theme-text-muted">Zone</span>
+  <div className="flex-1 max-w-[280px]">
+    <ZoneSelect ... />
+  </div>
+</div>
+```
+
+#### 2. Combine Developer & Project into Inline Rows
+```tsx
+<div className="space-y-2">
+  <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
+    <span className="text-xs text-theme-text-muted">Developer</span>
+    <div className="flex-1 max-w-[280px]">
+      <DeveloperSelect ... />
+    </div>
+  </div>
+  <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
+    <span className="text-xs text-theme-text-muted">Project</span>
+    <div className="flex-1 max-w-[280px]">
+      <ProjectSelect ... />
+    </div>
+  </div>
+</div>
+```
+
+#### 3. Simplify Unit Details Grid
+Keep the 2x2 grid but remove the card wrapper and icon header:
+```tsx
+<div className="grid grid-cols-2 gap-2">
+  <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
+    <label className="text-xs text-theme-text-muted mb-1 block">Unit</label>
+    <Input ... />
+  </div>
+  <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
+    <label className="text-xs text-theme-text-muted mb-1 block">Type</label>
+    <Select ... />
+  </div>
+  ...
+</div>
+```
+
+#### 4. Make AI Import Banner More Compact
+Reduce padding and make it single-line:
+```tsx
+<div className="flex items-center justify-between p-2.5 rounded-lg border border-purple-500/30 bg-purple-500/10">
+  <div className="flex items-center gap-2">
+    <Sparkles className="w-4 h-4 text-purple-400" />
+    <span className="text-xs text-theme-text-muted">
+      Upload a brochure to auto-fill details
+    </span>
+  </div>
+  <Button size="sm" variant="ghost" className="text-purple-400 h-7 px-2">
+    <Sparkles className="w-3.5 h-3.5 mr-1" />
+    Import
+  </Button>
+</div>
+```
+
+---
+
+## Visual Comparison
+
+**Before (3 heavy cards, ~320px tall):**
+```text
+┌──────────────────────────────────────────────┐
+│ [Sparkles] AI Auto-Fill                      │
+│ Upload a brochure or payment plan to...      │  [Import]
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ [📍] Investment Zone                         │
+│     Select where the property is located     │
+│     ┌──────────────────────────────────┐     │
+│     │ Al Barari                      ▼ │     │
+│     └──────────────────────────────────┘     │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ [🏢] Developer & Project                     │
+│     Who is building the property             │
+│     Developer: [NYX Properties ▼]            │
+│     Project:   [Xenia Residence ▼]           │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ [🏗️] Unit Details                            │
+│     Specific unit information                │
+│     ┌────────────┐  ┌────────────┐           │
+│     │ 202        │  │ Studio   ▼ │           │
+│     └────────────┘  └────────────┘           │
+│     ┌────────────┐  ┌────────────┐           │
+│     │ 560.69     │  │ 52.1       │           │
+│     └────────────┘  └────────────┘           │
+└──────────────────────────────────────────────┘
+```
+
+**After (compact inline rows, ~200px tall):**
+```text
+┌─ [Sparkles] Upload brochure to auto-fill ── [Import] ─┐
+
+Zone       │ Al Barari                              ▼ │
+Developer  │ NYX Properties                         ▼ │
+Project    │ Xenia Residence                        ▼ │
+
+┌──────────────┐  ┌──────────────┐
+│ Unit: 202    │  │ Type: Studio │
+└──────────────┘  └──────────────┘
+┌──────────────┐  ┌──────────────┐
+│ 560.69 sqft  │  │ 52.1 m²      │
+└──────────────┘  └──────────────┘
+```
+
+**Space savings:** ~40% reduction in vertical space
 
 ---
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Remove wrapper headers for property, payment, appreciation sections |
-| `src/components/roi/configurator/PropertySection.tsx` | Add internal section header |
-| `src/components/roi/configurator/RentalSection.tsx` | Simplify to just render `RentSection` without duplicate header wrapper |
-| `src/components/roi/configurator/RentSection.tsx` | Remove internal header (let parent handle it) |
-| `src/components/roi/configurator/MobileConfiguratorSheet.tsx` | Apply same fixes for mobile view |
+| File | Changes |
+|------|---------|
+| `src/components/roi/configurator/LocationSection.tsx` | Remove 3 card wrappers, remove icon header blocks, use inline label-control rows, compact AI banner |
 
 ---
 
-## Visual Result After Fix
+## Design Principles Applied
 
-**Before (current broken state):**
-```
-┌─────────────────────────────────────┐
-│ Payment Plan                        │  <-- Header #1 (from Layout)
-│ Configure payment split and...      │
-│                                     │
-│ Payment Plan                        │  <-- Header #2 (from Component) ❌
-│ Configure your payment schedule     │
-│ [AI Import button]                  │
-└─────────────────────────────────────┘
-```
-
-**After (fixed):**
-```
-┌─────────────────────────────────────┐
-│ Payment Plan           [AI Import]  │  <-- Single unified header ✓
-│ Configure your payment schedule     │
-│                                     │
-│ [Allow Payments Past Handover]      │
-│ [Split buttons: 20/80 30/70...]     │
-└─────────────────────────────────────┘
-```
-
----
-
-## Summary
-
-This fix establishes a consistent pattern:
-- Each section component is self-contained with its own header
-- `ConfiguratorLayout.renderSection()` simply returns the component without wrappers
-- No more duplicate text, cleaner UX
+1. **Consistency** - Match PropertySection's inline row pattern
+2. **Density** - Real estate pros want data-dense UIs
+3. **Less boxing** - One section boundary, not 3 nested cards
+4. **Inline labels** - Left-aligned labels with right-aligned controls
+5. **Visual hierarchy** - Section header → AI feature → Fields
