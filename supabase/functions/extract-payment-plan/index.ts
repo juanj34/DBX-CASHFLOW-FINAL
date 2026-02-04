@@ -86,6 +86,21 @@ This payment should have type: "handover" and be included in the installments ar
 5. "Q3 2027" → Mid-quarter month (Aug = month 8), calculate offset from booking
 6. If no booking context provided, assume current date as booking reference
 
+=== EXPLICIT DATE PARSING FROM SCHEDULE TABLES ===
+When you see a "Schedule of Payments" table with EXPLICIT dates in formats like:
+- "29-Jan-2026", "01-Mar-2026", "30-Dec-2026" (DD-MMM-YYYY)
+- "January 29, 2026", "March 1, 2026" (Month Day, Year)
+- "29/01/2026", "01/03/2026" (DD/MM/YYYY)
+
+Apply these rules:
+1. Identify the FIRST date as the booking date (row labeled "Today", "Booking Amount", or "On Booking")
+2. Calculate months from booking for EACH payment using the formula:
+   - monthsFromBooking = (targetYear - bookingYear) * 12 + (targetMonth - bookingMonth)
+   - Example: Booking "29-Jan-2026", Payment "01-Mar-2026" = (2026-2026)*12 + (3-1) = 2 months
+   - Example: Booking "29-Jan-2026", Handover "30-Dec-2026" = (2026-2026)*12 + (12-1) = 11 months
+3. The "At the Handover" or "Final Payment" row defines handoverMonthFromBooking
+4. Output each payment with the calculated triggerValue (months from booking)
+
 === CONSTRUCTION MILESTONE DETECTION - CRITICAL ===
 - Keywords: "% complete", "completion", "built", "structure", "foundation", "roof", "topping"
 - "On 30% completion" → type: "construction", triggerValue: 30
@@ -166,7 +181,32 @@ FOR SNAPSHOT FORMAT, apply these SPECIAL RULES:
    - Parse timing like "17m Jul'27" → handoverMonthFromBooking = 17
    - The "m" suffix indicates months from booking
 6. The split is shown in section headers (e.g., "20% + 40% + 40%" = "60/40" standard plan)
-7. If you see "POST-HANDOVER" section, set hasPostHandover = true and extract those installments`;
+7. If you see "POST-HANDOVER" section, set hasPostHandover = true and extract those installments
+
+=== EXAMPLE: DEVELOPER SALES OFFER FORMAT (XENIA-style) ===
+If you see a "SALES OFFER" document with a "Schedule of Payments" table containing EXPLICIT DATES like:
+
+| Description | Amount | Date |
+| Booking Amount (Today) - 10% | 78,497 | 29-Jan-2026 |
+| First Installment - 10% | 78,497 | 01-Mar-2026 |
+| 2nd Installment - 10% | 78,497 | 01-May-2026 |
+| 3rd Installment - 10% | 78,497 | 01-Jul-2026 |
+| 4th Installment - 10% | 78,497 | 01-Sep-2026 |
+| 5th Installment - 10% | 78,497 | 01-Nov-2026 |
+| At the Handover - 40% | 313,986 | 30-Dec-2026 |
+
+Extract as:
+- 7 installments total (6 time-based pre-handover + 1 handover)
+- Downpayment at Month 0: 10%, type: "time", triggerValue: 0
+- Installments at Month 2, 4, 6, 8, 10: 10% each, type: "time", bi-monthly pattern
+- Handover at Month 11: 40%, type: "handover" (Dec 2026 - Jan 2026 = 11 months)
+- paymentSplit: "60/40" (60% pre-handover, 40% on handover)
+- handoverMonthFromBooking: 11
+- hasPostHandover: false (no payments after handover)
+
+KEY: Calculate months using: (targetYear - bookingYear) * 12 + (targetMonth - bookingMonth)
+- Mar-2026 from Jan-2026 = (2026-2026)*12 + (3-1) = 2 months
+- Dec-2026 from Jan-2026 = (2026-2026)*12 + (12-1) = 11 months`;
 
 const extractionTool = {
   type: "function",
@@ -385,7 +425,7 @@ serve(async (req) => {
     
     let instructionText = `Analyze the following payment plan document and extract all payment information.
       
-${images.length > 1 ? 'These files are from the SAME document - combine all information.' : ''}
+${images.length > 1 ? 'CRITICAL - MULTI-PAGE DOCUMENT: These pages are from the SAME document. The payment schedule may CONTINUE across pages - you MUST combine ALL rows from ALL pages into a single complete schedule. Look for table continuations, page breaks, and ensure you capture payments from every page.' : ''}
 
 Context:
 - ${bookingContext}
