@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AlertCircle, DollarSign } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfiguratorSectionProps, months, quarters, years } from "./types";
@@ -101,32 +101,23 @@ export const PropertySection = ({
   const isHandoverBeforeBooking = handoverDate <= bookingDate;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Section Header */}
       <div>
-        <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
-        <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
+        <h3 className="text-lg font-semibold text-theme-text">Property Details</h3>
+        <p className="text-sm text-theme-text-muted">Base price, dates, and entry costs</p>
       </div>
       
-      <div className="space-y-3">
-      {/* Key Metrics Row - Price/sqft (if unit size is set) */}
-      {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-theme-bg/30 rounded-lg border border-theme-border/30">
-          <div className="flex items-center gap-1 text-[10px] text-theme-text-muted">
-            <span className="text-theme-text font-mono font-medium">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
-            <span>/sqft</span>
-          </div>
-        </div>
-      )}
-
-      {/* Base Price - Inline */}
-      <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
+      {/* Base Price */}
+      <div className="space-y-1.5">
         <div className="flex items-center gap-1">
-          <span className="text-xs text-theme-text-muted">Base Property Price</span>
+          <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+            Base Property Price
+          </label>
           <InfoTooltip translationKey="tooltipBasePrice" />
         </div>
         <div className="relative">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-theme-text-muted text-xs">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted text-sm">
             {currency === 'USD' ? '$' : 'AED'}
           </span>
           <Input
@@ -140,30 +131,42 @@ export const PropertySection = ({
               isEditingRef.current = false;
               handleBasePriceBlur();
             }}
-            className="w-36 h-8 text-right bg-theme-bg border-theme-border text-theme-accent font-mono text-sm pl-10"
+            className="h-10 text-right bg-theme-bg border-theme-border text-theme-accent font-mono text-base pl-12 pr-3"
           />
         </div>
+        {/* Price per sqft indicator */}
+        {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
+          <div className="text-xs text-theme-text-muted">
+            <span className="text-theme-accent font-mono">{formatCurrency(inputs.basePrice / inputs.unitSizeSqf, currency)}</span>
+            <span> per sqft</span>
+          </div>
+        )}
       </div>
 
-      {/* Dates - Compact Grid */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Divider */}
+      <div className="border-t border-theme-border/50" />
+
+      {/* Dates Row */}
+      <div className="grid grid-cols-2 gap-4">
         {/* Booking Date */}
-        <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-          <div className="flex items-center gap-1 mb-1.5">
-            <span className="text-xs text-theme-text-muted">Booking Date</span>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              Booking Date
+            </label>
             <InfoTooltip translationKey="tooltipBookingDate" />
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <Select
               value={String(inputs.bookingMonth)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, bookingMonth: parseInt(value) }))}
             >
-              <SelectTrigger className="flex-1 h-7 text-xs bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="flex-1 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {months.map(m => (
-                  <SelectItem key={m.value} value={String(m.value)} className="text-xs text-theme-text hover:bg-theme-border">
+                  <SelectItem key={m.value} value={String(m.value)} className="text-sm text-theme-text hover:bg-theme-border">
                     {m.label}
                   </SelectItem>
                 ))}
@@ -173,12 +176,12 @@ export const PropertySection = ({
               value={String(inputs.bookingYear)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, bookingYear: parseInt(value) }))}
             >
-              <SelectTrigger className="w-[72px] h-7 text-xs bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="w-20 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {years.map(y => (
-                  <SelectItem key={y} value={String(y)} className="text-xs text-theme-text hover:bg-theme-border">
+                  <SelectItem key={y} value={String(y)} className="text-sm text-theme-text hover:bg-theme-border">
                     {y}
                   </SelectItem>
                 ))}
@@ -188,22 +191,24 @@ export const PropertySection = ({
         </div>
 
         {/* Handover Date */}
-        <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-          <div className="flex items-center gap-1 mb-1.5">
-            <span className="text-xs text-theme-text-muted">Handover Date</span>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              Handover Date
+            </label>
             <InfoTooltip translationKey="tooltipHandoverDate" />
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <Select
               value={String(inputs.handoverQuarter)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, handoverQuarter: parseInt(value) }))}
             >
-              <SelectTrigger className="w-16 h-7 text-xs bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="w-16 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Q" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {quarters.map(q => (
-                  <SelectItem key={q.value} value={String(q.value)} className="text-xs text-theme-text hover:bg-theme-border">
+                  <SelectItem key={q.value} value={String(q.value)} className="text-sm text-theme-text hover:bg-theme-border">
                     {q.label}
                   </SelectItem>
                 ))}
@@ -213,12 +218,12 @@ export const PropertySection = ({
               value={String(inputs.handoverYear)}
               onValueChange={(value) => setInputs(prev => ({ ...prev, handoverYear: parseInt(value) }))}
             >
-              <SelectTrigger className="flex-1 h-7 text-xs bg-theme-bg border-theme-border text-theme-text">
+              <SelectTrigger className="flex-1 h-9 text-sm bg-theme-bg border-theme-border text-theme-text">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
                 {years.map(y => (
-                  <SelectItem key={y} value={String(y)} className="text-xs text-theme-text hover:bg-theme-border">
+                  <SelectItem key={y} value={String(y)} className="text-sm text-theme-text hover:bg-theme-border">
                     {y}
                   </SelectItem>
                 ))}
@@ -230,23 +235,26 @@ export const PropertySection = ({
 
       {/* Date validation warning */}
       {isHandoverBeforeBooking && (
-        <div className="flex items-center gap-2 text-amber-400 text-xs bg-amber-500/10 px-3 py-2 rounded-md">
+        <div className="flex items-center gap-2 text-amber-500 text-xs">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           <span>Handover must be after booking</span>
         </div>
       )}
 
-      {/* Entry Costs - Compact */}
-      <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-        <div className="flex items-center gap-1 mb-2">
-          <span className="text-xs text-theme-text-muted font-medium">Entry Costs (At Booking)</span>
-        </div>
+      {/* Divider */}
+      <div className="border-t border-theme-border/50" />
+
+      {/* Entry Costs */}
+      <div className="space-y-3">
+        <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+          Entry Costs (At Booking)
+        </label>
         
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {/* EOI Fee */}
-          <div>
-            <div className="flex items-center gap-0.5 mb-1">
-              <span className="text-[10px] text-theme-text-muted">EOI / Booking</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-0.5">
+              <span className="text-[11px] text-theme-text-muted">EOI / Booking</span>
               <InfoTooltip translationKey="tooltipEoiFee" />
             </div>
             <div className="relative">
@@ -258,26 +266,26 @@ export const PropertySection = ({
                 value={eoiInput}
                 onChange={(e) => setEoiInput(e.target.value.replace(/,/g, ''))}
                 onBlur={() => handleFixedFeeChange('eoiFee', eoiInput)}
-                className="w-full h-7 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs pl-8"
+                className="w-full h-8 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs pl-8"
               />
             </div>
           </div>
 
           {/* DLD Fee */}
-          <div>
-            <div className="flex items-center gap-0.5 mb-1">
-              <span className="text-[10px] text-theme-text-muted">DLD (4%)</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-0.5">
+              <span className="text-[11px] text-theme-text-muted">DLD (4%)</span>
               <InfoTooltip translationKey="tooltipDldFee" />
             </div>
-            <div className="h-7 px-2 bg-theme-bg border border-theme-border rounded-md flex items-center justify-end">
+            <div className="h-8 px-2 bg-theme-bg border border-theme-border rounded-md flex items-center justify-end">
               <span className="text-xs text-theme-text font-mono">{formatCurrency(inputs.basePrice * 0.04, currency)}</span>
             </div>
           </div>
           
           {/* Oqood Fee */}
-          <div>
-            <div className="flex items-center gap-0.5 mb-1">
-              <span className="text-[10px] text-theme-text-muted">Oqood</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-0.5">
+              <span className="text-[11px] text-theme-text-muted">Oqood</span>
               <InfoTooltip translationKey="tooltipOqoodFee" />
             </div>
             <div className="relative">
@@ -289,18 +297,18 @@ export const PropertySection = ({
                 value={oqoodInput}
                 onChange={(e) => setOqoodInput(e.target.value.replace(/,/g, ''))}
                 onBlur={() => handleFixedFeeChange('oqoodFee', oqoodInput)}
-                className="w-full h-7 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs pl-8"
+                className="w-full h-8 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs pl-8"
               />
             </div>
           </div>
         </div>
 
-        <div className="mt-2 pt-2 border-t border-theme-border/50 flex justify-between items-center">
-          <span className="text-[10px] text-theme-text-muted">Total Entry Cost</span>
+        {/* Total Entry Cost */}
+        <div className="flex justify-between items-center pt-2 border-t border-theme-border/30">
+          <span className="text-xs text-theme-text-muted">Total Entry Cost</span>
           <span className="text-sm font-mono text-theme-accent font-semibold">
             {formatCurrency(inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee, currency)}
           </span>
-        </div>
         </div>
       </div>
     </div>

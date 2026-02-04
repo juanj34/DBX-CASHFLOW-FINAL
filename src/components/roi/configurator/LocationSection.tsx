@@ -152,88 +152,82 @@ export const LocationSection = ({
         onApply={handleAIExtraction}
       />
       
-      <div className="space-y-4">
-        {/* Section Header */}
-        <div>
-          <h3 className="text-lg font-semibold text-theme-text mb-1">Location & Property</h3>
-          <p className="text-sm text-theme-text-muted">Select zone and property details</p>
-        </div>
-
-        {/* Compact AI Import Banner */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg border border-purple-500/30 bg-purple-500/10">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
-            <span className="text-xs text-theme-text-muted">
-              Upload brochure to auto-fill
-            </span>
+      <div className="space-y-5">
+        {/* Section Header with AI Import */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-theme-text">Location & Property</h3>
+            <p className="text-sm text-theme-text-muted">Zone and property details</p>
           </div>
           <Button
             onClick={() => setShowAIExtractor(true)}
             variant="ghost"
             size="sm"
-            className="text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 h-7 px-2"
+            className="text-theme-accent hover:bg-theme-accent/10 h-8 gap-1.5"
           >
-            <Sparkles className="w-3.5 h-3.5 mr-1" />
-            Import
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="text-xs">AI Import</span>
           </Button>
         </div>
 
-        {/* Inline Rows for Selects */}
-        <div className="space-y-2">
-          {/* Zone */}
-          <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <span className="text-xs text-theme-text-muted shrink-0">{language === 'es' ? 'Zona' : 'Zone'}</span>
-            <div className="flex-1 max-w-[240px]">
-              <ZoneSelect
-                value={clientInfo.zoneId}
-                onValueChange={handleZoneChange}
-                className="w-full"
-              />
-            </div>
-          </div>
+        {/* Zone */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+            {language === 'es' ? 'Zona' : 'Zone'}
+          </label>
+          <ZoneSelect
+            value={clientInfo.zoneId}
+            onValueChange={handleZoneChange}
+            className="w-full"
+          />
+        </div>
 
-          {/* Developer */}
-          <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <span className="text-xs text-theme-text-muted shrink-0">{t('developer')}</span>
-            <div className="flex-1 max-w-[240px]">
-              <DeveloperSelect
-                value={clientInfo.developer || ''}
-                onValueChange={(name) => handleChange('developer', name)}
-              />
-            </div>
+        {/* Developer & Project - Side by Side */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              {t('developer')}
+            </label>
+            <DeveloperSelect
+              value={clientInfo.developer || ''}
+              onValueChange={(name) => handleChange('developer', name)}
+            />
           </div>
-
-          {/* Project */}
-          <div className="flex items-center justify-between gap-3 p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <span className="text-xs text-theme-text-muted shrink-0">{t('projectName')}</span>
-            <div className="flex-1 max-w-[240px]">
-              <ProjectSelect
-                value={clientInfo.projectName || ''}
-                developer={clientInfo.developer}
-                onValueChange={(name) => handleChange('projectName', name)}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              {t('projectName')}
+            </label>
+            <ProjectSelect
+              value={clientInfo.projectName || ''}
+              developer={clientInfo.developer}
+              onValueChange={(name) => handleChange('projectName', name)}
+            />
           </div>
         </div>
 
-        {/* Unit Details Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* Unit */}
-          <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <label className="text-xs text-theme-text-muted mb-1.5 block">{t('unit')}</label>
+        {/* Divider */}
+        <div className="border-t border-theme-border/50" />
+
+        {/* Unit Details - Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              {t('unit')}
+            </label>
             <Input
               value={clientInfo.unit}
               onChange={(e) => handleChange('unit', e.target.value)}
               placeholder="e.g. 3011"
-              className="bg-theme-bg border-theme-border text-theme-text h-8 text-sm"
+              className="bg-theme-bg border-theme-border text-theme-text h-9"
             />
           </div>
 
-          {/* Unit Type */}
-          <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <label className="text-xs text-theme-text-muted mb-1.5 block">{t('unitType')}</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              {t('unitType')}
+            </label>
             <Select value={clientInfo.unitType} onValueChange={(v) => handleChange('unitType', v)}>
-              <SelectTrigger className="bg-theme-bg border-theme-border text-theme-text h-8 text-sm">
+              <SelectTrigger className="bg-theme-bg border-theme-border text-theme-text h-9">
                 <SelectValue placeholder={t('selectType')} />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
@@ -252,15 +246,15 @@ export const LocationSection = ({
 
           {/* Bedroom Count - only for villa/townhouse */}
           {(clientInfo.unitType === 'villa' || clientInfo.unitType === 'townhouse') && (
-            <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50 col-span-2">
-              <label className="text-xs text-theme-text-muted mb-1.5 block">
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
                 {language === 'es' ? 'Habitaciones' : 'Bedrooms'}
               </label>
               <Select 
                 value={clientInfo.bedrooms?.toString() || ''} 
                 onValueChange={(v) => handleChange('bedrooms', parseInt(v) || 0)}
               >
-                <SelectTrigger className="bg-theme-bg border-theme-border text-theme-text h-8 text-sm">
+                <SelectTrigger className="bg-theme-bg border-theme-border text-theme-text h-9">
                   <SelectValue placeholder={language === 'es' ? 'Seleccionar' : 'Select'} />
                 </SelectTrigger>
                 <SelectContent className="bg-theme-card border-theme-border">
@@ -274,27 +268,29 @@ export const LocationSection = ({
             </div>
           )}
 
-          {/* Unit Size sqf */}
-          <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <label className="text-xs text-theme-text-muted mb-1.5 block">{t('unitSizeSqf')}</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              {t('unitSizeSqf')}
+            </label>
             <Input
               type="number"
               value={clientInfo.unitSizeSqf || ''}
               onChange={(e) => handleChange('unitSizeSqf', parseFloat(e.target.value) || 0)}
               placeholder="e.g. 1250"
-              className="bg-theme-bg border-theme-border text-theme-text h-8 text-sm"
+              className="bg-theme-bg border-theme-border text-theme-text h-9"
             />
           </div>
 
-          {/* Unit Size m² */}
-          <div className="p-2.5 bg-theme-bg/50 rounded-lg border border-theme-border/50">
-            <label className="text-xs text-theme-text-muted mb-1.5 block">{t('unitSizeM2')}</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-theme-text-muted uppercase tracking-wide">
+              {t('unitSizeM2')}
+            </label>
             <Input
               type="number"
               value={clientInfo.unitSizeM2 || ''}
               onChange={(e) => handleChange('unitSizeM2', parseFloat(e.target.value) || 0)}
               placeholder="e.g. 116"
-              className="bg-theme-bg border-theme-border text-theme-text h-8 text-sm"
+              className="bg-theme-bg border-theme-border text-theme-text h-9"
             />
           </div>
         </div>
