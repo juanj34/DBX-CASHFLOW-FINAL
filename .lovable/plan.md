@@ -1,104 +1,101 @@
 
 
-# Plan: Fix AI Payment Plan Extractor for Snapshot Documents
+# Plan: Verify and Fix AI Payment Plan Extraction for XENIA PDF
 
-## Problem Analysis
+## Analysis of the XENIA Payment Plan PDF
 
-The AI extractor is producing incorrect results when parsing **cashflow snapshot PDFs** (the system's own generated output):
+The PDF clearly shows a **60/40 standard plan**:
 
-### What's Being Extracted (Incorrect):
-| Field | Extracted | Expected |
-|-------|-----------|----------|
-| Month 0 | 5.57% EOI | Should be combined 20% |
-| Month 0 | 13.6% Downpayment | ↑ |
-| Handover Month | 14 | ~17 (Jul 2027) |
-| Handover Payment | Missing/not visible | 40% |
-| Total shown | ~59% visible | Should show 100% |
+| Payment | Percent | Date | Month from Booking |
+|---------|---------|------|-------------------|
+| Booking Amount (Today) | 10% | 29-Jan-2026 | Month 0 |
+| First Installment | 10% | 01-Mar-2026 | Month 2 |
+| 2nd Installment | 10% | 01-May-2026 | Month 4 |
+| 3rd Installment | 10% | 01-Jul-2026 | Month 6 |
+| 4th Installment | 10% | 01-Sep-2026 | Month 8 |
+| 5th Installment | 10% | 01-Nov-2026 | Month 10 |
+| **At the Handover** | **40%** | 30-Dec-2026 | Month 11 |
 
-### Root Causes:
-
-1. **Snapshot Format Not Recognized**: The AI extractor's prompt is designed for raw developer payment plans (brochures), not for the system's own snapshot output format which has:
-   - "PAYMENT BREAKDOWN" with Entry/Journey/Handover sections
-   - Exit scenarios showing "17m Jul'27" for 100% Built
-   - DLD/Oqood fees separated from property payments
-
-2. **Entry Payment Split**: The snapshot shows EOI (50K) and Downpayment Balance (107K) as separate line items, but they should be treated as a single 20% downpayment
-
-3. **Handover Month Calculation**: The AI is looking for "In X months" patterns but the snapshot uses "17m Jul'27" format in the exit scenarios section
-
-4. **Missing Handover Payment**: The 40% "Final Payment" in the "HANDOVER" section isn't being captured
+**Expected Extraction:**
+- Split: 60/40
+- Handover Month from Booking: 11
+- hasPostHandover: false
+- 7 installments totaling 100%
 
 ---
 
-## Proposed Solution
+## Potential Issues
 
-### Option A: Update Extractor to Recognize Snapshot Format (Recommended)
-Add specific instructions to the system prompt to handle the cashflow snapshot format:
+### Issue 1: Multi-Page PDF Parsing
+The payment schedule is split across two pages:
+- **Page 1**: Shows first 3 payments (Booking + 2 installments)
+- **Page 2**: Shows remaining 4 payments including "At the Handover - 40%"
+
+The AI must combine data from both pages correctly.
+
+### Issue 2: Date-to-Month Calculation
+The system needs to calculate months from explicit dates:
+- Booking: 29-Jan-2026
+- Handover: 30-Dec-2026
+- **Expected:** 11 months (Jan→Dec)
+
+The prompt already has date parsing instructions, but we need to verify it works for this format.
+
+---
+
+## Proposed Improvements
+
+### 1. Enhance Date Parsing Instructions in System Prompt
+
+Add explicit handling for the DD-MMM-YYYY format commonly used in Dubai payment plans:
 
 **File: `supabase/functions/extract-payment-plan/index.ts`**
 
-Add to system prompt:
+Update system prompt (around line 81-88) to add:
+
 ```text
-=== LOVABLE CASHFLOW SNAPSHOT FORMAT ===
-If the document is a "MONTHLY CASHFLOW STATEMENT" or shows "PAYMENT BREAKDOWN" with:
-- THE ENTRY section (EOI/Booking + Downpayment Balance + DLD)
-- THE JOURNEY section (monthly payments)
-- HANDOVER section (Final Payment)
+=== EXPLICIT DATE PARSING FROM SCHEDULE ===
+When you see a "Schedule of Payments" table with explicit dates like:
+- "29-Jan-2026", "01-Mar-2026", "30-Dec-2026"
 
-Then apply these rules:
-1. COMBINE "EOI / Booking Fee" + "Downpayment Balance" as a SINGLE downpayment at Month 0
-   - Ignore DLD Fee and Oqood/Admin (they are not part of the price split)
-2. Look for "EXIT SCENARIOS" to find handover timing:
-   - "17m Jul'27" = 17 months from booking, handoverMonthFromBooking = 17
-   - "100% Built" indicates handover completion
-3. The "HANDOVER (X%)" section contains the on-handover percentage
-4. Calculate the split from section headers (e.g., "20% Entry + 40% Journey + 40% Handover = 60/40 split")
+1. Identify the FIRST date as the booking date (typically "Today" or "Booking Amount")
+2. Calculate months from booking for each payment:
+   - "01-Mar-2026" from "29-Jan-2026" = 2 months (Jan→Feb→Mar)
+   - "30-Dec-2026" from "29-Jan-2026" = 11 months (Jan→Dec)
+3. The "At the Handover" row defines handoverMonthFromBooking
+4. Month calculation: (targetYear - bookingYear) * 12 + (targetMonth - bookingMonth)
+   - Example: (2026-2026)*12 + (12-1) = 11 months
 ```
 
-### Specific Changes:
+### 2. Strengthen Multi-Page Instruction
 
-**1. Add snapshot format detection (lines 44-148):**
-```typescript
-// Add after UNIT TYPE MAPPING section
-=== LOVABLE CASHFLOW SNAPSHOT FORMAT DETECTION ===
-If you see these indicators, this is a SYSTEM-GENERATED SNAPSHOT:
-- "MONTHLY CASHFLOW STATEMENT" header
-- "PAYMENT BREAKDOWN" with "THE ENTRY", "THE JOURNEY", "HANDOVER" sections
-- "EXIT SCENARIOS" table with dates like "6m Aug'26", "17m Jul'27"
-- "CASH TO START", "RENTAL INCOME", "BREAKEVEN" metrics
+Update the instruction text (around line 388):
 
-FOR SNAPSHOT FORMAT:
-1. Ignore DLD Fee, Oqood/Admin, and other fees - only extract property price payments
-2. Calculate total Entry as: EOI + Downpayment Balance (output as SINGLE Month 0 payment)
-3. Journey payments are already shown with Month X format
-4. HANDOVER section shows the on-handover percentage
-5. For handover timing: Find "100% Built" in EXIT SCENARIOS (e.g., "17m Jul'27" = month 17)
-6. The split is shown next to "CASH TO START" (e.g., "60/40")
+```text
+${images.length > 1 ? 'CRITICAL: These pages are from the SAME document. The payment schedule may continue across pages - combine ALL rows from ALL pages into a single complete schedule. Look for continuation of tables.' : ''}
 ```
 
-**2. Update the instruction text (around line 365):**
-Add snapshot-specific guidance:
-```typescript
-let instructionText = `Analyze the following payment plan document...
+### 3. Add Example Pattern for XENIA-style Plans
 
-DOCUMENT TYPE DETECTION:
-- If this is a "MONTHLY CASHFLOW STATEMENT" (system-generated snapshot), combine Entry fees as single downpayment
-- If this is a developer brochure/payment plan PDF, extract individual milestones
+Add to system prompt:
 
-For SNAPSHOT format, find handover month from "EXIT SCENARIOS" table (look for "100% Built" row like "17m Jul'27" = month 17)
-```
+```text
+=== EXAMPLE: DEVELOPER SALES OFFER FORMAT ===
+If you see "SALES OFFER" with "Schedule of Payments" table showing:
+| Payment Type | Amount | Date |
+| Booking Amount (Today) - 10% | 78,497 | 29-Jan-2026 |
+| First Installment - 10% | 78,497 | 01-Mar-2026 |
+...
+| At the Handover - 40% | 313,986 | 30-Dec-2026 |
 
-**3. Improve handover month extraction in post-processing (lines 483-530):**
-```typescript
-// Add fallback: try to detect from any month format in warnings or labels
-if (!extractedData.paymentStructure.handoverMonthFromBooking) {
-  // Look for patterns like "17m" in labels
-  const allLabels = extractedData.installments.map(i => i.label || '').join(' ');
-  const monthMatch = allLabels.match(/(\d+)m\s+[A-Za-z]+'\d{2}/);
-  if (monthMatch) {
-    extractedData.paymentStructure.handoverMonthFromBooking = parseInt(monthMatch[1]);
-  }
-}
+Extract as:
+- 7 installments (6 time-based + 1 handover)
+- Downpayment at Month 0 (10%)
+- Installments at Month 2, 4, 6, 8, 10 (10% each, bi-monthly)
+- Handover at Month 11 (40%)
+- Split: 60/40
+- handoverMonthFromBooking: 11
+- hasPostHandover: false
 ```
 
 ---
@@ -107,34 +104,35 @@ if (!extractedData.paymentStructure.handoverMonthFromBooking) {
 
 | File | Change |
 |------|--------|
-| `supabase/functions/extract-payment-plan/index.ts` | Add snapshot format detection, update system prompt, improve handover extraction |
+| `supabase/functions/extract-payment-plan/index.ts` | Add explicit date parsing for DD-MMM-YYYY format, strengthen multi-page handling, add XENIA-style example |
 
 ---
 
 ## Expected Results After Fix
 
-When processing the same snapshot PDF, the extractor should output:
+When processing the XENIA PDF, the extractor should output:
 
-| Field | Current | After Fix |
-|-------|---------|-----------|
-| Downpayment | 5.57% + 13.6% separate | 20% combined at Month 0 |
-| Handover Month | 14 | 17 |
-| Split | Calculated wrong | 60/40 (from header) |
-| Installments | Missing 40% handover | Complete 100% |
-
----
-
-## Alternative Option B: Add User Warning
-
-If we don't want to complicate the extractor, we could:
-1. Detect when a snapshot is uploaded (by looking for "MONTHLY CASHFLOW STATEMENT")
-2. Show a warning: "This appears to be a generated cashflow statement. Please upload the original payment plan PDF for accurate extraction."
-
-This would be simpler but less user-friendly.
+| Field | Expected Value |
+|-------|----------------|
+| Developer | NYX Real Estate |
+| Project | Xenia Residence |
+| Unit | 202 |
+| Type | studio |
+| Size | 560.69 sqft |
+| Base Price | 784,966 AED |
+| Split | 60/40 |
+| Handover Month | 11 |
+| hasPostHandover | false |
+| Installments | 7 (10%, 10%, 10%, 10%, 10%, 10%, 40%) |
 
 ---
 
-## Recommendation
+## Testing Verification
 
-**Go with Option A** - Update the extractor to handle both formats. This makes the tool more robust and handles the case where users accidentally upload snapshots instead of original payment plans.
+After implementation:
+1. Upload the XENIA PDF through the AI extractor
+2. Verify all 7 payments appear (page 1 + page 2 combined)
+3. Verify handoverMonthFromBooking = 11
+4. Verify the "At the Handover - 40%" is captured with type: "handover"
+5. Verify total = 100%
 
