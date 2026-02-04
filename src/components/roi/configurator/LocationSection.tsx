@@ -50,8 +50,8 @@ export const LocationSection = ({
     onClientInfoChange({ ...clientInfo, zoneId, zoneName: zone?.name });
   };
 
-  // Handle AI extraction results
-  const handleAIExtraction = (extractedData: ExtractedPaymentPlan) => {
+  // Handle AI extraction results - apply FULL payment plan data, not just property info
+  const handleAIExtraction = (extractedData: ExtractedPaymentPlan, bookingDate?: { month: number; year: number }) => {
     const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2 * 10) / 10;
     
     // Update client info with extracted property details
@@ -67,15 +67,90 @@ export const LocationSection = ({
         : clientInfo.unitSizeM2,
     });
     
-    // Also update base price and payment plan in inputs
-    if (extractedData.property?.basePrice) {
-      setInputs(prev => ({
-        ...prev,
-        basePrice: extractedData.property!.basePrice!,
-      }));
+    // === Apply FULL payment plan data ===
+    const effectiveBookingDate = bookingDate || { month: inputs.bookingMonth, year: inputs.bookingYear };
+    
+    // Find handover payment and calculate timing
+    const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
+    let handoverMonth: number | undefined = inputs.handoverMonth;
+    let handoverYear = inputs.handoverYear;
+    let handoverQuarter = inputs.handoverQuarter;
+    
+    if (handoverPayment && handoverPayment.triggerValue > 0) {
+      const bookingDateObj = new Date(effectiveBookingDate.year, effectiveBookingDate.month - 1);
+      const handoverDateObj = new Date(bookingDateObj);
+      handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverPayment.triggerValue);
+      handoverMonth = handoverDateObj.getMonth() + 1;
+      handoverYear = handoverDateObj.getFullYear();
+      handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
+    } else if (extractedData.paymentStructure.handoverMonthFromBooking) {
+      const bookingDateObj = new Date(effectiveBookingDate.year, effectiveBookingDate.month - 1);
+      const handoverDateObj = new Date(bookingDateObj);
+      handoverDateObj.setMonth(handoverDateObj.getMonth() + extractedData.paymentStructure.handoverMonthFromBooking);
+      handoverMonth = handoverDateObj.getMonth() + 1;
+      handoverYear = handoverDateObj.getFullYear();
+      handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
     }
     
-    toast.success('Property data imported!');
+    // Find downpayment (first time-based payment at month 0)
+    const downpayment = extractedData.installments.find(i => i.type === 'time' && i.triggerValue === 0);
+    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
+    
+    // Calculate pre-handover percent from payment split or installments
+    let preHandoverPercent = inputs.preHandoverPercent;
+    if (extractedData.paymentStructure.paymentSplit) {
+      const [pre] = extractedData.paymentStructure.paymentSplit.split('/').map(Number);
+      if (!isNaN(pre)) preHandoverPercent = pre;
+    } else {
+      const preHOInstallments = extractedData.installments.filter(i => 
+        i.type === 'time' || i.type === 'construction'
+      );
+      const preHOTotal = preHOInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+      if (preHOTotal > 0 && preHOTotal <= 100) preHandoverPercent = preHOTotal;
+    }
+    
+    // Convert installments (excluding downpayment and handover)
+    const additionalPayments = extractedData.installments
+      .filter(i => {
+        if (i.type === 'time' && i.triggerValue === 0) return false; // exclude downpayment
+        if (i.type === 'handover') return false; // exclude handover
+        return true;
+      })
+      .map((inst, idx) => ({
+        id: inst.id || `ai-${Date.now()}-${idx}`,
+        type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
+        triggerValue: inst.triggerValue,
+        paymentPercent: inst.paymentPercent,
+      }))
+      .sort((a, b) => a.triggerValue - b.triggerValue);
+    
+    // Post-handover handling
+    const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
+    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+    
+    // Update inputs with FULL payment plan
+    setInputs(prev => ({
+      ...prev,
+      // Property
+      basePrice: extractedData.property?.basePrice || prev.basePrice,
+      unitSizeSqf: extractedData.property?.unitSizeSqft || prev.unitSizeSqf,
+      // Booking date
+      bookingMonth: effectiveBookingDate.month,
+      bookingYear: effectiveBookingDate.year,
+      // Payment structure
+      downpaymentPercent,
+      preHandoverPercent,
+      additionalPayments,
+      hasPostHandoverPlan: hasPostHandover,
+      postHandoverPercent: postHandoverTotal,
+      // Handover timing
+      handoverMonth,
+      handoverQuarter,
+      handoverYear,
+    }));
+    
+    toast.success('Property data and payment plan imported!');
     setShowAIExtractor(false);
   };
 
