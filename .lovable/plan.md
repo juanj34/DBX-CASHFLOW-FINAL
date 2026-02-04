@@ -1,102 +1,163 @@
 
+# Plan: Fix Configurator UX/UI - Remove Duplicate Headers and Improve Consistency
 
-# Plan: Verify and Fix AI Payment Plan Extraction for XENIA PDF
+## Problem Analysis
 
-## Analysis of the XENIA Payment Plan PDF
+The configurator wizard has **multiple UX issues** where headers are duplicated and inconsistent across sections:
 
-The PDF clearly shows a **60/40 standard plan**:
+### Issue 1: Duplicate "Payment Plan" Headers
+The `ConfiguratorLayout.tsx` wraps `PaymentSection` with its own header:
+```tsx
+// ConfiguratorLayout.tsx (lines 446-455)
+case 'payment':
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3>Payment Plan</h3>               // <-- Header #1
+        <p>Configure payment split and installments</p>
+      </div>
+      <PaymentSection />
+    </div>
+  );
+```
 
-| Payment | Percent | Date | Month from Booking |
-|---------|---------|------|-------------------|
-| Booking Amount (Today) | 10% | 29-Jan-2026 | Month 0 |
-| First Installment | 10% | 01-Mar-2026 | Month 2 |
-| 2nd Installment | 10% | 01-May-2026 | Month 4 |
-| 3rd Installment | 10% | 01-Jul-2026 | Month 6 |
-| 4th Installment | 10% | 01-Sep-2026 | Month 8 |
-| 5th Installment | 10% | 01-Nov-2026 | Month 10 |
-| **At the Handover** | **40%** | 30-Dec-2026 | Month 11 |
+But `PaymentSection.tsx` also has its own header inside:
+```tsx
+// PaymentSection.tsx (lines 422-426)
+<div>
+  <h3>Payment Plan</h3>                    // <-- Header #2 (DUPLICATE!)
+  <p>Configure your payment schedule</p>
+</div>
+```
 
-**Expected Extraction:**
-- Split: 60/40
-- Handover Month from Booking: 11
-- hasPostHandover: false
-- 7 installments totaling 100%
+**Result:** User sees "Payment Plan" TWICE as shown in the screenshot.
+
+### Issue 2: Similar Duplicate in Rental Section
+`RentalSection.tsx` adds a header wrapper:
+```tsx
+<h3>Rental Strategy</h3>
+<p>Configure yield, service charges...</p>
+```
+
+Then `RentSection.tsx` inside also has:
+```tsx
+<h3>Rental Strategy</h3>
+<p>Configure rental income projections</p>
+```
+
+### Issue 3: Inconsistent Section Header Patterns
+Some sections have their OWN headers (internal), while the layout ALSO adds headers:
+
+| Section | Layout Header | Internal Header | Result |
+|---------|---------------|-----------------|--------|
+| Location | None | Yes | OK |
+| Property | Yes | None | OK |
+| Payment | Yes | Yes | DUPLICATE |
+| Appreciation | Yes | Yes | DUPLICATE (Different text) |
+| Rental | Yes (wrapper) | Yes (RentSection) | DUPLICATE |
+| Exit | None | Yes | OK |
 
 ---
 
-## Potential Issues
+## Solution
 
-### Issue 1: Multi-Page PDF Parsing
-The payment schedule is split across two pages:
-- **Page 1**: Shows first 3 payments (Booking + 2 installments)
-- **Page 2**: Shows remaining 4 payments including "At the Handover - 40%"
+Adopt a **single source of truth** pattern: Let each section component own its header internally, and remove the wrapper headers from `ConfiguratorLayout.tsx`.
 
-The AI must combine data from both pages correctly.
+### Changes Required
 
-### Issue 2: Date-to-Month Calculation
-The system needs to calculate months from explicit dates:
-- Booking: 29-Jan-2026
-- Handover: 30-Dec-2026
-- **Expected:** 11 months (Jan→Dec)
-
-The prompt already has date parsing instructions, but we need to verify it works for this format.
-
----
-
-## Proposed Improvements
-
-### 1. Enhance Date Parsing Instructions in System Prompt
-
-Add explicit handling for the DD-MMM-YYYY format commonly used in Dubai payment plans:
-
-**File: `supabase/functions/extract-payment-plan/index.ts`**
-
-Update system prompt (around line 81-88) to add:
-
-```text
-=== EXPLICIT DATE PARSING FROM SCHEDULE ===
-When you see a "Schedule of Payments" table with explicit dates like:
-- "29-Jan-2026", "01-Mar-2026", "30-Dec-2026"
-
-1. Identify the FIRST date as the booking date (typically "Today" or "Booking Amount")
-2. Calculate months from booking for each payment:
-   - "01-Mar-2026" from "29-Jan-2026" = 2 months (Jan→Feb→Mar)
-   - "30-Dec-2026" from "29-Jan-2026" = 11 months (Jan→Dec)
-3. The "At the Handover" row defines handoverMonthFromBooking
-4. Month calculation: (targetYear - bookingYear) * 12 + (targetMonth - bookingMonth)
-   - Example: (2026-2026)*12 + (12-1) = 11 months
+#### 1. `ConfiguratorLayout.tsx` - Remove Wrapper Headers (lines 430-478)
+**Before:**
+```tsx
+case 'property':
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3>Property Details</h3>
+        <p>Base price, booking date, and entry costs</p>
+      </div>
+      <PropertySection />
+    </div>
+  );
+case 'payment':
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3>Payment Plan</h3>
+        <p>Configure payment split and installments</p>
+      </div>
+      <PaymentSection />
+    </div>
+  );
+case 'appreciation':
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3>Appreciation Profile</h3>
+        <p>Configure growth rates...</p>
+      </div>
+      <AppreciationSection />
+    </div>
+  );
 ```
 
-### 2. Strengthen Multi-Page Instruction
-
-Update the instruction text (around line 388):
-
-```text
-${images.length > 1 ? 'CRITICAL: These pages are from the SAME document. The payment schedule may continue across pages - combine ALL rows from ALL pages into a single complete schedule. Look for continuation of tables.' : ''}
+**After:**
+```tsx
+case 'property':
+  return <PropertySection />;
+case 'payment':
+  return <PaymentSection />;
+case 'appreciation':
+  return <AppreciationSection />;
 ```
 
-### 3. Add Example Pattern for XENIA-style Plans
-
-Add to system prompt:
-
-```text
-=== EXAMPLE: DEVELOPER SALES OFFER FORMAT ===
-If you see "SALES OFFER" with "Schedule of Payments" table showing:
-| Payment Type | Amount | Date |
-| Booking Amount (Today) - 10% | 78,497 | 29-Jan-2026 |
-| First Installment - 10% | 78,497 | 01-Mar-2026 |
-...
-| At the Handover - 40% | 313,986 | 30-Dec-2026 |
-
-Extract as:
-- 7 installments (6 time-based + 1 handover)
-- Downpayment at Month 0 (10%)
-- Installments at Month 2, 4, 6, 8, 10 (10% each, bi-monthly)
-- Handover at Month 11 (40%)
-- Split: 60/40
-- handoverMonthFromBooking: 11
-- hasPostHandover: false
+#### 2. `PropertySection.tsx` - Add Internal Header
+Currently missing a header. Add one for consistency:
+```tsx
+return (
+  <div className="space-y-4">
+    <div>
+      <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
+      <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
+    </div>
+    {/* ...existing content... */}
+  </div>
+);
 ```
+
+#### 3. `RentalSection.tsx` - Remove Duplicate Wrapping
+**Before:**
+```tsx
+return (
+  <div className="space-y-4">
+    <div>
+      <h3>Rental Strategy</h3>  // Wrapper header
+      <p>Configure yield, service charges...</p>
+    </div>
+    <div className="border...">
+      <div className="flex items-center...">
+        <h4>Long-Term & Short-Term Rental</h4>  // Sub-header
+        <p>Configure rental income projections</p>
+      </div>
+      <RentSection />
+    </div>
+  </div>
+);
+```
+
+**After:** Remove the outer header since `RentSection` has its own, OR remove the header from `RentSection` and keep only the wrapper.
+
+#### 4. `RentSection.tsx` - Remove Internal Header
+Since it's embedded inside `RentalSection`, remove its own header:
+```tsx
+// Remove lines 63-67
+<div>
+  <h3 className="text-lg font-semibold text-theme-text mb-1">Rental Strategy</h3>
+  <p className="text-sm text-theme-text-muted">Configure rental income projections</p>
+</div>
+```
+
+#### 5. `MobileConfiguratorSheet.tsx` - Apply Same Fixes (lines 274-320)
+The mobile version has the same duplicate header issue. Apply identical fixes.
 
 ---
 
@@ -104,35 +165,44 @@ Extract as:
 
 | File | Change |
 |------|--------|
-| `supabase/functions/extract-payment-plan/index.ts` | Add explicit date parsing for DD-MMM-YYYY format, strengthen multi-page handling, add XENIA-style example |
+| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Remove wrapper headers for property, payment, appreciation sections |
+| `src/components/roi/configurator/PropertySection.tsx` | Add internal section header |
+| `src/components/roi/configurator/RentalSection.tsx` | Simplify to just render `RentSection` without duplicate header wrapper |
+| `src/components/roi/configurator/RentSection.tsx` | Remove internal header (let parent handle it) |
+| `src/components/roi/configurator/MobileConfiguratorSheet.tsx` | Apply same fixes for mobile view |
 
 ---
 
-## Expected Results After Fix
+## Visual Result After Fix
 
-When processing the XENIA PDF, the extractor should output:
+**Before (current broken state):**
+```
+┌─────────────────────────────────────┐
+│ Payment Plan                        │  <-- Header #1 (from Layout)
+│ Configure payment split and...      │
+│                                     │
+│ Payment Plan                        │  <-- Header #2 (from Component) ❌
+│ Configure your payment schedule     │
+│ [AI Import button]                  │
+└─────────────────────────────────────┘
+```
 
-| Field | Expected Value |
-|-------|----------------|
-| Developer | NYX Real Estate |
-| Project | Xenia Residence |
-| Unit | 202 |
-| Type | studio |
-| Size | 560.69 sqft |
-| Base Price | 784,966 AED |
-| Split | 60/40 |
-| Handover Month | 11 |
-| hasPostHandover | false |
-| Installments | 7 (10%, 10%, 10%, 10%, 10%, 10%, 40%) |
+**After (fixed):**
+```
+┌─────────────────────────────────────┐
+│ Payment Plan           [AI Import]  │  <-- Single unified header ✓
+│ Configure your payment schedule     │
+│                                     │
+│ [Allow Payments Past Handover]      │
+│ [Split buttons: 20/80 30/70...]     │
+└─────────────────────────────────────┘
+```
 
 ---
 
-## Testing Verification
+## Summary
 
-After implementation:
-1. Upload the XENIA PDF through the AI extractor
-2. Verify all 7 payments appear (page 1 + page 2 combined)
-3. Verify handoverMonthFromBooking = 11
-4. Verify the "At the Handover - 40%" is captured with type: "handover"
-5. Verify total = 100%
-
+This fix establishes a consistent pattern:
+- Each section component is self-contained with its own header
+- `ConfiguratorLayout.renderSection()` simply returns the component without wrappers
+- No more duplicate text, cleaner UX
