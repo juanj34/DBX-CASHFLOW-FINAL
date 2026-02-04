@@ -542,17 +542,6 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
               <div className="flex justify-between items-center py-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-theme-text-muted">{inputs.additionalPayments.length} payments</span>
-                  <Button
-                    type="button"
-                    onClick={handleResetPayments}
-                    size="sm"
-                    variant="ghost"
-                    className="h-5 px-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[9px]"
-                  >
-                    <Trash2 className="w-2.5 h-2.5 mr-0.5" /> Clear
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
                   <span className={cn(
                     "text-xs px-1.5 py-0.5 rounded font-mono",
                     remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' : 
@@ -563,6 +552,17 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                     remainingToDistribute < -0.5 ? `${Math.abs(remainingToDistribute).toFixed(1)}% over` : 
                     '✓ balanced'}
                   </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleResetPayments}
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[10px]"
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear All
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -710,21 +710,39 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                         {payment.type === 'time' && (
                           <div className="flex items-center gap-1">
                             <span className="text-[9px] text-theme-text-muted font-mono">M{payment.triggerValue}</span>
-                            {showHandoverBadge && (
-                              <span className={cn(
-                                "text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5",
-                                isExplicitHandover 
-                                  ? "bg-green-500/30 text-green-300" 
-                                  : "bg-green-500/20 text-green-400"
-                              )}>
-                                <Key className="w-2.5 h-2.5" />
-                              </span>
-                            )}
-                            {isPostHO && !showHandoverBadge && (
+                            {isPostHO && !isExplicitHandover && (
                               <span className="text-[9px] px-1 py-0.5 bg-purple-500/20 text-purple-400 rounded">PH</span>
                             )}
                           </div>
                         )}
+
+                        {/* Mark as Completion button */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            // Toggle isHandover flag for this payment
+                            // First, remove isHandover from all other payments
+                            setInputs(prev => ({
+                              ...prev,
+                              additionalPayments: prev.additionalPayments.map(p => ({
+                                ...p,
+                                isHandover: p.id === payment.id ? !p.isHandover : false
+                              }))
+                            }));
+                          }}
+                          className={cn(
+                            "h-5 px-1.5 text-[9px]",
+                            isExplicitHandover 
+                              ? "bg-green-500/30 text-green-300 hover:bg-green-500/20" 
+                              : "text-theme-text-muted hover:bg-green-500/10 hover:text-green-400"
+                          )}
+                          title="Mark as completion/handover payment"
+                        >
+                          <Key className="w-3 h-3" />
+                          {isExplicitHandover && <span className="ml-0.5">🔑</span>}
+                        </Button>
 
                         <div className="flex items-center gap-1 ml-auto">
                           <Input
