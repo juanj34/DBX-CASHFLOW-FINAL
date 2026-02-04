@@ -145,7 +145,28 @@ UNIT TYPE MAPPING:
 - "4BR", "4 Bed", "4 Bedroom", "4+" → "4br"
 - "Penthouse", "PH" → "penthouse"
 - "Townhouse", "TH" → "townhouse"
-- "Villa" → "villa"`;
+- "Villa" → "villa"
+
+=== LOVABLE CASHFLOW SNAPSHOT FORMAT DETECTION ===
+If you see these indicators, this is a SYSTEM-GENERATED CASHFLOW SNAPSHOT:
+- "MONTHLY CASHFLOW STATEMENT" header
+- "PAYMENT BREAKDOWN" with sections labeled "THE ENTRY", "THE JOURNEY", "HANDOVER"
+- "EXIT SCENARIOS" table with timing patterns like "6m Aug'26", "17m Jul'27"
+- "CASH TO START", "RENTAL INCOME", "BREAKEVEN" metrics
+- Section headers showing percentages like "THE ENTRY (20%)", "THE JOURNEY (40%)", "HANDOVER (40%)"
+
+FOR SNAPSHOT FORMAT, apply these SPECIAL RULES:
+1. IGNORE fees: DLD Fee, Oqood/Admin, and any other government fees - only extract property payments
+2. COMBINE Entry payments: "EOI / Booking Fee" + "Downpayment Balance" = SINGLE Month 0 downpayment
+   - Sum the percentages (e.g., 5.57% + 13.6% = 19.17%, round to 20%)
+   - Output as ONE installment with type: "time", triggerValue: 0
+3. Journey payments: Already shown with "Month X" format, extract normally
+4. HANDOVER section: The "Final Payment" percentage is the on-handover payment (type: "handover")
+5. For handover timing: Find "100% Built" row in "EXIT SCENARIOS" table
+   - Parse timing like "17m Jul'27" → handoverMonthFromBooking = 17
+   - The "m" suffix indicates months from booking
+6. The split is shown in section headers (e.g., "20% + 40% + 40%" = "60/40" standard plan)
+7. If you see "POST-HANDOVER" section, set hasPostHandover = true and extract those installments`;
 
 const extractionTool = {
   type: "function",
@@ -370,16 +391,29 @@ Context:
 - ${bookingContext}
 - This is likely a Dubai real estate payment plan
 
+=== DOCUMENT TYPE DETECTION - CHECK FIRST ===
+If this is a "MONTHLY CASHFLOW STATEMENT" (system-generated snapshot with PAYMENT BREAKDOWN sections):
+- COMBINE "EOI / Booking Fee" + "Downpayment Balance" as a SINGLE downpayment at Month 0
+- IGNORE DLD Fee, Oqood/Admin (they are not part of the 100% price split)
+- Look for "EXIT SCENARIOS" table to find handover timing (e.g., "17m Jul'27" for "100% Built" = month 17)
+- The section headers show the split (e.g., "THE ENTRY (20%)" + "THE JOURNEY (40%)" + "HANDOVER (40%)")
+- Extract the "Final Payment" percentage from HANDOVER section as type: "handover"
+
+If this is a developer brochure/payment plan PDF:
+- Extract individual milestones as shown
+- Standard "In X months" patterns apply
+
 CRITICAL INSTRUCTIONS:
-1. Find the LAST pre-handover payment month and calculate handoverMonthFromBooking = lastPreHandoverMonth + 1
-   - Example: If last pre-handover is "In 26 months", then handoverMonthFromBooking = 27
+1. Find the LAST pre-handover payment month and calculate handoverMonthFromBooking
+   - For snapshots: Parse from "EXIT SCENARIOS" table (e.g., "17m Jul'27" = month 17)
+   - For brochures: handoverMonthFromBooking = lastPreHandoverMonth + 1
 2. Convert ALL dates (days, calendar dates, quarters) to ABSOLUTE months from booking
 3. For post-handover payments, calculate ABSOLUTE months from booking (handoverMonth + relative months)
    - Example: "4th Month after Completion" with handover at month 27 = triggerValue 31 (27 + 4)
 4. For construction milestones (30% complete, foundation, etc.), use type: "construction" with triggerValue as percentage
-5. Include the "Completion" payment with type: "handover" - DO NOT skip it
+5. Include the "Completion" / "Final Payment" with type: "handover" - DO NOT skip it
 6. Ensure all percentages sum to exactly 100%
-7. Set hasPostHandover = true if there are any payments after the Completion payment`;
+7. Set hasPostHandover = true if there are any payments after the Completion/Handover payment`;
 
     // Add Excel data as text context if we have any
     if (excelTextContext) {
@@ -560,6 +594,27 @@ CRITICAL INSTRUCTIONS:
         extractedData.paymentStructure.paymentSplit = 
           `${Math.round(preHandoverTotal)}/${Math.round(postHandoverTotal)}`;
         console.log(`Calculated paymentSplit from installments: ${extractedData.paymentStructure.paymentSplit}`);
+      }
+    }
+    
+    // Fallback 6: Try to detect handover month from snapshot "Xm Mon'YY" patterns in labels/warnings
+    if (!extractedData.paymentStructure.handoverMonthFromBooking) {
+      // Look for patterns like "17m Jul'27" in labels or warnings which indicate snapshot format
+      const allText = [
+        ...extractedData.installments.map(i => i.label || ''),
+        ...(extractedData.warnings || [])
+      ].join(' ');
+      
+      // Match patterns like "17m Jul'27", "6m Aug'26", etc.
+      const monthPatterns = allText.match(/(\d+)m\s+[A-Za-z]+'\d{2}/g);
+      if (monthPatterns && monthPatterns.length > 0) {
+        // Find the largest month value (likely handover/completion)
+        const monthValues = monthPatterns.map(p => parseInt(p.match(/^(\d+)m/)?.[1] || '0'));
+        const maxMonth = Math.max(...monthValues);
+        if (maxMonth > 0) {
+          extractedData.paymentStructure.handoverMonthFromBooking = maxMonth;
+          console.log(`Detected handoverMonthFromBooking from snapshot pattern: ${maxMonth}`);
+        }
       }
     }
 
