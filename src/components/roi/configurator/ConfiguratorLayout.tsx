@@ -137,7 +137,14 @@ export const ConfiguratorLayout = ({
   onHeroImageChange,
   onShowLogoOverlayChange,
 }: ConfiguratorLayoutProps) => {
-  const savedState = (quoteId && !isNewQuote) ? loadConfiguratorState() : null;
+  // Only load saved state if we have an existing quote (not new)
+  const savedState = useMemo(() => {
+    // Never load saved state for new quotes
+    if (isNewQuote) return null;
+    // Only load if we have a real quote with data
+    if (!quoteId) return null;
+    return loadConfiguratorState();
+  }, [quoteId, isNewQuote]);
   
   const [internalClientInfo, setInternalClientInfo] = useState<ClientUnitData>(DEFAULT_CLIENT_INFO);
   const clientInfo = externalClientInfo || internalClientInfo;
@@ -169,6 +176,15 @@ export const ConfiguratorLayout = ({
     const startSection = savedState?.activeSection || 'location';
     return new Set([...saved, startSection]);
   });
+  
+  // Clear state and reset to step 1 for new quotes
+  useEffect(() => {
+    if (isNewQuote) {
+      localStorage.removeItem(CONFIGURATOR_STATE_KEY);
+      setActiveSection('location');
+      setVisitedSections(new Set(['location']));
+    }
+  }, [isNewQuote]);
   
   useEffect(() => {
     if (!quoteId) {

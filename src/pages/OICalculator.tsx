@@ -227,7 +227,7 @@ const OICalculatorContent = () => {
   }, [quote]);
 
   // Handle new quote creation with unsaved draft check
-  const handleNewQuote = useCallback(() => {
+  const handleNewQuote = useCallback(async () => {
     // If current quote is a working draft with content, show dialog
     if (isWorkingDraftWithContent) {
       setPendingAction('new');
@@ -237,11 +237,18 @@ const OICalculatorContent = () => {
     
     // Clear configurator localStorage state for fresh start
     localStorage.removeItem('cashflow-configurator-state');
+    localStorage.removeItem('cashflow-configurator-state-v2');
     localStorage.removeItem('cashflow_configurator_open');
     
-    // Navigate to generator without a quoteId, opening configurator immediately
-    navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
-  }, [navigate, isWorkingDraftWithContent]);
+    // Create draft first, then navigate once (eliminates double-navigation refresh)
+    const newId = await createDraft();
+    if (newId) {
+      navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
+    } else {
+      // Fallback: navigate to generator if draft creation fails
+      navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+    }
+  }, [navigate, isWorkingDraftWithContent, createDraft]);
 
   // Handle load quote with unsaved draft check
   const handleLoadQuote = useCallback(() => {
