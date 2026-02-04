@@ -1,4 +1,4 @@
-import { TrendingUp, Clock, ChevronRight, Hammer, Rocket, Shield, Key } from 'lucide-react';
+import { TrendingUp, Clock, ChevronRight, Hammer, Rocket, Shield, Key, ArrowRight } from 'lucide-react';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatCurrency, formatDualCurrency } from '../currencyUtils';
 import { monthToConstruction, calculateExitScenario, isHandoverExit } from '../constructionProgress';
@@ -83,14 +83,6 @@ export const CompactAllExitsCard = ({
     return { primary: dual.primary, secondary: dual.secondary };
   };
   
-  // Format compact (K/M) for property values
-  const formatCompact = (value: number): string => {
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(2)}M`;
-    }
-    return `${(value / 1000).toFixed(0)}K`;
-  };
-  
   // Calculate scenarios dynamically instead of looking up from pre-calculated list
   const scenarios = exitScenarios.map((exitMonths, index) => {
     // Calculate scenario dynamically using the canonical function
@@ -113,9 +105,6 @@ export const CompactAllExitsCard = ({
       ? getPostHandoverPhase(monthsAfterHandover, inputs.growthPeriodYears || 5)
       : null;
     
-    // Calculate appreciation earned for handover display
-    const appreciationEarned = scenarioResult.exitPrice - basePrice;
-    
     return {
       exitMonths,
       exitPrice: scenarioResult.exitPrice,
@@ -131,8 +120,6 @@ export const CompactAllExitsCard = ({
       constructionPct,
       exitNumber: index + 1,
       initialValue: basePrice,
-      appreciationEarned,
-      appreciationPercent: scenarioResult.appreciationPercent,
     };
   });
   
@@ -161,132 +148,109 @@ export const CompactAllExitsCard = ({
         )}
       </div>
       
-      {/* Scenarios List */}
-      <div className="p-3 space-y-2.5 flex-1 overflow-auto">
+      {/* Scenarios List - REDESIGNED with bigger numbers */}
+      <div className="p-2 space-y-2 flex-1 overflow-auto">
         {scenarios.map((scenario) => {
           return (
             <Tooltip key={scenario.exitMonths}>
               <TooltipTrigger asChild>
                 <div 
                   className={cn(
-                    "p-2.5 rounded-lg transition-colors border",
+                    "p-3 rounded-xl transition-colors border",
                     scenario.isHandover 
-                      ? "bg-cyan-500/5 border-cyan-500/30 hover:bg-cyan-500/10"
+                      ? "bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/15"
                       : scenario.isPostHandover 
-                        ? "bg-green-500/5 border-theme-border/30 hover:bg-green-500/10" 
+                        ? "bg-green-500/5 border-green-500/20 hover:bg-green-500/10" 
                         : "bg-theme-bg/50 border-theme-border/30 hover:bg-theme-border/30"
                   )}
                 >
-                  {/* Top Row: Exit Number/Handover, Months, Date, Phase/Construction % */}
-                  <div className="flex items-center justify-between mb-2">
+                  {/* TOP: Timing & Status - Compact row */}
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       {scenario.isHandover ? (
-                        <>
-                          <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <Key className="w-3 h-3" />
-                            Handover
-                          </span>
-                        </>
+                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Key className="w-3 h-3" />
+                          🔑 Handover
+                        </span>
                       ) : (
-                        <span className="text-[10px] font-bold text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">
+                        <span className="text-xs font-bold text-theme-accent bg-theme-accent/10 px-2 py-0.5 rounded-full">
                           #{scenario.exitNumber}
                         </span>
                       )}
-                      <Clock className="w-3 h-3 text-theme-text-muted" />
-                      <span className="text-sm font-medium text-theme-text">
-                        {scenario.exitMonths}m
-                      </span>
-                      <span className="text-xs text-theme-text-muted">
-                        {scenario.dateStr}
-                      </span>
+                      <span className="text-sm font-medium text-theme-text">{scenario.exitMonths}m</span>
+                      <span className="text-xs text-theme-text-muted">{scenario.dateStr}</span>
                     </div>
-                    {/* Show phase for post-handover, 100% for handover, construction % for pre-handover */}
+                    
+                    {/* Status Badge */}
                     {scenario.isHandover ? (
-                      <div className="flex items-center gap-1 text-cyan-400">
-                        <span className="text-xs font-medium">100% Complete</span>
-                      </div>
+                      <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">100% built</span>
                     ) : scenario.isPostHandover && scenario.phaseInfo ? (
-                      <div className={cn("flex items-center gap-1", scenario.phaseInfo.color)}>
+                      <span className={cn("text-[10px] px-2 py-0.5 rounded flex items-center gap-1", scenario.phaseInfo.color, scenario.phaseInfo.bgColor)}>
                         {scenario.phaseInfo.icon}
-                        <span className="text-xs font-medium">
-                          {scenario.phaseInfo.label} {formatPostHandoverOffset(scenario.monthsAfterHandover)}
-                        </span>
-                      </div>
+                        {scenario.phaseInfo.label} {formatPostHandoverOffset(scenario.monthsAfterHandover)}
+                      </span>
                     ) : (
-                      <div className="flex items-center gap-1">
-                        <Hammer className="w-3 h-3 text-orange-400" />
-                        <span className="text-xs text-orange-400 font-medium">
-                          {scenario.constructionPct.toFixed(0)}% {t('builtLabel')}
-                        </span>
-                      </div>
+                      <span className="text-[10px] text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Hammer className="w-3 h-3" />
+                        {scenario.constructionPct.toFixed(0)}% built
+                      </span>
                     )}
                   </div>
                   
-                  {/* Clear labeled metrics */}
-                  <div className="space-y-1 text-xs">
-                    {/* Row 1: Capital Invested with tooltip */}
-                    <div className="flex items-center justify-between">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-theme-text-muted cursor-help border-b border-dashed border-theme-text-muted/50">
-                            {t('cashInvestedLabel')}:
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[220px] bg-theme-card border-theme-border">
-                          <p className="text-xs text-theme-text">
-                            {t('cashInvestedTooltip')}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <span className="text-theme-text font-mono">
-                        {getDualValue(scenario.totalCapitalDeployed).primary}
-                        {currency !== 'AED' && getDualValue(scenario.totalCapitalDeployed).secondary && (
-                          <span className="text-theme-text-muted ml-1">({getDualValue(scenario.totalCapitalDeployed).secondary})</span>
-                        )}
+                  {/* HERO NUMBERS - Big and prominent */}
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    {/* Profit */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-theme-text-muted uppercase tracking-wide block">Profit</span>
+                      <span className={cn(
+                        "text-lg font-bold font-mono block",
+                        scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"
+                      )}>
+                        {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, 'AED' as Currency)}
                       </span>
+                      {currency !== 'AED' && getDualValue(scenario.trueProfit).secondary && (
+                        <span className="text-[10px] text-theme-text-muted">({getDualValue(scenario.trueProfit).secondary})</span>
+                      )}
                     </div>
                     
-                    {/* Row 2: Property Value (Initial → Current) */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-theme-text-muted">{t('propertyValueLabel')}:</span>
-                      <span className="text-theme-text font-mono">
-                        <span className="text-theme-text-muted">{formatCompact(scenario.initialValue)}</span>
-                        <span className="text-theme-text-muted mx-1">→</span>
-                        <span className="text-theme-text">{formatCompact(scenario.exitPrice)}</span>
-                        {currency !== 'AED' && (
-                          <span className="text-theme-text-muted ml-1">({formatCurrency(scenario.exitPrice, currency, rate)})</span>
-                        )}
+                    {/* ROE */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-theme-text-muted uppercase tracking-wide block">ROE</span>
+                      <span className={cn(
+                        "text-2xl font-bold font-mono block",
+                        scenario.trueROE >= 20 ? "text-green-400" : 
+                        scenario.trueROE >= 10 ? "text-theme-accent" : 
+                        scenario.trueROE >= 0 ? "text-amber-400" : "text-red-400"
+                      )}>
+                        {scenario.trueROE?.toFixed(0) ?? 0}%
                       </span>
+                      <span className="text-[10px] text-theme-text-muted">{scenario.annualizedROE?.toFixed(1)}%/yr</span>
                     </div>
                     
-                    {/* Row 3: Profit + ROE */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-theme-text-muted">{t('profit')}:</span>
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "font-mono font-medium",
-                          scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"
-                        )}>
-                          {scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit).primary}
-                          {currency !== 'AED' && getDualValue(scenario.trueProfit).secondary && (
-                            <span className="opacity-70 ml-1">({getDualValue(scenario.trueProfit).secondary})</span>
-                          )}
-                        </span>
-                        <span className={cn(
-                          "font-bold font-mono px-1.5 py-0.5 rounded text-[10px]",
-                          scenario.trueROE >= 0 ? "text-green-400 bg-green-400/10" : "text-red-400 bg-red-400/10"
-                        )}>
-                          {scenario.trueROE?.toFixed(0) ?? 0}% ROE
-                        </span>
-                      </div>
+                    {/* Time */}
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-theme-text-muted uppercase tracking-wide block">Hold</span>
+                      <span className="text-lg font-bold font-mono text-theme-text block">
+                        {scenario.exitMonths < 12 
+                          ? `${scenario.exitMonths}m` 
+                          : `${(scenario.exitMonths / 12).toFixed(1)}y`}
+                      </span>
+                      <span className="text-[10px] text-theme-text-muted">{scenario.dateStr}</span>
                     </div>
+                  </div>
+                  
+                  {/* Bottom: Capital info - smaller text */}
+                  <div className="flex items-center justify-center gap-4 mt-3 pt-2 border-t border-theme-border/20 text-[10px] text-theme-text-muted">
+                    <span>Capital: {formatCurrency(scenario.totalCapitalDeployed, 'AED' as Currency)}</span>
+                    <ArrowRight className="w-3 h-3" />
+                    <span>Value: {formatCurrency(scenario.exitPrice, 'AED' as Currency)}</span>
                   </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="left" className="max-w-xs bg-theme-card border-theme-border">
                 <div className="space-y-2 text-xs">
                   <p className="font-semibold text-theme-text">
-                    {t('exitAtLabel')} {scenario.exitMonths}m ({scenario.dateStr})
+                    Exit at {scenario.exitMonths}m ({scenario.dateStr})
                     {scenario.isPostHandover && scenario.phaseInfo && (
                       <span className={cn("ml-2", scenario.phaseInfo.color)}>
                         [{scenario.phaseInfo.label} Phase]
@@ -294,52 +258,34 @@ export const CompactAllExitsCard = ({
                     )}
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    {scenario.isPostHandover ? (
-                      <>
-                        <span className="text-theme-text-muted">Post-Handover:</span>
-                        <span className="text-green-400">{formatPostHandoverOffset(scenario.monthsAfterHandover)}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-theme-text-muted">{t('constructionTime')}:</span>
-                        <span className="text-theme-text">{scenario.constructionPct.toFixed(0)}% {t('completeLabel')}</span>
-                      </>
-                    )}
-                    
-                    <span className="text-theme-text-muted">{t('cashInvestedLabel')}:</span>
-                    <span className="text-theme-text">
+                    <span className="text-theme-text-muted">Cash Invested:</span>
+                    <span className="text-theme-text font-mono">
                       {getDualValue(scenario.totalCapitalDeployed).primary}
                       {currency !== 'AED' && getDualValue(scenario.totalCapitalDeployed).secondary && (
                         <span className="opacity-70 ml-1">({getDualValue(scenario.totalCapitalDeployed).secondary})</span>
                       )}
                     </span>
                     
-                    <span className="text-theme-text-muted">{t('initialValueLabel')}:</span>
-                    <span className="text-theme-text">
+                    <span className="text-theme-text-muted">Initial Value:</span>
+                    <span className="text-theme-text font-mono">
                       {getDualValue(scenario.initialValue).primary}
-                      {currency !== 'AED' && getDualValue(scenario.initialValue).secondary && (
-                        <span className="opacity-70 ml-1">({getDualValue(scenario.initialValue).secondary})</span>
-                      )}
                     </span>
                     
-                    <span className="text-theme-text-muted">{t('currentValueLabel')}:</span>
-                    <span className="text-theme-text">
+                    <span className="text-theme-text-muted">Exit Value:</span>
+                    <span className="text-theme-text font-mono">
                       {getDualValue(scenario.exitPrice).primary}
-                      {currency !== 'AED' && getDualValue(scenario.exitPrice).secondary && (
-                        <span className="opacity-70 ml-1">({getDualValue(scenario.exitPrice).secondary})</span>
-                      )}
                     </span>
                     
-                    <span className="text-theme-text-muted">{t('profit')}:</span>
-                    <span className={scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"}>
-                      {getDualValue(scenario.trueProfit).primary}
-                      {currency !== 'AED' && getDualValue(scenario.trueProfit).secondary && (
-                        <span className="opacity-70 ml-1">({getDualValue(scenario.trueProfit).secondary})</span>
-                      )}
+                    <span className="text-theme-text-muted">Profit:</span>
+                    <span className={cn("font-mono", scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400")}>
+                      {scenario.trueProfit >= 0 ? '+' : ''}{getDualValue(scenario.trueProfit).primary}
                     </span>
                     
-                    <span className="text-theme-text-muted">{t('totalROELabel')}:</span>
-                    <span className="font-bold text-theme-text">{scenario.trueROE?.toFixed(2) ?? 0}%</span>
+                    <span className="text-theme-text-muted">Total ROE:</span>
+                    <span className="font-bold text-theme-text">{scenario.trueROE?.toFixed(1)}%</span>
+                    
+                    <span className="text-theme-text-muted">Annualized:</span>
+                    <span className="text-theme-accent font-bold">{scenario.annualizedROE?.toFixed(1)}%/yr</span>
                   </div>
                 </div>
               </TooltipContent>
