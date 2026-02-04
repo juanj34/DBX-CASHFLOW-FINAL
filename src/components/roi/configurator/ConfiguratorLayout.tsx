@@ -429,45 +429,27 @@ export const ConfiguratorLayout = ({
         );
       case 'property':
         return (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
-              <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
-            </div>
-            <PropertySection 
-              inputs={inputs} 
-              setInputs={setInputs} 
-              currency={currency}
-            />
-          </div>
+          <PropertySection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency}
+          />
         );
       case 'payment':
         return (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-theme-text mb-1">Payment Plan</h3>
-              <p className="text-sm text-theme-text-muted">Configure payment split and installments</p>
-            </div>
-            <PaymentSection 
-              inputs={inputs} 
-              setInputs={setInputs} 
-              currency={currency}
-            />
-          </div>
+          <PaymentSection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency}
+          />
         );
       case 'appreciation':
         return (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-theme-text mb-1">Appreciation Profile</h3>
-              <p className="text-sm text-theme-text-muted">Configure growth rates across construction and post-handover phases</p>
-            </div>
-            <AppreciationSection 
-              inputs={inputs} 
-              setInputs={setInputs} 
-              currency={currency}
-            />
-          </div>
+          <AppreciationSection 
+            inputs={inputs} 
+            setInputs={setInputs} 
+            currency={currency}
+          />
         );
       case 'rental':
         return (

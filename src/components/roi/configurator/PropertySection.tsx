@@ -101,7 +101,14 @@ export const PropertySection = ({
   const isHandoverBeforeBooking = handoverDate <= bookingDate;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Section Header */}
+      <div>
+        <h3 className="text-lg font-semibold text-theme-text mb-1">Property Details</h3>
+        <p className="text-sm text-theme-text-muted">Base price, booking date, and entry costs</p>
+      </div>
+      
+      <div className="space-y-3">
       {/* Key Metrics Row - Price/sqft (if unit size is set) */}
       {inputs.unitSizeSqf && inputs.unitSizeSqf > 0 && (
         <div className="flex items-center gap-2 p-2 bg-theme-bg/30 rounded-lg border border-theme-border/30">
@@ -293,6 +300,7 @@ export const PropertySection = ({
           <span className="text-sm font-mono text-theme-accent font-semibold">
             {formatCurrency(inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee, currency)}
           </span>
+        </div>
         </div>
       </div>
     </div>
