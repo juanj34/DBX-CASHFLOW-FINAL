@@ -425,6 +425,12 @@ export const ConfiguratorLayout = ({
             onClientInfoChange={setClientInfo}
             inputs={inputs}
             setInputs={setInputs}
+            floorPlanUrl={floorPlanUrl}
+            buildingRenderUrl={buildingRenderUrl}
+            heroImageUrl={heroImageUrl}
+            onFloorPlanChange={setFloorPlanUrl}
+            onBuildingRenderChange={setBuildingRenderUrl}
+            onHeroImageChange={setHeroImageUrl}
           />
         );
       case 'property':

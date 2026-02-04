@@ -47,6 +47,14 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
   // Format number with commas
   const formatWithCommas = (num: number) => num.toLocaleString();
 
+  // Handle yield decimal input
+  const handleYieldChange = (value: string) => {
+    const num = parseFloat(value);
+    if (!isNaN(num) && num >= 0 && num <= 20) {
+      setInputs(prev => ({ ...prev, rentalYieldPercent: Math.round(num * 10) / 10 }));
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Section Header */}
@@ -56,8 +64,8 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
       </div>
 
       {/* Long-Term Rental */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between py-1">
+      <div className="p-3 bg-theme-bg/50 rounded-lg space-y-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Home className="w-4 h-4 text-theme-accent" />
             <span className="text-sm text-theme-text font-medium">Long-Term Rental</span>
@@ -70,8 +78,8 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         </div>
 
         {longTermEnabled && (
-          <div className="space-y-3 pl-4 border-l-2 border-theme-accent/30">
-            {/* Rental Yield */}
+          <div className="space-y-3 pt-2 border-t border-theme-border/20">
+            {/* Rental Yield - with decimal input */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1">
                 <label className="text-xs text-theme-text-muted">Annual Yield</label>
@@ -80,13 +88,22 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               <div className="flex items-center gap-2">
                 <Slider
                   value={[inputs.rentalYieldPercent]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
+                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: Math.round(value * 10) / 10 }))}
                   min={3}
                   max={15}
-                  step={0.5}
-                  className="w-24 roi-slider-lime"
+                  step={0.1}
+                  className="w-20 roi-slider-lime"
                 />
-                <span className="text-sm text-theme-accent font-mono font-bold w-10 text-right">{inputs.rentalYieldPercent}%</span>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="20"
+                  value={inputs.rentalYieldPercent}
+                  onChange={(e) => handleYieldChange(e.target.value)}
+                  className="w-14 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-sm"
+                />
+                <span className="text-xs text-theme-text-muted">%</span>
               </div>
             </div>
 
@@ -104,9 +121,9 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                   min={0}
                   max={10}
                   step={0.5}
-                  className="w-24 roi-slider-lime"
+                  className="w-20 roi-slider-lime"
                 />
-                <span className="text-xs text-green-500 font-mono w-10 text-right">{inputs.rentGrowthRate ?? 4}%</span>
+                <span className="text-xs text-green-500 font-mono w-12 text-right">{inputs.rentGrowthRate ?? 4}%</span>
               </div>
             </div>
 
@@ -127,7 +144,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                     setInputs(prev => ({ ...prev, serviceChargePerSqft: Math.min(Math.max(val, 0), 100) }));
                   }}
                   placeholder="18"
-                  className="w-16 h-7 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs"
+                  className="w-14 h-7 text-right bg-theme-bg border-theme-border text-theme-text font-mono text-xs"
                 />
                 <span className="text-[10px] text-theme-text-muted">/sqft</span>
               </div>
@@ -149,12 +166,9 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         )}
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-theme-border/30" />
-
       {/* Short-Term Comparison */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between py-1">
+      <div className="p-3 bg-theme-bg/50 rounded-lg space-y-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Plane className="w-4 h-4 text-orange-400" />
             <span className="text-sm text-theme-text font-medium">Short-Term (Airbnb)</span>
@@ -167,7 +181,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
         </div>
 
         {airbnbEnabled && (
-          <div className="space-y-3 pl-4 border-l-2 border-orange-400/30">
+          <div className="space-y-3 pt-2 border-t border-theme-border/20">
             {/* ADR - Main visible control */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1">
