@@ -1,213 +1,291 @@
 
-# Plan: Fixes for Snapshot Card Overflow, Quote Loading Lag, and AI Extractor Missing 10% Completion
 
-## Summary of Issues
+# Plan: Fixes for Quote Creation Issues, Configurator Step Persistence, and AI Import Payment Plan Erasure
 
-Based on your screenshot and the PDF document:
+## Summary of Issues Found
 
-1. **Card Number Overflow** - Values in the POST-HANDOVER COVERAGE card are being cut off (e.g., "AED 8..." instead of full amounts)
-2. **Quote Loading Lag** - "Load Quotes" modal sometimes experiences long delays with quotes not loading
-3. **AI Extractor Missing 10% Completion** - The PDF shows a clear "At the Handover - 40%" payment but the AI is not extracting it correctly
+Based on code analysis, I identified three related bugs:
+
+### Issue 1: Strange Refresh When Creating New Quote
+**Root Cause:** When clicking "New Quote", the flow involves:
+1. `handleNewQuote()` navigates to `/cashflow-generator` with `{ state: { openConfigurator: true } }`
+2. This triggers a full component remount (state reset in `useEffect` at line 161-210)
+3. Then `createDraft()` creates a new quote and navigates AGAIN to `/cashflow/${newId}` with `{ state: { openConfigurator: true } }`
+4. This double navigation causes the "refresh" feeling
+
+**The Problem:** The flow creates a working draft, navigates, then opens the configurator - but the navigation itself causes a visual refresh.
+
+### Issue 2: Configurator Opens on Wrong Step
+**Root Cause:** In `ConfiguratorLayout.tsx` line 140:
+```typescript
+const savedState = (quoteId && !isNewQuote) ? loadConfiguratorState() : null;
+```
+
+The `isNewQuote` prop is computed in `OICalculator.tsx` line 546:
+```typescript
+isNewQuote={!!(quoteId && !quote?.project_name && !quote?.developer && inputs.basePrice === 0)}
+```
+
+**The Problem:** 
+- When creating a new quote, `createDraft()` is called, which creates a quote with empty data
+- But then `inputs.basePrice` might be set to `800000` (default from `NEW_QUOTE_OI_INPUTS`)
+- This makes `isNewQuote` evaluate to `false`, so `loadConfiguratorState()` is called
+- If there's stale state in localStorage from a previous session, it loads that step (not step 1)
+
+### Issue 3: Payment Plans Erased After AI Import
+**Root Cause:** The AI extractor in LocationSection only applies property data, NOT payment plan data:
+
+```typescript
+// LocationSection.tsx lines 54-80
+const handleAIExtraction = (extractedData: ExtractedPaymentPlan) => {
+  // Only updates clientInfo and basePrice
+  // Does NOT update payment plan installments!
+  
+  onClientInfoChange({ ... }); // Updates developer, project, unit
+  
+  if (extractedData.property?.basePrice) {
+    setInputs(prev => ({ ...prev, basePrice: extractedData.property!.basePrice! }));
+  }
+  
+  toast.success('Property data imported!');
+  // Payment plan data is LOST here!
+};
+```
+
+**The Problem:** When using AI import from Step 1 (Location), only property info is applied. The user expects payment data too, but it's discarded.
 
 ---
 
-## Issue 1: Card Number Overflow Fix
+## Proposed Fixes
 
-### Root Cause
-The `CompactPostHandoverCard.tsx` and `DottedRow.tsx` components don't handle long currency values properly when dual currency is enabled. The card has `min-w-0` but the parent containers aren't constraining overflow.
+### Fix 1: Eliminate Double Navigation on New Quote
 
-### Files to Modify
+**File: `src/pages/OICalculator.tsx`**
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/snapshot/DottedRow.tsx` | Add `overflow-hidden` and proper `text-right` alignment to value container |
-| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Add `min-w-0` to parent containers, constrain card width |
-| `src/components/roi/snapshot/CompactRentCard.tsx` | Same overflow fixes |
-| `src/components/roi/snapshot/CompactAllExitsCard.tsx` | Add `text-right` and `whitespace-nowrap` to prevent wrapping |
+Change the flow so we don't navigate twice:
 
-### Specific Changes
-
-**DottedRow.tsx:**
 ```typescript
-// Current: value container can overflow
-<span 
-  className={cn(
-    'font-mono tabular-nums text-theme-text text-sm min-w-0',
-    ...
-  )}
->
-  <span className="truncate">{value}</span>
-  ...
-</span>
-
-// Fixed: proper overflow handling
-<span 
-  className={cn(
-    'font-mono tabular-nums text-theme-text text-sm shrink-0 text-right whitespace-nowrap',
-    ...
-  )}
->
-  {value}
-  ...
-</span>
+// Current problematic flow (lines 230-243):
+const handleNewQuote = useCallback(() => {
+  // ... checks ...
+  localStorage.removeItem('cashflow-configurator-state');
+  localStorage.removeItem('cashflow_configurator_open');
+  navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+}, [navigate, isWorkingDraftWithContent]);
 ```
 
-**CompactPostHandoverCard.tsx:**
+**Solution:** Navigate directly to a new quote without the intermediate `/cashflow-generator` step:
+
 ```typescript
-// Add min-w-0 to inner content container to allow text truncation
-<div className="p-3 space-y-1.5 min-w-0 overflow-hidden">
-```
-
----
-
-## Issue 2: Quote Loading Lag Fix
-
-### Root Cause
-The `useQuotesList` hook in `useCashflowQuote.ts` (line 521-533) doesn't have:
-1. A `.limit()` clause to prevent loading too many quotes
-2. Error handling / timeout protection
-3. A try-catch block
-
-This causes issues when users have many quotes or network is slow.
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/hooks/useCashflowQuote.ts` | Add `.limit(150)`, try-catch, timeout handling |
-| `src/components/roi/compare/QuoteSelector.tsx` | Add loading states with timeout fallback |
-
-### Specific Changes
-
-**useCashflowQuote.ts - useQuotesList (line 513-540):**
-```typescript
-const fetchQuotes = useCallback(async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    setLoading(false);
+const handleNewQuote = useCallback(async () => {
+  if (isWorkingDraftWithContent) {
+    setPendingAction('new');
+    setShowUnsavedDialog(true);
     return;
   }
-
-  setLoading(true);
   
-  try {
-    const { data, error } = await supabase
-      .from('cashflow_quotes')
-      .select(`
-        id, broker_id, share_token, client_name, client_country, client_email,
-        project_name, developer, unit, unit_type, unit_size_sqf, unit_size_m2,
-        inputs, title, created_at, updated_at, status, status_changed_at,
-        presented_at, negotiation_started_at, sold_at, view_count, first_viewed_at,
-        is_archived, archived_at, last_viewed_at
-      `)
-      .eq('broker_id', user.id)
-      .neq('status', 'working_draft')
-      .or('is_archived.is.null,is_archived.eq.false')
-      .order('updated_at', { ascending: false })
-      .limit(150); // ADD LIMIT
-
-    if (!error && data) {
-      setQuotes(data.map(q => ({ ...q, inputs: q.inputs as unknown as OIInputs })));
-      setLastFetched(new Date());
-    } else if (error) {
-      console.error('Failed to fetch quotes:', error);
-    }
-  } catch (err) {
-    console.error('Failed to fetch quotes:', err);
-  } finally {
-    setLoading(false);
+  // Clear configurator state
+  localStorage.removeItem('cashflow-configurator-state');
+  localStorage.removeItem('cashflow_configurator_open');
+  
+  // Create draft first, then navigate once
+  const newId = await createDraft();
+  if (newId) {
+    navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
+  } else {
+    // Fallback: navigate to generator
+    navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
   }
-}, []);
+}, [navigate, isWorkingDraftWithContent, createDraft]);
+```
+
+### Fix 2: Always Clear Configurator State for New Quotes
+
+**File: `src/components/roi/configurator/ConfiguratorLayout.tsx`**
+
+Improve the detection logic and always start at step 1 for new quotes:
+
+```typescript
+// Line 140 - Current:
+const savedState = (quoteId && !isNewQuote) ? loadConfiguratorState() : null;
+
+// Proposed - More robust check:
+const savedState = useMemo(() => {
+  // Never load saved state for new quotes
+  if (isNewQuote) return null;
+  
+  // Only load saved state if we have a real quote with data
+  if (!quoteId) return null;
+  
+  const loaded = loadConfiguratorState();
+  
+  // Validate the loaded state is for the current quote (add quoteId to storage)
+  // For now, just check if we have meaningful data
+  return loaded;
+}, [quoteId, isNewQuote]);
+```
+
+**Also add a useEffect to clear state when `isNewQuote` changes:**
+
+```typescript
+useEffect(() => {
+  if (isNewQuote) {
+    localStorage.removeItem(CONFIGURATOR_STATE_KEY);
+    setActiveSection('location');
+    setVisitedSections(new Set(['location']));
+  }
+}, [isNewQuote]);
+```
+
+### Fix 3: Apply Full Payment Plan from AI Import in LocationSection
+
+**File: `src/components/roi/configurator/LocationSection.tsx`**
+
+Update `handleAIExtraction` to also apply payment plan data (like PaymentSection does):
+
+```typescript
+const handleAIExtraction = (extractedData: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => {
+  const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2 * 10) / 10;
+  
+  // Update client info with extracted property details
+  onClientInfoChange({
+    ...clientInfo,
+    developer: extractedData.property?.developer || clientInfo.developer,
+    projectName: extractedData.property?.projectName || clientInfo.projectName,
+    unit: extractedData.property?.unitNumber || clientInfo.unit,
+    unitType: extractedData.property?.unitType || clientInfo.unitType,
+    unitSizeSqf: extractedData.property?.unitSizeSqft || clientInfo.unitSizeSqf,
+    unitSizeM2: extractedData.property?.unitSizeSqft 
+      ? sqfToM2(extractedData.property.unitSizeSqft) 
+      : clientInfo.unitSizeM2,
+  });
+  
+  // === NEW: Apply the FULL payment plan data ===
+  // Reuse the same logic from PaymentSection.handleAIExtraction
+  
+  // Find handover payment
+  const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
+  
+  // Calculate handover timing
+  let handoverMonth: number | undefined;
+  let handoverYear = inputs.handoverYear;
+  let handoverQuarter = inputs.handoverQuarter;
+  
+  if (handoverPayment && handoverPayment.triggerValue > 0) {
+    const bookingDateObj = new Date(bookingDate.year, bookingDate.month - 1);
+    const handoverDateObj = new Date(bookingDateObj);
+    handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverPayment.triggerValue);
+    handoverMonth = handoverDateObj.getMonth() + 1;
+    handoverYear = handoverDateObj.getFullYear();
+    handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
+  } else if (extractedData.paymentStructure.handoverMonthFromBooking) {
+    const bookingDateObj = new Date(bookingDate.year, bookingDate.month - 1);
+    const handoverDateObj = new Date(bookingDateObj);
+    handoverDateObj.setMonth(handoverDateObj.getMonth() + extractedData.paymentStructure.handoverMonthFromBooking);
+    handoverMonth = handoverDateObj.getMonth() + 1;
+    handoverYear = handoverDateObj.getFullYear();
+    handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
+  }
+  
+  // Find downpayment
+  const downpayment = extractedData.installments.find(i => i.type === 'time' && i.triggerValue === 0);
+  const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
+  
+  // Calculate pre-handover percent
+  let preHandoverPercent = inputs.preHandoverPercent;
+  if (extractedData.paymentStructure.paymentSplit) {
+    const [pre] = extractedData.paymentStructure.paymentSplit.split('/').map(Number);
+    if (!isNaN(pre)) preHandoverPercent = pre;
+  } else {
+    const preHOInstallments = extractedData.installments.filter(i => 
+      i.type === 'time' || i.type === 'construction'
+    );
+    const preHOTotal = preHOInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    if (preHOTotal > 0 && preHOTotal <= 100) preHandoverPercent = preHOTotal;
+  }
+  
+  // Convert installments (excluding downpayment and handover)
+  const additionalPayments = extractedData.installments
+    .filter(i => {
+      if (i.type === 'time' && i.triggerValue === 0) return false;
+      if (i.type === 'handover') return false;
+      return true;
+    })
+    .map((inst, idx) => ({
+      id: inst.id || `ai-${Date.now()}-${idx}`,
+      type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
+      triggerValue: inst.triggerValue,
+      paymentPercent: inst.paymentPercent,
+    }))
+    .sort((a, b) => a.triggerValue - b.triggerValue);
+  
+  // Post-handover handling
+  const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
+  const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+  const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+  
+  // Update inputs with FULL payment plan
+  setInputs(prev => ({
+    ...prev,
+    // Property
+    basePrice: extractedData.property?.basePrice || prev.basePrice,
+    unitSizeSqf: extractedData.property?.unitSizeSqft || prev.unitSizeSqf,
+    // Booking date
+    bookingMonth: bookingDate.month,
+    bookingYear: bookingDate.year,
+    // Payment structure
+    downpaymentPercent,
+    preHandoverPercent,
+    additionalPayments,
+    hasPostHandoverPlan: hasPostHandover,
+    postHandoverPercent: postHandoverTotal,
+    // Handover timing
+    handoverMonth,
+    handoverQuarter,
+    handoverYear,
+  }));
+  
+  toast.success('Property data and payment plan imported!');
+};
+```
+
+**Also update the PaymentPlanExtractor call to pass bookingDate:**
+
+```typescript
+<PaymentPlanExtractor
+  open={showAIExtractor}
+  onOpenChange={setShowAIExtractor}
+  existingBookingMonth={inputs.bookingMonth}
+  existingBookingYear={inputs.bookingYear}
+  onApply={(data, bookingDate) => handleAIExtraction(data, bookingDate)}
+/>
 ```
 
 ---
 
-## Issue 3: AI Extractor Missing 10% Completion Payment
+## Files to Modify
 
-### Analysis of the PDF
-
-The PDF shows this payment schedule:
-```text
-| Payment Type                 | Amount    | Date        |
-| Booking Amount (Today) - 10% | 78,497.00 | 29-Jan-2026 |
-| First Installment - 10%      | 78,497.00 | 01-Mar-2026 |
-| 2nd Installment - 10%        | 78,497.00 | 01-May-2026 |
-| 3rd Installment - 10%        | 78,497.00 | 01-Jul-2026 |
-| 4th Installment - 10%        | 78,497.00 | 01-Sep-2026 |
-| 5th Installment - 10%        | 78,497.00 | 01-Nov-2026 |
-| At the Handover - 40%        | 313,986.00| 30-Dec-2026 |
-```
-
-**Total: 60% before handover + 40% on handover = 100%**
-
-This is a **60/40 standard plan** (no post-handover). The issue is that the AI extractor may be:
-1. Missing the "At the Handover - 40%" payment from page 2
-2. Not correctly calculating that handover happens at Dec-2026 (11 months from booking)
-
-### Root Cause
-The system prompt in the edge function mentions "completion" keywords but the PDF says "At the Handover" which should also trigger handover detection.
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `supabase/functions/extract-payment-plan/index.ts` | Enhance handover detection keywords to include "At the Handover", "On Handover", "Upon Handover" |
-
-### Specific Changes
-
-**extract-payment-plan/index.ts - System Prompt Enhancement (around line 66-71):**
-
-Current prompt mentions "Completion" detection. Need to add explicit "At the Handover" pattern:
-
-```typescript
-// Add to HANDOVER MONTH DETECTION section
-=== HANDOVER PAYMENT DETECTION ===
-- Look for these patterns to identify the handover/completion payment:
-  - "At the Handover" / "On Handover" / "Upon Handover"
-  - "Completion" / "On Completion" / "At Completion"
-  - "Final Payment" / "Balance Payment"
-  - "Handover Payment"
-- This payment should have type: "handover"
-- Calculate handoverMonthFromBooking from the date if provided (e.g., "30-Dec-2026" with booking Jan 2026 = 12 months)
-```
-
-**Add explicit date parsing guidance:**
-```typescript
-=== DATE PARSING FROM PAYMENT SCHEDULE ===
-- When you see explicit dates like "01-Mar-2026", "30-Dec-2026":
-  - Calculate months from the booking date (e.g., Jan 2026)
-  - "01-Mar-2026" from "29-Jan-2026" = 2 months
-  - "30-Dec-2026" from "29-Jan-2026" = 11 months
-- The "At the Handover" or "Completion" payment defines handoverMonthFromBooking
-```
-
-**Also update the extractionTool description** to include "At the Handover" as a recognized label pattern.
-
----
-
-## Files Summary
-
-| File | Issue | Change Type |
-|------|-------|-------------|
-| `src/components/roi/snapshot/DottedRow.tsx` | Overflow | Fix value alignment and prevent overflow |
-| `src/components/roi/snapshot/CompactPostHandoverCard.tsx` | Overflow | Add min-w-0 to containers |
-| `src/components/roi/snapshot/CompactRentCard.tsx` | Overflow | Add min-w-0 to containers |
-| `src/hooks/useCashflowQuote.ts` | Loading Lag | Add .limit(150), try-catch, error handling |
-| `supabase/functions/extract-payment-plan/index.ts` | AI Extraction | Enhance handover keyword detection, add date parsing guidance |
+| File | Change | Priority |
+|------|--------|----------|
+| `src/pages/OICalculator.tsx` | Fix double navigation in handleNewQuote - create draft first, navigate once | High |
+| `src/components/roi/configurator/ConfiguratorLayout.tsx` | Clear localStorage state for new quotes, always start at step 1 | High |
+| `src/components/roi/configurator/LocationSection.tsx` | Apply full payment plan from AI extraction, not just property info | High |
 
 ---
 
 ## Expected Results
 
-1. **Card Overflow**: Numbers like "AED 8,500" will display fully without being cut off
-2. **Loading Lag**: Quotes will load faster with the 150 limit and won't hang on network issues
-3. **AI Extraction**: The "At the Handover - 40%" payment will be correctly extracted and the handoverMonthFromBooking will be set to 11 (or 12 depending on exact calculation)
+1. **New Quote Creation:** Single smooth navigation, no visual refresh
+2. **Configurator Step:** Always starts at Step 1 (Location) for new quotes
+3. **AI Import:** Payment plans extracted in Step 1 will persist and be visible in Step 3 (Payment)
 
 ---
 
 ## Testing Notes
 
 After implementation:
-1. Test the POST-HANDOVER COVERAGE card with dual currency enabled to verify numbers don't overflow
-2. Test Load Quotes with many quotes to verify it loads quickly
-3. Re-upload the XENIA PDF and verify all 7 payments are extracted correctly (6 installments + handover = 100%)
+1. Click "New Quote" from an existing quote - verify smooth transition, no double refresh
+2. Verify configurator opens at Step 1 (Location) for new quotes
+3. Upload a payment plan PDF in Step 1 (AI Auto-Fill)
+4. Navigate to Step 3 (Payment) and verify installments are populated correctly
+
