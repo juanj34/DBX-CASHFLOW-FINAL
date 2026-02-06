@@ -81,7 +81,7 @@ export const CompactExitGraphCard = ({
   // Chart dimensions - larger and more imposing
   const width = 400;
   const height = 200;
-  const padding = { top: 40, right: 20, bottom: 30, left: 45 };
+  const padding = { top: 25, right: 15, bottom: 20, left: 35 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   
@@ -181,7 +181,7 @@ export const CompactExitGraphCard = ({
       </div>
       
       {/* Inline Graph */}
-      <div className="px-3 pt-2 pb-1">
+      <div className="px-2 pt-1">
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
           {/* Gradient definitions */}
           <defs>
@@ -351,10 +351,12 @@ export const CompactExitGraphCard = ({
       </div>
       
       {/* Horizontal Exit Cards */}
-      <div className="p-3">
+      <div className="p-2 pt-1">
         <div className={cn(
-          "grid gap-2",
-          scenarios.length === 2 ? "grid-cols-2" : "grid-cols-3 sm:grid-cols-4"
+          "grid gap-1.5",
+          scenarios.length === 2 ? "grid-cols-2" : 
+          scenarios.length <= 4 ? "grid-cols-4" : 
+          "grid-cols-5"
         )}>
           {scenarios.map((scenario) => {
             const isHandover = scenario.isHandover;
@@ -363,43 +365,45 @@ export const CompactExitGraphCard = ({
               <div 
                 key={scenario.exitMonths}
                 className={cn(
-                  "bg-black/30 backdrop-blur-sm border rounded-lg p-2.5 text-center",
+                  "bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md",
+                  "border border-white/10 rounded-xl shadow-lg p-2 text-center",
+                  "border-l-2",
                   isHandover 
-                    ? "border-cyan-500/40"
+                    ? "border-l-white"
                     : scenario.isPostHandover 
-                      ? "border-green-500/30" 
-                      : "border-theme-border/40"
+                      ? "border-l-green-500" 
+                      : "border-l-theme-accent"
                 )}
               >
                 {/* Exit Number + Months */}
-                <div className="flex items-center justify-center gap-1 mb-1">
+                <div className="flex items-center justify-center gap-1 mb-0.5">
                   {isHandover ? (
-                    <span className="text-[10px] font-bold text-cyan-400">🔑</span>
+                    <Key className="w-3 h-3 text-white" />
                   ) : (
-                    <span className="text-[10px] font-bold text-theme-accent">
+                    <span className="text-[9px] font-bold text-theme-accent">
                       #{scenario.exitNumber}
                     </span>
                   )}
-                  <span className="text-xs text-theme-text-muted">
+                  <span className="text-[10px] text-theme-text-muted">
                     {scenario.exitMonths}m
                   </span>
                 </div>
                 
                 {/* Hero ROE - Big & Bold */}
                 <span className={cn(
-                  "text-2xl font-black font-mono block",
+                  "text-xl font-black font-mono block",
                   scenario.trueROE >= 20 ? "text-green-400" : 
                   scenario.trueROE >= 10 ? "text-theme-accent" : 
                   scenario.trueROE >= 0 ? "text-amber-400" : "text-red-400"
                 )}>
                   {scenario.trueROE?.toFixed(0) ?? 0}%
                 </span>
-                <span className="text-[8px] text-theme-text-muted uppercase tracking-wide">ROE</span>
+                <span className="text-[7px] text-theme-text-muted uppercase tracking-wide">ROE</span>
                 
                 {/* Profit */}
-                <div className="mt-1.5 pt-1.5 border-t border-theme-border/20">
+                <div className="mt-1 pt-1 border-t border-white/10">
                   <span className={cn(
-                    "text-xs font-bold",
+                    "text-[10px] font-bold",
                     scenario.trueProfit >= 0 ? "text-green-400/80" : "text-red-400/80"
                   )}>
                     {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrencyShort(scenario.trueProfit, 'AED' as Currency)}

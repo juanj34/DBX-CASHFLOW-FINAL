@@ -1,8 +1,10 @@
-import { Home, TrendingUp, Calendar, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import { Home, TrendingUp, Calendar, ChevronDown } from 'lucide-react';
 import { OIInputs } from '../useOICalculations';
 import { Currency, formatDualCurrency, formatCurrency } from '../currencyUtils';
 import { DottedRow } from './DottedRow';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -105,23 +107,17 @@ export const CompactRentCard = ({
 
       {/* HERO NUMBER: 7-Year Average - Most Important */}
       <div className="px-4 py-3 bg-gradient-to-r from-green-500/10 via-theme-bg to-green-500/5 border-b border-green-500/20">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase tracking-wide text-green-400 font-semibold">{t('sevenYearAverageLabel')}</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-bold font-mono text-green-400">
-                {formatCurrency(averageAnnualRent, 'AED' as Currency)}
-              </span>
-              <span className="text-xs text-theme-text-muted">/yr</span>
-            </div>
-            {currency !== 'AED' && getDualValue(averageAnnualRent).secondary && (
-              <span className="text-xs text-theme-text-muted">≈ {getDualValue(averageAnnualRent).secondary}</span>
-            )}
+        <div>
+          <span className="text-[10px] uppercase tracking-wide text-green-400 font-semibold">{t('sevenYearAverageLabel')}</span>
+          <div className="flex items-baseline gap-1 mt-0.5">
+            <span className="text-2xl font-bold font-mono text-green-400">
+              {formatCurrency(averageAnnualRent, 'AED' as Currency)}
+            </span>
+            <span className="text-xs text-theme-text-muted">/yr</span>
           </div>
-          <div className="text-right">
-            <span className="text-[10px] text-theme-text-muted">{t('includesGrowthLabel')}</span>
-            <div className="text-sm font-bold text-green-400">+{rentGrowthRate}%/yr</div>
-          </div>
+          {currency !== 'AED' && getDualValue(averageAnnualRent).secondary && (
+            <span className="text-xs text-theme-text-muted">≈ {getDualValue(averageAnnualRent).secondary}</span>
+          )}
         </div>
       </div>
 
@@ -149,28 +145,36 @@ export const CompactRentCard = ({
             </div>
           </div>
           
-          <DottedRow 
-            label={t('grossLabel')}
-            value={getDualValue(grossAnnualRent).primary}
-            secondaryValue={getDualValue(grossAnnualRent).secondary}
-          />
-          
-          {unitSizeSqf > 0 && (
-            <DottedRow 
-              label={`− ${t('serviceLabel')}`}
-              value={`-${getDualValue(annualServiceCharges).primary}`}
-              valueClassName="text-red-400"
-            />
-          )}
-          
-          <div className="flex items-center gap-2 pt-2 border-t border-theme-border/30">
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
-              {t('grossLabel')}: {grossYield.toFixed(1)}%
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold">
-              {t('netLabel')}: {netYield.toFixed(1)}%
-            </span>
-          </div>
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-theme-text-muted hover:text-theme-text w-full justify-center py-1.5 transition-colors group">
+              <span>View breakdown</span>
+              <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1.5 pt-2 animate-accordion-down">
+              <DottedRow 
+                label={t('grossLabel')}
+                value={getDualValue(grossAnnualRent).primary}
+                secondaryValue={getDualValue(grossAnnualRent).secondary}
+              />
+              
+              {unitSizeSqf > 0 && (
+                <DottedRow 
+                  label={`− ${t('serviceLabel')}`}
+                  value={`-${getDualValue(annualServiceCharges).primary}`}
+                  valueClassName="text-red-400"
+                />
+              )}
+              
+              <div className="flex items-center gap-2 pt-2 border-t border-theme-border/30">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
+                  {t('grossLabel')}: {grossYield.toFixed(1)}%
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold">
+                  {t('netLabel')}: {netYield.toFixed(1)}%
+                </span>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Short-Term Section */}
