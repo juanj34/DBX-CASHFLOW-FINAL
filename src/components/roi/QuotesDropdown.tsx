@@ -55,6 +55,8 @@ export const QuotesDropdown = ({
       // Clear local storage for fresh start
       localStorage.removeItem('cashflow_quote_draft');
       localStorage.removeItem('cashflow-configurator-state');
+      localStorage.removeItem('cashflow-configurator-state-v2');
+      localStorage.removeItem('cashflow_configurator_open');
       // Navigate without reload - let React handle the state reset
       navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
     }
