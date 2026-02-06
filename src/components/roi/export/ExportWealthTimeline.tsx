@@ -140,15 +140,15 @@ export const ExportWealthTimeline = ({
     if (language === 'es') {
       switch (phase) {
         case 'construction': return 'Constr';
-        case 'growth': return 'Crec';
-        case 'mature': return 'Maduro';
+        case 'growth': return 'Post-E';
+        case 'mature': return 'Madurez';
         default: return 'Entrega';
       }
     }
     switch (phase) {
       case 'construction': return 'Constr';
-      case 'growth': return 'Growth';
-      case 'mature': return 'Mature';
+      case 'growth': return 'Post-HO';
+      case 'mature': return 'Maturity';
       default: return 'Handover';
     }
   };
@@ -156,10 +156,10 @@ export const ExportWealthTimeline = ({
   const t = {
     wealthProjection: language === 'es' ? 'Proyección de Riqueza' : 'Wealth Projection',
     inYears: language === 'es' ? `en ${regularData.length - 1} años` : `in ${regularData.length - 1} years`,
-    construction: language === 'es' ? 'Construcción' : 'Construction',
+    construction: language === 'es' ? 'En Construcción' : 'Under Construction',
     handover: language === 'es' ? 'Entrega' : 'Handover',
-    growth: language === 'es' ? 'Crecimiento' : 'Growth',
-    mature: language === 'es' ? 'Maduro' : 'Mature',
+    growth: language === 'es' ? 'Post Entrega' : 'Post Handover',
+    mature: language === 'es' ? 'Madurez de Zona' : 'Zone Maturity',
   };
 
   const numColumns = projections.length;

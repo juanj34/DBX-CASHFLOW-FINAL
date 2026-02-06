@@ -25,9 +25,9 @@ export const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = ({
   className,
 }) => {
   const phases = [
-    { key: 'construction' as const, label: 'Construction', color: 'bg-cyan-500' },
-    { key: 'growth' as const, label: 'Growth', color: 'bg-emerald-500' },
-    { key: 'mature' as const, label: 'Mature', color: 'bg-blue-500' },
+    { key: 'construction' as const, label: 'Under Construction', color: 'bg-cyan-500' },
+    { key: 'growth' as const, label: 'Post Handover', color: 'bg-emerald-500' },
+    { key: 'mature' as const, label: 'Zone Maturity', color: 'bg-blue-500' },
   ];
 
   const maxRate = Math.max(

@@ -149,8 +149,8 @@ export const WealthProjectionTimeline = ({
     if (isHandover) return 'Handover';
     switch (phase) {
       case 'construction': return 'Constr';
-      case 'growth': return 'Growth';
-      case 'mature': return 'Mature';
+      case 'growth': return 'Post-HO';
+      case 'mature': return 'Maturity';
       case 'handover': return 'Handover';
     }
   };
@@ -241,7 +241,7 @@ export const WealthProjectionTimeline = ({
       <div className="flex items-center justify-center gap-3 sm:gap-4 mt-4 pt-3 border-t border-theme-border">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-orange-400" />
-          <span className="text-[10px] text-theme-text-muted">Construction</span>
+          <span className="text-[10px] text-theme-text-muted">Under Construction</span>
         </div>
         {hasHandover && (
           <div className="flex items-center gap-1.5">
@@ -251,11 +251,11 @@ export const WealthProjectionTimeline = ({
         )}
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-green-400" />
-          <span className="text-[10px] text-theme-text-muted">Growth</span>
+          <span className="text-[10px] text-theme-text-muted">Post Handover</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-cyan-400" />
-          <span className="text-[10px] text-theme-text-muted">Mature</span>
+          <span className="text-[10px] text-theme-text-muted">Zone Maturity</span>
         </div>
       </div>
     </div>

@@ -383,15 +383,15 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         <div className="flex items-center justify-center gap-3 text-[9px]">
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-            <span className="text-theme-text-muted">Construction</span>
+            <span className="text-theme-text-muted">{language === 'es' ? 'En Construcción' : 'Under Construction'}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-theme-text-muted">Growth ({growthPeriodYears}y)</span>
+            <span className="text-theme-text-muted">{language === 'es' ? `Post Entrega (${growthPeriodYears}a)` : `Post Handover (${growthPeriodYears}y)`}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-            <span className="text-theme-text-muted">Mature</span>
+            <span className="text-theme-text-muted">{language === 'es' ? 'Madurez de Zona' : 'Zone Maturity'}</span>
           </div>
         </div>
       </div>
@@ -433,10 +433,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         
         <CollapsibleContent className="pt-2">
           <div className="space-y-3 pl-4 border-l-2 border-purple-500/30">
-            {/* Construction */}
+            {/* Under Construction */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">Construction</label>
+                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'En Construcción' : 'Under Construction'}</label>
                 <InfoTooltip translationKey="tooltipConstructionAppreciation" />
               </div>
               <div className="flex items-center gap-2">
@@ -452,10 +452,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               </div>
             </div>
 
-            {/* Growth */}
+            {/* Post Handover */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">Growth ({inputs.growthPeriodYears ?? 5}y)</label>
+                <label className="text-xs text-theme-text-muted">{language === 'es' ? `Post Entrega (${inputs.growthPeriodYears ?? 5}a)` : `Post Handover (${inputs.growthPeriodYears ?? 5}y)`}</label>
                 <InfoTooltip translationKey="tooltipGrowthAppreciation" />
               </div>
               <div className="flex items-center gap-2">
@@ -471,10 +471,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               </div>
             </div>
 
-            {/* Growth Period */}
+            {/* Post Handover Duration */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">Growth Duration</label>
+                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Duración Post Entrega' : 'Post Handover Duration'}</label>
                 <InfoTooltip translationKey="tooltipGrowthYears" />
               </div>
               <div className="flex items-center gap-2">
@@ -490,10 +490,10 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
               </div>
             </div>
 
-            {/* Mature */}
+            {/* Zone Maturity */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">Mature</label>
+                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Madurez de Zona' : 'Zone Maturity'}</label>
                 <InfoTooltip translationKey="tooltipMatureAppreciation" />
               </div>
               <div className="flex items-center gap-2">

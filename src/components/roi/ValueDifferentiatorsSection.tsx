@@ -172,8 +172,8 @@ export const ValueDifferentiatorsSection = ({
             <Progress value={bonusProgress} className="h-1.5 bg-theme-border" />
             <p className="text-[10px] text-theme-text-muted text-right">
               {language === 'es' 
-                ? `Aplicado a todas las fases de apreciación (construcción, crecimiento, madurez)`
-                : `Applied to all appreciation phases (construction, growth, mature)`}
+                ? `Aplicado a todas las fases (en construcción, post entrega, madurez de zona)`
+                : `Applied to all phases (under construction, post handover, zone maturity)`}
             </p>
           </div>
         </>
