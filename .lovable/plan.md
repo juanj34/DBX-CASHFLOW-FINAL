@@ -1,42 +1,50 @@
 
 
-# Plan: Modern Exit Graph Redesign
+# Plan: Fix Graph Labels & Enhanced Exit Marker Tooltips
 
-## Problem Analysis
+## Problems Identified
 
-Looking at the screenshot reference ("Property Appreciation" modal), the current `CompactExitGraphCard` is missing:
+Looking at the screenshot:
 
-1. **Y-axis labels** - No value scale on left side (should show 746K, 834K, 923K, 1.0M, 1.1M)
-2. **Base price line** - Missing horizontal dashed line with "Base: 785K" label
-3. **Proper X-axis** - Should show month intervals (0mo, 2mo, 4mo... Handover)
-4. **Exit markers on curve** - Points with labels should be ON the curve, not floating
-5. **Cards below are ugly** - Faded black `from-black/50 to-black/30` looks bad, should be clean themed cards
+1. **Label Overlap Issue**: At the start of the graph (month 0), there are overlapping numbers - "785K" from the Y-axis and "785K" from the base marker are colliding
+2. **Exit Marker Hover**: When hovering over exit markers, user wants to see detailed info including "Equity In"
+3. **General Hover**: The current curve hover shows month/price but not enough context
 
-## Solution: Redesign to Match Reference
+---
 
-### Graph Improvements
+## Solution
 
-| Element | Before | After |
-|---------|--------|-------|
-| Y-axis | None | Show 5 price ticks with labels (746K, 834K, etc.) |
-| X-axis | "0", "🔑 11m", "14m" | Show intervals: 0mo, 2mo, 4mo... Handover |
-| Base line | None | Horizontal dashed gray line with "Base: 785K" label |
-| Curve | Thick gradient | Same cyan-to-green gradient, 2.5px stroke |
-| Exit markers | Floating boxes above curve | Dots on curve + vertical dashed line down |
-| Padding | `{ top: 20, right: 10, bottom: 18, left: 10 }` | `{ top: 40, right: 40, bottom: 45, left: 60 }` to fit Y-axis labels |
+### 1. Fix Base Label Overlap
 
-### Card Improvements
+Remove the duplicate "Base: 785K" text that appears on top of the Y-axis labels. Instead, show a clean base marker dot without redundant label.
 
-**Before (faded black):**
-```tsx
-className="bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md"
+**Before:**
+```
+817K   785K←Base:785K  (overlapping!)
+       ●
 ```
 
-**After (clean theme cards):**
-```tsx
-className="bg-theme-bg/80 border border-theme-border rounded-xl"
-// With handover getting special white border
+**After:**
 ```
+817K                    
+       ●←─ Base
+```
+
+### 2. Enhanced Exit Marker Hover State
+
+Add a `hoveredExit` state that tracks when mouse is near an exit point. When hovering on an exit marker, show a detailed tooltip card:
+
+| Field | Value |
+|-------|-------|
+| Exit X | Month 32 |
+| Exit Price | 999K |
+| Equity In | 285K |
+| Net Gain | +215K |
+| ROE | 9.8%/yr |
+
+### 3. Refine Scenarios Calculation
+
+Update the `scenarios` memo to include `equityDeployed` from `calculateExitScenario` so we can display it in the tooltip.
 
 ---
 
@@ -44,229 +52,176 @@ className="bg-theme-bg/80 border border-theme-border rounded-xl"
 
 ### File: `src/components/roi/snapshot/CompactExitGraphCard.tsx`
 
-#### 1. Increase SVG Height & Padding
+#### Changes Overview
+
+| Line Range | Change |
+|------------|--------|
+| 23 | Add `hoveredExitIndex` state for exit marker hover |
+| 105-128 | Update scenarios memo to include `equityDeployed` and `totalCapital` |
+| 253-260 | Remove redundant base price label text (keep only the small marker) |
+| 277-289 | Simplify base marker - just dot + "Base" label below |
+| 317-360 | Add exit marker hover detection and enhanced tooltip |
+
+#### New State
 
 ```tsx
-// Current:
-const width = 400;
-const height = 140;
-const padding = { top: 20, right: 10, bottom: 18, left: 10 };
-
-// New - more room for labels:
-const width = 420;
-const height = 180;
-const padding = { top: 30, right: 30, bottom: 40, left: 55 };
+const [hoveredExitIndex, setHoveredExitIndex] = useState<number | null>(null);
 ```
 
-#### 2. Add Y-Axis Values & Labels
+#### Updated Scenarios Memo
 
 ```tsx
-// Calculate Y-axis ticks (5 values from minValue to maxValue)
-const yAxisValues = useMemo(() => {
-  const range = maxValue - minValue;
-  const step = range / 4;
-  return Array.from({ length: 5 }, (_, i) => minValue + step * i);
-}, [minValue, maxValue]);
-
-// In SVG:
-{yAxisValues.map((value, i) => (
-  <g key={`y-${i}`}>
-    {/* Grid line */}
-    <line
-      x1={padding.left}
-      y1={yScale(value)}
-      x2={width - padding.right}
-      y2={yScale(value)}
-      stroke="hsl(var(--theme-border))"
-      strokeDasharray="3,3"
-      opacity="0.3"
-    />
-    {/* Label */}
-    <text
-      x={padding.left - 8}
-      y={yScale(value)}
-      fill="hsl(var(--theme-text-muted))"
-      fontSize="9"
-      textAnchor="end"
-      dominantBaseline="middle"
-    >
-      {formatCurrencyShort(value, 'AED')}
-    </text>
-  </g>
-))}
+const scenarios = useMemo(() => {
+  if (basePrice <= 0) return [];
+  return exitScenarios.map((exitMonths) => {
+    const scenarioResult = calculateExitScenario(
+      exitMonths,
+      basePrice,
+      totalMonths,
+      inputs,
+      calculations.totalEntryCosts
+    );
+    
+    const isHandover = Math.abs(exitMonths - totalMonths) <= 1;
+    const netGain = scenarioResult.exitPrice - basePrice;
+    
+    return {
+      exitMonths,
+      exitPrice: scenarioResult.exitPrice,
+      netGain,
+      annualizedROE: scenarioResult.annualizedROE,
+      equityDeployed: scenarioResult.equityDeployed,  // NEW
+      totalCapital: scenarioResult.totalCapital,        // NEW (Equity + Entry Costs)
+      isHandover,
+    };
+  });
+}, [...]);
 ```
 
-#### 3. Add Base Price Dashed Line
+#### Remove Base Label Overlap
 
+Current code (lines 253-260):
 ```tsx
-{/* Base price horizontal dashed line */}
-<line
-  x1={padding.left}
-  y1={yScale(basePrice)}
-  x2={width - padding.right}
-  y2={yScale(basePrice)}
-  stroke="#64748b"
-  strokeWidth="1"
-  strokeDasharray="6,3"
-  opacity="0.6"
-/>
 <text
-  x={padding.left + 5}
+  x={padding.left + 4}
   y={yScale(basePrice) - 6}
-  fill="#64748b"
+  fill="hsl(var(--theme-text-muted))"
   fontSize="9"
 >
-  Base: {formatCurrencyShort(basePrice, 'AED')}
+  Base: {formatCurrencyShort(basePrice, 'AED')}  // REMOVE THIS
 </text>
 ```
 
-#### 4. Improve X-Axis Labels
-
+Replace with simple "Base" label at bottom:
 ```tsx
-// Generate time interval labels (0mo, 2mo, 4mo... Handover)
-const xAxisLabels = useMemo(() => {
-  const labels: number[] = [];
-  const step = Math.ceil(chartMaxMonth / 6);
-  for (let m = 0; m <= chartMaxMonth; m += step) {
-    labels.push(m);
-  }
-  // Ensure handover month is included
-  if (!labels.includes(totalMonths)) {
-    labels.push(totalMonths);
-  }
-  return labels.sort((a, b) => a - b);
-}, [chartMaxMonth, totalMonths]);
-
-// Render:
-{xAxisLabels.map(months => (
-  <text
-    key={months}
-    x={xScale(months)}
-    y={height - padding.bottom + 15}
-    fill={months === totalMonths ? "hsl(var(--theme-text))" : "hsl(var(--theme-text-muted))"}
-    fontSize="9"
-    fontWeight={months === totalMonths ? "bold" : "normal"}
-    textAnchor="middle"
-  >
-    {months === totalMonths ? 'Handover' : `${months}mo`}
-  </text>
-))}
+<text
+  x={xScale(0)}
+  y={height - padding.bottom + 12}
+  fill="hsl(var(--theme-text-muted))"
+  fontSize="8"
+  textAnchor="middle"
+>
+  Base
+</text>
 ```
 
-#### 5. Redesign Exit Markers on Curve
-
-Replace floating boxes with clean markers on the curve:
+#### Enhanced Exit Marker with Hover
 
 ```tsx
 {scenarios.map((scenario, index) => {
   const x = xScale(scenario.exitMonths);
   const y = yScale(scenario.exitPrice);
-  const isHandover = scenario.isHandover;
-  const markerColor = isHandover ? '#ffffff' : 'hsl(var(--theme-accent))';
+  const isHovered = hoveredExitIndex === index;
   
   return (
-    <g key={scenario.exitMonths}>
-      {/* Vertical dashed line from marker to X-axis */}
-      <line
-        x1={x}
-        y1={y}
-        x2={x}
-        y2={height - padding.bottom}
-        stroke={markerColor}
-        strokeWidth="1"
-        strokeDasharray="3,3"
-        opacity="0.4"
+    <g 
+      key={scenario.exitMonths}
+      onMouseEnter={() => setHoveredExitIndex(index)}
+      onMouseLeave={() => setHoveredExitIndex(null)}
+      style={{ cursor: 'pointer' }}
+    >
+      {/* Marker circle - larger hit area */}
+      <circle cx={x} cy={y} r="12" fill="transparent" />
+      
+      {/* Visible marker */}
+      <circle cx={x} cy={y} r={isHovered ? 8 : 6} 
+        fill={scenario.isHandover ? "hsl(var(--theme-accent))" : "hsl(142.1 76.2% 36.3%)"} 
+        className="transition-all duration-150"
       />
+      <circle cx={x} cy={y} r={isHovered ? 4 : 3} fill="hsl(var(--theme-card))" />
       
-      {/* Marker dot on curve */}
-      <circle cx={x} cy={y} r="7" fill="hsl(var(--theme-card))" stroke={markerColor} strokeWidth="2" />
-      <circle cx={x} cy={y} r="3" fill={markerColor} />
-      
-      {/* Small label above marker */}
-      <text
-        x={x}
-        y={y - 14}
-        fill="hsl(var(--theme-text))"
-        fontSize="9"
-        fontWeight="bold"
-        textAnchor="middle"
-      >
+      {/* Price label above */}
+      <text x={x} y={y - 14} ...>
         {formatCurrencyShort(scenario.exitPrice, 'AED')}
       </text>
+      
+      {/* Hover tooltip - detailed info */}
+      {isHovered && (
+        <g>
+          <rect x={x - 55} y={y - 75} width="110" height="55" rx="6" 
+            fill="hsl(var(--theme-card))" 
+            stroke="hsl(var(--theme-border))" 
+          />
+          <text x={x} y={y - 60} textAnchor="middle" fontSize="9">
+            {scenario.isHandover ? '🔑 Handover' : `Exit ${index + 1}`} • {scenario.exitMonths}m
+          </text>
+          <text x={x - 48} y={y - 46} fontSize="8" fill="muted">Equity In:</text>
+          <text x={x + 48} y={y - 46} textAnchor="end" fontWeight="bold">
+            {formatCurrencyShort(scenario.totalCapital, 'AED')}
+          </text>
+          <text x={x - 48} y={y - 34} fontSize="8" fill="muted">Net Gain:</text>
+          <text x={x + 48} y={y - 34} textAnchor="end" fill="green">
+            +{formatCurrencyShort(scenario.netGain, 'AED')}
+          </text>
+          <text x={x - 48} y={y - 22} fontSize="8" fill="muted">ROE:</text>
+          <text x={x + 48} y={y - 22} textAnchor="end" fill="green">
+            {scenario.annualizedROE.toFixed(1)}%/yr
+          </text>
+        </g>
+      )}
     </g>
   );
 })}
 ```
 
-#### 6. Fix Exit Cards - Clean Theme
-
-Remove the ugly faded black background:
-
-```tsx
-// Before (ugly):
-className="bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md border border-white/10"
-
-// After (clean theme cards):
-className={cn(
-  "bg-theme-bg/90 border rounded-xl p-2.5 text-center transition-colors",
-  isHandover 
-    ? "border-white/50 bg-white/5" 
-    : scenario.isPostHandover 
-      ? "border-green-500/30 hover:border-green-500/50" 
-      : "border-theme-border hover:border-theme-accent/50"
-)}
-```
-
 ---
 
-## Visual Comparison
+## Visual Result
 
-### Graph Before → After
+### Graph (Fixed Labels)
 
-**Before:**
 ```text
-┌────────────────────────────────┐
-│  [no Y-axis]                   │
-│        ╱────curve──────        │
-│  ┌──┐╱  [floating boxes]       │
-│  └──┘                          │
-│──────────────────────────────  │
-│  0       🔑11m           14m   │
-└────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│ 1.1M ─────────────────────────────────  │
+│ 999K ─────────────────────────● 999K    │
+│ 911K ───────────────● 879K              │
+│ 817K ───────●                           │
+│ 722K ●                                  │
+│      ╎        ╎        ╎        ╎       │
+│     Base     7m    🔑12m      28m  Exit1│
+└─────────────────────────────────────────┘
 ```
 
-**After:**
+### Exit Marker Hover Tooltip
+
 ```text
-┌────────────────────────────────────┐
-│ 1.1M ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌  │
-│ 1.0M ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ ● 999K    │
-│ 923K ╌╌╌╌╌╌╌╌╌╌╌╌ ●───────────    │
-│ 834K ╌╌╌╌╌╌╌╌ ●──────────────────  │
-│ 746K ┄┄┄┄┄┄┄┄┄┄ Base: 785K ┄┄┄┄┄  │
-│      ╎    ╎    ╎    ╎    ╎        │
-│     0mo  2mo  4mo  6mo  Handover  │
-└────────────────────────────────────┘
+        ┌─────────────────┐
+        │ Exit 1 • 32m    │
+        │ Equity In: 285K │
+        │ Net Gain: +215K │
+        │ ROE: 9.8%/yr    │
+        └─────────────────┘
+              ●
 ```
 
-### Cards Before → After
+### Exit Cards (Unchanged - Already Compact)
 
-**Before (faded black):**
 ```text
-┌─────────┐
-│ bg-black│  <- ugly gray/black
-│   17%   │
-│  +142K  │
-└─────────┘
-```
-
-**After (clean theme):**
-```text
-┌─────────┐
-│ bg-theme│  <- clean card background
-│   17%   │
-│  +142K  │
-│  32m    │
-└─────────┘
+┌─────────────┐ ┌─────────────┐
+│ 🔑 Handover │ │ ① Exit 1    │
+│   +170K     │ │   +215K     │
+│ 12m • 45% ROE│ │ 32m • 9.8% ROE│
+└─────────────┘ └─────────────┘
 ```
 
 ---
@@ -275,5 +230,5 @@ className={cn(
 
 | File | Changes |
 |------|---------|
-| `src/components/roi/snapshot/CompactExitGraphCard.tsx` | Increase dimensions, add Y-axis, add base price line, improve X-axis, clean markers, fix card styling |
+| `src/components/roi/snapshot/CompactExitGraphCard.tsx` | Add hover state, fix label overlap, enhance exit marker tooltips with equity/gain/ROE |
 
