@@ -240,6 +240,10 @@ const OICalculatorContent = () => {
     localStorage.removeItem('cashflow-configurator-state-v2');
     localStorage.removeItem('cashflow_configurator_open');
     
+    // IMPORTANT: Clear existing working draft content BEFORE navigating
+    // This ensures we get a fresh start, not the previous quote's data
+    await clearWorkingDraft();
+    
     // Create draft first, then navigate once (eliminates double-navigation refresh)
     const newId = await createDraft();
     if (newId) {
@@ -248,7 +252,7 @@ const OICalculatorContent = () => {
       // Fallback: navigate to generator if draft creation fails
       navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
     }
-  }, [navigate, isWorkingDraftWithContent, createDraft]);
+  }, [navigate, isWorkingDraftWithContent, createDraft, clearWorkingDraft]);
 
   // Handle load quote with unsaved draft check
   const handleLoadQuote = useCallback(() => {
