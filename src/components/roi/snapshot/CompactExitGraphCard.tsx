@@ -78,10 +78,10 @@ export const CompactExitGraphCard = ({
     return { primary: dual.primary, secondary: dual.secondary };
   };
   
-  // Chart dimensions - compact
+  // Chart dimensions - larger and more imposing
   const width = 400;
-  const height = 140;
-  const padding = { top: 35, right: 20, bottom: 25, left: 45 };
+  const height = 200;
+  const padding = { top: 40, right: 20, bottom: 30, left: 45 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   
@@ -185,23 +185,37 @@ export const CompactExitGraphCard = ({
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
           {/* Gradient definitions */}
           <defs>
+            <linearGradient id="chartBgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="rgba(0,0,0,0.5)" />
+              <stop offset="100%" stopColor="rgba(0,0,0,0.15)" />
+            </linearGradient>
             <linearGradient id="exitCurveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#CCFF00" />
               <stop offset={`${(totalMonths / chartMaxMonth) * 100}%`} stopColor="#CCFF00" />
               <stop offset="100%" stopColor="#22c55e" />
             </linearGradient>
             <linearGradient id="exitAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.15" />
+              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.2" />
               <stop offset="100%" stopColor="#CCFF00" stopOpacity="0" />
             </linearGradient>
             <filter id="glowExit" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
           </defs>
+          
+          {/* Dark gradient background for chart area */}
+          <rect
+            x={padding.left}
+            y={padding.top}
+            width={chartWidth}
+            height={chartHeight}
+            rx="8"
+            fill="url(#chartBgGradient)"
+          />
           
           {/* Base price reference line */}
           <line
@@ -241,12 +255,12 @@ export const CompactExitGraphCard = ({
             fill="url(#exitAreaGradient)"
           />
           
-          {/* Curve */}
+          {/* Curve - thicker stroke */}
           <path
             d={curvePath}
             fill="none"
             stroke="url(#exitCurveGradient)"
-            strokeWidth="2"
+            strokeWidth="3"
             strokeLinecap="round"
           />
           
@@ -336,107 +350,65 @@ export const CompactExitGraphCard = ({
         </svg>
       </div>
       
-      {/* Exit Summary Cards */}
-      <div className="p-2 space-y-2 flex-1">
-        {scenarios.map((scenario) => {
-          const isHandover = scenario.isHandover;
-          
-          return (
-            <div 
-              key={scenario.exitMonths}
-              className={cn(
-                "p-3 rounded-lg transition-colors border",
-                isHandover 
-                  ? "bg-cyan-500/10 border-cyan-500/30"
-                  : scenario.isPostHandover 
-                    ? "bg-green-500/5 border-green-500/20" 
-                    : "bg-theme-bg/50 border-theme-border/30"
-              )}
-            >
-              {/* Header row: timing & status */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
+      {/* Horizontal Exit Cards */}
+      <div className="p-3">
+        <div className={cn(
+          "grid gap-2",
+          scenarios.length === 2 ? "grid-cols-2" : "grid-cols-3 sm:grid-cols-4"
+        )}>
+          {scenarios.map((scenario) => {
+            const isHandover = scenario.isHandover;
+            
+            return (
+              <div 
+                key={scenario.exitMonths}
+                className={cn(
+                  "bg-black/30 backdrop-blur-sm border rounded-lg p-2.5 text-center",
+                  isHandover 
+                    ? "border-cyan-500/40"
+                    : scenario.isPostHandover 
+                      ? "border-green-500/30" 
+                      : "border-theme-border/40"
+                )}
+              >
+                {/* Exit Number + Months */}
+                <div className="flex items-center justify-center gap-1 mb-1">
                   {isHandover ? (
-                    <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Key className="w-3 h-3" />
-                      🔑 Handover
-                    </span>
+                    <span className="text-[10px] font-bold text-cyan-400">🔑</span>
                   ) : (
-                    <span className="text-xs font-bold text-theme-accent bg-theme-accent/10 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold text-theme-accent">
                       #{scenario.exitNumber}
                     </span>
                   )}
-                  <span className="text-sm font-medium text-theme-text">{scenario.exitMonths}m</span>
-                  <span className="text-[10px] text-theme-text-muted">{scenario.dateStr}</span>
+                  <span className="text-xs text-theme-text-muted">
+                    {scenario.exitMonths}m
+                  </span>
                 </div>
                 
-                {/* Status Badge */}
-                {isHandover ? (
-                  <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">100% built</span>
-                ) : scenario.isPostHandover ? (
-                  <span className="text-[10px] text-green-400 bg-green-400/10 px-2 py-0.5 rounded flex items-center gap-1">
-                    <Rocket className="w-3 h-3" />
-                    +{scenario.monthsAfterHandover}mo
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded flex items-center gap-1">
-                    <Hammer className="w-3 h-3" />
-                    {scenario.constructionPct.toFixed(0)}% built
-                  </span>
-                )}
-              </div>
-              
-              {/* Hero Numbers Grid */}
-              <div className="grid grid-cols-3 gap-2 text-center">
+                {/* Hero ROE - Big & Bold */}
+                <span className={cn(
+                  "text-2xl font-black font-mono block",
+                  scenario.trueROE >= 20 ? "text-green-400" : 
+                  scenario.trueROE >= 10 ? "text-theme-accent" : 
+                  scenario.trueROE >= 0 ? "text-amber-400" : "text-red-400"
+                )}>
+                  {scenario.trueROE?.toFixed(0) ?? 0}%
+                </span>
+                <span className="text-[8px] text-theme-text-muted uppercase tracking-wide">ROE</span>
+                
                 {/* Profit */}
-                <div className="space-y-0.5">
-                  <span className="text-[9px] text-theme-text-muted uppercase tracking-wide block">Profit</span>
+                <div className="mt-1.5 pt-1.5 border-t border-theme-border/20">
                   <span className={cn(
-                    "text-base font-bold font-mono block",
-                    scenario.trueProfit >= 0 ? "text-green-400" : "text-red-400"
+                    "text-xs font-bold",
+                    scenario.trueProfit >= 0 ? "text-green-400/80" : "text-red-400/80"
                   )}>
-                    {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrency(scenario.trueProfit, 'AED' as Currency)}
+                    {scenario.trueProfit >= 0 ? '+' : ''}{formatCurrencyShort(scenario.trueProfit, 'AED' as Currency)}
                   </span>
-                  {currency !== 'AED' && getDualValue(scenario.trueProfit).secondary && (
-                    <span className="text-[9px] text-theme-text-muted">({getDualValue(scenario.trueProfit).secondary})</span>
-                  )}
-                </div>
-                
-                {/* ROE */}
-                <div className="space-y-0.5">
-                  <span className="text-[9px] text-theme-text-muted uppercase tracking-wide block">ROE</span>
-                  <span className={cn(
-                    "text-xl font-bold font-mono block",
-                    scenario.trueROE >= 20 ? "text-green-400" : 
-                    scenario.trueROE >= 10 ? "text-theme-accent" : 
-                    scenario.trueROE >= 0 ? "text-amber-400" : "text-red-400"
-                  )}>
-                    {scenario.trueROE?.toFixed(0) ?? 0}%
-                  </span>
-                  <span className="text-[9px] text-theme-text-muted">{scenario.annualizedROE?.toFixed(1)}%/yr</span>
-                </div>
-                
-                {/* Hold Time */}
-                <div className="space-y-0.5">
-                  <span className="text-[9px] text-theme-text-muted uppercase tracking-wide block">Hold</span>
-                  <span className="text-base font-bold font-mono text-theme-text block">
-                    {scenario.exitMonths < 12 
-                      ? `${scenario.exitMonths}m` 
-                      : `${(scenario.exitMonths / 12).toFixed(1)}y`}
-                  </span>
-                  <span className="text-[9px] text-theme-text-muted">{scenario.dateStr}</span>
                 </div>
               </div>
-              
-              {/* Capital → Value row */}
-              <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t border-theme-border/20 text-[10px] text-theme-text-muted">
-                <span>Capital: {formatCurrency(scenario.totalCapitalDeployed, 'AED' as Currency)}</span>
-                <ArrowRight className="w-3 h-3" />
-                <span>Value: {formatCurrency(scenario.exitPrice, 'AED' as Currency)}</span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
