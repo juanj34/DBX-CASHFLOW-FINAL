@@ -1,223 +1,165 @@
 
-# Plan: Extend Booking Date Range & Add Drag-Drop AI Extractor Zone
+# Plan: Improve Growth Phase Terminology for Client Clarity
 
 ## Overview
 
-Two enhancements requested:
-1. **Extend booking year range** to include past years (for loading old client portfolio quotes)
-2. **Add a drag-and-drop zone** in the Payment section that opens the AI Payment Plan Extractor with files pre-loaded
+The current phase names "Construction", "Growth", and "Mature" are technical and confusing for clients. The proposed new terminology is more descriptive and investor-friendly:
+
+| Current | New (English) | New (Spanish) |
+|---------|--------------|---------------|
+| Construction | Under Construction | En Construccion |
+| Growth | Post Handover | Post Entrega |
+| Mature | Zone Maturity | Madurez de Zona |
 
 ---
 
-## Problem Analysis
+## Files Requiring Updates
 
-### Issue 1: Year Range Too Limited
+Based on analysis, the phase labels appear in **13 files**:
 
-Currently in `src/components/roi/configurator/types.ts`:
+### 1. Configurator Section (User-facing controls)
+**File: `src/components/roi/configurator/AppreciationSection.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| Phase legend | 386 | "Construction" | "Under Construction" |
+| Phase legend | 390 | "Growth ({years}y)" | "Post Handover ({years}y)" |
+| Phase legend | 394 | "Mature" | "Zone Maturity" |
+| Slider label | 439 | "Construction" | "Under Construction" |
+| Slider label | 458 | "Growth ({years}y)" | "Post Handover ({years}y)" |
+| Slider label | 477 | "Growth Duration" | "Post Handover Duration" |
+| Slider label | 496 | "Mature" | "Zone Maturity" |
+
+### 2. Zone Appreciation Indicator (Zone info display)
+**File: `src/components/roi/ZoneAppreciationIndicator.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| Phase card | 86 | "Construction" | "Under Construction" |
+| Phase card | 91 | "Growth ({years}y)" | "Post Handover ({years}y)" |
+| Phase card | 96 | "Mature" | "Zone Maturity" |
+
+### 3. OI Growth Curve (Chart labels)
+**File: `src/components/roi/OIGrowthCurve.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| Phase labels | 165 | "Construction" | "Under Construction" |
+| Phase labels | 169 | "Growth" | "Post Handover" |
+| Phase labels | 173 | "Mature" | "Zone Maturity" |
+
+### 4. Wealth Projection Timeline (Snapshot view)
+**File: `src/components/roi/snapshot/WealthProjectionTimeline.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| getPhaseLabel function | 151 | "Constr" | "Constr" (keep short for space) |
+| getPhaseLabel function | 152 | "Growth" | "Post-HO" |
+| getPhaseLabel function | 153 | "Mature" | "Mature" (keep for space) |
+| Legend items | ~245 | "Construction" | "Under Construction" |
+| Legend items | ~252 | "Growth" | "Post Handover" |
+| Legend items | ~257 | "Mature" | "Zone Maturity" |
+
+### 5. Export Wealth Timeline (PDF export)
+**File: `src/components/roi/export/ExportWealthTimeline.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| getPhaseLabel (en) | 149 | "Constr" | "Constr" |
+| getPhaseLabel (en) | 150 | "Growth" | "Post-HO" |
+| getPhaseLabel (en) | 151 | "Mature" | "Mature" |
+| getPhaseLabel (es) | 142 | "Constr" | "Constr" |
+| getPhaseLabel (es) | 143 | "Crec" | "Post-E" |
+| getPhaseLabel (es) | 144 | "Maduro" | "Maduro" |
+| Legend (en) | 159 | "Construction" | "Under Construction" |
+| Legend (en) | 161 | "Growth" | "Post Handover" |
+| Legend (en) | 162 | "Mature" | "Zone Maturity" |
+| Legend (es) | 159 | "Construccion" | "En Construccion" |
+| Legend (es) | 161 | "Crecimiento" | "Post Entrega" |
+| Legend (es) | 162 | "Maduro" | "Madurez de Zona" |
+
+### 6. OI Yearly Projection Table
+**File: `src/components/roi/OIYearlyProjectionTable.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| Footer legend | 174 | "{t('build')}" | Keep (using translation key) |
+| Footer legend | 175 | "{t('growth')}" | Update translation key |
+| Footer legend | 176 | "{t('mature')}" | Update translation key |
+| Status badge | 332 | "{t('growth')}" | Update translation key |
+| Status badge | 332 | "{t('mature')}" | Update translation key |
+
+### 7. Value Differentiators Section
+**File: `src/components/roi/ValueDifferentiatorsSection.tsx`**
+
+| Location | Line | Current | New |
+|----------|------|---------|-----|
+| Tooltip text (en) | 176 | "construction, growth, mature" | "under construction, post handover, zone maturity" |
+| Tooltip text (es) | 175 | "construccion, crecimiento, madurez" | "en construccion, post entrega, madurez de zona" |
+
+---
+
+## Translation Keys to Add/Update
+
+**File: Translation system (LanguageContext or i18n files)**
+
 ```typescript
-export const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
-// Results in: [2024, 2025, 2026, ... 2035]
-```
+// English
+phaseUnderConstruction: "Under Construction",
+phasePostHandover: "Post Handover", 
+phaseZoneMaturity: "Zone Maturity",
 
-And in `PaymentPlanExtractor.tsx`:
-```typescript
-const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => currentYear + i);
-// Results in: [2026, 2027, 2028, 2029, 2030]
-```
-
-**Solution**: Extend years to go back to 2018 (covering ~8 years of historical data) while still projecting forward.
-
-### Issue 2: No Quick Drag-Drop to AI Extractor
-
-Currently, users must:
-1. Click "AI Import" button
-2. Wait for sheet to open
-3. Drag/upload files
-4. Click extract
-
-**Solution**: Add a subtle drop zone in the Payment section header that:
-- Shows a visual indicator when dragging files over
-- Automatically opens the AI Extractor with files pre-loaded
-- Provides a faster workflow for power users
-
----
-
-## Implementation Details
-
-### Phase 1: Extend Year Ranges
-
-**File: `src/components/roi/configurator/types.ts`**
-
-Change the `years` constant to include past years:
-
-```typescript
-// Current:
-export const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
-
-// New: 8 years back + 8 years forward from current year
-const currentYear = new Date().getFullYear();
-export const years = Array.from({ length: 16 }, (_, i) => currentYear - 8 + i);
-// For 2026: [2018, 2019, 2020, ..., 2033]
-```
-
-**File: `src/components/roi/configurator/PaymentPlanExtractor.tsx`**
-
-Extend the YEARS constant for the custom date picker:
-
-```typescript
-// Current:
-const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => currentYear + i);
-
-// New: Include 8 years back
-const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 13 }, (_, i) => currentYear - 8 + i);
-// For 2026: [2018, 2019, ..., 2030]
+// Spanish
+phaseUnderConstruction: "En Construccion",
+phasePostHandover: "Post Entrega",
+phaseZoneMaturity: "Madurez de Zona",
 ```
 
 ---
 
-### Phase 2: Add Drag-Drop Zone to Payment Section
+## Abbreviated Labels (for space-constrained areas)
 
-**File: `src/components/roi/configurator/PaymentSection.tsx`**
+For timelines, charts, and compact views, use abbreviated versions:
 
-Add a new drag-drop zone component that:
-1. Accepts file drops
-2. Processes files (same as FileUploadZone)
-3. Opens AI Extractor with files pre-populated
-
-```text
-┌─────────────────────────────────────────────────┐
-│ Payment Plan                          [AI Import]│
-│ Configure your payment schedule                  │
-├─────────────────────────────────────────────────┤
-│  ╔═══════════════════════════════════════════╗  │
-│  ║   🔮 Drop payment plan here               ║  │
-│  ║      PDF, image, or screenshot            ║  │
-│  ╚═══════════════════════════════════════════╝  │
-│                                                  │
-│  [Post-Handover Toggle]                         │
-│  ...                                            │
-└─────────────────────────────────────────────────┘
-```
-
-**Component structure:**
-
-```tsx
-// New component: AIExtractorDropZone
-interface AIExtractorDropZoneProps {
-  onFilesDropped: (files: FileWithPreview[]) => void;
-  disabled?: boolean;
-}
-
-const AIExtractorDropZone = ({ onFilesDropped, disabled }: AIExtractorDropZoneProps) => {
-  const [isDragging, setIsDragging] = useState(false);
-  
-  // File processing logic (reused from FileUploadZone)
-  const processFiles = useCallback(async (fileList: FileList | File[]) => {
-    // Convert files to FileWithPreview format
-    // Call onFilesDropped with processed files
-  }, [onFilesDropped]);
-
-  return (
-    <div
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      className={cn(
-        "border-2 border-dashed rounded-lg p-3 transition-all cursor-pointer",
-        isDragging 
-          ? "border-purple-400 bg-purple-500/10" 
-          : "border-theme-border/40 hover:border-purple-400/50",
-        disabled && "opacity-50 pointer-events-none"
-      )}
-      onClick={() => !disabled && onFilesDropped([])} // Click opens extractor empty
-    >
-      <div className="flex items-center justify-center gap-2 text-sm">
-        <Sparkles className="w-4 h-4 text-purple-400" />
-        <span className="text-theme-text-muted">
-          Drop payment plan here or <span className="text-purple-400">click to import</span>
-        </span>
-      </div>
-    </div>
-  );
-};
-```
-
-**Integration in PaymentSection:**
-
-```tsx
-// In PaymentSection component:
-
-// State for pre-loaded files
-const [preloadedFiles, setPreloadedFiles] = useState<FileWithPreview[]>([]);
-
-// Handler for drop zone
-const handleDropZoneFiles = (files: FileWithPreview[]) => {
-  setPreloadedFiles(files);
-  setShowAIExtractor(true);
-};
-
-// Modify PaymentPlanExtractor to accept initial files
-<PaymentPlanExtractor
-  open={showAIExtractor}
-  onOpenChange={(open) => {
-    setShowAIExtractor(open);
-    if (!open) setPreloadedFiles([]); // Clear on close
-  }}
-  existingBookingMonth={inputs.bookingMonth}
-  existingBookingYear={inputs.bookingYear}
-  onApply={handleAIExtraction}
-  initialFiles={preloadedFiles}  // NEW PROP
-/>
-```
-
-**Update PaymentPlanExtractor to support initial files:**
-
-```tsx
-interface PaymentPlanExtractorProps {
-  // ... existing props
-  initialFiles?: FileWithPreview[];
-}
-
-// In component:
-useEffect(() => {
-  if (initialFiles && initialFiles.length > 0 && open) {
-    setFiles(initialFiles);
-  }
-}, [initialFiles, open]);
-```
+| Phase | Full Label | Abbreviated |
+|-------|-----------|-------------|
+| Under Construction | Under Construction | Constr |
+| Post Handover | Post Handover | Post-HO |
+| Zone Maturity | Zone Maturity | Maturity |
 
 ---
 
-## Files to Modify
+## Implementation Approach
 
-| File | Changes |
-|------|---------|
-| `src/components/roi/configurator/types.ts` | Extend `years` array to include past 8 years |
-| `src/components/roi/configurator/PaymentPlanExtractor.tsx` | Extend `YEARS` array, add `initialFiles` prop |
-| `src/components/roi/configurator/PaymentSection.tsx` | Add drag-drop zone component and integration |
+1. **Create centralized phase label constants** - Add a utility file or extend existing constants to have a single source of truth for all phase labels (full and abbreviated, English and Spanish)
+
+2. **Update components** - Replace hardcoded strings with the new terminology
+
+3. **Keep internal variable names** - The TypeScript types (`'construction' | 'growth' | 'mature'`) and variable names (`constructionAppreciation`, etc.) remain unchanged to avoid breaking changes
+
+4. **Consistent colors preserved** - Orange for construction, Green for post-handover, Blue for maturity
 
 ---
 
-## User Experience
+## Visual Example
 
-### Before:
-- Booking year limited to 2024-2035
-- Must click AI Import → wait for sheet → drag file → click extract
+**Current:**
+```
+Construction → Growth → Mature
+    12%     →   8%   →   4%
+```
 
-### After:
-- Booking year supports 2018-2033 (adjusts dynamically with current year)
-- Can drag file directly onto Payment section → extractor opens with file ready
-- Click on drop zone also opens extractor (empty)
-- Existing AI Import button still works as before
+**New:**
+```
+Under Construction → Post Handover → Zone Maturity
+        12%        →      8%       →      4%
+```
 
 ---
 
 ## Technical Notes
 
-- The drop zone will reuse the same file processing logic from `FileUploadZone`
-- Files dragged in will be converted to `FileWithPreview[]` format
-- The extractor will automatically focus on the "Upload" tab when files are pre-loaded
-- The subtle styling ensures it doesn't distract from the payment configuration
+- Only display labels change; no calculation logic is affected
+- Database column names (`construction_appreciation`, etc.) remain unchanged
+- Variable names in code remain unchanged for backward compatibility
+- Tooltips and info icons will use the new terminology
