@@ -1,320 +1,192 @@
 
-# Quote System Reliability Overhaul
+# Plan: Extend Booking Date Range & Add Drag-Drop AI Extractor Zone
 
-## Problem Summary
+## Overview
 
-The quote creation system has multiple race conditions and inconsistent behaviors across different entry points that cause:
-1. **Unnamed/empty quotes getting saved** to the database
-2. **Old draft data appearing** when creating new quotes
-3. **Different behaviors** from Dashboard, Generator, Quotes list, and Client pages
-4. **Working drafts not being properly cleared** before new quote creation
+Two enhancements requested:
+1. **Extend booking year range** to include past years (for loading old client portfolio quotes)
+2. **Add a drag-and-drop zone** in the Payment section that opens the AI Payment Plan Extractor with files pre-loaded
 
 ---
 
-## Root Causes Identified
+## Problem Analysis
 
-### Issue 1: Multiple Entry Points with Different Logic
+### Issue 1: Year Range Too Limited
 
-| Entry Point | File | Current Behavior | Problem |
-|-------------|------|-----------------|---------|
-| `/cashflow-dashboard` | `CashflowDashboard.tsx` | Auto-creates draft on mount (lines 101-119) | Creates empty quote immediately |
-| `/cashflow-generator` | Uses same logic | Does NOT auto-create, uses lazy creation | Inconsistent with dashboard |
-| `/cashflow/:quoteId` (OICalculator) | `OICalculator.tsx` | Relies on quoteId param, lazy creation | Works differently than dashboard |
-| New Quote button | Various locations | Different implementations | No unified approach |
-| Client preselection | OICalculator effect | Stores in localStorage, reads on mount | Race conditions |
-
-### Issue 2: Draft Auto-Creation Race Condition
-
-```tsx
-// CashflowDashboard.tsx lines 101-119
-useEffect(() => {
-  const initDraft = async () => {
-    if (quoteId || creatingDraft || quoteLoading || draftInitializedRef.current) return;
-    
-    draftInitializedRef.current = true;
-    setCreatingDraft(true);
-    
-    const newId = await createDraft(); // ← Creates empty quote in DB immediately!
-    if (newId) {
-      navigate(`/cashflow-dashboard/${newId}`, { replace: true });
-    }
-  };
-  initDraft();
-}, [quoteId, creatingDraft, createDraft, quoteLoading, navigate]);
+Currently in `src/components/roi/configurator/types.ts`:
+```typescript
+export const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
+// Results in: [2024, 2025, 2026, ... 2035]
 ```
 
-**Problem**: Dashboard creates an empty `working_draft` the moment you visit it, even before any configuration.
-
-### Issue 3: Auto-Save Triggers with Empty Data
-
-```tsx
-// useCashflowQuote.ts lines 434-444
-if (!existingQuoteId && isQuoteConfigured) {
-  autoSaveTimeout.current = setTimeout(async () => {
-    console.log('Creating new quote on first meaningful change...');
-    const savedQuote = await saveQuote(...);
-    // ...
-  }, 500);
-}
+And in `PaymentPlanExtractor.tsx`:
+```typescript
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => currentYear + i);
+// Results in: [2026, 2027, 2028, 2029, 2030]
 ```
 
-**Problem**: `isQuoteConfigured` is too permissive (line 88-95 in OICalculator):
-```tsx
-const isQuoteConfigured = useMemo(() => {
-  return (
-    !!quoteId ||  // ← Any quoteId counts as "configured"!
-    !!clientInfo.developer ||
-    !!clientInfo.projectName ||
-    inputs.basePrice > 0
-  );
-}, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
-```
+**Solution**: Extend years to go back to 2018 (covering ~8 years of historical data) while still projecting forward.
 
-### Issue 4: Title Generation Creates "Untitled Quote"
+### Issue 2: No Quick Drag-Drop to AI Extractor
 
-```tsx
-// useCashflowQuote.ts lines 318-321
-title: titleClientPart
-  ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
-  : 'Untitled Quote',  // ← Saved even with no meaningful data!
-```
+Currently, users must:
+1. Click "AI Import" button
+2. Wait for sheet to open
+3. Drag/upload files
+4. Click extract
 
-### Issue 5: clearWorkingDraft Doesn't Reset Local State
-
-```tsx
-// useCashflowQuote.ts lines 211-235
-const clearWorkingDraft = useCallback(async (): Promise<void> => {
-  // Only clears database record...
-  await supabase.from('cashflow_quotes').update({
-    inputs: {} as any,
-    client_name: null,
-    // ...
-  }).eq('broker_id', user.id).eq('status', 'working_draft');
-  
-  // Does NOT reset the local quote state or quoteImages!
-}, []);
-```
-
-### Issue 6: "Ask Each Time" Dialog Not Implemented
-
-User wants to be asked whether to resume or discard drafts, but current implementation only shows dialog when:
-- Navigating away from a draft with content
-- Not when initially opening the app with an existing working draft
+**Solution**: Add a subtle drop zone in the Payment section header that:
+- Shows a visual indicator when dragging files over
+- Automatically opens the AI Extractor with files pre-loaded
+- Provides a faster workflow for power users
 
 ---
 
-## Proposed Solution Architecture
+## Implementation Details
+
+### Phase 1: Extend Year Ranges
+
+**File: `src/components/roi/configurator/types.ts`**
+
+Change the `years` constant to include past years:
+
+```typescript
+// Current:
+export const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
+
+// New: 8 years back + 8 years forward from current year
+const currentYear = new Date().getFullYear();
+export const years = Array.from({ length: 16 }, (_, i) => currentYear - 8 + i);
+// For 2026: [2018, 2019, 2020, ..., 2033]
+```
+
+**File: `src/components/roi/configurator/PaymentPlanExtractor.tsx`**
+
+Extend the YEARS constant for the custom date picker:
+
+```typescript
+// Current:
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => currentYear + i);
+
+// New: Include 8 years back
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 13 }, (_, i) => currentYear - 8 + i);
+// For 2026: [2018, 2019, ..., 2030]
+```
+
+---
+
+### Phase 2: Add Drag-Drop Zone to Payment Section
+
+**File: `src/components/roi/configurator/PaymentSection.tsx`**
+
+Add a new drag-drop zone component that:
+1. Accepts file drops
+2. Processes files (same as FileUploadZone)
+3. Opens AI Extractor with files pre-populated
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                     UNIFIED ENTRY FLOW                          │
-├─────────────────────────────────────────────────────────────────┤
-│  1. User opens any Cashflow page                                │
-│  2. System checks: Does user have a working_draft with content? │
-│     ├─ YES → Show "Resume Draft?" dialog                        │
-│     │   ├─ Resume → Load existing draft                         │
-│     │   └─ Start Fresh → Clear draft, open configurator empty   │
-│     └─ NO → Proceed directly (no dialog)                        │
-│  3. NO draft created until user actually enters data            │
-│  4. Auto-save ONLY triggers when meaningful content exists      │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│ Payment Plan                          [AI Import]│
+│ Configure your payment schedule                  │
+├─────────────────────────────────────────────────┤
+│  ╔═══════════════════════════════════════════╗  │
+│  ║   🔮 Drop payment plan here               ║  │
+│  ║      PDF, image, or screenshot            ║  │
+│  ╚═══════════════════════════════════════════╝  │
+│                                                  │
+│  [Post-Handover Toggle]                         │
+│  ...                                            │
+└─────────────────────────────────────────────────┘
 ```
 
----
-
-## Implementation Plan
-
-### Phase 1: Remove Eager Draft Creation
-
-**File: `src/pages/CashflowDashboard.tsx`**
-
-Remove the auto-draft creation on mount (lines 97-119). The system should NOT create a database record until the user actually configures something.
-
-Replace with:
-- Check for existing working_draft with content on mount
-- If exists AND has content → Show "Resume or Start Fresh?" dialog
-- If no content or user chooses fresh → Clear and show empty configurator
-
-### Phase 2: Add "Ask Each Time" Dialog on App Open
-
-**New Component: `src/components/roi/ResumeDraftDialog.tsx`**
+**Component structure:**
 
 ```tsx
-interface ResumeDraftDialogProps {
-  open: boolean;
-  draftInfo: {
-    projectName?: string;
-    developer?: string;
-    lastUpdated?: Date;
-  } | null;
-  onResume: () => void;
-  onStartFresh: () => void;
+// New component: AIExtractorDropZone
+interface AIExtractorDropZoneProps {
+  onFilesDropped: (files: FileWithPreview[]) => void;
+  disabled?: boolean;
 }
 
-// Shows: "You have an unsaved draft from [date]"
-// Project: [name] | Developer: [name]
-// [Resume Draft] [Start Fresh]
-```
-
-**Integration**: Call `getOrCreateWorkingDraft()` to check (not create) on mount:
-```tsx
-const checkForExistingDraft = useCallback(async () => {
-  const { data } = await supabase
-    .from('cashflow_quotes')
-    .select('id, project_name, developer, updated_at, inputs')
-    .eq('broker_id', user.id)
-    .eq('status', 'working_draft')
-    .maybeSingle();
+const AIExtractorDropZone = ({ onFilesDropped, disabled }: AIExtractorDropZoneProps) => {
+  const [isDragging, setIsDragging] = useState(false);
   
-  if (data && hasWorkingDraftContent(data)) {
-    setExistingDraft(data);
-    setShowResumeDialog(true);
-  } else {
-    // No meaningful draft - proceed fresh
-    setModalOpen(true);
-  }
-}, []);
-```
+  // File processing logic (reused from FileUploadZone)
+  const processFiles = useCallback(async (fileList: FileList | File[]) => {
+    // Convert files to FileWithPreview format
+    // Call onFilesDropped with processed files
+  }, [onFilesDropped]);
 
-### Phase 3: Stricter `isQuoteConfigured` Logic
-
-**File: `src/pages/OICalculator.tsx` and `src/pages/CashflowDashboard.tsx`**
-
-Change the validation to require MEANINGFUL content before auto-saving:
-
-```tsx
-// Old (too permissive):
-const isQuoteConfigured = !!quoteId || !!clientInfo.developer || !!clientInfo.projectName || inputs.basePrice > 0;
-
-// New (stricter):
-const hasMeaningfulContent = useMemo(() => {
   return (
-    (inputs.basePrice > 0) ||
-    (!!clientInfo.projectName && clientInfo.projectName.trim().length > 0) ||
-    (!!clientInfo.developer && clientInfo.developer.trim().length > 0)
+    <div
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      className={cn(
+        "border-2 border-dashed rounded-lg p-3 transition-all cursor-pointer",
+        isDragging 
+          ? "border-purple-400 bg-purple-500/10" 
+          : "border-theme-border/40 hover:border-purple-400/50",
+        disabled && "opacity-50 pointer-events-none"
+      )}
+      onClick={() => !disabled && onFilesDropped([])} // Click opens extractor empty
+    >
+      <div className="flex items-center justify-center gap-2 text-sm">
+        <Sparkles className="w-4 h-4 text-purple-400" />
+        <span className="text-theme-text-muted">
+          Drop payment plan here or <span className="text-purple-400">click to import</span>
+        </span>
+      </div>
+    </div>
   );
-}, [inputs.basePrice, clientInfo.projectName, clientInfo.developer]);
-```
-
-### Phase 4: Block "Untitled Quote" Creation
-
-**File: `src/hooks/useCashflowQuote.ts`**
-
-Add guard before saving:
-
-```tsx
-const saveQuote = useCallback(async (...) => {
-  // Guard: Don't save completely empty quotes
-  const hasMinimumContent = 
-    (inputs.basePrice > 0) ||
-    (clientInfo.projectName?.trim()) ||
-    (clientInfo.developer?.trim()) ||
-    (clientInfo.clients?.some(c => c.name?.trim()));
-  
-  if (!hasMinimumContent) {
-    console.log('Skipping save - no meaningful content');
-    return null;
-  }
-  
-  // ... rest of save logic
-}, []);
-```
-
-Also update title generation:
-```tsx
-// If no meaningful title can be generated, keep as null (for working_draft only)
-const generatedTitle = titleClientPart
-  ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
-  : clientInfo.projectName || clientInfo.developer || null;
-
-// Only set "Untitled Quote" when promoting to draft
-title: generatedTitle || (quote?.status === 'working_draft' ? null : 'Untitled Quote'),
-```
-
-### Phase 5: Unify "New Quote" Handler Across Entry Points
-
-**Create: `src/hooks/useNewQuote.ts`**
-
-```tsx
-export const useNewQuote = () => {
-  const navigate = useNavigate();
-  const { clearWorkingDraft, getOrCreateWorkingDraft } = useCashflowQuote();
-  
-  const startNewQuote = useCallback(async (options?: {
-    preselectedClient?: { id: string; name: string };
-    openConfigurator?: boolean;
-    targetRoute?: 'generator' | 'dashboard';
-  }) => {
-    // 1. Clear localStorage state
-    localStorage.removeItem('cashflow-configurator-state');
-    localStorage.removeItem('cashflow-configurator-state-v2');
-    localStorage.removeItem('cashflow_configurator_open');
-    
-    // 2. Clear working draft in DB
-    await clearWorkingDraft();
-    
-    // 3. Store preselected client if provided
-    if (options?.preselectedClient) {
-      localStorage.setItem('preselected_client', JSON.stringify(options.preselectedClient));
-    }
-    
-    // 4. Navigate with clean state
-    const route = options?.targetRoute === 'dashboard' 
-      ? '/cashflow-dashboard' 
-      : '/cashflow-generator';
-    
-    navigate(route, { 
-      replace: true, 
-      state: { 
-        openConfigurator: options?.openConfigurator ?? true,
-        freshStart: true 
-      } 
-    });
-  }, [navigate, clearWorkingDraft]);
-  
-  return { startNewQuote };
 };
 ```
 
-**Update all New Quote buttons** to use this unified hook:
-- `QuotesDropdown.tsx`
-- `OICalculator.tsx`
-- `CashflowDashboard.tsx`
-- Client pages (ClientCard, etc.)
-
-### Phase 6: Clear Local State When Clearing Draft
-
-**File: `src/hooks/useCashflowQuote.ts`**
-
-Enhance `clearWorkingDraft` to also reset the local state:
+**Integration in PaymentSection:**
 
 ```tsx
-const clearWorkingDraft = useCallback(async (): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+// In PaymentSection component:
 
-  // Clear database record
-  await supabase.from('cashflow_quotes').update({
-    inputs: {} as any,
-    client_name: null,
-    client_id: null,
-    // ... all fields
-  })
-  .eq('broker_id', user.id)
-  .eq('status', 'working_draft');
-  
-  // ALSO reset local state
-  setQuote(null);
-  setQuoteImages({
-    floorPlanUrl: null,
-    buildingRenderUrl: null,
-    heroImageUrl: null,
-    showLogoOverlay: true,
-  });
-  setLastSaved(null);
-  
-  console.log('Cleared working draft content and local state');
-}, []);
+// State for pre-loaded files
+const [preloadedFiles, setPreloadedFiles] = useState<FileWithPreview[]>([]);
+
+// Handler for drop zone
+const handleDropZoneFiles = (files: FileWithPreview[]) => {
+  setPreloadedFiles(files);
+  setShowAIExtractor(true);
+};
+
+// Modify PaymentPlanExtractor to accept initial files
+<PaymentPlanExtractor
+  open={showAIExtractor}
+  onOpenChange={(open) => {
+    setShowAIExtractor(open);
+    if (!open) setPreloadedFiles([]); // Clear on close
+  }}
+  existingBookingMonth={inputs.bookingMonth}
+  existingBookingYear={inputs.bookingYear}
+  onApply={handleAIExtraction}
+  initialFiles={preloadedFiles}  // NEW PROP
+/>
+```
+
+**Update PaymentPlanExtractor to support initial files:**
+
+```tsx
+interface PaymentPlanExtractorProps {
+  // ... existing props
+  initialFiles?: FileWithPreview[];
+}
+
+// In component:
+useEffect(() => {
+  if (initialFiles && initialFiles.length > 0 && open) {
+    setFiles(initialFiles);
+  }
+}, [initialFiles, open]);
 ```
 
 ---
@@ -323,30 +195,29 @@ const clearWorkingDraft = useCallback(async (): Promise<void> => {
 
 | File | Changes |
 |------|---------|
-| `src/pages/CashflowDashboard.tsx` | Remove eager draft creation, add resume dialog check |
-| `src/pages/OICalculator.tsx` | Add resume dialog check, use stricter validation |
-| `src/hooks/useCashflowQuote.ts` | Block empty saves, reset local state on clear, improve title logic |
-| `src/components/roi/QuotesDropdown.tsx` | Use unified `useNewQuote` hook |
-| `src/components/roi/ResumeDraftDialog.tsx` | **NEW** - "Resume or Start Fresh" dialog |
-| `src/hooks/useNewQuote.ts` | **NEW** - Unified new quote creation logic |
+| `src/components/roi/configurator/types.ts` | Extend `years` array to include past 8 years |
+| `src/components/roi/configurator/PaymentPlanExtractor.tsx` | Extend `YEARS` array, add `initialFiles` prop |
+| `src/components/roi/configurator/PaymentSection.tsx` | Add drag-drop zone component and integration |
 
 ---
 
-## Expected Behavior After Fix
+## User Experience
 
-1. **Opening `/cashflow-dashboard` fresh** → Check for draft → If exists with content, ask resume/fresh → If fresh, open empty configurator
-2. **Opening `/cashflow-generator` fresh** → Same behavior as dashboard
-3. **"New Quote" from anywhere** → Clear existing draft, navigate, open configurator empty
-4. **Auto-save** → Only triggers when basePrice > 0 OR project/developer/client name exists
-5. **No more "Untitled Quote"** entries appearing in quote lists from empty configurations
-6. **Preselected clients** → Work consistently across all entry points
+### Before:
+- Booking year limited to 2024-2035
+- Must click AI Import → wait for sheet → drag file → click extract
+
+### After:
+- Booking year supports 2018-2033 (adjusts dynamically with current year)
+- Can drag file directly onto Payment section → extractor opens with file ready
+- Click on drop zone also opens extractor (empty)
+- Existing AI Import button still works as before
 
 ---
 
 ## Technical Notes
 
-- The working_draft system remains (single row per user)
-- `hasWorkingDraftContent()` already exists and works correctly
-- All entry points will use the same logic via `useNewQuote` hook
-- The resume dialog respects user preference ("Ask each time")
-- Backward compatible - existing quotes unaffected
+- The drop zone will reuse the same file processing logic from `FileUploadZone`
+- Files dragged in will be converted to `FileWithPreview[]` format
+- The extractor will automatically focus on the "Upload" tab when files are pre-loaded
+- The subtle styling ensures it doesn't distract from the payment configuration
