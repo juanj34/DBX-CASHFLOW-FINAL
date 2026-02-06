@@ -21,6 +21,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ClientForm } from "@/components/clients/ClientForm";
+import { useClients } from "@/hooks/useClients";
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { 
   developer: '', 
@@ -178,6 +180,19 @@ export const ConfiguratorLayout = ({
       }] : prev.clients,
     }));
   }, [setClientInfo]);
+
+  // Client creation modal state
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const { createClient } = useClients();
+  
+  const handleCreateClient = useCallback(async (data: { name: string; email?: string; phone?: string; country?: string; notes?: string }) => {
+    const newClient = await createClient(data);
+    if (newClient) {
+      // Auto-select the newly created client
+      handleDbClientSelect(newClient.id, newClient);
+      toast.success(`Client "${newClient.name}" created and linked!`);
+    }
+  }, [createClient, handleDbClientSelect]);
   
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
     savedState?.activeSection || 'location'
@@ -441,6 +456,7 @@ export const ConfiguratorLayout = ({
             setInputs={setInputs}
             dbClientId={clientInfo.dbClientId}
             onDbClientSelect={handleDbClientSelect}
+            onCreateClient={() => setShowCreateClientModal(true)}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
             heroImageUrl={heroImageUrl}
@@ -707,6 +723,14 @@ export const ConfiguratorLayout = ({
           </div>
         </div>
       </div>
+
+      {/* Client Creation Modal */}
+      <ClientForm
+        open={showCreateClientModal}
+        onClose={() => setShowCreateClientModal(false)}
+        onSubmit={handleCreateClient}
+        mode="create"
+      />
     </div>
   );
 };
