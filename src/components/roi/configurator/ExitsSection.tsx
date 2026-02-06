@@ -22,6 +22,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
     inputs.enabledSections?.exitStrategy ?? true
   );
   const [showExitCosts, setShowExitCosts] = useState(false);
+  const [customMonth, setCustomMonth] = useState<string>('');
 
   const [exits, setExits] = useState<ExitScenario[]>(() => {
     const months = (inputs._exitScenarios || []).filter((m) => typeof m === "number" && m > 0);
@@ -79,11 +80,19 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
   const maxExitMonth = totalMonths + 60;
 
   const handleAddExit = () => {
-    let newMonth = Math.round(totalMonths * 0.5);
+    // Default to one month before handover (max equity during construction)
+    let newMonth = Math.max(1, totalMonths - 1);
     
-    // Find an available slot, now allowing post-handover
-    while (exits.some(e => e.monthsFromBooking === newMonth) && newMonth < maxExitMonth) {
-      newMonth++;
+    // Find an available slot if that's taken
+    while (exits.some(e => e.monthsFromBooking === newMonth) && newMonth > 0) {
+      newMonth--;
+    }
+    // If all pre-handover taken, go post-handover
+    if (newMonth <= 0 || exits.some(e => e.monthsFromBooking === newMonth)) {
+      newMonth = totalMonths + 12;
+      while (exits.some(e => e.monthsFromBooking === newMonth) && newMonth < maxExitMonth) {
+        newMonth++;
+      }
     }
     
     if (newMonth > 0 && newMonth <= maxExitMonth) {
@@ -94,6 +103,14 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
       const newExits = [...exits, newExit].sort((a, b) => a.monthsFromBooking - b.monthsFromBooking);
       setExits(newExits);
       syncExitsToInputs(newExits);
+    }
+  };
+
+  const handleAddCustomMonth = () => {
+    const month = parseInt(customMonth, 10);
+    if (!isNaN(month) && month > 0 && month <= maxExitMonth && !exits.some(e => e.monthsFromBooking === month)) {
+      handleAddExitAtMonth(month);
+      setCustomMonth('');
     }
   };
 
@@ -255,19 +272,18 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               </div>
             </div>
             <div className="flex flex-wrap gap-1">
-              {/* Pre-handover shortcuts */}
-              {[18, 24, 30].map(month => (
+              {/* Pre-handover shortcuts - relative to handover */}
+              {totalMonths > 6 && (
                 <Button
-                  key={month}
                   variant="outline"
                   size="sm"
-                  onClick={() => handleAddExitAtMonth(month)}
-                  disabled={exits.some(e => e.monthsFromBooking === month) || month >= totalMonths}
-                  className="h-6 text-[10px] px-2 border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
+                  onClick={() => handleAddExitAtMonth(totalMonths - 1)}
+                  disabled={exits.some(e => e.monthsFromBooking === totalMonths - 1)}
+                  className="h-6 text-[10px] px-2 border-orange-500/40 text-orange-400/80 hover:text-orange-400 hover:border-orange-500/60 disabled:opacity-30"
                 >
-                  {month}mo
+                  -1mo
                 </Button>
-              ))}
+              )}
               {[30, 50, 80].map(pct => {
                 const month = constructionToMonth(pct, totalMonths);
                 return (
@@ -288,7 +304,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
                 size="sm"
                 onClick={() => handleAddExitAtMonth(totalMonths)}
                 disabled={exits.some(e => e.monthsFromBooking === totalMonths)}
-                className="h-6 text-[10px] px-2 border-theme-border text-theme-text-muted hover:text-theme-text hover:border-theme-accent/50 disabled:opacity-30"
+                className="h-6 text-[10px] px-2 border-cyan-500/40 text-cyan-400/80 hover:text-cyan-400 hover:border-cyan-500/60 disabled:opacity-30"
               >
                 Handover
               </Button>
@@ -297,9 +313,9 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               <div className="w-px h-6 bg-theme-border/50" />
               
               {/* Post-handover shortcuts */}
-              {[6, 12, 24, 36].map(offset => {
+              {[12, 24, 36, 60].map(offset => {
                 const month = totalMonths + offset;
-                const label = offset >= 12 ? `+${offset / 12}yr` : `+${offset}mo`;
+                const label = `+${offset / 12}yr`;
                 return (
                   <Button
                     key={`post-${offset}`}
@@ -321,6 +337,32 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               >
                 <Plus className="w-3 h-3" />
               </Button>
+            </div>
+
+            {/* Custom Month Input */}
+            <div className="flex items-center gap-2 mt-2">
+              <Input
+                type="number"
+                placeholder="Month #"
+                value={customMonth}
+                onChange={(e) => setCustomMonth(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCustomMonth()}
+                min={1}
+                max={maxExitMonth}
+                className="w-20 h-7 text-xs bg-theme-bg-alt border-theme-border text-theme-text font-mono text-center"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddCustomMonth}
+                disabled={!customMonth || parseInt(customMonth, 10) <= 0 || parseInt(customMonth, 10) > maxExitMonth || exits.some(e => e.monthsFromBooking === parseInt(customMonth, 10))}
+                className="h-7 text-[10px] px-3 border-theme-border text-theme-text-muted hover:text-theme-text"
+              >
+                Add Month
+              </Button>
+              <span className="text-[10px] text-theme-text-muted">
+                (1-{maxExitMonth})
+              </span>
             </div>
           </div>
 
