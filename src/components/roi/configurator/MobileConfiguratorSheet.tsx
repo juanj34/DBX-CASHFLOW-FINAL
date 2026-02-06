@@ -120,6 +120,20 @@ export const MobileConfiguratorSheet = ({
   const effectiveClientInfo = clientInfo || internalClientInfo;
   const effectiveSetClientInfo = setClientInfo || setInternalClientInfo;
   
+  // Handler for client selection from ClientSelector
+  const handleDbClientSelect = useCallback((clientId: string | null, client: { id: string; name: string; email?: string | null; country?: string | null } | null) => {
+    effectiveSetClientInfo(prev => ({
+      ...prev,
+      dbClientId: clientId || undefined,
+      clients: client ? [{
+        id: '1',
+        name: client.name,
+        email: client.email || '',
+        country: client.country || '',
+      }] : prev.clients,
+    }));
+  }, [effectiveSetClientInfo]);
+  
   // Swipe gesture state
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -269,6 +283,8 @@ export const MobileConfiguratorSheet = ({
             onClientInfoChange={effectiveSetClientInfo}
             inputs={inputs}
             setInputs={setInputs}
+            dbClientId={effectiveClientInfo.dbClientId}
+            onDbClientSelect={handleDbClientSelect}
           />
         );
       case 'property':

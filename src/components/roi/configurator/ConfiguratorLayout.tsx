@@ -165,6 +165,20 @@ export const ConfiguratorLayout = ({
   const setHeroImageUrl = onHeroImageChange || setInternalHeroImageUrl;
   const setShowLogoOverlay = onShowLogoOverlayChange || setInternalShowLogoOverlay;
   
+  // Handler for client selection from ClientSelector
+  const handleDbClientSelect = useCallback((clientId: string | null, client: { id: string; name: string; email?: string | null; country?: string | null } | null) => {
+    setClientInfo(prev => ({
+      ...prev,
+      dbClientId: clientId || undefined,
+      clients: client ? [{
+        id: '1',
+        name: client.name,
+        email: client.email || '',
+        country: client.country || '',
+      }] : prev.clients,
+    }));
+  }, [setClientInfo]);
+  
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
     savedState?.activeSection || 'location'
   );
@@ -425,6 +439,8 @@ export const ConfiguratorLayout = ({
             onClientInfoChange={setClientInfo}
             inputs={inputs}
             setInputs={setInputs}
+            dbClientId={clientInfo.dbClientId}
+            onDbClientSelect={handleDbClientSelect}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
             heroImageUrl={heroImageUrl}
