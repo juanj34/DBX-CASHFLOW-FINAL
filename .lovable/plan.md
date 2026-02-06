@@ -1,209 +1,272 @@
 
 
-# Plan: Modernize Snapshot UI - Better Scannability, Colors & Simplification
+# Plan: Modern Exit Graph Redesign
 
-## Screenshot Analysis
+## Problem Analysis
 
-Looking at the current snapshot, I see several issues:
+Looking at the screenshot reference ("Property Appreciation" modal), the current `CompactExitGraphCard` is missing:
 
-### Problems Identified:
+1. **Y-axis labels** - No value scale on left side (should show 746K, 834K, 923K, 1.0M, 1.1M)
+2. **Base price line** - Missing horizontal dashed line with "Base: 785K" label
+3. **Proper X-axis** - Should show month intervals (0mo, 2mo, 4mo... Handover)
+4. **Exit markers on curve** - Points with labels should be ON the curve, not floating
+5. **Cards below are ugly** - Faded black `from-black/50 to-black/30` looks bad, should be clean themed cards
 
-1. **Exit Scenario Cards** - Ugly gray backgrounds (`bg-black/30`) look washed out and dated. Grid doesn't handle 5 cards well (leaves orphan)
+## Solution: Redesign to Match Reference
 
-2. **Rental Income Card** - Too cluttered:
-   - "+4%/yr" badge in hero section adds noise
-   - "Gross" and "Service" lines visible by default (should be hidden)
-   - "Gross: 9.0%" and "Net: 7.7%" badges too prominent
+### Graph Improvements
 
-3. **Graph Padding** - Still has excessive padding (`px-3 pt-2`, `p-3`) wasting space
+| Element | Before | After |
+|---------|--------|-------|
+| Y-axis | None | Show 5 price ticks with labels (746K, 834K, etc.) |
+| X-axis | "0", "🔑 11m", "14m" | Show intervals: 0mo, 2mo, 4mo... Handover |
+| Base line | None | Horizontal dashed gray line with "Base: 785K" label |
+| Curve | Thick gradient | Same cyan-to-green gradient, 2.5px stroke |
+| Exit markers | Floating boxes above curve | Dots on curve + vertical dashed line down |
+| Padding | `{ top: 20, right: 10, bottom: 18, left: 10 }` | `{ top: 40, right: 40, bottom: 45, left: 60 }` to fit Y-axis labels |
 
-4. **Color Consistency** - Some gray tones feel off for the dark theme
+### Card Improvements
 
----
-
-## Solution Overview
-
-### Part 1: Exit Scenario Cards - Modern Premium Look
-
-**Grid Logic Fix (5 items in single row):**
+**Before (faded black):**
 ```tsx
-// Dynamic grid based on count
-scenarios.length === 2 ? "grid-cols-2" :
-scenarios.length <= 4 ? "grid-cols-4" :
-"grid-cols-5" // 5 items in one row
+className="bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md"
 ```
 
-**Card Styling Upgrade:**
+**After (clean theme cards):**
 ```tsx
-// Before (ugly gray):
-className="bg-black/30 backdrop-blur-sm border rounded-lg"
-
-// After (premium glass with gradient):
-className="bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md 
-           border border-white/10 rounded-xl shadow-lg"
-```
-
-**Colored Borders by Type:**
-| Type | Border |
-|------|--------|
-| Pre-Handover | `border-l-2 border-l-theme-accent` (lime) |
-| Handover (🔑) | `border-l-2 border-l-white` + key icon |
-| Post-Handover | `border-l-2 border-l-green-500` |
-
-### Part 2: Reduce Graph Padding
-
-**Before:**
-```tsx
-const padding = { top: 40, right: 20, bottom: 30, left: 45 };
-<div className="px-3 pt-2 pb-1">
-<div className="p-3">
-```
-
-**After:**
-```tsx
-const padding = { top: 25, right: 15, bottom: 20, left: 35 };
-<div className="px-2 pt-1">
-<div className="p-2 pt-1">
-```
-
-### Part 3: Simplify Rental Income Card
-
-**Hide in Collapsible Dropdown:**
-- Gross annual rent
-- Service charges line
-- Gross/Net yield badges
-
-**Keep Visible:**
-- 7-Year Average (hero)
-- Year 1 Net (secondary hero)
-
-**Remove from Hero:**
-- "+4%/yr" badge (unnecessary clutter)
-
-**New Layout:**
-```text
-┌─────────────────────────────────────┐
-│ 🏠 RENTAL INCOME          📅 Table │
-├─────────────────────────────────────┤
-│ 7-YEAR AVERAGE                      │
-│ AED 68,325/yr                       │
-├─────────────────────────────────────┤
-│ ● LONG-TERM                         │
-│ ┌─────────────────────────────────┐ │
-│ │ Year 1 Net    AED 60,555       │ │
-│ │              (AED 5,046/mo)    │ │
-│ └─────────────────────────────────┘ │
-│           ▼ View breakdown          │  ← Click to expand
-│     [Hidden: Gross, Service, %s]    │
-└─────────────────────────────────────┘
+className="bg-theme-bg/80 border border-theme-border rounded-xl"
+// With handover getting special white border
 ```
 
 ---
 
-## Implementation Details
+## Technical Implementation
 
-### File 1: `CompactExitGraphCard.tsx`
+### File: `src/components/roi/snapshot/CompactExitGraphCard.tsx`
 
-| Line | Change |
-|------|--------|
-| 84 | Reduce padding: `{ top: 25, right: 15, bottom: 20, left: 35 }` |
-| 184 | Change `px-3 pt-2 pb-1` → `px-2 pt-1` |
-| 354-358 | Update grid logic for 5 columns when needed |
-| 363-372 | Modernize card backgrounds with premium gradient |
-| 365 | Add left border color accent for type differentiation |
+#### 1. Increase SVG Height & Padding
 
-**New Card Grid Logic:**
 ```tsx
-<div className={cn(
-  "grid gap-2",
-  scenarios.length === 2 ? "grid-cols-2" :
-  scenarios.length <= 4 ? "grid-cols-4" :
-  "grid-cols-5"
-)}>
+// Current:
+const width = 400;
+const height = 140;
+const padding = { top: 20, right: 10, bottom: 18, left: 10 };
+
+// New - more room for labels:
+const width = 420;
+const height = 180;
+const padding = { top: 30, right: 30, bottom: 40, left: 55 };
 ```
 
-**New Card Classes:**
+#### 2. Add Y-Axis Values & Labels
+
 ```tsx
+// Calculate Y-axis ticks (5 values from minValue to maxValue)
+const yAxisValues = useMemo(() => {
+  const range = maxValue - minValue;
+  const step = range / 4;
+  return Array.from({ length: 5 }, (_, i) => minValue + step * i);
+}, [minValue, maxValue]);
+
+// In SVG:
+{yAxisValues.map((value, i) => (
+  <g key={`y-${i}`}>
+    {/* Grid line */}
+    <line
+      x1={padding.left}
+      y1={yScale(value)}
+      x2={width - padding.right}
+      y2={yScale(value)}
+      stroke="hsl(var(--theme-border))"
+      strokeDasharray="3,3"
+      opacity="0.3"
+    />
+    {/* Label */}
+    <text
+      x={padding.left - 8}
+      y={yScale(value)}
+      fill="hsl(var(--theme-text-muted))"
+      fontSize="9"
+      textAnchor="end"
+      dominantBaseline="middle"
+    >
+      {formatCurrencyShort(value, 'AED')}
+    </text>
+  </g>
+))}
+```
+
+#### 3. Add Base Price Dashed Line
+
+```tsx
+{/* Base price horizontal dashed line */}
+<line
+  x1={padding.left}
+  y1={yScale(basePrice)}
+  x2={width - padding.right}
+  y2={yScale(basePrice)}
+  stroke="#64748b"
+  strokeWidth="1"
+  strokeDasharray="6,3"
+  opacity="0.6"
+/>
+<text
+  x={padding.left + 5}
+  y={yScale(basePrice) - 6}
+  fill="#64748b"
+  fontSize="9"
+>
+  Base: {formatCurrencyShort(basePrice, 'AED')}
+</text>
+```
+
+#### 4. Improve X-Axis Labels
+
+```tsx
+// Generate time interval labels (0mo, 2mo, 4mo... Handover)
+const xAxisLabels = useMemo(() => {
+  const labels: number[] = [];
+  const step = Math.ceil(chartMaxMonth / 6);
+  for (let m = 0; m <= chartMaxMonth; m += step) {
+    labels.push(m);
+  }
+  // Ensure handover month is included
+  if (!labels.includes(totalMonths)) {
+    labels.push(totalMonths);
+  }
+  return labels.sort((a, b) => a - b);
+}, [chartMaxMonth, totalMonths]);
+
+// Render:
+{xAxisLabels.map(months => (
+  <text
+    key={months}
+    x={xScale(months)}
+    y={height - padding.bottom + 15}
+    fill={months === totalMonths ? "hsl(var(--theme-text))" : "hsl(var(--theme-text-muted))"}
+    fontSize="9"
+    fontWeight={months === totalMonths ? "bold" : "normal"}
+    textAnchor="middle"
+  >
+    {months === totalMonths ? 'Handover' : `${months}mo`}
+  </text>
+))}
+```
+
+#### 5. Redesign Exit Markers on Curve
+
+Replace floating boxes with clean markers on the curve:
+
+```tsx
+{scenarios.map((scenario, index) => {
+  const x = xScale(scenario.exitMonths);
+  const y = yScale(scenario.exitPrice);
+  const isHandover = scenario.isHandover;
+  const markerColor = isHandover ? '#ffffff' : 'hsl(var(--theme-accent))';
+  
+  return (
+    <g key={scenario.exitMonths}>
+      {/* Vertical dashed line from marker to X-axis */}
+      <line
+        x1={x}
+        y1={y}
+        x2={x}
+        y2={height - padding.bottom}
+        stroke={markerColor}
+        strokeWidth="1"
+        strokeDasharray="3,3"
+        opacity="0.4"
+      />
+      
+      {/* Marker dot on curve */}
+      <circle cx={x} cy={y} r="7" fill="hsl(var(--theme-card))" stroke={markerColor} strokeWidth="2" />
+      <circle cx={x} cy={y} r="3" fill={markerColor} />
+      
+      {/* Small label above marker */}
+      <text
+        x={x}
+        y={y - 14}
+        fill="hsl(var(--theme-text))"
+        fontSize="9"
+        fontWeight="bold"
+        textAnchor="middle"
+      >
+        {formatCurrencyShort(scenario.exitPrice, 'AED')}
+      </text>
+    </g>
+  );
+})}
+```
+
+#### 6. Fix Exit Cards - Clean Theme
+
+Remove the ugly faded black background:
+
+```tsx
+// Before (ugly):
+className="bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md border border-white/10"
+
+// After (clean theme cards):
 className={cn(
-  "bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-md",
-  "border border-white/10 rounded-xl shadow-lg p-2 text-center",
-  "border-l-2",
-  isHandover ? "border-l-white" :
-  scenario.isPostHandover ? "border-l-green-500" :
-  "border-l-theme-accent"
+  "bg-theme-bg/90 border rounded-xl p-2.5 text-center transition-colors",
+  isHandover 
+    ? "border-white/50 bg-white/5" 
+    : scenario.isPostHandover 
+      ? "border-green-500/30 hover:border-green-500/50" 
+      : "border-theme-border hover:border-theme-accent/50"
 )}
-```
-
-### File 2: `CompactRentCard.tsx`
-
-| Line | Change |
-|------|--------|
-| 1 | Add import for `Collapsible` components and `ChevronDown` |
-| 121-124 | Remove the "+4%/yr" badge from hero section |
-| 152-173 | Wrap Gross, Service, and badge rows in `Collapsible` |
-
-**Collapsible Implementation:**
-```tsx
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-
-// After Year 1 hero box:
-<Collapsible>
-  <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-theme-text-muted hover:text-theme-text w-full justify-center py-1.5 transition-colors">
-    <span>View breakdown</span>
-    <ChevronDown className="w-3 h-3 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-  </CollapsibleTrigger>
-  <CollapsibleContent className="space-y-1 pt-1 animate-accordion-down">
-    <DottedRow label="Gross" value={...} />
-    <DottedRow label="− Service" value={...} />
-    <div className="flex gap-2 pt-1">
-      {/* Yield badges */}
-    </div>
-  </CollapsibleContent>
-</Collapsible>
 ```
 
 ---
 
 ## Visual Comparison
 
-### Exit Cards Before/After:
+### Graph Before → After
 
-**Before (ugly gray, orphan card):**
+**Before:**
 ```text
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│ gray   │ │ gray   │ │ gray   │ │ gray   │
-└────────┘ └────────┘ └────────┘ └────────┘
-┌────────┐
-│ orphan │  ← 5th card alone on second row
-└────────┘
+┌────────────────────────────────┐
+│  [no Y-axis]                   │
+│        ╱────curve──────        │
+│  ┌──┐╱  [floating boxes]       │
+│  └──┘                          │
+│──────────────────────────────  │
+│  0       🔑11m           14m   │
+└────────────────────────────────┘
 ```
 
-**After (premium gradient, all 5 in row):**
+**After:**
 ```text
-┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐
-│ lime │ │ white│ │ green│ │ green│ │ green│
-│ edge │ │ edge │ │ edge │ │ edge │ │ edge │
-└──────┘ └──────┘ └──────┘ └──────┘ └──────┘
-  10m      🔑11m    18m      24m      32m
+┌────────────────────────────────────┐
+│ 1.1M ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌  │
+│ 1.0M ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌ ● 999K    │
+│ 923K ╌╌╌╌╌╌╌╌╌╌╌╌ ●───────────    │
+│ 834K ╌╌╌╌╌╌╌╌ ●──────────────────  │
+│ 746K ┄┄┄┄┄┄┄┄┄┄ Base: 785K ┄┄┄┄┄  │
+│      ╎    ╎    ╎    ╎    ╎        │
+│     0mo  2mo  4mo  6mo  Handover  │
+└────────────────────────────────────┘
 ```
 
-### Rental Income Before/After:
+### Cards Before → After
 
-**Before (cluttered):**
+**Before (faded black):**
 ```text
-7-YEAR AVERAGE        +4%/yr   ← Remove
-Year 1 Net: AED 60,555
-Gross ........... AED 70,647   ← Hide
-− Service ....... -AED 10,092  ← Hide
-[Gross: 9.0%] [Net: 7.7%]      ← Hide
+┌─────────┐
+│ bg-black│  <- ugly gray/black
+│   17%   │
+│  +142K  │
+└─────────┘
 ```
 
-**After (clean):**
+**After (clean theme):**
 ```text
-7-YEAR AVERAGE
-Year 1 Net: AED 60,555 (AED 5,046/mo)
-        ▼ View breakdown       ← Tap to expand
+┌─────────┐
+│ bg-theme│  <- clean card background
+│   17%   │
+│  +142K  │
+│  32m    │
+└─────────┘
 ```
 
 ---
@@ -212,6 +275,5 @@ Year 1 Net: AED 60,555 (AED 5,046/mo)
 
 | File | Changes |
 |------|---------|
-| `CompactExitGraphCard.tsx` | Reduce padding, fix 5-col grid, premium card styling with colored borders |
-| `CompactRentCard.tsx` | Remove +4% badge, wrap Gross/Service/badges in Collapsible |
+| `src/components/roi/snapshot/CompactExitGraphCard.tsx` | Increase dimensions, add Y-axis, add base price line, improve X-axis, clean markers, fix card styling |
 
