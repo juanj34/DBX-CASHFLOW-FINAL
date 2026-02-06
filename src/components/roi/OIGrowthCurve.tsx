@@ -162,15 +162,15 @@ export const OIGrowthCurve = ({
     
     // Only show phase labels if we're showing post-handover
     if (chartMaxMonth > totalMonths) {
-      labels.push({ x: totalMonths / 2, label: 'Construction', color: '#f97316' });
+      labels.push({ x: totalMonths / 2, label: 'Under Constr.', color: '#f97316' });
       
       const growthEnd = Math.min(growthPhaseEndMonth, chartMaxMonth);
       if (growthEnd > totalMonths) {
-        labels.push({ x: (totalMonths + growthEnd) / 2, label: 'Growth', color: '#22c55e' });
+        labels.push({ x: (totalMonths + growthEnd) / 2, label: 'Post-HO', color: '#22c55e' });
       }
       
       if (chartMaxMonth > growthPhaseEndMonth) {
-        labels.push({ x: (growthPhaseEndMonth + chartMaxMonth) / 2, label: 'Mature', color: '#3b82f6' });
+        labels.push({ x: (growthPhaseEndMonth + chartMaxMonth) / 2, label: 'Maturity', color: '#3b82f6' });
       }
     }
     

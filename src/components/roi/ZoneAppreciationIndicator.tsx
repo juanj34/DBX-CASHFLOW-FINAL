@@ -83,17 +83,17 @@ export const ZoneAppreciationIndicator = ({ maturityLevel, zoneName, compact = f
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
           <Building className="w-4 h-4 text-orange-400 mx-auto mb-1" />
-          <div className="text-xs text-gray-400">Construction</div>
+          <div className="text-xs text-gray-400">Under Construction</div>
           <div className="text-lg font-bold text-orange-400">{profile.constructionAppreciation}%</div>
         </div>
         <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/30">
           <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
-          <div className="text-xs text-gray-400">Growth ({profile.growthPeriodYears}y)</div>
+          <div className="text-xs text-gray-400">Post Handover ({profile.growthPeriodYears}y)</div>
           <div className="text-lg font-bold text-green-400">{profile.growthAppreciation}%</div>
         </div>
         <div className="text-center p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
           <Home className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-          <div className="text-xs text-gray-400">Mature</div>
+          <div className="text-xs text-gray-400">Zone Maturity</div>
           <div className="text-lg font-bold text-blue-400">{profile.matureAppreciation}%</div>
         </div>
       </div>
