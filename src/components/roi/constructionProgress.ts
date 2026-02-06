@@ -511,14 +511,16 @@ export const calculateExitScenario = (
   const exitCosts = agentCommission + nocFee;
   
   // Calculate profits
+  // Profit = Appreciation (what you gain from the property value increase)
   const totalCapital = equityDeployed + entryCosts;
-  const profit = appreciation;
-  const trueProfit = profit - entryCosts;
-  const netProfit = trueProfit - exitCosts; // After exit costs
+  const profit = appreciation; // Pure appreciation gain
+  const trueProfit = appreciation; // Keep same as profit - appreciation IS the profit
+  const netProfit = appreciation - exitCosts; // After exit costs only
   
-  // Calculate ROE
-  const roe = equityDeployed > 0 ? (profit / equityDeployed) * 100 : 0;
-  const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+  // Calculate ROE - Profit divided by Equity Deployed (money put in)
+  // This shows the true leverage effect: how much your invested capital multiplied
+  const roe = equityDeployed > 0 ? (appreciation / equityDeployed) * 100 : 0;
+  const trueROE = totalCapital > 0 ? (appreciation / totalCapital) * 100 : 0;
   const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
   const annualizedROE = monthsFromBooking > 0 ? (trueROE / (monthsFromBooking / 12)) : 0;
   const netAnnualizedROE = monthsFromBooking > 0 ? (netROE / (monthsFromBooking / 12)) : 0;

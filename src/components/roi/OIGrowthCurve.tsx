@@ -117,13 +117,17 @@ export const OIGrowthCurve = ({
     return path;
   }, [basePrice, totalMonths, chartMaxMonth, inputs, xScale, yScale]);
 
-  // Calculate exit scenarios - FILTER OUT exits at handover month (they would overlap with Handover Value)
+  // Calculate exit scenarios - FILTER OUT exits that would overlap with Handover marker
+  // Also check for proximity (within 2 months of handover) to avoid visual overlap
   const exitMarkersData = useMemo(() => {
     let exitNumber = 0;
     return exitScenarios
       .map((month) => {
         // Skip exits exactly at handover month - those are shown as "Handover Value"
         if (month === totalMonths) return null;
+        
+        // Check if this exit is too close to handover (within 2 months) - flag for offset
+        const isNearHandover = Math.abs(month - totalMonths) <= 2;
         
         exitNumber++;
         const scenario = calculateExitScenario(month, basePrice, totalMonths, inputs, totalEntryCosts);
@@ -132,6 +136,8 @@ export const OIGrowthCurve = ({
           exitMonth: month,
           label: `Exit ${exitNumber}`,
           exitNumber,
+          isNearHandover,
+          isBeforeHandover: month < totalMonths,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -402,11 +408,15 @@ export const OIGrowthCurve = ({
           </g>
 
           {/* Exit markers with labels and ROE */}
-          {exitMarkersData.map(({ scenario, exitMonth, label }, index) => {
+          {exitMarkersData.map(({ scenario, exitMonth, label, isNearHandover, isBeforeHandover }, index) => {
             const isHighlighted = highlightedExit === index;
             const markerDelay = 0.1 * index;
             const isPostHandover = exitMonth > totalMonths;
             const markerColor = isPostHandover ? '#22c55e' : '#CCFF00';
+            
+            // Offset text position if near handover to avoid overlap
+            const textXOffset = isNearHandover ? (isBeforeHandover ? -25 : 25) : 0;
+            const textAnchor = isNearHandover ? (isBeforeHandover ? 'end' : 'start') : 'middle';
             
             return (
               <g 
@@ -422,12 +432,12 @@ export const OIGrowthCurve = ({
               >
                 {/* Exit label above */}
                 <text
-                  x={xScale(exitMonth)}
+                  x={xScale(exitMonth) + textXOffset}
                   y={yScale(scenario.exitPrice) - 30}
                   fill={markerColor}
                   fontSize="9"
                   fontWeight="bold"
-                  textAnchor="middle"
+                  textAnchor={textAnchor}
                 >
                   Exit {index + 1}
                 </text>
@@ -435,11 +445,11 @@ export const OIGrowthCurve = ({
                 {/* Post-handover indicator */}
                 {isPostHandover && (
                   <text
-                    x={xScale(exitMonth)}
+                    x={xScale(exitMonth) + textXOffset}
                     y={yScale(scenario.exitPrice) - 42}
                     fill="#22c55e"
                     fontSize="7"
-                    textAnchor="middle"
+                    textAnchor={textAnchor}
                     opacity="0.7"
                   >
                     +{exitMonth - totalMonths}mo
@@ -448,28 +458,28 @@ export const OIGrowthCurve = ({
                 
                 {/* Price label */}
                 <text
-                  x={xScale(exitMonth)}
+                  x={xScale(exitMonth) + textXOffset}
                   y={yScale(scenario.exitPrice) - 18}
                   fill={markerColor}
                   fontSize="10"
                   fontWeight="bold"
-                  textAnchor="middle"
+                  textAnchor={textAnchor}
                   fontFamily="monospace"
                 >
                   {formatCurrencyShort(scenario.exitPrice, currency, rate)}
                 </text>
 
-                {/* ROE label - now using annualizedROE */}
+                {/* ROE label - now showing true ROE (appreciation / total capital) */}
                 <text
-                  x={xScale(exitMonth)}
+                  x={xScale(exitMonth) + textXOffset}
                   y={yScale(scenario.exitPrice) - 6}
                   fill="#22d3d1"
                   fontSize="8"
                   fontWeight="bold"
-                  textAnchor="middle"
+                  textAnchor={textAnchor}
                   fontFamily="monospace"
                 >
-                  {scenario.annualizedROE.toFixed(0)}%/yr
+                  {scenario.trueROE.toFixed(0)}% ROE
                 </text>
                 
                 {/* Marker circles */}
