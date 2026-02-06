@@ -55,6 +55,14 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
     }
   };
 
+  // Handle rent growth decimal input
+  const handleRentGrowthChange = (value: string) => {
+    const num = parseFloat(value);
+    if (!isNaN(num) && num >= 0 && num <= 15) {
+      setInputs(prev => ({ ...prev, rentGrowthRate: Math.round(num * 10) / 10 }));
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Section Header */}
@@ -92,7 +100,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                   min={3}
                   max={15}
                   step={0.1}
-                  className="w-20 roi-slider-lime"
+                  className="w-24 roi-slider-lime"
                 />
                 <Input
                   type="number"
@@ -101,7 +109,7 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
                   max="20"
                   value={inputs.rentalYieldPercent}
                   onChange={(e) => handleYieldChange(e.target.value)}
-                  className="w-14 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-sm"
+                  className="w-16 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-sm"
                 />
                 <span className="text-xs text-theme-text-muted">%</span>
               </div>
@@ -117,13 +125,22 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
               <div className="flex items-center gap-2">
                 <Slider
                   value={[inputs.rentGrowthRate ?? 4]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: value }))}
+                  onValueChange={([value]) => setInputs(prev => ({ ...prev, rentGrowthRate: Math.round(value * 10) / 10 }))}
                   min={0}
                   max={10}
-                  step={0.5}
-                  className="w-20 roi-slider-lime"
+                  step={0.1}
+                  className="w-24 roi-slider-lime"
                 />
-                <span className="text-xs text-green-500 font-mono w-12 text-right">{inputs.rentGrowthRate ?? 4}%</span>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="15"
+                  value={inputs.rentGrowthRate ?? 4}
+                  onChange={(e) => handleRentGrowthChange(e.target.value)}
+                  className="w-16 h-7 text-center bg-theme-bg-alt border-theme-border text-green-500 font-mono text-sm"
+                />
+                <span className="text-xs text-theme-text-muted">%</span>
               </div>
             </div>
 
