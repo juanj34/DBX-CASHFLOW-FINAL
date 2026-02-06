@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
 import { ExtractedPaymentPlan } from "@/lib/paymentPlanTypes";
+import { AIExtractorDropZone } from "./AIExtractorDropZone";
+import { FileWithPreview } from "@/components/dashboard/FileUploadZone";
 
 // Helper to calculate actual payment date
 const getPaymentDate = (monthsFromBooking: number, bookingMonth: number, bookingYear: number): Date => {
@@ -44,6 +46,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const [paymentInterval, setPaymentInterval] = useState(3);
   const [paymentPercent, setPaymentPercent] = useState(5);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
+  const [preloadedFiles, setPreloadedFiles] = useState<FileWithPreview[]>([]);
 
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -357,10 +360,22 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       {/* AI Extractor Sheet */}
       <PaymentPlanExtractor
         open={showAIExtractor}
-        onOpenChange={setShowAIExtractor}
+        onOpenChange={(open) => {
+          setShowAIExtractor(open);
+          if (!open) setPreloadedFiles([]); // Clear on close
+        }}
         existingBookingMonth={inputs.bookingMonth}
         existingBookingYear={inputs.bookingYear}
         onApply={handleAIExtraction}
+        initialFiles={preloadedFiles}
+      />
+
+      {/* AI Drop Zone */}
+      <AIExtractorDropZone 
+        onFilesDropped={(files) => {
+          setPreloadedFiles(files);
+          setShowAIExtractor(true);
+        }}
       />
 
       {/* Post-Handover Toggle */}
