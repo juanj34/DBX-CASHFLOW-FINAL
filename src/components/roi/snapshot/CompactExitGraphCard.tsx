@@ -78,10 +78,10 @@ export const CompactExitGraphCard = ({
     return { primary: dual.primary, secondary: dual.secondary };
   };
   
-  // Chart dimensions - larger and more imposing
+  // Chart dimensions - compact
   const width = 400;
-  const height = 200;
-  const padding = { top: 25, right: 15, bottom: 20, left: 35 };
+  const height = 140;
+  const padding = { top: 20, right: 10, bottom: 18, left: 10 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   
@@ -180,74 +180,20 @@ export const CompactExitGraphCard = ({
         <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">{t('exitScenariosHeader')}</span>
       </div>
       
-      {/* Inline Graph */}
-      <div className="px-2 pt-1">
+      {/* Inline Graph - Minimal */}
+      <div className="px-1">
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-          {/* Gradient definitions */}
           <defs>
-            <linearGradient id="chartBgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="rgba(0,0,0,0.5)" />
-              <stop offset="100%" stopColor="rgba(0,0,0,0.15)" />
-            </linearGradient>
             <linearGradient id="exitCurveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#CCFF00" />
-              <stop offset={`${(totalMonths / chartMaxMonth) * 100}%`} stopColor="#CCFF00" />
-              <stop offset="100%" stopColor="#22c55e" />
+              <stop offset="0%" stopColor="hsl(var(--theme-accent))" />
+              <stop offset={`${(totalMonths / chartMaxMonth) * 100}%`} stopColor="hsl(var(--theme-accent))" />
+              <stop offset="100%" stopColor="hsl(142.1 76.2% 36.3%)" />
             </linearGradient>
             <linearGradient id="exitAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#CCFF00" stopOpacity="0" />
+              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="0" />
             </linearGradient>
-            <filter id="glowExit" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
           </defs>
-          
-          {/* Dark gradient background for chart area */}
-          <rect
-            x={padding.left}
-            y={padding.top}
-            width={chartWidth}
-            height={chartHeight}
-            rx="8"
-            fill="url(#chartBgGradient)"
-          />
-          
-          {/* Base price reference line */}
-          <line
-            x1={padding.left}
-            y1={yScale(basePrice)}
-            x2={width - padding.right}
-            y2={yScale(basePrice)}
-            stroke="#64748b"
-            strokeWidth="1"
-            strokeDasharray="3,3"
-            opacity="0.4"
-          />
-          <text
-            x={padding.left + 3}
-            y={yScale(basePrice) - 4}
-            fill="#64748b"
-            fontSize="7"
-          >
-            Base
-          </text>
-          
-          {/* Handover vertical line */}
-          <line
-            x1={xScale(totalMonths)}
-            y1={padding.top - 5}
-            x2={xScale(totalMonths)}
-            y2={height - padding.bottom}
-            stroke="#fff"
-            strokeWidth="1"
-            strokeDasharray="3,3"
-            opacity="0.3"
-          />
           
           {/* Area fill */}
           <path
@@ -255,98 +201,82 @@ export const CompactExitGraphCard = ({
             fill="url(#exitAreaGradient)"
           />
           
-          {/* Curve - thicker stroke */}
+          {/* Curve */}
           <path
             d={curvePath}
             fill="none"
             stroke="url(#exitCurveGradient)"
-            strokeWidth="3"
+            strokeWidth="2.5"
             strokeLinecap="round"
           />
           
-          {/* Handover marker (🔑) */}
-          <g>
-            <circle
-              cx={xScale(totalMonths)}
-              cy={yScale(handoverPrice)}
-              r="6"
-              fill="#fff"
-              stroke="#fff"
-              strokeWidth="1.5"
-              filter="url(#glowExit)"
-            />
-            <circle
-              cx={xScale(totalMonths)}
-              cy={yScale(handoverPrice)}
-              r="3"
-              fill="#000"
-            />
-            <text
-              x={xScale(totalMonths)}
-              y={yScale(handoverPrice) - 12}
-              fill="#fff"
-              fontSize="8"
-              fontWeight="bold"
-              textAnchor="middle"
-            >
-              🔑
-            </text>
-          </g>
+          {/* Handover vertical line */}
+          <line
+            x1={xScale(totalMonths)}
+            y1={padding.top}
+            x2={xScale(totalMonths)}
+            y2={height - padding.bottom}
+            stroke="hsl(var(--theme-text-muted))"
+            strokeWidth="1"
+            strokeDasharray="2,2"
+            opacity="0.3"
+          />
           
-          {/* Exit markers */}
-          {scenarios.map((scenario, index) => {
-            if (scenario.isHandover) return null;
-            
-            const markerColor = scenario.isPostHandover ? '#22c55e' : '#CCFF00';
-            const { xOffset, textAnchor, yOffset } = scenario.labelPos;
+          {/* Exit markers with values */}
+          {scenarios.map((scenario) => {
+            const isHandover = scenario.isHandover;
+            const markerColor = isHandover ? '#fff' : scenario.isPostHandover ? 'hsl(142.1 76.2% 36.3%)' : 'hsl(var(--theme-accent))';
+            const x = xScale(scenario.exitMonths);
+            const y = yScale(scenario.exitPrice);
             
             return (
               <g key={scenario.exitMonths}>
-                {/* Marker circles */}
-                <circle
-                  cx={xScale(scenario.exitMonths)}
-                  cy={yScale(scenario.exitPrice)}
-                  r="7"
-                  fill={markerColor}
-                  opacity="0.2"
-                />
-                <circle
-                  cx={xScale(scenario.exitMonths)}
-                  cy={yScale(scenario.exitPrice)}
-                  r="4"
-                  fill={markerColor}
-                  filter="url(#glowExit)"
-                />
+                {/* Marker dot */}
+                <circle cx={x} cy={y} r="5" fill={markerColor} opacity="0.3" />
+                <circle cx={x} cy={y} r="3" fill={markerColor} />
                 
-                {/* Label with background pill */}
+                {/* Value label with background */}
                 <rect
-                  x={xScale(scenario.exitMonths) + xOffset - 18}
-                  y={yScale(scenario.exitPrice) - 26 - yOffset}
-                  width="36"
-                  height="14"
-                  rx="3"
-                  fill="rgba(0,0,0,0.6)"
+                  x={x - 28}
+                  y={y - 32}
+                  width="56"
+                  height="24"
+                  rx="4"
+                  fill="hsl(var(--theme-bg))"
+                  stroke={markerColor}
+                  strokeWidth="1"
+                  opacity="0.95"
                 />
+                {/* Exit price */}
                 <text
-                  x={xScale(scenario.exitMonths) + xOffset}
-                  y={yScale(scenario.exitPrice) - 16 - yOffset}
-                  fill={markerColor}
+                  x={x}
+                  y={y - 20}
+                  fill="hsl(var(--theme-text))"
                   fontSize="8"
                   fontWeight="bold"
                   textAnchor="middle"
                 >
-                  #{scenario.exitNumber} {scenario.exitMonths}m
+                  {formatCurrencyShort(scenario.exitPrice, 'AED' as Currency)}
+                </text>
+                {/* ROE */}
+                <text
+                  x={x}
+                  y={y - 11}
+                  fill={markerColor}
+                  fontSize="7"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  {isHandover ? '🔑' : `#${scenario.exitNumber}`} {scenario.trueROE?.toFixed(0)}% ROE
                 </text>
               </g>
             );
           })}
           
           {/* X-axis labels */}
-          <text x={padding.left} y={height - 8} fill="#64748b" fontSize="7" textAnchor="start">0m</text>
-          <text x={xScale(totalMonths)} y={height - 8} fill="#fff" fontSize="7" textAnchor="middle" fontWeight="bold">HO</text>
-          {chartMaxMonth > totalMonths + 6 && (
-            <text x={width - padding.right} y={height - 8} fill="#64748b" fontSize="7" textAnchor="end">{chartMaxMonth}m</text>
-          )}
+          <text x={padding.left + 5} y={height - 5} fill="hsl(var(--theme-text-muted))" fontSize="8" textAnchor="start">0</text>
+          <text x={xScale(totalMonths)} y={height - 5} fill="hsl(var(--theme-text))" fontSize="8" textAnchor="middle" fontWeight="bold">🔑 {totalMonths}m</text>
+          <text x={width - padding.right - 5} y={height - 5} fill="hsl(var(--theme-text-muted))" fontSize="8" textAnchor="end">{chartMaxMonth}m</text>
         </svg>
       </div>
       
