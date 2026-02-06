@@ -29,6 +29,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ClientForm } from "@/components/clients/ClientForm";
+import { useClients } from "@/hooks/useClients";
 
 interface MobileConfiguratorSheetProps {
   open: boolean;
@@ -133,6 +135,18 @@ export const MobileConfiguratorSheet = ({
       }] : prev.clients,
     }));
   }, [effectiveSetClientInfo]);
+
+  // Client creation modal state
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const { createClient } = useClients();
+  
+  const handleCreateClient = useCallback(async (data: { name: string; email?: string; phone?: string; country?: string; notes?: string }) => {
+    const newClient = await createClient(data);
+    if (newClient) {
+      handleDbClientSelect(newClient.id, newClient);
+      toast.success(`Client "${newClient.name}" created and linked!`);
+    }
+  }, [createClient, handleDbClientSelect]);
   
   // Swipe gesture state
   const touchStartX = useRef<number | null>(null);
@@ -285,6 +299,7 @@ export const MobileConfiguratorSheet = ({
             setInputs={setInputs}
             dbClientId={effectiveClientInfo.dbClientId}
             onDbClientSelect={handleDbClientSelect}
+            onCreateClient={() => setShowCreateClientModal(true)}
           />
         );
       case 'property':
@@ -472,6 +487,14 @@ export const MobileConfiguratorSheet = ({
           </div>
         </DrawerFooter>
       </DrawerContent>
+
+      {/* Client Creation Modal */}
+      <ClientForm
+        open={showCreateClientModal}
+        onClose={() => setShowCreateClientModal(false)}
+        onSubmit={handleCreateClient}
+        mode="create"
+      />
     </Drawer>
   );
 };
