@@ -25,11 +25,13 @@ import { useAdminRole } from "@/hooks/useAuth";
 import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useNewQuote } from "@/hooks/useNewQuote";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { SnapshotContent } from "@/components/roi/snapshot";
 import { ExportModal } from "@/components/roi/ExportModal";
 import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
+import { ResumeDraftDialog, DraftInfo } from "@/components/roi/ResumeDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -103,15 +105,22 @@ const OICalculatorContent = () => {
   // Check if we have a loaded quote (dataLoaded=true means data has been populated from the database)
   const isFullyConfigured = (hasClientDetails && hasPropertyConfigured) || (!!quoteId && dataLoaded && !!quote);
 
-  // Keep isQuoteConfigured for autosave logic (less strict)
-  const isQuoteConfigured = useMemo(() => {
+  // Stricter validation for auto-save: require MEANINGFUL content
+  const hasMeaningfulContent = useMemo(() => {
     return (
-      !!quoteId ||
-      !!clientInfo.developer ||
-      !!clientInfo.projectName ||
-      inputs.basePrice > 0
+      (inputs.basePrice > 0) ||
+      (!!clientInfo.projectName && clientInfo.projectName.trim().length > 0) ||
+      (!!clientInfo.developer && clientInfo.developer.trim().length > 0) ||
+      (clientInfo.clients?.some(c => c.name?.trim()))
     );
-  }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
+  }, [inputs.basePrice, clientInfo.projectName, clientInfo.developer, clientInfo.clients]);
+
+  const { checkExistingDraft, startNewQuote } = useNewQuote();
+  
+  // Resume draft dialog state
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [existingDraft, setExistingDraft] = useState<DraftInfo | null>(null);
+  const [resumeCheckDone, setResumeCheckDone] = useState(false);
 
   // LAZY CREATION: No draft created on mount - quote created on first meaningful change
   // This prevents empty quotes from cluttering the database
@@ -341,7 +350,8 @@ const OICalculatorContent = () => {
     if (justResetRef.current) return;
 
     const canUpdateExisting = !!quoteId && quote?.id === quoteId;
-    const allowAutoCreate = !quoteId && isQuoteConfigured;
+    // Use stricter hasMeaningfulContent instead of permissive isQuoteConfigured
+    const allowAutoCreate = !quoteId && hasMeaningfulContent;
 
     scheduleAutoSave(
       inputs,
@@ -353,7 +363,7 @@ const OICalculatorContent = () => {
       handleNewQuoteCreated,
       modalOpen
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, hasMeaningfulContent, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
 
   // Exit scenarios - allow up to 5 years (60 months) post-handover
   const exitScenarios = useMemo(() => {
@@ -411,8 +421,8 @@ const OICalculatorContent = () => {
   // Warn user before leaving with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only warn if quote is configured but not yet saved to DB
-      if (isQuoteConfigured && !quoteId && !lastSaved) {
+      // Only warn if quote has meaningful content but not yet saved to DB
+      if (hasMeaningfulContent && !quoteId && !lastSaved) {
         e.preventDefault();
         e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
         return e.returnValue;
@@ -421,7 +431,7 @@ const OICalculatorContent = () => {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isQuoteConfigured, quoteId, lastSaved]);
+  }, [hasMeaningfulContent, quoteId, lastSaved]);
 
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
@@ -459,7 +469,7 @@ const OICalculatorContent = () => {
         setLanguage={setLanguage}
         currency={currency}
         setCurrency={setCurrency}
-        hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
+        hasUnsavedChanges={hasMeaningfulContent && !quoteId && !lastSaved}
         saving={saving}
         onSave={handleSave}
         onOpenExportModal={() => setExportModalOpen(true)}

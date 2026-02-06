@@ -207,10 +207,16 @@ export const useCashflowQuote = (quoteId?: string) => {
     return true;
   }, []);
 
-  // Clear working draft content (reset for new quote)
+  // Clear working draft content (reset for new quote) - also resets local state
   const clearWorkingDraft = useCallback(async (): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    // Cancel any pending auto-save
+    if (autoSaveTimeout.current) {
+      clearTimeout(autoSaveTimeout.current);
+      autoSaveTimeout.current = null;
+    }
 
     await supabase
       .from('cashflow_quotes')
@@ -231,7 +237,17 @@ export const useCashflowQuote = (quoteId?: string) => {
       .eq('broker_id', user.id)
       .eq('status', 'working_draft');
     
-    console.log('Cleared working draft content');
+    // CRITICAL: Also reset local state to prevent stale data
+    setQuote(null);
+    setQuoteImages({
+      floorPlanUrl: null,
+      buildingRenderUrl: null,
+      heroImageUrl: null,
+      showLogoOverlay: true,
+    });
+    setLastSaved(null);
+    
+    console.log('Cleared working draft content and local state');
   }, []);
 
   // Legacy createDraft - now uses working draft system
@@ -252,6 +268,19 @@ export const useCashflowQuote = (quoteId?: string) => {
       saveVersionFn?: (data: any) => Promise<any>,
       images?: { floorPlanUrl?: string | null; buildingRenderUrl?: string | null; heroImageUrl?: string | null }
     ) => {
+      // GUARD: Check for meaningful content before saving
+      // This prevents "Untitled Quote" entries from empty configurations
+      const hasMinimumContent = 
+        (inputs.basePrice > 0) ||
+        (clientInfo.projectName?.trim()) ||
+        (clientInfo.developer?.trim()) ||
+        (clientInfo.clients?.some(c => c.name?.trim()));
+      
+      if (!hasMinimumContent) {
+        console.log('[saveQuote] Skipping save - no meaningful content');
+        return null;
+      }
+
       setSaving(true);
 
       // Safety check: Prevent saving with mismatched quote IDs to avoid data corruption
@@ -303,6 +332,11 @@ export const useCashflowQuote = (quoteId?: string) => {
         _mortgageInputs: mortgageInputs,
       };
 
+      // Generate title - avoid "Untitled Quote" for working drafts
+      const generatedTitle = titleClientPart
+        ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
+        : clientInfo.projectName || clientInfo.developer || null;
+
       const quoteData = {
         broker_id: user.id,
         inputs: inputsWithClients as any,
@@ -315,9 +349,8 @@ export const useCashflowQuote = (quoteId?: string) => {
         unit_type: clientInfo.unitType || null,
         unit_size_sqf: clientInfo.unitSizeSqf || null,
         unit_size_m2: clientInfo.unitSizeM2 || null,
-        title: titleClientPart
-          ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
-          : 'Untitled Quote',
+        // Only use "Untitled Quote" as absolute fallback for non-working-draft quotes
+        title: generatedTitle || (quote?.status === 'working_draft' ? null : 'Untitled Quote'),
       };
 
       let result;
@@ -430,10 +463,17 @@ export const useCashflowQuote = (quoteId?: string) => {
         clearTimeout(autoSaveTimeout.current);
       }
 
-      // LAZY CREATION: If no quote ID but user has configured something meaningful, create quote
-      if (!existingQuoteId && isQuoteConfigured) {
+      // LAZY CREATION: If no quote ID but user has MEANINGFUL content, create quote
+      // Stricter check: require actual content, not just "isQuoteConfigured" which was too permissive
+      const hasMeaningfulContent = 
+        (inputs.basePrice > 0) ||
+        (clientInfo.projectName?.trim()) ||
+        (clientInfo.developer?.trim()) ||
+        (clientInfo.clients?.some(c => c.name?.trim()));
+
+      if (!existingQuoteId && hasMeaningfulContent) {
         autoSaveTimeout.current = setTimeout(async () => {
-          console.log('Creating new quote on first meaningful change...');
+          console.log('[scheduleAutoSave] Creating new quote on first meaningful change...');
           const exitScenarios = inputs._exitScenarios || [];
           const savedQuote = await saveQuote(inputs, clientInfo, undefined, exitScenarios, mortgageInputs, undefined, images);
           if (savedQuote && onNewQuoteCreated) {

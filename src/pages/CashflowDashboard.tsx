@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OIInputModal } from "@/components/roi/OIInputModal";
@@ -21,11 +21,13 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
 import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNewQuote } from "@/hooks/useNewQuote";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { OverviewTabContent, PropertyTabContent, PaymentsTabContent, HoldTabContent, ExitTabContent, MortgageTabContent, SummaryTabContent } from "@/components/roi/tabs";
 import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
+import { ResumeDraftDialog, DraftInfo } from "@/components/roi/ResumeDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -35,6 +37,7 @@ const CashflowDashboardContent = () => {
   useDocumentTitle("Cashflow Dashboard");
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -54,11 +57,21 @@ const CashflowDashboardContent = () => {
   const { customDifferentiators } = useCustomDifferentiators();
   const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft, promoteWorkingDraft, clearWorkingDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
+  const { checkExistingDraft, startNewQuote } = useNewQuote();
   
   // Unsaved draft dialog state
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'new' | 'load' | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  
+  // Resume draft dialog state
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [existingDraft, setExistingDraft] = useState<DraftInfo | null>(null);
+  const [resumeCheckDone, setResumeCheckDone] = useState(false);
+  
+  // Track if we just reset state (to prevent immediate auto-save)
+  const justResetRef = useRef(false);
+  
   const calculations = useOICalculations(inputs);
   const mortgageAnalysis = useMortgageCalculations({
     mortgageInputs,
@@ -85,38 +98,109 @@ const CashflowDashboardContent = () => {
 
   const isFullyConfigured = hasClientDetails && hasPropertyConfigured;
 
-  const isQuoteConfigured = useMemo(() => {
+  // Stricter validation for auto-save: require MEANINGFUL content
+  const hasMeaningfulContent = useMemo(() => {
     return (
-      !!quoteId ||
-      !!clientInfo.developer ||
-      !!clientInfo.projectName ||
-      inputs.basePrice > 0
+      (inputs.basePrice > 0) ||
+      (!!clientInfo.projectName && clientInfo.projectName.trim().length > 0) ||
+      (!!clientInfo.developer && clientInfo.developer.trim().length > 0) ||
+      (clientInfo.clients?.some(c => c.name?.trim()))
     );
-  }, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
+  }, [inputs.basePrice, clientInfo.projectName, clientInfo.developer, clientInfo.clients]);
 
-  // Create draft silently on mount if no quoteId - no navigation, no modal auto-open
-  const [creatingDraft, setCreatingDraft] = useState(false);
-  const draftInitializedRef = useRef(false);
-  
+  // NO EAGER DRAFT CREATION - Check for existing working draft on mount instead
+  // This prevents empty quotes from cluttering the database
   useEffect(() => {
-    const initDraft = async () => {
-      // Guard: only run once and only when we have no quoteId
-      if (quoteId || creatingDraft || quoteLoading || draftInitializedRef.current) {
+    const checkForDraft = async () => {
+      // Skip if we have a quoteId (loading existing quote) or already checked
+      if (quoteId || quoteLoading || resumeCheckDone) return;
+      
+      // Skip if this is a "fresh start" navigation (user already chose to start new)
+      if (location.state?.freshStart) {
+        setResumeCheckDone(true);
+        // Clear the state to prevent issues on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+        // Check for preselected client
+        const preselectedClient = localStorage.getItem('preselected_client');
+        if (preselectedClient) {
+          try {
+            const clientData = JSON.parse(preselectedClient);
+            setClientInfo({
+              ...DEFAULT_CLIENT_INFO,
+              clients: [{
+                id: '1',
+                name: clientData.clientName || '',
+                country: clientData.clientCountry || '',
+                email: clientData.clientEmail || ''
+              }],
+              dbClientId: clientData.dbClientId || undefined
+            });
+            localStorage.removeItem('preselected_client');
+          } catch (e) {
+            console.error('Failed to parse preselected client:', e);
+            localStorage.removeItem('preselected_client');
+          }
+        }
+        setDataLoaded(true);
+        // Open configurator if requested
+        if (location.state?.openConfigurator) {
+          setModalOpen(true);
+        }
         return;
       }
       
-      draftInitializedRef.current = true;
-      setCreatingDraft(true);
+      const draft = await checkExistingDraft();
+      setResumeCheckDone(true);
       
-      const newId = await createDraft();
-      if (newId) {
-        // Use navigate with replace to properly update React Router state
-        navigate(`/cashflow-dashboard/${newId}`, { replace: true });
+      if (draft) {
+        // User has a working draft with content - ask what to do
+        setExistingDraft(draft);
+        setShowResumeDialog(true);
+      } else {
+        // No meaningful draft - proceed fresh, open configurator
+        setDataLoaded(true);
+        // Don't auto-open configurator here - wait for user action
       }
-      setCreatingDraft(false);
     };
-    initDraft();
-  }, [quoteId, creatingDraft, createDraft, quoteLoading, navigate]);
+    
+    checkForDraft();
+  }, [quoteId, quoteLoading, resumeCheckDone, checkExistingDraft, location.state, navigate, location.pathname]);
+
+  // Handle resume draft
+  const handleResumeDraft = useCallback(() => {
+    if (existingDraft?.id) {
+      navigate(`/cashflow-dashboard/${existingDraft.id}`, { replace: true });
+    }
+    setShowResumeDialog(false);
+    setExistingDraft(null);
+  }, [existingDraft, navigate]);
+
+  // Handle start fresh
+  const handleStartFresh = useCallback(async () => {
+    setShowResumeDialog(false);
+    setExistingDraft(null);
+    
+    // Clear the working draft
+    await clearWorkingDraft();
+    
+    // Reset local state
+    setInputs(NEW_QUOTE_OI_INPUTS);
+    setClientInfo(DEFAULT_CLIENT_INFO);
+    setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+    setQuoteImages({
+      floorPlanUrl: null,
+      buildingRenderUrl: null,
+      heroImageUrl: null,
+      showLogoOverlay: true,
+    });
+    
+    setDataLoaded(true);
+    justResetRef.current = true;
+    setTimeout(() => { justResetRef.current = false; }, 500);
+    
+    // Open configurator for fresh start
+    setModalOpen(true);
+  }, [clearWorkingDraft, setQuoteImages]);
 
   // Load quote data from database
   useEffect(() => {
@@ -184,9 +268,12 @@ const CashflowDashboardContent = () => {
   useEffect(() => {
     if (!dataLoaded) return;
     if (quoteLoading) return;
+    // Skip auto-save immediately after resetting state for new quote
+    if (justResetRef.current) return;
 
     const canUpdateExisting = !!quoteId && quote?.id === quoteId;
-    const allowAutoCreate = !quoteId && isQuoteConfigured;
+    // Use stricter hasMeaningfulContent instead of permissive isQuoteConfigured
+    const allowAutoCreate = !quoteId && hasMeaningfulContent;
 
     scheduleAutoSave(
       inputs,
@@ -198,7 +285,7 @@ const CashflowDashboardContent = () => {
       handleNewQuoteCreated,
       modalOpen // suppress toast when configurator is open
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, isQuoteConfigured, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, hasMeaningfulContent, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen, justResetRef]);
 
   // Exit scenarios - allow up to 5 years (60 months) post-handover
   const exitScenarios = useMemo(() => {
@@ -302,7 +389,15 @@ const CashflowDashboardContent = () => {
 
   return (
     <CashflowErrorBoundary>
-      {/* Unsaved Draft Dialog */}
+      {/* Resume Draft Dialog - shown on initial load when user has existing draft */}
+      <ResumeDraftDialog
+        open={showResumeDialog}
+        draftInfo={existingDraft}
+        onResume={handleResumeDraft}
+        onStartFresh={handleStartFresh}
+      />
+
+      {/* Unsaved Draft Dialog - shown when navigating away with unsaved changes */}
       <UnsavedDraftDialog
         open={showUnsavedDialog}
         onSave={handleSaveWorkingDraft}
@@ -376,7 +471,7 @@ const CashflowDashboardContent = () => {
           setLanguage={setLanguage}
           currency={currency}
           setCurrency={setCurrency}
-          hasUnsavedChanges={isQuoteConfigured && !quoteId && !lastSaved}
+          hasUnsavedChanges={hasMeaningfulContent && !quoteId && !lastSaved}
           saving={saving}
           onSave={handleSave}
         >

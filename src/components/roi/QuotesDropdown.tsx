@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNewQuote } from '@/hooks/useNewQuote';
 
 interface QuotesDropdownProps {
   saving: boolean;
@@ -35,6 +36,7 @@ export const QuotesDropdown = ({
   const { toast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { startNewQuote } = useNewQuote();
 
   const handleSave = async () => {
     await onSave();
@@ -48,17 +50,16 @@ export const QuotesDropdown = ({
     }
   };
 
-  const handleNewQuote = () => {
+  const handleNewQuote = async () => {
     if (onNewQuote) {
+      // Use the callback provided by the parent (handles draft checks)
       onNewQuote();
     } else {
-      // Clear local storage for fresh start
-      localStorage.removeItem('cashflow_quote_draft');
-      localStorage.removeItem('cashflow-configurator-state');
-      localStorage.removeItem('cashflow-configurator-state-v2');
-      localStorage.removeItem('cashflow_configurator_open');
-      // Navigate without reload - let React handle the state reset
-      navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+      // Use unified hook for consistent behavior across all entry points
+      await startNewQuote({
+        openConfigurator: true,
+        targetRoute: 'generator',
+      });
     }
   };
 
