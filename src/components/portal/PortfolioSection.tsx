@@ -1,10 +1,13 @@
-import { Building, TrendingUp, DollarSign, PiggyBank, Wallet, Home, Percent, ExternalLink, TrendingDown } from "lucide-react";
+import { Building, TrendingUp, PiggyBank, Wallet, Home, Percent, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AcquiredProperty, PortfolioMetrics } from "@/hooks/usePortfolio";
+import { usePortfolioProjections } from "@/hooks/usePortfolioProjections";
 import { format } from "date-fns";
 import { Currency } from "@/components/roi/currencyUtils";
+import { PortfolioGoalCard } from "@/components/portfolio/PortfolioGoalCard";
+import { PortfolioGrowthChart } from "@/components/portfolio/PortfolioGrowthChart";
 
 // Extended property with rental yield data from quote
 export interface PropertyWithProjections extends AcquiredProperty {
@@ -35,25 +38,51 @@ export const PortfolioSection = ({ properties, metrics, currency, rate, language
   const appreciationPositive = metrics.totalAppreciation >= 0;
   const cashflowPositive = metrics.netMonthlyCashflow >= 0;
 
+  // Get projections for goal card and chart
+  const { 
+    projections, 
+    yearsToDouble, 
+    targetWealth, 
+    currentProgress,
+    projectedValueAtDouble,
+    projectedRentAtDouble,
+  } = usePortfolioProjections(properties, metrics);
+
   return (
     <div className="space-y-6">
-      {/* Hero Metric - Total Portfolio Value */}
-      <Card className="bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 border-theme-accent/30">
-        <CardContent className="p-6">
-          <div className="text-center">
-            <p className="text-sm text-theme-text-muted mb-1">Total Portfolio Value</p>
-            <p className="text-4xl font-bold text-theme-text">
-              {formatCurrency(metrics.totalCurrentValue, currency, rate)}
-            </p>
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <Badge className={`${appreciationPositive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} border-0`}>
-                <TrendingUp className="w-3 h-3 mr-1" />
-                {appreciationPositive ? '+' : ''}{formatCurrency(metrics.totalAppreciation, currency, rate)} ({metrics.appreciationPercent.toFixed(1)}%)
-              </Badge>
+      {/* Hero Row: Portfolio Value + Goal Card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Total Portfolio Value */}
+        <Card className="bg-gradient-to-br from-theme-accent/20 to-theme-accent/5 border-theme-accent/30">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-sm text-theme-text-muted mb-1">Total Portfolio Value</p>
+              <p className="text-4xl font-bold text-theme-text">
+                {formatCurrency(metrics.totalCurrentValue, currency, rate)}
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <Badge className={`${appreciationPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'} border-0`}>
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  {appreciationPositive ? '+' : ''}{formatCurrency(metrics.totalAppreciation, currency, rate)} ({metrics.appreciationPercent.toFixed(1)}%)
+                </Badge>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Years to Double Goal Card */}
+        <PortfolioGoalCard
+          yearsToDouble={yearsToDouble}
+          targetWealth={targetWealth}
+          currentProgress={currentProgress}
+          totalAppreciation={metrics.totalAppreciation}
+          appreciationPercent={metrics.appreciationPercent}
+          projectedRentAtDouble={projectedRentAtDouble}
+          projectedValueAtDouble={projectedValueAtDouble}
+          currency={currency}
+          rate={rate}
+        />
+      </div>
 
       {/* Secondary Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -91,6 +120,16 @@ export const PortfolioSection = ({ properties, metrics, currency, rate, language
           </CardContent>
         </Card>
       </div>
+
+      {/* Portfolio Growth Chart */}
+      {projections.length > 0 && (
+        <PortfolioGrowthChart
+          projections={projections}
+          currency={currency}
+          rate={rate}
+          targetWealth={targetWealth}
+        />
+      )}
 
       {/* Properties List */}
       <div>

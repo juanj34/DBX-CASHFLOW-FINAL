@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, DollarSign, Calendar, Eye, Download, Check, BarChart3 } from "lucide-react";
+import { Building2, DollarSign, Calendar, Eye, Download, Check, BarChart3, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ interface QuoteData {
   share_token: string | null;
   inputs: any;
   updated_at: string;
+  client_name?: string | null;
+  client_country?: string | null;
+  unit_size_sqf?: number | null;
 }
 
 interface OpportunitiesSectionProps {
@@ -24,6 +27,8 @@ interface OpportunitiesSectionProps {
   language: 'en' | 'es';
   onDownload: (quoteId: string) => void;
   onCompare: (quoteIds: string[]) => void;
+  onConvertToProperty?: (quote: QuoteData) => void;
+  isBrokerView?: boolean; // Shows convert button when true
 }
 
 const formatPrice = (inputs: any) => {
@@ -39,7 +44,9 @@ export const OpportunitiesSection = ({
   currency, 
   language, 
   onDownload,
-  onCompare 
+  onCompare,
+  onConvertToProperty,
+  isBrokerView = false,
 }: OpportunitiesSectionProps) => {
   const [selectedQuotes, setSelectedQuotes] = useState<string[]>([]);
 
@@ -165,7 +172,18 @@ export const OpportunitiesSection = ({
                       className="flex-1 bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
                     >
                       <Eye className="w-3.5 h-3.5 mr-1.5" />
-                      View Analysis
+                      View
+                    </Button>
+                  )}
+                  {isBrokerView && onConvertToProperty && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onConvertToProperty(quote)}
+                      className="border-theme-accent/30 bg-theme-bg text-theme-accent hover:bg-theme-accent/10"
+                      title="Add to Portfolio"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
                     </Button>
                   )}
                   <Button
