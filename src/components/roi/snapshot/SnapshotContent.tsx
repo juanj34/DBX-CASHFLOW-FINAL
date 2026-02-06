@@ -11,10 +11,9 @@ import { CompactPaymentTable } from './CompactPaymentTable';
 import { CompactRentCard } from './CompactRentCard';
 import { CompactMortgageCard } from './CompactMortgageCard';
 import { CompactPostHandoverCard } from './CompactPostHandoverCard';
-import { CompactAllExitsCard } from './CompactAllExitsCard';
+import { CompactExitGraphCard } from './CompactExitGraphCard';
 import { WealthProjectionModal } from './WealthProjectionModal';
 import { FloorPlanLightbox } from '@/components/roi/FloorPlanLightbox';
-import { ExitChartModal } from './ExitChartModal';
 
 interface SnapshotContentProps {
   inputs: OIInputs;
@@ -59,7 +58,6 @@ export const SnapshotContent = ({
 }: SnapshotContentProps) => {
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
   const [wealthModalOpen, setWealthModalOpen] = useState(false);
-  const [exitModalOpen, setExitModalOpen] = useState(false);
   const basePrice = calculations.basePrice;
 
   // Calculate price per sqft
@@ -176,13 +174,12 @@ export const SnapshotContent = ({
               
               {/* All Exits Card */}
               {showExits && (
-                <CompactAllExitsCard
+                <CompactExitGraphCard
                   inputs={inputs}
                   calculations={calculations}
                   exitScenarios={exitScenarios}
                   currency={currency}
                   rate={rate}
-                  onClick={() => setExitModalOpen(true)}
                 />
               )}
               
@@ -241,13 +238,12 @@ export const SnapshotContent = ({
               
               {/* All Exits Card */}
               {showExits && (
-                <CompactAllExitsCard
+                <CompactExitGraphCard
                   inputs={inputs}
                   calculations={calculations}
                   exitScenarios={exitScenarios}
                   currency={currency}
                   rate={rate}
-                  onClick={() => setExitModalOpen(true)}
                 />
               )}
               
@@ -307,18 +303,6 @@ export const SnapshotContent = ({
         bookingMonth={inputs.bookingMonth}
       />
 
-      {/* Exit Chart Modal */}
-      <ExitChartModal
-        open={exitModalOpen}
-        onOpenChange={setExitModalOpen}
-        inputs={inputs}
-        exitScenarios={exitScenarios}
-        totalMonths={calculations.totalMonths}
-        basePrice={calculations.basePrice}
-        totalEntryCosts={calculations.totalEntryCosts}
-        currency={currency}
-        rate={rate}
-      />
 
       {/* Floating Edit Button */}
       {onEditClick && (

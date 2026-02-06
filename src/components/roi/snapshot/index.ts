@@ -3,6 +3,7 @@ export { ClientUnitTable } from './ClientUnitTable';
 export { EquitySummaryCard } from './EquitySummaryCard';
 export { CompactExitCards } from './CompactExitCards';
 export { CompactAllExitsCard } from './CompactAllExitsCard';
+export { CompactExitGraphCard } from './CompactExitGraphCard';
 export { SnapshotExitCards } from './SnapshotExitCards';
 export { InitialCostTable } from './InitialCostTable';
 export { MilestoneTable } from './MilestoneTable';
