@@ -1,220 +1,144 @@
 
-# Plan: Replace Exit Scenarios with Inline Graph in Snapshot View
 
-## Overview
+# Plan: Redesign Exit Graph Card - Larger Graph + Horizontal Cards
 
-Transform the Exit Scenarios section in the Snapshot view to show an attractive inline graph (similar to `ExitChartModal`) directly visible, instead of requiring users to click to see it. The goal is to make the snapshot more visually impactful and professional.
+## Problem Summary
 
-## Current State
+The current design has:
+1. **Graph too small** (140px height) - not imposing enough
+2. **Cards are vertical** - each scenario is a tall vertical card taking too much space
+3. **Background plain** - numbers don't stand out enough
 
-**Problem 1: Exit graph hidden behind modal**
-- `CompactAllExitsCard` displays exit scenarios as a list of cards
-- User must click to open `ExitChartModal` to see the appreciation graph
-- The graph is actually the most visually impressive part
+## Solution
 
-**Problem 2: Visual overlap on graphs**  
-- When exit scenarios are close to handover (within 2-3 months), the text labels overlap
-- Handover marker and nearby exits collide visually
+### 1. Make Graph Bigger & More Imposing
 
-**Problem 3: UI appears cluttered**
-- The card-based list takes up space but isn't as impactful as the graph
+**Current:** `height = 140px`  
+**New:** `height = 200px`
 
-## Solution: Create `CompactExitGraphCard`
-
-A new hybrid component that combines:
-- A compact appreciation graph (simplified version of `OIGrowthCurve`)
-- Exit scenario summary cards below the graph (inspired by the reference image)
-
-## Implementation Details
-
-### 1. Create New Component: `CompactExitGraphCard.tsx`
-
-**Location:** `src/components/roi/snapshot/CompactExitGraphCard.tsx`
-
-**Features:**
-- Inline SVG appreciation curve (not a modal)
-- Compact height (~280-320px total)
-- Exit markers on the curve with smart positioning to avoid overlap
-- Summary cards below showing Profit, ROE, Hold time
-- No click required - everything visible immediately
-
-**Layout:**
-```text
-+----------------------------------------------+
-| ICON  EXIT SCENARIOS                         |
-+----------------------------------------------+
-|                                              |
-|     [APPRECIATION CURVE WITH MARKERS]        |
-|     Exit 1 ●    Exit 2 ●    🔑 Handover     |
-|                                              |
-+----------------------------------------------+
-| #1  6m Aug'26                    40% built   |
-| PROFIT        ROE          HOLD              |
-| +AED 45,764   13%          6m                |
-|               26.1%/yr     Aug'26            |
-| Capital: 350K  →  Value: 830K                |
-+----------------------------------------------+
-| #2  9m Nov'26                    75% built   |
-| ...                                          |
-+----------------------------------------------+
-```
-
-### 2. Smart Marker Positioning
-
-**Collision detection algorithm:**
-```typescript
-// Check for label collisions and compute offsets
-const exitPositions = exitScenarios.map(month => xScale(month));
-const handoverPosition = xScale(totalMonths);
-
-// For each exit, determine label placement:
-// - If within 40px of handover → offset left or right
-// - If within 40px of another exit → stagger vertically
-// - Otherwise → center above marker
-```
-
-**Label placement rules:**
-| Condition | Action |
-|-----------|--------|
-| Exit < handover by ≤3 months | Offset label LEFT |
-| Exit > handover by ≤3 months | Offset label RIGHT |
-| Two exits within 3 months | Stagger Y positions |
-| Handover marker | Always centered, white styling |
-
-### 3. Simplified Curve
-
-Remove complexity from the graph for snapshot:
-- No construction % bar below
-- No phase labels (Under Constr., Post-HO, etc.)
-- Just the appreciation curve + exit markers + handover
-- Base price line as reference
-
-### 4. Exit Summary Cards (Below Graph)
-
-Using the reference image layout:
+Add visual enhancements:
+- Gradient background inside the chart area
+- Stronger glow effects on markers
+- Thicker curve stroke (2 → 3px)
+- Better contrast on labels
 
 ```tsx
-<div className="grid grid-cols-3 gap-3">
-  {/* Profit */}
-  <div>
-    <span className="text-[10px] text-gray-500">PROFIT</span>
-    <span className="text-lg font-bold text-green-400">+AED 45,764</span>
-  </div>
-  
-  {/* ROE */}
-  <div>
-    <span className="text-[10px] text-gray-500">ROE</span>
-    <span className="text-2xl font-bold text-theme-accent">13%</span>
-    <span className="text-xs text-gray-500">26.1%/yr</span>
-  </div>
-  
-  {/* Hold Time */}
-  <div>
-    <span className="text-[10px] text-gray-500">HOLD</span>
-    <span className="text-lg font-bold">6m</span>
-    <span className="text-xs text-gray-500">Aug'26</span>
-  </div>
-</div>
+// New dimensions
+const width = 400;
+const height = 200;  // Was 140
+const padding = { top: 40, right: 20, bottom: 30, left: 45 };
+```
 
-{/* Capital → Value row */}
-<div className="text-xs text-gray-500">
-  Capital: AED 350,385 → Value: AED 830,730
+Add background styling:
+```tsx
+{/* Dark gradient background for chart area */}
+<rect
+  x={padding.left}
+  y={padding.top}
+  width={chartWidth}
+  height={chartHeight}
+  rx="8"
+  fill="url(#chartBgGradient)"
+/>
+
+<defs>
+  <linearGradient id="chartBgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stopColor="rgba(0,0,0,0.4)" />
+    <stop offset="100%" stopColor="rgba(0,0,0,0.1)" />
+  </linearGradient>
+</defs>
+```
+
+### 2. Horizontal Exit Cards (3-4 in a row)
+
+Replace vertical `space-y-2` cards with a horizontal grid of small square cards:
+
+**Current Layout:**
+```
+┌─────────────────────────────┐
+│ #1  6m   Profit ROE Hold    │ ← tall card
+├─────────────────────────────┤
+│ #2  9m   Profit ROE Hold    │ ← tall card
+├─────────────────────────────┤
+│ #3  12m  Profit ROE Hold    │ ← tall card
+└─────────────────────────────┘
+```
+
+**New Layout:**
+```
+┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+│ #1 6m  │ │ #2 9m  │ │ #3 12m │ │ #4 24m │
+│  13%   │ │  18%   │ │  22%   │ │  35%   │
+│ ROE    │ │ ROE    │ │ ROE    │ │ ROE    │
+│ +45K   │ │ +62K   │ │ +78K   │ │ +120K  │
+└────────┘ └────────┘ └────────┘ └────────┘
+```
+
+**Implementation:**
+```tsx
+{/* Horizontal Exit Cards */}
+<div className="p-3 pt-0">
+  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+    {scenarios.map((scenario) => (
+      <div 
+        key={scenario.exitMonths}
+        className="bg-black/30 backdrop-blur-sm border border-theme-border/40 rounded-lg p-2.5 text-center"
+      >
+        {/* Exit Number + Months */}
+        <div className="flex items-center justify-center gap-1 mb-1">
+          <span className="text-[10px] font-bold text-theme-accent">
+            #{scenario.exitNumber}
+          </span>
+          <span className="text-xs text-theme-text-muted">
+            {scenario.exitMonths}m
+          </span>
+        </div>
+        
+        {/* Hero ROE - Big & Bold */}
+        <span className="text-2xl font-black font-mono text-green-400 block">
+          {scenario.trueROE?.toFixed(0)}%
+        </span>
+        <span className="text-[8px] text-theme-text-muted uppercase">ROE</span>
+        
+        {/* Profit */}
+        <div className="mt-1 pt-1 border-t border-theme-border/20">
+          <span className="text-xs font-bold text-green-400/80">
+            +{formatCurrencyShort(scenario.trueProfit, 'AED')}
+          </span>
+        </div>
+      </div>
+    ))}
+  </div>
 </div>
 ```
 
-### 5. Update SnapshotContent
+### 3. Visual Improvements
 
-Replace `CompactAllExitsCard` usage with new `CompactExitGraphCard`:
+| Element | Before | After |
+|---------|--------|-------|
+| Chart height | 140px | 200px |
+| Curve stroke | 2px | 3px |
+| Card layout | Vertical stack | Horizontal grid (3-4 cols) |
+| Card size | Full width, tall | Square, compact |
+| Background | Plain | Dark gradient with blur |
+| Hero metric | 3 cols (Profit/ROE/Hold) | ROE dominant, profit secondary |
+| Number visibility | Medium | High contrast with backdrop |
 
-**File:** `src/components/roi/snapshot/SnapshotContent.tsx`
+### 4. Responsive Grid
 
 ```tsx
-// Replace:
-{showExits && (
-  <CompactAllExitsCard ... onClick={() => setExitModalOpen(true)} />
-)}
-
-// With:
-{showExits && (
-  <CompactExitGraphCard
-    inputs={inputs}
-    calculations={calculations}
-    exitScenarios={exitScenarios}
-    currency={currency}
-    rate={rate}
-  />
-)}
+// 3 columns on mobile, 4 on larger screens
+className="grid grid-cols-3 gap-2 sm:grid-cols-4"
 ```
 
-### 6. Remove Exit Modal Trigger
-
-Since the graph is now inline:
-- Remove the `onClick={() => setExitModalOpen(true)}` 
-- Keep `ExitChartModal` available but not needed for main view
-- The summary cards could optionally open the modal for more detail
+If there are only 2 scenarios → `grid-cols-2`
+If there are 3+ scenarios → `grid-cols-3 sm:grid-cols-4`
 
 ---
 
-## Visual Improvements
+## File to Modify
 
-### No Overlap Strategy
+| File | Changes |
+|------|---------|
+| `src/components/roi/snapshot/CompactExitGraphCard.tsx` | Increase graph height, add background gradient, convert cards to horizontal grid, simplify card content to ROE-dominant |
 
-**Smart offset calculation:**
-```typescript
-const calculateLabelPosition = (exitMonth: number, allExits: number[], handoverMonth: number) => {
-  const distanceFromHandover = Math.abs(exitMonth - handoverMonth);
-  const isBeforeHandover = exitMonth < handoverMonth;
-  
-  // Check proximity to handover
-  if (distanceFromHandover <= 3) {
-    return {
-      xOffset: isBeforeHandover ? -50 : 50,
-      textAnchor: isBeforeHandover ? 'end' : 'start',
-      yOffset: 0
-    };
-  }
-  
-  // Check proximity to other exits
-  const nearbyExits = allExits.filter(m => 
-    m !== exitMonth && Math.abs(m - exitMonth) <= 3
-  );
-  
-  if (nearbyExits.length > 0) {
-    const index = allExits.indexOf(exitMonth);
-    return {
-      xOffset: 0,
-      textAnchor: 'middle',
-      yOffset: (index % 2) * 20 // Stagger alternating exits
-    };
-  }
-  
-  return { xOffset: 0, textAnchor: 'middle', yOffset: 0 };
-};
-```
-
-### Graph Styling (Matching Premium Aesthetic)
-
-- Curve: Lime (#CCFF00) gradient to Cyan (#22d3d1)
-- Markers: Concentric circles with glow effect
-- Labels: Background pill with semi-transparent fill
-- Handover: White marker with 🔑 or special styling
-
----
-
-## Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `src/components/roi/snapshot/CompactExitGraphCard.tsx` | **CREATE** - New hybrid graph + cards component |
-| `src/components/roi/snapshot/SnapshotContent.tsx` | **MODIFY** - Replace CompactAllExitsCard with CompactExitGraphCard |
-| `src/components/roi/snapshot/index.ts` | **MODIFY** - Export new component |
-
----
-
-## Technical Notes
-
-- Reuse `calculateExitScenario()` and `calculateExitPrice()` from `constructionProgress.ts`
-- Keep calculations consistent with existing ROE logic
-- SVG viewBox scaled for compact height (~180px chart area)
-- Cards below use reference image grid layout
-- No framer-motion needed for inline static display
