@@ -1,10 +1,9 @@
-import { useMemo } from 'react';
-import { TrendingUp, Key, ArrowRight } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { TrendingUp, Key } from 'lucide-react';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatCurrencyShort } from '../currencyUtils';
 import { calculateExitPrice, calculateExitScenario } from '../constructionProgress';
 import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompactExitGraphCardProps {
   inputs: OIInputs;
@@ -21,15 +20,15 @@ export const CompactExitGraphCard = ({
   currency,
   rate,
 }: CompactExitGraphCardProps) => {
-  const { t } = useLanguage();
+  const [hoverData, setHoverData] = useState<{ x: number; y: number; month: number; price: number } | null>(null);
   
   const basePrice = inputs.basePrice || calculations.basePrice || 0;
   const totalMonths = calculations.totalMonths;
   
-  // Chart dimensions - clean and minimal
-  const width = 400;
-  const height = 120;
-  const padding = { top: 25, right: 20, bottom: 30, left: 20 };
+  // Chart dimensions - larger for better visibility
+  const width = 440;
+  const height = 200;
+  const padding = { top: 30, right: 25, bottom: 35, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   
@@ -41,7 +40,7 @@ export const CompactExitGraphCard = ({
   const xScale = (months: number) => padding.left + (months / chartMaxMonth) * chartWidth;
   const maxChartPrice = basePrice > 0 ? calculateExitPrice(chartMaxMonth, basePrice, totalMonths, inputs) : 0;
   const maxValue = maxChartPrice * 1.08;
-  const minValue = basePrice * 0.95;
+  const minValue = basePrice * 0.92;
   const yScale = (value: number) => {
     if (maxValue === minValue) return padding.top + chartHeight / 2;
     return padding.top + chartHeight - ((value - minValue) / (maxValue - minValue)) * chartHeight;
@@ -50,30 +49,62 @@ export const CompactExitGraphCard = ({
   // Handover price
   const handoverPrice = basePrice > 0 ? calculateExitPrice(totalMonths, basePrice, totalMonths, inputs) : 0;
   
-  // Generate smooth curve path
-  const curvePath = useMemo(() => {
-    if (basePrice <= 0) return '';
-    const points: { x: number; y: number }[] = [];
-    const steps = 40;
+  // Y-axis ticks (5 values)
+  const yAxisTicks = useMemo(() => {
+    if (basePrice <= 0) return [];
+    const range = maxValue - minValue;
+    const step = range / 4;
+    return Array.from({ length: 5 }, (_, i) => minValue + step * i).reverse();
+  }, [minValue, maxValue, basePrice]);
+  
+  // X-axis labels
+  const xAxisLabels = useMemo(() => {
+    const labels: { month: number; label: string; isHandover: boolean }[] = [];
+    labels.push({ month: 0, label: '0', isHandover: false });
+    
+    // Add some intermediate points
+    const step = Math.max(Math.floor(chartMaxMonth / 5), 3);
+    for (let m = step; m < chartMaxMonth; m += step) {
+      if (Math.abs(m - totalMonths) > 2) {
+        labels.push({ month: m, label: `${m}m`, isHandover: false });
+      }
+    }
+    
+    // Always add handover
+    labels.push({ month: totalMonths, label: `🔑 ${totalMonths}m`, isHandover: true });
+    
+    return labels.sort((a, b) => a.month - b.month);
+  }, [chartMaxMonth, totalMonths]);
+  
+  // Generate smooth curve path and points for hover
+  const { curvePath, curvePoints } = useMemo(() => {
+    if (basePrice <= 0) return { curvePath: '', curvePoints: [] };
+    const points: { x: number; y: number; month: number; price: number }[] = [];
+    const steps = 50;
     for (let i = 0; i <= steps; i++) {
       const progress = i / steps;
       const month = progress * chartMaxMonth;
       const price = calculateExitPrice(month, basePrice, totalMonths, inputs);
-      points.push({ x: month, y: price });
+      points.push({ 
+        x: xScale(month), 
+        y: yScale(price), 
+        month, 
+        price 
+      });
     }
     
-    let path = `M ${xScale(points[0].x)} ${yScale(points[0].y)}`;
+    let path = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) {
-      path += ` L ${xScale(points[i].x)} ${yScale(points[i].y)}`;
+      path += ` L ${points[i].x} ${points[i].y}`;
     }
     
-    return path;
+    return { curvePath: path, curvePoints: points };
   }, [basePrice, totalMonths, chartMaxMonth, inputs]);
   
-  // Calculate scenarios
+  // Calculate scenarios with ROE
   const scenarios = useMemo(() => {
     if (basePrice <= 0) return [];
-    return exitScenarios.map((exitMonths, index) => {
+    return exitScenarios.map((exitMonths) => {
       const scenarioResult = calculateExitScenario(
         exitMonths,
         basePrice,
@@ -82,34 +113,49 @@ export const CompactExitGraphCard = ({
         calculations.totalEntryCosts
       );
       
-      const isPostHandover = exitMonths > totalMonths;
       const isHandover = Math.abs(exitMonths - totalMonths) <= 1;
       const netGain = scenarioResult.exitPrice - basePrice;
       const gainPercent = basePrice > 0 ? (netGain / basePrice) * 100 : 0;
-      
-      // Label for the exit
-      let exitLabel = '';
-      if (isHandover) {
-        exitLabel = 'Handover';
-      } else if (isPostHandover) {
-        const yearsAfter = Math.round((exitMonths - totalMonths) / 12);
-        exitLabel = yearsAfter > 0 ? `+${yearsAfter}Y Post` : `+${exitMonths - totalMonths}m`;
-      } else {
-        exitLabel = `${exitMonths}m`;
-      }
       
       return {
         exitMonths,
         exitPrice: scenarioResult.exitPrice,
         netGain,
         gainPercent,
-        isPostHandover,
+        annualizedROE: scenarioResult.annualizedROE,
         isHandover,
-        exitNumber: index + 1,
-        exitLabel,
       };
     });
   }, [exitScenarios, basePrice, totalMonths, inputs, calculations.totalEntryCosts]);
+  
+  // Handle mouse move on graph
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * width;
+    
+    if (x >= padding.left && x <= width - padding.right) {
+      // Find closest point
+      let closest = curvePoints[0];
+      let minDist = Math.abs(curvePoints[0]?.x - x);
+      
+      for (const point of curvePoints) {
+        const dist = Math.abs(point.x - x);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = point;
+        }
+      }
+      
+      if (closest) {
+        setHoverData(closest);
+      }
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    setHoverData(null);
+  };
   
   // Early returns AFTER all hooks
   if (basePrice <= 0 || exitScenarios.length === 0) {
@@ -123,7 +169,7 @@ export const CompactExitGraphCard = ({
 
   return (
     <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
-      {/* Header - Simple */}
+      {/* Header */}
       <div className="px-4 py-3 border-b border-theme-border">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-theme-accent" />
@@ -132,21 +178,68 @@ export const CompactExitGraphCard = ({
         <p className="text-xs text-theme-text-muted mt-0.5">From purchase to exit</p>
       </div>
       
-      {/* Clean Graph - Only shows value evolution */}
+      {/* Large Graph with Axes */}
       <div className="px-3 py-4">
-        <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+        <svg 
+          width="100%" 
+          viewBox={`0 0 ${width} ${height}`} 
+          preserveAspectRatio="xMidYMid meet"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          className="cursor-crosshair"
+        >
           <defs>
             <linearGradient id="valueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="hsl(142.1 76.2% 36.3%)" stopOpacity="0.9" />
+              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="hsl(142.1 76.2% 36.3%)" stopOpacity="1" />
             </linearGradient>
             <linearGradient id="areaFill" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="0" />
+              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.02" />
             </linearGradient>
           </defs>
           
-          {/* Subtle baseline */}
+          {/* Y-Axis Grid Lines & Labels */}
+          {yAxisTicks.map((value, i) => (
+            <g key={`y-${i}`}>
+              <line
+                x1={padding.left}
+                y1={yScale(value)}
+                x2={width - padding.right}
+                y2={yScale(value)}
+                stroke="hsl(var(--theme-border))"
+                strokeWidth="1"
+                opacity="0.3"
+              />
+              <text
+                x={padding.left - 8}
+                y={yScale(value)}
+                fill="hsl(var(--theme-text-muted))"
+                fontSize="10"
+                textAnchor="end"
+                dominantBaseline="middle"
+              >
+                {formatCurrencyShort(value, 'AED')}
+              </text>
+            </g>
+          ))}
+          
+          {/* X-Axis Labels */}
+          {xAxisLabels.map(({ month, label, isHandover }) => (
+            <text
+              key={month}
+              x={xScale(month)}
+              y={height - 10}
+              fill={isHandover ? "hsl(var(--theme-text))" : "hsl(var(--theme-text-muted))"}
+              fontSize={isHandover ? "10" : "9"}
+              fontWeight={isHandover ? "600" : "normal"}
+              textAnchor="middle"
+            >
+              {label}
+            </text>
+          ))}
+          
+          {/* Base Price Dashed Line */}
           <line
             x1={padding.left}
             y1={yScale(basePrice)}
@@ -155,8 +248,16 @@ export const CompactExitGraphCard = ({
             stroke="hsl(var(--theme-text-muted))"
             strokeWidth="1"
             strokeDasharray="4,4"
-            opacity="0.3"
+            opacity="0.5"
           />
+          <text
+            x={padding.left + 4}
+            y={yScale(basePrice) - 6}
+            fill="hsl(var(--theme-text-muted))"
+            fontSize="9"
+          >
+            Base: {formatCurrencyShort(basePrice, 'AED')}
+          </text>
           
           {/* Area fill */}
           <path
@@ -164,7 +265,7 @@ export const CompactExitGraphCard = ({
             fill="url(#areaFill)"
           />
           
-          {/* Main curve - clean single line */}
+          {/* Main curve */}
           <path
             d={curvePath}
             fill="none"
@@ -173,122 +274,194 @@ export const CompactExitGraphCard = ({
             strokeLinecap="round"
           />
           
-          {/* Base price marker (start) */}
+          {/* Base marker */}
           <g>
-            <circle cx={xScale(0)} cy={yScale(basePrice)} r="4" fill="hsl(var(--theme-text-muted))" />
+            <circle cx={xScale(0)} cy={yScale(basePrice)} r="5" fill="hsl(var(--theme-text-muted))" />
             <text
-              x={xScale(0)}
-              y={yScale(basePrice) - 10}
+              x={xScale(0) + 8}
+              y={yScale(basePrice) - 8}
               fill="hsl(var(--theme-text-muted))"
               fontSize="9"
               fontWeight="600"
-              textAnchor="middle"
             >
-              Base
+              {formatCurrencyShort(basePrice, 'AED')}
             </text>
           </g>
           
           {/* Handover marker */}
           <g>
-            <circle cx={xScale(totalMonths)} cy={yScale(handoverPrice)} r="5" fill="hsl(var(--theme-accent))" />
+            <line
+              x1={xScale(totalMonths)}
+              y1={yScale(handoverPrice)}
+              x2={xScale(totalMonths)}
+              y2={height - padding.bottom}
+              stroke="hsl(var(--theme-accent))"
+              strokeWidth="1"
+              strokeDasharray="3,3"
+              opacity="0.5"
+            />
+            <circle cx={xScale(totalMonths)} cy={yScale(handoverPrice)} r="6" fill="hsl(var(--theme-accent))" />
+            <circle cx={xScale(totalMonths)} cy={yScale(handoverPrice)} r="3" fill="hsl(var(--theme-card))" />
             <text
               x={xScale(totalMonths)}
-              y={height - 8}
+              y={yScale(handoverPrice) - 12}
               fill="hsl(var(--theme-text))"
-              fontSize="9"
-              fontWeight="600"
+              fontSize="10"
+              fontWeight="bold"
               textAnchor="middle"
             >
-              🔑 Handover
+              {formatCurrencyShort(handoverPrice, 'AED')}
             </text>
           </g>
           
-          {/* Exit markers - small dots only */}
-          {scenarios.map((scenario) => {
-            if (scenario.isHandover) return null; // Already shown
+          {/* Exit markers with values */}
+          {scenarios.map((scenario, index) => {
+            if (scenario.isHandover) return null;
             const x = xScale(scenario.exitMonths);
             const y = yScale(scenario.exitPrice);
             
             return (
               <g key={scenario.exitMonths}>
-                <circle cx={x} cy={y} r="4" fill="hsl(142.1 76.2% 36.3%)" />
+                {/* Vertical guide */}
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={x}
+                  y2={height - padding.bottom}
+                  stroke="hsl(142.1 76.2% 36.3%)"
+                  strokeWidth="1"
+                  strokeDasharray="3,3"
+                  opacity="0.4"
+                />
+                {/* Marker */}
+                <circle cx={x} cy={y} r="6" fill="hsl(142.1 76.2% 36.3%)" />
+                <circle cx={x} cy={y} r="3" fill="hsl(var(--theme-card))" />
+                {/* Value label */}
                 <text
                   x={x}
-                  y={height - 8}
+                  y={y - 12}
+                  fill="hsl(142.1 76.2% 36.3%)"
+                  fontSize="10"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  {formatCurrencyShort(scenario.exitPrice, 'AED')}
+                </text>
+                {/* Exit number */}
+                <text
+                  x={x}
+                  y={height - padding.bottom + 12}
                   fill="hsl(var(--theme-text-muted))"
                   fontSize="8"
                   textAnchor="middle"
                 >
-                  #{scenario.exitNumber}
+                  Exit {index + 1}
                 </text>
               </g>
             );
           })}
+          
+          {/* Hover tooltip */}
+          {hoverData && (
+            <g>
+              {/* Vertical line */}
+              <line
+                x1={hoverData.x}
+                y1={padding.top}
+                x2={hoverData.x}
+                y2={height - padding.bottom}
+                stroke="hsl(var(--theme-text))"
+                strokeWidth="1"
+                opacity="0.3"
+              />
+              {/* Dot on curve */}
+              <circle
+                cx={hoverData.x}
+                cy={hoverData.y}
+                r="5"
+                fill="hsl(var(--theme-accent))"
+                stroke="hsl(var(--theme-card))"
+                strokeWidth="2"
+              />
+              {/* Tooltip box */}
+              <rect
+                x={hoverData.x - 45}
+                y={hoverData.y - 40}
+                width="90"
+                height="30"
+                rx="4"
+                fill="hsl(var(--theme-card))"
+                stroke="hsl(var(--theme-border))"
+                strokeWidth="1"
+              />
+              <text
+                x={hoverData.x}
+                y={hoverData.y - 28}
+                fill="hsl(var(--theme-text-muted))"
+                fontSize="9"
+                textAnchor="middle"
+              >
+                Month {Math.round(hoverData.month)}
+              </text>
+              <text
+                x={hoverData.x}
+                y={hoverData.y - 16}
+                fill="hsl(var(--theme-text))"
+                fontSize="11"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                {formatCurrencyShort(hoverData.price, 'AED')}
+              </text>
+            </g>
+          )}
         </svg>
       </div>
       
-      {/* EXIT CARDS - The star of the show */}
-      <div className="p-3 pt-0 space-y-2">
-        {scenarios.map((scenario) => (
+      {/* Compact Exit Cards - Small, focused */}
+      <div className="px-3 pb-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {scenarios.map((scenario, index) => (
           <div 
             key={scenario.exitMonths}
             className={cn(
-              "bg-theme-bg border rounded-lg p-3",
+              "bg-theme-bg border rounded-lg p-2 text-center",
               scenario.isHandover 
                 ? "border-theme-accent/50" 
                 : "border-theme-border"
             )}
           >
-            {/* Exit Title */}
-            <div className="flex items-center gap-2 mb-2">
+            {/* Title */}
+            <div className="flex items-center justify-center gap-1 mb-1">
               {scenario.isHandover ? (
-                <Key className="w-4 h-4 text-theme-accent" />
+                <Key className="w-3 h-3 text-theme-accent" />
               ) : (
-                <span className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center">
-                  {scenario.exitNumber}
+                <span className="w-4 h-4 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold flex items-center justify-center">
+                  {index + 1}
                 </span>
               )}
-              <span className="text-sm font-semibold text-theme-text">
-                EXIT {scenario.exitNumber} — {scenario.exitLabel}
-              </span>
-              <span className="text-xs text-theme-text-muted ml-auto">
-                {scenario.exitMonths}m
+              <span className="text-xs font-medium text-theme-text-muted">
+                {scenario.isHandover ? 'Handover' : `Exit ${index + 1}`}
               </span>
             </div>
             
-            {/* Price comparison row */}
-            <div className="flex items-center gap-3 text-sm mb-2">
-              <div className="flex-1">
-                <span className="text-theme-text-muted text-xs block">Base price</span>
-                <span className="text-theme-text font-medium">{formatCurrencyShort(basePrice, 'AED')}</span>
-              </div>
-              <ArrowRight className="w-4 h-4 text-theme-text-muted" />
-              <div className="flex-1">
-                <span className="text-theme-text-muted text-xs block">Exit value</span>
-                <span className="text-theme-text font-medium">{formatCurrencyShort(scenario.exitPrice, 'AED')}</span>
-              </div>
+            {/* Net Gain - Hero */}
+            <div className={cn(
+              "text-base font-bold",
+              scenario.netGain >= 0 ? "text-green-400" : "text-red-400"
+            )}>
+              {scenario.netGain >= 0 ? '+' : ''}{formatCurrencyShort(scenario.netGain, 'AED')}
             </div>
             
-            {/* Separator */}
-            <div className="border-t border-theme-border my-2" />
-            
-            {/* NET GAIN - Big and prominent */}
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs text-theme-text-muted uppercase tracking-wide">Net Gain</span>
-              <div className="text-right">
-                <span className={cn(
-                  "text-xl font-bold",
-                  scenario.netGain >= 0 ? "text-green-400" : "text-red-400"
-                )}>
-                  {scenario.netGain >= 0 ? '+' : ''}{formatCurrencyShort(scenario.netGain, 'AED')}
-                </span>
-                <span className={cn(
-                  "text-sm font-semibold ml-2",
-                  scenario.netGain >= 0 ? "text-green-400/70" : "text-red-400/70"
-                )}>
-                  ({scenario.netGain >= 0 ? '+' : ''}{scenario.gainPercent.toFixed(1)}%)
-                </span>
-              </div>
+            {/* Time & ROE */}
+            <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-theme-text-muted">
+              <span>{scenario.exitMonths}m</span>
+              <span>•</span>
+              <span className={cn(
+                "font-semibold",
+                scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
+              )}>
+                {scenario.annualizedROE.toFixed(1)}% ROE
+              </span>
             </div>
           </div>
         ))}
