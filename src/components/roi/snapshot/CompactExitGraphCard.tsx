@@ -448,8 +448,8 @@ export const CompactExitGraphCard = ({
             );
           })}
           
-          {/* Hover tooltip */}
-          {hoverData && (
+          {/* Hover tooltip - only show when NOT hovering an exit marker */}
+          {hoverData && hoveredExitIndex === null && (
             <g>
               {/* Vertical line */}
               <line
