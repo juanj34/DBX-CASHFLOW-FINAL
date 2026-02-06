@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Client } from "@/hooks/useClients";
+import { useNewQuote } from "@/hooks/useNewQuote";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -117,15 +118,20 @@ export const ClientCard = ({
     }
   };
 
-  const handleCreateQuote = () => {
-    // Store client info in localStorage for the generator to pick up
-    localStorage.setItem('preselected_client', JSON.stringify({
-      dbClientId: client.id,
-      clientName: client.name,
-      clientEmail: client.email || '',
-      clientCountry: client.country || ''
-    }));
-    navigate('/cashflow-generator');
+  const { startNewQuote } = useNewQuote();
+
+  const handleCreateQuote = async () => {
+    // Use unified hook for consistent behavior across all entry points
+    await startNewQuote({
+      preselectedClient: {
+        dbClientId: client.id,
+        clientName: client.name,
+        clientEmail: client.email || '',
+        clientCountry: client.country || ''
+      },
+      openConfigurator: true,
+      targetRoute: 'generator',
+    });
   };
 
   const getStatusColor = (status: string | null) => {

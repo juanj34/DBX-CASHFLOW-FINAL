@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useClients, Client } from "@/hooks/useClients";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useClientComparisons } from "@/hooks/useClientComparisons";
+import { useNewQuote } from "@/hooks/useNewQuote";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Currency } from "@/components/roi/currencyUtils";
@@ -175,15 +176,21 @@ const ClientPortfolioView = () => {
     setActiveTab("opportunities");
   };
 
-  const handleCreateQuote = () => {
+  const { startNewQuote } = useNewQuote();
+
+  const handleCreateQuote = async () => {
     if (client) {
-      localStorage.setItem('preselected_client', JSON.stringify({
-        dbClientId: client.id,
-        clientName: client.name,
-        clientEmail: client.email || '',
-        clientCountry: client.country || ''
-      }));
-      navigate('/cashflow-generator');
+      // Use unified hook for consistent behavior across all entry points
+      await startNewQuote({
+        preselectedClient: {
+          dbClientId: client.id,
+          clientName: client.name,
+          clientEmail: client.email || '',
+          clientCountry: client.country || ''
+        },
+        openConfigurator: true,
+        targetRoute: 'generator',
+      });
     }
   };
 
