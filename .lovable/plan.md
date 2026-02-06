@@ -1,234 +1,240 @@
 
+# Plan: Quote to Portfolio Conversion + Enhanced Portfolio Dashboard
 
-# Plan: Fix Graph Labels & Enhanced Exit Marker Tooltips
+## Overview
 
-## Problems Identified
-
-Looking at the screenshot:
-
-1. **Label Overlap Issue**: At the start of the graph (month 0), there are overlapping numbers - "785K" from the Y-axis and "785K" from the base marker are colliding
-2. **Exit Marker Hover**: When hovering over exit markers, user wants to see detailed info including "Equity In"
-3. **General Hover**: The current curve hover shows month/price but not enough context
+This plan adds two major features:
+1. **Direct Quote-to-Portfolio Conversion** - Enable converting quotes to portfolio properties from within the Client Portfolio view
+2. **Enhanced Portfolio Metrics & Growth Chart** - Add impactful financial projections including "Years to Double" and a portfolio growth timeline
 
 ---
 
-## Solution
+## Part 1: Quote to Portfolio Conversion
 
-### 1. Fix Base Label Overlap
+### Problem
+Currently, a quote can only be converted to a portfolio property when its status is changed to "sold" from the main dashboard. There's no way to:
+- Convert an existing sold quote that was skipped during initial conversion
+- Add a quote to the portfolio from within the client's portfolio view
 
-Remove the duplicate "Base: 785K" text that appears on top of the Y-axis labels. Instead, show a clean base marker dot without redundant label.
+### Solution
+Add a "Convert to Property" action button on each quote card in the OpportunitiesSection (Quotes tab) within ClientPortfolioView.
 
-**Before:**
+### Changes
+
+| File | Description |
+|------|-------------|
+| `src/pages/ClientPortfolioView.tsx` | Add ConvertToPropertyModal import and state; pass conversion handler to OpportunitiesSection |
+| `src/components/portal/OpportunitiesSection.tsx` | Add "Add to Portfolio" button on quote cards |
+
+### UI Flow
+
+```text
+┌─────────────────────────────────────────────────┐
+│  Client Portfolio View                          │
+│  ┌─────────────────────────────────────────────┐│
+│  │ Tabs: [Portfolio] [Quotes] [Presentations]  ││
+│  └─────────────────────────────────────────────┘│
+│                                                 │
+│  Quote Card: Marina Heights - Unit 1205        │
+│  ┌─────────────────────────────────────────────┐│
+│  │ AED 1,200,000 • 7.2% Yield                  ││
+│  │ Status: Sold ✓                              ││
+│  │                                             ││
+│  │ [View] [Download] [➕ Add to Portfolio]    ││
+│  └─────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────┘
 ```
-817K   785K←Base:785K  (overlapping!)
-       ●
+
+---
+
+## Part 2: Enhanced Portfolio Metrics
+
+### New Metrics to Display
+
+| Metric | Formula | Purpose |
+|--------|---------|---------|
+| **Cumulative Appreciation** | currentValue - purchasePrice (all properties) | Shows total unrealized gains |
+| **Monthly Rent + Growth** | totalRent with projected growth rate | Shows income trajectory |
+| **Years to Double** | Using geometric series with appreciation + rent | The GOAL metric - when does investment 2x |
+
+### Years to Double Calculation
+
+This is a key "impact" metric showing when total wealth (appreciation + rent) doubles the initial investment:
+
+```typescript
+// Calculate years to double investment considering both appreciation and rent
+function calculateYearsToDouble(
+  totalPurchaseValue: number,
+  appreciationRate: number, // e.g., 8%
+  annualRent: number,
+  rentGrowthRate: number // e.g., 4%
+): number {
+  // Target: (Value + Cumulative Rent) = 2 × Initial Investment
+  // This requires iterative calculation since both appreciation and rent compound
+  
+  let year = 0;
+  let cumulativeWealth = totalPurchaseValue;
+  let currentRent = annualRent;
+  
+  while (cumulativeWealth < 2 * totalPurchaseValue && year < 50) {
+    year++;
+    // Property appreciates
+    cumulativeWealth *= (1 + appreciationRate / 100);
+    // Add rent (after first year)
+    currentRent *= (1 + rentGrowthRate / 100);
+    cumulativeWealth += currentRent;
+  }
+  
+  return year;
+}
 ```
 
-**After:**
+### New Component: PortfolioGoalCard
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  🎯 Investment Goal                                      │
+│  ┌─────────────────────────────────────────────────────┐│
+│  │                                                     ││
+│  │  DOUBLE YOUR INVESTMENT IN                          ││
+│  │  ┌──────────────────────────────────┐               ││
+│  │  │         8.3 YEARS               │               ││
+│  │  │   ████████████░░░░░░░░░░░░░░   │               ││
+│  │  └──────────────────────────────────┘               ││
+│  │                                                     ││
+│  │  📈 Appreciation: +4.2M AED (+32%)                  ││
+│  │  🏠 Rent Collected: +2.8M AED (7yrs)               ││
+│  │  ═══════════════════════════════════                ││
+│  │  💰 Total Wealth: 20.1M AED                         ││
+│  │                                                     ││
+│  └─────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────┘
 ```
-817K                    
-       ●←─ Base
+
+---
+
+## Part 3: Portfolio Growth Chart
+
+### Description
+A large area chart showing portfolio value growth over time with three phases:
+1. **Historical** (purchase to now) - if valuation data exists
+2. **Current** - Today's portfolio value
+3. **Projected** (now to 10 years) - Based on appreciation rates
+
+### Data Structure
+
+```typescript
+interface PortfolioTimelinePoint {
+  date: string; // YYYY-MM or Year
+  value: number; // Total portfolio value
+  cumulativeRent: number; // Total rent collected
+  totalWealth: number; // value + cumulativeRent
+  isProjected: boolean;
+}
 ```
 
-### 2. Enhanced Exit Marker Hover State
+### Visual Design
 
-Add a `hoveredExit` state that tracks when mouse is near an exit point. When hovering on an exit marker, show a detailed tooltip card:
-
-| Field | Value |
-|-------|-------|
-| Exit X | Month 32 |
-| Exit Price | 999K |
-| Equity In | 285K |
-| Net Gain | +215K |
-| ROE | 9.8%/yr |
-
-### 3. Refine Scenarios Calculation
-
-Update the `scenarios` memo to include `equityDeployed` from `calculateExitScenario` so we can display it in the tooltip.
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Portfolio Growth Timeline                                   │
+│  ─────────────────────────────────────────────────────────  │
+│                                                              │
+│  25M ─                                          ╭──────      │
+│      │                                      ╭───╯            │
+│  20M ─                               ╭──────╯                │
+│      │                          ╭────╯                       │
+│  15M ─                    ╭─────╯                            │
+│      │              ╭─────╯                                  │
+│  10M ─     ╭────────╯                                        │
+│      │ ╭───╯   █ Today                                       │
+│   5M ─ ▪ Start                                               │
+│      │                                                       │
+│      └─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┼       │
+│          2024  2025  2026  2027  2028  2029  2030  2031      │
+│                           │                                  │
+│                     Projected →                              │
+└─────────────────────────────────────────────────────────────┘
+│  Legend: ━━ Portfolio Value  ░░░ + Cumulative Rent          │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Technical Implementation
 
-### File: `src/components/roi/snapshot/CompactExitGraphCard.tsx`
+### New Files
 
-#### Changes Overview
+| File | Purpose |
+|------|---------|
+| `src/components/portfolio/PortfolioGoalCard.tsx` | "Years to Double" hero metric with progress |
+| `src/components/portfolio/PortfolioGrowthChart.tsx` | Area chart showing portfolio value over time |
+| `src/components/portfolio/usePortfolioProjections.ts` | Hook for calculating growth projections |
 
-| Line Range | Change |
-|------------|--------|
-| 23 | Add `hoveredExitIndex` state for exit marker hover |
-| 105-128 | Update scenarios memo to include `equityDeployed` and `totalCapital` |
-| 253-260 | Remove redundant base price label text (keep only the small marker) |
-| 277-289 | Simplify base marker - just dot + "Base" label below |
-| 317-360 | Add exit marker hover detection and enhanced tooltip |
-
-#### New State
-
-```tsx
-const [hoveredExitIndex, setHoveredExitIndex] = useState<number | null>(null);
-```
-
-#### Updated Scenarios Memo
-
-```tsx
-const scenarios = useMemo(() => {
-  if (basePrice <= 0) return [];
-  return exitScenarios.map((exitMonths) => {
-    const scenarioResult = calculateExitScenario(
-      exitMonths,
-      basePrice,
-      totalMonths,
-      inputs,
-      calculations.totalEntryCosts
-    );
-    
-    const isHandover = Math.abs(exitMonths - totalMonths) <= 1;
-    const netGain = scenarioResult.exitPrice - basePrice;
-    
-    return {
-      exitMonths,
-      exitPrice: scenarioResult.exitPrice,
-      netGain,
-      annualizedROE: scenarioResult.annualizedROE,
-      equityDeployed: scenarioResult.equityDeployed,  // NEW
-      totalCapital: scenarioResult.totalCapital,        // NEW (Equity + Entry Costs)
-      isHandover,
-    };
-  });
-}, [...]);
-```
-
-#### Remove Base Label Overlap
-
-Current code (lines 253-260):
-```tsx
-<text
-  x={padding.left + 4}
-  y={yScale(basePrice) - 6}
-  fill="hsl(var(--theme-text-muted))"
-  fontSize="9"
->
-  Base: {formatCurrencyShort(basePrice, 'AED')}  // REMOVE THIS
-</text>
-```
-
-Replace with simple "Base" label at bottom:
-```tsx
-<text
-  x={xScale(0)}
-  y={height - padding.bottom + 12}
-  fill="hsl(var(--theme-text-muted))"
-  fontSize="8"
-  textAnchor="middle"
->
-  Base
-</text>
-```
-
-#### Enhanced Exit Marker with Hover
-
-```tsx
-{scenarios.map((scenario, index) => {
-  const x = xScale(scenario.exitMonths);
-  const y = yScale(scenario.exitPrice);
-  const isHovered = hoveredExitIndex === index;
-  
-  return (
-    <g 
-      key={scenario.exitMonths}
-      onMouseEnter={() => setHoveredExitIndex(index)}
-      onMouseLeave={() => setHoveredExitIndex(null)}
-      style={{ cursor: 'pointer' }}
-    >
-      {/* Marker circle - larger hit area */}
-      <circle cx={x} cy={y} r="12" fill="transparent" />
-      
-      {/* Visible marker */}
-      <circle cx={x} cy={y} r={isHovered ? 8 : 6} 
-        fill={scenario.isHandover ? "hsl(var(--theme-accent))" : "hsl(142.1 76.2% 36.3%)"} 
-        className="transition-all duration-150"
-      />
-      <circle cx={x} cy={y} r={isHovered ? 4 : 3} fill="hsl(var(--theme-card))" />
-      
-      {/* Price label above */}
-      <text x={x} y={y - 14} ...>
-        {formatCurrencyShort(scenario.exitPrice, 'AED')}
-      </text>
-      
-      {/* Hover tooltip - detailed info */}
-      {isHovered && (
-        <g>
-          <rect x={x - 55} y={y - 75} width="110" height="55" rx="6" 
-            fill="hsl(var(--theme-card))" 
-            stroke="hsl(var(--theme-border))" 
-          />
-          <text x={x} y={y - 60} textAnchor="middle" fontSize="9">
-            {scenario.isHandover ? '🔑 Handover' : `Exit ${index + 1}`} • {scenario.exitMonths}m
-          </text>
-          <text x={x - 48} y={y - 46} fontSize="8" fill="muted">Equity In:</text>
-          <text x={x + 48} y={y - 46} textAnchor="end" fontWeight="bold">
-            {formatCurrencyShort(scenario.totalCapital, 'AED')}
-          </text>
-          <text x={x - 48} y={y - 34} fontSize="8" fill="muted">Net Gain:</text>
-          <text x={x + 48} y={y - 34} textAnchor="end" fill="green">
-            +{formatCurrencyShort(scenario.netGain, 'AED')}
-          </text>
-          <text x={x - 48} y={y - 22} fontSize="8" fill="muted">ROE:</text>
-          <text x={x + 48} y={y - 22} textAnchor="end" fill="green">
-            {scenario.annualizedROE.toFixed(1)}%/yr
-          </text>
-        </g>
-      )}
-    </g>
-  );
-})}
-```
-
----
-
-## Visual Result
-
-### Graph (Fixed Labels)
-
-```text
-┌─────────────────────────────────────────┐
-│ 1.1M ─────────────────────────────────  │
-│ 999K ─────────────────────────● 999K    │
-│ 911K ───────────────● 879K              │
-│ 817K ───────●                           │
-│ 722K ●                                  │
-│      ╎        ╎        ╎        ╎       │
-│     Base     7m    🔑12m      28m  Exit1│
-└─────────────────────────────────────────┘
-```
-
-### Exit Marker Hover Tooltip
-
-```text
-        ┌─────────────────┐
-        │ Exit 1 • 32m    │
-        │ Equity In: 285K │
-        │ Net Gain: +215K │
-        │ ROE: 9.8%/yr    │
-        └─────────────────┘
-              ●
-```
-
-### Exit Cards (Unchanged - Already Compact)
-
-```text
-┌─────────────┐ ┌─────────────┐
-│ 🔑 Handover │ │ ① Exit 1    │
-│   +170K     │ │   +215K     │
-│ 12m • 45% ROE│ │ 32m • 9.8% ROE│
-└─────────────┘ └─────────────┘
-```
-
----
-
-## Files to Modify
+### Modified Files
 
 | File | Changes |
 |------|---------|
-| `src/components/roi/snapshot/CompactExitGraphCard.tsx` | Add hover state, fix label overlap, enhance exit marker tooltips with equity/gain/ROE |
+| `src/pages/ClientPortfolioView.tsx` | Add ConvertToPropertyModal, pass handler to OpportunitiesSection |
+| `src/components/portal/OpportunitiesSection.tsx` | Add "Add to Portfolio" button on quote cards |
+| `src/components/portal/PortfolioSection.tsx` | Add PortfolioGoalCard and PortfolioGrowthChart |
+| `src/hooks/usePortfolio.ts` | Extend PortfolioMetrics with projection data |
 
+---
+
+## Updated PortfolioSection Layout
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  ┌───────────────────────┐  ┌───────────────────────────┐  │
+│  │ Total Portfolio Value │  │ 🎯 Years to Double        │  │
+│  │     13.2M AED        │  │      8.3 years            │  │
+│  │    +2.1M (+19%)      │  │ ████████░░░░░░░░          │  │
+│  └───────────────────────┘  └───────────────────────────┘  │
+│                                                             │
+│  ┌─────┐ ┌─────┐ ┌─────────┐ ┌─────────┐                   │
+│  │Props│ │Equity│ │Rent/mo  │ │Cashflow │                   │
+│  │  4  │ │ 8.2M │ │ 52K     │ │ +32K    │                   │
+│  └─────┘ └─────┘ └─────────┘ └─────────┘                   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │           Portfolio Growth Timeline                  │   │
+│  │    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   │   │
+│  │          [Large Area Chart - 10 Year View]          │   │
+│  │    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│  Your Properties                                            │
+│  ┌────────────────┐ ┌────────────────┐                     │
+│  │ Marina Heights │ │ Dubai Creek    │                     │
+│  │ +450K (+18%)   │ │ +320K (+12%)   │                     │
+│  └────────────────┘ └────────────────┘                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Configuration Assumptions
+
+For portfolio projections, we'll use:
+- **Appreciation Rate**: 6% default (or from linked quote if available)
+- **Rent Growth Rate**: 4% default (or from linked quote)
+- **Projection Horizon**: 10 years
+
+These can be overridden if the property has a linked quote with specific rates.
+
+---
+
+## Summary
+
+| Feature | Impact |
+|---------|--------|
+| Convert Quote to Portfolio | Enables adding properties directly from client dashboard |
+| Years to Double | Powerful goal-oriented metric that answers "when does my investment double?" |
+| Portfolio Growth Chart | Visual timeline showing where you started, where you are, and where you're going |
+| Cumulative Appreciation | Shows total unrealized gains across portfolio |
+
+This creates a compelling investment narrative: **"Your 13.2M portfolio will double in 8.3 years"**
