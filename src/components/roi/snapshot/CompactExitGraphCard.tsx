@@ -21,6 +21,7 @@ export const CompactExitGraphCard = ({
   rate,
 }: CompactExitGraphCardProps) => {
   const [hoverData, setHoverData] = useState<{ x: number; y: number; month: number; price: number } | null>(null);
+  const [hoveredExitIndex, setHoveredExitIndex] = useState<number | null>(null);
   
   const basePrice = inputs.basePrice || calculations.basePrice || 0;
   const totalMonths = calculations.totalMonths;
@@ -123,6 +124,8 @@ export const CompactExitGraphCard = ({
         netGain,
         gainPercent,
         annualizedROE: scenarioResult.annualizedROE,
+        equityDeployed: scenarioResult.equityDeployed,
+        totalCapital: scenarioResult.totalCapital,
         isHandover,
       };
     });
@@ -250,14 +253,6 @@ export const CompactExitGraphCard = ({
             strokeDasharray="4,4"
             opacity="0.5"
           />
-          <text
-            x={padding.left + 4}
-            y={yScale(basePrice) - 6}
-            fill="hsl(var(--theme-text-muted))"
-            fontSize="9"
-          >
-            Base: {formatCurrencyShort(basePrice, 'AED')}
-          </text>
           
           {/* Area fill */}
           <path
@@ -278,13 +273,13 @@ export const CompactExitGraphCard = ({
           <g>
             <circle cx={xScale(0)} cy={yScale(basePrice)} r="5" fill="hsl(var(--theme-text-muted))" />
             <text
-              x={xScale(0) + 8}
-              y={yScale(basePrice) - 8}
+              x={xScale(0)}
+              y={height - padding.bottom + 12}
               fill="hsl(var(--theme-text-muted))"
-              fontSize="9"
-              fontWeight="600"
+              fontSize="8"
+              textAnchor="middle"
             >
-              {formatCurrencyShort(basePrice, 'AED')}
+              Base
             </text>
           </g>
           
@@ -319,9 +314,18 @@ export const CompactExitGraphCard = ({
             if (scenario.isHandover) return null;
             const x = xScale(scenario.exitMonths);
             const y = yScale(scenario.exitPrice);
+            const isHovered = hoveredExitIndex === index;
             
             return (
-              <g key={scenario.exitMonths}>
+              <g 
+                key={scenario.exitMonths}
+                onMouseEnter={() => setHoveredExitIndex(index)}
+                onMouseLeave={() => setHoveredExitIndex(null)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Larger hit area */}
+                <circle cx={x} cy={y} r="14" fill="transparent" />
+                
                 {/* Vertical guide */}
                 <line
                   x1={x}
@@ -334,19 +338,29 @@ export const CompactExitGraphCard = ({
                   opacity="0.4"
                 />
                 {/* Marker */}
-                <circle cx={x} cy={y} r="6" fill="hsl(142.1 76.2% 36.3%)" />
-                <circle cx={x} cy={y} r="3" fill="hsl(var(--theme-card))" />
-                {/* Value label */}
-                <text
-                  x={x}
-                  y={y - 12}
-                  fill="hsl(142.1 76.2% 36.3%)"
-                  fontSize="10"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  {formatCurrencyShort(scenario.exitPrice, 'AED')}
-                </text>
+                <circle 
+                  cx={x} 
+                  cy={y} 
+                  r={isHovered ? 8 : 6} 
+                  fill="hsl(142.1 76.2% 36.3%)" 
+                  className="transition-all duration-150"
+                />
+                <circle cx={x} cy={y} r={isHovered ? 4 : 3} fill="hsl(var(--theme-card))" />
+                
+                {/* Value label - hide when hovered to show tooltip */}
+                {!isHovered && (
+                  <text
+                    x={x}
+                    y={y - 12}
+                    fill="hsl(142.1 76.2% 36.3%)"
+                    fontSize="10"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    {formatCurrencyShort(scenario.exitPrice, 'AED')}
+                  </text>
+                )}
+                
                 {/* Exit number */}
                 <text
                   x={x}
@@ -357,6 +371,54 @@ export const CompactExitGraphCard = ({
                 >
                   Exit {index + 1}
                 </text>
+                
+                {/* Hover tooltip - detailed info */}
+                {isHovered && (
+                  <g>
+                    <rect
+                      x={x - 60}
+                      y={y - 85}
+                      width="120"
+                      height="70"
+                      rx="6"
+                      fill="hsl(var(--theme-card))"
+                      stroke="hsl(var(--theme-border))"
+                      strokeWidth="1"
+                    />
+                    {/* Title */}
+                    <text
+                      x={x}
+                      y={y - 68}
+                      fill="hsl(var(--theme-text))"
+                      fontSize="10"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                    >
+                      Exit {index + 1} • {scenario.exitMonths}m
+                    </text>
+                    {/* Equity In */}
+                    <text x={x - 52} y={y - 52} fill="hsl(var(--theme-text-muted))" fontSize="9">
+                      Equity In:
+                    </text>
+                    <text x={x + 52} y={y - 52} fill="hsl(var(--theme-text))" fontSize="9" fontWeight="600" textAnchor="end">
+                      {formatCurrencyShort(scenario.totalCapital, 'AED')}
+                    </text>
+                    {/* Net Gain */}
+                    <text x={x - 52} y={y - 38} fill="hsl(var(--theme-text-muted))" fontSize="9">
+                      Net Gain:
+                    </text>
+                    <text x={x + 52} y={y - 38} fill="hsl(142.1 76.2% 36.3%)" fontSize="9" fontWeight="600" textAnchor="end">
+                      +{formatCurrencyShort(scenario.netGain, 'AED')}
+                    </text>
+                    {/* ROE */}
+                    <text x={x - 52} y={y - 24} fill="hsl(var(--theme-text-muted))" fontSize="9">
+                      ROE:
+                    </text>
+                    <text x={x + 52} y={y - 24} fill="hsl(142.1 76.2% 36.3%)" fontSize="9" fontWeight="600" textAnchor="end">
+                      {scenario.annualizedROE.toFixed(1)}%/yr
+                    </text>
+                  </g>
+                )}
               </g>
             );
           })}
