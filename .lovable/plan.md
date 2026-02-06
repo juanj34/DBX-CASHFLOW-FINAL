@@ -1,280 +1,320 @@
 
+# Quote System Reliability Overhaul
 
-# Comprehensive Configurator UX Improvement Plan
+## Problem Summary
 
-## Analysis of Current Issues
-
-Based on the screenshots and codebase review, I identified **10 distinct issues**:
-
-### 1. **Dual Currency Not Showing in Footer/Prices**
-- When a currency other than AED is selected (e.g., EUR), prices should show both AED and converted value
-- Currently `PropertySection.tsx` only shows the selected currency, not the "AED (€xxx)" dual format
-- Missing in: Base Price, Entry Costs, and payment amounts
-
-### 2. **Payment Plan Generator is Confusing**
-- The generator row (`4 × 5% every 3 mo = 20.0%`) is hard to understand
-- No clear visual guidance on what happens when you click "Generate"
-- Post-handover toggle is disconnected from the flow
-
-### 3. **Wizard Feels Overwhelming, Not Onboarding-Friendly**
-- All sections throw data at user at once
-- No "progressive disclosure" or guided steps within each section
-- No contextual tips or "why this matters" explanations
-
-### 4. **Poor Visual Contrast - Fields Hard to Locate**
-- Labels are far from controls (inline `justify-between` creates too much gap)
-- Lack of visual grouping - everything blends together
-- Zone/Developer/Project rows have excessive whitespace between label and dropdown
-
-### 5. **Annual Yield Doesn't Allow Decimals (e.g., 8.1%)**
-- `RentSection.tsx` uses `step={0.5}` on the slider (line 86)
-- Need to allow finer control via text input
-
-### 6. **Image Upload Missing from Location Section**
-- Should be below unit size in Location as compact upload cards
-- Currently ImagesSection is separate, not integrated
-
-### 7. **Mortgage in Wrong Place**
-- Currently in Exit section as a collapsible
-- User wants it on the last page (Exit) but more prominent
-
-### 8. **Zone/Developer/Project Visual Spacing Issues**
-- Screenshot shows Zone label on far left, dropdown on far right
-- Makes UI look broken/unintentional
-
-### 9. **Client Selector Missing**
-- LocationSection doesn't have the ClientSelector component
-- The old ClientSection had it but was replaced
-
-### 10. **Too Much White Space / Labels Too Far**
-- The `flex items-center justify-between` pattern creates a disconnected layout
+The quote creation system has multiple race conditions and inconsistent behaviors across different entry points that cause:
+1. **Unnamed/empty quotes getting saved** to the database
+2. **Old draft data appearing** when creating new quotes
+3. **Different behaviors** from Dashboard, Generator, Quotes list, and Client pages
+4. **Working drafts not being properly cleared** before new quote creation
 
 ---
 
-## Proposed Solutions
+## Root Causes Identified
 
-### Phase 1: Fix Visual Layout (Urgent)
+### Issue 1: Multiple Entry Points with Different Logic
 
-**A. Compact Field Rows Instead of `justify-between`**
+| Entry Point | File | Current Behavior | Problem |
+|-------------|------|-----------------|---------|
+| `/cashflow-dashboard` | `CashflowDashboard.tsx` | Auto-creates draft on mount (lines 101-119) | Creates empty quote immediately |
+| `/cashflow-generator` | Uses same logic | Does NOT auto-create, uses lazy creation | Inconsistent with dashboard |
+| `/cashflow/:quoteId` (OICalculator) | `OICalculator.tsx` | Relies on quoteId param, lazy creation | Works differently than dashboard |
+| New Quote button | Various locations | Different implementations | No unified approach |
+| Client preselection | OICalculator effect | Stores in localStorage, reads on mount | Race conditions |
 
-Replace the current pattern:
+### Issue 2: Draft Auto-Creation Race Condition
+
 ```tsx
-// Current - creates too much gap
-<div className="flex items-center justify-between gap-4 py-2">
-  <label>Zone</label>          // Far left
-  <ZoneSelect />               // Far right ← TOO FAR
-</div>
+// CashflowDashboard.tsx lines 101-119
+useEffect(() => {
+  const initDraft = async () => {
+    if (quoteId || creatingDraft || quoteLoading || draftInitializedRef.current) return;
+    
+    draftInitializedRef.current = true;
+    setCreatingDraft(true);
+    
+    const newId = await createDraft(); // ← Creates empty quote in DB immediately!
+    if (newId) {
+      navigate(`/cashflow-dashboard/${newId}`, { replace: true });
+    }
+  };
+  initDraft();
+}, [quoteId, creatingDraft, createDraft, quoteLoading, navigate]);
 ```
 
-With a grouped pattern:
+**Problem**: Dashboard creates an empty `working_draft` the moment you visit it, even before any configuration.
+
+### Issue 3: Auto-Save Triggers with Empty Data
+
 ```tsx
-// New - fields grouped together
-<div className="space-y-1">
-  <label className="text-xs text-theme-text-muted">Zone</label>
-  <ZoneSelect className="w-full" />
-</div>
+// useCashflowQuote.ts lines 434-444
+if (!existingQuoteId && isQuoteConfigured) {
+  autoSaveTimeout.current = setTimeout(async () => {
+    console.log('Creating new quote on first meaningful change...');
+    const savedQuote = await saveQuote(...);
+    // ...
+  }, 500);
+}
 ```
 
-OR use a compact inline pattern with fixed label width:
+**Problem**: `isQuoteConfigured` is too permissive (line 88-95 in OICalculator):
 ```tsx
-<div className="flex items-center gap-3">
-  <label className="text-xs text-theme-text-muted w-20 shrink-0">Zone</label>
-  <ZoneSelect className="flex-1" />
-</div>
+const isQuoteConfigured = useMemo(() => {
+  return (
+    !!quoteId ||  // ← Any quoteId counts as "configured"!
+    !!clientInfo.developer ||
+    !!clientInfo.projectName ||
+    inputs.basePrice > 0
+  );
+}, [quoteId, clientInfo.developer, clientInfo.projectName, inputs.basePrice]);
 ```
 
-**B. Group Related Fields Visually**
+### Issue 4: Title Generation Creates "Untitled Quote"
 
-Add subtle background containers for field groups:
 ```tsx
-<div className="p-3 bg-theme-bg/50 rounded-lg space-y-2">
-  {/* Zone */}
-  <div className="space-y-1">
-    <label>Zone</label>
-    <ZoneSelect />
-  </div>
-  {/* Developer */}
-  <div className="space-y-1">
-    <label>Developer</label>
-    <DeveloperSelect />
-  </div>
-  {/* Project */}
-  <div className="space-y-1">
-    <label>Project</label>
-    <ProjectSelect />
-  </div>
-</div>
+// useCashflowQuote.ts lines 318-321
+title: titleClientPart
+  ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
+  : 'Untitled Quote',  // ← Saved even with no meaningful data!
 ```
+
+### Issue 5: clearWorkingDraft Doesn't Reset Local State
+
+```tsx
+// useCashflowQuote.ts lines 211-235
+const clearWorkingDraft = useCallback(async (): Promise<void> => {
+  // Only clears database record...
+  await supabase.from('cashflow_quotes').update({
+    inputs: {} as any,
+    client_name: null,
+    // ...
+  }).eq('broker_id', user.id).eq('status', 'working_draft');
+  
+  // Does NOT reset the local quote state or quoteImages!
+}, []);
+```
+
+### Issue 6: "Ask Each Time" Dialog Not Implemented
+
+User wants to be asked whether to resume or discard drafts, but current implementation only shows dialog when:
+- Navigating away from a draft with content
+- Not when initially opening the app with an existing working draft
 
 ---
 
-### Phase 2: Dual Currency Display
+## Proposed Solution Architecture
 
-**A. Update PropertySection to Show Dual Currency**
-
-For Base Price display (when currency !== 'AED'):
-```tsx
-// Current
-<span className="text-theme-accent font-mono">{formatCurrency(inputs.basePrice, currency)}</span>
-
-// New
-<span className="text-theme-accent font-mono">
-  {formatDualCurrency(inputs.basePrice, currency, rate)}
-</span>
-// Result: "AED 784,966 (€196,xxx)"
-```
-
-Apply to:
-- Base Price
-- Entry Costs (EOI, DLD, Oqood)
-- Total Entry
-- Payment amounts in PaymentSection
-
----
-
-### Phase 3: Client Selector Integration
-
-**Add ClientSelector to LocationSection:**
-
-```tsx
-// After Section Header
-<div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30 space-y-2">
-  <div className="flex items-center gap-2">
-    <Users className="w-4 h-4 text-purple-400" />
-    <span className="text-xs text-theme-text-muted">Link to Client</span>
-  </div>
-  <ClientSelector
-    value={clientInfo.dbClientId || null}
-    onValueChange={handleDbClientSelect}
-    onCreateNew={() => setShowClientForm(true)}
-    placeholder="Select or create client..."
-  />
-</div>
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                     UNIFIED ENTRY FLOW                          │
+├─────────────────────────────────────────────────────────────────┤
+│  1. User opens any Cashflow page                                │
+│  2. System checks: Does user have a working_draft with content? │
+│     ├─ YES → Show "Resume Draft?" dialog                        │
+│     │   ├─ Resume → Load existing draft                         │
+│     │   └─ Start Fresh → Clear draft, open configurator empty   │
+│     └─ NO → Proceed directly (no dialog)                        │
+│  3. NO draft created until user actually enters data            │
+│  4. Auto-save ONLY triggers when meaningful content exists      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Phase 4: Image Upload in Location Section
+## Implementation Plan
 
-**Add compact image upload cards below Unit Size:**
+### Phase 1: Remove Eager Draft Creation
+
+**File: `src/pages/CashflowDashboard.tsx`**
+
+Remove the auto-draft creation on mount (lines 97-119). The system should NOT create a database record until the user actually configures something.
+
+Replace with:
+- Check for existing working_draft with content on mount
+- If exists AND has content → Show "Resume or Start Fresh?" dialog
+- If no content or user chooses fresh → Clear and show empty configurator
+
+### Phase 2: Add "Ask Each Time" Dialog on App Open
+
+**New Component: `src/components/roi/ResumeDraftDialog.tsx`**
 
 ```tsx
-{/* After Unit Size grid */}
-<div className="border-t border-theme-border/30 pt-4 mt-4">
-  <div className="flex items-center gap-2 mb-3">
-    <ImageIcon className="w-4 h-4 text-purple-400" />
-    <span className="text-xs text-theme-text-muted">Property Images (Optional)</span>
-  </div>
-  <div className="grid grid-cols-3 gap-2">
-    <CompactImageUpload 
-      label="Floor Plan" 
-      imageUrl={floorPlanUrl} 
-      onChange={onFloorPlanChange} 
-    />
-    <CompactImageUpload 
-      label="Render" 
-      imageUrl={buildingRenderUrl} 
-      onChange={onBuildingRenderChange} 
-    />
-    <CompactImageUpload 
-      label="Hero" 
-      imageUrl={heroImageUrl} 
-      onChange={onHeroImageChange} 
-    />
-  </div>
-</div>
+interface ResumeDraftDialogProps {
+  open: boolean;
+  draftInfo: {
+    projectName?: string;
+    developer?: string;
+    lastUpdated?: Date;
+  } | null;
+  onResume: () => void;
+  onStartFresh: () => void;
+}
+
+// Shows: "You have an unsaved draft from [date]"
+// Project: [name] | Developer: [name]
+// [Resume Draft] [Start Fresh]
 ```
 
----
-
-### Phase 5: Fix Annual Yield Decimal Support
-
-**In RentSection.tsx:**
-
-Replace slider-only control with slider + input combo:
+**Integration**: Call `getOrCreateWorkingDraft()` to check (not create) on mount:
 ```tsx
-<div className="flex items-center gap-2">
-  <Slider
-    value={[inputs.rentalYieldPercent]}
-    onValueChange={([value]) => setInputs(prev => ({ ...prev, rentalYieldPercent: value }))}
-    min={3}
-    max={15}
-    step={0.1}  // Changed from 0.5
-    className="w-24 roi-slider-lime"
-  />
-  <Input
-    type="number"
-    step={0.1}
-    value={inputs.rentalYieldPercent}
-    onChange={(e) => setInputs(prev => ({ ...prev, rentalYieldPercent: parseFloat(e.target.value) || 0 }))}
-    className="w-14 h-7 text-center text-sm font-mono"
-  />
-  <span className="text-xs text-theme-text-muted">%</span>
-</div>
+const checkForExistingDraft = useCallback(async () => {
+  const { data } = await supabase
+    .from('cashflow_quotes')
+    .select('id, project_name, developer, updated_at, inputs')
+    .eq('broker_id', user.id)
+    .eq('status', 'working_draft')
+    .maybeSingle();
+  
+  if (data && hasWorkingDraftContent(data)) {
+    setExistingDraft(data);
+    setShowResumeDialog(true);
+  } else {
+    // No meaningful draft - proceed fresh
+    setModalOpen(true);
+  }
+}, []);
 ```
 
----
+### Phase 3: Stricter `isQuoteConfigured` Logic
 
-### Phase 6: Simplify Payment Generator UX
+**File: `src/pages/OICalculator.tsx` and `src/pages/CashflowDashboard.tsx`**
 
-**A. Add Explanatory Header:**
+Change the validation to require MEANINGFUL content before auto-saving:
+
 ```tsx
-<div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/30 mb-2">
-  <p className="text-[11px] text-theme-text-muted">
-    💡 Auto-generate a series of equal installments. Example: 4 payments of 5% every 3 months.
-  </p>
-</div>
+// Old (too permissive):
+const isQuoteConfigured = !!quoteId || !!clientInfo.developer || !!clientInfo.projectName || inputs.basePrice > 0;
+
+// New (stricter):
+const hasMeaningfulContent = useMemo(() => {
+  return (
+    (inputs.basePrice > 0) ||
+    (!!clientInfo.projectName && clientInfo.projectName.trim().length > 0) ||
+    (!!clientInfo.developer && clientInfo.developer.trim().length > 0)
+  );
+}, [inputs.basePrice, clientInfo.projectName, clientInfo.developer]);
 ```
 
-**B. Better Visual Grouping:**
+### Phase 4: Block "Untitled Quote" Creation
+
+**File: `src/hooks/useCashflowQuote.ts`**
+
+Add guard before saving:
+
 ```tsx
-<div className="flex items-center gap-1.5 p-2 bg-theme-bg rounded-lg border border-theme-border">
-  <Input value={numPayments} className="w-10" />
-  <span className="text-xs text-theme-text-muted">payments of</span>
-  <Input value={paymentPercent} className="w-12" />
-  <span className="text-xs text-theme-text-muted">% each</span>
-  <span className="text-xs text-theme-text-muted mx-1">·</span>
-  <span className="text-xs text-theme-text-muted">every</span>
-  <Input value={paymentInterval} className="w-10" />
-  <span className="text-xs text-theme-text-muted">months</span>
-  <span className="text-xs text-theme-text-muted mx-1">=</span>
-  <span className="text-sm text-theme-accent font-bold">{total}%</span>
-  <Button size="sm" className="ml-2">Generate</Button>
-</div>
+const saveQuote = useCallback(async (...) => {
+  // Guard: Don't save completely empty quotes
+  const hasMinimumContent = 
+    (inputs.basePrice > 0) ||
+    (clientInfo.projectName?.trim()) ||
+    (clientInfo.developer?.trim()) ||
+    (clientInfo.clients?.some(c => c.name?.trim()));
+  
+  if (!hasMinimumContent) {
+    console.log('Skipping save - no meaningful content');
+    return null;
+  }
+  
+  // ... rest of save logic
+}, []);
 ```
 
----
-
-### Phase 7: Onboarding-Style Progressive Disclosure
-
-Add contextual tips at the top of each section:
-
+Also update title generation:
 ```tsx
-// LocationSection
-<div className="p-3 bg-theme-bg-alt/50 rounded-lg mb-4 border-l-2 border-theme-accent">
-  <p className="text-xs text-theme-text-muted">
-    <strong className="text-theme-text">Step 1:</strong> Start by selecting the zone and entering property details. This helps calculate accurate appreciation rates.
-  </p>
-</div>
+// If no meaningful title can be generated, keep as null (for working_draft only)
+const generatedTitle = titleClientPart
+  ? `${clientInfo.projectName || clientInfo.developer || 'Quote'} - ${titleClientPart}`
+  : clientInfo.projectName || clientInfo.developer || null;
 
-// PaymentSection
-<div className="p-3 bg-theme-bg-alt/50 rounded-lg mb-4 border-l-2 border-theme-accent">
-  <p className="text-xs text-theme-text-muted">
-    <strong className="text-theme-text">Step 3:</strong> Configure how payments are split between booking, construction milestones, and handover.
-  </p>
-</div>
+// Only set "Untitled Quote" when promoting to draft
+title: generatedTitle || (quote?.status === 'working_draft' ? null : 'Untitled Quote'),
 ```
 
----
+### Phase 5: Unify "New Quote" Handler Across Entry Points
 
-### Phase 8: Keep Mortgage in Exit Section (But Prominent)
-
-The mortgage is already in ExitSection as a collapsible. Make it:
-1. Default to **open** if `mortgageInputs.enabled === true`
-2. Add visual prominence with accent border when enabled
+**Create: `src/hooks/useNewQuote.ts`**
 
 ```tsx
-<Collapsible open={mortgageOpen || mortgageInputs.enabled} onOpenChange={setMortgageOpen}>
+export const useNewQuote = () => {
+  const navigate = useNavigate();
+  const { clearWorkingDraft, getOrCreateWorkingDraft } = useCashflowQuote();
+  
+  const startNewQuote = useCallback(async (options?: {
+    preselectedClient?: { id: string; name: string };
+    openConfigurator?: boolean;
+    targetRoute?: 'generator' | 'dashboard';
+  }) => {
+    // 1. Clear localStorage state
+    localStorage.removeItem('cashflow-configurator-state');
+    localStorage.removeItem('cashflow-configurator-state-v2');
+    localStorage.removeItem('cashflow_configurator_open');
+    
+    // 2. Clear working draft in DB
+    await clearWorkingDraft();
+    
+    // 3. Store preselected client if provided
+    if (options?.preselectedClient) {
+      localStorage.setItem('preselected_client', JSON.stringify(options.preselectedClient));
+    }
+    
+    // 4. Navigate with clean state
+    const route = options?.targetRoute === 'dashboard' 
+      ? '/cashflow-dashboard' 
+      : '/cashflow-generator';
+    
+    navigate(route, { 
+      replace: true, 
+      state: { 
+        openConfigurator: options?.openConfigurator ?? true,
+        freshStart: true 
+      } 
+    });
+  }, [navigate, clearWorkingDraft]);
+  
+  return { startNewQuote };
+};
+```
+
+**Update all New Quote buttons** to use this unified hook:
+- `QuotesDropdown.tsx`
+- `OICalculator.tsx`
+- `CashflowDashboard.tsx`
+- Client pages (ClientCard, etc.)
+
+### Phase 6: Clear Local State When Clearing Draft
+
+**File: `src/hooks/useCashflowQuote.ts`**
+
+Enhance `clearWorkingDraft` to also reset the local state:
+
+```tsx
+const clearWorkingDraft = useCallback(async (): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Clear database record
+  await supabase.from('cashflow_quotes').update({
+    inputs: {} as any,
+    client_name: null,
+    client_id: null,
+    // ... all fields
+  })
+  .eq('broker_id', user.id)
+  .eq('status', 'working_draft');
+  
+  // ALSO reset local state
+  setQuote(null);
+  setQuoteImages({
+    floorPlanUrl: null,
+    buildingRenderUrl: null,
+    heroImageUrl: null,
+    showLogoOverlay: true,
+  });
+  setLastSaved(null);
+  
+  console.log('Cleared working draft content and local state');
+}, []);
 ```
 
 ---
@@ -283,43 +323,30 @@ The mortgage is already in ExitSection as a collapsible. Make it:
 
 | File | Changes |
 |------|---------|
-| `LocationSection.tsx` | Fix field layout, add ClientSelector, add compact image uploads |
-| `PropertySection.tsx` | Add dual currency display to all monetary values |
-| `PaymentSection.tsx` | Simplify generator UX, add explanatory tips |
-| `RentSection.tsx` | Add decimal input support for yield percentage |
-| `ExitSection.tsx` | Auto-expand mortgage if enabled |
-| `ConfiguratorLayout.tsx` | Pass image props to LocationSection |
+| `src/pages/CashflowDashboard.tsx` | Remove eager draft creation, add resume dialog check |
+| `src/pages/OICalculator.tsx` | Add resume dialog check, use stricter validation |
+| `src/hooks/useCashflowQuote.ts` | Block empty saves, reset local state on clear, improve title logic |
+| `src/components/roi/QuotesDropdown.tsx` | Use unified `useNewQuote` hook |
+| `src/components/roi/ResumeDraftDialog.tsx` | **NEW** - "Resume or Start Fresh" dialog |
+| `src/hooks/useNewQuote.ts` | **NEW** - Unified new quote creation logic |
 
 ---
 
-## Technical Implementation Notes
+## Expected Behavior After Fix
 
-### Dual Currency Helper
-Use the existing `formatDualCurrency` function from `currencyUtils.ts`:
-```tsx
-import { formatDualCurrency } from "../currencyUtils";
-// Usage: formatDualCurrency(amount, currency, rate)
-// Returns: "AED 100,000 (€25,000)" when currency is EUR
-```
-
-### ClientSelector Import
-```tsx
-import { ClientSelector } from "@/components/clients/ClientSelector";
-import { Client as DbClient, useClients } from "@/hooks/useClients";
-```
-
-### Compact Image Upload Component
-Create a new `CompactImageUpload.tsx` or simplify the existing `ImageUploadCard` for small 1:1 aspect ratio thumbnails.
+1. **Opening `/cashflow-dashboard` fresh** → Check for draft → If exists with content, ask resume/fresh → If fresh, open empty configurator
+2. **Opening `/cashflow-generator` fresh** → Same behavior as dashboard
+3. **"New Quote" from anywhere** → Clear existing draft, navigate, open configurator empty
+4. **Auto-save** → Only triggers when basePrice > 0 OR project/developer/client name exists
+5. **No more "Untitled Quote"** entries appearing in quote lists from empty configurations
+6. **Preselected clients** → Work consistently across all entry points
 
 ---
 
-## Expected Results
+## Technical Notes
 
-1. **50% reduction in perceived whitespace** - fields grouped tightly
-2. **Dual currency visible everywhere** - AED always shown as reference
-3. **Client selector restored** - links quotes to clients
-4. **Image uploads accessible** - in step 1 instead of buried
-5. **Decimal yield support** - e.g., 8.1%, 7.5%
-6. **Clearer payment generator** - sentence-based UX
-7. **Progressive tips** - guides new users through each step
-
+- The working_draft system remains (single row per user)
+- `hasWorkingDraftContent()` already exists and works correctly
+- All entry points will use the same logic via `useNewQuote` hook
+- The resume dialog respects user preference ("Ask each time")
+- Backward compatible - existing quotes unaffected
