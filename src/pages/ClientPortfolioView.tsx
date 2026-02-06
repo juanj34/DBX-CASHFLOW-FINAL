@@ -28,6 +28,7 @@ import { PresentationsSection } from "@/components/portal/PresentationsSection";
 import { ComparisonsSection } from "@/components/portal/ComparisonsSection";
 import { CompareSection } from "@/components/portal/CompareSection";
 import { SnapshotModal } from "@/components/portal/SnapshotModal";
+import { ConvertToPropertyModal } from "@/components/portfolio/ConvertToPropertyModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,6 +88,9 @@ const ClientPortfolioView = () => {
   // Compare state
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+
+  // Convert to property modal state
+  const [convertingQuote, setConvertingQuote] = useState<QuoteData | null>(null);
 
   // Determine if user is an investor (has properties) or prospect (only quotes)
   const isInvestor = portfolioProperties.length > 0;
@@ -174,6 +178,24 @@ const ClientPortfolioView = () => {
   const handleBackFromCompare = () => {
     setShowCompare(false);
     setActiveTab("opportunities");
+  };
+
+  const handleConvertToProperty = (quote: QuoteData) => {
+    setConvertingQuote(quote);
+  };
+
+  const handleConversionSuccess = async () => {
+    setConvertingQuote(null);
+    // Refetch data
+    if (clientId) {
+      const { data: quotesData } = await supabase
+        .from('cashflow_quotes')
+        .select('id, project_name, developer, unit, unit_type, share_token, inputs, updated_at, client_name, client_country, unit_size_sqf')
+        .eq('client_id', clientId)
+        .or('is_archived.is.null,is_archived.eq.false')
+        .order('updated_at', { ascending: false });
+      if (quotesData) setQuotes(quotesData);
+    }
   };
 
   const { startNewQuote } = useNewQuote();
@@ -516,6 +538,8 @@ const ClientPortfolioView = () => {
               language={language}
               onDownload={handleDownloadQuote}
               onCompare={handleCompare}
+              onConvertToProperty={handleConvertToProperty}
+              isBrokerView={true}
             />
           </TabsContent>
 
@@ -578,6 +602,25 @@ const ClientPortfolioView = () => {
           quoteImages={exportQuoteImages}
         />
       )}
+
+      {/* Convert to Property Modal */}
+      <ConvertToPropertyModal
+        open={!!convertingQuote}
+        onOpenChange={(open) => !open && setConvertingQuote(null)}
+        quote={convertingQuote ? {
+          id: convertingQuote.id,
+          project_name: convertingQuote.project_name,
+          developer: convertingQuote.developer,
+          unit: convertingQuote.unit,
+          unit_type: convertingQuote.unit_type,
+          inputs: {
+            ...convertingQuote.inputs,
+            unitSizeSqf: convertingQuote.unit_size_sqf || convertingQuote.inputs?.unitSizeSqf,
+          },
+          client_id: clientId,
+        } : null}
+        onSuccess={handleConversionSuccess}
+      />
     </div>
   );
 };
