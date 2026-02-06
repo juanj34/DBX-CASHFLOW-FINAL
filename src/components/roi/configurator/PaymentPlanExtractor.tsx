@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Sparkles, Loader2, AlertCircle, Calendar, Upload, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -19,6 +19,7 @@ interface PaymentPlanExtractorProps {
   existingBookingMonth?: number;
   existingBookingYear?: number;
   onApply: (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => void;
+  initialFiles?: FileWithPreview[];
 }
 
 const MONTHS = [
@@ -37,7 +38,8 @@ const MONTHS = [
 ];
 
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => currentYear + i);
+// 8 years back + 5 years forward for historical booking dates
+const YEARS = Array.from({ length: 13 }, (_, i) => currentYear - 8 + i);
 
 export const PaymentPlanExtractor = ({
   open,
@@ -45,6 +47,7 @@ export const PaymentPlanExtractor = ({
   existingBookingMonth,
   existingBookingYear,
   onApply,
+  initialFiles,
 }: PaymentPlanExtractorProps) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -55,6 +58,13 @@ export const PaymentPlanExtractor = ({
   const [dateOption, setDateOption] = useState<'today' | 'existing' | 'custom'>('today');
   const [customMonth, setCustomMonth] = useState(new Date().getMonth() + 1);
   const [customYear, setCustomYear] = useState(currentYear);
+
+  // Load initial files when sheet opens with pre-loaded files
+  useEffect(() => {
+    if (initialFiles && initialFiles.length > 0 && open) {
+      setFiles(initialFiles);
+    }
+  }, [initialFiles, open]);
 
   const handleFilesSelected = useCallback((newFiles: FileWithPreview[]) => {
     setFiles(prev => [...prev, ...newFiles]);
