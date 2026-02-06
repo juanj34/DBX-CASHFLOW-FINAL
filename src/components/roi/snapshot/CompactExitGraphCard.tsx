@@ -135,29 +135,55 @@ export const CompactExitGraphCard = ({
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * width;
-    
-    if (x >= padding.left && x <= width - padding.right) {
-      // Find closest point
+
+    // Convert mouse position into SVG viewBox coordinates
+    const mouseX = ((e.clientX - rect.left) / rect.width) * width;
+    const mouseY = ((e.clientY - rect.top) / rect.height) * height;
+
+    // 1) Curve hover (month + price)
+    if (mouseX >= padding.left && mouseX <= width - padding.right) {
+      // Find closest curve point by X
       let closest = curvePoints[0];
-      let minDist = Math.abs(curvePoints[0]?.x - x);
-      
+      let minDist = Math.abs(curvePoints[0]?.x - mouseX);
+
       for (const point of curvePoints) {
-        const dist = Math.abs(point.x - x);
+        const dist = Math.abs(point.x - mouseX);
         if (dist < minDist) {
           minDist = dist;
           closest = point;
         }
       }
-      
-      if (closest) {
-        setHoverData(closest);
-      }
+
+      if (closest) setHoverData(closest);
     }
+
+    // 2) Exit marker hover (bigger, proximity-based)
+    // Make hover easy: if the cursor is within this radius of a marker, consider it hovered.
+    const HIT_RADIUS = 22;
+
+    let nearestIndex: number | null = null;
+    let nearestDist = Infinity;
+
+    scenarios.forEach((scenario, index) => {
+      if (scenario.isHandover) return;
+      const x = xScale(scenario.exitMonths);
+      const y = yScale(scenario.exitPrice);
+      const dx = x - mouseX;
+      const dy = y - mouseY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist <= HIT_RADIUS && dist < nearestDist) {
+        nearestDist = dist;
+        nearestIndex = index;
+      }
+    });
+
+    setHoveredExitIndex(nearestIndex);
   };
-  
+
   const handleMouseLeave = () => {
     setHoverData(null);
+    setHoveredExitIndex(null);
   };
   
   // Early returns AFTER all hooks
@@ -319,12 +345,11 @@ export const CompactExitGraphCard = ({
             return (
               <g 
                 key={scenario.exitMonths}
-                onMouseEnter={() => setHoveredExitIndex(index)}
-                onMouseLeave={() => setHoveredExitIndex(null)}
+                // Hover is handled globally in onMouseMove via proximity detection
                 style={{ cursor: 'pointer' }}
               >
                 {/* Larger hit area */}
-                <circle cx={x} cy={y} r="14" fill="transparent" />
+                <circle cx={x} cy={y} r="22" fill="transparent" pointerEvents="all" />
                 
                 {/* Vertical guide */}
                 <line
@@ -374,7 +399,7 @@ export const CompactExitGraphCard = ({
                 
                 {/* Hover tooltip - detailed info */}
                 {isHovered && (
-                  <g>
+                  <g pointerEvents="none">
                     <rect
                       x={x - 60}
                       y={y - 85}
