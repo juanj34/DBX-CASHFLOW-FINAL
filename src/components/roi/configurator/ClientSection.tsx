@@ -258,15 +258,38 @@ export const ClientSection = ({
       return inst.triggerValue;
     };
     
+    // Separate post-handover installments for the dedicated array
+    const postHandoverPaymentsMapped = hasPostHandover 
+      ? extractedData.installments
+          .filter(i => i.type === 'post-handover')
+          .map((inst, idx) => ({
+            id: inst.id || `ai-post-${Date.now()}-${idx}`,
+            type: 'time' as const,
+            triggerValue: inst.triggerValue,
+            paymentPercent: inst.paymentPercent,
+            isPostHandover: true as const,
+          }))
+          .sort((a, b) => a.triggerValue - b.triggerValue)
+      : [];
+
     const additionalPayments = extractedData.installments
       .filter(i => {
         // Skip downpayment (Month 0) - handled by downpaymentPercent
         if (i.type === 'time' && i.triggerValue === 0) return false;
         
-        // CRITICAL: Skip handover payment - it's the completion lump sum handled by onHandoverPercent
+        // Skip post-handover payments when hasPostHandover - they go to postHandoverPayments
+        if (i.type === 'post-handover' && hasPostHandover) return false;
+        
+        // Skip handover payment ONLY if hasPostHandover (it's handled by onHandoverPercent)
+        // For standard plans, KEEP it as a regular installment with isHandover flag
         if (i.type === 'handover') {
-          console.log('Excluding handover payment from installments:', i.paymentPercent, '%');
-          return false;
+          if (hasPostHandover) {
+            console.log('Excluding handover payment from installments (post-HO plan):', i.paymentPercent, '%');
+            return false;
+          }
+          // Standard plan: include as regular installment with isHandover marker
+          console.log('Including handover payment as installment (standard plan):', i.paymentPercent, '%');
+          return true;
         }
         
         return true;
@@ -279,6 +302,7 @@ export const ClientSection = ({
           : 'time' as const,
         triggerValue: inst.triggerValue, // Already absolute from AI
         paymentPercent: inst.paymentPercent,
+        isHandover: inst.type === 'handover' ? true : undefined,
       }))
       .sort((a, b) => {
         // Type-aware sorting: convert construction % to estimated months
@@ -295,8 +319,9 @@ export const ClientSection = ({
       preHandoverPercent,
       onHandoverPercent,
       additionalPayments,
-      hasPostHandoverPlan: extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0,
+      hasPostHandoverPlan: hasPostHandover,
       postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
+      postHandoverPayments: postHandoverPaymentsMapped,
       handoverMonth, // NEW: Store the actual month (1-12)
       handoverQuarter,
       handoverYear,
