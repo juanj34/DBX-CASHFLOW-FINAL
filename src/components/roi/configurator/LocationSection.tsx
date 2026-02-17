@@ -127,10 +127,35 @@ export const LocationSection = ({
       if (preHOTotal > 0 && preHOTotal <= 100) preHandoverPercent = preHOTotal;
     }
     
+    const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
+    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
+    const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
+    
+    const onHandoverPercent = hasPostHandover 
+      ? (handoverPayment?.paymentPercent || 0)
+      : 0;
+    
+    // Separate post-handover installments for the dedicated array
+    const postHandoverPaymentsMapped = hasPostHandover 
+      ? postHandoverInstallments
+          .map((inst, idx) => ({
+            id: inst.id || `ai-post-${Date.now()}-${idx}`,
+            type: 'time' as const,
+            triggerValue: inst.triggerValue,
+            paymentPercent: inst.paymentPercent,
+            isPostHandover: true as const,
+          }))
+          .sort((a, b) => a.triggerValue - b.triggerValue)
+      : [];
+    
     const additionalPayments = extractedData.installments
       .filter(i => {
         if (i.type === 'time' && i.triggerValue === 0) return false;
-        if (i.type === 'handover') return false;
+        if (i.type === 'post-handover' && hasPostHandover) return false;
+        if (i.type === 'handover') {
+          if (hasPostHandover) return false;
+          return true;
+        }
         return true;
       })
       .map((inst, idx) => ({
@@ -138,12 +163,9 @@ export const LocationSection = ({
         type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
         triggerValue: inst.triggerValue,
         paymentPercent: inst.paymentPercent,
+        isHandover: inst.type === 'handover' ? true : undefined,
       }))
       .sort((a, b) => a.triggerValue - b.triggerValue);
-    
-    const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
-    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-    const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
     
     setInputs(prev => ({
       ...prev,
@@ -153,9 +175,11 @@ export const LocationSection = ({
       bookingYear: effectiveBookingDate.year,
       downpaymentPercent,
       preHandoverPercent,
+      onHandoverPercent,
       additionalPayments,
       hasPostHandoverPlan: hasPostHandover,
-      postHandoverPercent: postHandoverTotal,
+      postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
+      postHandoverPayments: postHandoverPaymentsMapped,
       handoverMonth,
       handoverQuarter,
       handoverYear,
