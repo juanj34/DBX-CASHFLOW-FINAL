@@ -68,7 +68,6 @@ export const RentSection = ({ inputs, setInputs, currency }: ConfiguratorSection
       {/* Section Header */}
       <div>
         <h3 className="text-lg font-semibold text-theme-text">Rental Strategy</h3>
-        <p className="text-sm text-theme-text-muted">Configure rental income projections</p>
       </div>
 
       {/* Long-Term Rental */}

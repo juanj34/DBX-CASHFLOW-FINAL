@@ -1,4 +1,4 @@
-import { OIInputs } from "./useOICalculations";
+import { OIInputs, monthName } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { getCountryByCode } from "@/data/countries";
@@ -19,7 +19,7 @@ const DLD_FEE_PERCENT = 4;
 
 export const ClientSplitCards = ({ inputs, clientInfo, currency, rate }: ClientSplitCardsProps) => {
   const { t, language } = useLanguage();
-  const { basePrice, downpaymentPercent, additionalPayments, oqoodFee, eoiFee, preHandoverPercent, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
+  const { basePrice, downpaymentPercent, additionalPayments, oqoodFee, eoiFee, preHandoverPercent, bookingMonth, bookingYear, handoverMonth, handoverYear } = inputs;
 
   const clients = clientInfo.clients || [];
   const clientShares = clientInfo.clientShares || [];
@@ -54,7 +54,7 @@ export const ClientSplitCards = ({ inputs, clientInfo, currency, rate }: ClientS
     ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const bookingLabel = `${monthNamesShort[bookingMonth - 1]} ${bookingYear}`;
-  const handoverLabel = `Q${handoverQuarter} ${handoverYear}`;
+  const handoverLabel = `${monthName(handoverMonth)} ${handoverYear}`;
 
   if (!clients || clients.length < 2) return null;
 

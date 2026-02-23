@@ -1,7 +1,7 @@
-import { OIInputs, PaymentMilestone, ShortTermRentalConfig } from './useOICalculations';
+import { OIInputs, PaymentMilestone, ShortTermRentalConfig, quarterToMonth } from './useOICalculations';
 
 // Schema version tracking
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 // Dynamic date helpers
 const getCurrentMonth = () => new Date().getMonth() + 1;
@@ -21,7 +21,7 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   appreciationRate: 10,
   bookingMonth: getCurrentMonth(),
   bookingYear: getCurrentYear(),
-  handoverQuarter: 4,
+  handoverMonth: 11, // November (was Q4)
   handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
   preHandoverPercent: 20,
@@ -31,7 +31,7 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   onHandoverPercent: 0,
   postHandoverPercent: 0,
   postHandoverPayments: [],
-  postHandoverEndQuarter: 4,
+  postHandoverEndMonth: 11, // November
   postHandoverEndYear: new Date().getFullYear() + 4,
   // Entry costs
   eoiFee: 50000,
@@ -97,28 +97,46 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.exitAgentCommissionEnabled ??= false;
     merged.exitNocFee ??= 5000;
     merged.valueDifferentiators ??= [];
-    
+
     // Handle legacy rentalMode field
     if (saved.rentalMode === 'short-term' && !saved.showAirbnbComparison) {
       merged.showAirbnbComparison = true;
     }
-    
+
     console.log('[inputMigration] Migrated quote from v1 to v2');
   }
-  
-  // V2 → V3 migrations (post-handover payment plan)
+
+  // Post-handover payment plan fields (added across v2-v3)
   merged.hasPostHandoverPlan ??= false;
   merged.onHandoverPercent ??= 0;
   merged.postHandoverPercent ??= 0;
   merged.postHandoverPayments ??= [];
-  merged.postHandoverEndQuarter ??= 4;
   merged.postHandoverEndYear ??= new Date().getFullYear() + 4;
-  
+
+  // V2 → V3 migration: quarter-based → month-based handover timing
+  if (version < 3) {
+    // Derive handoverMonth from legacy handoverQuarter if not already set
+    const legacyQuarter = (saved as any).handoverQuarter;
+    if (!saved.handoverMonth && legacyQuarter) {
+      merged.handoverMonth = quarterToMonth(legacyQuarter);
+    }
+    merged.handoverMonth ??= 11; // default November
+
+    // Derive postHandoverEndMonth from legacy postHandoverEndQuarter
+    const legacyEndQuarter = (saved as any).postHandoverEndQuarter;
+    if (!(merged as any).postHandoverEndMonth && legacyEndQuarter) {
+      merged.postHandoverEndMonth = quarterToMonth(legacyEndQuarter);
+    }
+    merged.postHandoverEndMonth ??= 11; // default November
+
+    console.log('[inputMigration] Migrated quote from v2 to v3 (quarter → month)');
+  }
+
   // Ensure post-handover payments array is valid
   if (!Array.isArray(merged.postHandoverPayments)) {
     merged.postHandoverPayments = [];
   }
-  
+
   // Validate post-handover payment milestones
   merged.postHandoverPayments = merged.postHandoverPayments.map((payment, index) => ({
     id: payment.id || `post-payment-${index}`,
@@ -127,7 +145,7 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     paymentPercent: payment.paymentPercent ?? 0,
     label: payment.label || '',
   }));
-  
+
   // Ensure valueDifferentiators is always an array
   if (!Array.isArray(merged.valueDifferentiators)) {
     merged.valueDifferentiators = [];

@@ -195,22 +195,30 @@ export const ClientSection = ({
     }
     
     // === STEP 1: Calculate handoverMonth and handoverYear from handoverMonthFromBooking ===
-    let handoverQuarter = extractedData.paymentStructure.handoverQuarter || inputs.handoverQuarter;
     let handoverYear = extractedData.paymentStructure.handoverYear || inputs.handoverYear;
-    let handoverMonth: number | undefined = undefined;
-    
+    let handoverMonth: number = inputs.handoverMonth;
+    let handoverQuarter: number | undefined = inputs.handoverQuarter;
+
     if (extractedData.paymentStructure.handoverMonthFromBooking) {
       const handoverMonths = extractedData.paymentStructure.handoverMonthFromBooking;
       const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
       const handoverDate = new Date(bookingDate);
       handoverDate.setMonth(handoverDate.getMonth() + handoverMonths);
-      
+
       // Store actual month (1-12) for accurate scheduling
       handoverMonth = handoverDate.getMonth() + 1;
       handoverYear = handoverDate.getFullYear();
-      
-      // Derive quarter from month for display
+
+      // Derive quarter from month for backward compat
       handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
+    } else if (extractedData.paymentStructure.handoverMonth) {
+      handoverMonth = extractedData.paymentStructure.handoverMonth;
+      handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
+    } else if (extractedData.paymentStructure.handoverQuarter) {
+      // Legacy: derive month from quarter
+      const q = extractedData.paymentStructure.handoverQuarter;
+      handoverMonth = q === 1 ? 2 : q === 2 ? 5 : q === 3 ? 8 : 11;
+      handoverQuarter = q;
     }
     
     // === STEP 2: Find special installments ===

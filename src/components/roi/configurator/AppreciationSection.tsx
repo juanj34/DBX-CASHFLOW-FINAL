@@ -74,8 +74,8 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
     
     // Calculate years to handover
     const bookingDate = new Date(inputs.bookingYear || 2025, (inputs.bookingMonth || 1) - 1);
-    const handoverQuarterMonth = ((inputs.handoverQuarter || 4) - 1) * 3;
-    const handoverDate = new Date(inputs.handoverYear || 2028, handoverQuarterMonth);
+    const handoverMonthIndex = (inputs.handoverMonth || 12) - 1;
+    const handoverDate = new Date(inputs.handoverYear || 2028, handoverMonthIndex);
     const yearsToHandover = Math.max(0, (handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 365));
     
     const data = [];
@@ -108,7 +108,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
     }
     
     return { data, yearsToHandover };
-  }, [inputs.basePrice, inputs.unitSizeSqf, inputs.bookingYear, inputs.bookingMonth, inputs.handoverYear, inputs.handoverQuarter, constructionRate, growthRate, matureRate, growthPeriodYears]);
+  }, [inputs.basePrice, inputs.unitSizeSqf, inputs.bookingYear, inputs.bookingMonth, inputs.handoverYear, inputs.handoverMonth, constructionRate, growthRate, matureRate, growthPeriodYears]);
 
   // Determine which profile is currently selected (or custom)
   const getSelectedProfile = (): ProfileKey | 'custom' => {
@@ -213,9 +213,6 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         <h3 className="text-lg font-semibold text-theme-text">
           {language === 'es' ? 'Proyección de Crecimiento' : 'Growth Projection'}
         </h3>
-        <p className="text-sm text-theme-text-muted">
-          {language === 'es' ? 'Proyecta el crecimiento del valor' : 'Project property value growth'}
-        </p>
       </div>
 
       {/* Appreciation Bonus Banner */}
@@ -432,81 +429,114 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
         </CollapsibleTrigger>
         
         <CollapsibleContent className="pt-2">
-          <div className="space-y-3 pl-4 border-l-2 border-purple-500/30">
-            {/* Under Construction */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'En Construcción' : 'Under Construction'}</label>
-                <InfoTooltip translationKey="tooltipConstructionAppreciation" />
+          <div className="space-y-3">
+            {/* Construction Phase */}
+            <div className="p-3 rounded-lg border-l-3 border-orange-400/60 bg-orange-500/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-orange-400" />
+                  <label className="text-xs font-medium text-theme-text">
+                    {language === 'es' ? 'Fase de Construcción' : 'Construction Phase'}
+                  </label>
+                  <InfoTooltip translationKey="tooltipConstructionAppreciation" />
+                </div>
+                <span className="text-sm text-orange-400 font-mono font-bold">{inputs.constructionAppreciation ?? 12}%</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[inputs.constructionAppreciation ?? 12]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, constructionAppreciation: value }))}
-                  min={5}
-                  max={20}
-                  step={1}
-                  className="w-24 roi-slider-lime"
-                />
-                <span className="text-xs text-orange-400 font-mono w-8 text-right">{inputs.constructionAppreciation ?? 12}%</span>
-              </div>
+              <p className="text-[10px] text-theme-text-muted">
+                {language === 'es' ? 'Apreciación anual durante la construcción del proyecto' : 'Annual appreciation while the project is being built'}
+              </p>
+              <Slider
+                value={[inputs.constructionAppreciation ?? 12]}
+                onValueChange={([value]) => setInputs(prev => ({ ...prev, constructionAppreciation: value }))}
+                min={5}
+                max={20}
+                step={1}
+                className="w-full roi-slider-lime"
+              />
+              {appreciationBonus > 0 && (
+                <p className="text-[10px] text-theme-accent font-mono">
+                  Effective: {inputs.constructionAppreciation ?? 12}% + {appreciationBonus.toFixed(1)}% bonus = {constructionRate.toFixed(1)}%
+                </p>
+              )}
             </div>
 
-            {/* Post Handover */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">{language === 'es' ? `Post Entrega (${inputs.growthPeriodYears ?? 5}a)` : `Post Handover (${inputs.growthPeriodYears ?? 5}y)`}</label>
-                <InfoTooltip translationKey="tooltipGrowthAppreciation" />
+            {/* Growth Phase */}
+            <div className="p-3 rounded-lg border-l-3 border-green-400/60 bg-green-500/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400" />
+                  <label className="text-xs font-medium text-theme-text">
+                    {language === 'es' ? 'Fase de Crecimiento' : 'Growth Phase'}
+                  </label>
+                  <InfoTooltip translationKey="tooltipGrowthAppreciation" />
+                </div>
+                <span className="text-sm text-green-400 font-mono font-bold">{inputs.growthAppreciation ?? 8}%</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[inputs.growthAppreciation ?? 8]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, growthAppreciation: value }))}
-                  min={3}
-                  max={15}
-                  step={1}
-                  className="w-24 roi-slider-lime"
-                />
-                <span className="text-xs text-green-400 font-mono w-8 text-right">{inputs.growthAppreciation ?? 8}%</span>
+              <p className="text-[10px] text-theme-text-muted">
+                {language === 'es' ? 'Primeros años después de la entrega — zona en expansión' : 'First years after handover — area is expanding'}
+              </p>
+              <Slider
+                value={[inputs.growthAppreciation ?? 8]}
+                onValueChange={([value]) => setInputs(prev => ({ ...prev, growthAppreciation: value }))}
+                min={3}
+                max={15}
+                step={1}
+                className="w-full roi-slider-lime"
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] text-theme-text-muted">
+                    {language === 'es' ? 'Duración' : 'Duration'}
+                  </label>
+                  <InfoTooltip translationKey="tooltipGrowthYears" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.growthPeriodYears ?? 5]}
+                    onValueChange={([value]) => setInputs(prev => ({ ...prev, growthPeriodYears: value }))}
+                    min={2}
+                    max={10}
+                    step={1}
+                    className="w-20 roi-slider-lime"
+                  />
+                  <span className="text-xs text-theme-text font-mono w-6 text-right">{inputs.growthPeriodYears ?? 5}y</span>
+                </div>
               </div>
+              {appreciationBonus > 0 && (
+                <p className="text-[10px] text-theme-accent font-mono">
+                  Effective: {inputs.growthAppreciation ?? 8}% + {appreciationBonus.toFixed(1)}% bonus = {growthRate.toFixed(1)}%
+                </p>
+              )}
             </div>
 
-            {/* Post Handover Duration */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Duración Post Entrega' : 'Post Handover Duration'}</label>
-                <InfoTooltip translationKey="tooltipGrowthYears" />
+            {/* Mature Phase */}
+            <div className="p-3 rounded-lg border-l-3 border-blue-400/60 bg-blue-500/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-400" />
+                  <label className="text-xs font-medium text-theme-text">
+                    {language === 'es' ? 'Fase de Madurez' : 'Mature Phase'}
+                  </label>
+                  <InfoTooltip translationKey="tooltipMatureAppreciation" />
+                </div>
+                <span className="text-sm text-blue-400 font-mono font-bold">{inputs.matureAppreciation ?? 4}%</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[inputs.growthPeriodYears ?? 5]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, growthPeriodYears: value }))}
-                  min={2}
-                  max={10}
-                  step={1}
-                  className="w-24 roi-slider-lime"
-                />
-                <span className="text-xs text-theme-text font-mono w-8 text-right">{inputs.growthPeriodYears ?? 5}y</span>
-              </div>
-            </div>
-
-            {/* Zone Maturity */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1">
-                <label className="text-xs text-theme-text-muted">{language === 'es' ? 'Madurez de Zona' : 'Zone Maturity'}</label>
-                <InfoTooltip translationKey="tooltipMatureAppreciation" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[inputs.matureAppreciation ?? 4]}
-                  onValueChange={([value]) => setInputs(prev => ({ ...prev, matureAppreciation: value }))}
-                  min={1}
-                  max={8}
-                  step={1}
-                  className="w-24 roi-slider-lime"
-                />
-                <span className="text-xs text-blue-400 font-mono w-8 text-right">{inputs.matureAppreciation ?? 4}%</span>
-              </div>
+              <p className="text-[10px] text-theme-text-muted">
+                {language === 'es' ? 'Crecimiento estable de zona establecida' : 'Steady-state growth in an established area'}
+              </p>
+              <Slider
+                value={[inputs.matureAppreciation ?? 4]}
+                onValueChange={([value]) => setInputs(prev => ({ ...prev, matureAppreciation: value }))}
+                min={1}
+                max={8}
+                step={1}
+                className="w-full roi-slider-lime"
+              />
+              {appreciationBonus > 0 && (
+                <p className="text-[10px] text-theme-accent font-mono">
+                  Effective: {inputs.matureAppreciation ?? 4}% + {appreciationBonus.toFixed(1)}% bonus = {matureRate.toFixed(1)}%
+                </p>
+              )}
             </div>
 
             {/* Saved Presets */}
@@ -574,7 +604,7 @@ export const AppreciationSection = ({ inputs, setInputs, currency }: Configurato
                     }
                   }}
                   disabled={!presetName.trim() || saving}
-                  className="h-7 px-2 bg-theme-accent text-black hover:bg-theme-accent/90 text-xs"
+                  className="h-7 px-2 bg-theme-accent text-white hover:bg-theme-accent/90 text-xs"
                 >
                   <Save className="w-3 h-3 mr-1" />
                   Save

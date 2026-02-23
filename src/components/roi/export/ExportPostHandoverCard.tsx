@@ -56,22 +56,21 @@ const translations = {
   net: { en: 'Net', es: 'Neto' },
 };
 
-// Check if a payment is AFTER the handover quarter (strictly after Q end)
-const isPaymentAfterHandoverQuarter = (
+// Check if a payment is AFTER the handover month
+const isPaymentAfterHandoverMonth = (
   monthsFromBooking: number,
   bookingMonth: number,
   bookingYear: number,
-  handoverQuarter: number,
+  handoverMonth: number,
   handoverYear: number
 ): boolean => {
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
   const paymentDate = new Date(bookingDate);
   paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-  
-  const handoverQuarterEndMonth = handoverQuarter * 3;
-  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
-  
-  return paymentDate > handoverQuarterEnd;
+
+  const handoverDate = new Date(handoverYear, handoverMonth - 1, 28);
+
+  return paymentDate > handoverDate;
 };
 
 export const ExportPostHandoverCard = ({
@@ -99,11 +98,11 @@ export const ExportPostHandoverCard = ({
   if (postHandoverPaymentsToUse.length === 0 && inputs.additionalPayments?.length > 0) {
     postHandoverPaymentsToUse = inputs.additionalPayments.filter(p => {
       if (p.type !== 'time') return false;
-      return isPaymentAfterHandoverQuarter(
+      return isPaymentAfterHandoverMonth(
         p.triggerValue,
         inputs.bookingMonth,
         inputs.bookingYear,
-        inputs.handoverQuarter,
+        inputs.handoverMonth,
         inputs.handoverYear
       );
     });

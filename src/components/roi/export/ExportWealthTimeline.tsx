@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Currency, formatCurrencyShort } from '../currencyUtils';
 import { calculateExitPrice } from '../constructionProgress';
+import { monthName } from '../useOICalculations';
 
 interface ExportWealthTimelineProps {
   basePrice: number;
@@ -14,7 +15,7 @@ interface ExportWealthTimelineProps {
   rate: number;
   language: 'en' | 'es';
   // Handover props
-  handoverQuarter?: number;
+  handoverMonth?: number;
   handoverYear?: number;
   bookingMonth?: number;
 }
@@ -30,16 +31,6 @@ interface YearProjection {
   label?: string;
 }
 
-const quarterToMonth = (quarter: number): number => {
-  switch (quarter) {
-    case 1: return 2;
-    case 2: return 5;
-    case 3: return 8;
-    case 4: return 11;
-    default: return 11;
-  }
-};
-
 export const ExportWealthTimeline = ({
   basePrice,
   constructionMonths,
@@ -51,7 +42,7 @@ export const ExportWealthTimeline = ({
   currency,
   rate,
   language,
-  handoverQuarter,
+  handoverMonth: propHandoverMonth,
   handoverYear: propHandoverYear,
   bookingMonth = 1,
 }: ExportWealthTimelineProps) => {
@@ -60,10 +51,10 @@ export const ExportWealthTimeline = ({
     const data: YearProjection[] = [];
     let currentValue = basePrice;
     const constructionYears = Math.ceil(constructionMonths / 12);
-    
+
     // Calculate handover details
     const handoverYear = propHandoverYear || (bookingYear + constructionYears);
-    const handoverMonth = handoverQuarter ? quarterToMonth(handoverQuarter) : 11;
+    const handoverMonth = propHandoverMonth || 11;
     const bookingDate = new Date(bookingYear, bookingMonth - 1);
     const handoverDate = new Date(handoverYear, handoverMonth - 1);
     const monthsToHandover = Math.max(0, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
@@ -76,7 +67,7 @@ export const ExportWealthTimeline = ({
     );
     
     let handoverInserted = false;
-    const maxYears = handoverQuarter ? 6 : 7;
+    const maxYears = propHandoverMonth ? 6 : 7;
     
     for (let year = 0; year < maxYears; year++) {
       const calendarYear = bookingYear + year;
@@ -105,21 +96,21 @@ export const ExportWealthTimeline = ({
         appreciation,
       });
       
-      if (!handoverInserted && calendarYear === handoverYear && handoverQuarter) {
-        const quarterLabel = `Q${handoverQuarter}'${String(handoverYear).slice(-2)}`;
+      if (!handoverInserted && calendarYear === handoverYear && propHandoverMonth) {
+        const handoverLabel = `${monthName(handoverMonth)}'${String(handoverYear).slice(-2)}`;
         data.push({
           year: handoverYear,
           value: handoverValue,
           phase: 'handover',
           appreciation: 0,
           isHandover: true,
-          label: `🔑 ${quarterLabel}`,
+          label: `🔑 ${handoverLabel}`,
         });
         handoverInserted = true;
       }
     }
     return data;
-  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, handoverQuarter, propHandoverYear, bookingMonth]);
+  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, propHandoverMonth, propHandoverYear, bookingMonth]);
   
   const regularData = projections.filter(d => !d.isHandover);
   const totalGrowth = regularData.length > 1

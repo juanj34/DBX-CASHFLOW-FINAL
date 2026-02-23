@@ -8,7 +8,7 @@ interface ShowcaseUnitCardProps {
   unitSizeSqf: number;
   basePrice: number;
   pricePerSqft: number;
-  handoverQuarter: string;
+  handoverLabel: string;
   handoverYear: number;
   monthsToHandover: number;
   currency: Currency;
@@ -21,7 +21,7 @@ export const ShowcaseUnitCard: React.FC<ShowcaseUnitCardProps> = ({
   unitSizeSqf,
   basePrice,
   pricePerSqft,
-  handoverQuarter,
+  handoverLabel,
   handoverYear,
   monthsToHandover,
   currency,
@@ -67,7 +67,7 @@ export const ShowcaseUnitCard: React.FC<ShowcaseUnitCardProps> = ({
           <p className="text-[9px] text-white/50 uppercase mb-0.5">Handover</p>
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3 text-cyan-400" />
-            <span className="text-sm font-bold text-white">{handoverQuarter} {handoverYear}</span>
+            <span className="text-sm font-bold text-white">{handoverLabel} {handoverYear}</span>
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3 text-white/50" />

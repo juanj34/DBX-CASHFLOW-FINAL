@@ -1,4 +1,4 @@
-import { OIInputs, OIHoldAnalysis } from "../useOICalculations";
+import { OIInputs, OIHoldAnalysis, monthName } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TrendingUp } from "lucide-react";
@@ -24,7 +24,7 @@ export const CompactInvestmentSnapshot = ({
   
   const pricePerSqft = unitSizeSqf > 0 ? inputs.basePrice / unitSizeSqf : 0;
   
-  const { basePrice, downpaymentPercent, preHandoverPercent, additionalPayments, bookingMonth, bookingYear, handoverQuarter, handoverYear, oqoodFee } = inputs;
+  const { basePrice, downpaymentPercent, preHandoverPercent, additionalPayments, bookingMonth, bookingYear, handoverMonth, handoverYear, oqoodFee } = inputs;
   
   const dldFee = basePrice * 0.04;
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
@@ -72,7 +72,7 @@ export const CompactInvestmentSnapshot = ({
           <div>
             <p className="text-[10px] uppercase tracking-wide text-theme-text-muted mb-1">Timeline</p>
             <p className="text-sm font-bold text-theme-text font-mono">
-              {monthNames[bookingMonth - 1]} {bookingYear} → Q{handoverQuarter} {handoverYear}
+              {monthNames[bookingMonth - 1]} {bookingYear} → {monthName(handoverMonth)} {handoverYear}
             </p>
           </div>
         </div>

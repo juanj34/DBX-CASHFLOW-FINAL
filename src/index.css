@@ -55,19 +55,19 @@ All colors MUST be HSL.
     /* Transitions */
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Default theme variables (tech-dark as default) */
-    --theme-bg: 222 47% 11%;
-    --theme-bg-alt: 222 47% 7%;
-    --theme-card: 222 36% 14%;
-    --theme-card-alt: 222 27% 20%;
-    --theme-border: 222 27% 20%;
-    --theme-border-alt: 222 20% 27%;
-    --theme-accent: 75 100% 50%;
-    --theme-accent-secondary: 187 100% 50%;
-    --theme-text: 0 0% 100%;
-    --theme-text-muted: 220 9% 60%;
-    --theme-text-highlight: 75 100% 50%;
-    --theme-positive: 142 71% 45%;
+    /* Default theme variables — single blue/white theme */
+    --theme-bg: 210 40% 98%;
+    --theme-bg-alt: 210 40% 96%;
+    --theme-card: 0 0% 100%;
+    --theme-card-alt: 210 40% 98%;
+    --theme-border: 214 32% 91%;
+    --theme-border-alt: 213 27% 84%;
+    --theme-accent: 221 83% 53%;
+    --theme-accent-secondary: 224 76% 48%;
+    --theme-text: 222 47% 11%;
+    --theme-text-muted: 215 16% 47%;
+    --theme-text-highlight: 221 83% 53%;
+    --theme-positive: 142 76% 36%;
     --theme-negative: 0 84% 60%;
 
     --sidebar-background: 0 0% 98%;
@@ -120,82 +120,30 @@ All colors MUST be HSL.
   }
 }
 
-/* Theme: Tech Dark (fintech/neon aesthetic) */
-.theme-tech-dark {
-  --theme-bg: 222 47% 11%;
-  --theme-bg-alt: 222 47% 7%;
-  --theme-card: 222 36% 14%;
-  --theme-card-alt: 222 27% 20%;
-  --theme-border: 222 27% 20%;
-  --theme-border-alt: 222 20% 27%;
-  --theme-accent: 75 100% 50%;
-  --theme-accent-secondary: 187 100% 50%;
-  --theme-text: 0 0% 100%;
-  --theme-text-muted: 220 9% 60%;
-  --theme-text-highlight: 75 100% 50%;
-  --theme-positive: 142 71% 45%;
-  --theme-negative: 0 84% 60%;
-  /* Semantic role colors */
-  --theme-info: 187 100% 50%;
-  --theme-warning: 38 92% 50%;
-  --theme-rental: 187 100% 50%;
-  --theme-exit: 280 100% 65%;
-  /* Phase colors */
-  --theme-phase-construction: 24 95% 53%;
-  --theme-phase-growth: 142 71% 45%;
-  --theme-phase-mature: 217 91% 60%;
-}
-
-/* Theme: Consultant (light professional) */
-.theme-consultant {
-  --theme-bg: 210 20% 98%;
-  --theme-bg-alt: 210 17% 95%;
+/* Single theme: Blue/White */
+.theme-default {
+  --theme-bg: 210 40% 98%;
+  --theme-bg-alt: 210 40% 96%;
   --theme-card: 0 0% 100%;
-  --theme-card-alt: 210 17% 95%;
-  --theme-border: 214 20% 90%;
-  --theme-border-alt: 214 18% 82%;
-  --theme-accent: 43 74% 49%;
-  --theme-accent-secondary: 210 53% 37%;
+  --theme-card-alt: 210 40% 98%;
+  --theme-border: 214 32% 91%;
+  --theme-border-alt: 213 27% 84%;
+  --theme-accent: 221 83% 53%;
+  --theme-accent-secondary: 224 76% 48%;
   --theme-text: 222 47% 11%;
   --theme-text-muted: 215 16% 47%;
-  --theme-text-highlight: 43 74% 49%;
-  --theme-positive: 160 84% 30%;
-  --theme-negative: 0 84% 45%;
-  /* Semantic role colors - darker for light backgrounds */
-  --theme-info: 210 53% 37%;
-  --theme-warning: 38 92% 45%;
-  --theme-rental: 173 58% 30%;
-  --theme-exit: 280 68% 40%;
-  /* Phase colors - darker for light backgrounds */
-  --theme-phase-construction: 24 85% 40%;
-  --theme-phase-growth: 158 64% 32%;
-  --theme-phase-mature: 217 78% 45%;
-}
-
-/* Theme: Consultant Dark (elegant dark) */
-.theme-consultant-dark {
-  --theme-bg: 217 33% 17%;
-  --theme-bg-alt: 222 47% 11%;
-  --theme-card: 215 25% 27%;
-  --theme-card-alt: 215 20% 35%;
-  --theme-border: 215 20% 35%;
-  --theme-border-alt: 215 16% 47%;
-  --theme-accent: 45 93% 47%;
-  --theme-accent-secondary: 213 94% 68%;
-  --theme-text: 210 40% 98%;
-  --theme-text-muted: 220 13% 69%;
-  --theme-text-highlight: 45 93% 47%;
-  --theme-positive: 158 64% 52%;
-  --theme-negative: 0 91% 71%;
-  /* Semantic role colors */
-  --theme-info: 213 94% 68%;
-  --theme-warning: 38 92% 50%;
-  --theme-rental: 187 85% 53%;
-  --theme-exit: 280 85% 65%;
-  /* Phase colors */
-  --theme-phase-construction: 24 95% 53%;
-  --theme-phase-growth: 158 64% 52%;
-  --theme-phase-mature: 217 91% 65%;
+  --theme-text-highlight: 221 83% 53%;
+  --theme-positive: 142 76% 36%;
+  --theme-negative: 0 84% 60%;
+  /* Semantic role colors — all mapped to accent blue or positive green */
+  --theme-info: 221 83% 53%;
+  --theme-warning: 221 83% 53%;
+  --theme-rental: 221 83% 53%;
+  --theme-exit: 221 83% 53%;
+  /* Phase colors — shades of blue */
+  --theme-phase-construction: 221 83% 53%;
+  --theme-phase-growth: 224 76% 48%;
+  --theme-phase-mature: 215 16% 47%;
 }
 
 @layer base {
@@ -310,93 +258,24 @@ All colors MUST be HSL.
   animation: gradient 3s ease infinite;
 }
 
-/* Custom Mapbox Geocoder styles to match app design */
-.mapboxgl-ctrl-geocoder-wrapper .mapboxgl-ctrl-geocoder {
-  min-width: 240px;
-  max-width: 320px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-family: inherit;
-}
-
-.mapboxgl-ctrl-geocoder--input {
-  font-size: 14px;
-  padding: 8px 12px 8px 36px;
-  height: 38px;
-}
-
-.mapboxgl-ctrl-geocoder--input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-.mapboxgl-ctrl-geocoder .suggestions {
-  border-radius: 0 0 8px 8px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
-}
-
-.mapboxgl-ctrl-geocoder .suggestions > li > a {
-  padding: 10px 12px;
-  font-size: 13px;
-}
-
-.mapboxgl-ctrl-geocoder .suggestions > .active > a,
-.mapboxgl-ctrl-geocoder .suggestions > li > a:hover {
-  background-color: rgba(37, 99, 235, 0.1);
-}
-
-/* Make Mapbox controls visible above DrawingCanvas in presentation mode */
-.mapboxgl-ctrl-top-right,
-.mapboxgl-ctrl-top-left,
-.mapboxgl-ctrl-bottom-right,
-.mapboxgl-ctrl-bottom-left {
-  z-index: 1060 !important;
-}
-
-.mapboxgl-ctrl-group {
-  position: relative;
-  z-index: 1060 !important;
-}
 
 /* ROI Calculator Custom Slider Styles */
-.roi-slider-lime [data-radix-slider-track] {
-  background: hsl(222 47% 20%);
-}
-.roi-slider-lime [data-radix-slider-range] {
-  background: #CCFF00;
-}
-.roi-slider-lime [data-radix-slider-thumb] {
-  background: #CCFF00;
-  border-color: #CCFF00;
-  box-shadow: 0 0 10px #CCFF00;
-}
-
-.roi-slider-cyan [data-radix-slider-track] {
-  background: hsl(222 47% 20%);
-}
-.roi-slider-cyan [data-radix-slider-range] {
-  background: #00EAFF;
-}
-.roi-slider-cyan [data-radix-slider-thumb] {
-  background: #00EAFF;
-  border-color: #00EAFF;
-  box-shadow: 0 0 10px #00EAFF;
-}
-
+.roi-slider-lime [data-radix-slider-track],
+.roi-slider-cyan [data-radix-slider-track],
 .roi-slider-pink [data-radix-slider-track] {
-  background: hsl(222 47% 20%);
+  background: hsl(214 32% 91%);
 }
+.roi-slider-lime [data-radix-slider-range],
+.roi-slider-cyan [data-radix-slider-range],
 .roi-slider-pink [data-radix-slider-range] {
-  background: #FF00FF;
+  background: #2563EB;
 }
+.roi-slider-lime [data-radix-slider-thumb],
+.roi-slider-cyan [data-radix-slider-thumb],
 .roi-slider-pink [data-radix-slider-thumb] {
-  background: #FF00FF;
-  border-color: #FF00FF;
-  box-shadow: 0 0 10px #FF00FF;
+  background: #2563EB;
+  border-color: #2563EB;
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.4);
 }
 
 /* Custom Scrollbar Styles - Global fallback for native scrollbars */
@@ -410,12 +289,12 @@ All colors MUST be HSL.
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(222 27% 25%);
+  background: hsl(215 16% 80%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(222 27% 35%);
+  background: hsl(215 16% 65%);
 }
 
 ::-webkit-scrollbar-corner {
@@ -425,7 +304,7 @@ All colors MUST be HSL.
 /* Firefox scrollbar support */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(222, 27%, 25%) transparent;
+  scrollbar-color: hsl(215, 16%, 80%) transparent;
 }
 
 /* Hide scrollbar utility */
@@ -473,33 +352,15 @@ All colors MUST be HSL.
     padding: 0 !important;
   }
 
-  /* Dark cards should print with dark background for brand consistency */
-  .bg-\[\#0f172a\],
-  .bg-\[\#1a1f2e\] {
-    background: #0f172a !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
   /* Ensure text colors are preserved */
-  .text-white,
-  .text-gray-100,
-  .text-gray-200,
-  .text-gray-300 {
-    color: inherit !important;
+  .text-theme-text,
+  .text-theme-text-muted {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   /* Accent colors preserved */
-  .text-\[\#CCFF00\] {
-    color: #CCFF00 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .text-\[\#00EAFF\] {
-    color: #00EAFF !important;
+  .text-theme-accent {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -551,7 +412,7 @@ All colors MUST be HSL.
   .border,
   .border-b,
   .border-t {
-    border-color: #2a3142 !important;
+    border-color: #E2E8F0 !important;
   }
 }
 

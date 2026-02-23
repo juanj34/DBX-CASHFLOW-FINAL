@@ -1,4 +1,4 @@
-import { OIInputs, PaymentMilestone } from '../useOICalculations';
+import { OIInputs, PaymentMilestone, monthName } from '../useOICalculations';
 import { ClientUnitData } from '../ClientUnitInfo';
 import { Currency, formatDualCurrency } from '../currencyUtils';
 
@@ -43,24 +43,23 @@ export const ExportPaymentTable = ({
     additionalPayments, 
     bookingMonth, 
     bookingYear,
-    handoverQuarter,
+    handoverMonth,
     handoverYear,
     oqoodFee,
     eoiFee = 0
   } = inputs;
-  
+
   const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
-  
-  // Helper to check if a payment is AFTER the handover quarter
-  const isPaymentAfterHandoverQuarter = (monthsFromBooking: number): boolean => {
+
+  // Helper to check if a payment is AFTER the handover month
+  const isPaymentAfterHandoverMonth = (monthsFromBooking: number): boolean => {
     const bookingDate = new Date(bookingYear, bookingMonth - 1);
     const paymentDate = new Date(bookingDate);
     paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-    
-    const handoverQuarterEndMonth = handoverQuarter * 3;
-    const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
-    
-    return paymentDate > handoverQuarterEnd;
+
+    const handoverDate = new Date(handoverYear, handoverMonth - 1, 28);
+
+    return paymentDate > handoverDate;
   };
   
   // Calculate amounts
@@ -85,13 +84,13 @@ export const ExportPaymentTable = ({
     if (postHandoverPaymentsToUse.length === 0 && additionalPayments?.length > 0) {
       postHandoverPaymentsToUse = additionalPayments.filter(p => {
         if (p.type !== 'time') return false;
-        return isPaymentAfterHandoverQuarter(p.triggerValue);
+        return isPaymentAfterHandoverMonth(p.triggerValue);
       });
       
       // Filter pre-handover payments (exclude post-handover ones)
       preHandoverPayments = additionalPayments.filter(p => {
         if (p.type !== 'time') return true; // construction-based stay in pre-handover
-        return !isPaymentAfterHandoverQuarter(p.triggerValue);
+        return !isPaymentAfterHandoverMonth(p.triggerValue);
       });
     }
     
@@ -228,7 +227,7 @@ export const ExportPaymentTable = ({
           {t.paymentBreakdown}
         </span>
         <span style={{ fontSize: '10px', color: 'hsl(var(--theme-text-muted))' }}>
-          {monthToDateString(bookingMonth, bookingYear, language)} → Q{handoverQuarter} {handoverYear}
+          {monthToDateString(bookingMonth, bookingYear, language)} → {monthName(handoverMonth)} {handoverYear}
         </span>
       </div>
 
@@ -375,10 +374,13 @@ export const ExportPaymentTable = ({
             </div>
             {postHandoverPaymentsToUse.map((payment, index) => {
               const amount = basePrice * (payment.paymentPercent / 100);
+              const postLabel = payment.type === 'time'
+                ? `${getPaymentLabel(payment)} (${getPaymentDate(payment)})`
+                : payment.label || `+${payment.triggerValue} ${t.months}`;
               return (
                 <div key={index} style={rowStyle}>
                   <span style={labelStyle}>
-                    {payment.label || `+${payment.triggerValue} ${t.months}`}
+                    {postLabel}
                   </span>
                   <span style={valueStyle}>
                     {getDualValue(amount).primary}

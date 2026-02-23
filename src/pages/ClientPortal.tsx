@@ -464,7 +464,7 @@ const ClientPortal = () => {
               {isInvestor && (
                 <TabsTrigger 
                   value="portfolio" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-white text-theme-text gap-2"
                 >
                   <Building className="w-4 h-4" />
                   <span className="hidden sm:inline">My Portfolio</span>
@@ -473,7 +473,7 @@ const ClientPortal = () => {
               )}
               <TabsTrigger 
                 value="opportunities" 
-                className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+                className="data-[state=active]:bg-theme-accent data-[state=active]:text-white text-theme-text gap-2"
               >
                 <FileText className="w-4 h-4" />
                 <span className="hidden sm:inline">{isInvestor ? 'New Opportunities' : 'Opportunities'}</span>
@@ -485,7 +485,7 @@ const ClientPortal = () => {
               {presentations.length > 0 && (
                 <TabsTrigger 
                   value="presentations" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-white text-theme-text gap-2"
                 >
                   <Presentation className="w-4 h-4" />
                   <span className="hidden sm:inline">Presentations</span>
@@ -496,7 +496,7 @@ const ClientPortal = () => {
               {totalComparisons > 0 && (
                 <TabsTrigger 
                   value="comparisons" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-white text-theme-text gap-2"
                 >
                   <Scale className="w-4 h-4" />
                   <span className="hidden sm:inline">Comparisons</span>
@@ -507,7 +507,7 @@ const ClientPortal = () => {
               {showCompare && (
                 <TabsTrigger 
                   value="compare" 
-                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-slate-900 text-theme-text gap-2"
+                  className="data-[state=active]:bg-theme-accent data-[state=active]:text-white text-theme-text gap-2"
                 >
                   <BarChart3 className="w-4 h-4" />
                   Side by Side

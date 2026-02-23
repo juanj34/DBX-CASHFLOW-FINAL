@@ -1,4 +1,4 @@
-import { OIInputs } from "./useOICalculations";
+import { OIInputs, monthName } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { getCountryByCode } from "@/data/countries";
@@ -59,7 +59,7 @@ export const ClientPaymentSheet = ({
   
   if (!client) return null;
 
-  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverMonth, handoverYear } = inputs;
 
   const getClientShare = (cId: string): number => {
     const share = clientShares.find(s => s.clientId === cId);
@@ -234,7 +234,7 @@ export const ClientPaymentSheet = ({
                 {t('completionHandover')}
               </span>
               <span className="text-[10px] text-theme-text-muted">
-                (Q{handoverQuarter} {handoverYear})
+                ({monthName(handoverMonth)} {handoverYear})
               </span>
             </div>
             

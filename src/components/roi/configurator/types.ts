@@ -3,7 +3,7 @@ import { Currency } from "../currencyUtils";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { MortgageInputs } from "../useMortgageCalculations";
 
-export type ConfiguratorSection = 'location' | 'property' | 'payment' | 'appreciation' | 'rental' | 'exit';
+export type ConfiguratorSection = 'location' | 'property' | 'payment' | 'appreciation' | 'value' | 'rental' | 'exit' | 'mortgage';
 
 export interface ConfiguratorSectionProps {
   inputs: OIInputs;
@@ -66,8 +66,7 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   appreciationRate: 10,
   bookingMonth: getCurrentMonth(),
   bookingYear: getCurrentYear(),
-  handoverMonth: undefined, // Will be calculated from AI extraction or derived from quarter
-  handoverQuarter: 4,
+  handoverMonth: 11, // November (was Q4)
   handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
   preHandoverPercent: 20,
@@ -77,7 +76,7 @@ export const DEFAULT_OI_INPUTS: OIInputs = {
   onHandoverPercent: 0,
   postHandoverPercent: 0,
   postHandoverPayments: [],
-  postHandoverEndQuarter: 4,
+  postHandoverEndMonth: 11, // November
   postHandoverEndYear: getCurrentYear() + 4,
   // Entry costs
   eoiFee: 50000,
@@ -138,15 +137,14 @@ export const SAMPLE_MORTGAGE_INPUTS: MortgageInputs = {
   propertyInsurance: 1500,
 };
 
-// Defaults for NEW quotes - preselected "Balanced" growth profile
+// Defaults for NEW quotes - no property data until user configures via wizard
 export const NEW_QUOTE_OI_INPUTS: OIInputs = {
-  basePrice: 800000,
+  basePrice: 0,
   rentalYieldPercent: 8,
   appreciationRate: 0,
   bookingMonth: getCurrentMonth(),
   bookingYear: getCurrentYear(),
-  handoverMonth: undefined, // Will be calculated from AI extraction or derived from quarter
-  handoverQuarter: 4,
+  handoverMonth: 11, // November (was Q4)
   handoverYear: getCurrentYear() + 2,
   downpaymentPercent: 20,
   preHandoverPercent: 30,
@@ -156,7 +154,7 @@ export const NEW_QUOTE_OI_INPUTS: OIInputs = {
   onHandoverPercent: 0,
   postHandoverPercent: 0,
   postHandoverPayments: [],
-  postHandoverEndQuarter: 4,
+  postHandoverEndMonth: 11, // November
   postHandoverEndYear: getCurrentYear() + 4,
   // Entry costs
   eoiFee: 50000,

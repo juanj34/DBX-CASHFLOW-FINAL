@@ -1,19 +1,24 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, LayoutDashboard, CreditCard, TrendingUp, Building2, LineChart, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
 import { Currency } from '@/components/roi/currencyUtils';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { PropertyHeroCard } from '@/components/roi/PropertyHeroCard';
-import { SnapshotOverviewCards } from './SnapshotOverviewCards';
+import { OverviewTab } from './OverviewTab';
 import { CompactPaymentTable } from './CompactPaymentTable';
-import { CompactRentCard } from './CompactRentCard';
-import { CompactMortgageCard } from './CompactMortgageCard';
-import { CompactPostHandoverCard } from './CompactPostHandoverCard';
-import { CompactExitGraphCard } from './CompactExitGraphCard';
+import { PaymentBreakdownDetailed } from './PaymentBreakdownDetailed';
+import { ExitsTab } from './ExitsTab';
+import { MortgageTab } from './MortgageTab';
+import { WealthTab } from './WealthTab';
+import { PostHandoverTab } from './PostHandoverTab';
 import { WealthProjectionModal } from './WealthProjectionModal';
 import { FloorPlanLightbox } from '@/components/roi/FloorPlanLightbox';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+type TabId = 'overview' | 'payments' | 'exits' | 'mortgage' | 'wealth' | 'posthandover';
 
 interface SnapshotContentProps {
   inputs: OIInputs;
@@ -22,6 +27,7 @@ interface SnapshotContentProps {
   mortgageInputs: MortgageInputs;
   mortgageAnalysis: MortgageAnalysis;
   exitScenarios: number[];
+  setExitScenarios?: (scenarios: number[]) => void;
   quoteImages: {
     heroImageUrl: string | null;
     floorPlanUrl: string | null;
@@ -46,6 +52,7 @@ export const SnapshotContent = ({
   mortgageInputs,
   mortgageAnalysis,
   exitScenarios,
+  setExitScenarios,
   quoteImages,
   currency,
   setCurrency,
@@ -56,58 +63,24 @@ export const SnapshotContent = ({
   onSnapshotTitleChange,
   onEditClick,
 }: SnapshotContentProps) => {
+  const { t } = useLanguage();
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
   const [wealthModalOpen, setWealthModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [paymentView, setPaymentView] = useState<'simple' | 'detailed'>('simple');
   const basePrice = calculations.basePrice;
 
   // Calculate price per sqft
   const pricePerSqft = clientInfo.unitSizeSqf > 0 ? basePrice / clientInfo.unitSizeSqf : 0;
 
-  // Calculate monthly rent for mortgage card
-  const grossAnnualRent = basePrice * (inputs.rentalYieldPercent / 100);
-  const annualServiceCharges = (clientInfo.unitSizeSqf || 0) * (inputs.serviceChargePerSqft || 18);
-  const netAnnualRent = grossAnnualRent - annualServiceCharges;
-  const monthlyRent = netAnnualRent / 12;
-
-  // Get value differentiators from inputs
-  const valueDifferentiators = (inputs as any).valueDifferentiators || [];
-  const appreciationBonus = (inputs as any).appreciationBonus || 0;
-
-  // Determine construction years for handover
-  const constructionYears = Math.ceil(calculations.totalMonths / 12);
-  const handoverYear = inputs.bookingYear + constructionYears;
-
-  // Determine if we have a long payment plan (triggers adaptive 2-column layout)
-  const isLongPaymentPlan = useMemo(() => {
-    const payments = inputs.additionalPayments || [];
-    return payments.length > 12;
-  }, [inputs.additionalPayments]);
-
-  // Check visibility conditions for cards
-  const showRent = inputs.rentalYieldPercent > 0;
-  const showExits = inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0;
-  const showPostHandover = inputs.hasPostHandoverPlan;
+  // Conditional tabs
   const showMortgage = mortgageInputs.enabled;
+  const showPostHandover = inputs.hasPostHandoverPlan;
+  const showExits = inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0;
+  const readOnly = !setExitScenarios;
 
-  // Count visible cards and generate dynamic grid class
-  const visibleCardCount = [showRent, showExits, showPostHandover, showMortgage].filter(Boolean).length;
-  const cardGridClass = useMemo(() => {
-    switch (visibleCardCount) {
-      case 1: return 'grid grid-cols-1 gap-3';
-      case 2: return 'grid grid-cols-1 md:grid-cols-2 gap-3';
-      case 3: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3';
-      case 4: return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3';
-      default: return 'grid grid-cols-1 gap-3';
-    }
-  }, [visibleCardCount]);
-
-  // Determine column count for payment table (3 columns for very long plans)
-  const paymentColumnCount = useMemo(() => {
-    const payments = inputs.additionalPayments || [];
-    if (payments.length >= 21) return 3;
-    if (payments.length > 12) return 2;
-    return 2;
-  }, [inputs.additionalPayments]);
+  // Tab trigger styling
+  const triggerClass = "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap data-[state=active]:bg-theme-accent/20 data-[state=active]:text-theme-accent text-theme-text-muted hover:text-theme-text transition-all";
 
   return (
     <div className="min-h-full flex flex-col bg-theme-bg max-w-[1600px] mx-auto w-full">
@@ -133,145 +106,159 @@ export const SnapshotContent = ({
         />
       </div>
 
-      {/* Overview Cards - fixed height */}
-      <div className="flex-shrink-0 px-4 py-3">
-        <SnapshotOverviewCards 
-          inputs={inputs}
-          calculations={calculations}
-          currency={currency}
-          rate={rate}
-        />
-      </div>
+      {/* Tabs - Main content area */}
+      <div className="flex-1 px-4 py-3 pb-4" data-export-layout="expand">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)} className="w-full">
+          <TabsList className="w-full justify-start bg-theme-card/50 border border-theme-border rounded-xl p-1 mb-4 overflow-x-auto flex-nowrap">
+            <TabsTrigger value="overview" className={triggerClass}>
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>{t('overviewTabLabel')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="payments" className={triggerClass}>
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>{t('paymentBreakdownHeader')}</span>
+            </TabsTrigger>
+            {showExits && (
+              <TabsTrigger value="exits" className={triggerClass}>
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>{t('exitsTabLabel')}</span>
+              </TabsTrigger>
+            )}
+            {showMortgage && (
+              <TabsTrigger value="mortgage" className={triggerClass}>
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{t('mortgage')}</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="wealth" className={triggerClass}>
+              <LineChart className="w-3.5 h-3.5" />
+              <span>{t('wealthTabLabel')}</span>
+            </TabsTrigger>
+            {showPostHandover && (
+              <TabsTrigger value="posthandover" className={triggerClass}>
+                <Clock className="w-3.5 h-3.5" />
+                <span>{t('postHoTabLabel')}</span>
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-      {/* Main content - flows naturally with single scroll */}
-      <div className="flex-1 px-4 pb-4" data-export-layout="expand">
-        {isLongPaymentPlan ? (
-          /* STACKED LAYOUT for long payment plans: Payment full width, then cards in horizontal grid */
-          <div className="flex flex-col gap-4">
-            {/* Payment Table - Full Width with internal 2-column layout */}
-            <CompactPaymentTable
+          {/* Tab 1: Overview */}
+          <TabsContent value="overview" className="mt-0">
+            <OverviewTab
               inputs={inputs}
+              calculations={calculations}
               clientInfo={clientInfo}
-              valueDifferentiators={valueDifferentiators}
-              appreciationBonus={appreciationBonus}
+              mortgageInputs={mortgageInputs}
+              mortgageAnalysis={mortgageAnalysis}
+              exitScenarios={exitScenarios}
               currency={currency}
               rate={rate}
-              totalMonths={calculations.totalMonths}
-              twoColumnMode="auto"
+              onViewWealthProjection={() => setWealthModalOpen(true)}
+              onTabChange={(tab) => setActiveTab(tab as TabId)}
             />
-            
-            {/* Insight Cards - dynamic grid based on visible card count */}
-            <div className={cardGridClass}>
-              {/* Rent Card with Wealth Projection Button */}
-              {showRent && (
-                <CompactRentCard
-                  inputs={inputs}
-                  currency={currency}
-                  rate={rate}
-                  onViewWealthProjection={() => setWealthModalOpen(true)}
-                />
-              )}
-              
-              {/* All Exits Card */}
-              {showExits && (
-                <CompactExitGraphCard
-                  inputs={inputs}
-                  calculations={calculations}
-                  exitScenarios={exitScenarios}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-              
-              {/* Post-Handover Coverage Card */}
-              {showPostHandover && (
-                <CompactPostHandoverCard
-                  inputs={inputs}
-                  monthlyRent={monthlyRent}
-                  rentGrowthRate={inputs.rentGrowthRate || 4}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-              
-              {/* Mortgage Card */}
-              {showMortgage && (
-                <CompactMortgageCard
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  monthlyRent={monthlyRent}
-                  rentGrowthRate={inputs.rentGrowthRate || 4}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
+          </TabsContent>
+
+          {/* Tab 2: Payment Plan with Simple/Detailed toggle */}
+          <TabsContent value="payments" className="mt-0">
+            <div className="flex justify-end mb-3">
+              <div className="inline-flex rounded-lg bg-theme-card/50 border border-theme-border p-0.5">
+                <button
+                  onClick={() => setPaymentView('simple')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    paymentView === 'simple'
+                      ? 'bg-theme-accent/20 text-theme-accent'
+                      : 'text-theme-text-muted hover:text-theme-text'
+                  }`}
+                >
+                  {t('switchToOption1')}
+                </button>
+                <button
+                  onClick={() => setPaymentView('detailed')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    paymentView === 'detailed'
+                      ? 'bg-theme-accent/20 text-theme-accent'
+                      : 'text-theme-text-muted hover:text-theme-text'
+                  }`}
+                >
+                  {t('switchToOption2')}
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          /* ORIGINAL LAYOUT for short payment plans: 2 columns side by side */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Left Column: Payment */}
-            <div className="flex flex-col">
+
+            {paymentView === 'simple' ? (
               <CompactPaymentTable
                 inputs={inputs}
                 clientInfo={clientInfo}
-                valueDifferentiators={valueDifferentiators}
-                appreciationBonus={appreciationBonus}
                 currency={currency}
                 rate={rate}
                 totalMonths={calculations.totalMonths}
-                twoColumnMode="never"
+                twoColumnMode="auto"
+                collapsiblePhases={false}
               />
-            </div>
+            ) : (
+              <PaymentBreakdownDetailed
+                inputs={inputs}
+                calculations={calculations}
+                clientInfo={clientInfo}
+                currency={currency}
+                rate={rate}
+              />
+            )}
+          </TabsContent>
 
-            {/* Right Column: Rent + Exits + Mortgage */}
-            <div className="flex flex-col gap-3">
-              {/* Rent Card with Wealth Projection Button */}
-              {showRent && (
-                <CompactRentCard
-                  inputs={inputs}
-                  currency={currency}
-                  rate={rate}
-                  onViewWealthProjection={() => setWealthModalOpen(true)}
-                />
-              )}
-              
-              {/* All Exits Card */}
-              {showExits && (
-                <CompactExitGraphCard
-                  inputs={inputs}
-                  calculations={calculations}
-                  exitScenarios={exitScenarios}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-              
-              {/* Post-Handover Coverage Card */}
-              {showPostHandover && (
-                <CompactPostHandoverCard
-                  inputs={inputs}
-                  monthlyRent={monthlyRent}
-                  rentGrowthRate={inputs.rentGrowthRate || 4}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-              
-              {/* Mortgage Card */}
-              {showMortgage && (
-                <CompactMortgageCard
-                  mortgageInputs={mortgageInputs}
-                  mortgageAnalysis={mortgageAnalysis}
-                  monthlyRent={monthlyRent}
-                  rentGrowthRate={inputs.rentGrowthRate || 4}
-                  currency={currency}
-                  rate={rate}
-                />
-              )}
-            </div>
-          </div>
-        )}
+          {/* Tab 3: Exits */}
+          {showExits && (
+            <TabsContent value="exits" className="mt-0">
+              <ExitsTab
+                inputs={inputs}
+                calculations={calculations}
+                currency={currency}
+                rate={rate}
+                exitScenarios={exitScenarios}
+                setExitScenarios={setExitScenarios || (() => {})}
+                unitSizeSqf={clientInfo.unitSizeSqf}
+                readOnly={readOnly}
+              />
+            </TabsContent>
+          )}
+
+          {/* Tab 4: Mortgage (conditional) */}
+          {showMortgage && (
+            <TabsContent value="mortgage" className="mt-0">
+              <MortgageTab
+                inputs={inputs}
+                calculations={calculations}
+                mortgageInputs={mortgageInputs}
+                mortgageAnalysis={mortgageAnalysis}
+                currency={currency}
+                rate={rate}
+              />
+            </TabsContent>
+          )}
+
+          {/* Tab 5: Wealth */}
+          <TabsContent value="wealth" className="mt-0">
+            <WealthTab
+              inputs={inputs}
+              calculations={calculations}
+              currency={currency}
+              rate={rate}
+              unitSizeSqf={clientInfo.unitSizeSqf}
+            />
+          </TabsContent>
+
+          {/* Tab 6: Post-Handover (conditional) */}
+          {showPostHandover && (
+            <TabsContent value="posthandover" className="mt-0">
+              <PostHandoverTab
+                inputs={inputs}
+                calculations={calculations}
+                currency={currency}
+                rate={rate}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
 
       {/* Floor Plan Lightbox */}
@@ -298,11 +285,10 @@ export const SnapshotContent = ({
         rentGrowthRate={inputs.rentGrowthRate || 3}
         currency={currency}
         rate={rate}
-        handoverQuarter={inputs.handoverQuarter}
+        handoverMonth={inputs.handoverMonth}
         handoverYear={inputs.handoverYear}
         bookingMonth={inputs.bookingMonth}
       />
-
 
       {/* Floating Edit Button */}
       {onEditClick && (

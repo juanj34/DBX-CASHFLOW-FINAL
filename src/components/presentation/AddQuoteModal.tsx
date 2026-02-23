@@ -221,7 +221,7 @@ export const AddQuoteModal = ({
             <Button
               onClick={handleAddSelected}
               disabled={selectedQuotes.size === 0}
-              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+              className="bg-theme-accent text-white hover:bg-theme-accent/90"
             >
               Add {selectedQuotes.size > 0 ? `${selectedQuotes.size} Quote${selectedQuotes.size !== 1 ? 's' : ''}` : ''}
             </Button>

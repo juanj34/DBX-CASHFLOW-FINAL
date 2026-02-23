@@ -24,6 +24,37 @@ export interface ExitPriceInputs {
 }
 
 /**
+ * Value differentiator bonuses that add to appreciation rates.
+ * Capped at APPRECIATION_BONUS_CAP total.
+ */
+const APPRECIATION_BONUS_CAP = 2.0;
+const DIFFERENTIATOR_BONUSES: Record<string, number> = {
+  'waterfront': 0.5, 'ocean-view': 0.3, 'master-community': 0.3, 'emerging-zone': 0.3,
+  'corner-unit': 0.2, 'top-floor': 0.3, 'skyline-view': 0.2,
+  'premium-developer': 0.4, 'metro-adjacent': 0.3,
+};
+
+/**
+ * Get effective appreciation rates with value differentiator bonus applied.
+ * This is the SINGLE SOURCE OF TRUTH for appreciation rates across the app.
+ */
+export const getEffectiveAppreciationRates = (inputs: OIInputs) => {
+  const selectedIds = inputs.valueDifferentiators || [];
+  let appreciationBonus = 0;
+  if (selectedIds.length > 0) {
+    const totalBonus = selectedIds.reduce((sum, id) => sum + (DIFFERENTIATOR_BONUSES[id] || 0), 0);
+    appreciationBonus = Math.min(totalBonus, APPRECIATION_BONUS_CAP);
+  }
+  return {
+    constructionAppreciation: (inputs.constructionAppreciation ?? 12) + appreciationBonus,
+    growthAppreciation: (inputs.growthAppreciation ?? 8) + appreciationBonus,
+    matureAppreciation: (inputs.matureAppreciation ?? 4) + appreciationBonus,
+    growthPeriodYears: inputs.growthPeriodYears ?? 5,
+    appreciationBonus,
+  };
+};
+
+/**
  * CALIBRACIÓN DUBAI - Torres 30-40 pisos (36 meses estándar)
  * 
  * Fase Lenta (0-9 meses): Cimientos y Podio
@@ -408,7 +439,11 @@ export const getMonthWhenThresholdMet = (
 
 /**
  * Calculate exit price using phased appreciation with monthly compounding
- * This is the canonical exit price calculation used across the app
+ * This is the canonical exit price calculation used across the app.
+ *
+ * If `inputs` contains `valueDifferentiators` (i.e. a full OIInputs object),
+ * the appreciation bonus is automatically applied to the rates.
+ * If `inputs` has pre-adjusted rates (no valueDifferentiators), rates are used as-is.
  */
 export const calculateExitPrice = (
   months: number,
@@ -416,12 +451,18 @@ export const calculateExitPrice = (
   totalMonths: number,
   inputs: ExitPriceInputs
 ): number => {
-  const { 
-    constructionAppreciation = 12, 
-    growthAppreciation = 8, 
-    matureAppreciation = 4, 
-    growthPeriodYears = 5 
-  } = inputs;
+  // Apply appreciation bonus if valueDifferentiators present (full OIInputs passed)
+  const valueDifferentiators = (inputs as any).valueDifferentiators as string[] | undefined;
+  let appreciationBonus = 0;
+  if (valueDifferentiators && valueDifferentiators.length > 0) {
+    const totalBonus = valueDifferentiators.reduce((sum, id) => sum + (DIFFERENTIATOR_BONUSES[id] || 0), 0);
+    appreciationBonus = Math.min(totalBonus, APPRECIATION_BONUS_CAP);
+  }
+
+  const constructionAppreciation = (inputs.constructionAppreciation ?? 12) + appreciationBonus;
+  const growthAppreciation = (inputs.growthAppreciation ?? 8) + appreciationBonus;
+  const matureAppreciation = (inputs.matureAppreciation ?? 4) + appreciationBonus;
+  const growthPeriodYears = inputs.growthPeriodYears ?? 5;
   
   let currentValue = basePrice;
   
@@ -495,32 +536,37 @@ export const calculateExitScenario = (
   inputs: OIInputs,
   entryCosts: number = 0
 ): ExitScenarioResult => {
-  // Calculate exit price using phased appreciation
-  const exitPrice = calculateExitPrice(monthsFromBooking, basePrice, totalMonths, inputs);
+  // Use bonus-adjusted appreciation rates (includes value differentiator bonus)
+  const effectiveRates = getEffectiveAppreciationRates(inputs);
+
+  // Calculate exit price using phased appreciation with bonus-adjusted rates
+  const exitPrice = calculateExitPrice(monthsFromBooking, basePrice, totalMonths, effectiveRates);
   const appreciation = exitPrice - basePrice;
   const appreciationPercent = (appreciation / basePrice) * 100;
-  
+
   // Calculate equity using S-curve and threshold logic
   const equityResult = calculateEquityAtExitWithDetails(monthsFromBooking, inputs, totalMonths, basePrice);
   const equityDeployed = equityResult.finalEquity;
   const equityPercent = (equityDeployed / basePrice) * 100;
-  
+
   // Calculate exit costs
   const agentCommission = inputs.exitAgentCommissionEnabled ? exitPrice * 0.02 : 0; // 2% of exit price
   const nocFee = inputs.exitNocFee || 0;
   const exitCosts = agentCommission + nocFee;
-  
+
   // Calculate profits
-  // Profit = Appreciation (what you gain from the property value increase)
+  // profit = Pure appreciation (exitPrice - basePrice)
+  // trueProfit = Appreciation minus entry costs (DLD + fees) — what you actually gained
+  // netProfit = After ALL costs (entry + exit) — what you pocket
   const totalCapital = equityDeployed + entryCosts;
-  const profit = appreciation; // Pure appreciation gain
-  const trueProfit = appreciation; // Keep same as profit - appreciation IS the profit
-  const netProfit = appreciation - exitCosts; // After exit costs only
-  
-  // Calculate ROE - Profit divided by Equity Deployed (money put in)
-  // This shows the true leverage effect: how much your invested capital multiplied
+  const profit = appreciation;
+  const trueProfit = appreciation - entryCosts;
+  const netProfit = appreciation - entryCosts - exitCosts;
+
+  // Calculate ROE - Return on total capital deployed
+  // Numerator uses profit AFTER entry costs (trueProfit) since entry costs are in the denominator
   const roe = equityDeployed > 0 ? (appreciation / equityDeployed) * 100 : 0;
-  const trueROE = totalCapital > 0 ? (appreciation / totalCapital) * 100 : 0;
+  const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
   const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
   const annualizedROE = monthsFromBooking > 0 ? (trueROE / (monthsFromBooking / 12)) : 0;
   const netAnnualizedROE = monthsFromBooking > 0 ? (netROE / (monthsFromBooking / 12)) : 0;

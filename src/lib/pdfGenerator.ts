@@ -371,9 +371,8 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
       const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
       const paymentDate = new Date(bookingDate);
       paymentDate.setMonth(paymentDate.getMonth() + p.triggerValue);
-      const handoverQuarterEndMonth = inputs.handoverQuarter * 3;
-      const handoverQuarterEnd = new Date(inputs.handoverYear, handoverQuarterEndMonth - 1, 28);
-      return paymentDate > handoverQuarterEnd;
+      const handoverDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1, 28);
+      return paymentDate > handoverDate;
     });
     
     if (postHandoverPayments.length > 0) {
@@ -509,9 +508,8 @@ export const generateSnapshotPDF = async (data: PDFExportData): Promise<Blob> =>
       const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
       const paymentDate = new Date(bookingDate);
       paymentDate.setMonth(paymentDate.getMonth() + p.triggerValue);
-      const handoverQuarterEndMonth = inputs.handoverQuarter * 3;
-      const handoverQuarterEnd = new Date(inputs.handoverYear, handoverQuarterEndMonth - 1, 28);
-      return paymentDate > handoverQuarterEnd;
+      const handoverDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1, 28);
+      return paymentDate > handoverDate;
     });
     
     if (postHandoverPayments.length > 0) {

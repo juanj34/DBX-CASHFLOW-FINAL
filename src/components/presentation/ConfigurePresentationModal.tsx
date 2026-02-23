@@ -219,7 +219,7 @@ export const ConfigurePresentationModal = ({
           </span>
           <Button
             onClick={handleClose}
-            className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+            className="bg-theme-accent text-white hover:bg-theme-accent/90"
           >
             Done
           </Button>

@@ -3,6 +3,7 @@ import { OICalculations, OIInputs } from "./useOICalculations";
 import { Currency, formatCurrencyShort } from "./currencyUtils";
 import { useState, useEffect, useMemo } from "react";
 import { monthToConstruction, calculateExitPrice, calculateExitScenario } from "./constructionProgress";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OIGrowthCurveProps {
   calculations: OICalculations;
@@ -24,7 +25,8 @@ export const OIGrowthCurve = ({
   onExitHover 
 }: OIGrowthCurveProps) => {
   const { basePrice, totalMonths, totalEntryCosts } = calculations;
-  
+  const { t } = useLanguage();
+
   // Animation states
   const [isAnimated, setIsAnimated] = useState(false);
   const [showMarkers, setShowMarkers] = useState(false);
@@ -134,7 +136,7 @@ export const OIGrowthCurve = ({
         return {
           scenario,
           exitMonth: month,
-          label: `Exit ${exitNumber}`,
+          label: `${t('exitLabel')} ${exitNumber}`,
           exitNumber,
           isNearHandover,
           isBeforeHandover: month < totalMonths,
@@ -168,15 +170,15 @@ export const OIGrowthCurve = ({
     
     // Only show phase labels if we're showing post-handover
     if (chartMaxMonth > totalMonths) {
-      labels.push({ x: totalMonths / 2, label: 'Under Constr.', color: '#f97316' });
+      labels.push({ x: totalMonths / 2, label: t('underConstructionPhaseLabel'), color: 'hsl(var(--theme-accent))' });
       
       const growthEnd = Math.min(growthPhaseEndMonth, chartMaxMonth);
       if (growthEnd > totalMonths) {
-        labels.push({ x: (totalMonths + growthEnd) / 2, label: 'Post-HO', color: '#22c55e' });
+        labels.push({ x: (totalMonths + growthEnd) / 2, label: t('postHandoverPhaseLabel'), color: 'hsl(var(--theme-positive))' });
       }
       
       if (chartMaxMonth > growthPhaseEndMonth) {
-        labels.push({ x: (growthPhaseEndMonth + chartMaxMonth) / 2, label: 'Maturity', color: '#3b82f6' });
+        labels.push({ x: (growthPhaseEndMonth + chartMaxMonth) / 2, label: t('maturityPhaseLabel'), color: 'hsl(var(--theme-text-highlight))' });
       }
     }
     
@@ -184,12 +186,12 @@ export const OIGrowthCurve = ({
   }, [chartMaxMonth, totalMonths, growthPhaseEndMonth]);
 
   return (
-    <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 relative overflow-hidden h-full">
+    <div className="bg-theme-card border border-theme-border rounded-xl p-4 relative overflow-hidden h-full">
       <div className="relative h-full flex flex-col">
         {/* Header - Title only */}
         <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-5 h-5 text-[#CCFF00]" />
-          <span className="text-sm font-semibold text-white">Price Appreciation</span>
+          <TrendingUp className="w-5 h-5 text-theme-accent" />
+          <span className="text-sm font-semibold text-theme-text">{t('priceAppreciationLabel')}</span>
         </div>
 
         <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="flex-1" preserveAspectRatio="xMidYMid meet">
@@ -197,19 +199,19 @@ export const OIGrowthCurve = ({
           <defs>
             {/* Phased gradient for the curve - Construction → Growth → Mature */}
             <linearGradient id="curveGradientPhased" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset={`${(totalMonths / chartMaxMonth) * 100}%`} stopColor="#CCFF00" />
-              <stop offset={`${(Math.min(growthPhaseEndMonth, chartMaxMonth) / chartMaxMonth) * 100}%`} stopColor="#22c55e" />
-              <stop offset="100%" stopColor="#3b82f6" />
+              <stop offset={`${(totalMonths / chartMaxMonth) * 100}%`} stopColor="hsl(var(--theme-accent))" />
+              <stop offset={`${(Math.min(growthPhaseEndMonth, chartMaxMonth) / chartMaxMonth) * 100}%`} stopColor="hsl(var(--theme-positive))" />
+              <stop offset="100%" stopColor="hsl(var(--theme-text-highlight))" />
             </linearGradient>
             
             <linearGradient id="areaGradientMain" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#CCFF00" stopOpacity="0" />
+              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="0" />
             </linearGradient>
             
             <linearGradient id="constructionBarGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#CCFF00" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#22d3d1" stopOpacity="0.5" />
+              <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.5" />
             </linearGradient>
           </defs>
 
@@ -234,7 +236,7 @@ export const OIGrowthCurve = ({
               key={`y-${i}`}
               x={padding.left - 8}
               y={yScale(value)}
-              fill="#94a3b8"
+              fill="hsl(var(--theme-text-muted))"
               fontSize="9"
               textAnchor="end"
               dominantBaseline="middle"
@@ -264,7 +266,7 @@ export const OIGrowthCurve = ({
               key={`label-${months}`}
               x={xScale(months)}
               y={height - padding.bottom + 12}
-              fill="#94a3b8"
+              fill="hsl(var(--theme-text-muted))"
               fontSize="9"
               textAnchor="middle"
             >
@@ -288,7 +290,7 @@ export const OIGrowthCurve = ({
               key={`const-${i}`}
               x={xScale(marker.month)}
               y={height - 36}
-              fill="#64748b"
+              fill="hsl(var(--theme-text-muted))"
               fontSize="7"
               textAnchor="middle"
             >
@@ -319,7 +321,7 @@ export const OIGrowthCurve = ({
               y1={padding.top}
               x2={xScale(totalMonths)}
               y2={height - padding.bottom}
-              stroke="#CCFF00"
+              stroke="hsl(var(--theme-accent))"
               strokeWidth="1"
               strokeDasharray="4,4"
               opacity="0.4"
@@ -333,7 +335,7 @@ export const OIGrowthCurve = ({
               y1={padding.top}
               x2={xScale(growthPhaseEndMonth)}
               y2={height - padding.bottom}
-              stroke="#3b82f6"
+              stroke="hsl(var(--theme-text-highlight))"
               strokeWidth="1"
               strokeDasharray="4,4"
               opacity="0.3"
@@ -346,7 +348,7 @@ export const OIGrowthCurve = ({
             y1={yScale(basePrice)}
             x2={width - padding.right}
             y2={yScale(basePrice)}
-            stroke="#64748b"
+            stroke="hsl(var(--theme-text-muted))"
             strokeWidth="1"
             strokeDasharray="4,4"
             opacity="0.5"
@@ -354,10 +356,10 @@ export const OIGrowthCurve = ({
           <text
             x={padding.left + 5}
             y={yScale(basePrice) - 6}
-            fill="#64748b"
+            fill="hsl(var(--theme-text-muted))"
             fontSize="8"
           >
-            Base Price
+            {t('basePriceLabel')}
           </text>
 
           {/* Area fill under curve */}
@@ -374,7 +376,7 @@ export const OIGrowthCurve = ({
           <path
             d={curvePath}
             fill="none"
-            stroke={chartMaxMonth > totalMonths ? "url(#curveGradientPhased)" : "#CCFF00"}
+            stroke={chartMaxMonth > totalMonths ? "url(#curveGradientPhased)" : "hsl(var(--theme-accent))"}
             strokeWidth="2.5"
             strokeLinecap="round"
             style={{
@@ -393,12 +395,12 @@ export const OIGrowthCurve = ({
               cx={xScale(0)}
               cy={yScale(basePrice)}
               r="5"
-              fill="#CCFF00"
+              fill="hsl(var(--theme-accent))"
             />
             <text
               x={xScale(0) + 10}
               y={yScale(basePrice) + 4}
-              fill="#CCFF00"
+              fill="hsl(var(--theme-accent))"
               fontSize="10"
               fontWeight="bold"
               fontFamily="monospace"
@@ -412,7 +414,7 @@ export const OIGrowthCurve = ({
             const isHighlighted = highlightedExit === index;
             const markerDelay = 0.1 * index;
             const isPostHandover = exitMonth > totalMonths;
-            const markerColor = isPostHandover ? '#22c55e' : '#CCFF00';
+            const markerColor = isPostHandover ? 'hsl(var(--theme-positive))' : 'hsl(var(--theme-accent))';
             
             // Offset text position if near handover to avoid overlap
             const textXOffset = isNearHandover ? (isBeforeHandover ? -25 : 25) : 0;
@@ -425,7 +427,7 @@ export const OIGrowthCurve = ({
                 onMouseEnter={() => onExitHover?.(index)}
                 onMouseLeave={() => onExitHover?.(null)}
                 style={{ 
-                  filter: isHighlighted ? `drop-shadow(0 0 10px ${markerColor}aa)` : undefined,
+                  filter: isHighlighted ? 'drop-shadow(0 0 10px hsl(var(--theme-accent) / 0.6))' : undefined,
                   opacity: showMarkers ? 1 : 0,
                   transition: `opacity 0.3s ease-out ${markerDelay}s`
                 }}
@@ -439,7 +441,7 @@ export const OIGrowthCurve = ({
                   fontWeight="bold"
                   textAnchor={textAnchor}
                 >
-                  Exit {index + 1}
+                  {t('exitLabel')} {index + 1}
                 </text>
                 
                 {/* Post-handover indicator */}
@@ -447,7 +449,7 @@ export const OIGrowthCurve = ({
                   <text
                     x={xScale(exitMonth) + textXOffset}
                     y={yScale(scenario.exitPrice) - 42}
-                    fill="#22c55e"
+                    fill="hsl(var(--theme-positive))"
                     fontSize="7"
                     textAnchor={textAnchor}
                     opacity="0.7"
@@ -473,13 +475,13 @@ export const OIGrowthCurve = ({
                 <text
                   x={xScale(exitMonth) + textXOffset}
                   y={yScale(scenario.exitPrice) - 6}
-                  fill="#22d3d1"
+                  fill="hsl(var(--theme-accent))"
                   fontSize="8"
                   fontWeight="bold"
                   textAnchor={textAnchor}
                   fontFamily="monospace"
                 >
-                  {scenario.trueROE.toFixed(0)}% ROE
+                  {scenario.trueROE.toFixed(0)}% {t('roeAbbr')}
                 </text>
                 
                 {/* Marker circles */}
@@ -487,7 +489,7 @@ export const OIGrowthCurve = ({
                   cx={xScale(exitMonth)}
                   cy={yScale(scenario.exitPrice)}
                   r={isHighlighted ? 9 : 7}
-                  fill="#0f172a"
+                  fill="hsl(var(--theme-bg))"
                   stroke={markerColor}
                   strokeWidth={isHighlighted ? 3 : 2}
                 />
@@ -510,19 +512,19 @@ export const OIGrowthCurve = ({
             <text
               x={xScale(totalMonths)}
               y={yScale(handoverPrice) - 24}
-              fill="#ffffff"
+              fill="hsl(var(--theme-text))"
               fontSize="9"
               fontWeight="bold"
               textAnchor="middle"
             >
-              🔑 Handover Value
+              🔑 {t('handoverValueLabel')}
             </text>
             
             {/* Handover price - just the property value at completion */}
             <text
               x={xScale(totalMonths)}
               y={yScale(handoverPrice) - 10}
-              fill="#ffffff"
+              fill="hsl(var(--theme-text))"
               fontSize="10"
               fontWeight="bold"
               textAnchor="middle"
@@ -538,15 +540,15 @@ export const OIGrowthCurve = ({
               cx={xScale(totalMonths)}
               cy={yScale(handoverPrice)}
               r="8"
-              fill="#0f172a"
-              stroke="#ffffff"
+              fill="hsl(var(--theme-bg))"
+              stroke="hsl(var(--theme-text))"
               strokeWidth="2"
             />
             <circle
               cx={xScale(totalMonths)}
               cy={yScale(handoverPrice)}
               r="4"
-              fill="#ffffff"
+              fill="hsl(var(--theme-text))"
             />
           </g>
         </svg>

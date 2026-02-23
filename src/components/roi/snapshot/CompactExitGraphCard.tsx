@@ -220,7 +220,7 @@ export const CompactExitGraphCard = ({
           <defs>
             <linearGradient id="valueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="hsl(142.1 76.2% 36.3%)" stopOpacity="1" />
+              <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="1" />
             </linearGradient>
             <linearGradient id="areaFill" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.2" />
@@ -357,7 +357,7 @@ export const CompactExitGraphCard = ({
                   y1={y}
                   x2={x}
                   y2={height - padding.bottom}
-                  stroke="hsl(142.1 76.2% 36.3%)"
+                  stroke="hsl(var(--theme-accent))"
                   strokeWidth="1"
                   strokeDasharray="3,3"
                   opacity="0.4"
@@ -367,7 +367,7 @@ export const CompactExitGraphCard = ({
                   cx={x} 
                   cy={y} 
                   r={isHovered ? 8 : 6} 
-                  fill="hsl(142.1 76.2% 36.3%)" 
+                  fill="hsl(var(--theme-accent))" 
                   className="transition-all duration-150"
                 />
                 <circle cx={x} cy={y} r={isHovered ? 4 : 3} fill="hsl(var(--theme-card))" />
@@ -377,7 +377,7 @@ export const CompactExitGraphCard = ({
                   <text
                     x={x}
                     y={y - 12}
-                    fill="hsl(142.1 76.2% 36.3%)"
+                    fill="hsl(var(--theme-accent))"
                     fontSize="10"
                     fontWeight="bold"
                     textAnchor="middle"
@@ -432,14 +432,14 @@ export const CompactExitGraphCard = ({
                     <text x={x - 52} y={y - 38} fill="hsl(var(--theme-text-muted))" fontSize="9">
                       Net Gain:
                     </text>
-                    <text x={x + 52} y={y - 38} fill="hsl(142.1 76.2% 36.3%)" fontSize="9" fontWeight="600" textAnchor="end">
+                    <text x={x + 52} y={y - 38} fill="hsl(var(--theme-accent))" fontSize="9" fontWeight="600" textAnchor="end">
                       +{formatCurrencyShort(scenario.netGain, 'AED')}
                     </text>
                     {/* ROE */}
                     <text x={x - 52} y={y - 24} fill="hsl(var(--theme-text-muted))" fontSize="9">
                       ROE:
                     </text>
-                    <text x={x + 52} y={y - 24} fill="hsl(142.1 76.2% 36.3%)" fontSize="9" fontWeight="600" textAnchor="end">
+                    <text x={x + 52} y={y - 24} fill="hsl(var(--theme-accent))" fontSize="9" fontWeight="600" textAnchor="end">
                       {scenario.annualizedROE.toFixed(1)}%/yr
                     </text>
                   </g>
@@ -522,7 +522,7 @@ export const CompactExitGraphCard = ({
               {scenario.isHandover ? (
                 <Key className="w-3 h-3 text-theme-accent" />
               ) : (
-                <span className="w-4 h-4 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-theme-accent/20 text-theme-accent text-[10px] font-bold flex items-center justify-center">
                   {index + 1}
                 </span>
               )}
@@ -534,7 +534,7 @@ export const CompactExitGraphCard = ({
             {/* Net Gain - Hero */}
             <div className={cn(
               "text-base font-bold",
-              scenario.netGain >= 0 ? "text-green-400" : "text-red-400"
+              scenario.netGain >= 0 ? "text-theme-positive" : "text-theme-negative"
             )}>
               {scenario.netGain >= 0 ? '+' : ''}{formatCurrencyShort(scenario.netGain, 'AED')}
             </div>
@@ -545,7 +545,7 @@ export const CompactExitGraphCard = ({
               <span>•</span>
               <span className={cn(
                 "font-semibold",
-                scenario.annualizedROE >= 0 ? "text-green-400" : "text-red-400"
+                scenario.annualizedROE >= 0 ? "text-theme-positive" : "text-theme-negative"
               )}>
                 {scenario.annualizedROE.toFixed(1)}% ROE
               </span>

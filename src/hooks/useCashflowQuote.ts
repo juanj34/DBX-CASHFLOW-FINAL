@@ -131,20 +131,8 @@ export const useCashflowQuote = (quoteId?: string) => {
     loadQuote();
   }, [quoteId]);
 
-  // Rate limiting for draft creation to prevent loops
-  const lastDraftCreatedAt = useRef<number>(0);
-  const draftCreationInProgress = useRef<boolean>(false);
-
-  // Get or create user's single working draft
+  // Get or create user's single working draft (atomic — database unique index prevents duplicates)
   const getOrCreateWorkingDraft = useCallback(async (): Promise<string | null> => {
-    // Prevent concurrent draft creation
-    if (draftCreationInProgress.current) {
-      console.warn('Draft creation already in progress');
-      return null;
-    }
-    
-    draftCreationInProgress.current = true;
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -152,7 +140,7 @@ export const useCashflowQuote = (quoteId?: string) => {
         return null;
       }
 
-      // Try to find existing working draft
+      // Fast path: find existing working draft
       const { data: existingDraft } = await supabase
         .from('cashflow_quotes')
         .select('id')
@@ -161,11 +149,14 @@ export const useCashflowQuote = (quoteId?: string) => {
         .maybeSingle();
 
       if (existingDraft) {
-        console.log('Found existing working draft:', existingDraft.id);
+        console.log('[getOrCreateWorkingDraft] Found existing:', existingDraft.id);
         return existingDraft.id;
       }
 
-      // Create new working draft
+      // No existing draft — create one.
+      // The partial unique index (idx_unique_working_draft_per_broker) guarantees at most
+      // one working_draft per broker. If a concurrent call already inserted one, the INSERT
+      // will fail with a unique constraint violation (23505) and we fall back to SELECT.
       const { data, error } = await supabase
         .from('cashflow_quotes')
         .insert({
@@ -178,15 +169,27 @@ export const useCashflowQuote = (quoteId?: string) => {
         .single();
 
       if (error) {
-        console.error('Failed to create working draft:', error);
+        // Handle unique constraint violation: another call created the draft concurrently
+        if (error.code === '23505') {
+          console.log('[getOrCreateWorkingDraft] Concurrent creation detected, fetching existing...');
+          const { data: raceDraft } = await supabase
+            .from('cashflow_quotes')
+            .select('id')
+            .eq('broker_id', user.id)
+            .eq('status', 'working_draft')
+            .maybeSingle();
+          if (raceDraft) return raceDraft.id;
+        }
+        console.error('[getOrCreateWorkingDraft] Failed:', error);
         toast({ title: 'Failed to create draft', variant: 'destructive' });
         return null;
       }
 
-      console.log('Created new working draft:', data.id);
+      console.log('[getOrCreateWorkingDraft] Created new:', data.id);
       return data.id;
-    } finally {
-      draftCreationInProgress.current = false;
+    } catch (err) {
+      console.error('[getOrCreateWorkingDraft] Error:', err);
+      return null;
     }
   }, [toast]);
 
@@ -218,25 +221,13 @@ export const useCashflowQuote = (quoteId?: string) => {
       autoSaveTimeout.current = null;
     }
 
+    // DELETE the working draft entirely so getOrCreateWorkingDraft() creates a fresh row
     await supabase
       .from('cashflow_quotes')
-      .update({
-        inputs: {} as any,
-        client_name: null,
-        client_id: null,
-        client_country: null,
-        client_email: null,
-        project_name: null,
-        developer: null,
-        unit: null,
-        unit_type: null,
-        unit_size_sqf: null,
-        unit_size_m2: null,
-        title: null,
-      })
+      .delete()
       .eq('broker_id', user.id)
       .eq('status', 'working_draft');
-    
+
     // CRITICAL: Also reset local state to prevent stale data
     setQuote(null);
     setQuoteImages({
@@ -249,11 +240,6 @@ export const useCashflowQuote = (quoteId?: string) => {
     
     console.log('Cleared working draft content and local state');
   }, []);
-
-  // Legacy createDraft - now uses working draft system
-  const createDraft = useCallback(async (): Promise<string | null> => {
-    return getOrCreateWorkingDraft();
-  }, [getOrCreateWorkingDraft]);
 
   // Removed: saveDraft localStorage function - now using immediate database persistence
 
@@ -379,7 +365,7 @@ export const useCashflowQuote = (quoteId?: string) => {
           .select()
           .single();
       } else {
-        result = await supabase.from('cashflow_quotes').insert(quoteData).select().single();
+        result = await supabase.from('cashflow_quotes').insert({ ...quoteData, status: 'draft' }).select().single();
       }
 
       setSaving(false);
@@ -447,59 +433,38 @@ export const useCashflowQuote = (quoteId?: string) => {
     [toast, quote?.id]
   );
 
-  // Auto-save with debounce - creates quote on first meaningful change (lazy creation)
+  // Auto-save with debounce — only UPDATES existing quotes, never creates new ones.
+  // Quote creation is explicit (via getOrCreateWorkingDraft), like Google Docs.
   const scheduleAutoSave = useCallback(
     (
       inputs: OIInputs,
       clientInfo: ClientUnitData,
       existingQuoteId?: string,
-      isQuoteConfigured?: boolean,
       mortgageInputs?: MortgageInputs,
       images?: { floorPlanUrl: string | null; buildingRenderUrl: string | null; heroImageUrl: string | null },
-      onNewQuoteCreated?: (newId: string) => void,
-      suppressToast?: boolean
     ) => {
       if (autoSaveTimeout.current) {
         clearTimeout(autoSaveTimeout.current);
       }
 
-      // LAZY CREATION: If no quote ID but user has MEANINGFUL content, create quote
-      // Stricter check: require actual content, not just "isQuoteConfigured" which was too permissive
-      const hasMeaningfulContent = 
-        (inputs.basePrice > 0) ||
-        (clientInfo.projectName?.trim()) ||
-        (clientInfo.developer?.trim()) ||
-        (clientInfo.clients?.some(c => c.name?.trim()));
-
-      if (!existingQuoteId && hasMeaningfulContent) {
-        autoSaveTimeout.current = setTimeout(async () => {
-          console.log('[scheduleAutoSave] Creating new quote on first meaningful change...');
-          const exitScenarios = inputs._exitScenarios || [];
-          const savedQuote = await saveQuote(inputs, clientInfo, undefined, exitScenarios, mortgageInputs, undefined, images);
-          if (savedQuote && onNewQuoteCreated) {
-            onNewQuoteCreated(savedQuote.id);
-          }
-        }, 500); // Fast creation - 500ms debounce
-        return;
-      }
-
-      // Normal auto-save for existing quotes
+      // No quote ID → nothing to update. Auto-save never creates.
       if (!existingQuoteId) {
         return;
       }
 
       autoSaveTimeout.current = setTimeout(async () => {
-        // Safety check - ensure we're still on the same quote
+        // Safety: ensure we're still on the same quote (prevents stale saves after navigation)
         if (quote?.id !== existingQuoteId) {
+          console.log('[scheduleAutoSave] Stale save prevented:', existingQuoteId, '!==', quote?.id);
           return;
         }
 
         const exitScenarios = inputs._exitScenarios || [];
-        console.log('Auto-saving quote:', existingQuoteId);
+        console.log('[scheduleAutoSave] Updating quote:', existingQuoteId);
         await saveQuote(inputs, clientInfo, existingQuoteId, exitScenarios, mortgageInputs, undefined, images);
-      }, 1500); // 1.5s debounce for existing quotes
+      }, 1500);
     },
-    [toast, quote?.id, saveQuote]
+    [quote?.id, saveQuote]
   );
 
   // Save as new quote
@@ -537,7 +502,6 @@ export const useCashflowQuote = (quoteId?: string) => {
     saveAsNew,
     scheduleAutoSave,
     generateShareToken,
-    createDraft,
     getOrCreateWorkingDraft,
     promoteWorkingDraft,
     clearWorkingDraft,

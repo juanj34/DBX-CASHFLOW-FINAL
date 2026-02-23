@@ -1,5 +1,6 @@
 import { RefreshCw, TrendingUp, TrendingDown, CheckCircle, AlertCircle, XCircle, Wallet } from 'lucide-react';
 import { Currency, formatDualCurrency } from './currencyUtils';
+import { monthName } from './useOICalculations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +14,7 @@ interface PostHandoverCoverageBreakdownProps {
   coveragePercent: number;
   isFullyCovered: boolean;
   totalGap: number;
-  endQuarter: number;
+  endMonth: number;
   endYear: number;
   currency: Currency;
   rate: number;
@@ -29,7 +30,7 @@ export const PostHandoverCoverageBreakdown = ({
   coveragePercent,
   isFullyCovered,
   totalGap,
-  endQuarter,
+  endMonth,
   endYear,
   currency,
   rate,
@@ -66,7 +67,7 @@ export const PostHandoverCoverageBreakdown = ({
                 {t('postHandoverCoverage') || 'Post-Handover Coverage'}
               </h3>
               <p className="text-xs text-theme-text-muted">
-                {postHandoverMonths} {t('months') || 'months'} • Q{endQuarter} {endYear}
+                {postHandoverMonths} {t('months') || 'months'} • {monthName(endMonth)} {endYear}
               </p>
             </div>
           </div>

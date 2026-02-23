@@ -1,4 +1,4 @@
-import { Sparkles, Users, Image as ImageIcon } from "lucide-react";
+import { Sparkles, Users, Image as ImageIcon, Upload, FileImage } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ interface LocationSectionProps {
   dbClientId?: string | null;
   onDbClientSelect?: (clientId: string | null, client: DbClient | null) => void;
   onCreateClient?: () => void;
+  clientsRefreshKey?: number;
   // Image upload props
   floorPlanUrl?: string | null;
   buildingRenderUrl?: string | null;
@@ -45,6 +46,7 @@ export const LocationSection = ({
   dbClientId,
   onDbClientSelect,
   onCreateClient,
+  clientsRefreshKey,
   floorPlanUrl,
   buildingRenderUrl,
   heroImageUrl,
@@ -200,21 +202,35 @@ export const LocationSection = ({
       />
       
       <div className="space-y-4">
-        {/* Section Header with AI Import */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-theme-text">Location & Property</h3>
-            <p className="text-sm text-theme-text-muted">Zone and property details</p>
+        {/* Section Header */}
+        <div>
+          <h3 className="text-lg font-semibold text-theme-text">Location & Property</h3>
+        </div>
+
+        {/* AI Import Card */}
+        <div className="rounded-xl border-2 border-dashed border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-sm font-semibold text-theme-text">AI Import</h4>
+              <p className="text-xs text-theme-text-muted">Upload a brochure or payment plan — AI fills location, property & payment fields</p>
+            </div>
           </div>
           <Button
-            onClick={() => setShowAIExtractor(true)}
-            variant="ghost"
+            type="button"
             size="sm"
-            className="text-purple-400 hover:bg-purple-500/10 h-7 gap-1.5 px-2"
+            onClick={() => setShowAIExtractor(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white gap-2 h-9 px-4 font-medium"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span className="text-xs">AI Import</span>
+            <Upload className="w-4 h-4" />
+            Upload PDF / Image
           </Button>
+          <div className="flex items-center gap-4 text-[11px] text-theme-text-muted">
+            <span className="flex items-center gap-1"><FileImage className="w-3 h-3" /> PNG, JPG, PDF</span>
+            <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> Auto-fills all fields</span>
+          </div>
         </div>
 
         {/* Client Selector */}
@@ -225,6 +241,7 @@ export const LocationSection = ({
               <span className="text-xs text-theme-text-muted">Link to Client</span>
             </div>
             <ClientSelector
+              key={clientsRefreshKey}
               value={dbClientId || null}
               onValueChange={onDbClientSelect}
               onCreateNew={onCreateClient}

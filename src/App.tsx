@@ -13,7 +13,6 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
 import OICalculator from "./pages/OICalculator";
 import AccountSettings from "./pages/AccountSettings";
@@ -94,7 +93,6 @@ function App() {
                 
                 {/* Protected Routes - Require Authentication */}
                 <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                <Route path="/map" element={<ProtectedRoute><Map /></ProtectedRoute>} />
                 <Route path="/map-config" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/roi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
                 <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />

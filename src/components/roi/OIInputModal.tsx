@@ -62,13 +62,6 @@ const months = [
   { value: 12, label: 'December' },
 ];
 
-const quarters = [
-  { value: 1, label: 'Q1' },
-  { value: 2, label: 'Q2' },
-  { value: 3, label: 'Q3' },
-  { value: 4, label: 'Q4' },
-];
-
 const years = Array.from({ length: 12 }, (_, i) => 2024 + i);
 
 // Presets only set the pre-handover/handover split
@@ -198,8 +191,7 @@ export const OIInputModal = ({
 
   // Date validation: Handover must be after Booking
   const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-  const handoverQuarterMonth = (inputs.handoverQuarter - 1) * 3 + 1; // Q1=Jan, Q2=Apr, Q3=Jul, Q4=Oct
-  const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
+  const handoverDate = new Date(inputs.handoverYear, (inputs.handoverMonth || 1) - 1);
   const isHandoverBeforeBooking = handoverDate <= bookingDate;
 
   const handleNumberChange = (field: keyof OIInputs, value: string, min: number, max: number) => {

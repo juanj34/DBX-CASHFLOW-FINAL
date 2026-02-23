@@ -21,9 +21,9 @@ export interface OIInputs {
   bookingMonth: number; // 1-12
   bookingYear: number;
   
-  // Handover timing - month-based for accurate payment scheduling
-  handoverMonth?: number; // 1-12 (actual month of handover, calculated from AI extraction)
-  handoverQuarter: number; // 1, 2, 3, 4 (Q1, Q2, Q3, Q4) - derived from handoverMonth if available
+  // Handover timing - month-based (primary)
+  handoverMonth: number; // 1-12 (primary field for handover timing)
+  handoverQuarter?: number; // Legacy: 1-4, kept for backward compatibility
   handoverYear: number;
   
   // NEW: Restructured Payment Plan
@@ -36,7 +36,8 @@ export interface OIInputs {
   onHandoverPercent: number;        // % paid exactly at handover (e.g., 1%)
   postHandoverPercent: number;      // % paid after handover (e.g., 43%)
   postHandoverPayments: PaymentMilestone[]; // Payments after handover (type: 'post-handover')
-  postHandoverEndQuarter: number;   // When post-handover payments complete (Q1-Q4)
+  postHandoverEndMonth: number;     // When post-handover payments complete (1-12)
+  postHandoverEndQuarter?: number;  // Legacy: 1-4, kept for backward compatibility
   postHandoverEndYear: number;      // Year when post-handover payments complete
   
   // Entry Costs (simplified - DLD fixed at 4%)
@@ -136,6 +137,7 @@ export interface OIYearlyProjection {
   serviceCharges: number | null; // NEW
   managementFee: number | null;
   netIncome: number | null;
+  netRent: number | null; // Alias for netIncome (rent minus service charges)
   cumulativeNetIncome: number;
   // Airbnb comparison (when showAirbnbComparison = true)
   airbnbGrossIncome: number | null;
@@ -176,7 +178,7 @@ const DEFAULT_SHORT_TERM_RENTAL: ShortTermRentalConfig = {
   managementFeePercent: 15,
 };
 
-// Convert quarter to mid-month for calculations
+// Convert quarter to mid-month for calculations (legacy — used in migration only)
 export const quarterToMonth = (quarter: number): number => {
   const quarterMidMonths: Record<number, number> = {
     1: 2,  // Q1 → February
@@ -185,6 +187,12 @@ export const quarterToMonth = (quarter: number): number => {
     4: 11  // Q4 → November
   };
   return quarterMidMonths[quarter] || 2;
+};
+
+// Short month name for display (1-12 → "Jan"-"Dec")
+export const monthName = (month: number): string => {
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[(month - 1) % 12] || 'Jan';
 };
 
 // NEW: Get appreciation profile based on zone maturity level
@@ -259,7 +267,7 @@ export const getZoneAppreciationProfile = (maturityLevel: number): ZoneAppreciat
 
 // Calculate equity deployed at exit based on new payment structure
 // Now uses S-curve for construction-based payments
-import { timelineToConstruction, calculateEquityAtExitWithDetails, EquityAtExitResult } from "./constructionProgress";
+import { timelineToConstruction, calculateEquityAtExitWithDetails, EquityAtExitResult, calculateExitPrice, getEffectiveAppreciationRates } from "./constructionProgress";
 
 const calculateEquityAtExit = (
   exitPercent: number,
@@ -315,37 +323,20 @@ const countTotalInstallments = (inputs: OIInputs): number => {
 };
 
 export const useOICalculations = (inputs: OIInputs): OICalculations => {
-  const { 
-    basePrice, 
-    rentalYieldPercent, 
-    bookingMonth, 
-    bookingYear, 
-    handoverQuarter, 
-    handoverYear, 
+  const {
+    basePrice,
+    rentalYieldPercent,
+    bookingMonth,
+    bookingYear,
+    handoverMonth,
+    handoverYear,
     oqoodFee,
     eoiFee,
   } = inputs;
 
-  // Calculate appreciation bonus from value differentiators
-  const appreciationBonus = (() => {
-    const selectedIds = inputs.valueDifferentiators || [];
-    if (selectedIds.length === 0) return 0;
-    // Inline calculation to avoid circular import
-    const APPRECIATION_BONUS_CAP = 2.0;
-    const DIFFERENTIATOR_BONUSES: Record<string, number> = {
-      'waterfront': 0.5, 'ocean-view': 0.3, 'master-community': 0.3, 'emerging-zone': 0.3,
-      'corner-unit': 0.2, 'top-floor': 0.3, 'skyline-view': 0.2,
-      'premium-developer': 0.4, 'metro-adjacent': 0.3,
-    };
-    const totalBonus = selectedIds.reduce((sum, id) => sum + (DIFFERENTIATOR_BONUSES[id] || 0), 0);
-    return Math.min(totalBonus, APPRECIATION_BONUS_CAP);
-  })();
-
-  // Get appreciation rates (zone-based or manual) + apply bonus
-  const constructionAppreciation = (inputs.constructionAppreciation ?? 12) + appreciationBonus;
-  const growthAppreciation = (inputs.growthAppreciation ?? 8) + appreciationBonus;
-  const matureAppreciation = (inputs.matureAppreciation ?? 4) + appreciationBonus;
-  const growthPeriodYears = inputs.growthPeriodYears ?? 5;
+  // Get effective appreciation rates using shared utility (includes value differentiator bonus)
+  const effectiveRates = getEffectiveAppreciationRates(inputs);
+  const { constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, appreciationBonus } = effectiveRates;
   const rentGrowthRate = inputs.rentGrowthRate ?? 4;
   const serviceChargePerSqft = inputs.serviceChargePerSqft ?? 18;
   const unitSizeSqf = inputs.unitSizeSqf ?? 0;
@@ -354,9 +345,6 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Calculate entry costs (paid at booking) - DLD fixed at 4%
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
   const totalEntryCosts = dldFeeAmount + oqoodFee;
-
-  // Convert handover quarter to month for calculations
-  const handoverMonth = quarterToMonth(handoverQuarter);
 
   // Calculate total construction period from booking to handover
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
@@ -367,39 +355,29 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Year 1 = bookingYear, Year 2 = bookingYear+1, etc.
   const handoverYearIndex = handoverYear - bookingYear + 1;
 
-  // Helper: Get appreciation rate for a given year (bonus already applied above)
-  const getAppreciationRate = (year: number): { rate: number; phase: 'construction' | 'growth' | 'mature' } => {
-    if (year <= handoverYearIndex) {
-      return { rate: constructionAppreciation, phase: 'construction' };
-    } else if (year <= handoverYearIndex + growthPeriodYears) {
-      return { rate: growthAppreciation, phase: 'growth' };
-    } else {
-      return { rate: matureAppreciation, phase: 'mature' };
-    }
+  // Months remaining in first calendar year (for pro-rata year 1)
+  const monthsRemainingInFirstYear = 13 - bookingMonth; // 12 - bookingMonth + 1
+
+  // Helper: Get phase for a given year index
+  const getPhase = (year: number): 'construction' | 'growth' | 'mature' => {
+    if (year <= handoverYearIndex) return 'construction';
+    if (year <= handoverYearIndex + growthPeriodYears) return 'growth';
+    return 'mature';
   };
 
-  // Calculate property values year by year with phased appreciation
-  // Year 1 gets pro-rata appreciation based on remaining months in first year
-  const propertyValues: number[] = [basePrice]; // Year 0 = booking
-  
-  // Calculate pro-rata factor for first year based on booking month
-  // If booking in December (month 12), only 1/12 of the year remains
-  // If booking in January (month 1), 12/12 of the year remains
-  const monthsRemainingInFirstYear = 13 - bookingMonth; // 12 - bookingMonth + 1
-  const firstYearProRataFactor = monthsRemainingInFirstYear / 12;
-  
   // Fixed 10-year projection window (construction + rental within 10 years)
   const totalProjectionYears = 10;
-  
+
+  // Calculate property values using CANONICAL calculateExitPrice for consistency
+  // Each yearIndex maps to a cumulative month count from booking
+  const propertyValues: number[] = [basePrice]; // Year 0 = booking
+
   for (let i = 1; i <= totalProjectionYears; i++) {
-    const { rate: yearRate } = getAppreciationRate(i);
-    const prevValue = propertyValues[i - 1];
-    
-    // Apply pro-rata appreciation only for first year
-    const appreciationFactor = i === 1 ? firstYearProRataFactor : 1;
-    const effectiveRate = yearRate * appreciationFactor;
-    
-    propertyValues.push(prevValue * (1 + effectiveRate / 100));
+    // Convert year index to cumulative months from booking
+    // Year 1 ends at end of first calendar year = monthsRemainingInFirstYear months
+    // Year 2 = monthsRemainingInFirstYear + 12, etc.
+    const monthsFromBooking = monthsRemainingInFirstYear + (i - 1) * 12;
+    propertyValues.push(calculateExitPrice(monthsFromBooking, basePrice, totalMonths, effectiveRates));
   }
 
   // Generate scenarios at key time points (every 6 months + handover)
@@ -416,13 +394,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     const exitYears = exitMonths / 12;
     const exitYearIndex = Math.ceil(exitYears);
 
-    // Property value at exit (from our calculated array, interpolated)
-    const lowerYear = Math.floor(exitYears);
-    const upperYear = Math.ceil(exitYears);
-    const fraction = exitYears - lowerYear;
-    const lowerValue = propertyValues[lowerYear] || basePrice;
-    const upperValue = propertyValues[upperYear] || propertyValues[lowerYear] || basePrice;
-    const exitPrice = lowerValue + (upperValue - lowerValue) * fraction;
+    // Property value at exit — direct canonical calculation (no interpolation)
+    const exitPrice = calculateExitPrice(exitMonths, basePrice, totalMonths, effectiveRates);
 
     // Equity deployed using new calculation
     const { equity: equityDeployed } = calculateEquityAtExit(
@@ -500,7 +473,11 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   for (let i = 1; i <= totalProjectionYears; i++) {
     const calendarYear = bookingYear + i - 1;
     const propertyValue = propertyValues[i];
-    const { rate: appreciationRate, phase } = getAppreciationRate(i);
+    const phase = getPhase(i);
+    // Derive the appreciation rate from the actual property value change
+    const appreciationRate = i > 0 && propertyValues[i - 1] > 0
+      ? ((propertyValues[i] / propertyValues[i - 1]) - 1) * 100
+      : 0;
     const isConstruction = i <= handoverYearIndex;
     const isHandover = i === handoverYearIndex;
     
@@ -589,6 +566,7 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
       serviceCharges,
       managementFee,
       netIncome,
+      netRent: netIncome,
       cumulativeNetIncome,
       airbnbGrossIncome,
       airbnbExpenses,

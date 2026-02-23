@@ -76,28 +76,28 @@ export const InvestmentJourneyCards = ({
     <div className="space-y-4">
       {/* Strategy Winner Banner - Only show if comparison enabled */}
       {showAirbnbComparison && (
-        <div className="bg-gradient-to-r from-green-500/10 via-[#CCFF00]/10 to-green-500/10 border border-green-500/30 rounded-2xl p-4 sm:p-6">
+        <div className="bg-gradient-to-r from-theme-positive/10 via-theme-accent/10 to-theme-positive/10 border border-theme-positive/30 rounded-2xl p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#CCFF00]/20 rounded-xl">
-                <Trophy className="w-6 h-6 text-[#CCFF00]" />
+              <div className="p-2 bg-theme-accent/20 rounded-xl">
+                <Trophy className="w-6 h-6 text-theme-accent" />
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Strategy Winner</p>
-                <p className="text-lg sm:text-xl font-bold text-white">
-                  {totalSTIncome > totalLTIncome ? 'Short-Term Rental' : 'Long-Term Rental'} 🏆
+                <p className="text-xs text-theme-text-muted uppercase tracking-wider">{t('strategyWinnerLabel')}</p>
+                <p className="text-lg sm:text-xl font-bold text-theme-text">
+                  {totalSTIncome > totalLTIncome ? t('shortTermRentalWinner') : t('longTermRentalWinner')} 🏆
                 </p>
               </div>
             </div>
             
             <div className="text-center sm:text-right">
-              <p className="text-2xl sm:text-3xl font-bold text-[#CCFF00] font-mono">
+              <p className="text-2xl sm:text-3xl font-bold text-theme-accent font-mono">
                 +{formatCurrency(Math.abs(totalSTIncome - totalLTIncome), currency, rate)}
               </p>
-              <p className="text-xs text-gray-400">
-                {totalSTIncome > totalLTIncome 
-                  ? `+${(((totalSTIncome - totalLTIncome) / totalLTIncome) * 100).toFixed(0)}% more than Long-Term over 10 years`
-                  : `more stable income with Long-Term strategy`
+              <p className="text-xs text-theme-text-muted">
+                {totalSTIncome > totalLTIncome
+                  ? `+${(((totalSTIncome - totalLTIncome) / totalLTIncome) * 100).toFixed(0)}% ${t('moreThanLongTermOver10Years')}`
+                  : t('stableIncomeWithLongTerm')
                 }
               </p>
             </div>
@@ -105,24 +105,24 @@ export const InvestmentJourneyCards = ({
           
           {/* Visual comparison bar */}
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-xs text-cyan-400 w-20 shrink-0">Long-Term</span>
-            <div className="flex-1 h-2 bg-[#2a3142] rounded-full overflow-hidden flex">
+            <span className="text-xs text-theme-positive w-20 shrink-0">{t('longTerm')}</span>
+            <div className="flex-1 h-2 bg-theme-border rounded-full overflow-hidden flex">
               <div 
-                className="h-full bg-cyan-400 transition-all duration-500"
+                className="h-full bg-theme-positive transition-all duration-500"
                 style={{ width: `${Math.min((totalLTIncome / Math.max(totalLTIncome, totalSTIncome)) * 100, 100)}%` }}
               />
             </div>
-            <span className="text-xs font-mono text-cyan-400 w-24 text-right">{formatCurrency(totalLTIncome, currency, rate)}</span>
+            <span className="text-xs font-mono text-theme-positive w-24 text-right">{formatCurrency(totalLTIncome, currency, rate)}</span>
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xs text-orange-400 w-20 shrink-0">Short-Term</span>
-            <div className="flex-1 h-2 bg-[#2a3142] rounded-full overflow-hidden flex">
+            <span className="text-xs text-theme-accent w-20 shrink-0">{t('shortTerm')}</span>
+            <div className="flex-1 h-2 bg-theme-border rounded-full overflow-hidden flex">
               <div 
-                className="h-full bg-orange-400 transition-all duration-500"
+                className="h-full bg-theme-accent transition-all duration-500"
                 style={{ width: `${Math.min((totalSTIncome / Math.max(totalLTIncome, totalSTIncome)) * 100, 100)}%` }}
               />
             </div>
-            <span className="text-xs font-mono text-orange-400 w-24 text-right">{formatCurrency(totalSTIncome, currency, rate)}</span>
+            <span className="text-xs font-mono text-theme-accent w-24 text-right">{formatCurrency(totalSTIncome, currency, rate)}</span>
           </div>
         </div>
       )}
@@ -130,18 +130,18 @@ export const InvestmentJourneyCards = ({
       {/* Investment Journey Timeline */}
       <div className="bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Zap className="w-5 h-5 text-[#CCFF00]" />
+          <Zap className="w-5 h-5 text-theme-accent" />
           <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">
-            Investment Overview
+            {t('investmentOverviewLabel')}
           </h3>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="w-3.5 h-3.5 text-gray-500 cursor-help" />
+                <Info className="w-3.5 h-3.5 text-theme-text-muted cursor-help" />
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+              <TooltipContent className="max-w-xs bg-theme-card border-theme-border text-theme-text">
                 <p className="text-xs">
-                  {constructionYears.length} years construction + {rentalYears} years of rental income within a 10-year window
+                  {constructionYears.length} {t('constructionTooltipPrefix')} {rentalYears} {t('constructionTooltipSuffix')}
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -150,25 +150,25 @@ export const InvestmentJourneyCards = ({
 
         {/* Visual Timeline */}
         <div className="relative mb-6 hidden sm:block">
-          <div className="absolute top-3 left-0 right-0 h-0.5 bg-[#2a3142]" />
+          <div className="absolute top-3 left-0 right-0 h-0.5 bg-theme-border" />
           <div className="flex justify-between relative">
             <div className="flex flex-col items-center">
-              <div className="w-6 h-6 rounded-full bg-[#CCFF00] flex items-center justify-center z-10">
-                <span className="text-xs font-bold text-black">1</span>
+              <div className="w-6 h-6 rounded-full bg-theme-accent flex items-center justify-center z-10">
+                <span className="text-xs font-bold text-theme-bg">1</span>
               </div>
-              <span className="text-[10px] text-gray-500 mt-1">{projections[0]?.calendarYear || 'Today'}</span>
+              <span className="text-[10px] text-theme-text-muted mt-1">{projections[0]?.calendarYear || t('todayLabel')}</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-6 h-6 rounded-full bg-[#CCFF00]/50 flex items-center justify-center z-10 border-2 border-[#CCFF00]">
-                <Key className="w-3 h-3 text-[#CCFF00]" />
+              <div className="w-6 h-6 rounded-full bg-theme-accent/50 flex items-center justify-center z-10 border-2 border-theme-accent">
+                <Key className="w-3 h-3 text-theme-accent" />
               </div>
-              <span className="text-[10px] text-[#CCFF00] mt-1">{handoverProjection?.calendarYear || 'Handover'}</span>
+              <span className="text-[10px] text-theme-accent mt-1">{handoverProjection?.calendarYear || t('handover')}</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center z-10">
-                <TrendingUp className="w-3 h-3 text-white" />
+              <div className="w-6 h-6 rounded-full bg-theme-positive flex items-center justify-center z-10">
+                <TrendingUp className="w-3 h-3 text-theme-text" />
               </div>
-              <span className="text-[10px] text-gray-500 mt-1">{lastProjection?.calendarYear || 'Target'}</span>
+              <span className="text-[10px] text-theme-text-muted mt-1">{lastProjection?.calendarYear || t('targetLabel')}</span>
             </div>
           </div>
         </div>
@@ -176,21 +176,21 @@ export const InvestmentJourneyCards = ({
         {/* 3 Milestone Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: The Build (Construction Phase) */}
-          <div className="bg-[#0d1117] border border-amber-500/30 rounded-xl p-4 hover:border-amber-500/60 transition-colors cursor-default group">
+          <div className="bg-theme-bg border border-theme-accent/30 rounded-xl p-4 hover:border-theme-accent/60 transition-colors cursor-default group">
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                <Building className="w-4 h-4 text-amber-400" />
+              <div className="p-1.5 bg-theme-accent/20 rounded-lg">
+                <Building className="w-4 h-4 text-theme-accent" />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-white">The Build</h4>
-                <p className="text-[10px] text-gray-500">Years 1-{constructionYears.length || 3}</p>
+                <h4 className="text-sm font-medium text-theme-text">{t('theBuildCardTitle')}</h4>
+                <p className="text-[10px] text-theme-text-muted">{t('yearsRange')} 1-{constructionYears.length || 3}</p>
               </div>
             </div>
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Cash Deployed</span>
-                <span className="text-sm font-mono text-red-400">
+                <span className="text-xs text-theme-text-muted">{t('cashDeployedLabel')}</span>
+                <span className="text-sm font-mono text-theme-negative">
                   -{formatCurrency(totalCapitalInvested, currency, rate)}
                 </span>
               </div>
@@ -198,58 +198,58 @@ export const InvestmentJourneyCards = ({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
-                        Capital Growth
-                        <Info className="w-3 h-3 text-gray-500" />
+                      <span className="text-xs text-theme-text-muted flex items-center gap-1 cursor-help underline decoration-dotted decoration-theme-border">
+                        {t('capitalGrowthLabel')}
+                        <Info className="w-3 h-3 text-theme-text-muted" />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                    <TooltipContent className="max-w-xs bg-theme-card border-theme-border text-theme-text">
                       <div className="space-y-1">
-                        <p className="text-xs font-medium">Construction Phase Appreciation</p>
-                        <p className="text-[10px] text-gray-400">
-                          Off-plan properties typically appreciate during construction as the project progresses and risk decreases.
+                        <p className="text-xs font-medium">{t('constructionPhaseAppreciationLabel')}</p>
+                        <p className="text-[10px] text-theme-text-muted">
+                          {t('offPlanAppreciationExplanation')}
                         </p>
-                        <div className="mt-2 pt-2 border-t border-[#2a3142]">
-                          <p className="text-[10px] text-gray-400">
-                            ~{appreciationPerYear.toFixed(1)}% per year × {constructionYears.length} years = <span className="text-green-400 font-medium">+{constructionAppreciation.toFixed(0)}%</span>
+                        <div className="mt-2 pt-2 border-t border-theme-border">
+                          <p className="text-[10px] text-theme-text-muted">
+                            ~{appreciationPerYear.toFixed(1)}% {t('perYearLabel')} × {constructionYears.length} {t('years')} = <span className="text-theme-positive font-medium">+{constructionAppreciation.toFixed(0)}%</span>
                           </p>
-                          <p className="text-[10px] text-gray-500 mt-1">
-                            Value at handover: {formatCurrency(handoverProjection?.propertyValue || basePrice, currency, rate)}
+                          <p className="text-[10px] text-theme-text-muted mt-1">
+                            {t('valueAtHandoverColonLabel')} {formatCurrency(handoverProjection?.propertyValue || basePrice, currency, rate)}
                           </p>
                         </div>
                       </div>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <span className="text-sm font-mono text-green-400">
+                <span className="text-sm font-mono text-theme-positive">
                   +{constructionAppreciation.toFixed(0)}%
                 </span>
               </div>
             </div>
             
-            <div className="mt-3 pt-2 border-t border-[#2a3142]">
-              <p className="text-[10px] text-gray-500">
-                Property appreciates while under construction. No rental income yet.
+            <div className="mt-3 pt-2 border-t border-theme-border">
+              <p className="text-[10px] text-theme-text-muted">
+                {t('buildPhaseExplanation')}
               </p>
             </div>
           </div>
 
           {/* Card 2: The Handover */}
-          <div className="bg-[#0d1117] border border-[#CCFF00]/30 rounded-xl p-4 hover:border-[#CCFF00]/60 transition-colors cursor-default">
+          <div className="bg-theme-bg border border-theme-accent/30 rounded-xl p-4 hover:border-theme-accent/60 transition-colors cursor-default">
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-[#CCFF00]/20 rounded-lg">
-                <Key className="w-4 h-4 text-[#CCFF00]" />
+              <div className="p-1.5 bg-theme-accent/20 rounded-lg">
+                <Key className="w-4 h-4 text-theme-accent" />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-white">The Handover</h4>
-                <p className="text-[10px] text-gray-500">Year {constructionYears.length || 3}</p>
+                <h4 className="text-sm font-medium text-theme-text">{t('theHandoverCardTitle')}</h4>
+                <p className="text-[10px] text-theme-text-muted">{t('yearColumn')} {constructionYears.length || 3}</p>
               </div>
             </div>
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Property Value</span>
-                <span className="text-sm font-mono text-[#CCFF00]">
+                <span className="text-xs text-theme-text-muted">{t('propertyValue')}</span>
+                <span className="text-sm font-mono text-theme-accent">
                   {formatCurrency(handoverProjection?.propertyValue || basePrice, currency, rate)}
                 </span>
               </div>
@@ -257,40 +257,40 @@ export const InvestmentJourneyCards = ({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
-                        First Full Year Rent
-                        <Info className="w-3 h-3 text-gray-500" />
+                      <span className="text-xs text-theme-text-muted flex items-center gap-1 cursor-help underline decoration-dotted decoration-theme-border">
+                        {t('firstFullYearRentLabel')}
+                        <Info className="w-3 h-3 text-theme-text-muted" />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                    <TooltipContent className="max-w-xs bg-theme-card border-theme-border text-theme-text">
                       <p className="text-xs">
-                        Annual rental income for {firstCompleteRentYear?.calendarYear || 'first full year'} (first complete 12-month period after handover).
+                        {t('annualRentalIncomeFor')} {firstCompleteRentYear?.calendarYear || t('year1RentalIncomeLabel')} {t('firstYearRentExplanationSuffix')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <span className="text-sm font-mono text-cyan-400">
+                <span className="text-sm font-mono text-theme-positive">
                   {formatCurrency(firstCompleteRentYear?.netIncome || 0, currency, rate)}
                 </span>
               </div>
             </div>
             
-            <div className="mt-3 pt-2 border-t border-[#2a3142]">
-              <p className="text-[10px] text-gray-500">
-                Keys collected! Start earning rental income.
+            <div className="mt-3 pt-2 border-t border-theme-border">
+              <p className="text-[10px] text-theme-text-muted">
+                {t('handoverPhaseExplanation')}
               </p>
             </div>
           </div>
 
           {/* Card 3: The Cashflow Engine */}
-          <div className="bg-[#0d1117] border border-green-500/30 rounded-xl p-4 hover:border-green-500/60 transition-colors cursor-default">
+          <div className="bg-theme-bg border border-theme-positive/30 rounded-xl p-4 hover:border-theme-positive/60 transition-colors cursor-default">
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-green-500/20 rounded-lg">
-                <Wallet className="w-4 h-4 text-green-400" />
+              <div className="p-1.5 bg-theme-positive/20 rounded-lg">
+                <Wallet className="w-4 h-4 text-theme-positive" />
               </div>
               <div>
-                <h4 className="text-sm font-medium text-white">The Cashflow Engine</h4>
-                <p className="text-[10px] text-gray-500">{rentalYears} years of rental</p>
+                <h4 className="text-sm font-medium text-theme-text">{t('theCashflowEngineTitle')}</h4>
+                <p className="text-[10px] text-theme-text-muted">{rentalYears} {t('yearsOfRental')}</p>
               </div>
             </div>
             
@@ -300,19 +300,19 @@ export const InvestmentJourneyCards = ({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
-                        Total Profit (LT)
-                        <Info className="w-3 h-3 text-gray-500" />
+                      <span className="text-xs text-theme-text-muted flex items-center gap-1 cursor-help underline decoration-dotted decoration-theme-border">
+                        {t('totalProfitLtLabel')}
+                        <Info className="w-3 h-3 text-theme-text-muted" />
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                    <TooltipContent className="max-w-xs bg-theme-card border-theme-border text-theme-text">
                       <p className="text-xs">
-                        Cumulative net rental income over {rentalYears} years with Long-Term strategy. Avg: {formatCurrency(avgAnnualLT, currency, rate)}/year
+                        {t('cumulativeNetRentalIncomePrefix')} {rentalYears} {t('yearsWithStrategyAvg')} Long-Term {t('strategyAvgSuffix')} {formatCurrency(avgAnnualLT, currency, rate)}{t('avgPerYearLabel')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <span className="text-sm font-mono text-cyan-400">
+                <span className="text-sm font-mono text-theme-positive">
                   +{formatCurrency(totalLTIncome, currency, rate)}
                 </span>
               </div>
@@ -321,19 +321,19 @@ export const InvestmentJourneyCards = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-xs text-gray-400 flex items-center gap-1 cursor-help underline decoration-dotted decoration-gray-600">
-                          Total Profit (ST)
-                          <Info className="w-3 h-3 text-gray-500" />
+                        <span className="text-xs text-theme-text-muted flex items-center gap-1 cursor-help underline decoration-dotted decoration-theme-border">
+                          {t('totalProfitStLabel')}
+                          <Info className="w-3 h-3 text-theme-text-muted" />
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs bg-[#1a1f2e] border-[#2a3142] text-white">
+                      <TooltipContent className="max-w-xs bg-theme-card border-theme-border text-theme-text">
                         <p className="text-xs">
-                          Cumulative net rental income over {rentalYears} years with Short-Term strategy. Avg: {formatCurrency(avgAnnualST, currency, rate)}/year
+                          {t('cumulativeNetRentalIncomePrefix')} {rentalYears} {t('yearsWithStrategyAvg')} Short-Term {t('strategyAvgSuffix')} {formatCurrency(avgAnnualST, currency, rate)}{t('avgPerYearLabel')}
                         </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <span className="text-sm font-mono text-orange-400">
+                  <span className="text-sm font-mono text-theme-accent">
                     +{formatCurrency(totalSTIncome, currency, rate)}
                   </span>
                 </div>
@@ -342,11 +342,11 @@ export const InvestmentJourneyCards = ({
             
             {/* Winner indicator when comparison enabled */}
             {showAirbnbComparison && (
-              <div className="mt-3 pt-2 border-t border-[#2a3142]">
-                <p className="text-[10px] text-gray-500">
-                  {totalSTIncome > totalLTIncome 
-                    ? `🏆 ST wins by +${formatCurrency(totalSTIncome - totalLTIncome, currency, rate)}`
-                    : `🏆 LT wins by +${formatCurrency(totalLTIncome - totalSTIncome, currency, rate)}`
+              <div className="mt-3 pt-2 border-t border-theme-border">
+                <p className="text-[10px] text-theme-text-muted">
+                  {totalSTIncome > totalLTIncome
+                    ? `🏆 ${t('stWinsByLabel')} +${formatCurrency(totalSTIncome - totalLTIncome, currency, rate)}`
+                    : `🏆 ${t('ltWinsByLabel')} +${formatCurrency(totalLTIncome - totalSTIncome, currency, rate)}`
                   }
                 </p>
               </div>

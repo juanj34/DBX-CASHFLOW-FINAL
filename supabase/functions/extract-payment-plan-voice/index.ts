@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
 interface ConversationMessage {
@@ -37,7 +37,8 @@ interface ExtractedPaymentPlan {
   paymentStructure: {
     paymentSplit?: string;
     hasPostHandover: boolean;
-    handoverQuarter?: number;
+    handoverMonth?: number;
+    handoverQuarter?: number; // legacy
     handoverYear?: number;
     handoverMonthFromBooking?: number;
     onHandoverPercent?: number;
@@ -119,7 +120,7 @@ const tools = [
               paymentSplit: { type: "string" },
               hasPostHandover: { type: "boolean" },
               handoverMonthFromBooking: { type: "number" },
-              handoverQuarter: { type: "number", enum: [1, 2, 3, 4] },
+              handoverMonth: { type: "number", description: "Expected handover month 1-12 (e.g., 6 for June)" },
               handoverYear: { type: "number" },
               onHandoverPercent: { type: "number" },
               postHandoverPercent: { type: "number" }
@@ -309,14 +310,14 @@ async function transcribeWithGemini(audioBase64: string, mimeType: string): Prom
     audioFormat = "ogg";
   }
   
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "Authorization": `Bearer ${GEMINI_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "gemini-2.5-flash",
       messages: [
         {
           role: "user",
@@ -356,8 +357,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const { audio, audioMimeType, textMessage, bookingDate, conversationHistory } = await req.json();
@@ -463,16 +464,16 @@ serve(async (req) => {
       throw new Error("No audio or text message provided");
     }
     
-    console.log(`Calling Lovable AI with ${messages.length} messages`);
+    console.log(`Calling Gemini API with ${messages.length} messages`);
     
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${GEMINI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-2.5-flash",
         messages,
         tools,
         tool_choice: "auto"
@@ -481,7 +482,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ 
@@ -502,7 +503,7 @@ serve(async (req) => {
         });
       }
       
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const result = await response.json();

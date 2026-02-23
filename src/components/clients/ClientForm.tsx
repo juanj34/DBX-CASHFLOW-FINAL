@@ -153,7 +153,7 @@ export const ClientForm = ({
             <Button
               type="submit"
               disabled={!name.trim() || isSubmitting}
-              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+              className="bg-theme-accent text-white hover:bg-theme-accent/90"
             >
               {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Client' : 'Save Changes'}
             </Button>

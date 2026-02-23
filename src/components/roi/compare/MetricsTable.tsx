@@ -1,5 +1,6 @@
 import { QuoteWithCalculations, ComparisonMetrics } from '@/hooks/useQuotesComparison';
 import { formatCurrency, formatDualCurrency, Currency } from '@/components/roi/currencyUtils';
+import { monthName } from '@/components/roi/useOICalculations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getQuoteDisplayName } from './utils';
@@ -54,17 +55,17 @@ export const MetricsTable = ({ quotesWithCalcs, metrics, currency = 'AED', excha
     return `${primary} (${secondary})`;
   };
 
-  // Format handover date as "Q# YYYY"
+  // Format handover date as "Mon YYYY"
   const formatHandoverDate = (quote: QuoteWithCalculations['quote']) => {
-    const q = quote.inputs.handoverQuarter;
+    const m = quote.inputs.handoverMonth;
     const y = quote.inputs.handoverYear;
-    return `Q${q} ${y}`;
+    return `${monthName(m)} ${y}`;
   };
 
   // Calculate time to completion
   const getTimeToCompletion = (quote: QuoteWithCalculations['quote']) => {
     const now = new Date();
-    const handoverDate = new Date(quote.inputs.handoverYear, (quote.inputs.handoverQuarter - 1) * 3, 1);
+    const handoverDate = new Date(quote.inputs.handoverYear, quote.inputs.handoverMonth - 1, 1);
     const diffMonths = Math.max(0, (handoverDate.getFullYear() - now.getFullYear()) * 12 + 
       (handoverDate.getMonth() - now.getMonth()));
     const years = Math.floor(diffMonths / 12);

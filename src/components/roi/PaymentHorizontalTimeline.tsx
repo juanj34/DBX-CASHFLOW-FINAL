@@ -1,4 +1,4 @@
-import { OIInputs } from "./useOICalculations";
+import { OIInputs, monthName } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useState, useMemo } from "react";
@@ -40,16 +40,16 @@ export const PaymentHorizontalTimeline = ({
   const { t, language } = useLanguage();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   
-  const { 
-    basePrice, 
-    downpaymentPercent, 
-    additionalPayments, 
+  const {
+    basePrice,
+    downpaymentPercent,
+    additionalPayments,
     preHandoverPercent,
     oqoodFee,
-    bookingMonth, 
-    bookingYear, 
-    handoverQuarter, 
-    handoverYear 
+    bookingMonth,
+    bookingYear,
+    handoverMonth,
+    handoverYear
   } = inputs;
 
   // Helper to format date
@@ -79,39 +79,28 @@ export const PaymentHorizontalTimeline = ({
   const handoverPercent = 100 - preHandoverPercent;
   const handoverAmount = basePrice * handoverPercent / 100;
 
-  // Helper to check if payment falls in handover quarter
-  const isInDeliveryQuarter = (monthsFromBooking: number): boolean => {
+  // Helper to check if payment falls in the handover month
+  const isInDeliveryMonth = (monthsFromBooking: number): boolean => {
     const totalMonthsFromStart = bookingMonth + monthsFromBooking;
     const paymentYearOffset = Math.floor((totalMonthsFromStart - 1) / 12);
     const paymentMonth = ((totalMonthsFromStart - 1) % 12) + 1;
     const paymentYear = bookingYear + paymentYearOffset;
-    
-    const handoverQuarterStart = (handoverQuarter - 1) * 3 + 1;
-    const handoverQuarterEnd = handoverQuarter * 3;
-    
-    if (paymentYear === handoverYear) {
-      return paymentMonth >= handoverQuarterStart && paymentMonth <= handoverQuarterEnd;
-    }
-    return false;
+
+    return paymentYear === handoverYear && paymentMonth === handoverMonth;
   };
 
-  // Calculate delivery quarter band position on timeline
-  const deliveryQuarterBand = useMemo(() => {
-    // Convert handover quarter to months from booking
-    const handoverQuarterStartMonth = (handoverQuarter - 1) * 3 + 1; // 1-indexed month in year
-    const handoverQuarterEndMonth = handoverQuarter * 3;
-    
-    // Calculate months from booking start to handover quarter start
-    const monthsToQuarterStart = 
-      (handoverYear - bookingYear) * 12 + (handoverQuarterStartMonth - bookingMonth);
-    const monthsToQuarterEnd = 
-      (handoverYear - bookingYear) * 12 + (handoverQuarterEndMonth - bookingMonth);
-    
-    const startPercent = Math.max(0, Math.min(100, (monthsToQuarterStart / totalMonths) * 100));
-    const endPercent = Math.max(0, Math.min(100, (monthsToQuarterEnd / totalMonths) * 100));
-    
+  // Calculate delivery month band position on timeline
+  const deliveryMonthBand = useMemo(() => {
+    // Calculate months from booking start to handover month
+    const monthsToHandoverStart =
+      (handoverYear - bookingYear) * 12 + (handoverMonth - bookingMonth);
+    const monthsToHandoverEnd = monthsToHandoverStart + 1;
+
+    const startPercent = Math.max(0, Math.min(100, (monthsToHandoverStart / totalMonths) * 100));
+    const endPercent = Math.max(0, Math.min(100, (monthsToHandoverEnd / totalMonths) * 100));
+
     return { startPercent, endPercent, width: endPercent - startPercent };
-  }, [bookingMonth, bookingYear, handoverQuarter, handoverYear, totalMonths]);
+  }, [bookingMonth, bookingYear, handoverMonth, handoverYear, totalMonths]);
 
   // Build payments array with TRUE proportional positioning
   const payments: TimelinePayment[] = useMemo(() => {
@@ -177,7 +166,7 @@ export const PaymentHorizontalTimeline = ({
       monthsFromBooking: totalMonths,
       positionPercent: 100,
       type: 'handover',
-      date: `Q${handoverQuarter} ${handoverYear}`,
+      date: `${monthName(handoverMonth)} ${handoverYear}`,
       isEstimate: false,
     });
 
@@ -211,7 +200,7 @@ export const PaymentHorizontalTimeline = ({
   const paidProgress = 0;
 
   const startDate = monthToDateString(bookingMonth, bookingYear);
-  const endDate = `Q${handoverQuarter} ${handoverYear}`;
+  const endDate = `${monthName(handoverMonth)} ${handoverYear}`;
 
   // Summary totals
   const totalPreHandover = payments.filter(p => p.type !== 'handover').reduce((sum, p) => sum + p.amount, 0);
@@ -270,19 +259,19 @@ export const PaymentHorizontalTimeline = ({
         {/* Track Background */}
         <div className="absolute top-1/2 left-4 right-4 h-2 bg-slate-700/80 rounded-full transform -translate-y-1/2" />
         
-        {/* Delivery Quarter Band - Highlighted Zone */}
-        {deliveryQuarterBand.width > 0 && (
-          <div 
+        {/* Delivery Month Band - Highlighted Zone */}
+        {deliveryMonthBand.width > 0 && (
+          <div
             className="absolute top-1/2 h-4 bg-gradient-to-r from-green-500/30 via-green-400/40 to-green-500/30 rounded-full transform -translate-y-1/2 border border-green-400/50"
-            style={{ 
-              left: `calc(${deliveryQuarterBand.startPercent}% + 16px - ${deliveryQuarterBand.startPercent * 0.32}px)`,
-              width: `calc(${deliveryQuarterBand.width}% - ${deliveryQuarterBand.width * 0.32}px)`,
+            style={{
+              left: `calc(${deliveryMonthBand.startPercent}% + 16px - ${deliveryMonthBand.startPercent * 0.32}px)`,
+              width: `calc(${deliveryMonthBand.width}% - ${deliveryMonthBand.width * 0.32}px)`,
             }}
           >
             <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
               <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 flex items-center gap-0.5">
                 <Key className="w-2 h-2" />
-                Q{handoverQuarter} {handoverYear}
+                {monthName(handoverMonth)} {handoverYear}
               </span>
             </div>
           </div>
@@ -304,7 +293,7 @@ export const PaymentHorizontalTimeline = ({
             const leftCalc = `calc(${leftPercent}% + 16px - ${leftPercent * 0.32}px)`;
             
             // Check if this marker falls in the delivery quarter
-            const isDeliveryQuarter = payment.type === 'milestone' && isInDeliveryQuarter(payment.monthsFromBooking);
+            const isDeliveryQuarter = payment.type === 'milestone' && isInDeliveryMonth(payment.monthsFromBooking);
             
             const markerSize = payment.type === 'handover' ? 'w-8 h-8' : payment.type === 'entry' ? 'w-7 h-7' : 'w-6 h-6';
             // Delivery quarter milestones get green styling

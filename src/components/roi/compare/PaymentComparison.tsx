@@ -68,8 +68,8 @@ export const PaymentComparison = ({
           
           // Calculate construction period from booking to handover
           const bookingDate = new Date(quote.inputs.bookingYear, quote.inputs.bookingMonth - 1, 1);
-          const handoverMonth = (quote.inputs.handoverQuarter - 1) * 3 + 1;
-          const handoverDate = new Date(quote.inputs.handoverYear, handoverMonth, 1);
+          const hMonth = quote.inputs.handoverMonth || 12;
+          const handoverDate = new Date(quote.inputs.handoverYear, hMonth - 1, 1);
           const constructionMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
           
           // Sum all installment payments during construction

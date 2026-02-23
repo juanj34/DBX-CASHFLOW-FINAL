@@ -58,8 +58,8 @@ export const SnapshotOverviewCards = ({
   };
   const averageAnnualRent = calculate7YearAverageRent(netAnnualRent, rentGrowthRate);
   
-  // Calculate Breakeven
-  const yearsToBreakeven = calculations.holdAnalysis?.yearsToPayOff || 0;
+  // Calculate Breakeven (years for net rent to recover total investment including DLD + fees)
+  const yearsToBreakeven = calculations.holdAnalysis?.yearsToBreakEven || 0;
   
   // Calculate Monthly Burn Rate
   // = (Downpayment + DLD + Oqood + Pre-Handover Installments) / Construction Months

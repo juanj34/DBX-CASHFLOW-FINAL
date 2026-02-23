@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import mapboxgl from "mapbox-gl";
 import { Loader2, Upload, Link as LinkIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -23,11 +21,7 @@ interface LandmarkFormProps {
 }
 
 const LandmarkForm = ({ landmark, onClose, onSaved }: LandmarkFormProps) => {
-  const { data: token, isLoading } = useMapboxToken();
   const { toast } = useToast();
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const marker = useRef<mapboxgl.Marker | null>(null);
 
   const [formData, setFormData] = useState({
     title: landmark?.title || "",
@@ -39,48 +33,6 @@ const LandmarkForm = ({ landmark, onClose, onSaved }: LandmarkFormProps) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(landmark?.image_url || "");
-
-  useEffect(() => {
-    if (!token || !mapContainer.current || map.current) return;
-
-    mapboxgl.accessToken = token;
-
-    const initialLng = formData.longitude ? parseFloat(formData.longitude) : 55.2708;
-    const initialLat = formData.latitude ? parseFloat(formData.latitude) : 25.2048;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [initialLng, initialLat],
-      zoom: 12,
-    });
-
-    marker.current = new mapboxgl.Marker({ draggable: true })
-      .setLngLat([initialLng, initialLat])
-      .addTo(map.current);
-
-    marker.current.on("dragend", () => {
-      const lngLat = marker.current!.getLngLat();
-      setFormData((prev) => ({
-        ...prev,
-        latitude: lngLat.lat.toFixed(6),
-        longitude: lngLat.lng.toFixed(6),
-      }));
-    });
-
-    map.current.on("click", (e) => {
-      marker.current!.setLngLat(e.lngLat);
-      setFormData((prev) => ({
-        ...prev,
-        latitude: e.lngLat.lat.toFixed(6),
-        longitude: e.lngLat.lng.toFixed(6),
-      }));
-    });
-
-    return () => {
-      map.current?.remove();
-    };
-  }, [token]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,7 +107,7 @@ const LandmarkForm = ({ landmark, onClose, onSaved }: LandmarkFormProps) => {
     if (!formData.latitude || !formData.longitude) {
       toast({
         title: "Validation error",
-        description: "Please select a location on the map",
+        description: "Please enter latitude and longitude coordinates",
         variant: "destructive",
       });
       return;
@@ -278,16 +230,10 @@ const LandmarkForm = ({ landmark, onClose, onSaved }: LandmarkFormProps) => {
               <Label htmlFor="latitude">Latitude *</Label>
               <Input
                 id="latitude"
+                type="number"
+                step="any"
                 value={formData.latitude}
-                onChange={(e) => {
-                  setFormData({ ...formData, latitude: e.target.value });
-                  if (marker.current && e.target.value && formData.longitude) {
-                    marker.current.setLngLat([
-                      parseFloat(formData.longitude),
-                      parseFloat(e.target.value),
-                    ]);
-                  }
-                }}
+                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                 placeholder="25.2048"
               />
             </div>
@@ -296,36 +242,13 @@ const LandmarkForm = ({ landmark, onClose, onSaved }: LandmarkFormProps) => {
               <Label htmlFor="longitude">Longitude *</Label>
               <Input
                 id="longitude"
+                type="number"
+                step="any"
                 value={formData.longitude}
-                onChange={(e) => {
-                  setFormData({ ...formData, longitude: e.target.value });
-                  if (marker.current && formData.latitude && e.target.value) {
-                    marker.current.setLngLat([
-                      parseFloat(e.target.value),
-                      parseFloat(formData.latitude),
-                    ]);
-                  }
-                }}
+                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
                 placeholder="55.2708"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Select Location on Map *</Label>
-            <p className="text-sm text-muted-foreground">
-              Click on the map or drag the marker to set the location
-            </p>
-            <div
-              ref={mapContainer}
-              className="h-64 rounded-lg border"
-              style={{ display: isLoading ? "none" : "block" }}
-            />
-            {isLoading && (
-              <div className="h-64 rounded-lg border flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

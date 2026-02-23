@@ -13,6 +13,8 @@ import { PaymentSection } from "./PaymentSection";
 import { AppreciationSection } from "./AppreciationSection";
 import { RentalSection } from "./RentalSection";
 import { ExitSection } from "./ExitSection";
+import { ValueSection } from "./ValueSection";
+import { MortgageSection } from "./MortgageSection";
 import { ClientUnitData } from "../ClientUnitInfo";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -57,16 +59,17 @@ interface ConfiguratorLayoutProps {
   onShowLogoOverlayChange?: (show: boolean) => void;
 }
 
-// New 6-step sections
-const SECTIONS: ConfiguratorSection[] = ['location', 'property', 'payment', 'appreciation', 'rental', 'exit'];
+const SECTIONS: ConfiguratorSection[] = ['location', 'property', 'payment', 'appreciation', 'value', 'rental', 'exit', 'mortgage'];
 
 const SECTION_LABELS: Record<ConfiguratorSection, string> = {
   location: 'Location',
   property: 'Property',
   payment: 'Payment',
   appreciation: 'Growth',
+  value: 'Value',
   rental: 'Rental',
   exit: 'Exit',
+  mortgage: 'Mortgage',
 };
 
 // Confetti particle component
@@ -183,13 +186,15 @@ export const ConfiguratorLayout = ({
 
   // Client creation modal state
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [clientsRefreshKey, setClientsRefreshKey] = useState(0);
   const { createClient } = useClients();
-  
+
   const handleCreateClient = useCallback(async (data: { name: string; email?: string; phone?: string; country?: string; notes?: string }) => {
     const newClient = await createClient(data);
     if (newClient) {
-      // Auto-select the newly created client
+      // Auto-select the newly created client and force ClientSelector to refetch
       handleDbClientSelect(newClient.id, newClient);
+      setClientsRefreshKey(k => k + 1);
       toast.success(`Client "${newClient.name}" created and linked!`);
     }
   }, [createClient, handleDbClientSelect]);
@@ -265,7 +270,11 @@ export const ConfiguratorLayout = ({
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
       case 'rental':
         return inputs.rentalYieldPercent > 0;
+      case 'value':
+        return true; // Optional - complete when visited
       case 'exit':
+        return true; // Optional - complete when visited
+      case 'mortgage':
         return true; // Optional - complete when visited
       default:
         return false;
@@ -332,7 +341,11 @@ export const ConfiguratorLayout = ({
         return inputs.constructionAppreciation > 0 || inputs.growthAppreciation > 0 || inputs.matureAppreciation > 0;
       case 'rental':
         return inputs.rentalYieldPercent > 0;
+      case 'value':
+        return true;
       case 'exit':
+        return true;
+      case 'mortgage':
         return true;
       default:
         return true;
@@ -388,7 +401,7 @@ export const ConfiguratorLayout = ({
         return;
       }
       
-      if (e.key >= '1' && e.key <= '6') {
+      if (e.key >= '1' && e.key <= '8') {
         const index = parseInt(e.key) - 1;
         if (index < SECTIONS.length) {
           navigateToSection(SECTIONS[index]);
@@ -457,6 +470,7 @@ export const ConfiguratorLayout = ({
             dbClientId={clientInfo.dbClientId}
             onDbClientSelect={handleDbClientSelect}
             onCreateClient={() => setShowCreateClientModal(true)}
+            clientsRefreshKey={clientsRefreshKey}
             floorPlanUrl={floorPlanUrl}
             buildingRenderUrl={buildingRenderUrl}
             heroImageUrl={heroImageUrl}
@@ -497,9 +511,17 @@ export const ConfiguratorLayout = ({
             currency={currency}
           />
         );
+      case 'value':
+        return (
+          <ValueSection inputs={inputs} setInputs={setInputs} currency={currency} />
+        );
       case 'exit':
         return (
-          <ExitSection
+          <ExitSection inputs={inputs} setInputs={setInputs} currency={currency} />
+        );
+      case 'mortgage':
+        return (
+          <MortgageSection
             inputs={inputs}
             setInputs={setInputs}
             currency={currency}
@@ -661,7 +683,7 @@ export const ConfiguratorLayout = ({
               <span className="flex items-center gap-0.5">
                 <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">1</kbd>
                 <span>-</span>
-                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">6</kbd>
+                <kbd className="px-1 py-0.5 bg-theme-bg-alt/50 rounded border border-theme-border/50 text-[9px]">8</kbd>
               </span>
             </div>
           </div>

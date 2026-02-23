@@ -1,4 +1,4 @@
-import { OIInputs, OIHoldAnalysis } from "./useOICalculations";
+import { OIInputs, OIHoldAnalysis, monthName } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TrendingUp, Calendar, CreditCard, Home, Banknote } from "lucide-react";
@@ -22,7 +22,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
   // Calculate price per sqft
   const pricePerSqft = unitSizeSqf > 0 ? inputs.basePrice / unitSizeSqf : 0;
   
-  const { basePrice, downpaymentPercent, preHandoverPercent, additionalPayments, bookingMonth, bookingYear, handoverQuarter, handoverYear, oqoodFee } = inputs;
+  const { basePrice, downpaymentPercent, preHandoverPercent, additionalPayments, bookingMonth, bookingYear, handoverMonth, handoverYear, oqoodFee } = inputs;
   
   // DLD is 4%
   const dldFee = basePrice * 0.04;
@@ -95,7 +95,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
                 <span className="text-sm text-theme-text-muted">Timeline</span>
               </div>
               <span className="text-sm font-bold text-theme-text font-mono">
-                {monthNames[bookingMonth - 1]} {bookingYear} → Q{handoverQuarter} {handoverYear}
+                {monthNames[bookingMonth - 1]} {bookingYear} → {monthName(handoverMonth)} {handoverYear}
               </span>
             </div>
           )}
@@ -141,7 +141,7 @@ export const InvestmentSnapshot = ({ inputs, currency, totalMonths, totalEntryCo
           <>
             <div className="border-t border-theme-border my-2" />
             <div className="pt-2 text-xs text-theme-text-muted text-center">
-              {monthNames[bookingMonth - 1]} {bookingYear} → Q{handoverQuarter} {handoverYear}
+              {monthNames[bookingMonth - 1]} {bookingYear} → {monthName(handoverMonth)} {handoverYear}
             </div>
           </>
         )}

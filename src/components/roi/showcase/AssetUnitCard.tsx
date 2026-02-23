@@ -10,7 +10,7 @@ interface AssetUnitCardProps {
   unitSizeSqf?: number;
   basePrice: number;
   pricePerSqft?: number;
-  handoverQuarter?: string;
+  handoverLabel?: string;
   handoverYear?: number;
   currency: Currency;
   rate: number;
@@ -23,7 +23,7 @@ export const AssetUnitCard: React.FC<AssetUnitCardProps> = ({
   unitSizeSqf,
   basePrice,
   pricePerSqft,
-  handoverQuarter,
+  handoverLabel,
   handoverYear,
   currency,
   rate,
@@ -76,13 +76,13 @@ export const AssetUnitCard: React.FC<AssetUnitCardProps> = ({
         )}
 
         {/* Handover */}
-        {(handoverQuarter || handoverYear) && (
+        {(handoverLabel || handoverYear) && (
           <div className="flex items-start gap-2">
             <Calendar className="w-4 h-4 text-gray-500 mt-0.5" />
             <div>
               <p className="text-xs text-gray-500">Handover</p>
               <p className="text-sm font-semibold text-white">
-                {handoverQuarter && `${handoverQuarter} `}{handoverYear || 'TBD'}
+                {handoverLabel && `${handoverLabel} `}{handoverYear || 'TBD'}
               </p>
             </div>
           </div>

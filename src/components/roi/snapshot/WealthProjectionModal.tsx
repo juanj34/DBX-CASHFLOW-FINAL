@@ -18,7 +18,7 @@ interface WealthProjectionModalProps {
   currency: Currency;
   rate: number;
   // Handover props
-  handoverQuarter?: number;
+  handoverMonth?: number;
   handoverYear?: number;
   bookingMonth?: number;
 }
@@ -37,7 +37,7 @@ export const WealthProjectionModal = ({
   rentGrowthRate,
   currency,
   rate,
-  handoverQuarter,
+  handoverMonth,
   handoverYear,
   bookingMonth,
 }: WealthProjectionModalProps) => {
@@ -63,7 +63,7 @@ export const WealthProjectionModal = ({
           rentGrowthRate={rentGrowthRate}
           currency={currency}
           rate={rate}
-          handoverQuarter={handoverQuarter}
+          handoverMonth={handoverMonth}
           handoverYear={handoverYear}
           bookingMonth={bookingMonth}
         />

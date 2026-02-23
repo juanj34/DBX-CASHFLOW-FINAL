@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Camera, Zap, Briefcase, Moon, Settings, Check, Mail, Phone, Building2, Save, AlertTriangle } from 'lucide-react';
+import { User, Camera, Settings, Mail, Phone, Building2, Save, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
@@ -10,8 +10,6 @@ import { optimizeImage, PROFILE_AVATAR_CONFIG } from '@/lib/imageUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { ThemeKey, THEMES } from '@/config/themes';
 import { PageHeader, defaultShortcuts } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GrowthPresetsSection, MortgageDefaultsSection, AirbnbDefaultsSection, DifferentiatorsManager } from '@/components/settings';
@@ -24,7 +22,6 @@ const AccountSettings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
-  const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [fullName, setFullName] = useState('');
@@ -478,31 +475,6 @@ const AccountSettings = () => {
             {/* Custom Value Differentiators */}
             <DifferentiatorsManager language={language as 'en' | 'es'} />
 
-            {/* Theme Selection */}
-            <Card className="bg-theme-card border-theme-border">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-theme-text">{t('themePreference')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  {(Object.entries(THEMES) as [ThemeKey, typeof THEMES[ThemeKey]][]).map(([key, config]) => {
-                    const Icon = key === 'tech-dark' ? Zap : key === 'consultant' ? Briefcase : Moon;
-                    const isSelected = theme === key;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => setTheme(key)}
-                        className={`p-5 rounded-xl border-2 transition-all flex flex-col items-center ${isSelected ? 'border-theme-accent bg-theme-accent/10' : 'border-theme-border bg-theme-bg-alt hover:border-theme-border-alt'}`}
-                      >
-                        <Icon className={`w-7 h-7 mb-2 ${isSelected ? 'text-theme-accent' : 'text-theme-text-muted'}`} />
-                        <span className={`text-sm font-medium ${isSelected ? 'text-theme-text' : 'text-theme-text-muted'}`}>{config.name}</span>
-                        {isSelected && <div className="mt-2"><Check className="w-4 h-4 text-theme-accent" /></div>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>

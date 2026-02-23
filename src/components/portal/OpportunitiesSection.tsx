@@ -90,7 +90,7 @@ export const OpportunitiesSection = ({
           <Button 
             size="sm" 
             onClick={handleCompare}
-            className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+            className="bg-theme-accent text-white hover:bg-theme-accent/90"
           >
             Compare Side by Side
           </Button>
@@ -169,7 +169,7 @@ export const OpportunitiesSection = ({
                     <Button
                       size="sm"
                       onClick={() => window.open(`/view/${quote.share_token}?currency=${currency}&lang=${language}`, '_blank')}
-                      className="flex-1 bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+                      className="flex-1 bg-theme-accent text-white hover:bg-theme-accent/90"
                     >
                       <Eye className="w-3.5 h-3.5 mr-1.5" />
                       View

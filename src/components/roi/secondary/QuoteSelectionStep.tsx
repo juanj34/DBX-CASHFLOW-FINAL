@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuotesList, CashflowQuote } from '@/hooks/useCashflowQuote';
 import { formatCurrency } from '@/components/roi/currencyUtils';
-import { OIInputs } from '@/components/roi/useOICalculations';
+import { OIInputs, monthName } from '@/components/roi/useOICalculations';
 
 interface QuoteSelectionStepProps {
   selectedQuoteId?: string;
@@ -60,7 +60,7 @@ export const QuoteSelectionStep = ({
 
   const getHandoverInfo = (inputs: OIInputs | undefined) => {
     if (!inputs) return null;
-    return `Q${inputs.handoverQuarter} ${inputs.handoverYear}`;
+    return `${monthName(inputs.handoverMonth)} ${inputs.handoverYear}`;
   };
 
   if (loading) {

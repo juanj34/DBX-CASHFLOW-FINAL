@@ -1,4 +1,4 @@
-import { OIInputs } from "./useOICalculations";
+import { OIInputs, monthName } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Wallet, TrendingUp, Home } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -16,7 +16,7 @@ const DLD_FEE_PERCENT = 4;
 
 export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, vertical = false }: PaymentSummaryCardsProps) => {
   const { t, language } = useLanguage();
-  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverMonth, handoverYear } = inputs;
 
   // Calculate Initial Cash Required (Booking + DLD + Oqood + Downpayment)
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
@@ -28,8 +28,7 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
   
   // Calculate construction period in months
   const bookingDate = new Date(bookingYear, bookingMonth - 1, 1);
-  const handoverMonth = (handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(handoverYear, handoverMonth, 1);
+  const handoverDate = new Date(handoverYear, handoverMonth - 1, 1);
   const constructionMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
   
   const monthlyBurnRate = additionalTotal > 0 && constructionMonths > 0 
@@ -41,8 +40,7 @@ export const PaymentSummaryCards = ({ inputs, currency, rate, totalMonths, verti
   const handoverBalance = basePrice * handoverPercent / 100;
 
   // Format handover date
-  const quarterLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
-  const handoverLabel = `${quarterLabels[handoverQuarter - 1]} ${handoverYear}`;
+  const handoverLabel = `${monthName(handoverMonth)} ${handoverYear}`;
 
   // Format booking date
   const monthNamesShort = language === 'es' 

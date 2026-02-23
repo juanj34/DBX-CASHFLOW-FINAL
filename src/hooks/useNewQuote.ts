@@ -40,26 +40,14 @@ export const useNewQuote = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // DELETE the working draft entirely so a fresh row is created next time
     await supabase
       .from('cashflow_quotes')
-      .update({
-        inputs: {} as any,
-        client_name: null,
-        client_id: null,
-        client_country: null,
-        client_email: null,
-        project_name: null,
-        developer: null,
-        unit: null,
-        unit_type: null,
-        unit_size_sqf: null,
-        unit_size_m2: null,
-        title: null,
-      })
+      .delete()
       .eq('broker_id', user.id)
       .eq('status', 'working_draft');
-    
-    console.log('[useNewQuote] Cleared working draft in DB');
+
+    console.log('[useNewQuote] Deleted working draft from DB');
   }, []);
 
   /**

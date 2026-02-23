@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
 interface ExtractedInstallment {
   id?: string;
@@ -30,7 +30,8 @@ interface ExtractedPaymentPlan {
   paymentStructure: {
     paymentSplit?: string;
     hasPostHandover: boolean;
-    handoverQuarter?: number;
+    handoverMonth?: number;
+    handoverQuarter?: number; // legacy
     handoverYear?: number;
     handoverMonthFromBooking?: number;
     onHandoverPercent?: number;
@@ -152,6 +153,20 @@ Apply these rules:
 - In post-handover plans, handover payment may be 0% or small with remaining balance spread across post-handover installments
 - Confidence score: 90+ for clear text, 70-89 for partially visible, below 70 for inferred data
 
+=== HANDOVER DETECTION FROM PAYMENT PATTERNS (NO EXPLICIT LABEL) ===
+Sometimes the payment schedule has NO explicit "handover" or "completion" label.
+In numbered payment plans like "1st Payment, 2nd Payment, 3rd Payment...", detect the handover by looking for:
+1. A PERCENTAGE SPIKE: A payment significantly larger than surrounding payments (e.g., 20% surrounded by 0.5% and 1% payments)
+2. A PHASE CHANGE: Payments before the spike have one pattern (e.g., 0.5% monthly), payments after have a different pattern (e.g., 1% monthly)
+3. TYPICAL POSITION: The spike usually falls 60-80% through the total payment count
+
+Example: Down Payment 20%, then 28 monthly at 0.5%/4.5% mix, then ONE payment at 20%, then 30 monthly at 1%
+- The 20% spike is the HANDOVER payment → type: "handover"
+- The 30 monthly payments after it are POST-HANDOVER → type: "post-handover"
+- hasPostHandover = true
+
+ALWAYS classify such spike payments as type: "handover" and subsequent payments as type: "post-handover".
+
 UNIT TYPE MAPPING:
 - "Studio", "ST" → "studio"
 - "1BR", "1 Bed", "1 Bedroom" → "1br"
@@ -253,10 +268,9 @@ const extractionTool = {
               type: "number",
               description: "CRITICAL: Month number from booking when handover occurs. For 'Completion' after 'In 26 months', set to 27 (completion is NEXT month). Always calculate this from the payment schedule."
             },
-            handoverQuarter: { 
-              type: "number", 
-              enum: [1, 2, 3, 4],
-              description: "Expected handover quarter (Q1=1, Q2=2, Q3=3, Q4=4) - extract if explicitly stated" 
+            handoverMonth: {
+              type: "number",
+              description: "Expected handover month (1-12, e.g., 6 for June) - extract if explicitly stated"
             },
             handoverYear: { 
               type: "number", 
@@ -325,8 +339,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const { images, bookingDate } = await req.json();
@@ -478,15 +492,15 @@ CRITICAL INSTRUCTIONS:
       throw new Error("No valid content to analyze. Please upload images, PDFs, or Excel files.");
     }
 
-    // Call Lovable AI Gateway with Gemini 3 Flash Preview
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call Lovable Gemini API with Gemini 3 Flash Preview
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${GEMINI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: contentParts }
@@ -500,7 +514,7 @@ CRITICAL INSTRUCTIONS:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -521,7 +535,7 @@ CRITICAL INSTRUCTIONS:
         );
       }
       
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const aiResponse = await response.json();
@@ -529,7 +543,7 @@ CRITICAL INSTRUCTIONS:
 
     // Check if the AI gateway returned an error object instead of valid data
     if (aiResponse.error) {
-      console.error("AI Gateway returned error:", aiResponse.error);
+      console.error("Gemini API returned error:", aiResponse.error);
       
       const errorMessage = aiResponse.error.message === "Internal Server Error"
         ? "The AI service encountered an issue processing your file. Please try with a smaller image or a different file format."
@@ -658,9 +672,73 @@ CRITICAL INSTRUCTIONS:
       }
     }
 
+    // Fallback 7: Detect handover from payment pattern when ALL payments are type 'time'
+    // This handles PDFs with no explicit "handover"/"completion" label (e.g., numbered payments only)
+    const hasHandoverType = extractedData.installments.some(i => i.type === 'handover');
+    const hasPostHandoverType = extractedData.installments.some(i => i.type === 'post-handover');
+
+    if (!hasHandoverType && !hasPostHandoverType) {
+      // All payments are type 'time' — look for a percentage spike that indicates the handover
+      const timePayments = extractedData.installments
+        .filter(i => i.type === 'time' && i.triggerValue > 0)
+        .sort((a, b) => a.triggerValue - b.triggerValue);
+
+      if (timePayments.length > 5) {
+        // Calculate the median of small payments (exclude top 2 largest)
+        const percentages = timePayments.map(p => p.paymentPercent).sort((a, b) => a - b);
+        const medianIdx = Math.floor(percentages.length / 2);
+        const median = percentages[medianIdx];
+
+        // Find a "spike" payment: significantly larger than the median AND followed by payments
+        // that are different from the pre-spike pattern (indicates a phase change)
+        for (let i = 1; i < timePayments.length - 1; i++) {
+          const payment = timePayments[i];
+          const prevPayments = timePayments.slice(0, i);
+          const nextPayments = timePayments.slice(i + 1);
+
+          // The spike should be at least 5x the median AND there should be payments after it
+          if (payment.paymentPercent >= median * 5 && nextPayments.length >= 3) {
+            // Check if this looks like a handover: payments before AND after are smaller
+            const avgBefore = prevPayments.reduce((s, p) => s + p.paymentPercent, 0) / prevPayments.length;
+            const avgAfter = nextPayments.reduce((s, p) => s + p.paymentPercent, 0) / nextPayments.length;
+
+            // Both sides should have smaller payments than the spike
+            if (payment.paymentPercent > avgBefore * 3 && payment.paymentPercent > avgAfter * 3) {
+              console.log(`[Fallback 7] Detected handover from payment pattern: Month ${payment.triggerValue} at ${payment.paymentPercent}%`);
+
+              // Reclassify: spike = handover, everything after = post-handover
+              payment.type = 'handover';
+              const handoverMonth = payment.triggerValue;
+
+              for (const inst of nextPayments) {
+                inst.type = 'post-handover';
+                inst.isPostHandover = true;
+              }
+
+              // Update payment structure
+              extractedData.paymentStructure.hasPostHandover = true;
+              extractedData.paymentStructure.handoverMonthFromBooking = handoverMonth;
+              extractedData.paymentStructure.onHandoverPercent = payment.paymentPercent;
+              extractedData.paymentStructure.postHandoverPercent = nextPayments.reduce((s, p) => s + p.paymentPercent, 0);
+
+              // Recalculate paymentSplit
+              const preHandoverTotal = extractedData.installments
+                .filter(i => i.type === 'time')
+                .reduce((s, i) => s + i.paymentPercent, 0);
+              extractedData.paymentStructure.paymentSplit =
+                `${Math.round(preHandoverTotal)}/${Math.round(100 - preHandoverTotal)}`;
+
+              console.log(`[Fallback 7] Reclassified: ${nextPayments.length} post-handover payments, split: ${extractedData.paymentStructure.paymentSplit}`);
+              break;
+            }
+          }
+        }
+      }
+    }
+
     // Validate that percentages sum to 100
     const totalPercent = extractedData.installments.reduce(
-      (sum, inst) => sum + inst.paymentPercent, 
+      (sum, inst) => sum + inst.paymentPercent,
       0
     );
     

@@ -8,7 +8,7 @@ import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { calculateAutoExitScenarios } from '@/components/roi/ExitScenariosCards';
 import { CashflowPrintContent } from '@/components/roi/cashflow/CashflowPrintContent';
-import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 
 const CashflowPrintInner = () => {
@@ -24,12 +24,7 @@ const CashflowPrintInner = () => {
     floorPlanUrl: null,
     buildingRenderUrl: null,
   });
-  const { setTheme } = useTheme();
-
-  // Apply tech-dark theme for consistent screenshot
-  useEffect(() => {
-    setTheme('tech-dark');
-  }, [setTheme]);
+  // Theme is now single blue/white — no need to force a specific theme
 
   const { rate } = useExchangeRate(currency);
 

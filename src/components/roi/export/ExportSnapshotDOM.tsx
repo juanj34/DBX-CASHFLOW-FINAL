@@ -261,9 +261,9 @@ export const ExportSnapshotDOM = ({
         currency={currency}
         rate={rate}
         language={language}
-        handoverQuarter={(inputs as any).handoverQuarter}
-        handoverYear={(inputs as any).handoverYear}
-        bookingMonth={(inputs as any).bookingMonth}
+        handoverMonth={inputs.handoverMonth}
+        handoverYear={inputs.handoverYear}
+        bookingMonth={inputs.bookingMonth}
       />
     </div>
   );

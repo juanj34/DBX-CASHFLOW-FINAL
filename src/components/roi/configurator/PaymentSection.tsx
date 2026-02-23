@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Clock, Building2, Key, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Calendar, Zap, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, Clock, Building2, Key, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Calendar, Sparkles, Upload, FileImage, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -23,28 +23,24 @@ const getPaymentDate = (monthsFromBooking: number, bookingMonth: number, booking
 };
 
 // Check if a payment is after handover
-const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+const isPaymentPostHandover = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverMonth: number, handoverYear: number): boolean => {
   const paymentDate = getPaymentDate(monthsFromBooking, bookingMonth, bookingYear);
-  const handoverMonth = (handoverQuarter - 1) * 3 + 1;
   const handoverDate = new Date(handoverYear, handoverMonth - 1);
   return paymentDate >= handoverDate;
 };
 
-// Check if payment falls in handover quarter
-const isPaymentInHandoverQuarter = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverQuarter: number, handoverYear: number): boolean => {
+// Check if payment falls in handover month
+const isPaymentInHandoverMonth = (monthsFromBooking: number, bookingMonth: number, bookingYear: number, handoverMonth: number, handoverYear: number): boolean => {
   const paymentDate = getPaymentDate(monthsFromBooking, bookingMonth, bookingYear);
-  const handoverQuarterStart = new Date(handoverYear, (handoverQuarter - 1) * 3);
-  const handoverQuarterEnd = new Date(handoverYear, handoverQuarter * 3);
-  return paymentDate >= handoverQuarterStart && paymentDate < handoverQuarterEnd;
+  const handoverStart = new Date(handoverYear, handoverMonth - 1);
+  const handoverEnd = new Date(handoverYear, handoverMonth);
+  return paymentDate >= handoverStart && paymentDate < handoverEnd;
 };
 
 export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSectionProps) => {
   const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
   const [showCustomSplit, setShowCustomSplit] = useState(false);
   const [customPreHandover, setCustomPreHandover] = useState('');
-  const [numPayments, setNumPayments] = useState(4);
-  const [paymentInterval, setPaymentInterval] = useState(3);
-  const [paymentPercent, setPaymentPercent] = useState(5);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   const [preloadedFiles, setPreloadedFiles] = useState<FileWithPreview[]>([]);
 
@@ -55,14 +51,14 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const preHandoverPayments = hasPostHandoverPlan 
     ? inputs.additionalPayments.filter(p => {
         if (p.type !== 'time') return true;
-        return !isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
+        return !isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverMonth, inputs.handoverYear);
       })
     : inputs.additionalPayments;
 
   const postHandoverPayments = hasPostHandoverPlan
     ? inputs.additionalPayments.filter(p => {
         if (p.type !== 'time') return false;
-        return isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverQuarter, inputs.handoverYear);
+        return isPaymentPostHandover(p.triggerValue, inputs.bookingMonth, inputs.bookingYear, inputs.handoverMonth, inputs.handoverYear);
       })
     : [];
   
@@ -113,9 +109,9 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       ? Math.max(...inputs.additionalPayments.filter(p => p.type === 'time').map(p => p.triggerValue))
       : 0;
     const newPayment: PaymentMilestone = {
-      id: newId, 
-      type: 'time' as const, 
-      triggerValue: lastMonth + 3, 
+      id: newId,
+      type: 'time' as const,
+      triggerValue: lastMonth + 1,
       paymentPercent: lastPaymentPercent
     };
     setInputs(prev => ({
@@ -199,65 +195,93 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     }
   };
 
-  const handleGeneratePayments = () => {
-    const newPayments: PaymentMilestone[] = [];
-    
-    for (let i = 0; i < numPayments; i++) {
-      newPayments.push({
-        id: `auto-${Date.now()}-${i}`,
-        type: 'time',
-        triggerValue: paymentInterval * (i + 1),
-        paymentPercent: paymentPercent
-      });
-    }
-    
-    setInputs(prev => ({
-      ...prev,
-      additionalPayments: newPayments
-    }));
-    setShowInstallments(true);
-  };
-
   // Handle AI extraction result
   const handleAIExtraction = (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => {
     const appliedBookingMonth = bookingDate.month;
     const appliedBookingYear = bookingDate.year;
-    
+
+    const downpayment = data.installments.find(
+      i => i.type === 'time' && i.triggerValue === 0
+    );
+    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
+
+    // Client-side fallback: detect handover from payment pattern if AI didn't classify it
+    // Must run BEFORE handoverPayment lookup so the reclassified types are found
+    const hasAnyHandoverType = data.installments.some(i => i.type === 'handover');
+    const hasAnyPostHandoverType = data.installments.some(i => i.type === 'post-handover');
+    if (!hasAnyHandoverType && !hasAnyPostHandoverType) {
+      const timePayments = data.installments
+        .filter(i => i.type === 'time' && i.triggerValue > 0)
+        .sort((a, b) => a.triggerValue - b.triggerValue);
+
+      if (timePayments.length > 5) {
+        const percentages = timePayments.map(p => p.paymentPercent).sort((a, b) => a - b);
+        const median = percentages[Math.floor(percentages.length / 2)];
+
+        for (let i = 1; i < timePayments.length - 1; i++) {
+          const payment = timePayments[i];
+          const nextPayments = timePayments.slice(i + 1);
+
+          if (payment.paymentPercent >= median * 5 && nextPayments.length >= 3) {
+            const prevPayments = timePayments.slice(0, i);
+            const avgBefore = prevPayments.reduce((s, p) => s + p.paymentPercent, 0) / prevPayments.length;
+            const avgAfter = nextPayments.reduce((s, p) => s + p.paymentPercent, 0) / nextPayments.length;
+
+            if (payment.paymentPercent > avgBefore * 3 && payment.paymentPercent > avgAfter * 3) {
+              console.log(`[handleAIExtraction] Detected handover from pattern: Month ${payment.triggerValue} at ${payment.paymentPercent}%`);
+              payment.type = 'handover';
+              for (const inst of nextPayments) {
+                inst.type = 'post-handover';
+                (inst as any).isPostHandover = true;
+              }
+              data.paymentStructure.hasPostHandover = true;
+              data.paymentStructure.handoverMonthFromBooking = payment.triggerValue;
+              data.paymentStructure.onHandoverPercent = payment.paymentPercent;
+              data.paymentStructure.postHandoverPercent = nextPayments.reduce((s, p) => s + p.paymentPercent, 0);
+              const preHOTotal = data.installments
+                .filter(i => i.type === 'time')
+                .reduce((s, i) => s + i.paymentPercent, 0);
+              data.paymentStructure.paymentSplit = `${Math.round(preHOTotal)}/${Math.round(100 - preHOTotal)}`;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Lookup handover payment AFTER potential reclassification above
     const handoverPayment = data.installments.find(i => i.type === 'handover');
-    
-    let handoverMonth: number | undefined = undefined;
+
+    // Calculate handover date from various sources
+    let handoverMonth: number = inputs.handoverMonth;
     let handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
-    let handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
-    
+
     if (handoverPayment && handoverPayment.triggerValue > 0) {
       const bookingDateObj = new Date(appliedBookingYear, appliedBookingMonth - 1);
       const handoverDateObj = new Date(bookingDateObj);
       handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverPayment.triggerValue);
-      
+
       handoverMonth = handoverDateObj.getMonth() + 1;
       handoverYear = handoverDateObj.getFullYear();
-      handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
     } else if (data.paymentStructure.handoverMonthFromBooking) {
       const handoverMonths = data.paymentStructure.handoverMonthFromBooking;
       const bookingDateObj = new Date(appliedBookingYear, appliedBookingMonth - 1);
       const handoverDateObj = new Date(bookingDateObj);
       handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverMonths);
-      
+
       handoverMonth = handoverDateObj.getMonth() + 1;
       handoverYear = handoverDateObj.getFullYear();
-      handoverQuarter = (Math.ceil(handoverMonth / 3)) as 1 | 2 | 3 | 4;
-    } else if (data.paymentStructure.handoverQuarter || data.paymentStructure.handoverYear) {
-      handoverQuarter = data.paymentStructure.handoverQuarter || inputs.handoverQuarter;
+    } else if (data.paymentStructure.handoverMonth) {
+      handoverMonth = data.paymentStructure.handoverMonth;
       handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
-      handoverMonth = (handoverQuarter - 1) * 3 + 1;
+    } else if (data.paymentStructure.handoverQuarter) {
+      // Legacy: derive month from quarter
+      const q = data.paymentStructure.handoverQuarter;
+      handoverMonth = q === 1 ? 2 : q === 2 ? 5 : q === 3 ? 8 : 11;
+      handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
     }
-    
-    const downpayment = data.installments.find(
-      i => i.type === 'time' && i.triggerValue === 0
-    );
-    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
-    
-    const postHandoverInstallments = data.installments.filter(i => 
+
+    const postHandoverInstallments = data.installments.filter(i =>
       i.type === 'post-handover'
     );
     const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
@@ -294,16 +318,26 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     };
     
     // Separate post-handover installments for the dedicated array
-    const postHandoverPaymentsMapped = hasPostHandover 
+    // Convert absolute months from booking to relative months after handover
+    const handoverMonthFromBooking = data.paymentStructure.handoverMonthFromBooking
+      || handoverPayment?.triggerValue
+      || 0;
+
+    const postHandoverPaymentsMapped = hasPostHandover
       ? data.installments
           .filter(i => i.type === 'post-handover')
-          .map((inst, idx) => ({
-            id: inst.id || `ai-post-${Date.now()}-${idx}`,
-            type: 'time' as const,
-            triggerValue: inst.triggerValue,
-            paymentPercent: inst.paymentPercent,
-            isPostHandover: true as const,
-          }))
+          .map((inst, idx) => {
+            // AI extraction returns absolute months from booking; convert to relative
+            const relativeMonths = handoverMonthFromBooking > 0
+              ? inst.triggerValue - handoverMonthFromBooking
+              : inst.triggerValue;
+            return {
+              id: inst.id || `ai-post-${Date.now()}-${idx}`,
+              type: 'post-handover' as const,
+              triggerValue: Math.max(1, relativeMonths),
+              paymentPercent: inst.paymentPercent,
+            };
+          })
           .sort((a, b) => a.triggerValue - b.triggerValue)
       : [];
 
@@ -358,7 +392,6 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
       postHandoverPercent: postHandoverTotal || data.paymentStructure.postHandoverPercent || 0,
       postHandoverPayments: postHandoverPaymentsMapped,
       handoverMonth,
-      handoverQuarter,
       handoverYear,
       ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
       ...(data.property?.unitSizeSqft && { unitSizeSqf: data.property.unitSizeSqft }),
@@ -369,22 +402,51 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
 
   return (
     <div className="space-y-4">
-      {/* Section Header with AI Import */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-theme-text">Payment Plan</h3>
-          <p className="text-sm text-theme-text-muted">Configure your payment schedule</p>
+      {/* Section Header */}
+      <div>
+        <h3 className="text-lg font-semibold text-theme-text">Payment Plan</h3>
+      </div>
+
+      {/* AI Import — Primary action, shown first */}
+      <div className="rounded-xl border-2 border-dashed border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 space-y-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-purple-400" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold text-theme-text">AI Payment Plan Import</h4>
+            <p className="text-xs text-theme-text-muted">Upload a PDF or screenshot — AI extracts the full payment schedule</p>
+          </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowAIExtractor(true)}
-          className="text-purple-400 hover:bg-purple-500/10 h-7 gap-1.5 px-2"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span className="text-xs">AI Import</span>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowAIExtractor(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white gap-2 h-9 px-4 font-medium"
+          >
+            <Upload className="w-4 h-4" />
+            Upload PDF / Image
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPreloadedFiles([]);
+              setShowAIExtractor(true);
+            }}
+            className="border-purple-500/40 text-purple-400 hover:bg-purple-500/10 gap-2 h-9 px-4"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Describe Plan
+          </Button>
+        </div>
+        <div className="flex items-center gap-4 text-[11px] text-theme-text-muted">
+          <span className="flex items-center gap-1"><FileImage className="w-3 h-3" /> PNG, JPG, PDF</span>
+          <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI-powered extraction</span>
+          <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Auto-fills all fields</span>
+        </div>
       </div>
 
       {/* AI Extractor Sheet */}
@@ -400,8 +462,8 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         initialFiles={preloadedFiles}
       />
 
-      {/* AI Drop Zone */}
-      <AIExtractorDropZone 
+      {/* AI Drop Zone — drag-and-drop anywhere on the section */}
+      <AIExtractorDropZone
         onFilesDropped={(files) => {
           setPreloadedFiles(files);
           setShowAIExtractor(true);
@@ -480,7 +542,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                 size="sm"
                 onClick={applyCustomSplit}
                 disabled={!customPreHandover || parseInt(customPreHandover) < 10 || parseInt(customPreHandover) > 90}
-                className="h-6 px-1.5 bg-theme-accent text-black hover:bg-theme-accent/90 text-[9px]"
+                className="h-6 px-1.5 bg-theme-accent text-white hover:bg-theme-accent/90 text-[9px]"
               >
                 OK
               </Button>
@@ -529,76 +591,42 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
-      {/* Step 3: Installment Generator */}
+      {/* Step 3: Installments */}
       {hasSplitSelected && inputs.downpaymentPercent > 0 && (
         <div className="space-y-2 animate-fade-in">
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-4 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent">3</div>
             <span className="text-xs font-medium text-theme-text">Installments</span>
           </div>
-          
-          {/* Generator Row */}
-          <div className="flex items-center gap-2 pl-5">
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={numPayments}
-              onChange={(e) => setNumPayments(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
-              className="w-10 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-text font-mono text-xs"
-            />
-            <span className="text-[10px] text-theme-text-muted">×</span>
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={paymentPercent}
-              onChange={(e) => {
-                const val = e.target.value === '' ? 0.5 : parseFloat(e.target.value);
-                if (!isNaN(val)) {
-                  setPaymentPercent(Math.min(50, Math.max(0.1, val)));
-                }
-              }}
-              className="w-12 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-accent font-mono text-xs"
-            />
-            <span className="text-[10px] text-theme-text-muted">% every</span>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={paymentInterval}
-              onChange={(e) => setPaymentInterval(Math.min(24, Math.max(1, parseInt(e.target.value) || 1)))}
-              className="w-10 h-7 text-center bg-theme-bg-alt border-theme-border text-theme-text font-mono text-xs"
-            />
-            <span className="text-[10px] text-theme-text-muted">mo</span>
-            <span className="text-[10px] text-theme-text-muted">=</span>
-            <span className="text-xs text-theme-accent font-mono font-medium">{(numPayments * paymentPercent).toFixed(1)}%</span>
-            <Button
-              type="button"
-              onClick={handleGeneratePayments}
-              size="sm"
-              className="h-7 px-2 bg-theme-accent text-black hover:bg-theme-accent/90 font-semibold text-xs ml-auto"
-            >
-              <Zap className="w-3 h-3 mr-1" />
-              Generate
-            </Button>
-          </div>
 
-          {/* Installments List */}
-          {inputs.additionalPayments.length > 0 && (
-            <div className="pl-5 space-y-1.5">
-              <div className="flex justify-between items-center py-1">
+          {/* Add Payment + Summary Row */}
+          <div className="pl-5">
+            <div className="flex justify-between items-center py-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  addAdditionalPayment();
+                  setShowInstallments(true);
+                }}
+                className="h-7 text-xs px-3 border-dashed border-theme-border text-theme-text-muted hover:bg-theme-card hover:text-theme-text"
+              >
+                <Plus className="w-3 h-3 mr-1" /> Add Payment
+              </Button>
+              {inputs.additionalPayments.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-theme-text-muted">{inputs.additionalPayments.length} payments</span>
                   <span className={cn(
                     "text-xs px-1.5 py-0.5 rounded font-mono",
-                    remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' : 
-                    remainingToDistribute < -0.5 ? 'bg-red-500/20 text-red-400' : 
+                    remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' :
+                    remainingToDistribute < -0.5 ? 'bg-red-500/20 text-red-400' :
                     'bg-green-500/20 text-green-400'
                   )}>
-                    {remainingToDistribute > 0.5 ? `${remainingToDistribute.toFixed(1)}% left` : 
-                    remainingToDistribute < -0.5 ? `${Math.abs(remainingToDistribute).toFixed(1)}% over` : 
+                    {remainingToDistribute > 0.5 ? `${remainingToDistribute.toFixed(1)}% left` :
+                    remainingToDistribute < -0.5 ? `${Math.abs(remainingToDistribute).toFixed(1)}% over` :
                     '✓ balanced'}
                   </span>
-                </div>
-                <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     onClick={handleResetPayments}
@@ -618,30 +646,34 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                     {showInstallments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </Button>
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
 
-              {showInstallments && (
-                <div className="space-y-1 max-h-[40vh] overflow-y-auto border-t border-theme-border/30 pt-2">
+          {/* Installments List */}
+          {inputs.additionalPayments.length > 0 && showInstallments && (
+            <div className="pl-5 space-y-1.5">
+              <div className="space-y-1 max-h-[40vh] overflow-y-auto border-t border-theme-border/30 pt-2">
                   {inputs.additionalPayments.map((payment, index) => {
                     const paymentDate = payment.type === 'time' 
                       ? getPaymentDate(payment.triggerValue, inputs.bookingMonth, inputs.bookingYear)
                       : null;
                     const isPostHO = payment.type === 'time' && isPaymentPostHandover(
-                      payment.triggerValue, 
-                      inputs.bookingMonth, 
-                      inputs.bookingYear, 
-                      inputs.handoverQuarter, 
+                      payment.triggerValue,
+                      inputs.bookingMonth,
+                      inputs.bookingYear,
+                      inputs.handoverMonth,
                       inputs.handoverYear
                     );
-                    const isHandoverQuarter = payment.type === 'time' && isPaymentInHandoverQuarter(
-                      payment.triggerValue, 
-                      inputs.bookingMonth, 
-                      inputs.bookingYear, 
-                      inputs.handoverQuarter, 
+                    const isInHandoverMonth = payment.type === 'time' && isPaymentInHandoverMonth(
+                      payment.triggerValue,
+                      inputs.bookingMonth,
+                      inputs.bookingYear,
+                      inputs.handoverMonth,
                       inputs.handoverYear
                     );
                     const isExplicitHandover = payment.isHandover === true;
-                    const showHandoverBadge = isExplicitHandover || isHandoverQuarter;
+                    const showHandoverBadge = isExplicitHandover || isInHandoverMonth;
                     
                     return (
                       <div 
@@ -649,7 +681,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                         className={cn(
                           "flex items-center gap-1.5 py-1.5 px-2 rounded-lg",
                           isExplicitHandover ? "bg-green-500/15 border border-green-500/40" :
-                          isHandoverQuarter ? "bg-green-500/10" :
+                          isInHandoverMonth ? "bg-green-500/10" :
                           isPostHO ? "bg-purple-500/10" : 
                           "bg-theme-bg/50"
                         )}
@@ -657,7 +689,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                         <span className={cn(
                           "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0",
                           isPostHO ? "bg-purple-500/30 text-purple-400" :
-                          isHandoverQuarter ? "bg-green-500/30 text-green-400" :
+                          isInHandoverMonth ? "bg-green-500/30 text-green-400" :
                           "bg-theme-border text-theme-text-muted"
                         )}>
                           {index + 1}
@@ -815,18 +847,7 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                       </div>
                     );
                   })}
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addAdditionalPayment}
-                    className="w-full h-6 text-[10px] border-dashed border-theme-border text-theme-text-muted hover:bg-theme-card hover:text-theme-text mt-1"
-                  >
-                    <Plus className="w-3 h-3 mr-1" /> Add Payment
-                  </Button>
                 </div>
-              )}
             </div>
           )}
         </div>

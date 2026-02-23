@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/contexts/ThemeContext";
 
 interface AppLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -10,16 +9,13 @@ interface AppLogoProps {
   className?: string;
 }
 
-export const AppLogo = ({ 
-  size = 'md', 
-  collapsed = false, 
+export const AppLogo = ({
+  size = 'md',
+  collapsed = false,
   linkTo = '/home',
   showGlow = false,
-  className 
+  className
 }: AppLogoProps) => {
-  const { theme } = useTheme();
-  const isLightTheme = theme === 'consultant';
-  
   const sizeClasses = {
     sm: { container: 'w-7 h-7', icon: 'w-3.5 h-3.5', text: 'text-sm' },
     md: { container: 'w-8 h-8', icon: 'w-4 h-4', text: 'text-sm' },
@@ -31,73 +27,35 @@ export const AppLogo = ({
   const logoContent = (
     <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5", className)}>
       <div className="relative flex-shrink-0">
-        {/* Logo container - black bg with gold icon on light, gradient border on dark */}
         <div className={cn(
           sizes.container,
-          "rounded-lg flex items-center justify-center",
-          isLightTheme 
-            ? "bg-gray-900" 
-            : "bg-gradient-to-br from-theme-accent via-theme-accent-secondary to-theme-accent p-[1.5px]"
+          "rounded-lg flex items-center justify-center bg-theme-accent"
         )}>
-          {isLightTheme ? (
-            <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
-              <path 
-                d="M12 2L2 7L12 12L22 7L12 2Z" 
-                stroke="currentColor" 
-                className="text-theme-accent"
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-              <path 
-                d="M2 17L12 22L22 17" 
-                stroke="currentColor" 
-                className="text-theme-accent"
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-              <path 
-                d="M2 12L12 17L22 12" 
-                stroke="currentColor" 
-                className="text-theme-accent"
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </svg>
-          ) : (
-            <div className="w-full h-full rounded-[6px] bg-theme-card flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
-                <path 
-                  d="M12 2L2 7L12 12L22 7L12 2Z" 
-                  stroke="currentColor" 
-                  className="text-theme-accent"
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-                <path 
-                  d="M2 17L12 22L22 17" 
-                  stroke="currentColor" 
-                  className="text-theme-accent"
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-                <path 
-                  d="M2 12L12 17L22 12" 
-                  stroke="currentColor" 
-                  className="text-theme-accent"
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          )}
+          <svg viewBox="0 0 24 24" className={sizes.icon} fill="none">
+            <path
+              d="M12 2L2 7L12 12L22 7L12 2Z"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 17L12 22L22 17"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 12L12 17L22 12"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
-        {showGlow && !isLightTheme && (
+        {showGlow && (
           <div className="absolute -inset-1 bg-theme-accent rounded-lg blur opacity-20" />
         )}
       </div>

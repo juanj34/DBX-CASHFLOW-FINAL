@@ -19,43 +19,59 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
-    // Calculate 24 hours ago
+    // Calculate time thresholds
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+
     console.log(`Deleting empty drafts older than: ${twentyFourHoursAgo}`)
-    
-    // Delete empty drafts older than 24 hours
+    console.log(`Deleting stale working_drafts older than: ${fortyEightHoursAgo}`)
+
+    // 1. Delete empty drafts (status='draft') older than 24 hours
     // Empty = no client_name, no project_name, and no meaningful inputs
-    // IMPORTANT: Skip 'working_draft' status - these are active user sessions
     const { data: deletedDrafts, error } = await supabase
       .from('cashflow_quotes')
       .delete()
       .eq('status', 'draft')
-      .neq('status', 'working_draft')
       .is('client_name', null)
       .is('project_name', null)
       .lt('created_at', twentyFourHoursAgo)
       .select('id')
-    
+
     if (error) {
       console.error('Error deleting empty drafts:', error)
       return new Response(
         JSON.stringify({ error: error.message }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
-    
-    const deletedCount = deletedDrafts?.length || 0
-    console.log(`Successfully deleted ${deletedCount} empty drafts`)
+
+    // 2. Delete stale working_drafts older than 48 hours with no content
+    // These are abandoned sessions that never got meaningful data
+    const { data: deletedWorkingDrafts, error: wdError } = await supabase
+      .from('cashflow_quotes')
+      .delete()
+      .eq('status', 'working_draft')
+      .is('client_name', null)
+      .is('project_name', null)
+      .lt('updated_at', fortyEightHoursAgo)
+      .select('id')
+
+    if (wdError) {
+      console.error('Error deleting stale working drafts:', wdError)
+    }
+
+    const deletedCount = (deletedDrafts?.length || 0) + (deletedWorkingDrafts?.length || 0)
+    console.log(`Successfully deleted ${deletedDrafts?.length || 0} empty drafts and ${deletedWorkingDrafts?.length || 0} stale working drafts`)
     
     return new Response(
       JSON.stringify({ 
         success: true, 
         deleted_count: deletedCount,
-        deleted_ids: deletedDrafts?.map(d => d.id) || []
+        deleted_draft_ids: deletedDrafts?.map(d => d.id) || [],
+        deleted_working_draft_ids: deletedWorkingDrafts?.map(d => d.id) || []
       }),
       { 
         status: 200, 

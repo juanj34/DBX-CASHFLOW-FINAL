@@ -230,7 +230,7 @@ const ClientsManager = () => {
                 <p className="text-theme-text-muted mb-4">Create your first client to get started</p>
                 <Button 
                   onClick={() => setFormOpen(true)}
-                  className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+                  className="bg-theme-accent text-white hover:bg-theme-accent/90"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Client

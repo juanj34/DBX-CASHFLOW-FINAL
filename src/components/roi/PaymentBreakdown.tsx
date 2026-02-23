@@ -1,4 +1,4 @@
-import { OIInputs, PaymentMilestone, quarterToMonth } from "./useOICalculations";
+import { OIInputs, PaymentMilestone, monthName } from "./useOICalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
 import { Calendar, CreditCard, Home, Clock, Building2, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,40 +26,35 @@ const isPaymentAtOrAfterHandover = (
   paymentMonthsFromBooking: number,
   bookingMonth: number,
   bookingYear: number,
-  handoverQuarter: number,
+  handoverMonth: number,
   handoverYear: number
 ): { isHandover: boolean; isPostHandover: boolean } => {
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
   const paymentDate = new Date(bookingDate);
   paymentDate.setMonth(paymentDate.getMonth() + paymentMonthsFromBooking);
-  
-  const handoverMonthStart = (handoverQuarter - 1) * 3;
-  const handoverQuarterStart = new Date(handoverYear, handoverMonthStart);
-  const handoverQuarterEnd = new Date(handoverYear, handoverMonthStart + 3);
-  
-  const isHandover = paymentDate >= handoverQuarterStart && paymentDate < handoverQuarterEnd;
-  const isPostHandover = paymentDate >= handoverQuarterEnd;
-  
+
+  const handoverDate = new Date(handoverYear, handoverMonth - 1);
+  const handoverDateEnd = new Date(handoverYear, handoverMonth);
+
+  const isHandover = paymentDate >= handoverDate && paymentDate < handoverDateEnd;
+  const isPostHandover = paymentDate >= handoverDateEnd;
+
   return { isHandover, isPostHandover };
 };
 
-// Check if a payment falls within the handover quarter specifically (for strong highlighting)
-const isPaymentInHandoverQuarter = (
+// Check if a payment falls within the handover month specifically (for strong highlighting)
+const isPaymentInHandoverMonth = (
   monthsFromBooking: number,
   bookingMonth: number,
   bookingYear: number,
-  handoverQuarter: number,
+  handoverMonth: number,
   handoverYear: number
 ): boolean => {
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
   const paymentDate = new Date(bookingDate);
   paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-  
-  const paymentYear = paymentDate.getFullYear();
-  const paymentMonth = paymentDate.getMonth() + 1;
-  const paymentQuarter = Math.ceil(paymentMonth / 3);
-  
-  return paymentYear === handoverYear && paymentQuarter === handoverQuarter;
+
+  return paymentDate.getFullYear() === handoverYear && (paymentDate.getMonth() + 1) === handoverMonth;
 };
 
 // Convert booking month/year to readable date string
@@ -86,15 +81,32 @@ const DLD_FEE_PERCENT = 4;
 
 export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSizeSqf = 0, clientInfo, compact = false }: PaymentBreakdownProps) => {
   const { t, language } = useLanguage();
-  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverQuarter, handoverYear } = inputs;
+  const { basePrice, downpaymentPercent, additionalPayments, preHandoverPercent, oqoodFee, eoiFee, bookingMonth, bookingYear, handoverMonth, handoverYear } = inputs;
+  const hasPostHandoverPlan = inputs.hasPostHandoverPlan ?? false;
 
   // Calculate amounts
   const downpaymentAmount = basePrice * downpaymentPercent / 100;
   const eoiFeeActual = Math.min(eoiFee, downpaymentAmount);
   const restOfDownpayment = downpaymentAmount - eoiFeeActual;
   const dldFeeAmount = basePrice * DLD_FEE_PERCENT / 100;
-  const handoverPercent = 100 - preHandoverPercent;
+
+  // For post-handover plans, handover is the explicit onHandoverPercent
+  // For standard plans, handover is the remaining balance (100 - preHandover)
+  const totalAdditionalPercent = additionalPayments.reduce((sum, p) => sum + p.paymentPercent, 0);
+  const totalAllocatedPercent = downpaymentPercent + totalAdditionalPercent;
+  let handoverPercent: number;
+  if (hasPostHandoverPlan) {
+    handoverPercent = Math.abs(totalAllocatedPercent - 100) < 0.5
+      ? 0
+      : (inputs.onHandoverPercent || 0);
+  } else {
+    handoverPercent = 100 - preHandoverPercent;
+  }
   const handoverAmount = basePrice * handoverPercent / 100;
+
+  // Post-handover payments
+  const postHandoverPayments = hasPostHandoverPlan ? (inputs.postHandoverPayments || []) : [];
+  const postHandoverTotal = postHandoverPayments.reduce((sum, p) => sum + (basePrice * p.paymentPercent / 100), 0);
 
   // Calculate additional payments total
   const additionalTotal = additionalPayments.reduce((sum, m) => sum + (basePrice * m.paymentPercent / 100), 0);
@@ -116,11 +128,11 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
   const totalPropertyPayments = basePrice;
   const totalEntryCosts = dldFeeAmount + oqoodFee;
   const grandTotal = totalPropertyPayments + totalEntryCosts;
+  const totalUntilHandover = todayTotal + additionalTotal + handoverAmount;
 
   // Calculate avg monthly during construction
   const bookingDate = new Date(bookingYear, bookingMonth - 1, 1);
-  const handoverMonth = (handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(handoverYear, handoverMonth, 1);
+  const handoverDate = new Date(handoverYear, handoverMonth - 1, 1);
   const constructionMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
   const avgMonthlyPayment = additionalTotal > 0 && constructionMonths > 0 
     ? additionalTotal / constructionMonths 
@@ -265,18 +277,18 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                         ? payment.triggerValue 
                         : Math.round((payment.triggerValue / 100) * totalMonths);
                       const { isHandover, isPostHandover } = isPaymentAtOrAfterHandover(
-                        monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
+                        monthsFromBooking, bookingMonth, bookingYear, handoverMonth, handoverYear
                       );
                       
                       // Check if in handover quarter for strong highlighting
-                      const inHandoverQuarter = isPaymentInHandoverQuarter(
-                        monthsFromBooking, bookingMonth, bookingYear, handoverQuarter, handoverYear
+                      const inHandoverQuarter = isPaymentInHandoverMonth(
+                        monthsFromBooking, bookingMonth, bookingYear, handoverMonth, handoverYear
                       );
                       
                       // Check if this is the first payment in delivery quarter to show divider
                       const isFirstInDeliveryQuarter = inHandoverQuarter && !sortedAdditionalPayments.slice(0, index).some(p => {
                         const prevMonths = p.type === 'time' ? p.triggerValue : Math.round((p.triggerValue / 100) * totalMonths);
-                        return isPaymentInHandoverQuarter(prevMonths, bookingMonth, bookingYear, handoverQuarter, handoverYear);
+                        return isPaymentInHandoverMonth(prevMonths, bookingMonth, bookingYear, handoverMonth, handoverYear);
                       });
                       
                       return (
@@ -286,7 +298,7 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                             <div className="flex items-center gap-2 py-2 -mx-2 px-2 mb-2 border-t border-b border-green-500/30 bg-green-500/5">
                               <Key className="w-3.5 h-3.5 text-green-400" />
                               <span className="text-[10px] uppercase tracking-wide font-semibold text-green-400">
-                                {t('deliveryQuarter') || 'Delivery Quarter'} (Q{handoverQuarter} {handoverYear})
+                                {t('deliveryQuarter') || 'Delivery Quarter'} ({monthName(handoverMonth)} {handoverYear})
                               </span>
                             </div>
                           )}
@@ -351,46 +363,106 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                 </div>
               </div>
 
-              {/* Section: COMPLETION */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                    <Home className="w-3.5 h-3.5 text-cyan-400" />
-                  </div>
-                  <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wide">
-                    {t('completionHandover')}
-                  </span>
-                  <span className="text-xs text-theme-text-muted">
-                    (Q{handoverQuarter} {handoverYear})
-                  </span>
-                </div>
-                
-                <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4">
-                  <div className="flex justify-between items-center gap-2">
-                    <div className="flex items-center gap-1 min-w-0 flex-1">
-                      <span className="text-sm text-theme-text-muted truncate">{t('finalPayment')} ({handoverPercent}%)</span>
-                      <InfoTooltip translationKey="tooltipFinalPayment" />
+              {/* Section: COMPLETION / HANDOVER */}
+              {handoverPercent > 0 && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                      <Home className="w-3.5 h-3.5 text-cyan-400" />
                     </div>
-                    <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(handoverAmount, currency, rate)}</span>
+                    <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wide">
+                      {hasPostHandoverPlan ? t('onHandoverLabel') || 'On Handover' : t('completionHandover')}
+                    </span>
+                    <span className="text-xs text-theme-text-muted">
+                      ({monthName(handoverMonth)} {handoverYear})
+                    </span>
+                  </div>
+
+                  <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4">
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex items-center gap-1 min-w-0 flex-1">
+                        <span className="text-sm text-theme-text-muted truncate">
+                          {hasPostHandoverPlan ? 'Handover Payment' : t('finalPayment')} ({handoverPercent}%)
+                        </span>
+                        <InfoTooltip translationKey="tooltipFinalPayment" />
+                      </div>
+                      <span className="text-sm text-theme-text font-mono flex-shrink-0 text-right tabular-nums">{formatCurrency(handoverAmount, currency, rate)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Section: POST-HANDOVER */}
+              {hasPostHandoverPlan && postHandoverPayments.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <Clock className="w-3.5 h-3.5 text-purple-400" />
+                    </div>
+                    <span className="text-sm font-semibold text-purple-400 uppercase tracking-wide">
+                      Post-Handover ({postHandoverPayments.reduce((sum, p) => sum + p.paymentPercent, 0).toFixed(0)}%)
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {[...postHandoverPayments].sort((a, b) => a.triggerValue - b.triggerValue).map((payment, index) => {
+                      const amount = basePrice * payment.paymentPercent / 100;
+                      const label = payment.type === 'post-handover'
+                        ? `+${payment.triggerValue}mo`
+                        : `Month ${payment.triggerValue}`;
+                      const handoverMonthsFromBooking = (handoverYear - bookingYear) * 12 + (handoverMonth - bookingMonth);
+                      const absoluteMonth = payment.type === 'post-handover'
+                        ? handoverMonthsFromBooking + payment.triggerValue
+                        : payment.triggerValue;
+                      const dateStr = estimateDateFromMonths(absoluteMonth, bookingMonth, bookingYear, language);
+
+                      return (
+                        <div key={index} className="flex justify-between items-center">
+                          <span className="text-sm text-theme-text-muted">
+                            {label} <span className="text-xs text-purple-400/70">({dateStr})</span>
+                          </span>
+                          <span className="text-sm text-theme-text font-mono tabular-nums">{formatCurrency(amount, currency, rate)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between items-center pt-2 border-t border-theme-border">
+                      <span className="text-sm text-purple-400 font-semibold">Subtotal Post-Handover</span>
+                      <span className="text-sm text-purple-400 font-bold font-mono tabular-nums">{formatCurrency(postHandoverTotal, currency, rate)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Grand Total */}
               <div className="pt-4 border-t border-theme-border space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
-                  <span className="text-sm text-theme-text font-mono tabular-nums">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm text-theme-text-muted">{t('entryCostsDldOqood')}</span>
-                    <span className="text-[10px] bg-slate-700 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded">
-                      {t('govtFee')}
-                    </span>
-                  </div>
-                  <span className="text-sm text-red-400 font-mono tabular-nums">{formatCurrency(totalEntryCosts, currency, rate)}</span>
-                </div>
+                {hasPostHandoverPlan && postHandoverTotal > 0 ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-theme-text-muted">Paid Until Handover</span>
+                      <span className="text-sm text-green-400 font-mono tabular-nums">{formatCurrency(totalUntilHandover, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-theme-text-muted">Paid Post-Handover</span>
+                      <span className="text-sm text-purple-400 font-mono tabular-nums">{formatCurrency(postHandoverTotal, currency, rate)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-theme-text-muted">{t('basePropertyPrice')}</span>
+                      <span className="text-sm text-theme-text font-mono tabular-nums">{formatCurrency(totalPropertyPayments, currency, rate)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-theme-text-muted">{t('entryCostsDldOqood')}</span>
+                        <span className="text-[10px] bg-slate-700 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded">
+                          {t('govtFee')}
+                        </span>
+                      </div>
+                      <span className="text-sm text-red-400 font-mono tabular-nums">{formatCurrency(totalEntryCosts, currency, rate)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between items-center pt-2 bg-gradient-to-r from-emerald-500/10 to-transparent border-t border-emerald-500/30 -mx-4 px-4 py-3 rounded-b-xl">
                   <span className="text-sm font-bold text-emerald-400">{t('totalToDisburse')}</span>
                   <span className="text-xl font-bold text-emerald-400 font-mono tabular-nums">{formatCurrency(grandTotal, currency, rate)}</span>

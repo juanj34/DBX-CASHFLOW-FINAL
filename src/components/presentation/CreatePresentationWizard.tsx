@@ -426,7 +426,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
             <Button
               onClick={handleCreate}
               disabled={isCreating || !title.trim()}
-              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+              className="bg-theme-accent text-white hover:bg-theme-accent/90"
             >
               {isCreating ? 'Creating...' : 'Create Presentation'}
             </Button>
@@ -434,7 +434,7 @@ export const CreatePresentationWizard = ({ open, onClose, onCreate }: CreatePres
             <Button
               onClick={handleNext}
               disabled={!canProceed}
-              className="bg-theme-accent text-slate-900 hover:bg-theme-accent/90"
+              className="bg-theme-accent text-white hover:bg-theme-accent/90"
             >
               Next
               <ChevronRight className="w-4 h-4 ml-1" />

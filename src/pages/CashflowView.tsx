@@ -29,7 +29,6 @@ import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { DashboardTabs } from '@/components/roi/tabs/DashboardTabs';
 
 interface AdvisorProfile {
   full_name: string | null;
@@ -543,10 +542,8 @@ const CashflowViewContent = () => {
                   );
                   
                   // Calculate duration in months
-                  const handoverMonth = (inputs.handoverQuarter - 1) * 3 + 1;
-                  const handoverDate = new Date(inputs.handoverYear, handoverMonth - 1);
-                  const endMonth = (inputs.postHandoverEndQuarter - 1) * 3 + 1;
-                  const endDate = new Date(inputs.postHandoverEndYear, endMonth - 1);
+                  const handoverDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
+                  const endDate = new Date(inputs.postHandoverEndYear, inputs.postHandoverEndMonth - 1);
                   const postHandoverMonths = Math.max(1, 
                     (endDate.getFullYear() - handoverDate.getFullYear()) * 12 + 
                     (endDate.getMonth() - handoverDate.getMonth())
@@ -580,7 +577,7 @@ const CashflowViewContent = () => {
                       coveragePercent={coveragePercent}
                       isFullyCovered={isFullyCovered}
                       totalGap={totalGap}
-                      endQuarter={inputs.postHandoverEndQuarter}
+                      endMonth={inputs.postHandoverEndMonth}
                       endYear={inputs.postHandoverEndYear}
                       currency={currency}
                       rate={rate}

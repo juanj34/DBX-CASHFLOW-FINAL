@@ -3,6 +3,7 @@ import { TrendingUp, Wallet, Key } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Currency, formatCurrency } from '../currencyUtils';
 import { calculateExitPrice } from '../constructionProgress';
+import { monthName } from '../useOICalculations';
 
 interface WealthProjectionTableProps {
   basePrice: number;
@@ -19,20 +20,10 @@ interface WealthProjectionTableProps {
   rentGrowthRate?: number;
   showRentalIncome?: boolean;
   // Handover props (for dedicated handover row)
-  handoverQuarter?: number;
+  handoverMonth?: number;
   handoverYear?: number;
   bookingMonth?: number;
 }
-
-const quarterToMonth = (quarter: number): number => {
-  switch (quarter) {
-    case 1: return 2;  // Q1 = February
-    case 2: return 5;  // Q2 = May
-    case 3: return 8;  // Q3 = August
-    case 4: return 11; // Q4 = November
-    default: return 11;
-  }
-};
 
 export const WealthProjectionTable = ({
   basePrice,
@@ -47,15 +38,15 @@ export const WealthProjectionTable = ({
   rentalYieldPercent = 6,
   rentGrowthRate = 3,
   showRentalIncome = true,
-  handoverQuarter,
+  handoverMonth: propHandoverMonth,
   handoverYear: propHandoverYear,
   bookingMonth = 1,
 }: WealthProjectionTableProps) => {
   const tableData = useMemo(() => {
-    const data: { 
-      year: number; 
-      value: number; 
-      phase: string; 
+    const data: {
+      year: number;
+      value: number;
+      phase: string;
       appreciation: number;
       annualRent: number;
       cumulativeRent: number;
@@ -63,10 +54,10 @@ export const WealthProjectionTable = ({
       label?: string;
     }[] = [];
     const constructionYears = Math.ceil(constructionMonths / 12);
-    
+
     // Calculate handover year and value
     const handoverYear = propHandoverYear || (bookingYear + constructionYears);
-    const handoverMonth = handoverQuarter ? quarterToMonth(handoverQuarter) : 11;
+    const handoverMonth = propHandoverMonth || 11;
     
     // Calculate months from booking to handover
     const bookingDate = new Date(bookingYear, bookingMonth - 1);
@@ -128,8 +119,8 @@ export const WealthProjectionTable = ({
       });
 
       // Insert handover row after the handover year, before the next year
-      if (!handoverInserted && calendarYear === handoverYear && handoverQuarter) {
-        const quarterLabel = `Q${handoverQuarter}'${String(handoverYear).slice(-2)}`;
+      if (!handoverInserted && calendarYear === handoverYear && propHandoverMonth) {
+        const handoverLabel = `${monthName(handoverMonth)}'${String(handoverYear).slice(-2)}`;
         data.push({
           year: handoverYear,
           value: Math.round(handoverValue),
@@ -138,7 +129,7 @@ export const WealthProjectionTable = ({
           annualRent: 0,
           cumulativeRent: 0,
           isHandover: true,
-          label: `🔑 ${quarterLabel}`,
+          label: `🔑 ${handoverLabel}`,
         });
         handoverInserted = true;
       }
@@ -147,7 +138,7 @@ export const WealthProjectionTable = ({
     }
 
     return data;
-  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, rentalYieldPercent, rentGrowthRate, handoverQuarter, propHandoverYear, bookingMonth]);
+  }, [basePrice, constructionMonths, constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, bookingYear, rentalYieldPercent, rentGrowthRate, propHandoverMonth, propHandoverYear, bookingMonth]);
 
   const regularData = tableData.filter(d => !d.isHandover);
   const totalGrowth = regularData.length > 0 

@@ -16,7 +16,7 @@ interface WelcomeEmailRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-welcome-email function called");
-  
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,18 +47,18 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px; opacity: 0.8;">Investment Analysis Platform</p>
               </td>
             </tr>
-            
+
             <!-- Welcome Message -->
             <tr>
               <td style="padding: 40px 30px;">
-                <h2 style="color: #1a1f2e; margin: 0 0 20px 0; font-size: 24px;">Welcome, ${userName || 'Investor'}! 🎉</h2>
-                
+                <h2 style="color: #1a1f2e; margin: 0 0 20px 0; font-size: 24px;">Welcome, ${userName || 'Investor'}!</h2>
+
                 <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                   Thank you for joining InvestDubai. You now have access to our comprehensive real estate investment analysis tools.
                 </p>
-                
+
                 <h3 style="color: #1a1f2e; margin: 20px 0 15px 0; font-size: 18px;">What you can do:</h3>
-                
+
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
@@ -81,11 +81,11 @@ const handler = async (req: Request): Promise<Response> => {
                       <table>
                         <tr>
                           <td style="vertical-align: top; padding-right: 15px;">
-                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">🗺️</span>
+                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">📈</span>
                           </td>
                           <td>
-                            <strong style="color: #1a1f2e; font-size: 16px;">Interactive Map</strong>
-                            <p style="color: #666666; font-size: 14px; margin: 5px 0 0 0;">Explore Dubai's investment zones and opportunities</p>
+                            <strong style="color: #1a1f2e; font-size: 16px;">Investment Analysis</strong>
+                            <p style="color: #666666; font-size: 14px; margin: 5px 0 0 0;">Deep-dive into ROI, exits, mortgage coverage, and scenario modeling</p>
                           </td>
                         </tr>
                       </table>
@@ -97,7 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <table>
                         <tr>
                           <td style="vertical-align: top; padding-right: 15px;">
-                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">📈</span>
+                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">⚖️</span>
                           </td>
                           <td>
                             <strong style="color: #1a1f2e; font-size: 16px;">Quote Comparison</strong>
@@ -108,16 +108,16 @@ const handler = async (req: Request): Promise<Response> => {
                     </td>
                   </tr>
                 </table>
-                
+
                 <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 30px 0;">
                   Ready to start analyzing your first investment?
                 </p>
-                
+
                 <!-- CTA Button -->
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="text-align: center;">
-                      <a href="https://gxllyxusfyjjqpqylxrs.lovableproject.com/home" style="display: inline-block; background-color: #CCFF00; color: #1a1f2e; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                      <a href="https://wfihvfnanvkvezdrnrgp.lovableproject.com/home" style="display: inline-block; background-color: #CCFF00; color: #1a1f2e; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
                         Go to Dashboard
                       </a>
                     </td>
@@ -125,12 +125,12 @@ const handler = async (req: Request): Promise<Response> => {
                 </table>
               </td>
             </tr>
-            
+
             <!-- Footer -->
             <tr>
               <td style="background-color: #1a1f2e; padding: 30px; text-align: center;">
                 <p style="color: #888888; font-size: 12px; margin: 0;">
-                  © ${new Date().getFullYear()} InvestDubai. All rights reserved.
+                  &copy; ${new Date().getFullYear()} InvestDubai. All rights reserved.
                 </p>
               </td>
             </tr>

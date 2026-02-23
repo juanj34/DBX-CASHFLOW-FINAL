@@ -36,8 +36,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
 
   // Calculate months from booking to handover
   const bookingDate = useMemo(() => new Date(inputs.bookingYear, inputs.bookingMonth - 1), [inputs.bookingYear, inputs.bookingMonth]);
-  const handoverQuarterMonth = useMemo(() => (inputs.handoverQuarter - 1) * 3 + 1, [inputs.handoverQuarter]);
-  const handoverDate = useMemo(() => new Date(inputs.handoverYear, handoverQuarterMonth - 1), [inputs.handoverYear, handoverQuarterMonth]);
+  const handoverDate = useMemo(() => new Date(inputs.handoverYear, inputs.handoverMonth - 1), [inputs.handoverYear, inputs.handoverMonth]);
   const totalMonths = useMemo(() => Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30))), [bookingDate, handoverDate]);
 
   // Calculate entry costs (DLD 4% + Oqood fee)
@@ -333,7 +332,7 @@ export const ExitsSection = ({ inputs, setInputs, currency }: ConfiguratorSectio
               <Button
                 size="sm"
                 onClick={handleAddExit}
-                className="h-6 text-[10px] px-2 bg-theme-accent hover:bg-theme-accent/90 text-black"
+                className="h-6 text-[10px] px-2 bg-theme-accent hover:bg-theme-accent/90 text-white"
               >
                 <Plus className="w-3 h-3" />
               </Button>

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { GripVertical } from 'lucide-react';
 import { QuoteWithCalculations, ComparisonQuote } from '@/hooks/useQuotesComparison';
 import { formatCurrency, formatDualCurrency, Currency } from '@/components/roi/currencyUtils';
+import { monthName } from '@/components/roi/useOICalculations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getQuoteDisplayName } from './utils';
@@ -94,8 +95,8 @@ const getZoneName = (quote: ComparisonQuote) => {
 // Calculate time to completion
 const getTimeToCompletion = (inputs: any) => {
   const now = new Date();
-  const handoverMonth = ((inputs.handoverQuarter || 4) - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear || new Date().getFullYear() + 2, handoverMonth, 1);
+  const hMonth = inputs.handoverMonth || 11;
+  const handoverDate = new Date(inputs.handoverYear || new Date().getFullYear() + 2, hMonth - 1, 1);
   const diffMonths = Math.max(0, (handoverDate.getFullYear() - now.getFullYear()) * 12 + 
     (handoverDate.getMonth() - now.getMonth()));
   const years = Math.floor(diffMonths / 12);
@@ -106,11 +107,11 @@ const getTimeToCompletion = (inputs: any) => {
   return 'Now';
 };
 
-// Format handover date as "Q# YYYY"
+// Format handover date as "Mon YYYY"
 const formatHandoverDate = (inputs: any) => {
-  const q = inputs.handoverQuarter || 4;
+  const m = inputs.handoverMonth || 11;
   const y = inputs.handoverYear || new Date().getFullYear() + 2;
-  return `Q${q} ${y}`;
+  return `${monthName(m)} ${y}`;
 };
 
 // Calculate rent coverage for post-handover plans

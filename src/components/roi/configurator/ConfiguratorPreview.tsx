@@ -1,8 +1,7 @@
 import { Calendar, Percent, TrendingUp, Home, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
-import { OIInputs } from "../useOICalculations";
+import { OIInputs, monthName } from "../useOICalculations";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { calculateAppreciationBonus } from "../valueDifferentiators";
-import { quarters } from "./types";
 
 interface ConfiguratorPreviewProps {
   inputs: OIInputs;
@@ -35,7 +34,7 @@ const MiniPreview = ({ inputs, currency, onToggleCollapse }: ConfiguratorPreview
         </div>
         
         {/* Timeline indicator */}
-        <div className="flex flex-col items-center gap-1" title={`Q${inputs.handoverQuarter} ${inputs.handoverYear}`}>
+        <div className="flex flex-col items-center gap-1" title={`${monthName(inputs.handoverMonth)} ${inputs.handoverYear}`}>
           <Calendar className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] text-theme-text-muted font-mono">
             {inputs.handoverYear.toString().slice(-2)}
@@ -92,8 +91,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
   
   // Calculate months to handover
   const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-  const handoverQuarterMonth = (inputs.handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
+  const handoverDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
   const monthsToHandover = Math.max(0, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
   // Calculate first year rent using base price (matches Year 1 projection)
@@ -142,7 +140,7 @@ export const ConfiguratorPreview = ({ inputs, currency, isCollapsed, onToggleCol
             <span className="text-xs">Handover</span>
           </div>
           <span className="text-sm font-mono text-theme-text">
-            {quarters.find(q => q.value === inputs.handoverQuarter)?.label} {inputs.handoverYear}
+            {monthName(inputs.handoverMonth)} {inputs.handoverYear}
             <span className="text-xs text-theme-text-muted ml-1">({monthsToHandover}mo)</span>
           </span>
         </div>

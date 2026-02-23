@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AmortizationTableProps {
   amortizationSchedule: AmortizationPoint[];
@@ -31,6 +32,7 @@ export const AmortizationTable = ({
   currency,
   rate,
 }: AmortizationTableProps) => {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   if (!amortizationSchedule || amortizationSchedule.length === 0) return null;
@@ -40,9 +42,9 @@ export const AmortizationTable = ({
       <CollapsibleTrigger className="w-full">
         <div className="flex items-center justify-between p-3 rounded-xl bg-theme-bg-alt border border-theme-border hover:border-theme-accent/50 transition-colors cursor-pointer">
           <div className="flex items-center gap-2">
-            <Table className="w-4 h-4 text-blue-400" />
-            <span className="text-sm text-theme-text">Amortization Schedule</span>
-            <span className="text-xs text-theme-text-muted">({loanTermYears} Years)</span>
+            <Table className="w-4 h-4 text-theme-text-highlight" />
+            <span className="text-sm text-theme-text">{t('amortizationScheduleLabel')}</span>
+            <span className="text-xs text-theme-text-muted">({loanTermYears} {t('yearsParenLabel')})</span>
           </div>
           <div className="flex items-center gap-2">
             {isOpen ? (
@@ -59,11 +61,11 @@ export const AmortizationTable = ({
             <TableComponent>
               <TableHeader className="sticky top-0 bg-theme-bg-alt z-10">
                 <TableRow className="border-b border-theme-border hover:bg-transparent">
-                  <TableHead className="text-xs font-medium text-theme-text-muted w-16">Year</TableHead>
-                  <TableHead className="text-xs font-medium text-theme-text-muted text-right">Principal</TableHead>
-                  <TableHead className="text-xs font-medium text-theme-text-muted text-right">Interest</TableHead>
-                  <TableHead className="text-xs font-medium text-theme-text-muted text-right">Balance</TableHead>
-                  <TableHead className="text-xs font-medium text-theme-text-muted text-right w-20">Equity %</TableHead>
+                  <TableHead className="text-xs font-medium text-theme-text-muted w-16">{t('yearColumn')}</TableHead>
+                  <TableHead className="text-xs font-medium text-theme-text-muted text-right">{t('principalHeader')}</TableHead>
+                  <TableHead className="text-xs font-medium text-theme-text-muted text-right">{t('interestHeader')}</TableHead>
+                  <TableHead className="text-xs font-medium text-theme-text-muted text-right">{t('balanceHeader')}</TableHead>
+                  <TableHead className="text-xs font-medium text-theme-text-muted text-right w-20">{t('equityPercentHeader')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -87,10 +89,10 @@ export const AmortizationTable = ({
                       )}>
                         {point.year}
                       </TableCell>
-                      <TableCell className="text-xs font-mono text-emerald-400 text-right">
+                      <TableCell className="text-xs font-mono text-theme-positive text-right">
                         {formatCurrency(point.yearlyPrincipal, currency, rate)}
                       </TableCell>
-                      <TableCell className="text-xs font-mono text-red-400/70 text-right">
+                      <TableCell className="text-xs font-mono text-theme-negative text-right">
                         {formatCurrency(point.yearlyInterest, currency, rate)}
                       </TableCell>
                       <TableCell className="text-xs font-mono text-theme-text text-right">
@@ -112,13 +114,13 @@ export const AmortizationTable = ({
           {/* Summary Footer */}
           <div className="p-3 border-t border-theme-border bg-theme-card/50">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-theme-text-muted">Total over {loanTermYears} years:</span>
+              <span className="text-theme-text-muted">{t('totalOverYearsLabel')} {loanTermYears} {t('yearsColon')}</span>
               <div className="flex items-center gap-4">
-                <span className="text-emerald-400 font-mono">
-                  Principal: {formatCurrency(loanAmount, currency, rate)}
+                <span className="text-theme-positive font-mono">
+                  {t('principalTotalLabel')} {formatCurrency(loanAmount, currency, rate)}
                 </span>
-                <span className="text-red-400/70 font-mono">
-                  Interest: {formatCurrency(
+                <span className="text-theme-negative font-mono">
+                  {t('interestTotalLabel')} {formatCurrency(
                     amortizationSchedule[amortizationSchedule.length - 1]?.interestPaid || 0, 
                     currency, 
                     rate

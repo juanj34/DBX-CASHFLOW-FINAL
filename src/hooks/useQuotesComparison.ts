@@ -134,7 +134,7 @@ export const useQuoteCalculations = (inputs: OIInputs | null): OICalculations | 
     appreciationRate: 0,
     bookingMonth: 1,
     bookingYear: 2024,
-    handoverQuarter: 1,
+    handoverMonth: 1,
     handoverYear: 2025,
     downpaymentPercent: 20,
     preHandoverPercent: 20,
@@ -144,7 +144,7 @@ export const useQuoteCalculations = (inputs: OIInputs | null): OICalculations | 
     onHandoverPercent: 0,
     postHandoverPercent: 0,
     postHandoverPayments: [],
-    postHandoverEndQuarter: 4,
+    postHandoverEndMonth: 12,
     postHandoverEndYear: 2030,
     // Entry costs
     eoiFee: 0,

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConfiguratorSectionProps, months, quarters, years } from "./types";
+import { ConfiguratorSectionProps, months, years } from "./types";
 import { formatCurrency, formatDualCurrency, DEFAULT_RATE } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
 
@@ -111,8 +111,7 @@ export const PropertySection = ({
   };
 
   const bookingDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-  const handoverQuarterMonth = (inputs.handoverQuarter - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear, handoverQuarterMonth - 1);
+  const handoverDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
   const isHandoverBeforeBooking = handoverDate <= bookingDate;
 
   const totalEntry = inputs.eoiFee + (inputs.basePrice * 0.04) + inputs.oqoodFee;
@@ -122,7 +121,6 @@ export const PropertySection = ({
       {/* Section Header */}
       <div>
         <h3 className="text-lg font-semibold text-theme-text">Property Details</h3>
-        <p className="text-sm text-theme-text-muted">Base price, dates, and entry costs</p>
       </div>
       
       {/* Base Price - Grouped */}
@@ -223,16 +221,16 @@ export const PropertySection = ({
           </div>
           <div className="flex gap-2 flex-1">
             <Select
-              value={String(inputs.handoverQuarter)}
-              onValueChange={(value) => setInputs(prev => ({ ...prev, handoverQuarter: parseInt(value) }))}
+              value={String(inputs.handoverMonth)}
+              onValueChange={(value) => setInputs(prev => ({ ...prev, handoverMonth: parseInt(value) }))}
             >
-              <SelectTrigger className="w-16 h-8 text-xs bg-theme-bg border-theme-border text-theme-text">
-                <SelectValue placeholder="Q" />
+              <SelectTrigger className="flex-1 h-8 text-xs bg-theme-bg border-theme-border text-theme-text">
+                <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent className="bg-theme-card border-theme-border">
-                {quarters.map(q => (
-                  <SelectItem key={q.value} value={String(q.value)} className="text-xs text-theme-text hover:bg-theme-border">
-                    {q.label}
+                {months.map(m => (
+                  <SelectItem key={m.value} value={String(m.value)} className="text-xs text-theme-text hover:bg-theme-border">
+                    {m.label}
                   </SelectItem>
                 ))}
               </SelectContent>

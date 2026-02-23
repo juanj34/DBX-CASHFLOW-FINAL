@@ -1,4 +1,4 @@
-import { OIInputs, OICalculations, quarterToMonth } from "./useOICalculations";
+import { OIInputs, OICalculations, quarterToMonth, monthName } from "./useOICalculations";
 import { ClientUnitData } from "./ClientUnitInfo";
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { formatCurrency, Currency } from "./currencyUtils";
@@ -130,8 +130,8 @@ const getMonthName = (month: number, lang: Language): string => {
   return monthNames[lang][month - 1] || '';
 };
 
-const getQuarterName = (quarter: number): string => {
-  return `Q${quarter}`;
+const getHandoverMonthName = (month: number): string => {
+  return monthName(month);
 };
 
 export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => {
@@ -165,7 +165,7 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
   const totalToday = downpaymentAmount + dldFee + inputs.oqoodFee;
   
   const bookingDateStr = `${getMonthName(inputs.bookingMonth, lang)} ${inputs.bookingYear}`;
-  const handoverDateStr = `${getQuarterName(inputs.handoverQuarter)} ${inputs.handoverYear}`;
+  const handoverDateStr = `${getHandoverMonthName(inputs.handoverMonth)} ${inputs.handoverYear}`;
   
   // Build installments breakdown
   const installments: Array<{ label: string; percent: number; amount: number; timing: string }> = [

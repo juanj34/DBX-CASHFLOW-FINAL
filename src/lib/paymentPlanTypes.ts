@@ -13,7 +13,8 @@ export interface ExtractedProperty {
 export interface ExtractedPaymentStructure {
   paymentSplit?: string; // e.g., '40/60', '50/50'
   hasPostHandover: boolean;
-  handoverQuarter?: 1 | 2 | 3 | 4;
+  handoverQuarter?: 1 | 2 | 3 | 4; // Legacy: kept for backward compatibility
+  handoverMonth?: number; // 1-12, primary field for handover timing
   handoverYear?: number;
   handoverMonthFromBooking?: number; // Month number from booking when handover occurs (e.g., 26)
   onHandoverPercent?: number;

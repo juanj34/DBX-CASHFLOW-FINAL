@@ -1,5 +1,5 @@
 import { Building2, Calendar, CreditCard, TrendingUp } from "lucide-react";
-import { OIInputs, OICalculations } from "@/components/roi/useOICalculations";
+import { OIInputs, OICalculations, monthName } from "@/components/roi/useOICalculations";
 import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PaymentHorizontalTimeline } from "@/components/roi/PaymentHorizontalTimeline";
@@ -32,9 +32,7 @@ export const PropertyPaymentCards = ({
   const handoverAmount = inputs.basePrice * (handoverPercent / 100);
 
   // Format handover date
-  const quarterLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
-  const handoverQuarterLabel = quarterLabels[inputs.handoverQuarter - 1] || 'Q4';
-  const handoverDateFormatted = `${handoverQuarterLabel} ${inputs.handoverYear}`;
+  const handoverDateFormatted = `${monthName(inputs.handoverMonth)} ${inputs.handoverYear}`;
 
   // Format booking date
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

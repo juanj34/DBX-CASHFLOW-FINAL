@@ -1,6 +1,7 @@
 import { TrendingUp, Users } from "lucide-react";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { AmortizationPoint } from "../useMortgageCalculations";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TenantEquityPanelProps {
   loanAmount: number;
@@ -21,6 +22,7 @@ export const TenantEquityPanel = ({
   currency,
   rate,
 }: TenantEquityPanelProps) => {
+  const { t } = useLanguage();
   // Get key data points for the mini chart
   const chartPoints = amortizationSchedule
     .filter((_, i) => i % 5 === 4 || i === 0 || i === amortizationSchedule.length - 1)
@@ -52,8 +54,8 @@ export const TenantEquityPanel = ({
     <div className="p-4 rounded-xl bg-theme-card border border-theme-border h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Users className="w-4 h-4 text-blue-400" />
-        <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wider">Tenant-Funded Equity</span>
+        <Users className="w-4 h-4 text-theme-text-highlight" />
+        <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wider">{t('tenantFundedEquityLabel')}</span>
       </div>
 
       {/* Mini Area Chart */}
@@ -61,8 +63,8 @@ export const TenantEquityPanel = ({
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-12">
           <defs>
             <linearGradient id="equityGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
+              <stop offset="0%" stopColor="hsl(var(--theme-text-highlight))" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="hsl(var(--theme-text-highlight))" stopOpacity="0.1" />
             </linearGradient>
           </defs>
           
@@ -77,7 +79,7 @@ export const TenantEquityPanel = ({
             <polyline
               points={points.map(p => `${p.x},${height - padding - (p.principalPaid / maxBalance) * chartHeight}`).join(' ')}
               fill="none"
-              stroke="#3b82f6"
+              stroke="hsl(var(--theme-text-highlight))"
               strokeWidth="1.5"
             />
           )}
@@ -88,7 +90,7 @@ export const TenantEquityPanel = ({
               cx={points[points.length - 1].x}
               cy={height - padding - (points[points.length - 1].principalPaid / maxBalance) * chartHeight}
               r="2"
-              fill="#3b82f6"
+              fill="hsl(var(--theme-text-highlight))"
             />
           )}
         </svg>
@@ -98,8 +100,8 @@ export const TenantEquityPanel = ({
       <div className="space-y-2">
         {loanTermYears >= 5 && (
           <div className="flex items-center justify-between p-2 bg-theme-bg-alt rounded-lg">
-            <span className="text-xs text-theme-text-muted">Year 5</span>
-            <span className="text-sm font-mono font-semibold text-blue-400">
+            <span className="text-xs text-theme-text-muted">{t('year5')}</span>
+            <span className="text-sm font-mono font-semibold text-theme-text-highlight">
               {formatCurrency(principalPaidYear5, currency, rate)}
             </span>
           </div>
@@ -107,16 +109,16 @@ export const TenantEquityPanel = ({
         
         {loanTermYears >= 10 && (
           <div className="flex items-center justify-between p-2 bg-theme-bg-alt rounded-lg">
-            <span className="text-xs text-theme-text-muted">Year 10</span>
-            <span className="text-sm font-mono font-semibold text-blue-400">
+            <span className="text-xs text-theme-text-muted">{t('year10Label')}</span>
+            <span className="text-sm font-mono font-semibold text-theme-text-highlight">
               {formatCurrency(principalPaidYear10, currency, rate)}
             </span>
           </div>
         )}
         
-        <div className="flex items-center justify-between p-2 bg-blue-900/30 rounded-lg border border-blue-700/30">
-          <span className="text-xs text-theme-text-muted">Full Term ({loanTermYears}y)</span>
-          <span className="text-sm font-mono font-bold text-emerald-400">
+        <div className="flex items-center justify-between p-2 bg-theme-text-highlight/10 rounded-lg border border-theme-text-highlight/30">
+          <span className="text-xs text-theme-text-muted">{t('fullTermLabel')} ({loanTermYears}{t('yearsShort')})</span>
+          <span className="text-sm font-mono font-bold text-theme-positive">
             {formatCurrency(loanAmount, currency, rate)}
           </span>
         </div>
@@ -124,7 +126,7 @@ export const TenantEquityPanel = ({
 
       {/* Pitch Text */}
       <p className="text-[9px] text-theme-text-muted text-center mt-3 leading-relaxed">
-        Even if the market stays flat, your tenant will pay off {formatCurrency(principalPaidYear10 || loanAmount, currency, rate)} of your debt — guaranteed exit equity
+        {t('tenantEquityPitchPrefix')} {formatCurrency(principalPaidYear10 || loanAmount, currency, rate)} {t('tenantEquityPitchSuffix')}
       </p>
     </div>
   );

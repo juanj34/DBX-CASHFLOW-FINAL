@@ -22,16 +22,13 @@ import { useCashflowQuote, hasWorkingDraftContent } from "@/hooks/useCashflowQuo
 import { useQuoteVersions } from "@/hooks/useQuoteVersions";
 import { useProfile } from "@/hooks/useProfile";
 import { useAdminRole } from "@/hooks/useAuth";
-import { useCustomDifferentiators } from "@/hooks/useCustomDifferentiators";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { useNewQuote } from "@/hooks/useNewQuote";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/roi/dashboard";
 import { SnapshotContent } from "@/components/roi/snapshot";
 import { ExportModal } from "@/components/roi/ExportModal";
 import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
-import { ResumeDraftDialog, DraftInfo } from "@/components/roi/ResumeDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 
@@ -62,13 +59,11 @@ const OICalculatorContent = () => {
   // Ref for client-side export capture
   const mainContentRef = useRef<HTMLDivElement>(null);
   
-  // Track if we just reset state (to prevent immediate auto-save after navigation to new quote)
-  const justResetRef = useRef(false);
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
-  const { customDifferentiators } = useCustomDifferentiators();
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, createDraft, promoteWorkingDraft, clearWorkingDraft } = useCashflowQuote(quoteId);
+
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, getOrCreateWorkingDraft, promoteWorkingDraft, clearWorkingDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
   
   // Unsaved draft dialog state
@@ -98,12 +93,8 @@ const OICalculatorContent = () => {
   }, [clientInfo.developer, clientInfo.projectName, clientInfo.unit, clientInfo.unitSizeSqf]);
 
   const hasPropertyConfigured = useMemo(() => {
-    return inputs.basePrice > 0 || !!quoteId;
-  }, [inputs.basePrice, quoteId]);
-
-  // When loading an existing quote with data, show content even if some fields are empty
-  // Check if we have a loaded quote (dataLoaded=true means data has been populated from the database)
-  const isFullyConfigured = (hasClientDetails && hasPropertyConfigured) || (!!quoteId && dataLoaded && !!quote);
+    return inputs.basePrice > 0;
+  }, [inputs.basePrice]);
 
   // Stricter validation for auto-save: require MEANINGFUL content
   const hasMeaningfulContent = useMemo(() => {
@@ -115,15 +106,11 @@ const OICalculatorContent = () => {
     );
   }, [inputs.basePrice, clientInfo.projectName, clientInfo.developer, clientInfo.clients]);
 
-  const { checkExistingDraft, startNewQuote } = useNewQuote();
-  
-  // Resume draft dialog state
-  const [showResumeDialog, setShowResumeDialog] = useState(false);
-  const [existingDraft, setExistingDraft] = useState<DraftInfo | null>(null);
-  const [resumeCheckDone, setResumeCheckDone] = useState(false);
+  // Show cashflow ONLY after the configurator is completed (client details + base price).
+  // For existing saved quotes (not working_draft), allow partial data so users can still view them.
+  const isFullyConfigured = (hasClientDetails && hasPropertyConfigured) ||
+    (!!quoteId && dataLoaded && !!quote && quote.status !== 'working_draft' && hasMeaningfulContent);
 
-  // LAZY CREATION: No draft created on mount - quote created on first meaningful change
-  // This prevents empty quotes from cluttering the database
 
   // Load quote data from database
   useEffect(() => {
@@ -136,7 +123,18 @@ const OICalculatorContent = () => {
       delete (cleanInputs as any)._clients;
       delete (cleanInputs as any)._clientInfo;
       delete (cleanInputs as any)._mortgageInputs;
-      setInputs(migrateInputs(cleanInputs));
+
+      // Guard: if this is an empty working draft (inputs: {}), use fresh defaults
+      // migrateInputs({}) would fill in phantom defaults like basePrice: 800000
+      const hasStoredContent = Boolean(
+        quote.project_name || quote.developer || quote.client_name ||
+        (quote.inputs as any)?.basePrice > 0
+      );
+      if (!hasStoredContent && quote.status === 'working_draft') {
+        setInputs(NEW_QUOTE_OI_INPUTS);
+      } else {
+        setInputs(migrateInputs(cleanInputs));
+      }
       const clients = savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [];
       setClientInfo({ 
         developer: savedClientInfo.developer || quote.developer || '', 
@@ -160,75 +158,56 @@ const OICalculatorContent = () => {
         // No mortgage data saved - keep defaults (disabled)
         setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
       }
+      // Handle preselected client (from client CRM → new quote flow)
+      if (!hasStoredContent && quote.status === 'working_draft') {
+        const preselectedClient = localStorage.getItem('preselected_client');
+        if (preselectedClient) {
+          try {
+            const clientData = JSON.parse(preselectedClient);
+            setClientInfo(prev => ({
+              ...prev,
+              clients: [{
+                id: '1',
+                name: clientData.clientName || '',
+                country: clientData.clientCountry || '',
+                email: clientData.clientEmail || ''
+              }],
+              dbClientId: clientData.dbClientId || undefined
+            }));
+            localStorage.removeItem('preselected_client');
+          } catch (e) {
+            console.error('Failed to parse preselected client:', e);
+            localStorage.removeItem('preselected_client');
+          }
+        }
+      }
+
       setDataLoaded(true);
     }
   }, [quote, quoteId, dataLoaded]);
 
-  // Reset ALL state when navigating to new quote (no quoteId)
-  // This prevents duplicating the previous quote's data
-  // MERGED: Preselected client logic is handled HERE to prevent race condition
+  // Redirect to working draft when no quoteId (Google Docs pattern: always have a document URL)
   useEffect(() => {
-    if (!quoteId) {
-      // First, reset all state for a fresh start
-      setInputs(NEW_QUOTE_OI_INPUTS);
-      setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
-      setQuoteImages({
-        floorPlanUrl: null,
-        buildingRenderUrl: null,
-        heroImageUrl: null,
-        showLogoOverlay: true,
-      });
-      setShareUrl(null);
-      
-      // Then check for preselected client (AFTER reset, so it's not overwritten)
-      const preselectedClient = localStorage.getItem('preselected_client');
-      if (preselectedClient) {
-        try {
-          const clientData = JSON.parse(preselectedClient);
-          setClientInfo({
-            ...DEFAULT_CLIENT_INFO,
-            clients: [{
-              id: '1',
-              name: clientData.clientName || '',
-              country: clientData.clientCountry || '',
-              email: clientData.clientEmail || ''
-            }],
-            dbClientId: clientData.dbClientId || undefined
-          });
-          // Clear the localStorage after use
-          localStorage.removeItem('preselected_client');
-          // Open configurator so user can continue setting up
-          setModalOpen(true);
-        } catch (e) {
-          console.error('Failed to parse preselected client:', e);
-          setClientInfo(DEFAULT_CLIENT_INFO);
-          localStorage.removeItem('preselected_client');
-        }
-      } else {
-        setClientInfo(DEFAULT_CLIENT_INFO);
-      }
-      
-      setDataLoaded(true); // Ready immediately for new quotes
-      justResetRef.current = true;
-      // Clear the flag after sufficient delay to prevent race conditions with auto-save
-      setTimeout(() => { justResetRef.current = false; }, 500);
-    } else {
-      // Will load from DB
+    if (quoteId) {
+      // Will load from DB via the data-load effect above
       setDataLoaded(false);
+      return;
     }
-  }, [quoteId, setQuoteImages]);
+
+    let cancelled = false;
+
+    const redirect = async () => {
+      const draftId = await getOrCreateWorkingDraft();
+      if (cancelled || !draftId) return;
+      // Carry any existing navigation state (e.g., openConfigurator) to the new URL
+      navigate(`/cashflow/${draftId}`, { replace: true, state: location.state });
+    };
+
+    redirect();
+    return () => { cancelled = true; };
+  }, [quoteId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (profile?.full_name && !clientInfo.brokerName) setClientInfo(prev => ({ ...prev, brokerName: profile?.full_name || '' })); }, [profile?.full_name]);
   useEffect(() => { if (clientInfo.unitSizeSqf && clientInfo.unitSizeSqf !== inputs.unitSizeSqf) setInputs(prev => ({ ...prev, unitSizeSqf: clientInfo.unitSizeSqf })); }, [clientInfo.unitSizeSqf]);
-
-  // Handler for when a new quote is auto-created
-  const handleNewQuoteCreated = useCallback((newId: string) => {
-    if (modalOpen) {
-      // Use navigation state instead of localStorage
-      navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
-    } else {
-      navigate(`/cashflow/${newId}`, { replace: true });
-    }
-  }, [navigate, modalOpen]);
 
   // Check if current quote is a working draft with content
   const isWorkingDraftWithContent = useMemo(() => {
@@ -243,25 +222,17 @@ const OICalculatorContent = () => {
       setShowUnsavedDialog(true);
       return;
     }
-    
+
     // Clear configurator localStorage state for fresh start
     localStorage.removeItem('cashflow-configurator-state');
     localStorage.removeItem('cashflow-configurator-state-v2');
     localStorage.removeItem('cashflow_configurator_open');
-    
-    // IMPORTANT: Clear existing working draft content BEFORE navigating
-    // This ensures we get a fresh start, not the previous quote's data
+
+    // Clear existing working draft (DELETE from DB), then navigate.
+    // The redirect effect on /cashflow-generator will create a fresh working draft.
     await clearWorkingDraft();
-    
-    // Create draft first, then navigate once (eliminates double-navigation refresh)
-    const newId = await createDraft();
-    if (newId) {
-      navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
-    } else {
-      // Fallback: navigate to generator if draft creation fails
-      navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
-    }
-  }, [navigate, isWorkingDraftWithContent, createDraft, clearWorkingDraft]);
+    navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+  }, [navigate, isWorkingDraftWithContent, clearWorkingDraft]);
 
   // Handle load quote with unsaved draft check
   const handleLoadQuote = useCallback(() => {
@@ -334,6 +305,22 @@ const OICalculatorContent = () => {
     setPendingAction(null);
   }, []);
 
+  // Auto-promote working_draft to draft when configurator closes with configured content
+  const handleConfiguratorClose = useCallback(async (open: boolean) => {
+    setModalOpen(open);
+
+    if (!open && quoteId && quote?.status === 'working_draft' && isFullyConfigured) {
+      const exitScenarios = inputs._exitScenarios || [];
+      await saveQuote(inputs, clientInfo, quoteId, exitScenarios, mortgageInputs, undefined, {
+        floorPlanUrl: quoteImages.floorPlanUrl,
+        buildingRenderUrl: quoteImages.buildingRenderUrl,
+        heroImageUrl: quoteImages.heroImageUrl,
+      });
+      await promoteWorkingDraft(quoteId);
+      toast.success("Quote saved!");
+    }
+  }, [quoteId, quote?.status, isFullyConfigured, inputs, clientInfo, mortgageInputs, quoteImages, saveQuote, promoteWorkingDraft]);
+
   // Keep configurator open when navigating to new quote (via navigation state)
   useEffect(() => {
     if (dataLoaded && location.state?.openConfigurator) {
@@ -343,27 +330,19 @@ const OICalculatorContent = () => {
     }
   }, [dataLoaded, location.state?.openConfigurator, navigate, location.pathname]);
 
+  // Auto-save effect — only updates existing quotes, never creates new ones.
   useEffect(() => {
-    if (!dataLoaded) return;
-    if (quoteLoading) return;
-    // Skip auto-save immediately after resetting state for new quote
-    if (justResetRef.current) return;
-
-    const canUpdateExisting = !!quoteId && quote?.id === quoteId;
-    // Use stricter hasMeaningfulContent instead of permissive isQuoteConfigured
-    const allowAutoCreate = !quoteId && hasMeaningfulContent;
+    if (!dataLoaded || quoteLoading) return;
+    if (!quoteId || quote?.id !== quoteId) return;
 
     scheduleAutoSave(
       inputs,
       clientInfo,
-      canUpdateExisting ? quoteId : undefined,
-      allowAutoCreate,
+      quoteId,
       mortgageInputs,
       { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl },
-      handleNewQuoteCreated,
-      modalOpen
     );
-  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, hasMeaningfulContent, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl, handleNewQuoteCreated, modalOpen]);
+  }, [inputs, clientInfo, quoteId, quote?.id, quoteLoading, mortgageInputs, scheduleAutoSave, dataLoaded, quoteImages.floorPlanUrl, quoteImages.buildingRenderUrl, quoteImages.heroImageUrl]);
 
   // Exit scenarios - allow up to 5 years (60 months) post-handover
   const exitScenarios = useMemo(() => {
@@ -436,7 +415,8 @@ const OICalculatorContent = () => {
   const lastProjection = calculations.yearlyProjections[calculations.yearlyProjections.length - 1];
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
 
-  if (quoteLoading && quoteId) {
+  // Show skeleton while loading OR while redirecting to working draft
+  if (!quoteId || (quoteLoading && quoteId)) {
     return <CashflowSkeleton />;
   }
 
@@ -491,20 +471,11 @@ const OICalculatorContent = () => {
                 Configure your property details, payment plan, and investment assumptions to generate a comprehensive cashflow projection.
               </p>
               <div className="flex flex-col gap-4 items-center">
-                <Button 
-                  onClick={async () => {
+                <Button
+                  onClick={() => {
                     // Clear configurator state for fresh start
                     localStorage.removeItem('cashflow-configurator-state');
-                    
-                    // Create draft immediately when starting configuration
-                    if (!quoteId) {
-                      const newId = await createDraft();
-                      if (newId) {
-                        // Use navigation state instead of localStorage
-                        navigate(`/cashflow/${newId}`, { replace: true, state: { openConfigurator: true } });
-                        return;
-                      }
-                    }
+                    // quoteId always exists (redirect effect ensures it)
                     setModalOpen(true);
                   }}
                   size="lg"
@@ -520,7 +491,7 @@ const OICalculatorContent = () => {
             </div>
           </div>
         ) : (
-          /* Configured State - Show Cashflow View (formerly Snapshot) */
+          /* Configured State - Snapshot View */
           <SnapshotContent
             inputs={inputs}
             calculations={calculations}
@@ -528,6 +499,7 @@ const OICalculatorContent = () => {
             mortgageInputs={mortgageInputs}
             mortgageAnalysis={mortgageAnalysis}
             exitScenarios={exitScenarios}
+            setExitScenarios={setExitScenarios}
             quoteImages={{
               heroImageUrl: quoteImages.heroImageUrl,
               floorPlanUrl: quoteImages.floorPlanUrl,
@@ -553,11 +525,11 @@ const OICalculatorContent = () => {
           onOpenChange={setMortgageModalOpen}
         />
         <ClientUnitModal data={clientInfo} onChange={setClientInfo} open={clientModalOpen} onOpenChange={setClientModalOpen} />
-        <OIInputModal 
-          inputs={inputs} 
-          setInputs={setInputs} 
-          open={modalOpen} 
-          onOpenChange={setModalOpen} 
+        <OIInputModal
+          inputs={inputs}
+          setInputs={setInputs}
+          open={modalOpen}
+          onOpenChange={handleConfiguratorClose}
           currency={currency} 
           mortgageInputs={mortgageInputs} 
           setMortgageInputs={setMortgageInputs} 

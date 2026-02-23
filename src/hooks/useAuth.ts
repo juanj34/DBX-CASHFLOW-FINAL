@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import type { User, Session } from "@supabase/supabase-js";
 
-const STORAGE_KEY = "sb-gxllyxusfyjjqpqylxrs-auth-token";
+const STORAGE_KEY = "sb-wfihvfnanvkvezdrnrgp-auth-token";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);

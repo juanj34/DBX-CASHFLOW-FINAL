@@ -79,46 +79,46 @@ const monthsToDate = (months: number, bookingMonth: number, bookingYear: number,
 
 // Return Badge color helper - renamed from ROE for client-friendly terminology
 const getReturnBadgeStyle = (returnPercent: number): { bg: string; text: string; label: string } => {
-  if (returnPercent >= 40) return { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Excellent' };
-  if (returnPercent >= 25) return { bg: 'bg-[#CCFF00]/20', text: 'text-[#CCFF00]', label: 'Good' };
-  if (returnPercent >= 15) return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Fair' };
-  return { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Low' };
+  if (returnPercent >= 40) return { bg: 'bg-theme-positive/20', text: 'text-theme-positive', label: 'excellentLabel' };
+  if (returnPercent >= 25) return { bg: 'bg-theme-accent/20', text: 'text-theme-accent', label: 'goodLabel' };
+  if (returnPercent >= 15) return { bg: 'bg-theme-accent/20', text: 'text-theme-accent', label: 'fairLabel' };
+  return { bg: 'bg-theme-negative/20', text: 'text-theme-negative', label: 'lowLabel' };
 };
 
 // Get construction milestone label based on progress percentage
 const getConstructionMilestone = (progressPercent: number): { icon: React.ReactNode; label: string; color: string } => {
   if (progressPercent <= 35) {
-    return { icon: <Shield className="w-3 h-3" />, label: 'Early Structure', color: 'text-blue-400 bg-blue-400/10' };
+    return { icon: <Shield className="w-3 h-3" />, label: 'earlyStructureLabel', color: 'text-theme-text-muted bg-theme-text-muted/10' };
   }
   if (progressPercent <= 50) {
-    return { icon: <Shield className="w-3 h-3" />, label: '50% Complete', color: 'text-blue-400 bg-blue-400/10' };
+    return { icon: <Shield className="w-3 h-3" />, label: 'fiftyPercentCompleteLabel', color: 'text-theme-text-muted bg-theme-text-muted/10' };
   }
   if (progressPercent <= 65) {
-    return { icon: <Zap className="w-3 h-3" />, label: 'Structure Complete', color: 'text-[#CCFF00] bg-[#CCFF00]/10' };
+    return { icon: <Zap className="w-3 h-3" />, label: 'structureCompleteLabel', color: 'text-theme-accent bg-theme-accent/10' };
   }
   if (progressPercent <= 85) {
-    return { icon: <Zap className="w-3 h-3" />, label: 'Topping Out', color: 'text-[#CCFF00] bg-[#CCFF00]/10' };
+    return { icon: <Zap className="w-3 h-3" />, label: 'toppingOutLabel', color: 'text-theme-accent bg-theme-accent/10' };
   }
   if (progressPercent < 100) {
-    return { icon: <Rocket className="w-3 h-3" />, label: 'Pre-Handover', color: 'text-orange-400 bg-orange-400/10' };
+    return { icon: <Rocket className="w-3 h-3" />, label: 'preHandoverLabel', color: 'text-theme-accent bg-theme-accent/10' };
   }
-  return { icon: <Rocket className="w-3 h-3" />, label: 'Handover Ready', color: 'text-green-400 bg-green-400/10' };
+  return { icon: <Rocket className="w-3 h-3" />, label: 'handoverReadyLabel', color: 'text-theme-positive bg-theme-positive/10' };
 };
 
 // Get phase label for post-handover exits
 const getPostHandoverPhase = (monthsAfterHandover: number, growthPeriodYears: number): { icon: React.ReactNode; label: string; color: string } => {
   const yearsAfter = monthsAfterHandover / 12;
   if (yearsAfter <= growthPeriodYears) {
-    return { 
-      icon: <Rocket className="w-3 h-3" />, 
-      label: 'Growth Phase', 
-      color: 'text-green-400 bg-green-400/10' 
+    return {
+      icon: <Rocket className="w-3 h-3" />,
+      label: 'growthPhaseLabel',
+      color: 'text-theme-positive bg-theme-positive/10'
     };
   }
-  return { 
-    icon: <Shield className="w-3 h-3" />, 
-    label: 'Mature Phase', 
-    color: 'text-blue-400 bg-blue-400/10' 
+  return {
+    icon: <Shield className="w-3 h-3" />,
+    label: 'maturePhaseLabel',
+    color: 'text-theme-text-muted bg-theme-text-muted/10'
   };
 };
 
@@ -192,9 +192,9 @@ export const ExitScenariosCards = ({
       <div className="p-4 border-b border-theme-border">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-[#CCFF00]" />
+            <Target className="w-5 h-5 text-theme-accent" />
             <div>
-              <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">Exit Strategy</h3>
+              <h3 className="text-sm font-medium uppercase tracking-wider text-theme-text-muted">{t('exitStrategyLabel')}</h3>
               <p className="text-xs text-theme-text-muted">{scenarioCount} {scenarioLabel} • {t('clickToEdit')}</p>
             </div>
           </div>
@@ -207,23 +207,23 @@ export const ExitScenariosCards = ({
         </div>
         
         {/* Static Investment Summary - Moved from cards */}
-        <div className="grid grid-cols-3 gap-3 p-3 bg-[#0d1117] rounded-lg border border-[#2a3142]">
+        <div className="grid grid-cols-3 gap-3 p-3 bg-theme-bg rounded-lg border border-theme-border">
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Contract Price</p>
-            <p className="text-sm font-mono text-white">{formatCurrency(basePrice, currency, rate)}</p>
+            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">{t('contractPriceLabel')}</p>
+            <p className="text-sm font-mono text-theme-text">{formatCurrency(basePrice, currency, rate)}</p>
             {unitSizeSqf && unitSizeSqf > 0 && (
-              <p className="text-[10px] text-gray-500 font-mono">{formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft</p>
+              <p className="text-[10px] text-theme-text-muted font-mono">{formatCurrency(basePrice / unitSizeSqf, currency, rate)}/sqft</p>
             )}
           </div>
-          <div className="text-center border-x border-[#2a3142]">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Entry Costs</p>
-            <p className="text-sm font-mono text-red-400">{formatCurrency(totalEntryCosts, currency, rate)}</p>
-            <p className="text-[10px] text-gray-500">DLD + Fees</p>
+          <div className="text-center border-x border-theme-border">
+            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">{t('entryCostsLabel')}</p>
+            <p className="text-sm font-mono text-theme-negative">{formatCurrency(totalEntryCosts, currency, rate)}</p>
+            <p className="text-[10px] text-theme-text-muted">{t('dldFeesShortLabel')}</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Timeline</p>
-            <p className="text-sm font-mono text-white">{totalMonths} months</p>
-            <p className="text-[10px] text-gray-500">to handover</p>
+            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">{t('timelineLabel')}</p>
+            <p className="text-sm font-mono text-theme-text">{totalMonths} {t('months')}</p>
+            <p className="text-[10px] text-theme-text-muted">{t('toHandoverLabel')}</p>
           </div>
         </div>
       </div>
@@ -258,29 +258,29 @@ export const ExitScenariosCards = ({
             <div 
               key={index}
               className={cn(
-                "rounded-xl border transition-all bg-[#0d1117] overflow-hidden",
+                "rounded-xl border transition-all bg-theme-bg overflow-hidden",
                 isHighlighted 
-                  ? "border-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.3)] scale-[1.02]" 
+                  ? "border-theme-accent shadow-lg scale-[1.02]" 
                   : isPostHandover
-                    ? "border-green-500/30 hover:border-green-500/50"
-                    : "border-[#2a3142] hover:border-[#CCFF00]/30"
+                    ? "border-theme-positive/30 hover:border-theme-positive/50"
+                    : "border-theme-border hover:border-theme-accent/30"
               )}
               onMouseEnter={() => onCardHover?.(index)}
               onMouseLeave={() => onCardHover?.(null)}
             >
               {/* Card Header - Redesigned with milestone/phase and date primary */}
-              <div className="p-3 bg-[#1a1f2e] border-b border-[#2a3142]">
+              <div className="p-3 bg-theme-card border-b border-theme-border">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-[#CCFF00]">{t('exitNumber')}{index + 1}</span>
+                    <span className="text-sm font-semibold text-theme-accent">{t('exitNumber')}{index + 1}</span>
                     {/* Phase/Milestone Tag */}
                     <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${phaseOrMilestone.color}`}>
                       {phaseOrMilestone.icon}
-                      {phaseOrMilestone.label}
+                      {t(phaseOrMilestone.label)}
                     </span>
                     {/* Post-handover offset badge */}
                     {isPostHandover && (
-                      <span className="text-[10px] font-mono text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-mono text-theme-positive bg-theme-positive/10 px-1.5 py-0.5 rounded">
                         {formatPostHandoverOffset(monthsAfterHandover)}
                       </span>
                     )}
@@ -290,7 +290,7 @@ export const ExitScenariosCards = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-gray-500 hover:text-[#CCFF00]"
+                        className="h-6 w-6 text-theme-text-muted hover:text-theme-accent"
                         onClick={() => setEditingIndex(editingIndex === index ? null : index)}
                       >
                         <Pencil className="w-3 h-3" />
@@ -299,7 +299,7 @@ export const ExitScenariosCards = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-gray-500 hover:text-red-400"
+                          className="h-6 w-6 text-theme-text-muted hover:text-theme-negative"
                           onClick={() => handleRemoveExit(index)}
                         >
                           <Trash2 className="w-3 h-3" />
@@ -312,17 +312,17 @@ export const ExitScenariosCards = ({
                 {/* Timeline Info - Date primary, months secondary */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-[#CCFF00]" />
-                    <span className="text-sm font-semibold text-white">{dateInfo.date}</span>
-                    <span className="text-xs text-gray-500 font-mono">· {dateInfo.monthsLabel}</span>
+                    <Calendar className="w-3.5 h-3.5 text-theme-accent" />
+                    <span className="text-sm font-semibold text-theme-text">{dateInfo.date}</span>
+                    <span className="text-xs text-theme-text-muted font-mono">· {dateInfo.monthsLabel}</span>
                   </div>
                   {isPostHandover ? (
-                    <span className="text-[10px] text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
-                      Post-Handover
+                    <span className="text-[10px] text-theme-positive bg-theme-positive/10 px-1.5 py-0.5 rounded">
+                      {t('postHandoverBadgeLabel')}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-gray-500 bg-[#0d1117] px-1.5 py-0.5 rounded">
-                      {progressPercent}% built
+                    <span className="text-[10px] text-theme-text-muted bg-theme-bg px-1.5 py-0.5 rounded">
+                      {progressPercent}% {t('percentBuiltSuffix')}
                     </span>
                   )}
                 </div>
@@ -330,10 +330,10 @@ export const ExitScenariosCards = ({
 
               {/* Edit Slider - Extended for post-handover */}
               {!readOnly && editingIndex === index && (
-                <div className="p-3 bg-[#1a1f2e]/50 border-b border-[#CCFF00]/20">
+                <div className="p-3 bg-theme-card/50 border-b border-theme-accent/20">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-gray-400">{t('exitAfter')}</span>
-                    <span className="text-sm font-bold text-[#CCFF00]">
+                    <span className="text-xs text-theme-text-muted">{t('exitAfter')}</span>
+                    <span className="text-sm font-bold text-theme-accent">
                       {isPostHandover 
                         ? formatPostHandoverOffset(monthsAfterHandover)
                         : `${exitMonth} ${t('months')}`
@@ -348,10 +348,10 @@ export const ExitScenariosCards = ({
                     step={1}
                     className="roi-slider-lime"
                   />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <div className="flex justify-between text-xs text-theme-text-muted mt-1">
                     <span>6{t('mo')}</span>
-                    <span className="text-[#CCFF00]">Handover ({totalMonths}{t('mo')})</span>
-                    <span className="text-green-400">+5yr</span>
+                    <span className="text-theme-accent">{t('handover')} ({totalMonths}{t('mo')})</span>
+                    <span className="text-theme-positive">+5yr</span>
                   </div>
                 </div>
               )}
@@ -364,67 +364,67 @@ export const ExitScenariosCards = ({
                     <p className={`text-4xl font-bold font-mono ${returnBadge.text}`}>
                       {displayReturn.toFixed(0)}%
                     </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Return on Cash Invested
+                    <p className="text-sm text-theme-text-muted mt-1">
+                      {t('returnOnCashInvestedLabel')}
                     </p>
                     <div className="flex items-center justify-center gap-2 mt-2">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${returnBadge.bg} ${returnBadge.text}`}>
-                        {returnBadge.label}
+                        {t(returnBadge.label)}
                       </span>
-                      <span className="text-xs text-gray-500">·</span>
-                      <span className="text-xs text-[#CCFF00] font-mono">{displayAnnualizedReturn.toFixed(1)}%/year</span>
+                      <span className="text-xs text-theme-text-muted">·</span>
+                      <span className="text-xs text-theme-accent font-mono">{displayAnnualizedReturn.toFixed(1)}%{t('perYearSuffix')}</span>
                     </div>
                   </div>
                 </ROEBreakdownTooltip>
 
                 {/* SECONDARY: Profit Display - Hero Number */}
-                <div className={`text-center p-4 rounded-lg border ${displayProfit >= 0 ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">
-                    Profit to Pocket {scenario.exitCosts > 0 ? '(Net)' : ''}
+                <div className={`text-center p-4 rounded-lg border ${displayProfit >= 0 ? 'bg-theme-positive/10 border-theme-positive/20' : 'bg-theme-negative/10 border-theme-negative/20'}`}>
+                  <p className="text-[10px] uppercase tracking-wider text-theme-text-muted mb-1">
+                    {t('profitToPocketLabel')} {scenario.exitCosts > 0 ? t('profitToPocketNetLabel') : ''}
                   </p>
-                  <p className={`text-2xl font-bold font-mono ${displayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className={`text-2xl font-bold font-mono ${displayProfit >= 0 ? 'text-theme-positive' : 'text-theme-negative'}`}>
                     {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                   </p>
                 </div>
 
                 {/* TERTIARY: Cash Invested → Exit Value (The missing context) */}
-                <div className="mt-4 p-3 bg-[#1a1f2e]/50 rounded-lg space-y-2">
+                <div className="mt-4 p-3 bg-theme-card/50 rounded-lg space-y-2">
                   {/* Cash at Exit */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Wallet className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="text-xs text-gray-400">Cash at Exit</span>
+                      <Wallet className="w-3.5 h-3.5 text-theme-text-muted" />
+                      <span className="text-xs text-theme-text-muted">{t('cashAtExitLabel')}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-mono text-white font-medium">
+                      <span className="text-sm font-mono text-theme-text font-medium">
                         {formatCurrency(scenario.equityDeployed, currency, rate)}
                       </span>
                     </div>
                   </div>
                   {/* Entry Costs (small subtext) */}
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-gray-500 pl-5">+ Entry Costs</span>
-                    <span className="text-gray-500 font-mono">
+                    <span className="text-theme-text-muted pl-5">{t('plusEntryCostsLabel')}</span>
+                    <span className="text-theme-text-muted font-mono">
                       {formatCurrency(scenario.totalCapital - scenario.equityDeployed, currency, rate)}
                     </span>
                   </div>
                   
                   {/* Exit Value */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#2a3142]">
+                  <div className="flex items-center justify-between pt-2 border-t border-theme-border">
                     <div className="flex items-center gap-2">
-                      <Target className="w-3.5 h-3.5 text-[#CCFF00]" />
-                      <span className="text-xs text-gray-400">Exit Value</span>
+                      <Target className="w-3.5 h-3.5 text-theme-accent" />
+                      <span className="text-xs text-theme-text-muted">{t('exitValueLabel')}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-mono text-[#CCFF00] font-medium">
+                      <span className="text-sm font-mono text-theme-accent font-medium">
                         {formatCurrency(scenario.exitPrice, currency, rate)}
                       </span>
                     </div>
                   </div>
                   {/* Base Price (small subtext) */}
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-gray-500 pl-5">Base Price</span>
-                    <span className="text-gray-500 font-mono">
+                    <span className="text-theme-text-muted pl-5">{t('basePriceLabel')}</span>
+                    <span className="text-theme-text-muted font-mono">
                       {formatCurrency(basePrice, currency, rate)}
                     </span>
                   </div>
@@ -434,40 +434,40 @@ export const ExitScenariosCards = ({
               {/* View Breakdown Toggle */}
               <button
                 onClick={() => toggleCardExpansion(index)}
-                className="w-full px-4 py-2 flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors border-t border-[#2a3142] bg-[#0d1117]"
+                className="w-full px-4 py-2 flex items-center justify-center gap-1 text-xs text-theme-text-muted hover:text-theme-text transition-colors border-t border-theme-border bg-theme-bg"
               >
                 {isExpanded ? (
                   <>
                     <ChevronUp className="w-3 h-3" />
-                    Hide Breakdown
+                    {t('hideBreakdownLabel')}
                   </>
                 ) : (
                   <>
                     <ChevronDown className="w-3 h-3" />
-                    View Breakdown
+                    {t('viewBreakdownLabel')}
                   </>
                 )}
               </button>
 
               {/* Collapsible Details */}
               {isExpanded && (
-                <div className="px-4 pb-4 pt-2 space-y-1 border-t border-[#2a3142] bg-[#0d1117]/50 animate-in slide-in-from-top-2 duration-200">
+                <div className="px-4 pb-4 pt-2 space-y-1 border-t border-theme-border bg-theme-bg/50 animate-in slide-in-from-top-2 duration-200">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-500">Cash Deployed</span>
-                    <span className="text-gray-300 font-mono">{formatCurrency(scenario.equityDeployed, currency, rate)}</span>
+                    <span className="text-theme-text-muted">{t('cashDeployedLabel')}</span>
+                    <span className="text-theme-text font-mono">{formatCurrency(scenario.equityDeployed, currency, rate)}</span>
                   </div>
                   
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-500">Total Invested</span>
-                    <span className="text-white font-mono font-medium">{formatCurrency(scenario.totalCapital, currency, rate)}</span>
+                    <span className="text-theme-text-muted">{t('totalInvestedLabel')}</span>
+                    <span className="text-theme-text font-mono font-medium">{formatCurrency(scenario.totalCapital, currency, rate)}</span>
                   </div>
                   
-                  <div className="flex justify-between items-center text-xs border-t border-[#2a3142] pt-1">
-                    <span className="text-gray-500">Exit Price</span>
+                  <div className="flex justify-between items-center text-xs border-t border-theme-border pt-1">
+                    <span className="text-theme-text-muted">{t('exitPriceLabel')}</span>
                     <div className="text-right">
-                      <span className="text-white font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
+                      <span className="text-theme-text font-mono">{formatCurrency(scenario.exitPrice, currency, rate)}</span>
                       {unitSizeSqf && unitSizeSqf > 0 && (
-                        <span className="text-gray-500 font-mono text-[10px] ml-1">
+                        <span className="text-theme-text-muted font-mono text-[10px] ml-1">
                           ({formatCurrency(scenario.exitPrice / unitSizeSqf, currency, rate)}/sqft)
                         </span>
                       )}
@@ -476,21 +476,21 @@ export const ExitScenariosCards = ({
                   
                   {/* Exit Costs if applicable */}
                   {scenario.exitCosts > 0 && (
-                    <div className="pt-1 border-t border-[#2a3142] space-y-0.5">
+                    <div className="pt-1 border-t border-theme-border space-y-0.5">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">Gross Profit</span>
-                        <span className="text-green-400/70 font-mono">+{formatCurrency(scenario.trueProfit, currency, rate)}</span>
+                        <span className="text-theme-text-muted">{t('grossProfitLabel')}</span>
+                        <span className="text-theme-positive/70 font-mono">+{formatCurrency(scenario.trueProfit, currency, rate)}</span>
                       </div>
                       {scenario.agentCommission > 0 && (
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-red-400/60">Agent (2%)</span>
-                          <span className="text-red-400/60 font-mono">-{formatCurrency(scenario.agentCommission, currency, rate)}</span>
+                          <span className="text-theme-negative/60">{t('agentCommissionLabel')}</span>
+                          <span className="text-theme-negative/60 font-mono">-{formatCurrency(scenario.agentCommission, currency, rate)}</span>
                         </div>
                       )}
                       {scenario.nocFee > 0 && (
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-red-400/60">NOC Fee</span>
-                          <span className="text-red-400/60 font-mono">-{formatCurrency(scenario.nocFee, currency, rate)}</span>
+                          <span className="text-theme-negative/60">{t('nocFeeLabel')}</span>
+                          <span className="text-theme-negative/60 font-mono">-{formatCurrency(scenario.nocFee, currency, rate)}</span>
                         </div>
                       )}
                     </div>

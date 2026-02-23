@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConfiguratorSectionProps, quarters, years } from "./types";
+import { ConfiguratorSectionProps, months, years } from "./types";
 import { formatCurrency } from "../currencyUtils";
 import { InfoTooltip } from "../InfoTooltip";
 import { PaymentMilestone } from "../useOICalculations";
@@ -178,16 +178,16 @@ export const PostHandoverSection = ({ inputs, setInputs, currency }: Configurato
             </div>
             <div className="flex items-center gap-2 ml-6">
               <Select
-                value={String(inputs.postHandoverEndQuarter)}
-                onValueChange={(v) => setInputs(prev => ({ ...prev, postHandoverEndQuarter: Number(v) }))}
+                value={String(inputs.postHandoverEndMonth)}
+                onValueChange={(v) => setInputs(prev => ({ ...prev, postHandoverEndMonth: Number(v) }))}
               >
-                <SelectTrigger className="w-20 h-8 bg-theme-input border-theme-border text-theme-text">
+                <SelectTrigger className="flex-1 h-8 bg-theme-input border-theme-border text-theme-text">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-theme-card border-theme-border">
-                  {quarters.map((q) => (
-                    <SelectItem key={q.value} value={String(q.value)} className="text-theme-text hover:bg-theme-hover">
-                      {q.label}
+                  {months.map((m) => (
+                    <SelectItem key={m.value} value={String(m.value)} className="text-theme-text hover:bg-theme-hover">
+                      {m.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

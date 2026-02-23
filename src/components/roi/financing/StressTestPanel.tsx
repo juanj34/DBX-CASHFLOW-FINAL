@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle, MinusCircle } from "lucide-react";
 import { Currency, formatCurrency } from "../currencyUtils";
 import { StressScenario } from "../useMortgageCalculations";
 import { cn } from "@/lib/utils";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StressTestPanelProps {
   stressScenarios: StressScenario[];
@@ -16,38 +17,39 @@ export const StressTestPanel = ({
   rate,
   viewMode,
 }: StressTestPanelProps) => {
+  const { t } = useLanguage();
   const displayMultiplier = viewMode === 'annual' ? 12 : 1;
   
   const getStatusIcon = (status: 'positive' | 'tight' | 'negative') => {
     switch (status) {
       case 'positive':
-        return <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />;
+        return <CheckCircle className="w-3.5 h-3.5 text-theme-positive" />;
       case 'tight':
-        return <MinusCircle className="w-3.5 h-3.5 text-yellow-400" />;
+        return <MinusCircle className="w-3.5 h-3.5 text-theme-accent" />;
       case 'negative':
-        return <AlertTriangle className="w-3.5 h-3.5 text-red-400" />;
+        return <AlertTriangle className="w-3.5 h-3.5 text-theme-negative" />;
     }
   };
 
   const getStatusColor = (status: 'positive' | 'tight' | 'negative') => {
     switch (status) {
       case 'positive':
-        return 'text-emerald-400';
+        return 'text-theme-positive';
       case 'tight':
-        return 'text-yellow-400';
+        return 'text-theme-accent';
       case 'negative':
-        return 'text-red-400';
+        return 'text-theme-negative';
     }
   };
 
   const getStatusBg = (status: 'positive' | 'tight' | 'negative') => {
     switch (status) {
       case 'positive':
-        return 'bg-emerald-900/20 border-emerald-700/30';
+        return 'bg-theme-positive/10 border-theme-positive/30';
       case 'tight':
-        return 'bg-yellow-900/20 border-yellow-700/30';
+        return 'bg-theme-accent/10 border-theme-accent/30';
       case 'negative':
-        return 'bg-red-900/20 border-red-700/30';
+        return 'bg-theme-negative/10 border-theme-negative/30';
     }
   };
 
@@ -58,20 +60,20 @@ export const StressTestPanel = ({
     <div className="p-4 rounded-xl bg-theme-card border border-theme-border h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-4 h-4 text-amber-400" />
-        <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wider">Stress Test</span>
+        <AlertTriangle className="w-4 h-4 text-theme-accent" />
+        <span className="text-xs font-medium text-theme-text-muted uppercase tracking-wider">{t('stressTestLabel')}</span>
       </div>
 
       {/* Status Badge */}
       <div className={cn(
         "text-center py-2 px-3 rounded-lg mb-3",
-        allPositive ? "bg-emerald-900/30 border border-emerald-700/50" : "bg-amber-900/30 border border-amber-700/50"
+        allPositive ? "bg-theme-positive/10 border border-theme-positive/30" : "bg-theme-accent/10 border border-theme-accent/30"
       )}>
         <span className={cn(
           "text-xs font-semibold",
-          allPositive ? "text-emerald-400" : "text-amber-400"
+          allPositive ? "text-theme-positive" : "text-theme-accent"
         )}>
-          {allPositive ? "✓ Resilient at All Rates" : "⚠ Review Higher Rates"}
+          {allPositive ? `✓ ${t('resilientAllRatesLabel')}` : `⚠ ${t('reviewHigherRatesLabel')}`}
         </span>
       </div>
 
@@ -92,7 +94,7 @@ export const StressTestPanel = ({
                   {scenario.rate.toFixed(1)}%
                 </span>
                 {index === 0 && (
-                  <span className="ml-1 text-[9px] text-theme-text-muted">(current)</span>
+                  <span className="ml-1 text-[9px] text-theme-text-muted">{t('currentRateLabel')}</span>
                 )}
               </div>
             </div>
@@ -105,7 +107,7 @@ export const StressTestPanel = ({
                 {scenario.netCashflow >= 0 ? '+' : ''}{formatCurrency(scenario.netCashflow * displayMultiplier, currency, rate)}
               </div>
               <div className="text-[9px] text-theme-text-muted font-mono">
-                {formatCurrency(scenario.monthlyPayment * displayMultiplier, currency, rate)} debt
+                {formatCurrency(scenario.monthlyPayment * displayMultiplier, currency, rate)} {t('debtWord')}
               </div>
             </div>
           </div>
@@ -114,9 +116,9 @@ export const StressTestPanel = ({
 
       {/* Pitch Text */}
       <p className="text-[9px] text-theme-text-muted text-center mt-3 leading-relaxed">
-        {allPositive 
-          ? `Property remains cashflow positive even at ${stressScenarios[stressScenarios.length - 1]?.rate.toFixed(1)}% interest rate`
-          : "Higher rates may require additional cashflow planning"}
+        {allPositive
+          ? `${t('stressTestPositiveMsg')} ${stressScenarios[stressScenarios.length - 1]?.rate.toFixed(1)}${t('stressTestPositiveSuffix')}`
+          : t('stressTestNegativeMsg')}
       </p>
     </div>
   );

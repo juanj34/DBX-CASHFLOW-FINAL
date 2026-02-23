@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import mapboxgl from "mapbox-gl";
-import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import { Loader2, Upload, X } from "lucide-react";
 import { optimizeImage, ZONE_IMAGE_CONFIG } from "@/lib/imageUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,11 +24,7 @@ interface ZoneFormProps {
 
 const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
   const { t } = useLanguage();
-  const { data: token, isLoading } = useMapboxToken();
   const { toast } = useToast();
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const draw = useRef<MapboxDraw | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -84,65 +76,6 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
-  useEffect(() => {
-    if (!token || !mapContainer.current) return;
-
-    // Clean up existing map when zone changes or on remount
-    if (map.current) {
-      map.current.remove();
-      map.current = null;
-      draw.current = null;
-    }
-
-    mapboxgl.accessToken = token;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [55.2708, 25.2048], // Dubai
-      zoom: 11,
-    });
-
-    draw.current = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {
-        polygon: true,
-        trash: true,
-      },
-      // Start in simple_select mode if editing existing polygon
-      defaultMode: zone?.polygon ? "simple_select" : "draw_polygon",
-    });
-
-    map.current.addControl(draw.current);
-
-    // Wait for map to fully load before adding polygon
-    map.current.on('load', () => {
-      if (zone?.polygon && draw.current && map.current) {
-        draw.current.add({
-          type: "Feature",
-          geometry: zone.polygon,
-          properties: {},
-        });
-        
-        // Center map on existing polygon
-        try {
-          const bounds = new mapboxgl.LngLatBounds();
-          const coords = zone.polygon.coordinates[0] as [number, number][];
-          coords.forEach((coord) => bounds.extend(coord));
-          map.current.fitBounds(bounds, { padding: 50 });
-        } catch (e) {
-          console.error("Error fitting bounds:", e);
-        }
-      }
-    });
-
-    return () => {
-      map.current?.remove();
-      map.current = null;
-      draw.current = null;
-    };
-  }, [token, zone?.id]);
-
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -193,36 +126,15 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
       return;
     }
 
-    if (!draw.current) {
-      toast({
-        title: t('validationError'),
-        description: t('pleaseDrawPolygon'),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const data = draw.current.getAll();
-    if (data.features.length === 0) {
-      toast({
-        title: t('validationError'),
-        description: t('pleaseDrawPolygon'),
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSaving(true);
 
-    const polygon = data.features[0].geometry;
     const imageUrl = await uploadImage();
 
-    const zoneData = {
+    const zoneData: Record<string, any> = {
       name: formData.name,
       tagline: formData.tagline || null,
       description: formData.description || null,
       color: formData.color,
-      polygon,
       image_url: imageUrl,
       // Investment Profile
       concept: formData.concept || null,
@@ -266,40 +178,6 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
       onSaved();
     }
   };
-
-  // Show loading state while token is being fetched
-  if (isLoading) {
-    return (
-      <Dialog open onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
-          <DialogHeader>
-            <DialogTitle className="text-theme-text">{zone ? t('editZone') : t('createNewZone')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-theme-text-muted">{t('loadingMap') || 'Loading map...'}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Show error if token failed to load
-  if (!token) {
-    return (
-      <Dialog open onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-theme-card border-theme-border">
-          <DialogHeader>
-            <DialogTitle className="text-theme-text">{zone ? t('editZone') : t('createNewZone')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <p className="text-destructive">{t('mapLoadError') || 'Failed to load map. Please try again.'}</p>
-            <Button onClick={onClose} variant="outline">{t('close')}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -523,25 +401,6 @@ const ZoneForm = ({ zone, onClose, onSaved }: ZoneFormProps) => {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Section 5: Map */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b border-theme-border pb-2 text-theme-text">{t('zonePolygon')}</h3>
-            
-            <p className="text-sm text-theme-text-muted">
-              {t('drawPolygonInstruction')}
-            </p>
-            <div
-              ref={mapContainer}
-              className="h-96 rounded-lg border border-theme-border"
-              style={{ display: isLoading ? "none" : "block" }}
-            />
-            {isLoading && (
-              <div className="h-96 rounded-lg border border-theme-border flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-theme-accent" />
-              </div>
-            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

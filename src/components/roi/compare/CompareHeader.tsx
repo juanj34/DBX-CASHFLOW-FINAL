@@ -114,8 +114,8 @@ const SortableQuoteCard = ({
   
   // Calculate monthly burn during pre-handover
   const bookingDate = new Date(inputs.bookingYear, (inputs.bookingMonth || 1) - 1, 1);
-  const handoverMonth = ((inputs.handoverQuarter || 4) - 1) * 3 + 1;
-  const handoverDate = new Date(inputs.handoverYear || inputs.bookingYear + 2, handoverMonth, 1);
+  const hMonth = inputs.handoverMonth || 12;
+  const handoverDate = new Date(inputs.handoverYear || inputs.bookingYear + 2, hMonth - 1, 1);
   const constructionMonths = Math.max(1, Math.round((handoverDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
   
   // Entry costs

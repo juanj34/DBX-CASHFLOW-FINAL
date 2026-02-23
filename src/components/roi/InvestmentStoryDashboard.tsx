@@ -5,7 +5,7 @@ import {
   Calendar, Percent, CreditCard, Info, ChevronDown, ChevronUp,
   Hammer, Coins, FileText, CalendarDays, Sparkles
 } from "lucide-react";
-import { OIInputs, OICalculations } from "./useOICalculations";
+import { OIInputs, OICalculations, monthName } from "./useOICalculations";
 import { CumulativeIncomeChart } from "./CumulativeIncomeChart";
 import { MortgageAnalysis, MortgageInputs } from "./useMortgageCalculations";
 import { Currency, formatCurrency } from "./currencyUtils";
@@ -304,7 +304,7 @@ export const InvestmentStoryDashboard = ({
       unitSize,
       constructionMonths: calculations.totalMonths,
       // Handover date formatted
-      handoverQ: inputs.handoverQuarter,
+      handoverM: inputs.handoverMonth,
       handoverY: inputs.handoverYear,
       // For Leverage section
       loanAmount: mortgageEnabled ? mortgageAnalysis.loanAmount : 0,
@@ -445,9 +445,7 @@ export const InvestmentStoryDashboard = ({
 
   // Format handover date
   const formatHandoverDate = () => {
-    const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
-    const q = quarters[entryData.handoverQ - 1] || 'Q1';
-    return `${q} ${entryData.handoverY}`;
+    return `${monthName(entryData.handoverM)} ${entryData.handoverY}`;
   };
 
   // Animation classes based on direction

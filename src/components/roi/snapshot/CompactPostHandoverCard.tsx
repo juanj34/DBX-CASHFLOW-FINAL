@@ -35,24 +35,22 @@ const translations = {
   yearsShort: { en: 'yr', es: 'año' },
 };
 
-// Check if a payment is AFTER the handover quarter (strictly after Q end, not start)
+// Check if a payment is AFTER the handover month
 // Must match the logic in CompactPaymentTable.tsx
-const isPaymentAfterHandoverQuarter = (
+const isPaymentAfterHandoverMonth = (
   monthsFromBooking: number,
   bookingMonth: number,
   bookingYear: number,
-  handoverQuarter: number,
+  handoverMonth: number,
   handoverYear: number
 ): boolean => {
   const bookingDate = new Date(bookingYear, bookingMonth - 1);
   const paymentDate = new Date(bookingDate);
   paymentDate.setMonth(paymentDate.getMonth() + monthsFromBooking);
-  
-  // Handover quarter END = last month of quarter (Q3 = Sep = month 9)
-  const handoverQuarterEndMonth = handoverQuarter * 3;
-  const handoverQuarterEnd = new Date(handoverYear, handoverQuarterEndMonth - 1, 28);
-  
-  return paymentDate > handoverQuarterEnd;
+
+  const handoverDate = new Date(handoverYear, handoverMonth - 1, 28);
+
+  return paymentDate > handoverDate;
 };
 
 export const CompactPostHandoverCard = ({
@@ -83,11 +81,11 @@ export const CompactPostHandoverCard = ({
   if (postHandoverPaymentsToUse.length === 0 && inputs.additionalPayments?.length > 0) {
     postHandoverPaymentsToUse = inputs.additionalPayments.filter(p => {
       if (p.type !== 'time') return false;
-      return isPaymentAfterHandoverQuarter(
+      return isPaymentAfterHandoverMonth(
         p.triggerValue,
         inputs.bookingMonth,
         inputs.bookingYear,
-        inputs.handoverQuarter,
+        inputs.handoverMonth,
         inputs.handoverYear
       );
     });

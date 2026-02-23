@@ -20,9 +20,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Upload, X, Home, Building2, Store } from "lucide-react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { optimizeImage, PROJECT_IMAGE_CONFIG } from "@/lib/imageUtils";
 
 interface ProjectFormProps {
@@ -46,11 +43,7 @@ const UNIT_TYPE_OPTIONS = [
 
 const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
   const { toast } = useToast();
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const marker = useRef<mapboxgl.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { data: mapboxToken } = useMapboxToken();
 
   const [formData, setFormData] = useState({
     name: project?.name || "",
@@ -119,60 +112,6 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
-
-    mapboxgl.accessToken = mapboxToken;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [parseFloat(formData.longitude), parseFloat(formData.latitude)],
-      zoom: 12,
-    });
-
-    marker.current = new mapboxgl.Marker({
-      draggable: true,
-      color: "#10B981",
-    })
-      .setLngLat([parseFloat(formData.longitude), parseFloat(formData.latitude)])
-      .addTo(map.current);
-
-    marker.current.on("dragend", () => {
-      const lngLat = marker.current!.getLngLat();
-      setFormData((prev) => ({
-        ...prev,
-        latitude: lngLat.lat.toFixed(6),
-        longitude: lngLat.lng.toFixed(6),
-      }));
-    });
-
-    map.current.on("click", (e) => {
-      const { lng, lat } = e.lngLat;
-      marker.current?.setLngLat([lng, lat]);
-      setFormData((prev) => ({
-        ...prev,
-        latitude: lat.toFixed(6),
-        longitude: lng.toFixed(6),
-      }));
-    });
-
-    return () => {
-      map.current?.remove();
-    };
-  }, [mapboxToken]);
-
-  useEffect(() => {
-    if (marker.current && map.current) {
-      const lat = parseFloat(formData.latitude);
-      const lng = parseFloat(formData.longitude);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        marker.current.setLngLat([lng, lat]);
-        map.current.setCenter([lng, lat]);
-      }
-    }
-  }, [formData.latitude, formData.longitude]);
-
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -235,7 +174,7 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
     if (!formData.latitude || !formData.longitude) {
       toast({
         title: "Validation error",
-        description: "Please select a location on the map",
+        description: "Please enter latitude and longitude coordinates",
         variant: "destructive",
       });
       return;
@@ -365,6 +304,8 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
                 <Label htmlFor="latitude">Latitude</Label>
                 <Input
                   id="latitude"
+                  type="number"
+                  step="any"
                   value={formData.latitude}
                   onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                   placeholder="25.2048"
@@ -374,19 +315,14 @@ const ProjectForm = ({ project, onClose, onSaved }: ProjectFormProps) => {
                 <Label htmlFor="longitude">Longitude</Label>
                 <Input
                   id="longitude"
+                  type="number"
+                  step="any"
                   value={formData.longitude}
                   onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
                   placeholder="55.2708"
                 />
               </div>
             </div>
-            <div
-              ref={mapContainer}
-              className="w-full h-[300px] rounded-lg border"
-            />
-            <p className="text-sm text-muted-foreground">
-              Click on the map or drag the marker to set the project location
-            </p>
           </div>
 
           {/* Developer Selection */}
