@@ -48,8 +48,8 @@ interface DashboardSidebarProps {
   // Export modal trigger
   onOpenExportModal?: () => void;
   // View mode toggle
-  viewMode?: 'classic' | 'story';
-  onChangeViewMode?: (mode: 'classic' | 'story') => void;
+  viewMode?: 'classic' | 'story' | 'onion';
+  onChangeViewMode?: (mode: 'classic' | 'story' | 'onion') => void;
 }
 
 // Section Header Component
@@ -406,14 +406,18 @@ export const DashboardSidebar = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => onChangeViewMode(viewMode === 'classic' ? 'story' : 'classic')}
+                    onClick={() => {
+                      const modes: Array<'classic' | 'story' | 'onion'> = ['classic', 'onion', 'story'];
+                      const idx = modes.indexOf(viewMode || 'classic');
+                      onChangeViewMode(modes[(idx + 1) % modes.length]);
+                    }}
                     className="w-10 h-10 mx-auto flex flex-col items-center justify-center rounded-lg bg-theme-bg/50 border border-theme-border text-theme-text-muted hover:text-theme-text transition-all"
                   >
-                    {viewMode === 'classic' ? <LayoutDashboard className="w-4 h-4" /> : <Sparkles className="w-4 h-4 text-[#CCFF00]" />}
+                    {viewMode === 'classic' ? <LayoutDashboard className="w-4 h-4" /> : viewMode === 'onion' ? <TableProperties className="w-4 h-4 text-theme-accent" /> : <Sparkles className="w-4 h-4 text-theme-accent" />}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Switch to {viewMode === 'classic' ? 'Story View' : 'Classic View'}
+                  {viewMode === 'classic' ? 'Simple View' : viewMode === 'onion' ? 'Story View' : 'Classic View'}
                 </TooltipContent>
               </Tooltip>
             ) : (
@@ -431,12 +435,24 @@ export const DashboardSidebar = ({
                   Classic
                 </button>
                 <button
+                  onClick={() => onChangeViewMode('onion')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all",
+                    viewMode === 'onion'
+                      ? "bg-theme-card text-theme-accent shadow-sm ring-1 ring-theme-border"
+                      : "text-theme-text-muted hover:text-theme-accent"
+                  )}
+                >
+                  <TableProperties className="w-3 h-3" />
+                  Simple
+                </button>
+                <button
                   onClick={() => onChangeViewMode('story')}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all",
                     viewMode === 'story'
-                      ? "bg-theme-card text-[#CCFF00] shadow-sm ring-1 ring-theme-border"
-                      : "text-theme-text-muted hover:text-[#CCFF00]"
+                      ? "bg-theme-card text-theme-accent shadow-sm ring-1 ring-theme-border"
+                      : "text-theme-text-muted hover:text-theme-accent"
                   )}
                 >
                   <Sparkles className="w-3 h-3" />

@@ -32,6 +32,7 @@ import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
 import { InvestmentStoryDashboard } from "@/components/roi/InvestmentStoryDashboard";
+import { OnionView } from "@/components/roi/onion";
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' };
 
@@ -58,7 +59,7 @@ const OICalculatorContent = () => {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // View mode toggle
-  const [viewMode, setViewMode] = useState<'classic' | 'story'>('classic');
+  const [viewMode, setViewMode] = useState<'classic' | 'story' | 'onion'>('classic');
 
   // Ref for client-side export capture
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -537,6 +538,24 @@ const OICalculatorContent = () => {
             rate={rate}
             snapshotTitle={(inputs as any).snapshotTitle || null}
             onSnapshotTitleChange={(title) => setInputs(prev => ({ ...prev, snapshotTitle: title } as OIInputs))}
+            onEditClick={() => setModalOpen(true)}
+          />
+        ) : viewMode === 'onion' ? (
+          <OnionView
+            inputs={inputs}
+            calculations={calculations}
+            clientInfo={clientInfo}
+            mortgageInputs={mortgageInputs}
+            mortgageAnalysis={mortgageAnalysis}
+            exitScenarios={exitScenarios}
+            quoteImages={{
+              heroImageUrl: quoteImages.heroImageUrl,
+              floorPlanUrl: quoteImages.floorPlanUrl,
+              buildingRenderUrl: quoteImages.buildingRenderUrl,
+            }}
+            currency={currency}
+            rate={rate}
+            language={language}
             onEditClick={() => setModalOpen(true)}
           />
         ) : (

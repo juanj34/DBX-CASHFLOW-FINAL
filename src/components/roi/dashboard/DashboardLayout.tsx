@@ -36,8 +36,8 @@ interface DashboardLayoutProps {
   // Export modal trigger
   onOpenExportModal?: () => void;
   // View mode toggle
-  viewMode?: 'classic' | 'story';
-  onChangeViewMode?: (mode: 'classic' | 'story') => void;
+  viewMode?: 'classic' | 'story' | 'onion';
+  onChangeViewMode?: (mode: 'classic' | 'story' | 'onion') => void;
 }
 
 export const DashboardLayout = ({

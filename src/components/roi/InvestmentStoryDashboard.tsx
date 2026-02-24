@@ -146,7 +146,7 @@ const StrategyToggle = ({
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
         value === 'LT'
-          ? "bg-cyan-500 text-white"
+          ? "bg-theme-accent text-theme-bg"
           : "text-theme-text-muted hover:text-theme-text"
       )}
     >
@@ -157,7 +157,7 @@ const StrategyToggle = ({
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
         value === 'ST'
-          ? "bg-orange-500 text-white"
+          ? "bg-theme-text-highlight text-theme-bg"
           : "text-theme-text-muted hover:text-theme-text"
       )}
     >
@@ -528,23 +528,23 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 1: ENTRY ===== */}
           {activeSection === 'entry' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+            <section className="bg-theme-bg border border-theme-border rounded-2xl overflow-hidden flex-1 flex flex-col">
               <div className="p-4 space-y-3 flex-1">
                 {/* Row 1: Property Info Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* Property Price */}
                   <AnimatedCard delay={0}>
-                    <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
+                    <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50 relative overflow-hidden h-full">
                       <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full" />
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                          <Building2 className="w-3 h-3 text-emerald-400" />
+                          <Building2 className="w-3 h-3 text-theme-positive" />
                         </div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
+                        <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('propertyPrice') || 'Property Price'}</span>
                       </div>
-                      <p className="text-xl font-bold text-white font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
+                      <p className="text-xl font-bold text-theme-text font-mono">{formatCurrency(entryData.basePrice, currency, rate)}</p>
                       {entryData.pricePerSqft > 0 && (
-                        <p className="text-[10px] text-slate-500 mt-1">
+                        <p className="text-[10px] text-theme-text-muted mt-1">
                           {formatCurrency(entryData.pricePerSqft, currency, rate)}/sqft • {entryData.unitSize.toLocaleString()} sqft
                         </p>
                       )}
@@ -553,16 +553,16 @@ export const InvestmentStoryDashboard = ({
 
                   {/* Construction Timeline */}
                   <AnimatedCard delay={50}>
-                    <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
+                    <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50 relative overflow-hidden h-full">
                       <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full" />
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                          <Hammer className="w-3 h-3 text-purple-400" />
+                          <Hammer className="w-3 h-3 text-theme-accent" />
                         </div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
+                        <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('constructionTime') || 'Construction'}</span>
                       </div>
-                      <p className="text-xl font-bold text-purple-400 font-mono">{entryData.constructionMonths} <span className="text-sm text-purple-400/70">mo</span></p>
-                      <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                      <p className="text-xl font-bold text-theme-accent font-mono">{entryData.constructionMonths} <span className="text-sm text-theme-accent/70">mo</span></p>
+                      <p className="text-[10px] text-theme-text-muted mt-1 flex items-center gap-1">
                         <Key className="w-3 h-3" /> {formatHandoverDate()}
                       </p>
                     </div>
@@ -570,40 +570,40 @@ export const InvestmentStoryDashboard = ({
 
                   {/* Payment Split */}
                   <AnimatedCard delay={100} className="lg:col-span-2">
-                    <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 relative overflow-hidden h-full">
+                    <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50 relative overflow-hidden h-full">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                          <CreditCard className="w-3 h-3 text-cyan-400" />
+                          <CreditCard className="w-3 h-3 text-theme-accent" />
                         </div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
+                        <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
                       </div>
-                      <div className="flex h-3 rounded-full overflow-hidden bg-slate-700 shadow-inner">
+                      <div className="flex h-3 rounded-full overflow-hidden bg-theme-border shadow-inner">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
-                              className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                              className="bg-theme-positive flex items-center justify-center cursor-pointer hover:brightness-110"
                               style={{ width: `${entryData.preHandoverPercent}%` }}
                             />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                            <p className="text-sm font-medium text-white">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
+                          <TooltipContent className="bg-theme-card border-theme-border text-theme-text">
+                            <p className="text-sm font-medium text-theme-text">{formatCurrency(entryData.preHandoverAmount, currency, rate)}</p>
                           </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
-                              className="bg-gradient-to-r from-cyan-500 to-cyan-400 flex items-center justify-center cursor-pointer hover:brightness-110"
+                              className="bg-theme-accent flex items-center justify-center cursor-pointer hover:brightness-110"
                               style={{ width: `${entryData.handoverPercent}%` }}
                             />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-slate-800 border-slate-700 text-slate-100">
-                            <p className="text-sm font-medium text-white">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
+                          <TooltipContent className="bg-theme-card border-theme-border text-theme-text">
+                            <p className="text-sm font-medium text-theme-text">{formatCurrency(entryData.handoverAmount, currency, rate)}</p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
                       <div className="flex justify-between mt-1 text-[10px]">
-                        <span className="text-emerald-400 font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
-                        <span className="text-cyan-400 font-bold">{entryData.handoverPercent}% At Handover</span>
+                        <span className="text-theme-positive font-bold">{entryData.preHandoverPercent}% Pre-Handover</span>
+                        <span className="text-theme-accent font-bold">{entryData.handoverPercent}% At Handover</span>
                       </div>
                     </div>
                   </AnimatedCard>
@@ -613,17 +613,17 @@ export const InvestmentStoryDashboard = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Booking Card (Day 1) */}
                   <AnimatedCard delay={150}>
-                    <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30 h-full">
+                    <div className="bg-theme-positive/5 rounded-xl p-4 border border-theme-positive/30 h-full">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                          <FileText className="w-3 h-3 text-emerald-400" />
+                          <FileText className="w-3 h-3 text-theme-positive" />
                         </div>
-                        <span className="text-xs font-semibold text-white uppercase tracking-wide">Booking</span>
+                        <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Booking</span>
                       </div>
-                      <p className="text-2xl font-bold text-emerald-400 font-mono mb-2">
+                      <p className="text-2xl font-bold text-theme-positive font-mono mb-2">
                         {formatCurrency(entryData.totalDayOneEntry, currency, rate)}
                       </p>
-                      <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-700/50 mb-2">
+                      <div className="flex h-1.5 rounded-full overflow-hidden bg-theme-bg mb-2">
                         <div className="bg-yellow-500" style={{ width: `${(entryData.eoiFee / entryData.totalDayOneEntry) * 100}%` }} />
                         <div className="bg-emerald-500" style={{ width: `${(entryData.restOfDownpayment / entryData.totalDayOneEntry) * 100}%` }} />
                         <div className="bg-blue-500" style={{ width: `${(entryData.dldFee / entryData.totalDayOneEntry) * 100}%` }} />
@@ -631,21 +631,21 @@ export const InvestmentStoryDashboard = ({
                       </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />EOI</span>
-                          <span className="text-white font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span>
+                          <span className="text-theme-text-muted flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />EOI</span>
+                          <span className="text-theme-text font-mono">{formatCurrency(entryData.eoiFee, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Downpayment</span>
-                          <span className="text-white font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span>
+                          <span className="text-theme-text-muted flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Downpayment</span>
+                          <span className="text-theme-text font-mono">{formatCurrency(entryData.restOfDownpayment, currency, rate)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />DLD (4%)</span>
-                          <span className="text-white font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span>
+                          <span className="text-theme-text-muted flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />DLD (4%)</span>
+                          <span className="text-theme-text font-mono">{formatCurrency(entryData.dldFee, currency, rate)}</span>
                         </div>
                         {entryData.oqoodFee > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-500" />Oqood</span>
-                            <span className="text-white font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span>
+                            <span className="text-theme-text-muted flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-500" />Oqood</span>
+                            <span className="text-theme-text font-mono">{formatCurrency(entryData.oqoodFee, currency, rate)}</span>
                           </div>
                         )}
                       </div>
@@ -659,28 +659,28 @@ export const InvestmentStoryDashboard = ({
                       const installmentsTotal = (inputs.additionalPayments || []).reduce((sum, p) => sum + (basePrice * (p.paymentPercent || 0) / 100), 0);
                       const installmentsCount = (inputs.additionalPayments || []).length;
                       return (
-                        <div className="bg-gradient-to-br from-cyan-500/10 to-slate-800/50 rounded-xl p-4 border border-cyan-500/30 h-full">
+                        <div className="bg-theme-accent/5 rounded-xl p-4 border border-theme-accent/30 h-full">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                              <CalendarDays className="w-3 h-3 text-cyan-400" />
+                              <CalendarDays className="w-3 h-3 text-theme-accent" />
                             </div>
-                            <span className="text-xs font-semibold text-white uppercase tracking-wide">Installments</span>
+                            <span className="text-xs font-semibold text-theme-text uppercase tracking-wide">Installments</span>
                           </div>
-                          <p className="text-2xl font-bold text-cyan-400 font-mono mb-2">
+                          <p className="text-2xl font-bold text-theme-accent font-mono mb-2">
                             {formatCurrency(installmentsTotal, currency, rate)}
                           </p>
-                          <p className="text-xs text-slate-400 mb-3">
+                          <p className="text-xs text-theme-text-muted mb-3">
                             During construction (pre-handover)
                           </p>
                           {installmentsCount > 0 ? (
-                            <div className="flex items-center gap-2 text-xs text-slate-300">
-                              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium">
+                            <div className="flex items-center gap-2 text-xs text-theme-text">
+                              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-theme-accent font-medium">
                                 {installmentsCount} payment{installmentsCount !== 1 ? 's' : ''}
                               </span>
-                              <span className="text-slate-500">scheduled</span>
+                              <span className="text-theme-text-muted">scheduled</span>
                             </div>
                           ) : (
-                            <div className="text-xs text-slate-500 italic">
+                            <div className="text-xs text-theme-text-muted italic">
                               No additional installments
                             </div>
                           )}
@@ -692,12 +692,12 @@ export const InvestmentStoryDashboard = ({
 
                 {/* Payment Schedule */}
                 <AnimatedCard delay={200}>
-                  <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+                  <div className="bg-theme-bg rounded-xl p-3 border border-theme-border/50">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                        <Calendar className="w-3 h-3 text-purple-400" />
+                        <Calendar className="w-3 h-3 text-theme-accent" />
                       </div>
-                      <span className="text-xs font-semibold text-white">{t('yourPaymentSchedule') || 'Payment Schedule'}</span>
+                      <span className="text-xs font-semibold text-theme-text">{t('yourPaymentSchedule') || 'Payment Schedule'}</span>
                     </div>
                     <PaymentHorizontalTimeline
                       inputs={inputs}
@@ -714,8 +714,8 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 2: INCOME ===== */}
           {activeSection === 'income' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
-              <div className="p-3 border-b border-slate-700/50 flex items-center justify-between">
+            <section className="bg-theme-bg border border-theme-border rounded-2xl overflow-hidden flex-1 flex flex-col">
+              <div className="p-3 border-b border-theme-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {incomeData.showAirbnb && (
                     <StrategyToggle
@@ -735,42 +735,42 @@ export const InvestmentStoryDashboard = ({
                   {incomeStrategy === 'LT' ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="bg-gradient-to-br from-cyan-500/15 to-slate-800/50 rounded-xl p-3 border border-cyan-500/30 cursor-help text-center">
-                          <span className="text-[10px] text-slate-400 uppercase">ROI</span>
-                          <p className="text-3xl font-bold font-mono text-cyan-400">
+                        <div className="bg-theme-card rounded-xl p-3 border border-theme-accent/30 cursor-help text-center">
+                          <span className="text-[10px] text-theme-text-muted uppercase">ROI</span>
+                          <p className="text-3xl font-bold font-mono text-theme-accent">
                             {incomeData.grossYield.toFixed(1)}%
                           </p>
-                          <p className="text-[10px] text-slate-500">Net: {incomeData.netYield.toFixed(1)}%</p>
+                          <p className="text-[10px] text-theme-text-muted">Net: {incomeData.netYield.toFixed(1)}%</p>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
+                      <TooltipContent className="bg-theme-card border-theme-border max-w-xs text-theme-text">
                         <div className="space-y-1 text-xs">
-                          <p className="font-medium text-white">Return on Investment</p>
-                          <p className="text-slate-300">Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
-                          <p className="text-slate-300">Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
+                          <p className="font-medium text-theme-text">Return on Investment</p>
+                          <p className="text-theme-text">Gross: {incomeData.grossYield.toFixed(2)}% annual</p>
+                          <p className="text-theme-text">Net (after costs): {incomeData.netYield.toFixed(2)}% annual</p>
                         </div>
                       </TooltipContent>
                     </Tooltip>
                   ) : (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="bg-gradient-to-br from-orange-500/15 to-slate-800/50 rounded-xl p-3 border border-orange-500/30 cursor-help text-center">
-                          <span className="text-[10px] text-slate-400 uppercase">ADR</span>
-                          <p className="text-2xl font-bold font-mono text-orange-400">
+                        <div className="bg-theme-card rounded-xl p-3 border border-theme-text-highlight/30 cursor-help text-center">
+                          <span className="text-[10px] text-theme-text-muted uppercase">ADR</span>
+                          <p className="text-2xl font-bold font-mono text-theme-text-highlight">
                             {formatCurrency(inputs.shortTermRental?.averageDailyRate || 800, currency, rate)}
                           </p>
                           <div className="flex justify-center gap-3 mt-1 text-[10px]">
-                            <span className="text-slate-500">Occ: <span className="text-orange-300 font-mono">{incomeData.stOccupancy}%</span></span>
-                            <span className="text-slate-500">Exp: <span className="text-orange-300 font-mono">{incomeData.stExpenses}%</span></span>
+                            <span className="text-theme-text-muted">Occ: <span className="text-theme-text-highlight font-mono">{incomeData.stOccupancy}%</span></span>
+                            <span className="text-theme-text-muted">Exp: <span className="text-theme-text-highlight font-mono">{incomeData.stExpenses}%</span></span>
                           </div>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
+                      <TooltipContent className="bg-theme-card border-theme-border max-w-xs text-theme-text">
                         <div className="space-y-1 text-xs">
-                          <p className="font-medium text-white">Average Daily Rate</p>
-                          <p className="text-slate-300">Occupancy: {incomeData.stOccupancy}%</p>
-                          <p className="text-slate-300">Operating Expenses: {incomeData.stExpenses}%</p>
-                          {incomeData.stAdminFee > 0 && <p className="text-slate-300">Management Fee: {incomeData.stAdminFee}%</p>}
+                          <p className="font-medium text-theme-text">Average Daily Rate</p>
+                          <p className="text-theme-text">Occupancy: {incomeData.stOccupancy}%</p>
+                          <p className="text-theme-text">Operating Expenses: {incomeData.stExpenses}%</p>
+                          {incomeData.stAdminFee > 0 && <p className="text-theme-text">Management Fee: {incomeData.stAdminFee}%</p>}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -778,13 +778,13 @@ export const InvestmentStoryDashboard = ({
 
                   {/* Rental Income */}
                   <div className={cn(
-                    "bg-gradient-to-br rounded-xl p-3 border text-center",
+                    "rounded-xl p-3 border text-center",
                     incomeStrategy === 'LT'
-                      ? "from-emerald-500/15 to-slate-800/50 border-emerald-500/30"
-                      : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
+                      ? "bg-theme-card border-theme-positive/30"
+                      : "bg-theme-card border-theme-text-highlight/30"
                   )}>
-                    <span className="text-[10px] text-slate-400 uppercase">{incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Rent</span>
-                    <p className="text-2xl font-bold text-emerald-400 font-mono">
+                    <span className="text-[10px] text-theme-text-muted uppercase">{incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Rent</span>
+                    <p className="text-2xl font-bold text-theme-positive font-mono">
                       {formatCurrency(
                         incomeStrategy === 'LT'
                           ? (incomePeriod === 'month' ? incomeData.monthlyRentLT : incomeData.annualRentLT)
@@ -793,26 +793,26 @@ export const InvestmentStoryDashboard = ({
                         rate
                       )}
                     </p>
-                    <p className="text-[10px] text-slate-500">Net after costs</p>
+                    <p className="text-[10px] text-theme-text-muted">Net after costs</p>
                   </div>
 
                   {/* Payback Period */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 text-center cursor-help">
-                        <span className="text-[10px] text-slate-400 uppercase">Payback</span>
-                        <p className="text-2xl font-bold text-white font-mono">
+                      <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50 text-center cursor-help">
+                        <span className="text-[10px] text-theme-text-muted uppercase">Payback</span>
+                        <p className="text-2xl font-bold text-theme-text font-mono">
                           {(incomeStrategy === 'LT' ? incomeData.yearsToPayOffLT : incomeData.yearsToPayOffST).toFixed(1)}
                         </p>
-                        <p className="text-[10px] text-slate-500">years</p>
+                        <p className="text-[10px] text-theme-text-muted">years</p>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
+                    <TooltipContent className="bg-theme-card border-theme-border max-w-xs text-theme-text">
                       <div className="space-y-1 text-xs">
-                        <p className="font-medium text-white">Payback Calculation</p>
-                        <p className="text-slate-300">Investment: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
-                        <p className="text-slate-300">Annual Income: {formatCurrency(incomeStrategy === 'LT' ? incomeData.annualRentLT : incomeData.annualRentST, currency, rate)}</p>
-                        <p className="text-slate-400">Market avg: {incomeData.marketAvgPayoff} years</p>
+                        <p className="font-medium text-theme-text">Payback Calculation</p>
+                        <p className="text-theme-text">Investment: {formatCurrency(incomeData.paybackCalcLT.totalInvested, currency, rate)}</p>
+                        <p className="text-theme-text">Annual Income: {formatCurrency(incomeStrategy === 'LT' ? incomeData.annualRentLT : incomeData.annualRentST, currency, rate)}</p>
+                        <p className="text-theme-text-muted">Market avg: {incomeData.marketAvgPayoff} years</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -844,7 +844,7 @@ export const InvestmentStoryDashboard = ({
                 />
 
                 {/* Cumulative Income Chart - Compact */}
-                <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30 flex-1 min-h-0">
+                <div className="bg-theme-bg rounded-xl p-3 border border-theme-border/50 flex-1 min-h-0">
                   <CumulativeIncomeChart
                     projections={calculations.yearlyProjections}
                     currency={currency}
@@ -875,14 +875,14 @@ export const InvestmentStoryDashboard = ({
                   if (rentYears.length === 0) return null;
 
                   return (
-                    <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
-                      <h4 className="text-sm font-medium text-slate-300 mb-3">Projected Net Rental Income (Years 1–10)</h4>
+                    <div className="bg-theme-bg rounded-xl p-3 border border-theme-border/50">
+                      <h4 className="text-sm font-medium text-theme-text mb-3">Projected Net Rental Income (Years 1–10)</h4>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead>
                             <tr>
                               {rentYears.map((_, idx) => (
-                                <th key={idx} className="px-2 py-1 text-slate-500 font-normal text-center whitespace-nowrap">
+                                <th key={idx} className="px-2 py-1 text-theme-text-muted font-normal text-center whitespace-nowrap">
                                   Y{idx + 1}
                                 </th>
                               ))}
@@ -891,7 +891,7 @@ export const InvestmentStoryDashboard = ({
                           <tbody>
                             <tr>
                               {rentYears.map((p, idx) => (
-                                <td key={idx} className="px-2 py-1 text-center font-mono text-emerald-400 whitespace-nowrap">
+                                <td key={idx} className="px-2 py-1 text-center font-mono text-theme-positive whitespace-nowrap">
                                   {formatCurrency(p.netIncome || 0, currency, rate)}
                                 </td>
                               ))}
@@ -910,7 +910,7 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 3: EXIT ===== */}
           {activeSection === 'exit' && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col h-full">
+            <section className="bg-theme-bg border border-theme-border rounded-2xl overflow-hidden flex-1 flex flex-col h-full">
               <div className="p-4 flex-1 flex flex-col gap-3 min-h-0">
                 {/* Exit Scenario Cards - Dynamic grid based on exit count */}
                 <div className={cn(
@@ -942,8 +942,8 @@ export const InvestmentStoryDashboard = ({
                           className={cn(
                             "rounded-xl p-4 border transition-all cursor-pointer",
                             isHighlighted
-                              ? "bg-gradient-to-br from-[#CCFF00]/10 to-slate-800/80 border-[#CCFF00]/50 ring-1 ring-[#CCFF00]/30"
-                              : "bg-slate-800/60 border-slate-700/40 hover:border-[#CCFF00]/30"
+                              ? "bg-theme-accent/10 border-theme-accent/50 ring-1 ring-theme-accent/30"
+                              : "bg-theme-card border-theme-border hover:border-theme-accent/30"
                           )}
                           onMouseEnter={() => setHighlightedExit(index)}
                           onMouseLeave={() => setHighlightedExit(null)}
@@ -951,50 +951,50 @@ export const InvestmentStoryDashboard = ({
                           {/* Header: Exit number, months, and date */}
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-base font-bold text-[#CCFF00]">Exit {index + 1}</span>
-                              <span className="px-2 py-0.5 bg-slate-700/60 rounded text-xs text-white font-mono">{months}mo</span>
+                              <span className="text-base font-bold text-theme-accent">Exit {index + 1}</span>
+                              <span className="px-2 py-0.5 bg-theme-card rounded text-xs text-theme-text font-mono">{months}mo</span>
                             </div>
-                            <span className="text-xs text-slate-400">{exitDate}</span>
+                            <span className="text-xs text-theme-text-muted">{exitDate}</span>
                           </div>
 
                           {/* Construction progress estimate */}
                           <div className="flex items-center gap-1.5 mb-3">
-                            <span className="text-[10px] text-slate-500">~{Math.round(constructionPercent)}% Built</span>
+                            <span className="text-[10px] text-theme-text-muted">~{Math.round(constructionPercent)}% Built</span>
                           </div>
 
                           {/* Property Value */}
                           <div className="mb-2">
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500">Property Value</p>
-                            <p className="text-lg font-bold text-white font-mono">
+                            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">Property Value</p>
+                            <p className="text-lg font-bold text-theme-text font-mono">
                               {formatCurrency(scenario.exitPrice, currency, rate)}
                             </p>
                           </div>
 
                           {/* Cash Invested */}
                           <div className="mb-3">
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500">Cash In</p>
-                            <p className="text-sm font-medium text-slate-300 font-mono">
+                            <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">Cash In</p>
+                            <p className="text-sm font-medium text-theme-text font-mono">
                               {formatCurrency(scenario.equityDeployed + (scenario.totalCapital - scenario.equityDeployed), currency, rate)}
                             </p>
                           </div>
 
                           {/* Profit and ROE - Compact bottom */}
-                          <div className="flex items-end justify-between pt-2 border-t border-slate-700/50">
+                          <div className="flex items-end justify-between pt-2 border-t border-theme-border">
                             <div>
-                              <p className="text-[10px] uppercase tracking-wider text-slate-500">Profit</p>
+                              <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">Profit</p>
                               <p className={cn(
                                 "text-base font-bold font-mono",
-                                displayProfit >= 0 ? "text-emerald-400" : "text-red-400"
+                                displayProfit >= 0 ? "text-theme-positive" : "text-theme-negative"
                               )}>
                                 {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                               </p>
                             </div>
 
                             <div className="text-right">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-500">ROE</p>
+                              <p className="text-[10px] uppercase tracking-wider text-theme-text-muted">ROE</p>
                               <p className={cn(
                                 "text-2xl font-bold font-mono",
-                                displayROE >= 0 ? "text-[#CCFF00]" : "text-red-400"
+                                displayROE >= 0 ? "text-theme-accent" : "text-theme-negative"
                               )}>
                                 {displayROE.toFixed(0)}%
                               </p>
@@ -1027,57 +1027,57 @@ export const InvestmentStoryDashboard = ({
 
           {/* ===== SECTION 4: LEVERAGE ===== */}
           {activeSection === 'leverage' && mortgageEnabled && mortgageBreakdown && (
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/30 border border-slate-700/50 rounded-2xl overflow-hidden flex-1 flex flex-col">
+            <section className="bg-theme-bg border border-theme-border rounded-2xl overflow-hidden flex-1 flex flex-col">
               <div className="p-4 space-y-4 flex-1">
                 {/* Loan Details Grid - with toggle inline */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
-                    <p className="text-[10px] text-slate-500 mb-1">Loan Amount</p>
-                    <p className="text-xl font-bold text-blue-400 font-mono">{formatCurrency(entryData.loanAmount, currency, rate)}</p>
+                  <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50">
+                    <p className="text-[10px] text-theme-text-muted mb-1">Loan Amount</p>
+                    <p className="text-xl font-bold text-theme-accent font-mono">{formatCurrency(entryData.loanAmount, currency, rate)}</p>
                   </div>
 
                   {/* Monthly Payment with inline toggle */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30 cursor-help">
+                      <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50 cursor-help">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-[10px] text-slate-500">Payment</p>
+                          <p className="text-[10px] text-theme-text-muted">Payment</p>
                           <PeriodToggle value={leveragePeriod} onChange={setLeveragePeriod} />
                         </div>
-                        <p className="text-xl font-bold text-white font-mono">
+                        <p className="text-xl font-bold text-theme-text font-mono">
                           {formatCurrency(leveragePeriod === 'month' ? entryData.monthlyMortgage : entryData.monthlyMortgage * 12, currency, rate)}
                         </p>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-xs text-slate-100">
+                    <TooltipContent className="bg-theme-card border-theme-border max-w-xs text-theme-text">
                       <div className="space-y-2 text-xs">
-                        <p className="font-medium text-white">Payment Breakdown (Month 1)</p>
+                        <p className="font-medium text-theme-text">Payment Breakdown (Month 1)</p>
                         <div className="space-y-1">
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Principal:</span>
-                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.principalPortion, currency, rate)}</span>
+                            <span className="text-theme-text-muted">Principal:</span>
+                            <span className="text-theme-text">{formatCurrency(mortgageBreakdown.principalPortion, currency, rate)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Interest:</span>
-                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.interestPortion, currency, rate)}</span>
+                            <span className="text-theme-text-muted">Interest:</span>
+                            <span className="text-theme-text">{formatCurrency(mortgageBreakdown.interestPortion, currency, rate)}</span>
                           </div>
-                          <div className="flex justify-between border-t border-slate-700 pt-1">
-                            <span className="font-medium text-white">Total:</span>
-                            <span className="font-medium text-white">{formatCurrency(mortgageBreakdown.monthlyPayment, currency, rate)}</span>
+                          <div className="flex justify-between border-t border-theme-border pt-1">
+                            <span className="font-medium text-theme-text">Total:</span>
+                            <span className="font-medium text-theme-text">{formatCurrency(mortgageBreakdown.monthlyPayment, currency, rate)}</span>
                           </div>
                         </div>
-                        <p className="text-slate-400 text-[10px]">Interest rate: {entryData.interestRate}% p.a.</p>
+                        <p className="text-theme-text-muted text-[10px]">Interest rate: {entryData.interestRate}% p.a.</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
 
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
-                    <p className="text-[10px] text-slate-500 mb-1">Interest Rate</p>
-                    <p className="text-xl font-bold text-white font-mono">{entryData.interestRate}%</p>
+                  <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50">
+                    <p className="text-[10px] text-theme-text-muted mb-1">Interest Rate</p>
+                    <p className="text-xl font-bold text-theme-text font-mono">{entryData.interestRate}%</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
-                    <p className="text-[10px] text-slate-500 mb-1">Loan Term</p>
-                    <p className="text-xl font-bold text-white font-mono">{entryData.loanTerm} yrs</p>
+                  <div className="bg-theme-card rounded-xl p-3 border border-theme-border/50">
+                    <p className="text-[10px] text-theme-text-muted mb-1">Loan Term</p>
+                    <p className="text-xl font-bold text-theme-text font-mono">{entryData.loanTerm} yrs</p>
                   </div>
                 </div>
 
@@ -1087,21 +1087,21 @@ export const InvestmentStoryDashboard = ({
                   <div className={cn(
                     "rounded-xl p-4 border text-center",
                     incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0
-                      ? "bg-gradient-to-br from-emerald-500/15 to-slate-800/50 border-emerald-500/30"
-                      : "bg-gradient-to-br from-red-500/15 to-slate-800/50 border-red-500/30"
+                      ? "bg-theme-card border-theme-positive/30"
+                      : "bg-theme-card border-theme-negative/30"
                   )}>
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      <Banknote className="w-4 h-4 text-cyan-400" />
-                      <span className="text-xs font-medium text-slate-400">Long-Term</span>
+                      <Banknote className="w-4 h-4 text-theme-accent" />
+                      <span className="text-xs font-medium text-theme-text-muted">Long-Term</span>
                     </div>
                     <p className={cn(
                       "text-2xl font-bold font-mono",
-                      incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                      incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment >= 0 ? "text-theme-positive" : "text-theme-negative"
                     )}>
                       {(incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
                       {formatCurrency((incomeData.monthlyRentLT - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
                     </p>
-                    <p className="text-[10px] text-slate-500">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
+                    <p className="text-[10px] text-theme-text-muted">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
                   </div>
 
                   {/* ST Net Cashflow */}
@@ -1109,21 +1109,21 @@ export const InvestmentStoryDashboard = ({
                     <div className={cn(
                       "rounded-xl p-4 border text-center",
                       incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0
-                        ? "bg-gradient-to-br from-emerald-500/15 to-slate-800/50 border-emerald-500/30"
-                        : "bg-gradient-to-br from-red-500/15 to-slate-800/50 border-red-500/30"
+                        ? "bg-theme-card border-theme-positive/30"
+                        : "bg-theme-card border-theme-negative/30"
                     )}>
                       <div className="flex items-center justify-center gap-2 mb-2">
-                        <Banknote className="w-4 h-4 text-orange-400" />
-                        <span className="text-xs font-medium text-slate-400">Short-Term</span>
+                        <Banknote className="w-4 h-4 text-theme-text-highlight" />
+                        <span className="text-xs font-medium text-theme-text-muted">Short-Term</span>
                       </div>
                       <p className={cn(
                         "text-2xl font-bold font-mono",
-                        incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-emerald-400" : "text-red-400"
+                        incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment >= 0 ? "text-theme-positive" : "text-theme-negative"
                       )}>
                         {(incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) >= 0 ? '+' : ''}
                         {formatCurrency((incomeData.monthlyRentST - mortgageAnalysis.monthlyPayment) * (leveragePeriod === 'year' ? 12 : 1), currency, rate)}
                       </p>
-                      <p className="text-[10px] text-slate-500">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
+                      <p className="text-[10px] text-theme-text-muted">/{leveragePeriod === 'month' ? 'mo' : 'yr'} net cashflow</p>
                     </div>
                   )}
                 </div>
@@ -1132,35 +1132,35 @@ export const InvestmentStoryDashboard = ({
                 {entryData.hasGap && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 cursor-help">
-                        <Zap className="w-5 h-5 text-amber-400" />
+                      <div className="flex items-center gap-3 bg-theme-text-highlight/10 border border-theme-text-highlight/30 rounded-lg px-4 py-3 cursor-help">
+                        <Zap className="w-5 h-5 text-theme-text-highlight" />
                         <div>
-                          <p className="text-sm font-medium text-amber-300">Gap Payment Required at Handover</p>
-                          <p className="text-lg font-bold font-mono text-amber-400">{formatCurrency(entryData.gapAmount, currency, rate)}</p>
+                          <p className="text-sm font-medium text-theme-text-highlight">Gap Payment Required at Handover</p>
+                          <p className="text-lg font-bold font-mono text-theme-text-highlight">{formatCurrency(entryData.gapAmount, currency, rate)}</p>
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 border-slate-700 max-w-sm text-slate-100">
+                    <TooltipContent className="bg-theme-card border-theme-border max-w-sm text-theme-text">
                       <div className="space-y-2 text-xs">
-                        <p className="font-medium text-white">Why is there a gap payment?</p>
-                        <p className="text-slate-300">
+                        <p className="font-medium text-theme-text">Why is there a gap payment?</p>
+                        <p className="text-theme-text">
                           The handover payment exceeds what the bank can finance at your LTV.
                         </p>
-                        <div className="space-y-1 pt-2 border-t border-slate-700">
+                        <div className="space-y-1 pt-2 border-t border-theme-border">
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Handover Amount:</span>
-                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.handoverAmount, currency, rate)}</span>
+                            <span className="text-theme-text-muted">Handover Amount:</span>
+                            <span className="text-theme-text">{formatCurrency(mortgageBreakdown.handoverAmount, currency, rate)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Max Bank Financing:</span>
-                            <span className="text-slate-200">{formatCurrency(mortgageBreakdown.loanAmount, currency, rate)}</span>
+                            <span className="text-theme-text-muted">Max Bank Financing:</span>
+                            <span className="text-theme-text">{formatCurrency(mortgageBreakdown.loanAmount, currency, rate)}</span>
                           </div>
-                          <div className="flex justify-between border-t border-slate-700 pt-1">
-                            <span className="font-medium text-amber-400">Gap (You Pay):</span>
-                            <span className="font-medium text-amber-400">{formatCurrency(mortgageBreakdown.gapAmount, currency, rate)}</span>
+                          <div className="flex justify-between border-t border-theme-border pt-1">
+                            <span className="font-medium text-theme-text-highlight">Gap (You Pay):</span>
+                            <span className="font-medium text-theme-text-highlight">{formatCurrency(mortgageBreakdown.gapAmount, currency, rate)}</span>
                           </div>
                         </div>
-                        <p className="text-slate-400 text-[10px]">Due at handover before bank disburses the loan.</p>
+                        <p className="text-theme-text-muted text-[10px]">Due at handover before bank disburses the loan.</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -1186,51 +1186,51 @@ export const InvestmentStoryDashboard = ({
                   const maxValue = Math.max(wealthData.appreciation10Y, rent10Y, totalInterest10Y);
 
                   return (
-                    <div className="bg-gradient-to-br from-emerald-500/10 to-slate-800/50 rounded-xl p-4 border border-emerald-500/30">
+                    <div className="bg-theme-positive/5 rounded-xl p-4 border border-theme-positive/30">
                       <div className="flex items-center gap-2 mb-4">
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs font-medium text-slate-400 uppercase">Debt vs Wealth (10-Year Analysis)</span>
+                        <TrendingUp className="w-4 h-4 text-theme-positive" />
+                        <span className="text-xs font-medium text-theme-text-muted uppercase">Debt vs Wealth (10-Year Analysis)</span>
                       </div>
 
                       {/* Clear breakdown with consistent 10Y timeframe */}
                       <div className="space-y-3 mb-4">
                         <div>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-400">Property Appreciation (10Y)</span>
-                            <span className="text-emerald-400 font-mono">+{formatCurrency(wealthData.appreciation10Y, currency, rate)}</span>
+                            <span className="text-theme-text-muted">Property Appreciation (10Y)</span>
+                            <span className="text-theme-positive font-mono">+{formatCurrency(wealthData.appreciation10Y, currency, rate)}</span>
                           </div>
-                          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full" style={{ width: `${(wealthData.appreciation10Y / maxValue) * 100}%` }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-400">Rent Collected (10Y)</span>
-                            <span className="text-cyan-400 font-mono">+{formatCurrency(rent10Y, currency, rate)}</span>
-                          </div>
-                          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-400 rounded-full" style={{ width: `${(rent10Y / maxValue) * 100}%` }} />
+                          <div className="h-3 bg-theme-bg rounded-full overflow-hidden">
+                            <div className="h-full bg-theme-positive rounded-full" style={{ width: `${(wealthData.appreciation10Y / maxValue) * 100}%` }} />
                           </div>
                         </div>
                         <div>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-400">Interest Paid (10Y)</span>
-                            <span className="text-red-400 font-mono">-{formatCurrency(totalInterest10Y, currency, rate)}</span>
+                            <span className="text-theme-text-muted">Rent Collected (10Y)</span>
+                            <span className="text-theme-accent font-mono">+{formatCurrency(rent10Y, currency, rate)}</span>
                           </div>
-                          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full" style={{ width: `${(totalInterest10Y / maxValue) * 100}%` }} />
+                          <div className="h-3 bg-theme-bg rounded-full overflow-hidden">
+                            <div className="h-full bg-theme-accent rounded-full" style={{ width: `${(rent10Y / maxValue) * 100}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-theme-text-muted">Interest Paid (10Y)</span>
+                            <span className="text-theme-negative font-mono">-{formatCurrency(totalInterest10Y, currency, rate)}</span>
+                          </div>
+                          <div className="h-3 bg-theme-bg rounded-full overflow-hidden">
+                            <div className="h-full bg-theme-negative rounded-full" style={{ width: `${(totalInterest10Y / maxValue) * 100}%` }} />
                           </div>
                         </div>
                       </div>
 
                       {/* Formula display */}
-                      <div className="border-t border-slate-700/50 pt-3">
-                        <div className="flex items-center justify-center gap-1 text-xs text-slate-500 mb-2">
+                      <div className="border-t border-theme-border pt-3">
+                        <div className="flex items-center justify-center gap-1 text-xs text-theme-text-muted mb-2">
                           <span>Appreciation + Rent − Interest =</span>
                         </div>
                         <div className="text-center">
-                          <p className="text-xs text-slate-400 mb-1">🚀 Net Wealth Created (10Y)</p>
-                          <p className="text-2xl font-bold font-mono text-emerald-400">{formatCurrency(netWealth10Y, currency, rate)}</p>
+                          <p className="text-xs text-theme-text-muted mb-1">🚀 Net Wealth Created (10Y)</p>
+                          <p className="text-2xl font-bold font-mono text-theme-positive">{formatCurrency(netWealth10Y, currency, rate)}</p>
                         </div>
                       </div>
                     </div>
