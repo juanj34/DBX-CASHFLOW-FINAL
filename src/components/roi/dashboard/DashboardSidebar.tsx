@@ -47,6 +47,9 @@ interface DashboardSidebarProps {
   onSave?: () => void;
   // Export modal trigger
   onOpenExportModal?: () => void;
+  // View mode toggle
+  viewMode?: 'classic' | 'story';
+  onChangeViewMode?: (mode: 'classic' | 'story') => void;
 }
 
 // Section Header Component
@@ -62,15 +65,15 @@ const SectionHeader = ({ label, collapsed }: { label: string; collapsed: boolean
 };
 
 // Action Button Component - Uniform styling for all action buttons
-const ActionButton = ({ 
-  icon: Icon, 
-  label, 
-  onClick, 
+const ActionButton = ({
+  icon: Icon,
+  label,
+  onClick,
   collapsed,
   variant = 'default',
   badge,
   to,
-}: { 
+}: {
   icon: typeof Settings2;
   label: string;
   onClick?: () => void;
@@ -83,12 +86,12 @@ const ActionButton = ({
     "w-full flex items-center rounded-lg text-sm font-medium transition-all relative",
     collapsed ? "justify-center h-10 w-10 mx-auto" : "gap-3 px-3 py-2.5"
   );
-  
+
   const variantStyles = variant === 'primary'
     ? "bg-theme-accent text-theme-bg hover:bg-theme-accent/90"
     : variant === 'active'
-    ? "bg-theme-accent/20 text-theme-accent border border-theme-accent/30"
-    : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50";
+      ? "bg-theme-accent/20 text-theme-accent border border-theme-accent/30"
+      : "text-theme-text-muted hover:text-theme-text hover:bg-theme-bg/50";
 
   const content = (
     <button onClick={onClick} className={cn(baseStyles, variantStyles)}>
@@ -153,6 +156,8 @@ export const DashboardSidebar = ({
   saving,
   onSave,
   onOpenExportModal,
+  viewMode = 'classic',
+  onChangeViewMode,
 }: DashboardSidebarProps) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -171,7 +176,7 @@ export const DashboardSidebar = ({
   };
 
   return (
-    <aside 
+    <aside
       className={cn(
         "bg-theme-card border-r border-theme-border flex flex-col h-full transition-all duration-300 ease-in-out",
         collapsed ? "w-16" : "w-56"
@@ -221,9 +226,9 @@ export const DashboardSidebar = ({
                 <TooltipTrigger asChild>
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-theme-card-alt ring-2 ring-theme-accent/30">
                     {profile.avatar_url ? (
-                      <img 
-                        src={profile.avatar_url} 
-                        alt={profile.full_name || 'Advisor'} 
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.full_name || 'Advisor'}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -283,43 +288,43 @@ export const DashboardSidebar = ({
         <SectionHeader label="Quote" collapsed={collapsed} />
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
           {onNewQuote && (
-            <ActionButton 
-              icon={FilePlus} 
-              label="New Quote" 
-              onClick={onNewQuote} 
+            <ActionButton
+              icon={FilePlus}
+              label="New Quote"
+              onClick={onNewQuote}
               collapsed={collapsed}
             />
           )}
           {onConfigure && (
-            <ActionButton 
-              icon={Settings2} 
-              label="Configure" 
-              onClick={onConfigure} 
+            <ActionButton
+              icon={Settings2}
+              label="Configure"
+              onClick={onConfigure}
               collapsed={collapsed}
               variant="primary"
             />
           )}
           {onLoadQuote && (
-            <ActionButton 
-              icon={FolderOpen} 
-              label={t('loadQuote') || 'Load Quote'} 
-              onClick={onLoadQuote} 
+            <ActionButton
+              icon={FolderOpen}
+              label={t('loadQuote') || 'Load Quote'}
+              onClick={onLoadQuote}
               collapsed={collapsed}
             />
           )}
           {onViewHistory && quoteId && (
-            <ActionButton 
-              icon={History} 
-              label={t('versionHistory') || 'History'} 
-              onClick={onViewHistory} 
+            <ActionButton
+              icon={History}
+              label={t('versionHistory') || 'History'}
+              onClick={onViewHistory}
               collapsed={collapsed}
             />
           )}
           {/* Create Comparison */}
-          <ActionButton 
-            icon={GitCompare} 
-            label="Create Comparison" 
-            onClick={() => setCompareModalOpen(true)} 
+          <ActionButton
+            icon={GitCompare}
+            label="Create Comparison"
+            onClick={() => setCompareModalOpen(true)}
             collapsed={collapsed}
           />
         </div>
@@ -332,10 +337,10 @@ export const DashboardSidebar = ({
             <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
               {onShare && (
                 quoteId ? (
-                  <ActionButton 
-                    icon={Share2} 
-                    label="Share Link" 
-                    onClick={onShare} 
+                  <ActionButton
+                    icon={Share2}
+                    label="Share Link"
+                    onClick={onShare}
                     collapsed={collapsed}
                     badge={viewCount && viewCount > 0 ? viewCount : undefined}
                   />
@@ -358,14 +363,14 @@ export const DashboardSidebar = ({
                   )
                 )
               )}
-              
+
               {/* Single Export Button - opens modal with view/format options */}
               {onOpenExportModal && (
                 quoteId ? (
-                  <ActionButton 
-                    icon={Download} 
-                    label="Export" 
-                    onClick={onOpenExportModal} 
+                  <ActionButton
+                    icon={Download}
+                    label="Export"
+                    onClick={onOpenExportModal}
                     collapsed={collapsed}
                   />
                 ) : (
@@ -393,47 +398,96 @@ export const DashboardSidebar = ({
 
         {/* NAVIGATE Section - Order matches PageHeader: Home, Generator, Quotes, Compare, Presentations, Analytics */}
         <SectionHeader label="Navigate" collapsed={collapsed} />
+
+        {/* View Mode Toggle (Only visible if we have onChangeViewMode, meaning we are in the generator) */}
+        {onChangeViewMode && (
+          <div className={cn("mb-3", collapsed ? "px-2" : "px-3")}>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onChangeViewMode(viewMode === 'classic' ? 'story' : 'classic')}
+                    className="w-10 h-10 mx-auto flex flex-col items-center justify-center rounded-lg bg-theme-bg/50 border border-theme-border text-theme-text-muted hover:text-theme-text transition-all"
+                  >
+                    {viewMode === 'classic' ? <LayoutDashboard className="w-4 h-4" /> : <Sparkles className="w-4 h-4 text-[#CCFF00]" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Switch to {viewMode === 'classic' ? 'Story View' : 'Classic View'}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="bg-theme-bg/50 p-1 rounded-lg border border-theme-border flex">
+                <button
+                  onClick={() => onChangeViewMode('classic')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all",
+                    viewMode === 'classic'
+                      ? "bg-theme-card text-theme-text shadow-sm ring-1 ring-theme-border"
+                      : "text-theme-text-muted hover:text-theme-text"
+                  )}
+                >
+                  <LayoutDashboard className="w-3 h-3" />
+                  Classic
+                </button>
+                <button
+                  onClick={() => onChangeViewMode('story')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all",
+                    viewMode === 'story'
+                      ? "bg-theme-card text-[#CCFF00] shadow-sm ring-1 ring-theme-border"
+                      : "text-theme-text-muted hover:text-[#CCFF00]"
+                  )}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Story
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-          <ActionButton 
-            icon={LayoutDashboard} 
-            label="Home" 
-            to="/home" 
+          <ActionButton
+            icon={LayoutDashboard}
+            label="Home"
+            to="/home"
             collapsed={collapsed}
           />
-          <ActionButton 
-            icon={Wand2} 
-            label="Generator" 
-            to="/cashflow-generator" 
+          <ActionButton
+            icon={Wand2}
+            label="Generator"
+            to="/cashflow-generator"
             collapsed={collapsed}
           />
-          <ActionButton 
-            icon={LayoutGrid} 
-            label="All Quotes" 
-            to="/my-quotes" 
+          <ActionButton
+            icon={LayoutGrid}
+            label="All Quotes"
+            to="/my-quotes"
             collapsed={collapsed}
           />
-          <ActionButton 
-            icon={GitCompare} 
-            label="Compare" 
-            to="/compare" 
+          <ActionButton
+            icon={GitCompare}
+            label="Compare"
+            to="/compare"
             collapsed={collapsed}
           />
-          <ActionButton 
-            icon={TrendingUp} 
-            label="Off-Plan vs Resale" 
-            to="/offplan-vs-secondary" 
+          <ActionButton
+            icon={TrendingUp}
+            label="Off-Plan vs Resale"
+            to="/offplan-vs-secondary"
             collapsed={collapsed}
           />
-          <ActionButton 
-            icon={Presentation} 
-            label="Presentations" 
-            to="/presentations" 
+          <ActionButton
+            icon={Presentation}
+            label="Presentations"
+            to="/presentations"
             collapsed={collapsed}
           />
-          <ActionButton 
-            icon={BarChart3} 
-            label="Analytics" 
-            to="/quotes-analytics" 
+          <ActionButton
+            icon={BarChart3}
+            label="Analytics"
+            to="/quotes-analytics"
             collapsed={collapsed}
           />
         </div>
@@ -441,10 +495,10 @@ export const DashboardSidebar = ({
         {/* MANAGEMENT Section - Clients */}
         <SectionHeader label="Management" collapsed={collapsed} />
         <div className={cn("space-y-1", collapsed ? "px-2" : "px-3")}>
-          <ActionButton 
-            icon={Users} 
-            label="Clients" 
-            to="/clients" 
+          <ActionButton
+            icon={Users}
+            label="Clients"
+            to="/clients"
             collapsed={collapsed}
           />
         </div>
@@ -514,10 +568,10 @@ export const DashboardSidebar = ({
         {/* Admin Link - Home is now in Navigate section */}
         {isAdmin && (
           <div className={cn("space-y-1", collapsed ? "p-2" : "p-3")}>
-            <ActionButton 
-              icon={SlidersHorizontal} 
-              label="Admin" 
-              to="/dashboard" 
+            <ActionButton
+              icon={SlidersHorizontal}
+              label="Admin"
+              to="/dashboard"
               collapsed={collapsed}
             />
           </div>

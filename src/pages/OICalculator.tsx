@@ -31,6 +31,7 @@ import { ExportModal } from "@/components/roi/ExportModal";
 import { UnsavedDraftDialog } from "@/components/roi/UnsavedDraftDialog";
 
 import { NEW_QUOTE_OI_INPUTS } from "@/components/roi/configurator/types";
+import { InvestmentStoryDashboard } from "@/components/roi/InvestmentStoryDashboard";
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { developer: '', projectName: '', clients: [], brokerName: '', unit: '', unitSizeSqf: 0, unitSizeM2: 0, unitType: '' };
 
@@ -55,17 +56,20 @@ const OICalculatorContent = () => {
   const [mortgageInputs, setMortgageInputs] = useState<MortgageInputs>(DEFAULT_MORTGAGE_INPUTS);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  
+
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<'classic' | 'story'>('classic');
+
   // Ref for client-side export capture
   const mainContentRef = useRef<HTMLDivElement>(null);
-  
+
 
   const { profile } = useProfile();
   const { isAdmin } = useAdminRole();
 
-  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, getOrCreateWorkingDraft, promoteWorkingDraft, clearWorkingDraft } = useCashflowQuote(quoteId);
+  const { quote, loading: quoteLoading, saving, lastSaved, quoteImages, setQuoteImages, saveQuote, saveAsNew, scheduleAutoSave, generateShareToken, getOrCreateWorkingDraft, promoteWorkingDraft, clearWorkingDraft, createFreshDraft } = useCashflowQuote(quoteId);
   const { saveVersion } = useQuoteVersions(quoteId);
-  
+
   // Unsaved draft dialog state
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'new' | 'load' | null>(null);
@@ -79,7 +83,7 @@ const OICalculatorContent = () => {
     monthlyServiceCharges: calculations.holdAnalysis.annualServiceCharges / 12,
   });
   const { rate, isLive } = useExchangeRate(currency);
-  
+
 
   // Stricter validation: needs both client details AND property configured
   // But if we have a quoteId and data is loaded, show content even with partial data
@@ -136,14 +140,14 @@ const OICalculatorContent = () => {
         setInputs(migrateInputs(cleanInputs));
       }
       const clients = savedClients.length > 0 ? savedClients : quote.client_name ? [{ id: '1', name: quote.client_name, country: quote.client_country || '' }] : [];
-      setClientInfo({ 
-        developer: savedClientInfo.developer || quote.developer || '', 
-        projectName: savedClientInfo.projectName || quote.project_name || '', 
-        clients, 
-        brokerName: savedClientInfo.brokerName || '', 
-        unit: savedClientInfo.unit || quote.unit || '', 
-        unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0, 
-        unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0, 
+      setClientInfo({
+        developer: savedClientInfo.developer || quote.developer || '',
+        projectName: savedClientInfo.projectName || quote.project_name || '',
+        clients,
+        brokerName: savedClientInfo.brokerName || '',
+        unit: savedClientInfo.unit || quote.unit || '',
+        unitSizeSqf: savedClientInfo.unitSizeSqf || quote.unit_size_sqf || 0,
+        unitSizeM2: savedClientInfo.unitSizeM2 || quote.unit_size_m2 || 0,
         unitType: savedClientInfo.unitType || quote.unit_type || '',
         splitEnabled: savedClientInfo.splitEnabled || false,
         clientShares: savedClientInfo.clientShares || [],
@@ -189,6 +193,17 @@ const OICalculatorContent = () => {
   // Redirect to working draft when no quoteId (Google Docs pattern: always have a document URL)
   useEffect(() => {
     if (quoteId) {
+      // Fresh draft optimization: skip DB roundtrip, set defaults immediately
+      if (location.state?.freshDraft) {
+        setInputs(NEW_QUOTE_OI_INPUTS);
+        setClientInfo(prev => ({ ...DEFAULT_CLIENT_INFO, brokerName: prev.brokerName || profile?.full_name || '' }));
+        setMortgageInputs(DEFAULT_MORTGAGE_INPUTS);
+        setDataLoaded(true);
+        setModalOpen(true);
+        // Clear navigation state to prevent re-triggering on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+        return;
+      }
       // Will load from DB via the data-load effect above
       setDataLoaded(false);
       return;
@@ -228,11 +243,12 @@ const OICalculatorContent = () => {
     localStorage.removeItem('cashflow-configurator-state-v2');
     localStorage.removeItem('cashflow_configurator_open');
 
-    // Clear existing working draft (DELETE from DB), then navigate.
-    // The redirect effect on /cashflow-generator will create a fresh working draft.
-    await clearWorkingDraft();
-    navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
-  }, [navigate, isWorkingDraftWithContent, clearWorkingDraft]);
+    // Single-step: DELETE old draft + INSERT fresh draft, then navigate once
+    const freshDraftId = await createFreshDraft();
+    if (freshDraftId) {
+      navigate(`/cashflow/${freshDraftId}`, { replace: true, state: { freshDraft: true } });
+    }
+  }, [navigate, isWorkingDraftWithContent, createFreshDraft]);
 
   // Handle load quote with unsaved draft check
   const handleLoadQuote = useCallback(() => {
@@ -242,16 +258,16 @@ const OICalculatorContent = () => {
       setShowUnsavedDialog(true);
       return;
     }
-    
+
     setLoadQuoteModalOpen(true);
   }, [isWorkingDraftWithContent]);
 
   // Handle save draft (promote working draft to real draft)
   const handleSaveWorkingDraft = useCallback(async () => {
     if (!quote?.id) return;
-    
+
     setIsSavingDraft(true);
-    
+
     // First save current state
     const exitScenarios = inputs._exitScenarios || [];
     await saveQuote(inputs, clientInfo, quote.id, exitScenarios, mortgageInputs, undefined, {
@@ -259,45 +275,51 @@ const OICalculatorContent = () => {
       buildingRenderUrl: quoteImages.buildingRenderUrl,
       heroImageUrl: quoteImages.heroImageUrl,
     });
-    
+
     // Then promote the working draft to a real draft
     const success = await promoteWorkingDraft(quote.id);
-    
+
     setIsSavingDraft(false);
     setShowUnsavedDialog(false);
-    
+
     if (success) {
       toast.success("Draft saved successfully!");
-      
+
       // Proceed with pending action
       if (pendingAction === 'new') {
         localStorage.removeItem('cashflow-configurator-state');
         localStorage.removeItem('cashflow_configurator_open');
-        navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+        const freshId = await createFreshDraft();
+        if (freshId) {
+          navigate(`/cashflow/${freshId}`, { replace: true, state: { freshDraft: true } });
+        }
       } else if (pendingAction === 'load') {
         setLoadQuoteModalOpen(true);
       }
     }
-    
+
     setPendingAction(null);
-  }, [quote, inputs, clientInfo, mortgageInputs, quoteImages, saveQuote, promoteWorkingDraft, navigate, pendingAction]);
+  }, [quote, inputs, clientInfo, mortgageInputs, quoteImages, saveQuote, promoteWorkingDraft, navigate, pendingAction, createFreshDraft]);
 
   // Handle discard working draft
   const handleDiscardWorkingDraft = useCallback(async () => {
-    await clearWorkingDraft();
     setShowUnsavedDialog(false);
-    
+
     // Proceed with pending action
     if (pendingAction === 'new') {
       localStorage.removeItem('cashflow-configurator-state');
       localStorage.removeItem('cashflow_configurator_open');
-      navigate('/cashflow-generator', { replace: true, state: { openConfigurator: true } });
+      const freshId = await createFreshDraft();
+      if (freshId) {
+        navigate(`/cashflow/${freshId}`, { replace: true, state: { freshDraft: true } });
+      }
     } else if (pendingAction === 'load') {
+      await clearWorkingDraft();
       setLoadQuoteModalOpen(true);
     }
-    
+
     setPendingAction(null);
-  }, [clearWorkingDraft, navigate, pendingAction]);
+  }, [clearWorkingDraft, createFreshDraft, navigate, pendingAction]);
 
   // Handle cancel dialog
   const handleCancelDialog = useCallback(() => {
@@ -364,11 +386,11 @@ const OICalculatorContent = () => {
   const quoteImagesPayload = { floorPlanUrl: quoteImages.floorPlanUrl, buildingRenderUrl: quoteImages.buildingRenderUrl, heroImageUrl: quoteImages.heroImageUrl };
   const handleSave = useCallback(async () => saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveVersion, quoteImagesPayload), [inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, saveQuote, saveVersion, quoteImages]);
   const handleSaveAs = useCallback(async () => { const newQuote = await saveAsNew(inputs, clientInfo, exitScenarios, mortgageInputs, quoteImagesPayload); if (newQuote) navigate(`/cashflow/${newQuote.id}`); return newQuote; }, [inputs, clientInfo, exitScenarios, mortgageInputs, saveAsNew, navigate, quoteImages]);
-  
+
   const handleShare = useCallback(async () => {
     const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
     if (!savedQuote) return null;
-    
+
     const token = await generateShareToken(savedQuote.id);
     if (token) {
       const url = `${window.location.origin}/view/${token}`;
@@ -384,12 +406,12 @@ const OICalculatorContent = () => {
   const handlePresent = useCallback(async () => {
     const savedQuote = await saveQuote(inputs, clientInfo, quote?.id, exitScenarios, mortgageInputs, undefined, quoteImagesPayload);
     if (!savedQuote) return;
-    
+
     let token = savedQuote.share_token;
     if (!token) {
       token = await generateShareToken(savedQuote.id);
     }
-    
+
     if (token) {
       const url = `${window.location.origin}/view/${token}`;
       window.open(url, '_blank');
@@ -416,22 +438,23 @@ const OICalculatorContent = () => {
   const totalCapitalInvested = calculations.basePrice + calculations.totalEntryCosts;
 
   // Show skeleton while loading OR while redirecting to working draft
-  if (!quoteId || (quoteLoading && quoteId)) {
+  // Skip skeleton for fresh drafts (dataLoaded is already true from freshDraft optimization)
+  if (!quoteId || (quoteLoading && quoteId && !dataLoaded)) {
     return <CashflowSkeleton />;
   }
 
   return (
     <CashflowErrorBoundary>
-        {/* Unsaved Draft Dialog */}
-        <UnsavedDraftDialog
-          open={showUnsavedDialog}
-          onSave={handleSaveWorkingDraft}
-          onDiscard={handleDiscardWorkingDraft}
-          onCancel={handleCancelDialog}
-          isSaving={isSavingDraft}
-        />
+      {/* Unsaved Draft Dialog */}
+      <UnsavedDraftDialog
+        open={showUnsavedDialog}
+        onSave={handleSaveWorkingDraft}
+        onDiscard={handleDiscardWorkingDraft}
+        onCancel={handleCancelDialog}
+        isSaving={isSavingDraft}
+      />
 
-        <DashboardLayout
+      <DashboardLayout
         inputs={inputs}
         mortgageInputs={mortgageInputs}
         mainContentRef={mainContentRef}
@@ -453,6 +476,8 @@ const OICalculatorContent = () => {
         saving={saving}
         onSave={handleSave}
         onOpenExportModal={() => setExportModalOpen(true)}
+        viewMode={viewMode}
+        onChangeViewMode={setViewMode}
       >
 
         {/* Draft banner removed - all quotes now auto-save to database */}
@@ -490,8 +515,8 @@ const OICalculatorContent = () => {
               </div>
             </div>
           </div>
-        ) : (
-          /* Configured State - Snapshot View */
+        ) : viewMode === 'classic' ? (
+          /* Configured State - Snapshot View or Story Dashboard based on viewMode */
           <SnapshotContent
             inputs={inputs}
             calculations={calculations}
@@ -514,6 +539,24 @@ const OICalculatorContent = () => {
             onSnapshotTitleChange={(title) => setInputs(prev => ({ ...prev, snapshotTitle: title } as OIInputs))}
             onEditClick={() => setModalOpen(true)}
           />
+        ) : (
+          <InvestmentStoryDashboard
+            inputs={inputs}
+            calculations={calculations}
+            clientInfo={clientInfo}
+            mortgageInputs={mortgageInputs}
+            mortgageAnalysis={mortgageAnalysis}
+            exitScenarios={exitScenarios}
+            quoteImages={{
+              heroImageUrl: quoteImages.heroImageUrl,
+              floorPlanUrl: quoteImages.floorPlanUrl,
+              buildingRenderUrl: quoteImages.buildingRenderUrl,
+            }}
+            currency={currency}
+            rate={rate}
+            language={language}
+            onEditClick={() => setModalOpen(true)}
+          />
         )}
 
         {/* Modals */}
@@ -530,11 +573,11 @@ const OICalculatorContent = () => {
           setInputs={setInputs}
           open={modalOpen}
           onOpenChange={handleConfiguratorClose}
-          currency={currency} 
-          mortgageInputs={mortgageInputs} 
-          setMortgageInputs={setMortgageInputs} 
-          clientInfo={clientInfo} 
-          setClientInfo={setClientInfo} 
+          currency={currency}
+          mortgageInputs={mortgageInputs}
+          setMortgageInputs={setMortgageInputs}
+          clientInfo={clientInfo}
+          setClientInfo={setClientInfo}
           quoteId={quoteId}
           isNewQuote={!!(quoteId && !quote?.project_name && !quote?.developer && inputs.basePrice === 0)}
           floorPlanUrl={quoteImages.floorPlanUrl}
@@ -547,22 +590,22 @@ const OICalculatorContent = () => {
           onShowLogoOverlayChange={(show) => setQuoteImages(prev => ({ ...prev, showLogoOverlay: show }))}
         />
         <LoadQuoteModal open={loadQuoteModalOpen} onOpenChange={setLoadQuoteModalOpen} />
-        <VersionHistoryModal 
-          open={versionHistoryOpen} 
+        <VersionHistoryModal
+          open={versionHistoryOpen}
           onOpenChange={setVersionHistoryOpen}
           quoteId={quoteId}
           onRestore={() => {
             setDataLoaded(false);
           }}
         />
-        
+
         {/* Developer Info Modal */}
         <DeveloperInfoModal
           developerId={clientInfo.developerId || null}
           open={developerModalOpen}
           onOpenChange={setDeveloperModalOpen}
         />
-        
+
         {/* Project Info Modal */}
         <ProjectInfoModal
           project={clientInfo.projectId ? { id: clientInfo.projectId, name: clientInfo.projectName } : null}
@@ -570,7 +613,7 @@ const OICalculatorContent = () => {
           open={projectModalOpen}
           onOpenChange={setProjectModalOpen}
         />
-        
+
         {/* Floor Plan Lightbox */}
         {quoteImages.floorPlanUrl && (
           <FloorPlanLightbox

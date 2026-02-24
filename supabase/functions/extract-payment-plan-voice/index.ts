@@ -503,12 +503,19 @@ serve(async (req) => {
         });
       }
       
-      throw new Error(`Gemini API error: ${response.status}`);
+      let errorDetail = "";
+      try {
+        const parsed = JSON.parse(errorText);
+        errorDetail = parsed?.error?.message || errorText.slice(0, 200);
+      } catch {
+        errorDetail = errorText.slice(0, 200);
+      }
+      throw new Error(`Gemini API error (${response.status}): ${errorDetail}`);
     }
 
     const result = await response.json();
     console.log("AI response received:", JSON.stringify(result).substring(0, 500));
-    
+
     const choice = result.choices?.[0];
     if (!choice) {
       throw new Error("No response from AI");

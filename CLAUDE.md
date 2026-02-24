@@ -67,6 +67,7 @@ src/
 - **Admin roles**: `useAdminRole()` checks via Supabase RPC `has_role`
 - **Data fetching**: All via custom hooks in `src/hooks/` using Supabase client directly (no REST API layer)
 - **Shared views**: Public routes like `/view/:shareToken`, `/present/:shareToken`, `/portal/:portalToken` — no auth required
+- **Dual-View UI**: The Cashflow Generator (`OICalculatorContent.tsx`) acts as an orchestrator that toggles between `SnapshotContent` (Classic Tabbed View) and `InvestmentStoryDashboard` (Story View). **NEVER** attempt to aggressively merge or delete either component assuming one replaces the other.
 
 ### Database Tables (Supabase)
 

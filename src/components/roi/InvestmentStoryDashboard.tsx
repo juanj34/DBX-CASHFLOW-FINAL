@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { 
-  Wallet, TrendingUp, Trophy, Clock, Banknote, Building2, 
+import {
+  Wallet, TrendingUp, Trophy, Clock, Banknote, Building2,
   Key, Target, Home, Zap, DollarSign,
   Calendar, Percent, CreditCard, Info, ChevronDown, ChevronUp,
   Hammer, Coins, FileText, CalendarDays, Sparkles
@@ -27,28 +27,28 @@ import {
 } from "@/components/ui/tooltip";
 
 // Staggered animation wrapper component
-const AnimatedCard = ({ 
-  children, 
-  delay = 0, 
-  className = "" 
-}: { 
-  children: React.ReactNode; 
-  delay?: number; 
+const AnimatedCard = ({
+  children,
+  delay = 0,
+  className = ""
+}: {
+  children: React.ReactNode;
+  delay?: number;
   className?: string;
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);
     return () => clearTimeout(timer);
   }, [delay]);
 
   return (
-    <div 
+    <div
       className={cn(
         "transition-all duration-500 ease-out",
-        isVisible 
-          ? "opacity-100 translate-y-0" 
+        isVisible
+          ? "opacity-100 translate-y-0"
           : "opacity-0 translate-y-4",
         className
       )}
@@ -86,6 +86,13 @@ interface InvestmentStoryDashboardProps {
   projectId?: string;
   zoneId?: string;
   customDifferentiators?: import('./valueDifferentiators').ValueDifferentiator[];
+  quoteImages?: {
+    heroImageUrl?: string | null;
+    floorPlanUrl?: string | null;
+    buildingRenderUrl?: string | null;
+  };
+  language?: string;
+  onEditClick?: () => void;
 }
 
 // Donut Progress Component
@@ -122,13 +129,13 @@ const DonutProgress = ({ value, max, color, size = 64 }: { value: number; max: n
 };
 
 // Strategy Toggle Component
-const StrategyToggle = ({ 
-  value, 
-  onChange, 
-  ltLabel, 
-  stLabel 
-}: { 
-  value: 'LT' | 'ST'; 
+const StrategyToggle = ({
+  value,
+  onChange,
+  ltLabel,
+  stLabel
+}: {
+  value: 'LT' | 'ST';
   onChange: (val: 'LT' | 'ST') => void;
   ltLabel: string;
   stLabel: string;
@@ -138,8 +145,8 @@ const StrategyToggle = ({
       onClick={() => onChange('LT')}
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
-        value === 'LT' 
-          ? "bg-cyan-500 text-white" 
+        value === 'LT'
+          ? "bg-cyan-500 text-white"
           : "text-theme-text-muted hover:text-theme-text"
       )}
     >
@@ -149,8 +156,8 @@ const StrategyToggle = ({
       onClick={() => onChange('ST')}
       className={cn(
         "px-3 py-1 text-xs font-medium rounded-md transition-all",
-        value === 'ST' 
-          ? "bg-orange-500 text-white" 
+        value === 'ST'
+          ? "bg-orange-500 text-white"
           : "text-theme-text-muted hover:text-theme-text"
       )}
     >
@@ -160,11 +167,11 @@ const StrategyToggle = ({
 );
 
 // Period Toggle (Month/Year)
-const PeriodToggle = ({ 
-  value, 
-  onChange 
-}: { 
-  value: 'month' | 'year'; 
+const PeriodToggle = ({
+  value,
+  onChange
+}: {
+  value: 'month' | 'year';
   onChange: (val: 'month' | 'year') => void;
 }) => {
   const { t } = useLanguage();
@@ -174,8 +181,8 @@ const PeriodToggle = ({
         onClick={() => onChange('month')}
         className={cn(
           "px-2 py-0.5 text-[10px] font-medium rounded-md transition-all",
-          value === 'month' 
-            ? "bg-theme-card-alt text-theme-text" 
+          value === 'month'
+            ? "bg-theme-card-alt text-theme-text"
             : "text-theme-text-muted hover:text-theme-text"
         )}
       >
@@ -185,8 +192,8 @@ const PeriodToggle = ({
         onClick={() => onChange('year')}
         className={cn(
           "px-2 py-0.5 text-[10px] font-medium rounded-md transition-all",
-          value === 'year' 
-            ? "bg-theme-card-alt text-theme-text" 
+          value === 'year'
+            ? "bg-theme-card-alt text-theme-text"
             : "text-theme-text-muted hover:text-theme-text"
         )}
       >
@@ -212,13 +219,16 @@ export const InvestmentStoryDashboard = ({
   projectId,
   zoneId,
   customDifferentiators,
+  quoteImages,
+  language = 'en',
+  onEditClick
 }: InvestmentStoryDashboardProps) => {
   const { t } = useLanguage();
   const mortgageEnabled = mortgageInputs.enabled;
-  
+
   // Active section state for story navigation - start with showcase
   const [activeSection, setActiveSection] = useState<StorySection>('showcase');
-  
+
   // Strategy toggles state
   const [incomeStrategy, setIncomeStrategy] = useState<'LT' | 'ST'>('LT');
   const [incomePeriod, setIncomePeriod] = useState<'month' | 'year'>('year');
@@ -231,7 +241,7 @@ export const InvestmentStoryDashboard = ({
 
   // Define story sections - showcase first
   const hasExitScenarios = exitScenarios && exitScenarios.length > 0 && inputs.enabledSections?.exitStrategy !== false;
-  
+
   const storySections: StorySectionConfig[] = useMemo(() => [
     { id: 'showcase', labelKey: 'theProperty', fallbackLabel: 'Property', icon: Sparkles },
     { id: 'entry', labelKey: 'theEntry', fallbackLabel: 'Entry', icon: Wallet },
@@ -254,7 +264,7 @@ export const InvestmentStoryDashboard = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       const visibleSections = storySections.filter(s => s.show !== false);
       const currentIndex = visibleSections.findIndex(s => s.id === activeSection);
-      
+
       if (e.key === 'ArrowRight' && currentIndex < visibleSections.length - 1) {
         handleSectionChange(visibleSections[currentIndex + 1].id);
       } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
@@ -273,12 +283,12 @@ export const InvestmentStoryDashboard = ({
     const oqoodFee = inputs.oqoodFee || 0;
     const eoiFee = inputs.eoiFee || 0;
     const downpaymentPercent = inputs.downpaymentPercent || 20;
-    
+
     // Day 1 Entry = EOI + Rest of downpayment + DLD + Oqood
     const downpaymentAmount = basePrice * (downpaymentPercent / 100);
     const restOfDownpayment = downpaymentAmount - eoiFee;
     const totalDayOneEntry = eoiFee + restOfDownpayment + dldFee + oqoodFee;
-    
+
     // Pre-handover for display
     const preHandoverAmount = basePrice * inputs.preHandoverPercent / 100;
     const handoverAmount = basePrice * (100 - inputs.preHandoverPercent) / 100;
@@ -323,7 +333,7 @@ export const InvestmentStoryDashboard = ({
     // Base rental income WITHOUT mortgage deduction
     const monthlyRentLT = calculations.holdAnalysis.netAnnualRent / 12;
     const annualRentLT = calculations.holdAnalysis.netAnnualRent;
-    
+
     // Short-term calculations
     const showAirbnb = inputs.showAirbnbComparison;
     const firstFullYear = calculations.yearlyProjections.find(p => !p.isConstruction && !p.isHandover);
@@ -407,7 +417,7 @@ export const InvestmentStoryDashboard = ({
     const cumulativeRentST = lastYear?.airbnbCumulativeNetIncome || 0;
     const initialInvestment = calculations.holdAnalysis.totalCapitalInvested;
     const basePrice = calculations.basePrice;
-    
+
     // Correct wealth equation:
     // Property Value (Y10) - Base Price + Rent Collected = Net Gain
     // Or simply: Property Value + Rent - Initial Investment = Net Wealth
@@ -449,27 +459,27 @@ export const InvestmentStoryDashboard = ({
   };
 
   // Animation classes based on direction
-  const sectionAnimationClass = slideDirection === 'right' 
-    ? "animate-fade-in" 
+  const sectionAnimationClass = slideDirection === 'right'
+    ? "animate-fade-in"
     : "animate-fade-in";
 
-  
+
 
   // Mortgage calculations for leverage section
   const mortgageBreakdown = useMemo(() => {
     if (!mortgageEnabled) return null;
-    
+
     const monthlyRate = mortgageInputs.interestRate / 100 / 12;
     const totalPayments = mortgageInputs.loanTermYears * 12;
     const monthlyPayment = mortgageAnalysis.monthlyPayment;
-    
+
     // For first payment breakdown
     const interestPortion = mortgageAnalysis.loanAmount * monthlyRate;
     const principalPortion = monthlyPayment - interestPortion;
-    
+
     // Gap calculation explanation
     const handoverAmount = calculations.basePrice * (100 - inputs.preHandoverPercent) / 100;
-    
+
     return {
       monthlyPayment,
       interestPortion,
@@ -486,7 +496,7 @@ export const InvestmentStoryDashboard = ({
     <TooltipProvider>
       <div className="h-full flex flex-col">
         {/* Story Navigation */}
-        <StoryNavigation 
+        <StoryNavigation
           sections={storySections}
           activeSection={activeSection}
           onSectionChange={handleSectionChange}
@@ -498,7 +508,7 @@ export const InvestmentStoryDashboard = ({
 
         {/* Section Content Container */}
         <div className={cn("p-4 flex-1 flex flex-col min-h-0", sectionAnimationClass)} key={activeSection}>
-          
+
           {/* ===== SECTION 0: PROPERTY SHOWCASE ===== */}
           {activeSection === 'showcase' && (
             <section className="flex-1 flex flex-col overflow-hidden">
@@ -568,9 +578,9 @@ export const InvestmentStoryDashboard = ({
                         <span className="text-[10px] text-slate-400 uppercase tracking-wide">{t('paymentSplit') || 'Payment Split'}</span>
                       </div>
                       <div className="flex h-3 rounded-full overflow-hidden bg-slate-700 shadow-inner">
-                      <Tooltip>
+                        <Tooltip>
                           <TooltipTrigger asChild>
-                            <div 
+                            <div
                               className="bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center cursor-pointer hover:brightness-110"
                               style={{ width: `${entryData.preHandoverPercent}%` }}
                             />
@@ -581,7 +591,7 @@ export const InvestmentStoryDashboard = ({
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div 
+                            <div
                               className="bg-gradient-to-r from-cyan-500 to-cyan-400 flex items-center justify-center cursor-pointer hover:brightness-110"
                               style={{ width: `${entryData.handoverPercent}%` }}
                             />
@@ -708,8 +718,8 @@ export const InvestmentStoryDashboard = ({
               <div className="p-3 border-b border-slate-700/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {incomeData.showAirbnb && (
-                    <StrategyToggle 
-                      value={incomeStrategy} 
+                    <StrategyToggle
+                      value={incomeStrategy}
                       onChange={setIncomeStrategy}
                       ltLabel={t('longTerm') || 'Long-Term'}
                       stLabel={t('shortTerm') || 'Short-Term'}
@@ -769,17 +779,17 @@ export const InvestmentStoryDashboard = ({
                   {/* Rental Income */}
                   <div className={cn(
                     "bg-gradient-to-br rounded-xl p-3 border text-center",
-                    incomeStrategy === 'LT' 
-                      ? "from-emerald-500/15 to-slate-800/50 border-emerald-500/30" 
+                    incomeStrategy === 'LT'
+                      ? "from-emerald-500/15 to-slate-800/50 border-emerald-500/30"
                       : "from-orange-500/15 to-slate-800/50 border-orange-500/30"
                   )}>
                     <span className="text-[10px] text-slate-400 uppercase">{incomePeriod === 'month' ? 'Monthly' : 'Yearly'} Rent</span>
                     <p className="text-2xl font-bold text-emerald-400 font-mono">
                       {formatCurrency(
-                        incomeStrategy === 'LT' 
+                        incomeStrategy === 'LT'
                           ? (incomePeriod === 'month' ? incomeData.monthlyRentLT : incomeData.annualRentLT)
                           : (incomePeriod === 'month' ? incomeData.monthlyRentST : incomeData.annualRentST),
-                        currency, 
+                        currency,
                         rate
                       )}
                     </p>
@@ -813,12 +823,12 @@ export const InvestmentStoryDashboard = ({
                 <RentalCashflowWaterfall
                   grossRent={
                     incomeStrategy === 'LT'
-                      ? (incomePeriod === 'month' 
-                          ? incomeData.monthlyRentLT + incomeData.serviceCharges / 12 
-                          : incomeData.annualRentLT + incomeData.serviceCharges)
-                      : (incomePeriod === 'month' 
-                          ? incomeData.monthlyRentST + incomeData.annualRentST / 12 * 0.1 
-                          : incomeData.annualRentST + incomeData.annualRentST * 0.1)
+                      ? (incomePeriod === 'month'
+                        ? incomeData.monthlyRentLT + incomeData.serviceCharges / 12
+                        : incomeData.annualRentLT + incomeData.serviceCharges)
+                      : (incomePeriod === 'month'
+                        ? incomeData.monthlyRentST + incomeData.annualRentST / 12 * 0.1
+                        : incomeData.annualRentST + incomeData.annualRentST * 0.1)
                   }
                   serviceCharges={
                     incomeStrategy === 'LT'
@@ -857,13 +867,13 @@ export const InvestmentStoryDashboard = ({
                       return currentRentalIndex >= firstFullYearIndex;
                     })
                     .slice(0, 10);
-                  
+
                   // Simpler approach: skip the first rental year (handover year with partial income)
                   const allRentalYears = calculations.yearlyProjections.filter(p => !p.isConstruction && p.netIncome !== null);
                   const rentYears = allRentalYears.slice(1, 11); // Skip first (partial) year, take next 10
-                  
+
                   if (rentYears.length === 0) return null;
-                  
+
                   return (
                     <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
                       <h4 className="text-sm font-medium text-slate-300 mb-3">Projected Net Rental Income (Years 1–10)</h4>
@@ -915,20 +925,20 @@ export const InvestmentStoryDashboard = ({
                     const displayROE = scenario.exitCosts > 0 ? scenario.netROE : scenario.trueROE;
                     const displayProfit = scenario.exitCosts > 0 ? scenario.netProfit : scenario.trueProfit;
                     const isHighlighted = highlightedExit === index;
-                    
+
                     // Get exit date
                     const exitTotalMonths = inputs.bookingMonth + months;
                     const exitYear = inputs.bookingYear + Math.floor((exitTotalMonths - 1) / 12);
                     const exitMonth = ((exitTotalMonths - 1) % 12) + 1;
                     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                     const exitDate = `${monthNames[exitMonth - 1]} ${exitYear}`;
-                    
+
                     // Calculate construction progress at this exit point
                     const constructionPercent = monthToConstruction(months, calculations.totalMonths);
-                    
+
                     return (
                       <AnimatedCard key={index} delay={index * 75}>
-                        <div 
+                        <div
                           className={cn(
                             "rounded-xl p-4 border transition-all cursor-pointer",
                             isHighlighted
@@ -946,12 +956,12 @@ export const InvestmentStoryDashboard = ({
                             </div>
                             <span className="text-xs text-slate-400">{exitDate}</span>
                           </div>
-                          
+
                           {/* Construction progress estimate */}
                           <div className="flex items-center gap-1.5 mb-3">
                             <span className="text-[10px] text-slate-500">~{Math.round(constructionPercent)}% Built</span>
                           </div>
-                          
+
                           {/* Property Value */}
                           <div className="mb-2">
                             <p className="text-[10px] uppercase tracking-wider text-slate-500">Property Value</p>
@@ -959,7 +969,7 @@ export const InvestmentStoryDashboard = ({
                               {formatCurrency(scenario.exitPrice, currency, rate)}
                             </p>
                           </div>
-                          
+
                           {/* Cash Invested */}
                           <div className="mb-3">
                             <p className="text-[10px] uppercase tracking-wider text-slate-500">Cash In</p>
@@ -967,7 +977,7 @@ export const InvestmentStoryDashboard = ({
                               {formatCurrency(scenario.equityDeployed + (scenario.totalCapital - scenario.equityDeployed), currency, rate)}
                             </p>
                           </div>
-                          
+
                           {/* Profit and ROE - Compact bottom */}
                           <div className="flex items-end justify-between pt-2 border-t border-slate-700/50">
                             <div>
@@ -979,7 +989,7 @@ export const InvestmentStoryDashboard = ({
                                 {displayProfit >= 0 ? '+' : ''}{formatCurrency(displayProfit, currency, rate)}
                               </p>
                             </div>
-                            
+
                             <div className="text-right">
                               <p className="text-[10px] uppercase tracking-wider text-slate-500">ROE</p>
                               <p className={cn(
@@ -1025,7 +1035,7 @@ export const InvestmentStoryDashboard = ({
                     <p className="text-[10px] text-slate-500 mb-1">Loan Amount</p>
                     <p className="text-xl font-bold text-blue-400 font-mono">{formatCurrency(entryData.loanAmount, currency, rate)}</p>
                   </div>
-                  
+
                   {/* Monthly Payment with inline toggle */}
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1060,7 +1070,7 @@ export const InvestmentStoryDashboard = ({
                       </div>
                     </TooltipContent>
                   </Tooltip>
-                  
+
                   <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
                     <p className="text-[10px] text-slate-500 mb-1">Interest Rate</p>
                     <p className="text-xl font-bold text-white font-mono">{entryData.interestRate}%</p>
@@ -1163,7 +1173,7 @@ export const InvestmentStoryDashboard = ({
                   const totalMonths = 120; // 10 years
                   let remainingBalance = mortgageBreakdown.loanAmount;
                   let totalInterest10Y = 0;
-                  
+
                   for (let m = 0; m < totalMonths && remainingBalance > 0; m++) {
                     const interestPayment = remainingBalance * monthlyRate;
                     const principalPayment = mortgageAnalysis.monthlyPayment - interestPayment;
@@ -1181,7 +1191,7 @@ export const InvestmentStoryDashboard = ({
                         <TrendingUp className="w-4 h-4 text-emerald-400" />
                         <span className="text-xs font-medium text-slate-400 uppercase">Debt vs Wealth (10-Year Analysis)</span>
                       </div>
-                      
+
                       {/* Clear breakdown with consistent 10Y timeframe */}
                       <div className="space-y-3 mb-4">
                         <div>

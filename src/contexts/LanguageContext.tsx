@@ -1785,6 +1785,25 @@ const translations: Translations = {
   constructionTooltipPrefix: { en: 'years construction +', es: 'años de construcción +' },
   constructionTooltipSuffix: { en: 'years of rental income within a 10-year window', es: 'años de ingresos de renta en una ventana de 10 años' },
   annualRentalIncomeFor: { en: 'Annual rental income for', es: 'Ingreso anual por renta para' },
+
+  // Exit strategy tabs
+  exitStrategyTitle: { en: 'Exit Strategy Analysis', es: 'Análisis de Estrategia de Salida' },
+  exitStrategyDescription: { en: 'Analyze potential exit scenarios with projected property values, equity deployed, and return on equity at different timepoints.', es: 'Analiza escenarios de salida potenciales con valores proyectados, capital desplegado y retorno sobre capital en distintos momentos.' },
+  exitScenariosROETitle: { en: 'Exit Scenarios with ROE', es: 'Escenarios de Salida con ROE' },
+  monthLabel: { en: 'Month', es: 'Mes' },
+  equityInLabel: { en: 'Equity In', es: 'Capital Invertido' },
+  profitLabel: { en: 'Profit', es: 'Ganancia' },
+  annualROELabel: { en: 'Annual ROE', es: 'ROE Anual' },
+
+  // ROE Breakdown Tooltip
+  roeBreakdownTitle: { en: 'ROE Calculation Breakdown', es: 'Desglose del Cálculo ROE' },
+  originalPriceLabel: { en: 'Original Price', es: 'Precio Original' },
+  appreciationLabel: { en: 'Appreciation', es: 'Apreciación' },
+  equityDeployedLabel: { en: 'Equity Deployed', es: 'Capital Desplegado' },
+  totalCapitalLabel: { en: 'Total Capital', es: 'Capital Total' },
+  netProfitLabel: { en: 'Net Profit', es: 'Ganancia Neta' },
+  trueProfitLabel: { en: 'True Profit', es: 'Ganancia Real' },
+  annualizedLabel: { en: 'annualized', es: 'anualizado' },
 };
 
 interface LanguageContextType {

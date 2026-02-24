@@ -35,6 +35,9 @@ interface DashboardLayoutProps {
   onSave?: () => void;
   // Export modal trigger
   onOpenExportModal?: () => void;
+  // View mode toggle
+  viewMode?: 'classic' | 'story';
+  onChangeViewMode?: (mode: 'classic' | 'story') => void;
 }
 
 export const DashboardLayout = ({
@@ -60,9 +63,11 @@ export const DashboardLayout = ({
   saving,
   onSave,
   onOpenExportModal,
+  viewMode = 'classic',
+  onChangeViewMode,
 }: DashboardLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // Persist collapsed state in localStorage
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('cashflow_sidebar_collapsed');
@@ -98,6 +103,8 @@ export const DashboardLayout = ({
     saving,
     onSave,
     onOpenExportModal,
+    viewMode,
+    onChangeViewMode,
   };
 
   return (
@@ -122,15 +129,15 @@ export const DashboardLayout = ({
             <DashboardSidebar
               {...sidebarProps}
               collapsed={false}
-              onCollapsedChange={() => {}}
+              onCollapsedChange={() => { }}
             />
           </SheetContent>
         </Sheet>
       </div>
 
       {/* Main Content */}
-      <main 
-        ref={mainContentRef} 
+      <main
+        ref={mainContentRef}
         className="flex-1 overflow-auto bg-theme-bg flex flex-col dashboard-main-content"
       >
         <div className="p-6 flex-1 flex flex-col min-h-0">

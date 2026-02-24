@@ -241,6 +241,65 @@ export const useCashflowQuote = (quoteId?: string) => {
     console.log('Cleared working draft content and local state');
   }, []);
 
+  // Create a fresh working draft (DELETE old + INSERT new in one flow)
+  // Returns the new draft ID — eliminates multi-redirect flicker when creating new quotes
+  const createFreshDraft = useCallback(async (): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: 'Please login to create a quote', variant: 'destructive' });
+        return null;
+      }
+
+      // Cancel any pending auto-save
+      if (autoSaveTimeout.current) {
+        clearTimeout(autoSaveTimeout.current);
+        autoSaveTimeout.current = null;
+      }
+
+      // DELETE existing working draft
+      await supabase
+        .from('cashflow_quotes')
+        .delete()
+        .eq('broker_id', user.id)
+        .eq('status', 'working_draft');
+
+      // Reset local state
+      setQuote(null);
+      setQuoteImages({
+        floorPlanUrl: null,
+        buildingRenderUrl: null,
+        heroImageUrl: null,
+        showLogoOverlay: true,
+      });
+      setLastSaved(null);
+
+      // INSERT fresh working draft
+      const { data, error } = await supabase
+        .from('cashflow_quotes')
+        .insert({
+          broker_id: user.id,
+          inputs: {} as any,
+          status: 'working_draft',
+          title: null,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('[createFreshDraft] Failed to create:', error);
+        toast({ title: 'Failed to create draft', variant: 'destructive' });
+        return null;
+      }
+
+      console.log('[createFreshDraft] Created fresh draft:', data.id);
+      return data.id;
+    } catch (err) {
+      console.error('[createFreshDraft] Error:', err);
+      return null;
+    }
+  }, [toast]);
+
   // Removed: saveDraft localStorage function - now using immediate database persistence
 
   // Save quote to database (with version snapshot for existing quotes)
@@ -505,6 +564,7 @@ export const useCashflowQuote = (quoteId?: string) => {
     getOrCreateWorkingDraft,
     promoteWorkingDraft,
     clearWorkingDraft,
+    createFreshDraft,
   };
 };
 

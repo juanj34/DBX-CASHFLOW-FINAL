@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Percent, CreditCard, Flame, Clock, BarChart3, DollarSign } from 'lucide-react';
+import { Percent, CreditCard, Clock, BarChart3, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '../useMortgageCalculations';
@@ -59,14 +59,6 @@ export const OverviewTab = ({
   const monthlyRent = netAnnualRent / 12;
   const netYieldPercent = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
 
-  const preHandoverInstallments = (inputs.additionalPayments || []).reduce(
-    (sum, m) => sum + (basePrice * m.paymentPercent / 100), 0
-  );
-  const totalPreHandoverCash = cashToStart + preHandoverInstallments;
-  const monthlyBurnRate = calculations.totalMonths > 0
-    ? totalPreHandoverCash / calculations.totalMonths
-    : 0;
-
   const handoverPercent = inputs.hasPostHandoverPlan ? (inputs.onHandoverPercent || 0) : (100 - preHandoverPercent);
 
   // Breakeven
@@ -89,12 +81,10 @@ export const OverviewTab = ({
   const cashDual = formatDualCurrency(cashToStart, currency, rate);
   const rentDual = formatDualCurrency(netAnnualRent, currency, rate);
   const monthlyRentDual = formatDualCurrency(monthlyRent, currency, rate);
-  const burnDual = formatDualCurrency(monthlyBurnRate, currency, rate);
-
   return (
     <div className="space-y-4">
-      {/* === Section A: 4 KPI Cards — Net Yield first === */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* === Section A: 3 KPI Cards — Net Yield first === */}
+      <div className="grid grid-cols-3 gap-3">
         {/* Net Yield (PROMINENT) */}
         <motion.div
           custom={0}
@@ -140,32 +130,9 @@ export const OverviewTab = ({
           </div>
         </motion.div>
 
-        {/* Monthly Expense */}
-        <motion.div
-          custom={2}
-          initial="hidden"
-          animate="visible"
-          variants={cardVariants}
-          className="bg-theme-card border border-theme-border rounded-xl p-3 h-[88px] flex flex-col"
-        >
-          <div className="flex items-center gap-1.5 mb-1">
-            <Flame className="w-3.5 h-3.5 text-theme-accent" />
-            <span className="text-[10px] text-theme-text-muted uppercase tracking-wide">{t('monthlyBurnLabel')}</span>
-            <span className="ml-auto text-[9px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded">{calculations.totalMonths}{t('moShort')}</span>
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <div className="text-base font-bold text-theme-text font-mono tabular-nums leading-tight">
-              ~{burnDual.primary}<span className="text-[10px] text-theme-text-muted">/{t('moShort')}</span>
-            </div>
-            {burnDual.secondary && (
-              <span className="text-[10px] text-theme-text-muted">{burnDual.secondary}</span>
-            )}
-          </div>
-        </motion.div>
-
         {/* Breakeven */}
         <motion.div
-          custom={3}
+          custom={2}
           initial="hidden"
           animate="visible"
           variants={cardVariants}
