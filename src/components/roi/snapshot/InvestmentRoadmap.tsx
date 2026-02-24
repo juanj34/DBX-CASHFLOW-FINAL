@@ -12,6 +12,7 @@ interface InvestmentRoadmapProps {
   rate: number;
   totalMonths: number;
   onViewPayments?: () => void;
+  embedded?: boolean;
 }
 
 export const InvestmentRoadmap = ({
@@ -20,6 +21,7 @@ export const InvestmentRoadmap = ({
   rate,
   totalMonths,
   onViewPayments,
+  embedded = false,
 }: InvestmentRoadmapProps) => {
   const { language, t } = useLanguage();
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
@@ -202,12 +204,8 @@ export const InvestmentRoadmap = ({
     });
   }
 
-  return (
-    <div className="bg-theme-card border border-theme-border rounded-xl p-4">
-      <h3 className="text-sm font-semibold text-theme-text mb-4">
-        {language === 'es' ? 'Hoja de Ruta de Inversion' : 'Investment Roadmap'}
-      </h3>
-
+  const timelineContent = (
+    <>
       <div className="relative">
         {/* Vertical connecting line */}
         <div className="absolute left-[15px] top-4 bottom-4 w-px bg-theme-border" />
@@ -314,6 +312,19 @@ export const InvestmentRoadmap = ({
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div>{timelineContent}</div>;
+  }
+
+  return (
+    <div className="bg-theme-card border border-theme-border rounded-xl p-4">
+      <h3 className="text-sm font-semibold text-theme-text mb-4">
+        {language === 'es' ? 'Hoja de Ruta de Inversion' : 'Investment Roadmap'}
+      </h3>
+      {timelineContent}
     </div>
   );
 };

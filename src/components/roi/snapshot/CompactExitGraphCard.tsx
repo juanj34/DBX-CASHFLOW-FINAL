@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TrendingUp, Key } from 'lucide-react';
+import { TrendingUp, Key, ChevronDown } from 'lucide-react';
 import { OIInputs, OICalculations } from '../useOICalculations';
 import { Currency, formatCurrencyShort } from '../currencyUtils';
 import { calculateExitPrice, calculateExitScenario } from '../constructionProgress';
@@ -11,6 +11,7 @@ interface CompactExitGraphCardProps {
   exitScenarios: number[];
   currency: Currency;
   rate: number;
+  embedded?: boolean;
 }
 
 export const CompactExitGraphCard = ({
@@ -19,24 +20,26 @@ export const CompactExitGraphCard = ({
   exitScenarios,
   currency,
   rate,
+  embedded = false,
 }: CompactExitGraphCardProps) => {
   const [hoverData, setHoverData] = useState<{ x: number; y: number; month: number; price: number } | null>(null);
   const [hoveredExitIndex, setHoveredExitIndex] = useState<number | null>(null);
-  
+  const [expandedExit, setExpandedExit] = useState<number | null>(null);
+
   const basePrice = inputs.basePrice || calculations.basePrice || 0;
   const totalMonths = calculations.totalMonths;
-  
+
   // Chart dimensions - larger for better visibility
   const width = 440;
   const height = 200;
   const padding = { top: 30, right: 25, bottom: 35, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  
+
   // Calculate chart max month
   const maxExitMonth = exitScenarios.length > 0 ? Math.max(...exitScenarios, totalMonths) : totalMonths;
   const chartMaxMonth = Math.max(totalMonths + 6, maxExitMonth + 3);
-  
+
   // Scale functions
   const xScale = (months: number) => padding.left + (months / chartMaxMonth) * chartWidth;
   const maxChartPrice = basePrice > 0 ? calculateExitPrice(chartMaxMonth, basePrice, totalMonths, inputs) : 0;
@@ -46,10 +49,10 @@ export const CompactExitGraphCard = ({
     if (maxValue === minValue) return padding.top + chartHeight / 2;
     return padding.top + chartHeight - ((value - minValue) / (maxValue - minValue)) * chartHeight;
   };
-  
+
   // Handover price
   const handoverPrice = basePrice > 0 ? calculateExitPrice(totalMonths, basePrice, totalMonths, inputs) : 0;
-  
+
   // Y-axis ticks (5 values)
   const yAxisTicks = useMemo(() => {
     if (basePrice <= 0) return [];
@@ -57,12 +60,12 @@ export const CompactExitGraphCard = ({
     const step = range / 4;
     return Array.from({ length: 5 }, (_, i) => minValue + step * i).reverse();
   }, [minValue, maxValue, basePrice]);
-  
+
   // X-axis labels
   const xAxisLabels = useMemo(() => {
     const labels: { month: number; label: string; isHandover: boolean }[] = [];
     labels.push({ month: 0, label: '0', isHandover: false });
-    
+
     // Add some intermediate points
     const step = Math.max(Math.floor(chartMaxMonth / 5), 3);
     for (let m = step; m < chartMaxMonth; m += step) {
@@ -70,13 +73,13 @@ export const CompactExitGraphCard = ({
         labels.push({ month: m, label: `${m}m`, isHandover: false });
       }
     }
-    
+
     // Always add handover
     labels.push({ month: totalMonths, label: `🔑 ${totalMonths}m`, isHandover: true });
-    
+
     return labels.sort((a, b) => a.month - b.month);
   }, [chartMaxMonth, totalMonths]);
-  
+
   // Generate smooth curve path and points for hover
   const { curvePath, curvePoints } = useMemo(() => {
     if (basePrice <= 0) return { curvePath: '', curvePoints: [] };
@@ -86,23 +89,23 @@ export const CompactExitGraphCard = ({
       const progress = i / steps;
       const month = progress * chartMaxMonth;
       const price = calculateExitPrice(month, basePrice, totalMonths, inputs);
-      points.push({ 
-        x: xScale(month), 
-        y: yScale(price), 
-        month, 
-        price 
+      points.push({
+        x: xScale(month),
+        y: yScale(price),
+        month,
+        price
       });
     }
-    
+
     let path = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) {
       path += ` L ${points[i].x} ${points[i].y}`;
     }
-    
+
     return { curvePath: path, curvePoints: points };
   }, [basePrice, totalMonths, chartMaxMonth, inputs]);
-  
-  // Calculate scenarios with ROE
+
+  // Calculate scenarios with ROE + full detail for expandable cards
   const scenarios = useMemo(() => {
     if (basePrice <= 0) return [];
     return exitScenarios.map((exitMonths) => {
@@ -113,11 +116,11 @@ export const CompactExitGraphCard = ({
         inputs,
         calculations.totalEntryCosts
       );
-      
+
       const isHandover = Math.abs(exitMonths - totalMonths) <= 1;
       const netGain = scenarioResult.exitPrice - basePrice;
       const gainPercent = basePrice > 0 ? (netGain / basePrice) * 100 : 0;
-      
+
       return {
         exitMonths,
         exitPrice: scenarioResult.exitPrice,
@@ -126,11 +129,15 @@ export const CompactExitGraphCard = ({
         annualizedROE: scenarioResult.annualizedROE,
         equityDeployed: scenarioResult.equityDeployed,
         totalCapital: scenarioResult.totalCapital,
+        entryCosts: scenarioResult.entryCosts,
+        exitCosts: scenarioResult.exitCosts,
+        trueProfit: scenarioResult.trueProfit,
+        netProfit: scenarioResult.netProfit,
         isHandover,
       };
     });
   }, [exitScenarios, basePrice, totalMonths, inputs, calculations.totalEntryCosts]);
-  
+
   // Handle mouse move on graph
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;
@@ -158,7 +165,6 @@ export const CompactExitGraphCard = ({
     }
 
     // 2) Exit marker hover (bigger, proximity-based)
-    // Make hover easy: if the cursor is within this radius of a marker, consider it hovered.
     const HIT_RADIUS = 22;
 
     let nearestIndex: number | null = null;
@@ -185,33 +191,24 @@ export const CompactExitGraphCard = ({
     setHoverData(null);
     setHoveredExitIndex(null);
   };
-  
+
   // Early returns AFTER all hooks
   if (basePrice <= 0 || exitScenarios.length === 0) {
     return null;
   }
-  
+
   const hasValidScenarios = scenarios.some(s => s.exitPrice > 0);
   if (!hasValidScenarios) {
     return null;
   }
 
-  return (
-    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-theme-border">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-theme-accent" />
-          <span className="text-sm font-semibold text-theme-text">Asset Value Growth</span>
-        </div>
-        <p className="text-xs text-theme-text-muted mt-0.5">From purchase to exit</p>
-      </div>
-      
+  const graphAndCards = (
+    <>
       {/* Large Graph with Axes */}
       <div className="px-3 py-4">
-        <svg 
-          width="100%" 
-          viewBox={`0 0 ${width} ${height}`} 
+        <svg
+          width="100%"
+          viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="xMidYMid meet"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
@@ -227,7 +224,7 @@ export const CompactExitGraphCard = ({
               <stop offset="100%" stopColor="hsl(var(--theme-accent))" stopOpacity="0.02" />
             </linearGradient>
           </defs>
-          
+
           {/* Y-Axis Grid Lines & Labels */}
           {yAxisTicks.map((value, i) => (
             <g key={`y-${i}`}>
@@ -252,7 +249,7 @@ export const CompactExitGraphCard = ({
               </text>
             </g>
           ))}
-          
+
           {/* X-Axis Labels */}
           {xAxisLabels.map(({ month, label, isHandover }) => (
             <text
@@ -267,7 +264,7 @@ export const CompactExitGraphCard = ({
               {label}
             </text>
           ))}
-          
+
           {/* Base Price Dashed Line */}
           <line
             x1={padding.left}
@@ -279,13 +276,13 @@ export const CompactExitGraphCard = ({
             strokeDasharray="4,4"
             opacity="0.5"
           />
-          
+
           {/* Area fill */}
           <path
             d={`${curvePath} L ${xScale(chartMaxMonth)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`}
             fill="url(#areaFill)"
           />
-          
+
           {/* Main curve */}
           <path
             d={curvePath}
@@ -294,7 +291,7 @@ export const CompactExitGraphCard = ({
             strokeWidth="2.5"
             strokeLinecap="round"
           />
-          
+
           {/* Base marker */}
           <g>
             <circle cx={xScale(0)} cy={yScale(basePrice)} r="5" fill="hsl(var(--theme-text-muted))" />
@@ -308,7 +305,7 @@ export const CompactExitGraphCard = ({
               Base
             </text>
           </g>
-          
+
           {/* Handover marker */}
           <g>
             <line
@@ -334,23 +331,22 @@ export const CompactExitGraphCard = ({
               {formatCurrencyShort(handoverPrice, 'AED')}
             </text>
           </g>
-          
+
           {/* Exit markers with values */}
           {scenarios.map((scenario, index) => {
             if (scenario.isHandover) return null;
             const x = xScale(scenario.exitMonths);
             const y = yScale(scenario.exitPrice);
             const isHovered = hoveredExitIndex === index;
-            
+
             return (
-              <g 
+              <g
                 key={scenario.exitMonths}
-                // Hover is handled globally in onMouseMove via proximity detection
                 style={{ cursor: 'pointer' }}
               >
                 {/* Larger hit area */}
                 <circle cx={x} cy={y} r="22" fill="transparent" pointerEvents="all" />
-                
+
                 {/* Vertical guide */}
                 <line
                   x1={x}
@@ -363,15 +359,15 @@ export const CompactExitGraphCard = ({
                   opacity="0.4"
                 />
                 {/* Marker */}
-                <circle 
-                  cx={x} 
-                  cy={y} 
-                  r={isHovered ? 8 : 6} 
-                  fill="hsl(var(--theme-accent))" 
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isHovered ? 8 : 6}
+                  fill="hsl(var(--theme-accent))"
                   className="transition-all duration-150"
                 />
                 <circle cx={x} cy={y} r={isHovered ? 4 : 3} fill="hsl(var(--theme-card))" />
-                
+
                 {/* Value label - hide when hovered to show tooltip */}
                 {!isHovered && (
                   <text
@@ -385,7 +381,7 @@ export const CompactExitGraphCard = ({
                     {formatCurrencyShort(scenario.exitPrice, 'AED')}
                   </text>
                 )}
-                
+
                 {/* Exit number */}
                 <text
                   x={x}
@@ -396,7 +392,7 @@ export const CompactExitGraphCard = ({
                 >
                   Exit {index + 1}
                 </text>
-                
+
                 {/* Hover tooltip - detailed info */}
                 {isHovered && (
                   <g pointerEvents="none">
@@ -447,7 +443,7 @@ export const CompactExitGraphCard = ({
               </g>
             );
           })}
-          
+
           {/* Hover tooltip - only show when NOT hovering an exit marker */}
           {hoverData && hoveredExitIndex === null && (
             <g>
@@ -504,55 +500,150 @@ export const CompactExitGraphCard = ({
           )}
         </svg>
       </div>
-      
-      {/* Compact Exit Cards - Small, focused */}
-      <div className="px-3 pb-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {scenarios.map((scenario, index) => (
-          <div 
-            key={scenario.exitMonths}
-            className={cn(
-              "bg-theme-bg border rounded-lg p-2 text-center",
-              scenario.isHandover 
-                ? "border-theme-accent/50" 
-                : "border-theme-border"
-            )}
-          >
-            {/* Title */}
-            <div className="flex items-center justify-center gap-1 mb-1">
-              {scenario.isHandover ? (
-                <Key className="w-3 h-3 text-theme-accent" />
-              ) : (
-                <span className="w-4 h-4 rounded-full bg-theme-accent/20 text-theme-accent text-[10px] font-bold flex items-center justify-center">
-                  {index + 1}
+
+      {/* Compact Exit Cards - Clickable with expandable detail */}
+      <div className="px-3 pb-3 space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {scenarios.map((scenario, index) => {
+            const isExpanded = expandedExit === index;
+            return (
+              <button
+                key={scenario.exitMonths}
+                onClick={() => setExpandedExit(prev => prev === index ? null : index)}
+                className={cn(
+                  "bg-theme-bg border rounded-lg p-2 text-center transition-all cursor-pointer",
+                  scenario.isHandover
+                    ? "border-theme-accent/50"
+                    : isExpanded
+                      ? "border-theme-accent ring-1 ring-theme-accent/30"
+                      : "border-theme-border hover:border-theme-accent/30"
+                )}
+              >
+                {/* Title */}
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  {scenario.isHandover ? (
+                    <Key className="w-3 h-3 text-theme-accent" />
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-theme-accent/20 text-theme-accent text-[10px] font-bold flex items-center justify-center">
+                      {index + 1}
+                    </span>
+                  )}
+                  <span className="text-xs font-medium text-theme-text-muted">
+                    {scenario.isHandover ? 'Handover' : `Exit ${index + 1}`}
+                  </span>
+                  <ChevronDown className={cn(
+                    "w-3 h-3 text-theme-text-muted transition-transform duration-200",
+                    isExpanded && "rotate-180"
+                  )} />
+                </div>
+
+                {/* Net Gain - Hero */}
+                <div className={cn(
+                  "text-base font-bold",
+                  scenario.netGain >= 0 ? "text-theme-positive" : "text-theme-negative"
+                )}>
+                  {scenario.netGain >= 0 ? '+' : ''}{formatCurrencyShort(scenario.netGain, 'AED')}
+                </div>
+
+                {/* Time & ROE */}
+                <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-theme-text-muted">
+                  <span>{scenario.exitMonths}m</span>
+                  <span>•</span>
+                  <span className={cn(
+                    "font-semibold",
+                    scenario.annualizedROE >= 0 ? "text-theme-positive" : "text-theme-negative"
+                  )}>
+                    {scenario.annualizedROE.toFixed(1)}% ROE
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Expanded detail for selected exit */}
+        {expandedExit !== null && scenarios[expandedExit] && (() => {
+          const s = scenarios[expandedExit];
+          return (
+            <div className="bg-theme-bg border border-theme-accent/30 rounded-lg p-3 space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-theme-text">
+                  {s.isHandover ? 'Handover' : `Exit ${expandedExit + 1}`} — {s.exitMonths} months
                 </span>
+              </div>
+
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Exit Price</span>
+                <span className="font-mono text-theme-text font-medium">{formatCurrencyShort(s.exitPrice, 'AED')}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Purchase Price</span>
+                <span className="font-mono text-theme-text-muted">{formatCurrencyShort(basePrice, 'AED')}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Appreciation</span>
+                <span className={cn("font-mono font-medium", s.netGain >= 0 ? "text-theme-positive" : "text-theme-negative")}>
+                  {s.netGain >= 0 ? '+' : ''}{formatCurrencyShort(s.netGain, 'AED')} ({s.gainPercent.toFixed(1)}%)
+                </span>
+              </div>
+
+              <div className="border-t border-theme-border/30 my-1.5" />
+
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Equity Deployed</span>
+                <span className="font-mono text-theme-text">{formatCurrencyShort(s.equityDeployed, 'AED')}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Entry Costs (DLD + Oqood)</span>
+                <span className="font-mono text-theme-negative">-{formatCurrencyShort(s.entryCosts, 'AED')}</span>
+              </div>
+              {s.exitCosts > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-theme-text-muted">Exit Costs (Agent + NOC)</span>
+                  <span className="font-mono text-theme-negative">-{formatCurrencyShort(s.exitCosts, 'AED')}</span>
+                </div>
               )}
-              <span className="text-xs font-medium text-theme-text-muted">
-                {scenario.isHandover ? 'Handover' : `Exit ${index + 1}`}
-              </span>
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Total Capital In</span>
+                <span className="font-mono text-theme-text font-medium">{formatCurrencyShort(s.totalCapital, 'AED')}</span>
+              </div>
+
+              <div className="border-t border-theme-border/30 my-1.5" />
+
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text-muted">Net Profit</span>
+                <span className={cn("font-mono font-bold", s.netProfit >= 0 ? "text-theme-positive" : "text-theme-negative")}>
+                  {s.netProfit >= 0 ? '+' : ''}{formatCurrencyShort(s.netProfit, 'AED')}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-theme-text font-medium">Annualized ROE</span>
+                <span className={cn("font-mono font-bold text-sm", s.annualizedROE >= 0 ? "text-theme-positive" : "text-theme-negative")}>
+                  {s.annualizedROE.toFixed(1)}%
+                </span>
+              </div>
             </div>
-            
-            {/* Net Gain - Hero */}
-            <div className={cn(
-              "text-base font-bold",
-              scenario.netGain >= 0 ? "text-theme-positive" : "text-theme-negative"
-            )}>
-              {scenario.netGain >= 0 ? '+' : ''}{formatCurrencyShort(scenario.netGain, 'AED')}
-            </div>
-            
-            {/* Time & ROE */}
-            <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-theme-text-muted">
-              <span>{scenario.exitMonths}m</span>
-              <span>•</span>
-              <span className={cn(
-                "font-semibold",
-                scenario.annualizedROE >= 0 ? "text-theme-positive" : "text-theme-negative"
-              )}>
-                {scenario.annualizedROE.toFixed(1)}% ROE
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })()}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div>{graphAndCards}</div>;
+  }
+
+  return (
+    <div className="bg-theme-card border border-theme-border rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-theme-border">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-theme-accent" />
+          <span className="text-sm font-semibold text-theme-text">Asset Value Growth</span>
+        </div>
+        <p className="text-xs text-theme-text-muted mt-0.5">From purchase to exit</p>
+      </div>
+      {graphAndCards}
     </div>
   );
 };
