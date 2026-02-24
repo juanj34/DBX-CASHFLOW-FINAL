@@ -11,11 +11,10 @@ import { Currency, formatCurrency } from "@/components/roi/currencyUtils";
 import { calculateExitScenario } from "@/components/roi/constructionProgress";
 
 // Reused display components
-import { CompactPaymentTable } from "@/components/roi/snapshot/CompactPaymentTable";
-import { RentSnapshot } from "@/components/roi/RentSnapshot";
-import { OIYearlyProjectionTable } from "@/components/roi/OIYearlyProjectionTable";
+import { SnapshotOverviewCards } from "@/components/roi/snapshot/SnapshotOverviewCards";
+import { InvestmentRoadmap } from "@/components/roi/snapshot/InvestmentRoadmap";
+import { CompactRentCard } from "@/components/roi/snapshot/CompactRentCard";
 import { CompactExitGraphCard } from "@/components/roi/snapshot/CompactExitGraphCard";
-import { ExitScenariosCards } from "@/components/roi/ExitScenariosCards";
 import { MortgageBreakdown } from "@/components/roi/MortgageBreakdown";
 import { CompactPostHandoverCard } from "@/components/roi/snapshot/CompactPostHandoverCard";
 
@@ -53,47 +52,50 @@ export const OnionView = ({
 }: OnionViewProps) => {
   const { t } = useLanguage();
 
-  // Conditional section visibility (same logic as SnapshotContent)
+  // Conditional section visibility
   const showExits = inputs.enabledSections?.exitStrategy !== false && exitScenarios.length > 0 && calculations.basePrice > 0;
   const showMortgage = mortgageInputs.enabled;
   const showPostHandover = inputs.hasPostHandoverPlan;
 
-  // Compute payment phase summaries
+  // Payment phase summary for collapsed state
   const paymentSummary = useMemo(() => {
     const bp = calculations.basePrice;
-    const pre = bp * (inputs.preHandoverPercent || 0) / 100;
-    const handover = bp * ((inputs.handoverPercent || 0) / 100);
-    const post = bp * ((inputs.postHandoverPercent || 0) / 100);
-    return { pre, handover, post };
-  }, [calculations.basePrice, inputs.preHandoverPercent, inputs.handoverPercent, inputs.postHandoverPercent]);
+    const entry = bp * (inputs.downpaymentPercent || 0) / 100 + bp * 0.04 + (inputs.oqoodFee || 0);
+    const handoverPct = inputs.hasPostHandoverPlan
+      ? (inputs.onHandoverPercent || 0)
+      : (100 - (inputs.preHandoverPercent || 0));
+    const handover = bp * handoverPct / 100;
+    return { entry, handover };
+  }, [calculations.basePrice, inputs.downpaymentPercent, inputs.oqoodFee, inputs.preHandoverPercent, inputs.hasPostHandoverPlan, inputs.onHandoverPercent]);
 
-  // Compute rental summary
+  // Rental summary for collapsed state
   const rentalSummary = useMemo(() => {
-    const annualRent = (inputs.expectedAnnualRent || 0);
+    const annualRent = inputs.expectedAnnualRent || (calculations.basePrice * (inputs.rentalYieldPercent || 0) / 100);
     const serviceCharges = (inputs.serviceChargePerSqft || 18) * (inputs.unitSizeSqf || 0);
     const netAnnual = annualRent - serviceCharges;
     const yieldPct = calculations.basePrice > 0 ? (netAnnual / calculations.basePrice) * 100 : 0;
     return { netAnnual, yieldPct };
   }, [inputs, calculations.basePrice]);
 
-  // Compute exit summaries
-  const exitSummaries = useMemo(() => {
+  // Exit summaries for collapsed state (lightweight — only summary text)
+  const exitSummaryText = useMemo(() => {
     if (!showExits) return [];
-    return exitScenarios.map(months =>
-      calculateExitScenario(months, calculations.basePrice, calculations.totalMonths, inputs, calculations.totalEntryCosts)
-    );
+    return exitScenarios.map(months => {
+      const s = calculateExitScenario(months, calculations.basePrice, calculations.totalMonths, inputs, calculations.totalEntryCosts);
+      return { months, roe: s.trueROE };
+    });
   }, [showExits, exitScenarios, calculations.basePrice, calculations.totalMonths, calculations.totalEntryCosts, inputs]);
 
-  // Compute mortgage summary
+  // Mortgage summary for collapsed state
   const mortgageSummary = useMemo(() => {
     if (!showMortgage) return null;
     const monthly = mortgageAnalysis.monthlyPayment || 0;
-    const monthlyRent = (rentalSummary.netAnnual) / 12;
+    const monthlyRent = rentalSummary.netAnnual / 12;
     const coverage = monthly > 0 ? monthlyRent / monthly : 0;
     return { monthly, coverage };
   }, [showMortgage, mortgageAnalysis, rentalSummary]);
 
-  // Post-handover summary
+  // Post-handover summary for collapsed state
   const postHandoverSummary = useMemo(() => {
     if (!showPostHandover || !inputs.postHandoverPayments?.length) return null;
     const total = inputs.postHandoverPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -101,12 +103,12 @@ export const OnionView = ({
   }, [showPostHandover, inputs.postHandoverPayments]);
 
   // Monthly rent for post-handover card
-  const monthlyRent = (rentalSummary.netAnnual) / 12;
+  const monthlyRent = rentalSummary.netAnnual / 12;
   const rentGrowthRate = inputs.annualRentIncrease || 5;
 
   return (
     <div className="min-h-full bg-theme-bg">
-      <div className="max-w-[640px] mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-4 py-6">
 
         {/* 1. Unit Header — always visible */}
         <OnionHeader
@@ -117,31 +119,36 @@ export const OnionView = ({
           unitSizeSqf={inputs.unitSizeSqf}
         />
 
-        {/* 2. Payment Breakdown */}
+        {/* 2. KPI Cards — always visible */}
+        <div className="mt-3 mb-2">
+          <SnapshotOverviewCards
+            inputs={inputs}
+            calculations={calculations}
+            currency={currency}
+            rate={rate}
+          />
+        </div>
+
+        {/* 3. Investment Roadmap (Payments) */}
         <OnionSection
           icon={CreditCard}
           title={t('paymentBreakdownHeader') || 'Payment Breakdown'}
           summary={
             <div className="flex flex-wrap gap-x-3 gap-y-1">
-              <span>{t('preHandoverLabel') || 'Pre-HO'}: <span className="font-mono text-theme-text">{formatCurrency(paymentSummary.pre, currency, rate)}</span></span>
+              <span>{t('entryLabel') || 'Entry'}: <span className="font-mono text-theme-text">{formatCurrency(paymentSummary.entry, currency, rate)}</span></span>
               <span>{t('handoverLabel') || 'Handover'}: <span className="font-mono text-theme-text">{formatCurrency(paymentSummary.handover, currency, rate)}</span></span>
-              {paymentSummary.post > 0 && (
-                <span>{t('postHandoverLabel') || 'Post-HO'}: <span className="font-mono text-theme-text">{formatCurrency(paymentSummary.post, currency, rate)}</span></span>
-              )}
             </div>
           }
         >
-          <CompactPaymentTable
+          <InvestmentRoadmap
             inputs={inputs}
-            clientInfo={clientInfo}
             currency={currency}
             rate={rate}
             totalMonths={calculations.totalMonths}
-            collapsiblePhases={true}
           />
         </OnionSection>
 
-        {/* 3. Rental Income */}
+        {/* 4. Rental Income */}
         <OnionSection
           icon={Home}
           title={t('rentalIncome') || 'Rental Income'}
@@ -158,67 +165,42 @@ export const OnionView = ({
             </span>
           }
         >
-          <div className="space-y-4">
-            <RentSnapshot
-              inputs={inputs}
-              currency={currency}
-              rate={rate}
-              holdAnalysis={calculations.holdAnalysis}
-            />
-            {calculations.yearlyProjections && calculations.yearlyProjections.length > 0 && (
-              <OIYearlyProjectionTable
-                projections={calculations.yearlyProjections.slice(0, 7)}
-                currency={currency}
-                rate={rate}
-                showAirbnbComparison={inputs.showAirbnbComparison || false}
-                unitSizeSqf={inputs.unitSizeSqf}
-                embedded={true}
-              />
-            )}
-          </div>
+          <CompactRentCard
+            inputs={inputs}
+            currency={currency}
+            rate={rate}
+          />
         </OnionSection>
 
-        {/* 4. Exit Strategy (conditional) */}
+        {/* 5. Exit Strategy (conditional) */}
         {showExits && (
           <OnionSection
             icon={TrendingUp}
             title={t('exitStrategyTitle') || 'Exit Strategy'}
             summary={
               <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {exitSummaries.map((s, i) => (
+                {exitSummaryText.map((s, i) => (
                   <span key={i}>
-                    {exitScenarios[i]}mo:{' '}
-                    <span className={`font-mono ${s.trueROE >= 0 ? 'text-theme-positive' : 'text-theme-negative'}`}>
-                      {s.trueROE.toFixed(0)}% ROE
+                    {s.months}mo:{' '}
+                    <span className={`font-mono ${s.roe >= 0 ? 'text-theme-positive' : 'text-theme-negative'}`}>
+                      {s.roe.toFixed(0)}% ROE
                     </span>
                   </span>
                 ))}
               </div>
             }
           >
-            <div className="space-y-4">
-              <CompactExitGraphCard
-                inputs={inputs}
-                calculations={calculations}
-                exitScenarios={exitScenarios}
-                currency={currency}
-                rate={rate}
-              />
-              <ExitScenariosCards
-                inputs={inputs}
-                currency={currency}
-                totalMonths={calculations.totalMonths}
-                basePrice={calculations.basePrice}
-                totalEntryCosts={calculations.totalEntryCosts}
-                exitScenarios={exitScenarios}
-                rate={rate}
-                readOnly={true}
-              />
-            </div>
+            <CompactExitGraphCard
+              inputs={inputs}
+              calculations={calculations}
+              exitScenarios={exitScenarios}
+              currency={currency}
+              rate={rate}
+            />
           </OnionSection>
         )}
 
-        {/* 5. Mortgage (conditional) */}
+        {/* 6. Mortgage (conditional) */}
         {showMortgage && mortgageSummary && (
           <OnionSection
             icon={Building2}
@@ -248,7 +230,7 @@ export const OnionView = ({
           </OnionSection>
         )}
 
-        {/* 6. Post-Handover Coverage (conditional) */}
+        {/* 7. Post-Handover Coverage (conditional) */}
         {showPostHandover && postHandoverSummary && (
           <OnionSection
             icon={Clock}
@@ -271,7 +253,7 @@ export const OnionView = ({
           </OnionSection>
         )}
 
-        {/* Bottom border to close the last section */}
+        {/* Bottom border */}
         <div className="border-t border-theme-border" />
       </div>
 
