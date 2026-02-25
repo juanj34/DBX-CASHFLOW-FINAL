@@ -1,65 +1,42 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { useContrastChecker } from "@/hooks/useContrastChecker";
-import { useQuoteViewNotifications } from "@/hooks/useQuoteViewNotifications";
-import { usePresentationViewNotifications } from "@/hooks/usePresentationViewNotifications";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Dashboard from "./pages/Dashboard";
-import OICalculator from "./pages/OICalculator";
-import AccountSettings from "./pages/AccountSettings";
-import QuotesDashboard from "./pages/QuotesDashboard";
-import QuotesCompare from "./pages/QuotesCompare";
-import QuotesAnalytics from "./pages/QuotesAnalytics";
-import CashflowView from "./pages/CashflowView";
-import DeveloperRanking from "./pages/DeveloperRanking";
-import CompareView from "./pages/CompareView";
-import ResetPassword from "./pages/ResetPassword";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import Contact from "./pages/Contact";
-import Help from "./pages/Help";
-import ColorTest from "./pages/ColorTest";
-import ArchivedQuotes from "./pages/ArchivedQuotes";
-import PresentationsHub from "./pages/PresentationsHub";
-import PresentationBuilder from "./pages/PresentationBuilder";
-import PresentationView from "./pages/PresentationView";
-import SnapshotView from "./pages/SnapshotView";
-import SnapshotPrint from "./pages/SnapshotPrint";
-import CashflowPrint from "./pages/CashflowPrint";
-import ClientsManager from "./pages/ClientsManager";
-import ClientPortal from "./pages/ClientPortal";
-import OffPlanVsSecondary from "./pages/OffPlanVsSecondary";
+import { ProtectedRoute } from "@/components/auth-new/ProtectedRoute";
 
-import ClientPortfolioView from "./pages/ClientPortfolioView";
-import NotFound from "./pages/NotFound";
+// Eagerly load landing (first paint) and auth
+import Landing from "./pages-new/Landing";
+import Auth from "./pages-new/Auth";
+
+// Lazy-load all other routes for code splitting
+const Dashboard = lazy(() => import("./pages-new/Dashboard"));
+const StrategyCreator = lazy(() => import("./pages-new/StrategyCreator"));
+const SharedView = lazy(() => import("./pages-new/SharedView"));
+const Account = lazy(() => import("./pages-new/Account"));
+
+const LazyFallback = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-theme-bg">
+    <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-400 to-amber-600 animate-pulse" />
+    <div className="mt-4 h-1.5 w-32 bg-theme-border rounded-full overflow-hidden">
+      <div className="h-full w-1/2 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full animate-shimmer" />
+    </div>
+  </div>
+);
+
+const NotFound = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-theme-bg px-4 text-center">
+    <span className="font-mono text-6xl text-theme-accent font-bold mb-4">404</span>
+    <h1 className="font-display text-xl text-theme-text mb-2">Page Not Found</h1>
+    <p className="text-sm text-theme-text-muted mb-6">The page you're looking for doesn't exist.</p>
+    <a href="/" className="text-sm text-theme-accent hover:underline">Back to Home</a>
+  </div>
+);
 
 const queryClient = new QueryClient();
-
-// Component to run contrast checker in development
-function ContrastCheckerProvider({ children }: { children: React.ReactNode }) {
-  useContrastChecker({ scanOnMount: true, scanOnMutation: false, debounceMs: 2000 });
-  return <>{children}</>;
-}
-
-// Component to enable real-time notifications
-function NotificationProvider({ children }: { children: React.ReactNode }) {
-  useQuoteViewNotifications();
-  usePresentationViewNotifications();
-  return <>{children}</>;
-}
-function LegacyCompareRedirect() {
-  const location = useLocation();
-  return <Navigate to={`/compare${location.search}`} replace />;
-}
 
 function App() {
   return (
@@ -67,70 +44,34 @@ function App() {
       <LanguageProvider>
         <ThemeProvider>
           <TooltipProvider delayDuration={0}>
-            <ContrastCheckerProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-              <NotificationProvider>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                {/* Main shared view route - Cashflow View */}
-                <Route path="/view/:shareToken" element={<SnapshotView />} />
-                <Route path="/view/:shareToken/print" element={<SnapshotPrint />} />
-                {/* Legacy routes - kept for backward compatibility */}
-                <Route path="/snapshot/:shareToken" element={<SnapshotView />} />
-                <Route path="/snapshot/:shareToken/print" element={<SnapshotPrint />} />
-                <Route path="/cashflow/:shareToken/print" element={<CashflowPrint />} />
-                <Route path="/compare-view/:shareToken" element={<CompareView />} />
-                <Route path="/present/:shareToken" element={<PresentationView />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/help" element={<Help />} />
-                
-                {/* Protected Routes - Require Authentication */}
-                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                <Route path="/map-config" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/roi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/cashflow-generator" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
-                <Route path="/cashflow/:quoteId" element={<ProtectedRoute><OICalculator /></ProtectedRoute>} />
-                <Route path="/offplan-vs-secondary" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
-                <Route path="/offplan-vs-secondary/:quoteId" element={<ProtectedRoute><OffPlanVsSecondary /></ProtectedRoute>} />
-                {/* Redirects for old legacy URLs */}
-                <Route path="/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/legacy/cashflow-dashboard" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/legacy/cashflow-dashboard/:quoteId" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
-                <Route path="/my-quotes" element={<ProtectedRoute><QuotesDashboard /></ProtectedRoute>} />
-                <Route path="/archived-quotes" element={<ProtectedRoute><ArchivedQuotes /></ProtectedRoute>} />
-                <Route path="/quotes-analytics" element={<ProtectedRoute><QuotesAnalytics /></ProtectedRoute>} />
-                <Route path="/compare" element={<ProtectedRoute><QuotesCompare /></ProtectedRoute>} />
-                <Route path="/developer-ranking" element={<ProtectedRoute><DeveloperRanking /></ProtectedRoute>} />
-                <Route path="/presentations" element={<ProtectedRoute><PresentationsHub /></ProtectedRoute>} />
-                <Route path="/presentations/:id" element={<ProtectedRoute><PresentationBuilder /></ProtectedRoute>} />
-                <Route path="/clients" element={<ProtectedRoute><ClientsManager /></ProtectedRoute>} />
-                
-                <Route path="/clients/:clientId/portfolio" element={<ProtectedRoute><ClientPortfolioView /></ProtectedRoute>} />
-                <Route path="/portal/:portalToken" element={<ClientPortal />} />
-                <Route path="/color-test" element={<ProtectedRoute><ColorTest /></ProtectedRoute>} />
-                
-                {/* Redirects for old routes */}
-                <Route path="/oi-calculator" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/cash-statement" element={<Navigate to="/cashflow-generator" replace />} />
-                <Route path="/dashboard" element={<Navigate to="/map-config" replace />} />
-                <Route path="/quotes" element={<Navigate to="/my-quotes" replace />} />
-                <Route path="/quotes/compare" element={<LegacyCompareRedirect />} />
-                
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              </NotificationProvider>
-              </BrowserRouter>
-            </ContrastCheckerProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Suspense fallback={<LazyFallback />}>
+                <Routes>
+                  {/* Public */}
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/login" element={<Auth />} />
+                  <Route path="/view/:shareToken" element={<SharedView />} />
+
+                  {/* Protected */}
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/strategy/new" element={<ProtectedRoute><StrategyCreator /></ProtectedRoute>} />
+                  <Route path="/strategy/:quoteId" element={<ProtectedRoute><StrategyCreator /></ProtectedRoute>} />
+                  <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+
+                  {/* Legacy redirects */}
+                  <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/cashflow-generator" element={<Navigate to="/strategy/new" replace />} />
+                  <Route path="/cashflow/:quoteId" element={<Navigate to="/strategy/new" replace />} />
+                  <Route path="/my-quotes" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/account-settings" element={<Navigate to="/account" replace />} />
+                  <Route path="/map-config" element={<Navigate to="/dashboard" replace />} />
+
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
           </TooltipProvider>
         </ThemeProvider>
       </LanguageProvider>

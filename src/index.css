@@ -1,236 +1,225 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* =====================================================
+ * DESERT DECO — Design System
+ * Dark luxury aesthetic with gold/amber accents
+ * ===================================================== */
 
 @layer base {
   :root {
-    /* Premium color palette */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    
-    --radius: 0.75rem;
-    
+    /* shadcn/ui primitives — mapped to dark theme */
+    --background: 220 20% 8%;
+    --foreground: 210 20% 92%;
+
+    --card: 220 16% 14%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 16% 14%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 38 92% 55%;
+    --primary-foreground: 220 20% 8%;
+
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 215 12% 55%;
+
+    --accent: 220 14% 18%;
+    --accent-foreground: 210 20% 92%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 210 20% 92%;
+
+    --border: 220 12% 22%;
+    --input: 220 12% 22%;
+    --ring: 38 92% 55%;
+
+    --radius: 0.625rem;
+
     /* Custom design tokens */
-    --emerald: 160 84% 39%;
-    --amber: 38 92% 50%;
-    --soft-grey: 220 13% 91%;
-    
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-    
+    --emerald: 152 60% 48%;
+    --amber: 38 92% 55%;
+    --soft-grey: 220 12% 22%;
+
+    /* Shadows — dark theme shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4);
+
     /* Transitions */
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Default theme variables — single blue/white theme */
-    --theme-bg: 210 40% 98%;
-    --theme-bg-alt: 210 40% 96%;
-    --theme-card: 0 0% 100%;
-    --theme-card-alt: 210 40% 98%;
-    --theme-border: 214 32% 91%;
-    --theme-border-alt: 213 27% 84%;
-    --theme-accent: 221 83% 53%;
-    --theme-accent-secondary: 224 76% 48%;
-    --theme-text: 222 47% 11%;
-    --theme-text-muted: 215 16% 47%;
-    --theme-text-highlight: 221 83% 53%;
-    --theme-positive: 142 76% 36%;
-    --theme-negative: 0 84% 60%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 221 83% 53%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Theme variables — Desert Deco */
+    --theme-bg: 220 20% 8%;
+    --theme-bg-alt: 220 18% 12%;
+    --theme-card: 220 16% 14%;
+    --theme-card-alt: 220 14% 18%;
+    --theme-border: 220 12% 22%;
+    --theme-border-alt: 220 10% 32%;
+    --theme-accent: 38 92% 55%;
+    --theme-accent-secondary: 38 80% 45%;
+    --theme-accent-dark: 38 92% 55%;
+    --theme-accent-muted: 38 70% 40%;
+    --theme-text: 210 20% 92%;
+    --theme-text-muted: 215 12% 55%;
+    --theme-text-highlight: 38 92% 55%;
+    --theme-positive: 152 60% 48%;
+    --theme-negative: 0 72% 58%;
   }
 }
 
-/* Single theme: Blue/White */
-.theme-default {
-  --theme-bg: 210 40% 98%;
-  --theme-bg-alt: 210 40% 96%;
-  --theme-card: 0 0% 100%;
-  --theme-card-alt: 210 40% 98%;
-  --theme-border: 214 32% 91%;
-  --theme-border-alt: 213 27% 84%;
-  --theme-accent: 221 83% 53%;
-  --theme-accent-secondary: 224 76% 48%;
-  --theme-text: 222 47% 11%;
-  --theme-text-muted: 215 16% 47%;
-  --theme-text-highlight: 221 83% 53%;
-  --theme-positive: 142 76% 36%;
-  --theme-negative: 0 84% 60%;
-  /* Semantic role colors — all mapped to accent blue or positive green */
-  --theme-info: 221 83% 53%;
-  --theme-warning: 221 83% 53%;
-  --theme-rental: 221 83% 53%;
-  --theme-exit: 221 83% 53%;
-  /* Phase colors — shades of blue */
-  --theme-phase-construction: 221 83% 53%;
-  --theme-phase-growth: 224 76% 48%;
-  --theme-phase-mature: 215 16% 47%;
-}
+/* =====================================================
+ * BASE STYLES
+ * ===================================================== */
 
 @layer base {
   * {
     @apply border-border;
   }
-  
+
   html, body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+  }
+
+  /* Instrument Serif for headings */
+  h1, h2, h3 {
+    font-family: 'Instrument Serif', Georgia, serif;
+  }
+
+  /* JetBrains Mono for financial figures */
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
   }
 }
 
+/* =====================================================
+ * SEMANTIC UTILITY CLASSES
+ * ===================================================== */
+
 @layer utilities {
   .glass-panel {
-    @apply bg-white/80 backdrop-blur-xl border border-border/50 shadow-lg;
+    @apply bg-theme-card/80 backdrop-blur-xl border border-theme-border/50;
+    box-shadow: var(--shadow-lg);
   }
-  
+
   .transition-smooth {
     transition: var(--transition-smooth);
   }
 
-  /* =====================================================
-   * SEMANTIC TEXT CLASSES
-   * =====================================================
-   * ALWAYS use these instead of raw text-gray-* classes.
-   * These classes adapt automatically to the current theme,
-   * ensuring proper contrast on both light and dark backgrounds.
-   * See src/docs/DESIGN_SYSTEM.md for full guidelines.
-   */
-  
-  /* Primary content text - for headings, labels, key values */
+  /* Primary content text */
   .text-primary-content {
     color: hsl(var(--theme-text));
   }
-  
-  /* Secondary content text - for descriptions, hints, less important info */
+
+  /* Secondary content text */
   .text-secondary-content {
     color: hsl(var(--theme-text-muted));
   }
-  
-  /* Tertiary content text - for footnotes, timestamps, minor details */
+
+  /* Tertiary content text */
   .text-tertiary-content {
     color: hsl(var(--theme-text-muted) / 0.75);
   }
-  
-  /* Highlight content text - for key metrics, CTAs, emphasized values */
+
+  /* Highlight content text — gold accent */
   .text-highlight-content {
     color: hsl(var(--theme-text-highlight));
   }
-  
-  /* Legacy alias - for safe migration from text-gray-* */
+
+  /* Legacy alias */
   .text-muted-safe {
     color: hsl(var(--theme-text-muted));
   }
+
+  /* Dark accent classes — mapped to gold */
+  .bg-theme-accent-dark {
+    background-color: hsl(var(--theme-accent-dark));
+  }
+  .text-theme-accent-dark {
+    color: hsl(var(--theme-accent-dark));
+  }
+  .border-theme-accent-dark {
+    border-color: hsl(var(--theme-accent-dark));
+  }
+
+  /* Gold gradient border effect */
+  .border-gold-gradient {
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  .border-gold-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(38 92% 55% / 0.5), hsl(38 92% 55% / 0.1), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Noise texture overlay */
+  .noise-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Display font utility */
+  .font-display {
+    font-family: 'Instrument Serif', Georgia, serif;
+  }
+
+  /* Body font utility */
+  .font-body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
 }
 
-/* Landing page animations */
+/* =====================================================
+ * ANIMATIONS
+ * ===================================================== */
+
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0) rotate(var(--rotation, 0deg));
-  }
-  50% {
-    transform: translateY(-15px) rotate(var(--rotation, 0deg));
-  }
+  0%, 100% { transform: translateY(0) rotate(var(--rotation, 0deg)); }
+  50% { transform: translateY(-15px) rotate(var(--rotation, 0deg)); }
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.6;
-  }
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.35; }
 }
 
 @keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes reveal-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .animate-float {
@@ -258,27 +247,49 @@ All colors MUST be HSL.
   animation: gradient 3s ease infinite;
 }
 
+.animate-reveal-up {
+  animation: reveal-up 0.6s ease-out both;
+}
 
-/* ROI Calculator Custom Slider Styles */
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Staggered reveal delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+
+/* =====================================================
+ * SLIDER STYLES — Gold accent
+ * ===================================================== */
+
 .roi-slider-lime [data-radix-slider-track],
 .roi-slider-cyan [data-radix-slider-track],
 .roi-slider-pink [data-radix-slider-track] {
-  background: hsl(214 32% 91%);
+  background: hsl(220 12% 22%);
 }
 .roi-slider-lime [data-radix-slider-range],
 .roi-slider-cyan [data-radix-slider-range],
 .roi-slider-pink [data-radix-slider-range] {
-  background: #2563EB;
+  background: hsl(38 92% 55%);
 }
 .roi-slider-lime [data-radix-slider-thumb],
 .roi-slider-cyan [data-radix-slider-thumb],
 .roi-slider-pink [data-radix-slider-thumb] {
-  background: #2563EB;
-  border-color: #2563EB;
-  box-shadow: 0 0 6px rgba(37, 99, 235, 0.4);
+  background: hsl(38 92% 55%);
+  border-color: hsl(38 92% 55%);
+  box-shadow: 0 0 8px hsl(38 92% 55% / 0.4);
 }
 
-/* Custom Scrollbar Styles - Global fallback for native scrollbars */
+/* =====================================================
+ * SCROLLBAR — Dark themed
+ * ===================================================== */
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -289,25 +300,23 @@ All colors MUST be HSL.
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(215 16% 80%);
+  background: hsl(220 12% 28%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(215 16% 65%);
+  background: hsl(220 12% 38%);
 }
 
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-/* Firefox scrollbar support */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(215, 16%, 80%) transparent;
+  scrollbar-color: hsl(220, 12%, 28%) transparent;
 }
 
-/* Hide scrollbar utility */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -316,15 +325,16 @@ All colors MUST be HSL.
   display: none;
 }
 
-/* Print Styles for Cashflow Generator PDF Export */
+/* =====================================================
+ * PRINT STYLES
+ * ===================================================== */
+
 @media print {
-  /* Page setup */
   @page {
     size: A4;
     margin: 15mm;
   }
 
-  /* Hide interactive elements */
   header,
   .print-hidden,
   button,
@@ -333,12 +343,10 @@ All colors MUST be HSL.
     display: none !important;
   }
 
-  /* Show print-only elements */
   .print-only {
     display: block !important;
   }
 
-  /* Reset background for print */
   body,
   .min-h-screen {
     background: white !important;
@@ -347,48 +355,36 @@ All colors MUST be HSL.
     print-color-adjust: exact;
   }
 
-  /* Main container adjustments */
   main {
     padding: 0 !important;
   }
 
-  /* Ensure text colors are preserved */
   .text-theme-text,
-  .text-theme-text-muted {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  /* Accent colors preserved */
+  .text-theme-text-muted,
   .text-theme-accent {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Prevent page breaks inside important sections */
   .page-break-inside-avoid {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  /* Force page break before specific sections */
   .page-break-before {
     page-break-before: always;
     break-before: page;
   }
 
-  /* Grid layouts for print */
   .grid {
     display: grid !important;
   }
 
-  /* Ensure SVG charts print correctly */
   svg {
     max-width: 100%;
     height: auto;
   }
 
-  /* Table styling for print */
   table {
     width: 100%;
     border-collapse: collapse;
@@ -398,7 +394,6 @@ All colors MUST be HSL.
     padding: 8px;
   }
 
-  /* Remove shadows and blur effects for cleaner print */
   .shadow-lg,
   .shadow-md,
   .shadow-xl,
@@ -408,7 +403,6 @@ All colors MUST be HSL.
     backdrop-filter: none !important;
   }
 
-  /* Border visibility */
   .border,
   .border-b,
   .border-t {
@@ -417,12 +411,9 @@ All colors MUST be HSL.
 }
 
 /* =====================================================
- * CLIENT-SIDE EXPORT MODE
- * =====================================================
- * These styles are applied when capturing the DOM for export.
- * The sidebar and mobile menu are hidden, and the main content
- * expands to fill the entire viewport for clean exports.
- */
+ * EXPORT MODE
+ * ===================================================== */
+
 body.export-mode .dashboard-sidebar,
 body.export-mode [data-export-hide="true"] {
   display: none !important;
@@ -439,7 +430,6 @@ body.export-mode {
   overflow: visible !important;
 }
 
-/* Freeze all animations and transitions during export to prevent text baseline drift */
 body.export-mode *,
 body.export-mode *::before,
 body.export-mode *::after {
@@ -455,7 +445,6 @@ body.export-mode .dashboard-main-content > div {
   padding: 0 !important;
 }
 
-/* Force full height for content capture - prevents cropping */
 body.export-mode,
 body.export-mode .dashboard-main-content,
 body.export-mode .min-h-full,
@@ -473,7 +462,6 @@ body.export-mode .overflow-x-auto {
   overflow: visible !important;
 }
 
-/* Only expand containers explicitly marked for export - preserves internal layouts */
 body.export-mode [data-export-layout="expand"] {
   flex: none !important;
   height: auto !important;

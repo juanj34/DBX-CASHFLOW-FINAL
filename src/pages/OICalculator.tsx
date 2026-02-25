@@ -556,6 +556,8 @@ const OICalculatorContent = () => {
             currency={currency}
             rate={rate}
             language={language}
+            setCurrency={setCurrency}
+            setLanguage={setLanguage}
             onEditClick={() => setModalOpen(true)}
           />
         ) : (
@@ -648,6 +650,7 @@ const OICalculatorContent = () => {
           onOpenChange={setExportModalOpen}
           projectName={clientInfo.projectName}
           activeView="snapshot"
+          viewMode={viewMode}
           inputs={inputs}
           calculations={calculations}
           clientInfo={clientInfo}

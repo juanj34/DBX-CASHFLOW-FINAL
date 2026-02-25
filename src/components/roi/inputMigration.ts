@@ -37,6 +37,8 @@ const DEFAULT_INPUT_VALUES: OIInputs = {
   eoiFee: 50000,
   oqoodFee: 5000,
   minimumExitThreshold: 30,
+  resellEligiblePercent: 30,
+  mortgageEligiblePercent: 50,
   exitAgentCommissionEnabled: false,
   exitNocFee: 5000,
   showAirbnbComparison: false,
@@ -94,6 +96,8 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.useZoneDefaults ??= true;
     merged.showAirbnbComparison ??= false;
     merged.minimumExitThreshold ??= 30;
+    merged.resellEligiblePercent ??= 30;
+    merged.mortgageEligiblePercent ??= 50;
     merged.exitAgentCommissionEnabled ??= false;
     merged.exitNocFee ??= 5000;
     merged.valueDifferentiators ??= [];

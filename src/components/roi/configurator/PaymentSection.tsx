@@ -853,6 +853,50 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
         </div>
       )}
 
+      {/* Step 4: Eligibility Milestones */}
+      {hasSplitSelected && inputs.downpaymentPercent > 0 && (
+        <div className="space-y-2 animate-fade-in">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-theme-accent/20 flex items-center justify-center text-[10px] font-bold text-theme-accent">4</div>
+            <span className="text-xs font-medium text-theme-text">Eligibility Milestones</span>
+            <InfoTooltip translationKey="tooltipEligibility" />
+          </div>
+          <p className="text-[10px] text-theme-text-muted pl-5">Developer allows resale/mortgage after a % of the price is paid</p>
+
+          {/* Resale Eligible */}
+          <div className="pl-5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-theme-text-muted">Resale Eligible at</span>
+              <span className="text-xs font-mono text-theme-accent">{inputs.resellEligiblePercent ?? 30}%</span>
+            </div>
+            <Slider
+              value={[inputs.resellEligiblePercent ?? 30]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, resellEligiblePercent: value }))}
+              min={10}
+              max={60}
+              step={5}
+              className="roi-slider-lime"
+            />
+          </div>
+
+          {/* Mortgage Eligible */}
+          <div className="pl-5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-theme-text-muted">Mortgage Eligible at</span>
+              <span className="text-xs font-mono text-theme-accent">{inputs.mortgageEligiblePercent ?? 50}%</span>
+            </div>
+            <Slider
+              value={[inputs.mortgageEligiblePercent ?? 50]}
+              onValueChange={([value]) => setInputs(prev => ({ ...prev, mortgageEligiblePercent: value }))}
+              min={20}
+              max={80}
+              step={5}
+              className="roi-slider-lime"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Divider */}
       <div className="border-t border-theme-border/30" />
 

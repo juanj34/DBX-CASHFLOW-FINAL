@@ -13,10 +13,12 @@
 import { OIInputs, PaymentMilestone } from "./useOICalculations";
 
 /**
- * Inputs required for exit price calculation
+ * Inputs required for exit price calculation (2-phase model)
  */
 export interface ExitPriceInputs {
   constructionAppreciation?: number;
+  postConstructionAppreciation?: number;
+  // Legacy 3-phase fields (backward compat — mapped to 2-phase)
   growthAppreciation?: number;
   matureAppreciation?: number;
   growthPeriodYears?: number;
@@ -24,33 +26,29 @@ export interface ExitPriceInputs {
 }
 
 /**
- * Value differentiator bonuses that add to appreciation rates.
- * Capped at APPRECIATION_BONUS_CAP total.
- */
-const APPRECIATION_BONUS_CAP = 2.0;
-const DIFFERENTIATOR_BONUSES: Record<string, number> = {
-  'waterfront': 0.5, 'ocean-view': 0.3, 'master-community': 0.3, 'emerging-zone': 0.3,
-  'corner-unit': 0.2, 'top-floor': 0.3, 'skyline-view': 0.2,
-  'premium-developer': 0.4, 'metro-adjacent': 0.3,
-};
-
-/**
- * Get effective appreciation rates with value differentiator bonus applied.
- * This is the SINGLE SOURCE OF TRUTH for appreciation rates across the app.
+ * Get effective appreciation rates — 2-phase model.
+ * SINGLE SOURCE OF TRUTH for appreciation rates across the app.
+ *
+ * If postConstructionAppreciation is set, uses 2-phase directly.
+ * If legacy 3-phase fields exist, computes weighted average for post-construction.
  */
 export const getEffectiveAppreciationRates = (inputs: OIInputs) => {
-  const selectedIds = inputs.valueDifferentiators || [];
-  let appreciationBonus = 0;
-  if (selectedIds.length > 0) {
-    const totalBonus = selectedIds.reduce((sum, id) => sum + (DIFFERENTIATOR_BONUSES[id] || 0), 0);
-    appreciationBonus = Math.min(totalBonus, APPRECIATION_BONUS_CAP);
+  const constructionRate = inputs.constructionAppreciation ?? 12;
+
+  // 2-phase: use postConstructionAppreciation if available
+  let postConstructionRate: number;
+  if (inputs.postConstructionAppreciation != null) {
+    postConstructionRate = inputs.postConstructionAppreciation;
+  } else {
+    // Legacy fallback: weighted average of growth + mature
+    const growth = inputs.growthAppreciation ?? 8;
+    const mature = inputs.matureAppreciation ?? 4;
+    postConstructionRate = (growth + mature) / 2;
   }
+
   return {
-    constructionAppreciation: (inputs.constructionAppreciation ?? 12) + appreciationBonus,
-    growthAppreciation: (inputs.growthAppreciation ?? 8) + appreciationBonus,
-    matureAppreciation: (inputs.matureAppreciation ?? 4) + appreciationBonus,
-    growthPeriodYears: inputs.growthPeriodYears ?? 5,
-    appreciationBonus,
+    constructionAppreciation: constructionRate,
+    postConstructionAppreciation: postConstructionRate,
   };
 };
 
@@ -438,12 +436,11 @@ export const getMonthWhenThresholdMet = (
 };
 
 /**
- * Calculate exit price using phased appreciation with monthly compounding
- * This is the canonical exit price calculation used across the app.
+ * Calculate exit price using 2-phase appreciation with monthly compounding.
+ * This is the CANONICAL exit price calculation used across the app.
  *
- * If `inputs` contains `valueDifferentiators` (i.e. a full OIInputs object),
- * the appreciation bonus is automatically applied to the rates.
- * If `inputs` has pre-adjusted rates (no valueDifferentiators), rates are used as-is.
+ * Phase 1: Construction (booking → handover) at constructionAppreciation %
+ * Phase 2: Post-construction (handover → forever) at postConstructionAppreciation %
  */
 export const calculateExitPrice = (
   months: number,
@@ -451,48 +448,32 @@ export const calculateExitPrice = (
   totalMonths: number,
   inputs: ExitPriceInputs
 ): number => {
-  // Apply appreciation bonus if valueDifferentiators present (full OIInputs passed)
-  const valueDifferentiators = (inputs as any).valueDifferentiators as string[] | undefined;
-  let appreciationBonus = 0;
-  if (valueDifferentiators && valueDifferentiators.length > 0) {
-    const totalBonus = valueDifferentiators.reduce((sum, id) => sum + (DIFFERENTIATOR_BONUSES[id] || 0), 0);
-    appreciationBonus = Math.min(totalBonus, APPRECIATION_BONUS_CAP);
-  }
+  const constructionAppreciation = inputs.constructionAppreciation ?? 12;
+  // Support both new 2-phase and legacy 3-phase inputs
+  const postConstructionAppreciation = inputs.postConstructionAppreciation
+    ?? ((inputs.growthAppreciation ?? 8) + (inputs.matureAppreciation ?? 4)) / 2;
 
-  const constructionAppreciation = (inputs.constructionAppreciation ?? 12) + appreciationBonus;
-  const growthAppreciation = (inputs.growthAppreciation ?? 8) + appreciationBonus;
-  const matureAppreciation = (inputs.matureAppreciation ?? 4) + appreciationBonus;
-  const growthPeriodYears = inputs.growthPeriodYears ?? 5;
-  
   let currentValue = basePrice;
-  
-  // Phase 1: Construction period (using constructionAppreciation)
+
+  // Phase 1: Construction period
   const constructionMonths = Math.min(months, totalMonths);
   if (constructionMonths > 0) {
-    const monthlyConstructionRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyConstructionRate, constructionMonths);
+    const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyRate, constructionMonths);
   }
-  
+
   // If exit is during construction, return here
   if (months <= totalMonths) {
     return currentValue;
   }
-  
-  // Phase 2: Growth period (post-handover, first growthPeriodYears years)
+
+  // Phase 2: Post-construction (single rate, no growth/mature split)
   const postHandoverMonths = months - totalMonths;
-  const growthMonths = Math.min(postHandoverMonths, growthPeriodYears * 12);
-  if (growthMonths > 0) {
-    const monthlyGrowthRate = Math.pow(1 + growthAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyGrowthRate, growthMonths);
+  if (postHandoverMonths > 0) {
+    const monthlyRate = Math.pow(1 + postConstructionAppreciation / 100, 1/12) - 1;
+    currentValue *= Math.pow(1 + monthlyRate, postHandoverMonths);
   }
-  
-  // Phase 3: Mature period (after growthPeriodYears)
-  const matureMonths = Math.max(0, postHandoverMonths - growthPeriodYears * 12);
-  if (matureMonths > 0) {
-    const monthlyMatureRate = Math.pow(1 + matureAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyMatureRate, matureMonths);
-  }
-  
+
   return currentValue;
 };
 
@@ -536,10 +517,10 @@ export const calculateExitScenario = (
   inputs: OIInputs,
   entryCosts: number = 0
 ): ExitScenarioResult => {
-  // Use bonus-adjusted appreciation rates (includes value differentiator bonus)
+  // Use effective appreciation rates (2-phase)
   const effectiveRates = getEffectiveAppreciationRates(inputs);
 
-  // Calculate exit price using phased appreciation with bonus-adjusted rates
+  // Calculate exit price using 2-phase appreciation
   const exitPrice = calculateExitPrice(monthsFromBooking, basePrice, totalMonths, effectiveRates);
   const appreciation = exitPrice - basePrice;
   const appreciationPercent = (appreciation / basePrice) * 100;

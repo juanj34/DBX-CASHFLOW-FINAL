@@ -46,6 +46,8 @@ export interface OIInputs {
   
   // Exit Threshold
   minimumExitThreshold: number; // % mínimo requerido por developer para permitir reventa (default 30)
+  resellEligiblePercent?: number; // % paid to be eligible for resale (default 30)
+  mortgageEligiblePercent?: number; // % paid to be eligible for mortgage (default 50)
 
   // Exit Costs
   exitAgentCommissionEnabled: boolean; // Whether to include 2% agent commission
@@ -61,16 +63,19 @@ export interface OIInputs {
   // Legacy field for backward compatibility
   rentalMode?: 'long-term' | 'short-term';
   
-  // NEW: Zone-based appreciation
+  // Zone (legacy — kept for backward compat)
   zoneId?: string;
-  zoneMaturityLevel: number; // 0-100
-  useZoneDefaults: boolean; // If true, use zone-based appreciation profile
-  
-  // NEW: Phased appreciation rates
-  constructionAppreciation: number; // Default 12% (during construction)
-  growthAppreciation: number;       // Default 8% (first growthPeriodYears post-handover)
-  matureAppreciation: number;       // Default 4% (after growth period)
-  growthPeriodYears: number;        // Default 5 years
+  zoneMaturityLevel: number;
+  useZoneDefaults: boolean;
+
+  // 2-Phase appreciation model
+  constructionAppreciation: number;        // Default 12% (during construction)
+  postConstructionAppreciation?: number;   // Default 6% (after handover) — NEW 2-phase field
+
+  // Legacy 3-phase fields (backward compat — auto-mapped to 2-phase)
+  growthAppreciation?: number;
+  matureAppreciation?: number;
+  growthPeriodYears?: number;
   
   // NEW: Independent rent growth
   rentGrowthRate: number; // Annual rent growth % (default 4%)
@@ -334,9 +339,9 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     eoiFee,
   } = inputs;
 
-  // Get effective appreciation rates using shared utility (includes value differentiator bonus)
+  // Get effective appreciation rates (2-phase)
   const effectiveRates = getEffectiveAppreciationRates(inputs);
-  const { constructionAppreciation, growthAppreciation, matureAppreciation, growthPeriodYears, appreciationBonus } = effectiveRates;
+  const { constructionAppreciation, postConstructionAppreciation } = effectiveRates;
   const rentGrowthRate = inputs.rentGrowthRate ?? 4;
   const serviceChargePerSqft = inputs.serviceChargePerSqft ?? 18;
   const unitSizeSqf = inputs.unitSizeSqf ?? 0;
@@ -358,11 +363,10 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
   // Months remaining in first calendar year (for pro-rata year 1)
   const monthsRemainingInFirstYear = 13 - bookingMonth; // 12 - bookingMonth + 1
 
-  // Helper: Get phase for a given year index
+  // Helper: Get phase for a given year index (2-phase model)
   const getPhase = (year: number): 'construction' | 'growth' | 'mature' => {
     if (year <= handoverYearIndex) return 'construction';
-    if (year <= handoverYearIndex + growthPeriodYears) return 'growth';
-    return 'mature';
+    return 'growth'; // Post-construction — uses 'growth' key for backward compat
   };
 
   // Fixed 10-year projection window (construction + rental within 10 years)

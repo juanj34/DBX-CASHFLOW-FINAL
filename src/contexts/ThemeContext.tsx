@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { ThemeKey, THEME, ThemeColors } from '@/config/themes';
 
 interface ThemeContextType {
@@ -10,15 +10,9 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Apply single theme class on mount
-  useEffect(() => {
-    document.documentElement.classList.remove('theme-tech-dark', 'theme-consultant', 'theme-consultant-dark');
-    document.documentElement.classList.add('theme-default');
-  }, []);
-
   const value: ThemeContextType = {
     theme: 'default',
-    setTheme: () => {}, // no-op — single theme
+    setTheme: () => {},
     colors: THEME,
   };
 
@@ -37,7 +31,6 @@ export const useTheme = (): ThemeContextType => {
   return context;
 };
 
-// Hook for getting theme from URL parameter (for shared views) — now returns single theme
 export const useThemeFromUrl = (_urlTheme?: string | null): ThemeKey => {
   return 'default';
 };

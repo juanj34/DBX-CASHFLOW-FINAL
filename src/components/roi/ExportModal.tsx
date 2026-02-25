@@ -20,6 +20,7 @@ interface ExportModalProps {
   onOpenChange: (open: boolean) => void;
   projectName?: string;
   activeView?: 'cashflow' | 'snapshot';
+  viewMode?: 'classic' | 'story' | 'onion';
   // Legacy props (for backward compatibility with OICalculator)
   quoteId?: string;
   mainContentRef?: React.RefObject<HTMLDivElement>;
@@ -47,6 +48,7 @@ export const ExportModal = ({
   onOpenChange,
   projectName,
   activeView = 'snapshot',
+  viewMode = 'classic',
   inputs,
   calculations,
   clientInfo,
@@ -61,12 +63,15 @@ export const ExportModal = ({
   const [format, setFormat] = useState<FormatType>('pdf');
   const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
 
-  const { exporting, exportSnapshot } = useExportRenderer({
+  const { exporting, exportSnapshot, exportOnion } = useExportRenderer({
     projectName,
   });
 
   // Check if we have all required data for export
   const hasExportData = inputs && calculations && clientInfo && mortgageInputs && mortgageAnalysis;
+
+  const isOnionView = viewMode === 'onion';
+  const exportLabel = isOnionView ? 'Cashflow Statement' : 'Investment Snapshot';
 
   // Reset to current active view when modal opens
   const handleOpenChange = (isOpen: boolean) => {
@@ -88,7 +93,7 @@ export const ExportModal = ({
 
     // Close modal before capturing
     onOpenChange(false);
-    
+
     // Small delay to let modal close
     await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -98,24 +103,24 @@ export const ExportModal = ({
     });
 
     try {
-      setProgress({ current: 1, total: 1, label: `Generating snapshot...` });
+      setProgress({ current: 1, total: 1, label: `Generating ${isOnionView ? 'statement' : 'snapshot'}...` });
 
-      // Use unified DOM-based export for BOTH PNG and PDF
-      const result = await exportSnapshot(
-        {
-          inputs: inputs!,
-          calculations: calculations!,
-          clientInfo: clientInfo!,
-          mortgageInputs: mortgageInputs!,
-          mortgageAnalysis: mortgageAnalysis!,
-          exitScenarios,
-          currency,
-          rate,
-          language,
-          quoteImages,
-        },
-        format
-      );
+      const exportProps = {
+        inputs: inputs!,
+        calculations: calculations!,
+        clientInfo: clientInfo!,
+        mortgageInputs: mortgageInputs!,
+        mortgageAnalysis: mortgageAnalysis!,
+        exitScenarios,
+        currency,
+        rate,
+        language,
+        quoteImages,
+      };
+
+      const result = isOnionView
+        ? await exportOnion(exportProps, format)
+        : await exportSnapshot(exportProps, format);
 
       if (result.success) {
         toast({
@@ -135,7 +140,7 @@ export const ExportModal = ({
     } finally {
       setProgress({ current: 0, total: 0, label: '' });
     }
-  }, [hasExportData, format, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, quoteImages, exportSnapshot, onOpenChange]);
+  }, [hasExportData, format, isOnionView, inputs, calculations, clientInfo, mortgageInputs, mortgageAnalysis, exitScenarios, currency, rate, language, quoteImages, exportSnapshot, exportOnion, onOpenChange]);
 
   const formatOptions = [
     { value: 'pdf', label: 'PDF', icon: FileText, description: 'Professional document' },
@@ -148,10 +153,10 @@ export const ExportModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-theme-text">
             <Download className="w-5 h-5 text-theme-accent" />
-            Export Investment Snapshot
+            Export {exportLabel}
           </DialogTitle>
           <DialogDescription className="text-theme-text-muted">
-            Generate a professional PDF or image of your investment analysis.
+            Generate a professional PDF or image of your {isOnionView ? 'cashflow statement' : 'investment analysis'}.
           </DialogDescription>
         </DialogHeader>
 
@@ -199,8 +204,8 @@ export const ExportModal = ({
                   {progress.current}/{progress.total}
                 </span>
               </div>
-              <Progress 
-                value={(progress.current / progress.total) * 100} 
+              <Progress
+                value={(progress.current / progress.total) * 100}
                 className="h-2 bg-theme-bg"
               />
             </div>
@@ -233,9 +238,11 @@ export const ExportModal = ({
 
           {/* Info text */}
           <p className="text-xs text-center text-theme-text-muted">
-            {format === 'pdf' 
-              ? 'Creates a professional A4 landscape document'
-              : 'Creates a high-resolution image for sharing'
+            {isOnionView
+              ? 'Creates a clean cashflow statement document'
+              : format === 'pdf'
+                ? 'Creates a professional A4 landscape document'
+                : 'Creates a high-resolution image for sharing'
             }
           </p>
         </div>
