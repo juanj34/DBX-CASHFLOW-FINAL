@@ -3,6 +3,8 @@ import { OIInputs } from '@/components/roi/useOICalculations';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CountrySelect } from '@/components/ui/country-select';
+import { MoneyInput } from '@/components/ui/money-input';
 
 interface Props {
   inputs: OIInputs;
@@ -66,16 +68,12 @@ export const PropertyPaymentStep: React.FC<Props> = ({ inputs, updateField, upda
           </div>
           <div className="space-y-1">
             <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">Purchase Price</Label>
-            <div className="relative">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-theme-text-muted font-mono">AED</span>
-              <Input
-                type="number"
-                value={inputs.basePrice || ''}
-                onChange={(e) => updateField('basePrice', Number(e.target.value))}
-                placeholder="1,500,000"
-                className="h-8 text-xs bg-theme-card border-theme-border text-theme-text font-mono pl-9 placeholder:text-theme-text-muted/40"
-              />
-            </div>
+            <MoneyInput
+              value={inputs.basePrice || 0}
+              onChange={(v) => updateField('basePrice', v)}
+              placeholder="1,500,000"
+              className="h-8 text-xs bg-theme-card border-theme-border text-theme-text"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">Size (sqft)</Label>
@@ -111,7 +109,7 @@ export const PropertyPaymentStep: React.FC<Props> = ({ inputs, updateField, upda
       {/* Client Info */}
       <section>
         <h3 className="text-sm font-semibold text-theme-text mb-2">Client Details</h3>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5">
           <div className="space-y-1">
             <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">Client Name</Label>
             <Input
@@ -123,20 +121,10 @@ export const PropertyPaymentStep: React.FC<Props> = ({ inputs, updateField, upda
           </div>
           <div className="space-y-1">
             <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">Country</Label>
-            <Input
+            <CountrySelect
               value={(inputs as any)._clients?.[0]?.country || ''}
-              onChange={(e) => updateField('_clients' as any, [{ ...(inputs as any)._clients?.[0], country: e.target.value }])}
-              placeholder="UAE"
-              className="h-8 text-xs bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted/40"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">Broker Name</Label>
-            <Input
-              value={(inputs as any)._clientInfo?.brokerName || ''}
-              onChange={(e) => updateField('_clientInfo' as any, { ...(inputs as any)._clientInfo, brokerName: e.target.value })}
-              placeholder="Your name"
-              className="h-8 text-xs bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted/40"
+              onValueChange={(v) => updateField('_clients' as any, [{ ...(inputs as any)._clients?.[0], country: v }])}
+              className="h-8 text-xs bg-theme-card border-theme-border"
             />
           </div>
         </div>
@@ -198,27 +186,19 @@ export const PropertyPaymentStep: React.FC<Props> = ({ inputs, updateField, upda
         <div className="grid grid-cols-2 gap-2.5">
           <div className="space-y-1">
             <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">EOI Fee</Label>
-            <div className="relative">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-theme-text-muted font-mono">AED</span>
-              <Input
-                type="number"
-                value={inputs.eoiFee}
-                onChange={(e) => updateField('eoiFee', Number(e.target.value))}
-                className="h-8 text-xs bg-theme-card border-theme-border text-theme-text font-mono pl-9"
-              />
-            </div>
+            <MoneyInput
+              value={inputs.eoiFee}
+              onChange={(v) => updateField('eoiFee', v)}
+              className="h-8 text-xs bg-theme-card border-theme-border text-theme-text"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-[10px] text-theme-text-muted uppercase tracking-wider">Oqood Fee</Label>
-            <div className="relative">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-theme-text-muted font-mono">AED</span>
-              <Input
-                type="number"
-                value={inputs.oqoodFee}
-                onChange={(e) => updateField('oqoodFee', Number(e.target.value))}
-                className="h-8 text-xs bg-theme-card border-theme-border text-theme-text font-mono pl-9"
-              />
-            </div>
+            <MoneyInput
+              value={inputs.oqoodFee}
+              onChange={(v) => updateField('oqoodFee', v)}
+              className="h-8 text-xs bg-theme-card border-theme-border text-theme-text"
+            />
           </div>
         </div>
         <p className="text-[10px] text-theme-text-muted mt-1.5">

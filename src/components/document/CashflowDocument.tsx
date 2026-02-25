@@ -40,7 +40,7 @@ interface CashflowDocumentProps {
   setLanguage?: (l: string) => void;
   mortgageData?: MortgageData;
   brokerLogoUrl?: string;
-  advisorInfo?: { name?: string; email?: string; photoUrl?: string };
+  advisorInfo?: { name?: string; email?: string; photoUrl?: string; phone?: string };
 }
 
 // Number formatting
@@ -243,7 +243,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       )}
 
       {/* ============ LOGO + ADVISOR HEADER ============ */}
-      <div className="px-5 pt-4 flex items-center justify-between">
+      <div className="px-5 pt-4 flex items-center gap-4">
         <div className={!brokerLogoUrl ? 'print:hidden' : ''}>
           {brokerLogoUrl ? (
             <img
@@ -263,15 +263,25 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           )}
         </div>
         {advisorInfo && (advisorInfo.name || advisorInfo.email) && (
-          <div className="flex items-center gap-2.5 text-right">
-            {advisorInfo.photoUrl && (
-              <img src={advisorInfo.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200" />
-            )}
-            <div>
-              {advisorInfo.name && <p className="text-[11px] font-semibold text-gray-800">{advisorInfo.name}</p>}
-              {advisorInfo.email && <p className="text-[9px] text-gray-500">{advisorInfo.email}</p>}
+          <>
+            <div className="w-px h-10 bg-gray-200" />
+            <div className="flex items-center gap-2.5">
+              {advisorInfo.photoUrl ? (
+                <img src={advisorInfo.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" />
+              ) : advisorInfo.name ? (
+                <div className="w-9 h-9 rounded-full bg-[#B3893A]/15 border border-[#B3893A]/30 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-[#B3893A]">
+                    {advisorInfo.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </span>
+                </div>
+              ) : null}
+              <div>
+                {advisorInfo.name && <p className="text-[11px] font-semibold text-gray-800 leading-tight">{advisorInfo.name}</p>}
+                {advisorInfo.email && <p className="text-[9px] text-gray-500 leading-tight">{advisorInfo.email}</p>}
+                {advisorInfo.phone && <p className="text-[9px] text-gray-500 leading-tight">{advisorInfo.phone}</p>}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -446,72 +456,115 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         <div>
           <SectionHeader letter="B" title="Milestone Event" />
           <div className="px-5">
-            <div className="border border-gray-200 rounded-b-lg overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-900">
-                    <th className={TH_CLS + ' text-left'}>Description</th>
-                    <th className={TH_CLS + ' text-left w-20'}>When</th>
-                    <th className={TH_CLS + ' text-right w-14'}>%</th>
-                    <th className={TH_CLS + ' text-right'}>AED</th>
-                    {showCurrencyCol && <th className={TH_CLS + ' text-right'}>{currency}</th>}
-                    <th className={TH_CLS + ' text-left w-24'}>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paymentRows.map((row, i) => (
-                    <tr
-                      key={i}
-                      className={`border-t border-gray-100 ${row.isHandover ? 'bg-[#B3893A]/5' : ''}`}
-                    >
-                      <td className={TD_CLS}>
-                        <span className={`font-medium ${row.isHandover ? 'text-[#8A6528]' : 'text-gray-900'}`}>
-                          {row.label}
-                        </span>
-                        {row.badges.map((badge) => (
-                          <span
-                            key={badge}
-                            className={`ml-2 inline-flex text-[8px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                              badge === 'Resale'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-blue-100 text-blue-700'
-                            }`}
-                          >
-                            {badge}
-                          </span>
-                        ))}
-                      </td>
-                      <td className={TD_CLS}>
-                        {row.dateStr && (
-                          <div>
-                            <span className="text-gray-800 font-medium">{row.dateStr}</span>
-                            {row.dateDetail && (
-                              <span className="block text-[8px] text-gray-400">{row.dateDetail}</span>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className={TD_CLS + ' text-right font-mono text-gray-600'}>{row.percent}%</td>
-                      <td className={TD_CLS + ' text-right font-mono text-gray-900'}>{n2s(row.amount)}</td>
-                      {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-gray-900'}>{cvf(row.amount)}</td>}
-                      <td className={TD_CLS}>
-                        <NoteCell noteKey={`b-milestone-${i}`} notes={notes} onNotesChange={onNotesChange} exportMode={exportMode} />
-                      </td>
+            {(() => {
+              const colCount = paymentRows.length <= 12 ? 1 : paymentRows.length <= 24 ? 2 : 3;
+              const isMultiCol = colCount > 1;
+              const thCls = isMultiCol ? 'py-1.5 px-2 text-[8px] font-semibold text-white uppercase tracking-wide' : TH_CLS;
+              const tdCls = isMultiCol ? 'py-1 px-2 text-[10px]' : TD_CLS;
+
+              // Split rows into columns
+              const columns: typeof paymentRows[] = [];
+              if (isMultiCol) {
+                const perCol = Math.ceil(paymentRows.length / colCount);
+                for (let c = 0; c < colCount; c++) {
+                  columns.push(paymentRows.slice(c * perCol, (c + 1) * perCol));
+                }
+              }
+
+              const renderTable = (rows: typeof paymentRows, startIdx: number, compact: boolean) => (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-900">
+                      <th className={thCls + ' text-left'}>Description</th>
+                      <th className={thCls + ' text-left w-16'}>When</th>
+                      <th className={thCls + ' text-right w-10'}>%</th>
+                      <th className={thCls + ' text-right'}>AED</th>
+                      {showCurrencyCol && !compact && <th className={thCls + ' text-right'}>{currency}</th>}
+                      {!compact && <th className={thCls + ' text-left w-24'}>Notes</th>}
                     </tr>
-                  ))}
-                  <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                    <td className={TD_CLS + ' font-bold text-[#8A6528]'}>Total Equity Required</td>
-                    <td className={TD_CLS} />
-                    <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>100%</td>
-                    <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>{n2s(basePrice)}</td>
-                    {showCurrencyCol && (
-                      <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>{cvf(basePrice)}</td>
-                    )}
-                    <td className={TD_CLS} />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, i) => (
+                      <tr
+                        key={startIdx + i}
+                        className={`border-t border-gray-100 ${row.isHandover ? 'bg-[#B3893A]/5' : ''}`}
+                      >
+                        <td className={tdCls}>
+                          <span className={`font-medium ${row.isHandover ? 'text-[#8A6528]' : 'text-gray-900'}`}>
+                            {row.label}
+                          </span>
+                          {row.badges.map((badge) => (
+                            <span
+                              key={badge}
+                              className={`ml-1 inline-flex text-[7px] px-1 py-0.5 rounded font-bold uppercase ${
+                                badge === 'Resale'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {badge}
+                            </span>
+                          ))}
+                        </td>
+                        <td className={tdCls}>
+                          {row.dateStr && (
+                            <div>
+                              <span className="text-gray-800 font-medium">{row.dateStr}</span>
+                              {row.dateDetail && !compact && (
+                                <span className="block text-[8px] text-gray-400">{row.dateDetail}</span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className={tdCls + ' text-right font-mono text-gray-600'}>{row.percent}%</td>
+                        <td className={tdCls + ' text-right font-mono text-gray-900'}>{n2s(row.amount)}</td>
+                        {showCurrencyCol && !compact && <td className={tdCls + ' text-right font-mono text-gray-900'}>{cvf(row.amount)}</td>}
+                        {!compact && (
+                          <td className={tdCls}>
+                            <NoteCell noteKey={`b-milestone-${startIdx + i}`} notes={notes} onNotesChange={onNotesChange} exportMode={exportMode} />
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+
+              return (
+                <div className="border border-gray-200 rounded-b-lg overflow-hidden">
+                  {isMultiCol ? (
+                    <div className={`grid ${colCount === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                      {columns.map((colRows, colIdx) => (
+                        <div key={colIdx} className={colIdx > 0 ? 'border-l border-gray-200' : ''}>
+                          {renderTable(
+                            colRows,
+                            colIdx * Math.ceil(paymentRows.length / colCount),
+                            true,
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    renderTable(paymentRows, 0, false)
+                  )}
+                  {/* Total row — always full width */}
+                  <table className="w-full">
+                    <tbody>
+                      <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
+                        <td className={TD_CLS + ' font-bold text-[#8A6528]'}>Total Equity Required</td>
+                        <td className={TD_CLS} />
+                        <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>100%</td>
+                        <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>{n2s(basePrice)}</td>
+                        {showCurrencyCol && (
+                          <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>{cvf(basePrice)}</td>
+                        )}
+                        <td className={TD_CLS} />
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         </div>
 

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Home, ChevronDown, ChevronUp, Settings, BadgeCheck, X, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -184,11 +185,10 @@ export const MortgageStep: React.FC<Props> = ({ inputs, updateField }) => {
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2.5 rounded-lg border border-theme-border bg-theme-card">
                   <Label className="text-[10px] text-theme-text-muted block mb-1">Valuation Fee</Label>
-                  <Input
-                    type="number"
-                    value={mortgageInputs.valuationFee || ''}
-                    onChange={(e) => updateMortgage('valuationFee', Number(e.target.value) || 0)}
-                    className="h-6 bg-theme-bg border-theme-border text-theme-text text-[10px] text-right font-mono"
+                  <MoneyInput
+                    value={mortgageInputs.valuationFee || 0}
+                    onChange={(v) => updateMortgage('valuationFee', v)}
+                    className="h-6 bg-theme-bg border-theme-border text-theme-text text-[10px]"
                   />
                 </div>
                 <div className="p-2.5 rounded-lg border border-theme-border bg-theme-card">
@@ -217,11 +217,10 @@ export const MortgageStep: React.FC<Props> = ({ inputs, updateField }) => {
                 </div>
                 <div className="p-2.5 rounded-lg border border-theme-border bg-theme-card">
                   <Label className="text-[10px] text-theme-text-muted block mb-1">Property Ins.</Label>
-                  <Input
-                    type="number"
-                    value={mortgageInputs.propertyInsurance || ''}
-                    onChange={(e) => updateMortgage('propertyInsurance', Number(e.target.value) || 0)}
-                    className="h-6 bg-theme-bg border-theme-border text-theme-text text-[10px] text-right font-mono"
+                  <MoneyInput
+                    value={mortgageInputs.propertyInsurance || 0}
+                    onChange={(v) => updateMortgage('propertyInsurance', v)}
+                    className="h-6 bg-theme-bg border-theme-border text-theme-text text-[10px]"
                   />
                 </div>
               </div>

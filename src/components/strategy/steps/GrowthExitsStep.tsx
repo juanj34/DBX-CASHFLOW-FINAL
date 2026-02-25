@@ -1,11 +1,12 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { OIInputs } from '@/components/roi/useOICalculations';
 import { calculateExitScenario } from '@/components/roi/constructionProgress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Minus } from 'lucide-react';
+import { MoneyInput } from '@/components/ui/money-input';
+import { X, Plus } from 'lucide-react';
 
 interface Props {
   inputs: OIInputs;
@@ -24,15 +25,9 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
     return Math.max(1, Math.round((handover.getTime() - booking.getTime()) / (1000 * 60 * 60 * 24 * 30)));
   }, [inputs.bookingYear, inputs.bookingMonth, inputs.handoverYear, inputs.handoverMonth]);
 
-  // Persist default exits on first visit so the document doesn't fabricate them
-  useEffect(() => {
-    if (!inputs._exitScenarios) {
-      updateField('_exitScenarios', [totalMonths, totalMonths + 24, totalMonths + 60]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [customMonth, setCustomMonth] = useState('');
 
-  const exitScenarios = inputs._exitScenarios || [totalMonths, totalMonths + 24, totalMonths + 60];
+  const exitScenarios = inputs._exitScenarios || [];
   const constructionYears = Math.ceil(totalMonths / 12);
   const constructionAppreciation = inputs.constructionAppreciation ?? 12;
   const postConstructionAppreciation = inputs.postConstructionAppreciation ?? 6;
@@ -41,19 +36,21 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
   const dldFee = inputs.basePrice * 0.04;
   const totalEntryCosts = dldFee + (inputs.oqoodFee || 5000);
 
-  // Flat preset exits — single compact row
-  const presetExits = useMemo(() => [
-    ...[
-      { label: '6m', month: 6 },
-      { label: '12m', month: 12 },
-      { label: '18m', month: 18 },
-      { label: '24m', month: 24 },
-    ].filter(e => e.month < totalMonths),
-    { label: 'Handover', month: totalMonths, isHandover: true as const },
-    { label: '+6', month: totalMonths + 6 },
-    { label: '+12', month: totalMonths + 12 },
-    { label: '+18', month: totalMonths + 18 },
-    { label: '+24', month: totalMonths + 24 },
+  // Preset exit options grouped by phase
+  const preConstructionPresets = useMemo(() =>
+    [6, 12, 18, 24, 36].filter(m => m < totalMonths).map(m => ({
+      label: m < 12 ? `${m}m` : `${m / 12}yr`,
+      month: m,
+    })),
+    [totalMonths]
+  );
+
+  const postConstructionPresets = useMemo(() => [
+    { label: '+6m', month: totalMonths + 6 },
+    { label: '+1yr', month: totalMonths + 12 },
+    { label: '+2yr', month: totalMonths + 24 },
+    { label: '+3yr', month: totalMonths + 36 },
+    { label: '+5yr', month: totalMonths + 60 },
   ], [totalMonths]);
 
   const toggleExit = useCallback((month: number) => {
@@ -114,14 +111,43 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
     updateField('constructionSchedule' as any, current);
   }, [inputs.constructionSchedule, constructionYears, constructionAppreciation, updateField]);
 
-  // Get semantic label for a month
+  // Descriptive label for exit chips
   const getExitLabel = (month: number) => {
     if (month === totalMonths) return 'Handover';
-    if (month === totalMonths - 1) return 'Pre-HO';
-    if (month < totalMonths) return `${month}m`;
-    const yearsAfter = Math.round((month - totalMonths) / 12);
-    if (yearsAfter > 0) return `+${yearsAfter}yr`;
-    return `+${month - totalMonths}m`;
+    if (month < totalMonths) {
+      return month < 12 ? `Month ${month}` : `${(month / 12).toFixed(month % 12 === 0 ? 0 : 1)}yr`;
+    }
+    const after = month - totalMonths;
+    if (after % 12 === 0) return `HO + ${after / 12}yr`;
+    return `HO + ${after}m`;
+  };
+
+  const addCustomExit = useCallback(() => {
+    const val = Number(customMonth);
+    if (val > 0 && !exitScenarios.includes(val)) {
+      toggleExit(val);
+      setCustomMonth('');
+    }
+  }, [customMonth, exitScenarios, toggleExit]);
+
+  // Shared button style
+  const presetBtn = (month: number, label: string, accent = false) => {
+    const isSelected = exitScenarios.includes(month);
+    return (
+      <button
+        key={month}
+        onClick={() => toggleExit(month)}
+        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+          isSelected
+            ? 'bg-theme-accent/10 text-theme-accent border-theme-accent/30 ring-1 ring-theme-accent/20'
+            : accent
+            ? 'text-[#C9A04A] border-[#C9A04A]/30 hover:bg-[#C9A04A]/10'
+            : 'text-theme-text-muted border-theme-border hover:border-theme-accent/20 hover:text-theme-text'
+        }`}
+      >
+        {label}
+      </button>
+    );
   };
 
   return (
@@ -130,75 +156,85 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
       <section>
         <h3 className="font-display text-lg text-theme-text mb-1">Pick Exit Times</h3>
         <p className="text-xs text-theme-text-muted mb-4">
-          Choose when to analyze selling. Handover at month {totalMonths}.
+          Choose when to analyze selling. Handover at month <span className="font-mono text-theme-accent">{totalMonths}</span>.
         </p>
 
-        {/* Preset exits — single row */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {presetExits.map((exit) => {
-            const isSelected = exitScenarios.includes(exit.month);
-            const isHO = 'isHandover' in exit;
-            return (
-              <button
-                key={exit.month}
-                onClick={() => toggleExit(exit.month)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                  isSelected
-                    ? 'bg-theme-accent/10 text-theme-accent border-theme-accent/30 ring-1 ring-theme-accent/20'
-                    : isHO
-                    ? 'text-theme-accent/70 border-theme-accent/30 hover:bg-theme-accent/5'
-                    : 'text-theme-text-muted border-theme-border hover:border-theme-accent/20 hover:text-theme-text'
-                }`}
-              >
-                {exit.label}
-              </button>
-            );
-          })}
+        {/* During Construction */}
+        {preConstructionPresets.length > 0 && (
+          <div className="mb-3">
+            <span className="text-[10px] text-theme-text-muted uppercase tracking-wider font-medium block mb-1.5">During Construction</span>
+            <div className="flex flex-wrap gap-1.5">
+              {preConstructionPresets.map(p => presetBtn(p.month, p.label))}
+            </div>
+          </div>
+        )}
+
+        {/* Handover */}
+        <div className="mb-3">
+          {presetBtn(totalMonths, `Handover (M${totalMonths})`, true)}
         </div>
 
-        {/* Custom exit input */}
-        <div className="flex items-center gap-2">
+        {/* After Handover */}
+        <div className="mb-3">
+          <span className="text-[10px] text-theme-text-muted uppercase tracking-wider font-medium block mb-1.5">After Handover</span>
+          <div className="flex flex-wrap gap-1.5">
+            {postConstructionPresets.map(p => presetBtn(p.month, p.label))}
+          </div>
+        </div>
+
+        {/* Custom exit — inline */}
+        <div className="flex items-center gap-1.5">
           <Input
             type="number"
-            placeholder="Custom month"
-            className="w-32 bg-theme-card border-theme-border text-theme-text font-mono text-sm"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                const val = Number((e.target as HTMLInputElement).value);
-                if (val > 0 && !exitScenarios.includes(val)) {
-                  toggleExit(val);
-                  (e.target as HTMLInputElement).value = '';
-                }
-              }
-            }}
+            value={customMonth}
+            onChange={(e) => setCustomMonth(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCustomExit()}
+            placeholder="Month #"
+            className="w-20 h-7 text-xs bg-theme-card border-theme-border text-theme-text font-mono"
           />
-          <span className="text-xs text-theme-text-muted">Press Enter to add</span>
+          <button
+            onClick={addCustomExit}
+            disabled={!customMonth || Number(customMonth) <= 0}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium text-theme-accent border border-theme-accent/20 hover:bg-theme-accent/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <Plus className="w-3 h-3" />
+            Add
+          </button>
         </div>
 
-        {/* Selected exits summary with metrics */}
+        {/* Selected exits summary */}
         {exitScenarios.length > 0 && (
-          <div className="mt-4 p-3 rounded-lg bg-theme-bg border border-theme-border/50">
+          <div className="mt-4 p-3 rounded-xl bg-theme-bg border border-theme-border/50">
             <p className="text-[10px] font-medium text-theme-text-muted uppercase tracking-wide mb-2">
               {exitScenarios.length} exit{exitScenarios.length !== 1 ? 's' : ''} selected
             </p>
             <div className="flex flex-wrap gap-1.5">
               {exitScenarios.map((month) => {
                 const metrics = exitMetrics[month];
+                const isHO = month === totalMonths;
                 return (
                   <span
                     key={month}
-                    className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-theme-card border border-theme-border text-[10px] font-mono text-theme-text"
+                    className={`inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg border text-[10px] font-mono ${
+                      isHO
+                        ? 'bg-[#C9A04A]/10 border-[#C9A04A]/30 text-[#C9A04A]'
+                        : 'bg-theme-card border-theme-border text-theme-text'
+                    }`}
                   >
-                    {getExitLabel(month)}
-                    <span className="opacity-50">{month}m</span>
+                    <span className="font-medium">{getExitLabel(month)}</span>
+                    <span className="opacity-40">M{month}</span>
                     {metrics && (
-                      <span className="text-theme-positive ml-0.5">{metrics.roe}%</span>
+                      <>
+                        <span className="text-theme-positive">{metrics.roe}%</span>
+                        <span className="opacity-30">·</span>
+                        <span className="opacity-60">{metrics.price}</span>
+                      </>
                     )}
                     <button
                       onClick={() => toggleExit(month)}
                       className="ml-0.5 p-0.5 rounded hover:bg-theme-negative/10 text-theme-text-muted hover:text-theme-negative transition-colors"
                     >
-                      <Minus className="w-3 h-3" />
+                      <X className="w-3 h-3" />
                     </button>
                   </span>
                 );
@@ -338,11 +374,10 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
               <Label className="text-sm text-theme-text">NOC Fee (AED)</Label>
               <p className="text-xs text-theme-text-muted">Developer fee for resale</p>
             </div>
-            <Input
-              type="number"
+            <MoneyInput
               value={inputs.exitNocFee}
-              onChange={(e) => updateField('exitNocFee', Number(e.target.value))}
-              className="w-24 bg-theme-bg border-theme-border text-theme-text font-mono text-right text-sm"
+              onChange={(v) => updateField('exitNocFee', v)}
+              className="w-28 bg-theme-bg border-theme-border text-theme-text text-sm"
             />
           </div>
 

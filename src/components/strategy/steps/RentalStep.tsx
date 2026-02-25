@@ -1,8 +1,8 @@
 import React from 'react';
 import { OIInputs } from '@/components/roi/useOICalculations';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { MoneyInput } from '@/components/ui/money-input';
 
 interface Props {
   inputs: OIInputs;
@@ -85,15 +85,11 @@ export const RentalStep: React.FC<Props> = ({ inputs, updateField }) => {
           <div>
             <Label className="text-xs text-theme-text">Service Charge (per sqft/yr)</Label>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-theme-text-muted">AED</span>
-            <Input
-              type="number"
-              value={serviceCharge}
-              onChange={(e) => updateField('serviceChargePerSqft', Number(e.target.value))}
-              className="w-20 h-7 bg-theme-bg border-theme-border text-theme-text font-mono text-right text-xs"
-            />
-          </div>
+          <MoneyInput
+            value={serviceCharge}
+            onChange={(v) => updateField('serviceChargePerSqft', v)}
+            className="w-24 h-7 bg-theme-bg border-theme-border text-theme-text text-xs"
+          />
         </div>
         {inputs.unitSizeSqf > 0 && (
           <div className="pt-2 border-t border-theme-border/50 flex gap-4 text-[11px]">

@@ -40,6 +40,7 @@ const StrategyCreator: React.FC = () => {
   const [currency, setCurrency] = useState<Currency>('AED');
   const [language, setLanguage] = useState('en');
   const [showConfigurator, setShowConfigurator] = useState(!quoteId);
+  const [hasConfigured, setHasConfigured] = useState(!!quoteId);
   const [draftId, setDraftId] = useState<string | undefined>(quoteId);
   const { profile } = useProfile();
   const brokerLogoUrl = profile?.avatar_url || undefined;
@@ -109,7 +110,10 @@ const StrategyCreator: React.FC = () => {
       }
       initializedRef.current = true;
       // Don't auto-open modal for existing quotes with data
-      if (quoteId) setShowConfigurator(false);
+      if (quoteId) {
+        setShowConfigurator(false);
+        setHasConfigured(true);
+      }
     }
   }, [quote, quoteId]);
 
@@ -186,6 +190,7 @@ const StrategyCreator: React.FC = () => {
       }
       toast({ title: 'Strategy saved', description: 'Your strategy has been saved successfully.' });
       setShowConfigurator(false);
+      setHasConfigured(true);
       if (!quoteId && result.id) {
         navigate(`/strategy/${result.id}`, { replace: true });
       }
@@ -334,30 +339,50 @@ const StrategyCreator: React.FC = () => {
           </div>
         </div>
 
-        {/* Full-width Document */}
-        <div ref={documentRef}>
-          <CashflowDocument
-            inputs={inputs}
-            calculations={calculations}
-            clientInfo={clientInfo}
-            exitScenarios={inputs._exitScenarios}
-            currency={currency}
-            rate={rate}
-            language={language}
-            exportMode={exportMode}
-            notes={notes}
-            onNotesChange={setNotes}
-            setCurrency={setCurrency}
-            setLanguage={setLanguage}
-            mortgageData={mortgageData}
-            brokerLogoUrl={brokerLogoUrl}
-            advisorInfo={{
-              name: profile?.full_name || undefined,
-              email: profile?.business_email || undefined,
-              photoUrl: profile?.avatar_url || undefined,
-            }}
-          />
-        </div>
+        {/* Full-width Document or Empty State */}
+        {hasConfigured ? (
+          <div ref={documentRef}>
+            <CashflowDocument
+              inputs={inputs}
+              calculations={calculations}
+              clientInfo={clientInfo}
+              exitScenarios={inputs._exitScenarios}
+              currency={currency}
+              rate={rate}
+              language={language}
+              exportMode={exportMode}
+              notes={notes}
+              onNotesChange={setNotes}
+              setCurrency={setCurrency}
+              setLanguage={setLanguage}
+              mortgageData={mortgageData}
+              brokerLogoUrl={brokerLogoUrl}
+              advisorInfo={{
+                name: profile?.full_name || undefined,
+                email: profile?.business_email || undefined,
+                photoUrl: profile?.avatar_url || undefined,
+                phone: profile?.whatsapp_number ? `${profile?.whatsapp_country_code || '+971'}${profile?.whatsapp_number}` : undefined,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-md flex flex-col items-center justify-center py-24 px-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#C9A04A]/10 to-[#B3893A]/10 border border-[#C9A04A]/20 flex items-center justify-center mb-6">
+              <FileText className="w-7 h-7 text-[#C9A04A]" />
+            </div>
+            <h2 className="font-display text-xl text-gray-900 mb-2">No Strategy Configured</h2>
+            <p className="text-sm text-gray-500 max-w-md mb-8">
+              Configure your property details, payment plan, and growth assumptions to generate a cashflow statement.
+            </p>
+            <button
+              onClick={() => setShowConfigurator(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-[#C9A04A] to-[#B3893A] text-white hover:opacity-90 transition-opacity shadow-lg shadow-[#B3893A]/20"
+            >
+              <Settings2 className="w-4 h-4" />
+              Configure Strategy
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Configurator Modal */}

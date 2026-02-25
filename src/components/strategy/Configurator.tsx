@@ -23,7 +23,7 @@ interface ConfiguratorProps {
 
 const STEPS = [
   { id: 1, label: 'AI & Property' },
-  { id: 2, label: 'Payment Plan' },
+  { id: 2, label: 'Installments' },
   { id: 3, label: 'Growth & Exits' },
   { id: 4, label: 'Rental' },
   { id: 5, label: 'Mortgage' },

@@ -9,6 +9,20 @@ import type { OIInputs, PaymentMilestone } from '@/components/roi/useOICalculati
 const SQF_TO_M2 = 0.092903;
 const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2 * 10) / 10;
 
+// Strip trailing dates and replace "Payment" → "Installment" in AI-extracted labels
+// "1st Payment February 2026" → "1st Installment"
+// "3rd Installment March 2027" → "3rd Installment"
+const MONTH_NAMES = /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b/i;
+const cleanLabel = (label?: string): string | undefined => {
+  if (!label) return label;
+  let cleaned = label.replace(/Payment/gi, 'Installment');
+  // Remove trailing month+year patterns like "February 2026" or "Mar 2027"
+  cleaned = cleaned.replace(/\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}\s*$/i, '');
+  // Remove standalone year at end like "2026"
+  cleaned = cleaned.replace(/\s+\d{4}\s*$/, '');
+  return cleaned.trim() || label;
+};
+
 interface ClientInfo {
   developer?: string;
   projectName?: string;
@@ -64,16 +78,17 @@ export function applyExtractedPlan(
   const preHandoverPercent = plan.downpaymentPercent + preHandoverMilestones.reduce((s, m) => s + m.paymentPercent, 0);
 
   // Additional payments (pre-handover milestones, excluding downpayment)
-  // IMPORTANT: Exclude isHandover milestones — the handover/completion payment is NOT an
-  // installment. It's the remaining balance calculated as 100% - preHandoverPercent.
+  // Include isHandover milestones with flag preserved — the new PaymentPlanStep
+  // shows all installments in one flat list and splits them on save.
   const additionalPayments: PaymentMilestone[] = plan.milestones
-    .filter(m => m.type !== 'post-handover' && !m.isHandover)
+    .filter(m => m.type !== 'post-handover')
     .map((m, idx) => ({
       id: `ai-${Date.now()}-${idx}`,
       type: m.type === 'construction' ? 'construction' as const : 'time' as const,
       triggerValue: m.triggerValue,
       paymentPercent: m.paymentPercent,
-      label: m.label,
+      label: cleanLabel(m.label),
+      ...(m.isHandover && { isHandover: true }),
     }));
 
   // Post-handover payments (triggerValue is already relative months after handover)
@@ -85,7 +100,7 @@ export function applyExtractedPlan(
           type: 'post-handover' as const,
           triggerValue: m.triggerValue,
           paymentPercent: m.paymentPercent,
-          label: m.label,
+          label: cleanLabel(m.label),
         }))
         .sort((a, b) => a.triggerValue - b.triggerValue)
     : [];
@@ -102,7 +117,7 @@ export function applyExtractedPlan(
     handoverMonth,
     handoverYear,
     hasPostHandoverPlan: plan.hasPostHandover,
-    onHandoverPercent: plan.hasPostHandover ? (plan.onHandoverPercent || 0) : 0,
+    onHandoverPercent: plan.onHandoverPercent || 0,
     postHandoverPercent,
     postHandoverPayments,
     ...(plan.purchasePrice && { basePrice: plan.purchasePrice }),
