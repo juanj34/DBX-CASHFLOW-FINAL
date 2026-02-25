@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Clock, Building2, Key, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Calendar, Sparkles, Upload, FileImage, MessageSquare } from "lucide-react";
+import { Plus, Trash2, Clock, Building2, Key, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -10,10 +10,6 @@ import { InfoTooltip } from "../InfoTooltip";
 import { PaymentMilestone } from "../useOICalculations";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
-import { ExtractedPaymentPlan } from "@/lib/paymentPlanTypes";
-import { AIExtractorDropZone } from "./AIExtractorDropZone";
-import { FileWithPreview } from "@/components/dashboard/FileUploadZone";
 
 // Helper to calculate actual payment date
 const getPaymentDate = (monthsFromBooking: number, bookingMonth: number, bookingYear: number): Date => {
@@ -41,8 +37,6 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
   const [showInstallments, setShowInstallments] = useState(inputs.additionalPayments.length > 0);
   const [showCustomSplit, setShowCustomSplit] = useState(false);
   const [customPreHandover, setCustomPreHandover] = useState('');
-  const [showAIExtractor, setShowAIExtractor] = useState(false);
-  const [preloadedFiles, setPreloadedFiles] = useState<FileWithPreview[]>([]);
 
   // Calculate totals
   const additionalPaymentsTotal = inputs.additionalPayments.reduce((sum, m) => sum + m.paymentPercent, 0);
@@ -195,280 +189,12 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     }
   };
 
-  // Handle AI extraction result
-  const handleAIExtraction = (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => {
-    const appliedBookingMonth = bookingDate.month;
-    const appliedBookingYear = bookingDate.year;
-
-    const downpayment = data.installments.find(
-      i => i.type === 'time' && i.triggerValue === 0
-    );
-    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
-
-    // Client-side fallback: detect handover from payment pattern if AI didn't classify it
-    // Must run BEFORE handoverPayment lookup so the reclassified types are found
-    const hasAnyHandoverType = data.installments.some(i => i.type === 'handover');
-    const hasAnyPostHandoverType = data.installments.some(i => i.type === 'post-handover');
-    if (!hasAnyHandoverType && !hasAnyPostHandoverType) {
-      const timePayments = data.installments
-        .filter(i => i.type === 'time' && i.triggerValue > 0)
-        .sort((a, b) => a.triggerValue - b.triggerValue);
-
-      if (timePayments.length > 5) {
-        const percentages = timePayments.map(p => p.paymentPercent).sort((a, b) => a - b);
-        const median = percentages[Math.floor(percentages.length / 2)];
-
-        for (let i = 1; i < timePayments.length - 1; i++) {
-          const payment = timePayments[i];
-          const nextPayments = timePayments.slice(i + 1);
-
-          if (payment.paymentPercent >= median * 5 && nextPayments.length >= 3) {
-            const prevPayments = timePayments.slice(0, i);
-            const avgBefore = prevPayments.reduce((s, p) => s + p.paymentPercent, 0) / prevPayments.length;
-            const avgAfter = nextPayments.reduce((s, p) => s + p.paymentPercent, 0) / nextPayments.length;
-
-            if (payment.paymentPercent > avgBefore * 3 && payment.paymentPercent > avgAfter * 3) {
-              console.log(`[handleAIExtraction] Detected handover from pattern: Month ${payment.triggerValue} at ${payment.paymentPercent}%`);
-              payment.type = 'handover';
-              for (const inst of nextPayments) {
-                inst.type = 'post-handover';
-                (inst as any).isPostHandover = true;
-              }
-              data.paymentStructure.hasPostHandover = true;
-              data.paymentStructure.handoverMonthFromBooking = payment.triggerValue;
-              data.paymentStructure.onHandoverPercent = payment.paymentPercent;
-              data.paymentStructure.postHandoverPercent = nextPayments.reduce((s, p) => s + p.paymentPercent, 0);
-              const preHOTotal = data.installments
-                .filter(i => i.type === 'time')
-                .reduce((s, i) => s + i.paymentPercent, 0);
-              data.paymentStructure.paymentSplit = `${Math.round(preHOTotal)}/${Math.round(100 - preHOTotal)}`;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    // Lookup handover payment AFTER potential reclassification above
-    const handoverPayment = data.installments.find(i => i.type === 'handover');
-
-    // Calculate handover date from various sources
-    let handoverMonth: number = inputs.handoverMonth;
-    let handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
-
-    if (handoverPayment && handoverPayment.triggerValue > 0) {
-      const bookingDateObj = new Date(appliedBookingYear, appliedBookingMonth - 1);
-      const handoverDateObj = new Date(bookingDateObj);
-      handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverPayment.triggerValue);
-
-      handoverMonth = handoverDateObj.getMonth() + 1;
-      handoverYear = handoverDateObj.getFullYear();
-    } else if (data.paymentStructure.handoverMonthFromBooking) {
-      const handoverMonths = data.paymentStructure.handoverMonthFromBooking;
-      const bookingDateObj = new Date(appliedBookingYear, appliedBookingMonth - 1);
-      const handoverDateObj = new Date(bookingDateObj);
-      handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverMonths);
-
-      handoverMonth = handoverDateObj.getMonth() + 1;
-      handoverYear = handoverDateObj.getFullYear();
-    } else if (data.paymentStructure.handoverMonth) {
-      handoverMonth = data.paymentStructure.handoverMonth;
-      handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
-    } else if (data.paymentStructure.handoverQuarter) {
-      // Legacy: derive month from quarter
-      const q = data.paymentStructure.handoverQuarter;
-      handoverMonth = q === 1 ? 2 : q === 2 ? 5 : q === 3 ? 8 : 11;
-      handoverYear = data.paymentStructure.handoverYear || inputs.handoverYear;
-    }
-
-    const postHandoverInstallments = data.installments.filter(i =>
-      i.type === 'post-handover'
-    );
-    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-    const hasPostHandover = data.paymentStructure.hasPostHandover || postHandoverTotal > 0;
-    
-    const onHandoverPercent = hasPostHandover 
-      ? (handoverPayment?.paymentPercent || data.paymentStructure.onHandoverPercent || 0)
-      : 0;
-    
-    let preHandoverPercent = inputs.preHandoverPercent;
-    if (data.paymentStructure.paymentSplit) {
-      const [pre] = data.paymentStructure.paymentSplit.split('/').map(Number);
-      if (!isNaN(pre)) {
-        preHandoverPercent = pre;
-      }
-    } else {
-      const preHOInstallments = data.installments.filter(i => 
-        i.type === 'time' || i.type === 'construction'
-      );
-      const preHOTotal = preHOInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-      
-      if (preHOTotal > 0 && preHOTotal <= 100) {
-        preHandoverPercent = preHOTotal;
-      }
-    }
-    
-    const sortingTotalMonths = data.paymentStructure.handoverMonthFromBooking || handoverPayment?.triggerValue || 36;
-    const getEstimatedMonth = (inst: { type: string; triggerValue: number }, totalMonths: number): number => {
-      if (inst.type === 'time') return inst.triggerValue;
-      if (inst.type === 'construction') return Math.round((inst.triggerValue / 100) * totalMonths);
-      if (inst.type === 'handover') return totalMonths;
-      if (inst.type === 'post-handover') return totalMonths + inst.triggerValue;
-      return inst.triggerValue;
-    };
-    
-    // Separate post-handover installments for the dedicated array
-    // Convert absolute months from booking to relative months after handover
-    const handoverMonthFromBooking = data.paymentStructure.handoverMonthFromBooking
-      || handoverPayment?.triggerValue
-      || 0;
-
-    const postHandoverPaymentsMapped = hasPostHandover
-      ? data.installments
-          .filter(i => i.type === 'post-handover')
-          .map((inst, idx) => {
-            // AI extraction returns absolute months from booking; convert to relative
-            const relativeMonths = handoverMonthFromBooking > 0
-              ? inst.triggerValue - handoverMonthFromBooking
-              : inst.triggerValue;
-            return {
-              id: inst.id || `ai-post-${Date.now()}-${idx}`,
-              type: 'post-handover' as const,
-              triggerValue: Math.max(1, relativeMonths),
-              paymentPercent: inst.paymentPercent,
-            };
-          })
-          .sort((a, b) => a.triggerValue - b.triggerValue)
-      : [];
-
-    const additionalPayments = data.installments
-      .filter(i => {
-        if (i.type === 'time' && i.triggerValue === 0) return false;
-        
-        // Skip post-handover payments when hasPostHandover - they go to postHandoverPayments
-        if (i.type === 'post-handover' && hasPostHandover) return false;
-        
-        // Skip handover payment ONLY if hasPostHandover (handled by onHandoverPercent)
-        // For standard plans, KEEP it as a regular installment with isHandover flag
-        if (i.type === 'handover') {
-          if (hasPostHandover) {
-            console.log('Excluding handover payment from installments (post-HO plan):', i.paymentPercent, '%');
-            return false;
-          }
-          console.log('Including handover payment as installment (standard plan):', i.paymentPercent, '%');
-          return true;
-        }
-        
-        if (i.type === 'time' && i.triggerValue === 1 && 
-            downpayment && i.paymentPercent === downpayment.paymentPercent) {
-          return false;
-        }
-        return true;
-      })
-      .map((inst, idx) => ({
-        id: inst.id || `ai-${Date.now()}-${idx}`,
-        type: inst.type === 'construction' 
-          ? 'construction' as const 
-          : 'time' as const,
-        triggerValue: inst.triggerValue,
-        paymentPercent: inst.paymentPercent,
-        isHandover: inst.type === 'handover' ? true : undefined,
-      }))
-      .sort((a, b) => {
-        const aMonth = getEstimatedMonth(a, sortingTotalMonths);
-        const bMonth = getEstimatedMonth(b, sortingTotalMonths);
-        return aMonth - bMonth;
-      });
-    
-    setInputs(prev => ({
-      ...prev,
-      bookingMonth: appliedBookingMonth,
-      bookingYear: appliedBookingYear,
-      downpaymentPercent,
-      preHandoverPercent,
-      onHandoverPercent,
-      additionalPayments,
-      hasPostHandoverPlan: hasPostHandover,
-      postHandoverPercent: postHandoverTotal || data.paymentStructure.postHandoverPercent || 0,
-      postHandoverPayments: postHandoverPaymentsMapped,
-      handoverMonth,
-      handoverYear,
-      ...(data.property?.basePrice && { basePrice: data.property.basePrice }),
-      ...(data.property?.unitSizeSqft && { unitSizeSqf: data.property.unitSizeSqft }),
-    }));
-    
-    setShowInstallments(additionalPayments.length > 0);
-  };
-
   return (
     <div className="space-y-4">
       {/* Section Header */}
       <div>
         <h3 className="text-lg font-semibold text-theme-text">Payment Plan</h3>
       </div>
-
-      {/* AI Import — Primary action, shown first */}
-      <div className="rounded-xl border-2 border-dashed border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 space-y-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-purple-400" />
-          </div>
-          <div className="min-w-0">
-            <h4 className="text-sm font-semibold text-theme-text">AI Payment Plan Import</h4>
-            <p className="text-xs text-theme-text-muted">Upload a PDF or screenshot — AI extracts the full payment schedule</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setShowAIExtractor(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white gap-2 h-9 px-4 font-medium"
-          >
-            <Upload className="w-4 h-4" />
-            Upload PDF / Image
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setPreloadedFiles([]);
-              setShowAIExtractor(true);
-            }}
-            className="border-purple-500/40 text-purple-400 hover:bg-purple-500/10 gap-2 h-9 px-4"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Describe Plan
-          </Button>
-        </div>
-        <div className="flex items-center gap-4 text-[11px] text-theme-text-muted">
-          <span className="flex items-center gap-1"><FileImage className="w-3 h-3" /> PNG, JPG, PDF</span>
-          <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI-powered extraction</span>
-          <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Auto-fills all fields</span>
-        </div>
-      </div>
-
-      {/* AI Extractor Sheet */}
-      <PaymentPlanExtractor
-        open={showAIExtractor}
-        onOpenChange={(open) => {
-          setShowAIExtractor(open);
-          if (!open) setPreloadedFiles([]); // Clear on close
-        }}
-        existingBookingMonth={inputs.bookingMonth}
-        existingBookingYear={inputs.bookingYear}
-        onApply={handleAIExtraction}
-        initialFiles={preloadedFiles}
-      />
-
-      {/* AI Drop Zone — drag-and-drop anywhere on the section */}
-      <AIExtractorDropZone
-        onFilesDropped={(files) => {
-          setPreloadedFiles(files);
-          setShowAIExtractor(true);
-        }}
-      />
 
       {/* Post-Handover Toggle */}
       <div className="flex items-center justify-between py-2">

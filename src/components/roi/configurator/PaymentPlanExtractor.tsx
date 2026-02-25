@@ -1,24 +1,22 @@
 import { useState, useCallback, useEffect } from "react";
-import { Sparkles, Loader2, AlertCircle, Calendar, Upload, MessageSquare } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, Calendar, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FileUploadZone, { FileWithPreview } from "@/components/dashboard/FileUploadZone";
 import { ExtractedDataPreview } from "./ExtractedDataPreview";
-import { TextExtractionTab } from "./TextExtractionTab";
-import { ExtractedPaymentPlan, BookingDateOption, ExtractionResponse } from "@/lib/paymentPlanTypes";
+import type { AIPaymentPlanResult, AIUploadResponse } from "@/lib/aiExtractionTypes";
 
 interface PaymentPlanExtractorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   existingBookingMonth?: number;
   existingBookingYear?: number;
-  onApply: (data: ExtractedPaymentPlan, bookingDate: { month: number; year: number }) => void;
+  onApply: (data: AIPaymentPlanResult, bookingDate: { month: number; year: number }) => void;
   initialFiles?: FileWithPreview[];
 }
 
@@ -38,7 +36,6 @@ const MONTHS = [
 ];
 
 const currentYear = new Date().getFullYear();
-// 8 years back + 5 years forward for historical booking dates
 const YEARS = Array.from({ length: 13 }, (_, i) => currentYear - 8 + i);
 
 export const PaymentPlanExtractor = ({
@@ -51,15 +48,13 @@ export const PaymentPlanExtractor = ({
 }: PaymentPlanExtractorProps) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedData, setExtractedData] = useState<ExtractedPaymentPlan | null>(null);
+  const [extractedData, setExtractedData] = useState<AIPaymentPlanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  // Booking date options
+
   const [dateOption, setDateOption] = useState<'today' | 'existing' | 'custom'>('today');
   const [customMonth, setCustomMonth] = useState(new Date().getMonth() + 1);
   const [customYear, setCustomYear] = useState(currentYear);
 
-  // Load initial files when sheet opens with pre-loaded files
   useEffect(() => {
     if (initialFiles && initialFiles.length > 0 && open) {
       setFiles(initialFiles);
@@ -75,21 +70,20 @@ export const PaymentPlanExtractor = ({
     setFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  const getBookingDate = (): BookingDateOption => {
+  const getBookingDate = () => {
     const now = new Date();
     switch (dateOption) {
       case 'today':
-        return { type: 'today', month: now.getMonth() + 1, year: now.getFullYear() };
+        return { month: now.getMonth() + 1, year: now.getFullYear() };
       case 'existing':
-        return { 
-          type: 'existing', 
-          month: existingBookingMonth || now.getMonth() + 1, 
-          year: existingBookingYear || now.getFullYear() 
+        return {
+          month: existingBookingMonth || now.getMonth() + 1,
+          year: existingBookingYear || now.getFullYear()
         };
       case 'custom':
-        return { type: 'custom', month: customMonth, year: customYear };
+        return { month: customMonth, year: customYear };
       default:
-        return { type: 'today', month: now.getMonth() + 1, year: now.getFullYear() };
+        return { month: now.getMonth() + 1, year: now.getFullYear() };
     }
   };
 
@@ -104,33 +98,31 @@ export const PaymentPlanExtractor = ({
     setExtractedData(null);
 
     try {
-      // Get base64 data URLs from file previews - ensure they are valid strings
       const images = files
         .map(f => f.preview)
         .filter((p): p is string => typeof p === 'string' && p.length > 0 && p.startsWith('data:'));
-      
+
       if (images.length === 0) {
         setError("No valid files to process. Please re-upload your files.");
         return;
       }
-      
-      const bookingDate = getBookingDate();
-      
-      console.log(`Sending ${images.length} images for extraction`, { 
-        types: files.map(f => f.type),
-        previewLengths: images.map(p => p.length),
-        previewPrefixes: images.map(p => p.substring(0, 50))
-      });
 
-      const { data, error: fnError } = await supabase.functions.invoke<ExtractionResponse>(
+      const bookingDate = getBookingDate();
+
+      const { data, error: fnError } = await supabase.functions.invoke<AIUploadResponse>(
         'extract-payment-plan',
-        {
-          body: { images, bookingDate }
-        }
+        { body: { images, bookingDate } }
       );
 
       if (fnError) {
-        throw new Error(fnError.message);
+        let errorMsg = fnError.message;
+        try {
+          if ((fnError as any).context) {
+            const body = await (fnError as any).context.json();
+            if (body?.error) errorMsg = body.error;
+          }
+        } catch { /* ignore */ }
+        throw new Error(errorMsg);
       }
 
       if (!data?.success || !data?.data) {
@@ -139,7 +131,7 @@ export const PaymentPlanExtractor = ({
 
       setExtractedData(data.data);
       toast.success("Payment plan extracted successfully!");
-      
+
     } catch (err) {
       console.error("Extraction error:", err);
       const message = err instanceof Error ? err.message : "Failed to extract payment plan";
@@ -150,11 +142,10 @@ export const PaymentPlanExtractor = ({
     }
   };
 
-  const handleApply = (data: ExtractedPaymentPlan) => {
+  const handleApply = (data: AIPaymentPlanResult) => {
     const booking = getBookingDate();
-    onApply(data, { month: booking.month!, year: booking.year! });
+    onApply(data, { month: booking.month, year: booking.year });
     onOpenChange(false);
-    // Reset state
     setFiles([]);
     setExtractedData(null);
     setError(null);
@@ -166,7 +157,6 @@ export const PaymentPlanExtractor = ({
 
   const handleClose = () => {
     onOpenChange(false);
-    // Reset state after animation
     setTimeout(() => {
       setFiles([]);
       setExtractedData(null);
@@ -183,26 +173,15 @@ export const PaymentPlanExtractor = ({
             AI Payment Plan Extractor
           </SheetTitle>
           <SheetDescription>
-            Extract payment plans from documents or voice notes
+            Upload a payment plan PDF or image — AI extracts all details
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
           {!extractedData ? (
-            <Tabs defaultValue="upload" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="upload" className="flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
-                  Upload
-                </TabsTrigger>
-                <TabsTrigger value="voice" className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  Describe
-                </TabsTrigger>
-              </TabsList>
-              
-              {/* Booking Date Selection - shared by both tabs */}
-              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border mt-4">
+            <>
+              {/* Booking Date Selection */}
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-sm font-medium">Booking Date Reference</Label>
@@ -210,9 +189,9 @@ export const PaymentPlanExtractor = ({
                 <p className="text-xs text-muted-foreground">
                   Used to calculate payment dates from "Month X" triggers
                 </p>
-                
-                <RadioGroup 
-                  value={dateOption} 
+
+                <RadioGroup
+                  value={dateOption}
                   onValueChange={(v) => setDateOption(v as 'today' | 'existing' | 'custom')}
                   className="space-y-2"
                 >
@@ -222,7 +201,7 @@ export const PaymentPlanExtractor = ({
                       Use today's date ({new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })})
                     </Label>
                   </div>
-                  
+
                   {existingBookingMonth && existingBookingYear && (
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="existing" id="existing" />
@@ -233,7 +212,7 @@ export const PaymentPlanExtractor = ({
                       </Label>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="custom" id="custom" />
                     <Label htmlFor="custom" className="text-sm cursor-pointer">
@@ -244,95 +223,52 @@ export const PaymentPlanExtractor = ({
 
                 {dateOption === 'custom' && (
                   <div className="flex gap-2 ml-6 mt-2">
-                    <Select 
-                      value={customMonth.toString()} 
-                      onValueChange={(v) => setCustomMonth(parseInt(v))}
-                    >
-                      <SelectTrigger className="w-[130px]">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Select value={customMonth.toString()} onValueChange={(v) => setCustomMonth(parseInt(v))}>
+                      <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {MONTHS.map(m => (
-                          <SelectItem key={m.value} value={m.value.toString()}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
+                        {MONTHS.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    
-                    <Select 
-                      value={customYear.toString()} 
-                      onValueChange={(v) => setCustomYear(parseInt(v))}
-                    >
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Select value={customYear.toString()} onValueChange={(v) => setCustomYear(parseInt(v))}>
+                      <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {YEARS.map(y => (
-                          <SelectItem key={y} value={y.toString()}>
-                            {y}
-                          </SelectItem>
-                        ))}
+                        {YEARS.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
               </div>
 
-              {/* Upload Tab Content */}
-              <TabsContent value="upload" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Upload Payment Plan</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Supports multiple pages • Drag & drop, paste (Ctrl+V), or click
-                  </p>
-                  <FileUploadZone
-                    files={files}
-                    onFilesSelected={handleFilesSelected}
-                    onRemoveFile={handleRemoveFile}
-                    disabled={isExtracting}
-                    acceptPaste={true}
-                  />
-                </div>
-
-                {/* Error Display */}
-                {error && (
-                  <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
-                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {/* Extract Button */}
-                <Button
-                  onClick={handleExtract}
-                  disabled={files.length === 0 || isExtracting}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isExtracting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing with AI...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Extract Payment Plan
-                    </>
-                  )}
-                </Button>
-              </TabsContent>
-
-              {/* Text/Chat Tab Content */}
-              <TabsContent value="voice" className="mt-4">
-                <TextExtractionTab
-                  bookingDate={getBookingDate()}
-                  onExtracted={handleApply}
+              {/* Upload Zone */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Upload Payment Plan</Label>
+                <p className="text-xs text-muted-foreground">
+                  Supports multiple pages — Drag & drop, paste (Ctrl+V), or click
+                </p>
+                <FileUploadZone
+                  files={files}
+                  onFilesSelected={handleFilesSelected}
+                  onRemoveFile={handleRemoveFile}
                   disabled={isExtracting}
+                  acceptPaste={true}
                 />
-              </TabsContent>
-            </Tabs>
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button onClick={handleExtract} disabled={files.length === 0 || isExtracting} className="w-full" size="lg">
+                {isExtracting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing with AI...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4 mr-2" /> Extract Payment Plan</>
+                )}
+              </Button>
+            </>
           ) : (
             <ExtractedDataPreview
               data={extractedData}

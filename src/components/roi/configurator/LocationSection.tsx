@@ -10,7 +10,8 @@ import { UNIT_TYPES } from "../ClientUnitModal";
 import { OIInputs } from "../useOICalculations";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
-import { ExtractedPaymentPlan } from "@/lib/paymentPlanTypes";
+import type { AIPaymentPlanResult } from "@/lib/aiExtractionTypes";
+import { applyExtractedPlan } from "@/lib/applyExtractedPlan";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ClientSelector } from "@/components/clients/ClientSelector";
@@ -76,117 +77,15 @@ export const LocationSection = ({
   };
 
   // Handle AI extraction results
-  const handleAIExtraction = (extractedData: ExtractedPaymentPlan, bookingDate?: { month: number; year: number }) => {
-    const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2 * 10) / 10;
-    
+  const handleAIExtraction = (plan: AIPaymentPlanResult, bookingDate: { month: number; year: number }) => {
+    const { inputs: newInputs, clientInfo: newClientInfo } = applyExtractedPlan(plan, bookingDate, inputs);
+
     onClientInfoChange({
       ...clientInfo,
-      developer: extractedData.property?.developer || clientInfo.developer,
-      projectName: extractedData.property?.projectName || clientInfo.projectName,
-      unit: extractedData.property?.unitNumber || clientInfo.unit,
-      unitType: extractedData.property?.unitType || clientInfo.unitType,
-      unitSizeSqf: extractedData.property?.unitSizeSqft || clientInfo.unitSizeSqf,
-      unitSizeM2: extractedData.property?.unitSizeSqft 
-        ? sqfToM2(extractedData.property.unitSizeSqft) 
-        : clientInfo.unitSizeM2,
+      ...newClientInfo,
     });
-    
-    const effectiveBookingDate = bookingDate || { month: inputs.bookingMonth, year: inputs.bookingYear };
-    
-    const handoverPayment = extractedData.installments.find(i => i.type === 'handover');
-    let handoverMonth: number | undefined = inputs.handoverMonth;
-    let handoverYear = inputs.handoverYear;
-    let handoverQuarter = inputs.handoverQuarter;
-    
-    if (handoverPayment && handoverPayment.triggerValue > 0) {
-      const bookingDateObj = new Date(effectiveBookingDate.year, effectiveBookingDate.month - 1);
-      const handoverDateObj = new Date(bookingDateObj);
-      handoverDateObj.setMonth(handoverDateObj.getMonth() + handoverPayment.triggerValue);
-      handoverMonth = handoverDateObj.getMonth() + 1;
-      handoverYear = handoverDateObj.getFullYear();
-      handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
-    } else if (extractedData.paymentStructure.handoverMonthFromBooking) {
-      const bookingDateObj = new Date(effectiveBookingDate.year, effectiveBookingDate.month - 1);
-      const handoverDateObj = new Date(bookingDateObj);
-      handoverDateObj.setMonth(handoverDateObj.getMonth() + extractedData.paymentStructure.handoverMonthFromBooking);
-      handoverMonth = handoverDateObj.getMonth() + 1;
-      handoverYear = handoverDateObj.getFullYear();
-      handoverQuarter = Math.ceil(handoverMonth / 3) as 1 | 2 | 3 | 4;
-    }
-    
-    const downpayment = extractedData.installments.find(i => i.type === 'time' && i.triggerValue === 0);
-    const downpaymentPercent = downpayment?.paymentPercent || inputs.downpaymentPercent;
-    
-    let preHandoverPercent = inputs.preHandoverPercent;
-    if (extractedData.paymentStructure.paymentSplit) {
-      const [pre] = extractedData.paymentStructure.paymentSplit.split('/').map(Number);
-      if (!isNaN(pre)) preHandoverPercent = pre;
-    } else {
-      const preHOInstallments = extractedData.installments.filter(i => 
-        i.type === 'time' || i.type === 'construction'
-      );
-      const preHOTotal = preHOInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-      if (preHOTotal > 0 && preHOTotal <= 100) preHandoverPercent = preHOTotal;
-    }
-    
-    const postHandoverInstallments = extractedData.installments.filter(i => i.type === 'post-handover');
-    const postHandoverTotal = postHandoverInstallments.reduce((sum, i) => sum + i.paymentPercent, 0);
-    const hasPostHandover = extractedData.paymentStructure.hasPostHandover || postHandoverTotal > 0;
-    
-    const onHandoverPercent = hasPostHandover 
-      ? (handoverPayment?.paymentPercent || 0)
-      : 0;
-    
-    // Separate post-handover installments for the dedicated array
-    const postHandoverPaymentsMapped = hasPostHandover 
-      ? postHandoverInstallments
-          .map((inst, idx) => ({
-            id: inst.id || `ai-post-${Date.now()}-${idx}`,
-            type: 'time' as const,
-            triggerValue: inst.triggerValue,
-            paymentPercent: inst.paymentPercent,
-            isPostHandover: true as const,
-          }))
-          .sort((a, b) => a.triggerValue - b.triggerValue)
-      : [];
-    
-    const additionalPayments = extractedData.installments
-      .filter(i => {
-        if (i.type === 'time' && i.triggerValue === 0) return false;
-        if (i.type === 'post-handover' && hasPostHandover) return false;
-        if (i.type === 'handover') {
-          if (hasPostHandover) return false;
-          return true;
-        }
-        return true;
-      })
-      .map((inst, idx) => ({
-        id: inst.id || `ai-${Date.now()}-${idx}`,
-        type: inst.type === 'construction' ? 'construction' as const : 'time' as const,
-        triggerValue: inst.triggerValue,
-        paymentPercent: inst.paymentPercent,
-        isHandover: inst.type === 'handover' ? true : undefined,
-      }))
-      .sort((a, b) => a.triggerValue - b.triggerValue);
-    
-    setInputs(prev => ({
-      ...prev,
-      basePrice: extractedData.property?.basePrice || prev.basePrice,
-      unitSizeSqf: extractedData.property?.unitSizeSqft || prev.unitSizeSqf,
-      bookingMonth: effectiveBookingDate.month,
-      bookingYear: effectiveBookingDate.year,
-      downpaymentPercent,
-      preHandoverPercent,
-      onHandoverPercent,
-      additionalPayments,
-      hasPostHandoverPlan: hasPostHandover,
-      postHandoverPercent: postHandoverTotal || extractedData.paymentStructure.postHandoverPercent || 0,
-      postHandoverPayments: postHandoverPaymentsMapped,
-      handoverMonth,
-      handoverQuarter,
-      handoverYear,
-    }));
-    
+
+    setInputs(prev => ({ ...prev, ...newInputs }));
     toast.success('Property data and payment plan imported!');
     setShowAIExtractor(false);
   };
