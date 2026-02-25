@@ -508,12 +508,10 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                         </td>
                         <td className={tdCls}>
                           {row.dateStr && (
-                            <div>
-                              <span className="text-gray-800 font-medium">{row.dateStr}</span>
-                              {row.dateDetail && !compact && (
-                                <span className="block text-[8px] text-gray-400">{row.dateDetail}</span>
-                              )}
-                            </div>
+                            <span className="text-gray-800 font-medium">{row.dateStr}</span>
+                          )}
+                          {row.dateDetail && !compact && (
+                            <span className="text-[8px] text-gray-400 ml-1">{row.dateDetail}</span>
                           )}
                         </td>
                         <td className={tdCls + ' text-right font-mono text-gray-600'}>{row.percent}%</td>
@@ -869,8 +867,8 @@ function ordSuffix(n: number): string {
 }
 
 // ─── Shared constants ───────────────────────────────────────────────
-const TH_CLS = 'py-2 px-4 text-[9px] font-semibold text-white uppercase tracking-wide';
-const TD_CLS = 'py-2 px-4 text-[11px]';
+const TH_CLS = 'py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide';
+const TD_CLS = 'py-1 px-3 text-[11px]';
 
 // ─── Section header: gold bar with white text and circled letter badge ──
 const SectionHeader: React.FC<{ letter: string; title: string; subtitle?: string }> = ({ letter, title, subtitle }) => (
