@@ -1,7 +1,6 @@
-import { Sparkles, Users, Image as ImageIcon, Upload, FileImage } from "lucide-react";
+import { Users, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { ZoneSelect } from "@/components/ui/zone-select";
 import { DeveloperSelect } from "./DeveloperSelect";
 import { ProjectSelect } from "./ProjectSelect";
@@ -9,11 +8,6 @@ import { ClientUnitData } from "../ClientUnitInfo";
 import { UNIT_TYPES } from "../ClientUnitModal";
 import { OIInputs } from "../useOICalculations";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
-import type { AIPaymentPlanResult } from "@/lib/aiExtractionTypes";
-import { applyExtractedPlan } from "@/lib/applyExtractedPlan";
-import { useState } from "react";
-import { toast } from "sonner";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import { Client as DbClient } from "@/hooks/useClients";
 import { CompactImageUpload } from "./CompactImageUpload";
@@ -56,7 +50,6 @@ export const LocationSection = ({
   onHeroImageChange,
 }: LocationSectionProps) => {
   const { language, t } = useLanguage();
-  const [showAIExtractor, setShowAIExtractor] = useState(false);
 
   const handleChange = (field: keyof ClientUnitData, value: string | number | boolean) => {
     if (field === 'unitSizeSqf') {
@@ -76,60 +69,11 @@ export const LocationSection = ({
     onClientInfoChange({ ...clientInfo, zoneId, zoneName: zone?.name });
   };
 
-  // Handle AI extraction results
-  const handleAIExtraction = (plan: AIPaymentPlanResult, bookingDate: { month: number; year: number }) => {
-    const { inputs: newInputs, clientInfo: newClientInfo } = applyExtractedPlan(plan, bookingDate, inputs);
-
-    onClientInfoChange({
-      ...clientInfo,
-      ...newClientInfo,
-    });
-
-    setInputs(prev => ({ ...prev, ...newInputs }));
-    toast.success('Property data and payment plan imported!');
-    setShowAIExtractor(false);
-  };
-
   return (
-    <>
-      <PaymentPlanExtractor
-        open={showAIExtractor}
-        onOpenChange={setShowAIExtractor}
-        existingBookingMonth={inputs.bookingMonth}
-        existingBookingYear={inputs.bookingYear}
-        onApply={handleAIExtraction}
-      />
-      
       <div className="space-y-4">
         {/* Section Header */}
         <div>
           <h3 className="text-lg font-semibold text-theme-text">Location & Property</h3>
-        </div>
-
-        {/* AI Import Card */}
-        <div className="rounded-xl border-2 border-dashed border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 space-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-sm font-semibold text-theme-text">AI Import</h4>
-              <p className="text-xs text-theme-text-muted">Upload a brochure or payment plan — AI fills location, property & payment fields</p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setShowAIExtractor(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white gap-2 h-9 px-4 font-medium"
-          >
-            <Upload className="w-4 h-4" />
-            Upload PDF / Image
-          </Button>
-          <div className="flex items-center gap-4 text-[11px] text-theme-text-muted">
-            <span className="flex items-center gap-1"><FileImage className="w-3 h-3" /> PNG, JPG, PDF</span>
-            <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> Auto-fills all fields</span>
-          </div>
         </div>
 
         {/* Client Selector */}
@@ -303,6 +247,5 @@ export const LocationSection = ({
           </div>
         )}
       </div>
-    </>
   );
 };

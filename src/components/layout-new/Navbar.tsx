@@ -37,8 +37,8 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-14">
           {/* Left: Logo */}
           <Link to="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-shadow">
-              <span className="text-sm font-bold text-amber-950">D</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C9A04A] to-[#B3893A] flex items-center justify-center shadow-lg shadow-[#B3893A]/20 group-hover:shadow-[#B3893A]/40 transition-shadow">
+              <span className="text-sm font-bold text-white">D</span>
             </div>
             <span className="font-display text-lg text-theme-text tracking-tight hidden sm:block">
               Dubai Invest
@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-theme-card transition-colors">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400/20 to-amber-600/20 border border-theme-accent/30 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C9A04A]/20 to-[#B3893A]/20 border border-theme-accent/30 flex items-center justify-center">
                     <span className="text-xs font-semibold text-theme-accent">{initials}</span>
                   </div>
                   <ChevronDown className="w-3.5 h-3.5 text-theme-text-muted" />

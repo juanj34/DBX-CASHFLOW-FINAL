@@ -564,14 +564,14 @@ export const CompactPaymentTable = ({
                         onMouseDown={(e) => handleMouseDown(e, paymentId, amount)}
                         onMouseEnter={() => handleMouseEnter(paymentId, amount)}
                         className={cn(
-                          "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors select-none",
+                          "flex items-baseline gap-1 cursor-pointer rounded transition-colors select-none",
                           isHandoverQuarterPayment && "bg-theme-positive/10 px-1 py-0.5 -mx-1 border-l-2 border-theme-positive",
                           isCompletionPayment && "bg-theme-accent/10 px-1 py-0.5 -mx-1 border-l-2 border-theme-accent",
                           isSelected && "ring-1 ring-theme-accent/40 bg-theme-accent/20"
                         )}
                       >
-                        <div className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className={cn("text-xs text-theme-text-muted", useTwoColumns ? "truncate text-[11px]" : "truncate")}>
+                        <div className="flex items-center gap-1 shrink min-w-0">
+                          <span className={cn("text-xs text-theme-text-muted whitespace-nowrap", useTwoColumns && "text-[11px]")}>
                             {payment.paymentPercent}% · {labelWithDate}
                           </span>
                           {isConstructionPayment(payment) && (
@@ -601,6 +601,7 @@ export const CompactPaymentTable = ({
                             </span>
                           )}
                         </div>
+                        <span className="flex-1 border-b border-dotted border-theme-border/50 mx-1 min-w-4" />
                         <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[10px]")}>
                           {getDualValue(amount).primary}
                           {currency !== 'AED' && (
@@ -780,11 +781,12 @@ export const CompactPaymentTable = ({
                       onMouseDown={(e) => handleMouseDown(e, paymentId, amount)}
                       onMouseEnter={() => handleMouseEnter(paymentId, amount)}
                       className={cn(
-                        "flex items-center justify-between gap-2 cursor-pointer rounded transition-colors select-none",
+                        "flex items-baseline gap-1 cursor-pointer rounded transition-colors select-none",
                         isSelected && "bg-theme-accent/20 ring-1 ring-theme-accent/40"
                       )}
                     >
-                      <span className={cn("text-xs text-theme-text-muted truncate", useTwoColumns && "text-[11px]")}>{label}</span>
+                      <span className={cn("text-xs text-theme-text-muted whitespace-nowrap", useTwoColumns && "text-[11px]")}>{label}</span>
+                      <span className="flex-1 border-b border-dotted border-theme-border/50 mx-1 min-w-4" />
                       <span className={cn("text-xs font-mono text-theme-text whitespace-nowrap flex-shrink-0", useTwoColumns && "text-[10px]")}>
                         {getDualValue(amount).primary}
                         {currency !== 'AED' && (

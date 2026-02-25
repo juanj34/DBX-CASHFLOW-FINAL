@@ -155,6 +155,11 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.valueDifferentiators = [];
   }
 
+  // Ensure constructionSchedule is valid if present
+  if (merged.constructionSchedule && !Array.isArray(merged.constructionSchedule)) {
+    merged.constructionSchedule = undefined;
+  }
+
   // Validate additionalPayments array
   if (!Array.isArray(merged.additionalPayments)) {
     merged.additionalPayments = [];

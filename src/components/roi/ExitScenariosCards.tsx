@@ -372,7 +372,7 @@ export const ExitScenariosCards = ({
                         {t(returnBadge.label)}
                       </span>
                       <span className="text-xs text-theme-text-muted">·</span>
-                      <span className="text-xs text-theme-accent font-mono">{displayAnnualizedReturn.toFixed(1)}%{t('perYearSuffix')}</span>
+                      <span className="text-xs text-theme-text-muted font-mono">{displayAnnualizedReturn.toFixed(1)}%/yr</span>
                     </div>
                   </div>
                 </ROEBreakdownTooltip>

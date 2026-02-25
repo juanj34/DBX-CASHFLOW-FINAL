@@ -350,7 +350,7 @@ export const InvestmentStoryDashboard = ({
     const netYield = calculations.holdAnalysis.rentalYieldOnInvestment;
 
     // Service charges - use correct property names
-    const serviceCharges = (inputs.serviceChargePerSqft || 0) * (inputs.unitSizeSqf || 0);
+    const serviceCharges = (inputs.serviceChargePerSqft || 18) * (inputs.unitSizeSqf || 0);
 
     // ST Parameters - get from shortTermRental config
     const stOccupancy = inputs.shortTermRental?.occupancyPercent || 70;

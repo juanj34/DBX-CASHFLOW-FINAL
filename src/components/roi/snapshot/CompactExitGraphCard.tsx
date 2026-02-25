@@ -126,6 +126,7 @@ export const CompactExitGraphCard = ({
         exitPrice: scenarioResult.exitPrice,
         netGain,
         gainPercent,
+        totalROE: scenarioResult.exitCosts > 0 ? scenarioResult.netROE : scenarioResult.trueROE,
         annualizedROE: scenarioResult.annualizedROE,
         equityDeployed: scenarioResult.equityDeployed,
         totalCapital: scenarioResult.totalCapital,
@@ -436,7 +437,7 @@ export const CompactExitGraphCard = ({
                       ROE:
                     </text>
                     <text x={x + 52} y={y - 24} fill="hsl(var(--theme-accent))" fontSize="9" fontWeight="600" textAnchor="end">
-                      {scenario.annualizedROE.toFixed(1)}%/yr
+                      {scenario.totalROE.toFixed(1)}% ROE
                     </text>
                   </g>
                 )}
@@ -551,9 +552,9 @@ export const CompactExitGraphCard = ({
                   <span>•</span>
                   <span className={cn(
                     "font-semibold",
-                    scenario.annualizedROE >= 0 ? "text-theme-positive" : "text-theme-negative"
+                    scenario.totalROE >= 0 ? "text-theme-positive" : "text-theme-negative"
                   )}>
-                    {scenario.annualizedROE.toFixed(1)}% ROE
+                    {scenario.totalROE.toFixed(1)}% ROE
                   </span>
                 </div>
               </button>
@@ -617,9 +618,9 @@ export const CompactExitGraphCard = ({
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-theme-text font-medium">Annualized ROE</span>
-                <span className={cn("font-mono font-bold text-sm", s.annualizedROE >= 0 ? "text-theme-positive" : "text-theme-negative")}>
-                  {s.annualizedROE.toFixed(1)}%
+                <span className="text-theme-text font-medium">Total ROE</span>
+                <span className={cn("font-mono font-bold text-sm", s.totalROE >= 0 ? "text-theme-positive" : "text-theme-negative")}>
+                  {s.totalROE.toFixed(1)}%
                 </span>
               </div>
             </div>

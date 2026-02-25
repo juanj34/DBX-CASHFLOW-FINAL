@@ -228,8 +228,8 @@ serve(async (req) => {
       const netProfit = grossProfit - totalEntryCosts - exitCosts;
       const totalCapital = equity + totalEntryCosts;
       
-      // True ROE and Annualized ROE
-      const trueROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
+      // True ROE and Annualized ROE (equity deployed = payments toward property)
+      const trueROE = equity > 0 ? (netProfit / equity) * 100 : 0;
       const annualizedROE = month > 0 ? (trueROE / (month / 12)) : 0;
       
       return { 

@@ -4,72 +4,72 @@
 
 /* =====================================================
  * DESERT DECO — Design System
- * Dark luxury aesthetic with gold/amber accents
+ * Clean white aesthetic with gold/amber accents
  * ===================================================== */
 
 @layer base {
   :root {
-    /* shadcn/ui primitives — mapped to dark theme */
-    --background: 220 20% 8%;
-    --foreground: 210 20% 92%;
+    /* shadcn/ui primitives — light theme */
+    --background: 0 0% 98%;
+    --foreground: 220 15% 15%;
 
-    --card: 220 16% 14%;
-    --card-foreground: 210 20% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
 
-    --popover: 220 16% 14%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 15%;
 
-    --primary: 38 92% 55%;
-    --primary-foreground: 220 20% 8%;
+    --primary: 36 56% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 18%;
-    --secondary-foreground: 210 20% 92%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 15% 15%;
 
-    --muted: 220 14% 18%;
-    --muted-foreground: 215 12% 55%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 220 14% 18%;
-    --accent-foreground: 210 20% 92%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 15% 15%;
 
-    --destructive: 0 72% 58%;
-    --destructive-foreground: 210 20% 92%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 22%;
-    --input: 220 12% 22%;
-    --ring: 38 92% 55%;
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 36 56% 45%;
 
     --radius: 0.625rem;
 
     /* Custom design tokens */
-    --emerald: 152 60% 48%;
-    --amber: 38 92% 55%;
-    --soft-grey: 220 12% 22%;
+    --emerald: 152 60% 38%;
+    --amber: 36 56% 45%;
+    --soft-grey: 220 13% 89%;
 
-    /* Shadows — dark theme shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4);
+    /* Shadows — light theme shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.05);
 
     /* Transitions */
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Theme variables — Desert Deco */
-    --theme-bg: 220 20% 8%;
-    --theme-bg-alt: 220 18% 12%;
-    --theme-card: 220 16% 14%;
-    --theme-card-alt: 220 14% 18%;
-    --theme-border: 220 12% 22%;
-    --theme-border-alt: 220 10% 32%;
-    --theme-accent: 38 92% 55%;
-    --theme-accent-secondary: 38 80% 45%;
-    --theme-accent-dark: 38 92% 55%;
-    --theme-accent-muted: 38 70% 40%;
-    --theme-text: 210 20% 92%;
-    --theme-text-muted: 215 12% 55%;
-    --theme-text-highlight: 38 92% 55%;
-    --theme-positive: 152 60% 48%;
-    --theme-negative: 0 72% 58%;
+    /* Theme variables — Light Desert Deco */
+    --theme-bg: 0 0% 98%;
+    --theme-bg-alt: 220 14% 96%;
+    --theme-card: 0 0% 100%;
+    --theme-card-alt: 220 14% 96%;
+    --theme-border: 220 13% 89%;
+    --theme-border-alt: 220 13% 82%;
+    --theme-accent: 36 56% 45%;
+    --theme-accent-secondary: 34 50% 38%;
+    --theme-accent-dark: 34 55% 35%;
+    --theme-accent-muted: 34 45% 30%;
+    --theme-text: 220 15% 15%;
+    --theme-text-muted: 215 16% 47%;
+    --theme-text-highlight: 34 55% 35%;
+    --theme-positive: 152 60% 38%;
+    --theme-negative: 0 72% 48%;
   }
 }
 
@@ -161,7 +161,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, hsl(38 92% 55% / 0.5), hsl(38 92% 55% / 0.1), transparent);
+    background: linear-gradient(135deg, hsl(36 56% 50% / 0.5), hsl(36 56% 50% / 0.1), transparent);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -271,19 +271,19 @@
 .roi-slider-lime [data-radix-slider-track],
 .roi-slider-cyan [data-radix-slider-track],
 .roi-slider-pink [data-radix-slider-track] {
-  background: hsl(220 12% 22%);
+  background: hsl(220 13% 89%);
 }
 .roi-slider-lime [data-radix-slider-range],
 .roi-slider-cyan [data-radix-slider-range],
 .roi-slider-pink [data-radix-slider-range] {
-  background: hsl(38 92% 55%);
+  background: hsl(36 56% 50%);
 }
 .roi-slider-lime [data-radix-slider-thumb],
 .roi-slider-cyan [data-radix-slider-thumb],
 .roi-slider-pink [data-radix-slider-thumb] {
-  background: hsl(38 92% 55%);
-  border-color: hsl(38 92% 55%);
-  box-shadow: 0 0 8px hsl(38 92% 55% / 0.4);
+  background: hsl(36 56% 50%);
+  border-color: hsl(36 56% 50%);
+  box-shadow: 0 0 8px hsl(36 56% 50% / 0.4);
 }
 
 /* =====================================================
@@ -300,12 +300,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(220 12% 28%);
+  background: hsl(220 13% 82%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 12% 38%);
+  background: hsl(220 13% 72%);
 }
 
 ::-webkit-scrollbar-corner {
@@ -314,7 +314,7 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(220, 12%, 28%) transparent;
+  scrollbar-color: hsl(220, 13%, 82%) transparent;
 }
 
 .scrollbar-hide {

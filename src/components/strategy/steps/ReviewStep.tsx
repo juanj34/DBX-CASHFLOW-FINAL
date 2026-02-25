@@ -1,6 +1,6 @@
 import React from 'react';
 import { OIInputs } from '@/components/roi/useOICalculations';
-import { Share2, Save, Check } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 
 interface Props {
   inputs: OIInputs;
@@ -9,7 +9,7 @@ interface Props {
   isSaving?: boolean;
 }
 
-export const ReviewStep: React.FC<Props> = ({ inputs, onSave, onShare, isSaving }) => {
+export const ReviewStep: React.FC<Props> = ({ inputs, onShare }) => {
   const formatAED = (v: number) => {
     return new Intl.NumberFormat('en-AE', { style: 'decimal', maximumFractionDigits: 0 }).format(v);
   };
@@ -46,11 +46,20 @@ export const ReviewStep: React.FC<Props> = ({ inputs, onSave, onShare, isSaving 
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="font-display text-lg text-theme-text mb-2">Strategy Summary</h3>
-        <p className="text-xs text-theme-text-muted">
-          Review your inputs before saving. The cashflow document will update live as you adjust.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-lg text-theme-text mb-1">Strategy Summary</h3>
+          <p className="text-xs text-theme-text-muted">
+            Review your inputs. The cashflow document updates live.
+          </p>
+        </div>
+        <button
+          onClick={onShare}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-theme-border text-theme-text hover:bg-theme-card transition-colors"
+        >
+          <Share2 className="w-4 h-4" />
+          Share
+        </button>
       </div>
 
       {/* Summary table */}
@@ -70,31 +79,6 @@ export const ReviewStep: React.FC<Props> = ({ inputs, onSave, onShare, isSaving 
             </span>
           </div>
         ))}
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3">
-        <button
-          onClick={onSave}
-          disabled={isSaving}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 hover:from-amber-400 hover:to-amber-500 shadow-lg shadow-amber-500/20 disabled:opacity-50 transition-all"
-        >
-          {isSaving ? (
-            <>Saving...</>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Save Strategy
-            </>
-          )}
-        </button>
-        <button
-          onClick={onShare}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-medium border border-theme-border text-theme-text hover:bg-theme-card transition-colors"
-        >
-          <Share2 className="w-4 h-4" />
-          Share
-        </button>
       </div>
     </div>
   );

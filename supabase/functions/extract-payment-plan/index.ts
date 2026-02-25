@@ -100,7 +100,13 @@ serve(async (req) => {
 
     const data = result.data as any;
 
-    // Post-processing: validate percentages sum to 100
+    // Post-processing: strip any milestones that leaked with isHandover
+    // (safety net — the schema no longer includes isHandover but older cached responses might)
+    if (data.milestones) {
+      data.milestones = data.milestones.filter((m: any) => !m.isHandover);
+    }
+
+    // Validate: downpayment + milestones + onHandoverPercent = 100%
     const milestoneTotal = (data.milestones || []).reduce(
       (s: number, m: any) => s + (m.paymentPercent || 0),
       0

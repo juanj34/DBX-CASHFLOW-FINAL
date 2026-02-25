@@ -10,14 +10,14 @@ const Landing: React.FC = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-theme-border/30 bg-theme-bg/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <span className="text-sm font-bold text-amber-950">D</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C9A04A] to-[#B3893A] flex items-center justify-center shadow-lg shadow-[#B3893A]/20">
+              <span className="text-sm font-bold text-white">D</span>
             </div>
             <span className="font-display text-lg text-theme-text tracking-tight">Dubai Invest</span>
           </Link>
           <Link
             to="/login"
-            className="px-4 py-1.5 rounded-lg text-sm font-medium bg-theme-accent text-theme-bg hover:bg-theme-accent/90 transition-colors"
+            className="px-4 py-1.5 rounded-lg text-sm font-medium bg-theme-accent text-white hover:bg-theme-accent/90 transition-colors"
           >
             Sign In
           </Link>
@@ -27,8 +27,8 @@ const Landing: React.FC = () => {
       {/* Hero */}
       <section className="relative pt-32 pb-24 px-6 overflow-hidden">
         {/* Background orbs */}
-        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-500/5 blur-[100px] animate-pulse-slow delay-1000" />
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] rounded-full bg-[#B3893A]/10 blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-emerald-500/10 blur-[100px] animate-pulse-slow delay-1000" />
 
         <div className="max-w-4xl mx-auto text-center relative">
           {/* Badge */}
@@ -40,7 +40,7 @@ const Landing: React.FC = () => {
           {/* Title */}
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl text-theme-text leading-[1.1] mb-6 animate-reveal-up delay-100">
             Dubai Real Estate,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C9A04A] via-[#B3893A] to-[#916B2D]">
               Quantified
             </span>
           </h1>
@@ -55,7 +55,7 @@ const Landing: React.FC = () => {
           <div className="flex items-center justify-center gap-4 animate-reveal-up delay-300">
             <Link
               to="/login"
-              className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 hover:from-amber-400 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40"
+              className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#C9A04A] to-[#B3893A] text-white hover:from-[#D4AA55] hover:to-[#C9A04A] transition-all shadow-lg shadow-[#B3893A]/25 hover:shadow-[#B3893A]/40"
             >
               Get Started
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -142,7 +142,7 @@ const Landing: React.FC = () => {
       <section className="py-24 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <div className="p-12 rounded-2xl border border-theme-accent/20 bg-gradient-to-b from-theme-accent/5 to-transparent relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-amber-500/5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#B3893A]/5 via-transparent to-[#B3893A]/5" />
             <div className="relative">
               <h2 className="font-display text-3xl sm:text-4xl text-theme-text mb-4">
                 Ready to Quantify Returns?
@@ -152,7 +152,7 @@ const Landing: React.FC = () => {
               </p>
               <Link
                 to="/login"
-                className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 hover:from-amber-400 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/25"
+                className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#C9A04A] to-[#B3893A] text-white hover:from-[#D4AA55] hover:to-[#C9A04A] transition-all shadow-lg shadow-[#B3893A]/25"
               >
                 Start Free
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

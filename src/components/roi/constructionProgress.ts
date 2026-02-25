@@ -18,6 +18,7 @@ import { OIInputs, PaymentMilestone } from "./useOICalculations";
 export interface ExitPriceInputs {
   constructionAppreciation?: number;
   postConstructionAppreciation?: number;
+  constructionSchedule?: number[]; // Per-year rates during construction (overrides flat rate)
   // Legacy 3-phase fields (backward compat — mapped to 2-phase)
   growthAppreciation?: number;
   matureAppreciation?: number;
@@ -49,6 +50,7 @@ export const getEffectiveAppreciationRates = (inputs: OIInputs) => {
   return {
     constructionAppreciation: constructionRate,
     postConstructionAppreciation: postConstructionRate,
+    constructionSchedule: inputs.constructionSchedule,
   };
 };
 
@@ -458,8 +460,23 @@ export const calculateExitPrice = (
   // Phase 1: Construction period
   const constructionMonths = Math.min(months, totalMonths);
   if (constructionMonths > 0) {
-    const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
-    currentValue *= Math.pow(1 + monthlyRate, constructionMonths);
+    if (inputs.constructionSchedule?.length) {
+      // Year-by-year mode: apply different rate for each construction year
+      let monthsRemaining = constructionMonths;
+      let yearIdx = 0;
+      while (monthsRemaining > 0) {
+        const rate = inputs.constructionSchedule[Math.min(yearIdx, inputs.constructionSchedule.length - 1)];
+        const monthsThisYear = Math.min(12, monthsRemaining);
+        const monthlyRate = Math.pow(1 + rate / 100, 1/12) - 1;
+        currentValue *= Math.pow(1 + monthlyRate, monthsThisYear);
+        monthsRemaining -= monthsThisYear;
+        yearIdx++;
+      }
+    } else {
+      // Flat rate (default behavior)
+      const monthlyRate = Math.pow(1 + constructionAppreciation / 100, 1/12) - 1;
+      currentValue *= Math.pow(1 + monthlyRate, constructionMonths);
+    }
   }
 
   // If exit is during construction, return here
@@ -544,11 +561,11 @@ export const calculateExitScenario = (
   const trueProfit = appreciation - entryCosts;
   const netProfit = appreciation - entryCosts - exitCosts;
 
-  // Calculate ROE - Return on total capital deployed
-  // Numerator uses profit AFTER entry costs (trueProfit) since entry costs are in the denominator
+  // Calculate ROE - Return on equity deployed (payments toward the property)
+  // Entry costs reduce profit but are NOT part of the equity base
   const roe = equityDeployed > 0 ? (appreciation / equityDeployed) * 100 : 0;
-  const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
-  const netROE = totalCapital > 0 ? (netProfit / totalCapital) * 100 : 0;
+  const trueROE = equityDeployed > 0 ? (trueProfit / equityDeployed) * 100 : 0;
+  const netROE = equityDeployed > 0 ? (netProfit / equityDeployed) * 100 : 0;
   const annualizedROE = monthsFromBooking > 0 ? (trueROE / (monthsFromBooking / 12)) : 0;
   const netAnnualizedROE = monthsFromBooking > 0 ? (netROE / (monthsFromBooking / 12)) : 0;
   

@@ -12,14 +12,7 @@ import { DeveloperInfoModal } from "./DeveloperInfoModal";
 import { ProjectInfoModal } from "./ProjectInfoModal";
 import { cn } from "@/lib/utils";
 import type { ClientUnitData } from "./ClientUnitInfo";
-import { Currency, CURRENCY_CONFIG, formatDualCurrency } from "./currencyUtils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Currency, formatDualCurrency } from "./currencyUtils";
 
 interface PropertyHeroCardProps {
   data: ClientUnitData;
@@ -229,53 +222,6 @@ export const PropertyHeroCard = ({
 
         {/* Content - 2 Rows */}
         <div className="relative px-5 py-6 min-h-[160px] flex flex-col justify-end">
-          
-          {/* Currency & Language Dropdowns - Bottom right */}
-          {showPriceInfo && setCurrency && setLanguage && (
-            <div className="absolute bottom-4 right-5 flex items-center gap-2 z-20">
-              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                <SelectTrigger className={cn(
-                  "w-[90px] h-7 text-xs",
-                  hasBackgroundImage 
-                    ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
-                    : "bg-theme-bg-alt hover:bg-theme-card-alt border-theme-border text-theme-text"
-                )}>
-                  <SelectValue>
-                    <span className="flex items-center gap-1.5">
-                      <span>{CURRENCY_CONFIG[currency].flag}</span>
-                      <span>{currency}</span>
-                    </span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-theme-card border-theme-border z-50">
-                  {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((c) => (
-                    <SelectItem key={c} value={c} className="text-theme-text hover:bg-theme-card-alt">
-                      <span className="flex items-center gap-2">
-                        <span>{CURRENCY_CONFIG[c].flag}</span>
-                        <span>{c}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'es')}>
-                <SelectTrigger className={cn(
-                  "w-[65px] h-7 text-xs",
-                  hasBackgroundImage 
-                    ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
-                    : "bg-theme-bg-alt hover:bg-theme-card-alt border-theme-border text-theme-text"
-                )}>
-                  <SelectValue>{language.toUpperCase()}</SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-theme-card border-theme-border z-50">
-                  <SelectItem value="en" className="text-theme-text hover:bg-theme-card-alt">EN</SelectItem>
-                  <SelectItem value="es" className="text-theme-text hover:bg-theme-card-alt">ES</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           
           {/* Snapshot Title (editable headline) - Only in Snapshot view */}
           {showPriceInfo && (

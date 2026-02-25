@@ -76,8 +76,8 @@ export const ExitsROETab = ({
                 <th className="text-right py-2 text-theme-text-muted font-medium">{t('exitPriceLabel')}</th>
                 <th className="text-right py-2 text-theme-text-muted font-medium">{t('equityInLabel')}</th>
                 <th className="text-right py-2 text-theme-text-muted font-medium">{t('profitLabel')}</th>
-                <th className="text-right py-2 text-theme-text-muted font-medium">ROE</th>
-                <th className="text-right py-2 text-theme-text-muted font-medium">{t('annualROELabel')}</th>
+                <th className="text-right py-2 text-theme-text-muted font-medium">Total ROE</th>
+                <th className="text-right py-2 text-theme-text-muted font-medium">/yr</th>
               </tr>
             </thead>
             <tbody>
@@ -92,7 +92,7 @@ export const ExitsROETab = ({
                   <td className={`py-2 text-right font-mono font-semibold ${s.trueROE >= 0 ? 'text-theme-positive' : 'text-theme-negative'}`}>
                     {s.trueROE.toFixed(1)}%
                   </td>
-                  <td className="py-2 text-right text-theme-text-muted font-mono">{s.annualizedROE.toFixed(1)}%</td>
+                  <td className="py-2 text-right text-theme-text-muted font-mono text-[10px]">{s.annualizedROE.toFixed(1)}%</td>
                 </tr>
               ))}
             </tbody>

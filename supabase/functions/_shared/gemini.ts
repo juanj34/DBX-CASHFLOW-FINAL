@@ -57,6 +57,8 @@ export async function callGemini<T>(
       responseMimeType: "application/json",
       responseSchema: req.responseSchema,
       temperature: req.temperature ?? 0.1,
+      // Disable thinking to avoid 10-30s overhead — not needed for structured extraction
+      thinkingConfig: { thinkingBudget: 0 },
     },
   };
 
@@ -92,8 +94,10 @@ export async function callGemini<T>(
     return { success: false, error: result.error.message || "Gemini returned an error", retryable: false };
   }
 
-  // Extract text from response
-  const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+  // Extract text from response — skip any "thinking" parts, find the text part
+  const parts = result.candidates?.[0]?.content?.parts || [];
+  const textPart = parts.find((p: Record<string, unknown>) => typeof p.text === "string");
+  const text = textPart?.text;
   if (!text) {
     console.error("Unexpected Gemini response:", JSON.stringify(result).slice(0, 500));
     return { success: false, error: "No content in Gemini response", retryable: false };

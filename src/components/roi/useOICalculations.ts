@@ -71,6 +71,7 @@ export interface OIInputs {
   // 2-Phase appreciation model
   constructionAppreciation: number;        // Default 12% (during construction)
   postConstructionAppreciation?: number;   // Default 6% (after handover) — NEW 2-phase field
+  constructionSchedule?: number[];         // Per-year rates during construction (overrides flat constructionAppreciation)
 
   // Legacy 3-phase fields (backward compat — auto-mapped to 2-phase)
   growthAppreciation?: number;
@@ -427,8 +428,8 @@ export const useOICalculations = (inputs: OIInputs): OICalculations => {
     // ROE based on equity actually deployed
     const roe = equityDeployed > 0 ? (profit / equityDeployed) * 100 : 0;
 
-    // True ROE based on total capital deployed
-    const trueROE = totalCapitalDeployed > 0 ? (trueProfit / totalCapitalDeployed) * 100 : 0;
+    // True ROE based on equity deployed (entry costs reduce profit, not inflate capital)
+    const trueROE = equityDeployed > 0 ? (trueProfit / equityDeployed) * 100 : 0;
 
     // Annualized ROE
     const yearsHeld = exitMonths / 12;

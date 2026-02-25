@@ -26,33 +26,33 @@ export interface ThemeColors {
   chartTertiary: string;
 }
 
-// Desert Deco — dark luxury theme with gold/amber accents
+// Desert Deco — clean white theme with gold/amber accents
 export const THEME: ThemeColors = {
   name: 'Desert Deco',
   // Backgrounds
-  bg: '#0F1318',
-  bgAlt: '#171C24',
-  card: '#1C222C',
-  cardAlt: '#252C38',
+  bg: '#FAFAFA',
+  bgAlt: '#F3F4F6',
+  card: '#FFFFFF',
+  cardAlt: '#F3F4F6',
   // Borders
-  border: '#2E3542',
-  borderAlt: '#48505E',
-  // Accents — gold/amber
-  accent: '#E8A830',
-  accentSecondary: '#C4891F',
-  accentDark: '#E8A830',
-  accentMuted: 'rgba(232, 168, 48, 0.15)',
-  // Text — cream white
-  text: '#E8ECF1',
-  textMuted: '#7E8A9A',
-  textHighlight: '#E8A830',
+  border: '#E2E5EB',
+  borderAlt: '#CBD0D8',
+  // Accents — copper-gold
+  accent: '#B3893A',
+  accentSecondary: '#916B2D',
+  accentDark: '#8A6528',
+  accentMuted: 'rgba(179, 137, 58, 0.12)',
+  // Text — near-black
+  text: '#1A2030',
+  textMuted: '#64748B',
+  textHighlight: '#8A6528',
   // Specific
-  positive: '#30B875',
-  negative: '#D44040',
+  positive: '#22915A',
+  negative: '#C53030',
   // Charts
-  chartPrimary: '#E8A830',
-  chartSecondary: '#30B875',
-  chartTertiary: '#7E8A9A',
+  chartPrimary: '#B3893A',
+  chartSecondary: '#22915A',
+  chartTertiary: '#64748B',
 };
 
 // Backward-compatible exports

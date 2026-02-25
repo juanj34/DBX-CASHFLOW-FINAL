@@ -64,16 +64,16 @@ export function applyExtractedPlan(
   const preHandoverPercent = plan.downpaymentPercent + preHandoverMilestones.reduce((s, m) => s + m.paymentPercent, 0);
 
   // Additional payments (pre-handover milestones, excluding downpayment)
-  // For standard plans (no post-handover), the handover payment is included with isHandover=true
+  // IMPORTANT: Exclude isHandover milestones — the handover/completion payment is NOT an
+  // installment. It's the remaining balance calculated as 100% - preHandoverPercent.
   const additionalPayments: PaymentMilestone[] = plan.milestones
-    .filter(m => m.type !== 'post-handover')
+    .filter(m => m.type !== 'post-handover' && !m.isHandover)
     .map((m, idx) => ({
       id: `ai-${Date.now()}-${idx}`,
       type: m.type === 'construction' ? 'construction' as const : 'time' as const,
       triggerValue: m.triggerValue,
       paymentPercent: m.paymentPercent,
       label: m.label,
-      isHandover: m.isHandover || undefined,
     }));
 
   // Post-handover payments (triggerValue is already relative months after handover)

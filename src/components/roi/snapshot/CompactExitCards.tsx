@@ -34,7 +34,7 @@ export const CompactExitCards = ({
   onClick,
 }: CompactExitCardsProps) => {
   // Find best ROE
-  const bestROE = Math.max(...exitScenarios.map(s => s.annualizedROE));
+  const bestROE = Math.max(...exitScenarios.map(s => s.trueROE));
 
   return (
     <div 
@@ -56,7 +56,7 @@ export const CompactExitCards = ({
       
       <div className="space-y-2">
         {exitScenarios.slice(0, 4).map((scenario) => {
-          const isBest = scenario.annualizedROE === bestROE;
+          const isBest = scenario.trueROE === bestROE;
           const isHandover = scenario.exitMonths === totalMonths;
           
           return (
@@ -83,9 +83,9 @@ export const CompactExitCards = ({
                   <div className="text-right">
                     <span className={cn(
                       "text-sm font-bold",
-                      scenario.annualizedROE >= 0 ? "text-green-500" : "text-red-500"
+                      scenario.trueROE >= 0 ? "text-green-500" : "text-red-500"
                     )}>
-                      {scenario.annualizedROE.toFixed(1)}% ROE
+                      {scenario.trueROE.toFixed(1)}% ROE
                     </span>
                     <span className="text-xs text-muted-foreground block">
                       {formatCurrency(scenario.exitPrice, 'AED', 1)}
@@ -105,8 +105,8 @@ export const CompactExitCards = ({
                     <span className={scenario.trueProfit >= 0 ? "text-green-500" : "text-red-500"}>
                       {formatCurrency(scenario.trueProfit, 'AED', 1)}
                     </span>
-                    <span className="text-muted-foreground">Annualized ROE:</span>
-                    <span className="font-bold">{scenario.annualizedROE.toFixed(2)}%</span>
+                    <span className="text-muted-foreground">Total ROE:</span>
+                    <span className="font-bold">{scenario.trueROE.toFixed(1)}%</span>
                   </div>
                 </div>
               </TooltipContent>

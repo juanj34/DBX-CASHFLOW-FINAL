@@ -146,7 +146,7 @@ export const ROEBreakdownTooltip = ({
               <div className="flex items-center gap-1.5 text-xs mb-2">
                 <span className="text-theme-text-muted">ROE =</span>
                 <span className="text-theme-text font-mono">
-                  {scenario.exitCosts > 0 ? t('netProfitLabel') : (scenario.entryCosts > 0 ? t('trueProfitLabel') : t('profitLabel'))} ÷ {t('totalCapitalLabel')}
+                  {scenario.exitCosts > 0 ? t('netProfitLabel') : (scenario.entryCosts > 0 ? t('trueProfitLabel') : t('profitLabel'))} ÷ {t('equityDeployedLabel') || 'Equity Deployed'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-xs">
@@ -156,7 +156,7 @@ export const ROEBreakdownTooltip = ({
                 </span>
                 <span className="text-theme-text-muted">÷</span>
                 <span className="text-theme-text font-mono">
-                  {formatCurrency(scenario.totalCapital, currency, rate)}
+                  {formatCurrency(scenario.equityDeployed, currency, rate)}
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-2 pt-2 border-t border-theme-border">

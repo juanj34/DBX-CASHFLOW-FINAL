@@ -14,9 +14,6 @@ import { ProjectSelect } from "./ProjectSelect";
 import { ClientSelector } from "@/components/clients/ClientSelector";
 import { Client as DbClient, useClients } from "@/hooks/useClients";
 import { ClientForm } from "@/components/clients/ClientForm";
-import { PaymentPlanExtractor } from "./PaymentPlanExtractor";
-import type { AIPaymentPlanResult } from "@/lib/aiExtractionTypes";
-import { applyExtractedPlan } from "@/lib/applyExtractedPlan";
 import { OIInputs } from "../useOICalculations";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +41,6 @@ export const ClientSection = ({
   const { clients: dbClients, createClient } = useClients();
   const [showClientForm, setShowClientForm] = useState(false);
   const [selectedDbClientId, setSelectedDbClientId] = useState<string | null>(clientInfo.dbClientId || null);
-  const [showAIExtractor, setShowAIExtractor] = useState(false);
 
   // Simplified developer and project handlers (no more DB IDs)
   const handleDeveloperChange = (name: string) => {
@@ -171,30 +167,6 @@ export const ClientSection = ({
     }
   };
 
-  // Handle AI extraction results
-  const handleAIExtraction = (plan: AIPaymentPlanResult) => {
-    if (inputs && setInputs) {
-      const bookingDate = { month: inputs.bookingMonth, year: inputs.bookingYear };
-      const { inputs: newInputs, clientInfo: newClientInfo } = applyExtractedPlan(plan, bookingDate, inputs);
-      onClientInfoChange({ ...clientInfo, ...newClientInfo });
-      setInputs(prev => ({ ...prev, ...newInputs }));
-    } else {
-      // No inputs — just update client info
-      const SQF_TO_M2_LOCAL = 0.092903;
-      const sqfToM2 = (sqf: number) => Math.round(sqf * SQF_TO_M2_LOCAL * 10) / 10;
-      onClientInfoChange({
-        ...clientInfo,
-        ...(plan.developer && { developer: plan.developer }),
-        ...(plan.projectName && { projectName: plan.projectName }),
-        ...(plan.unitNumber && { unit: plan.unitNumber }),
-        ...(plan.unitType && { unitType: plan.unitType }),
-        ...(plan.sizeSqFt && { unitSizeSqf: plan.sizeSqFt, unitSizeM2: sqfToM2(plan.sizeSqFt) }),
-      });
-    }
-    toast.success('Quote data imported from AI extraction!');
-    setShowAIExtractor(false);
-  };
-
   return (
     <>
       <ClientForm
@@ -203,38 +175,7 @@ export const ClientSection = ({
         onSubmit={handleCreateNewClient}
         mode="create"
       />
-      <PaymentPlanExtractor
-        open={showAIExtractor}
-        onOpenChange={setShowAIExtractor}
-        existingBookingMonth={inputs?.bookingMonth}
-        existingBookingYear={inputs?.bookingYear}
-        onApply={handleAIExtraction}
-      />
     <div className="space-y-6">
-      {/* AI Import Banner */}
-      <div className="p-4 rounded-lg border border-purple-500/30 bg-purple-500/10">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <h4 className="text-sm font-medium text-theme-text flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              AI Auto-Fill
-            </h4>
-            <p className="text-xs text-theme-text-muted mt-1">
-              Upload a brochure or payment plan to auto-fill developer, unit info, price, and payment schedule.
-            </p>
-          </div>
-          <Button
-            onClick={() => setShowAIExtractor(true)}
-            variant="outline"
-            size="sm"
-            className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 shrink-0"
-          >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-            Import
-          </Button>
-        </div>
-      </div>
-
       {/* Property Details Section */}
       <div>
         <h3 className="text-sm font-semibold text-theme-text mb-3 flex items-center gap-2">

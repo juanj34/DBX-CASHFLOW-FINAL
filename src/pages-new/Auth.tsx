@@ -75,7 +75,7 @@ const Auth: React.FC = () => {
     <PageShell>
       <div className="min-h-screen flex items-center justify-center px-4 py-12">
         {/* Background orbs */}
-        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-amber-500/5 blur-[120px]" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-[#B3893A]/5 blur-[120px]" />
         <div className="absolute bottom-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-emerald-500/5 blur-[100px]" />
 
         <div className="w-full max-w-sm relative">
@@ -90,8 +90,8 @@ const Auth: React.FC = () => {
 
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <span className="text-lg font-bold text-amber-950">D</span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A04A] to-[#B3893A] flex items-center justify-center shadow-lg shadow-[#B3893A]/20">
+              <span className="text-lg font-bold text-white">D</span>
             </div>
             <div>
               <h1 className="font-display text-xl text-theme-text">Dubai Invest</h1>
@@ -107,7 +107,7 @@ const Auth: React.FC = () => {
                 onClick={() => setMode(m)}
                 className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
                   mode === m
-                    ? 'bg-theme-accent text-theme-bg shadow-sm'
+                    ? 'bg-theme-accent text-white shadow-sm'
                     : 'text-theme-text-muted hover:text-theme-text'
                 }`}
               >
@@ -177,7 +177,7 @@ const Auth: React.FC = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 hover:from-amber-400 hover:to-amber-500 font-semibold shadow-lg shadow-amber-500/20"
+              className="w-full bg-gradient-to-r from-[#C9A04A] to-[#B3893A] text-white hover:from-[#D4AA55] hover:to-[#C9A04A] font-semibold shadow-lg shadow-[#B3893A]/20"
             >
               {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
             </Button>

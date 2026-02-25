@@ -54,10 +54,10 @@ export const OIGrowthCurve = ({
   const maxValue = maxChartPrice * 1.08;
   const minValue = basePrice * 0.95;
 
-  // SVG dimensions - more compact with more bottom space
-  const width = 600;
-  const height = 200;
-  const padding = { top: 30, right: 30, bottom: 55, left: 55 };
+  // SVG dimensions - responsive width, taller for readability
+  const width = 700;
+  const height = 300;
+  const padding = { top: 35, right: 35, bottom: 60, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -237,7 +237,7 @@ export const OIGrowthCurve = ({
               x={padding.left - 8}
               y={yScale(value)}
               fill="hsl(var(--theme-text-muted))"
-              fontSize="9"
+              fontSize="10"
               textAnchor="end"
               dominantBaseline="middle"
             >
@@ -277,7 +277,7 @@ export const OIGrowthCurve = ({
           {/* Construction progress bar - only up to handover */}
           <rect
             x={padding.left}
-            y={height - 28}
+            y={height - 32}
             width={(totalMonths / chartMaxMonth) * chartWidth}
             height={6}
             fill="url(#constructionBarGradient)"
@@ -289,9 +289,9 @@ export const OIGrowthCurve = ({
             <text
               key={`const-${i}`}
               x={xScale(marker.month)}
-              y={height - 36}
+              y={height - 40}
               fill="hsl(var(--theme-text-muted))"
-              fontSize="7"
+              fontSize="8"
               textAnchor="middle"
             >
               {Math.round(marker.percent)}%
@@ -303,9 +303,9 @@ export const OIGrowthCurve = ({
             <text
               key={`phase-${i}`}
               x={xScale(phase.x)}
-              y={height - 14}
+              y={height - 16}
               fill={phase.color}
-              fontSize="8"
+              fontSize="9"
               textAnchor="middle"
               fontWeight="bold"
               opacity="0.7"

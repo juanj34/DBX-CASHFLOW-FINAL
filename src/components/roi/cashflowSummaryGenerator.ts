@@ -299,8 +299,7 @@ export const generateCashflowSummary = (data: SummaryData): GeneratedSummary => 
       const amountPaid = calculateEquityAtExit(month, inputs, calculations.totalMonths, inputs.basePrice);
       const profit = exitPrice - inputs.basePrice;
       const trueProfit = profit - totalEntryCosts;
-      const totalCapital = amountPaid + totalEntryCosts;
-      const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+      const trueROE = amountPaid > 0 ? (trueProfit / amountPaid) * 100 : 0;
       
       return {
         month,
@@ -466,8 +465,7 @@ Después de la entrega, basado en un rendimiento de renta inicial del ${inputs.r
       const amountPaid = calculateEquityAtExit(month, inputs, calculations.totalMonths, inputs.basePrice);
       const profit = exitPrice - inputs.basePrice;
       const trueProfit = profit - exitTotalEntryCosts;
-      const totalCapital = amountPaid + exitTotalEntryCosts;
-      const trueROE = totalCapital > 0 ? (trueProfit / totalCapital) * 100 : 0;
+      const trueROE = amountPaid > 0 ? (trueProfit / amountPaid) * 100 : 0;
       
       return lang === 'en'
         ? `• At month ${month}: Property valued at ${fmt(exitPrice)}, profit of ${fmt(trueProfit)} (ROE: ${trueROE.toFixed(1)}%)`

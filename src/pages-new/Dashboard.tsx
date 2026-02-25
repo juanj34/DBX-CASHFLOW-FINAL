@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageShell } from '@/components/layout-new/PageShell';
 import { Navbar } from '@/components/layout-new/Navbar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, FileText, Trash2, Share2, ExternalLink } from 'lucide-react';
+import { Plus, FileText, Trash2, Share2, ExternalLink, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 interface QuoteRow {
@@ -20,11 +21,17 @@ interface QuoteRow {
   created_at: string;
 }
 
+type SortField = 'project_name' | 'client_name' | 'developer' | 'price' | 'updated_at';
+type SortDir = 'asc' | 'desc';
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [quotes, setQuotes] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState<SortField>('updated_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     if (!user) return;
@@ -49,13 +56,11 @@ const Dashboard: React.FC = () => {
   };
 
   const handleNewStrategy = async () => {
-    // Clear any existing working draft first
     await supabase
       .from('cashflow_quotes')
       .delete()
       .eq('broker_id', user!.id)
       .eq('status', 'working_draft');
-
     navigate('/strategy/new');
   };
 
@@ -90,21 +95,67 @@ const Dashboard: React.FC = () => {
   };
 
   const formatPrice = (price: number) => {
-    if (price >= 1_000_000) return `AED ${(price / 1_000_000).toFixed(1)}M`;
-    if (price >= 1_000) return `AED ${(price / 1_000).toFixed(0)}K`;
-    return `AED ${price}`;
+    if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(1)}M`;
+    if (price >= 1_000) return `${(price / 1_000).toFixed(0)}K`;
+    return `${price}`;
   };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
   };
 
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir(field === 'updated_at' ? 'desc' : 'asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
+    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-theme-accent" /> : <ChevronDown className="w-3 h-3 text-theme-accent" />;
+  };
+
+  const filteredAndSorted = useMemo(() => {
+    let result = [...quotes];
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((r) =>
+        (r.project_name || '').toLowerCase().includes(q) ||
+        (r.client_name || '').toLowerCase().includes(q) ||
+        (r.developer || '').toLowerCase().includes(q)
+      );
+    }
+
+    result.sort((a, b) => {
+      let aVal: any, bVal: any;
+      switch (sortField) {
+        case 'project_name': aVal = (a.project_name || '').toLowerCase(); bVal = (b.project_name || '').toLowerCase(); break;
+        case 'client_name': aVal = (a.client_name || '').toLowerCase(); bVal = (b.client_name || '').toLowerCase(); break;
+        case 'developer': aVal = (a.developer || '').toLowerCase(); bVal = (b.developer || '').toLowerCase(); break;
+        case 'price': aVal = getBasePrice(a.inputs) || 0; bVal = getBasePrice(b.inputs) || 0; break;
+        case 'updated_at': aVal = new Date(a.updated_at).getTime(); bVal = new Date(b.updated_at).getTime(); break;
+      }
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [quotes, search, sortField, sortDir]);
+
+  const thClass = "px-4 py-2.5 text-[10px] font-semibold text-theme-text-muted uppercase tracking-wider text-left cursor-pointer hover:text-theme-text transition-colors select-none";
+  const tdClass = "px-4 py-3 text-sm";
+
   return (
     <PageShell>
       <Navbar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-3xl text-theme-text">Strategies</h1>
             <p className="text-sm text-theme-text-muted mt-1">
@@ -113,18 +164,29 @@ const Dashboard: React.FC = () => {
           </div>
           <button
             onClick={handleNewStrategy}
-            className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 hover:from-amber-400 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40"
+            className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#C9A04A] to-[#B3893A] text-white hover:from-[#D4AA55] hover:to-[#C9A04A] transition-all shadow-lg shadow-[#B3893A]/20 hover:shadow-[#B3893A]/40"
           >
             <Plus className="w-4 h-4" />
             New Strategy
           </button>
         </div>
 
-        {/* Grid */}
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by project, client, or developer..."
+            className="pl-10 bg-theme-card border-theme-border text-theme-text text-sm h-10"
+          />
+        </div>
+
+        {/* Table */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 rounded-xl border border-theme-border bg-theme-card animate-pulse" />
+              <div key={i} className="h-14 rounded-lg border border-theme-border bg-theme-card animate-pulse" />
             ))}
           </div>
         ) : quotes.length === 0 ? (
@@ -138,70 +200,90 @@ const Dashboard: React.FC = () => {
             </p>
             <button
               onClick={handleNewStrategy}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 hover:from-amber-400 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/20"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#C9A04A] to-[#B3893A] text-white hover:from-[#D4AA55] hover:to-[#C9A04A] transition-all shadow-lg shadow-[#B3893A]/20"
             >
               <Plus className="w-4 h-4" />
               New Strategy
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {quotes.map((q) => {
-              const price = getBasePrice(q.inputs);
-              return (
-                <div
-                  key={q.id}
-                  onClick={() => navigate(`/strategy/${q.id}`)}
-                  className="group relative p-5 rounded-xl border border-theme-border/50 bg-theme-card hover:border-theme-accent/30 hover:bg-theme-card-alt transition-all duration-200 cursor-pointer"
-                >
-                  {/* Gold gradient top border */}
-                  <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-display text-base text-theme-text truncate">
-                        {q.project_name || q.title || 'Untitled Strategy'}
-                      </h3>
-                      {q.developer && (
-                        <p className="text-xs text-theme-text-muted mt-0.5 truncate">{q.developer}</p>
-                      )}
-                    </div>
-                    {q.share_token && (
-                      <ExternalLink className="w-3.5 h-3.5 text-theme-accent flex-shrink-0 ml-2 mt-1" />
-                    )}
-                  </div>
-
-                  {price && (
-                    <div className="font-mono text-lg text-theme-accent font-medium mb-3">
-                      {formatPrice(price)}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-xs text-theme-text-muted">
-                    <span>{q.client_name || 'No client'}</span>
-                    <span>{formatDate(q.updated_at)}</span>
-                  </div>
-
-                  {/* Hover actions */}
-                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleShare(q, e)}
-                      className="p-1.5 rounded-md bg-theme-bg/80 border border-theme-border hover:border-theme-accent/30 transition-colors"
-                      title="Share"
+          <div className="rounded-xl border border-theme-border bg-theme-card overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-theme-border bg-theme-card-alt">
+                  <th className={thClass} onClick={() => toggleSort('project_name')}>
+                    <span className="inline-flex items-center gap-1">Project <SortIcon field="project_name" /></span>
+                  </th>
+                  <th className={thClass} onClick={() => toggleSort('client_name')}>
+                    <span className="inline-flex items-center gap-1">Client <SortIcon field="client_name" /></span>
+                  </th>
+                  <th className={thClass} onClick={() => toggleSort('developer')}>
+                    <span className="inline-flex items-center gap-1">Developer <SortIcon field="developer" /></span>
+                  </th>
+                  <th className={thClass + ' text-right'} onClick={() => toggleSort('price')}>
+                    <span className="inline-flex items-center gap-1 justify-end">Price <SortIcon field="price" /></span>
+                  </th>
+                  <th className={thClass} onClick={() => toggleSort('updated_at')}>
+                    <span className="inline-flex items-center gap-1">Updated <SortIcon field="updated_at" /></span>
+                  </th>
+                  <th className={thClass + ' w-20 text-right'}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAndSorted.map((q) => {
+                  const price = getBasePrice(q.inputs);
+                  return (
+                    <tr
+                      key={q.id}
+                      onClick={() => navigate(`/strategy/${q.id}`)}
+                      className="border-t border-theme-border/50 hover:bg-theme-bg/50 cursor-pointer transition-colors group"
                     >
-                      <Share2 className="w-3.5 h-3.5 text-theme-text-muted" />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(q.id, e)}
-                      className="p-1.5 rounded-md bg-theme-bg/80 border border-theme-border hover:border-theme-negative/30 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-theme-text-muted" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      <td className={tdClass}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-theme-text truncate max-w-[200px]">
+                            {q.project_name || q.title || 'Untitled'}
+                          </span>
+                          {q.share_token && <ExternalLink className="w-3 h-3 text-theme-accent flex-shrink-0" />}
+                        </div>
+                      </td>
+                      <td className={tdClass + ' text-theme-text-muted'}>{q.client_name || '—'}</td>
+                      <td className={tdClass + ' text-theme-text-muted'}>{q.developer || '—'}</td>
+                      <td className={tdClass + ' text-right'}>
+                        {price ? (
+                          <span className="font-mono text-theme-accent font-medium">AED {formatPrice(price)}</span>
+                        ) : (
+                          <span className="text-theme-text-muted">—</span>
+                        )}
+                      </td>
+                      <td className={tdClass + ' text-theme-text-muted text-xs font-mono'}>{formatDate(q.updated_at)}</td>
+                      <td className={tdClass + ' text-right'}>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => handleShare(q, e)}
+                            className="p-1.5 rounded-md hover:bg-theme-bg border border-transparent hover:border-theme-border transition-colors"
+                            title="Copy share link"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-theme-text-muted" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(q.id, e)}
+                            className="p-1.5 rounded-md hover:bg-theme-negative/10 border border-transparent hover:border-theme-negative/20 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-theme-text-muted" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filteredAndSorted.length === 0 && search && (
+              <div className="py-8 text-center text-sm text-theme-text-muted">
+                No strategies matching "{search}"
+              </div>
+            )}
           </div>
         )}
       </main>

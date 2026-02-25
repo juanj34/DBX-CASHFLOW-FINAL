@@ -102,11 +102,13 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
     const lastMonth = inputs.additionalPayments.length > 0 
       ? Math.max(...inputs.additionalPayments.filter(p => p.type === 'time').map(p => p.triggerValue))
       : 0;
+    const installmentNum = inputs.additionalPayments.length + 1;
     const newPayment: PaymentMilestone = {
       id: newId,
       type: 'time' as const,
       triggerValue: lastMonth + 1,
-      paymentPercent: lastPaymentPercent
+      paymentPercent: lastPaymentPercent,
+      label: `Installment ${installmentNum}`,
     };
     setInputs(prev => ({
       ...prev,
@@ -338,11 +340,11 @@ export const PaymentSection = ({ inputs, setInputs, currency }: ConfiguratorSect
                 }}
                 className="h-7 text-xs px-3 border-dashed border-theme-border text-theme-text-muted hover:bg-theme-card hover:text-theme-text"
               >
-                <Plus className="w-3 h-3 mr-1" /> Add Payment
+                <Plus className="w-3 h-3 mr-1" /> Add Installment
               </Button>
               {inputs.additionalPayments.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-theme-text-muted">{inputs.additionalPayments.length} payments</span>
+                  <span className="text-xs text-theme-text-muted">{inputs.additionalPayments.length} installments</span>
                   <span className={cn(
                     "text-xs px-1.5 py-0.5 rounded font-mono",
                     remainingToDistribute > 0.5 ? 'bg-amber-500/20 text-amber-400' :

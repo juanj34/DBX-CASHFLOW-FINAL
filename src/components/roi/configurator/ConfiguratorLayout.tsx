@@ -25,6 +25,10 @@ import {
 } from "@/components/ui/tooltip";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { useClients } from "@/hooks/useClients";
+import { PaymentPlanDropZone } from "./PaymentPlanDropZone";
+import { ExtractionConfirmModal } from "./ExtractionConfirmModal";
+import type { AIPaymentPlanResult, AIUploadResponse } from "@/lib/aiExtractionTypes";
+import { applyExtractedPlan } from "@/lib/applyExtractedPlan";
 
 const DEFAULT_CLIENT_INFO: ClientUnitData = { 
   developer: '', 
@@ -199,6 +203,103 @@ export const ConfiguratorLayout = ({
     }
   }, [createClient, handleDbClientSelect]);
   
+  // ── AI Extraction state ──────────────────────────────────────────
+  const [extractedData, setExtractedData] = useState<AIPaymentPlanResult | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [showExtractionModal, setShowExtractionModal] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const extractAbortRef = useRef<AbortController | null>(null);
+
+  const handleExtract = useCallback(async (dataUrls: string[]) => {
+    setExtractedData(null);
+    setExtractionError(null);
+    setShowExtractionModal(true);
+    setIsExtracting(true);
+
+    const abortController = new AbortController();
+    extractAbortRef.current = abortController;
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/extract-payment-plan`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseKey}`,
+            apikey: supabaseKey,
+          },
+          body: JSON.stringify({
+            images: dataUrls,
+            bookingDate: {
+              month: new Date().getMonth() + 1,
+              year: new Date().getFullYear(),
+            },
+          }),
+          signal: abortController.signal,
+        }
+      );
+
+      const result = (await response.json()) as AIUploadResponse;
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || `Edge function error (HTTP ${response.status})`
+        );
+      }
+
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error || "Extraction failed — no data returned");
+      }
+
+      setExtractedData(result.data);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      const message =
+        err instanceof Error ? err.message : "Unknown extraction error";
+      setExtractionError(message);
+      console.error("AI extraction error:", err);
+    } finally {
+      setIsExtracting(false);
+      extractAbortRef.current = null;
+    }
+  }, []);
+
+  const handleApplyExtraction = useCallback(
+    (data: AIPaymentPlanResult, bookingDate: { month: number; year: number }) => {
+      const { inputs: newInputs, clientInfo: newClientInfo } =
+        applyExtractedPlan(data, bookingDate, inputs);
+
+      setClientInfo((prev) => ({ ...prev, ...newClientInfo }));
+      setInputs((prev) => ({ ...prev, ...newInputs }));
+
+      // Mark relevant sections as visited
+      setVisitedSections((prev) => {
+        const newSet = new Set(prev);
+        newSet.add("location");
+        newSet.add("property");
+        newSet.add("payment");
+        return newSet;
+      });
+
+      setShowExtractionModal(false);
+      setExtractedData(null);
+      toast.success("Payment plan imported successfully!");
+    },
+    [inputs, setInputs, setClientInfo]
+  );
+
+  const handleCancelExtraction = useCallback(() => {
+    extractAbortRef.current?.abort();
+    setShowExtractionModal(false);
+    setExtractedData(null);
+    setExtractionError(null);
+    setIsExtracting(false);
+  }, []);
+
   const [activeSection, setActiveSection] = useState<ConfiguratorSection>(
     savedState?.activeSection || 'location'
   );
@@ -621,13 +722,21 @@ export const ConfiguratorLayout = ({
       {/* Middle Section */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Content Area */}
-        <div 
-          ref={contentScrollRef} 
+        <div
+          ref={contentScrollRef}
           className={`flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth transition-all duration-300 ${
             showSampleFlash ? 'bg-theme-accent/5 ring-2 ring-theme-accent/30 ring-inset' : ''
           }`}
         >
-          <div 
+          {/* AI Import Drop Zone */}
+          <div className="max-w-3xl mx-auto mb-4">
+            <PaymentPlanDropZone
+              onExtract={handleExtract}
+              extracting={isExtracting}
+            />
+          </div>
+
+          <div
             key={animationKey}
             className={`max-w-3xl mx-auto ${getAnimationClass()} ${showSampleFlash ? 'animate-pulse' : ''}`}
           >
@@ -745,6 +854,18 @@ export const ConfiguratorLayout = ({
           </div>
         </div>
       </div>
+
+      {/* AI Extraction Confirmation Modal */}
+      <ExtractionConfirmModal
+        open={showExtractionModal}
+        onOpenChange={setShowExtractionModal}
+        data={extractedData}
+        error={extractionError}
+        onApply={handleApplyExtraction}
+        onCancel={handleCancelExtraction}
+        existingBookingMonth={inputs.bookingMonth}
+        existingBookingYear={inputs.bookingYear}
+      />
 
       {/* Client Creation Modal */}
       <ClientForm

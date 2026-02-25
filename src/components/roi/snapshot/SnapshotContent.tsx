@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Settings, LayoutDashboard, CreditCard, TrendingUp, Building2, LineChart, Clock } from 'lucide-react';
+import { Settings, LayoutDashboard, CreditCard, TrendingUp, Building2, LineChart, Clock, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { MortgageInputs, MortgageAnalysis } from '@/components/roi/useMortgageCalculations';
-import { Currency } from '@/components/roi/currencyUtils';
+import { Currency, CURRENCY_CONFIG } from '@/components/roi/currencyUtils';
 import { ClientUnitData } from '@/components/roi/ClientUnitInfo';
 import { PropertyHeroCard } from '@/components/roi/PropertyHeroCard';
 import { OverviewTab } from './OverviewTab';
@@ -105,6 +105,47 @@ export const SnapshotContent = ({
           onSnapshotTitleChange={onSnapshotTitleChange}
         />
       </div>
+
+      {/* Currency & Language Toggle — pill style */}
+      {setCurrency && setLanguage && (
+        <div className="flex-shrink-0 px-4 pt-2 flex justify-end" data-export-hide="true">
+          <div className="flex items-center gap-3">
+            {/* Currency pills */}
+            <div className="inline-flex rounded-lg bg-theme-card/60 border border-theme-border p-0.5">
+              {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCurrency(c)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                    currency === c
+                      ? 'bg-theme-accent/15 text-theme-accent shadow-sm'
+                      : 'text-theme-text-muted hover:text-theme-text'
+                  }`}
+                >
+                  <span className="text-sm">{CURRENCY_CONFIG[c].flag}</span>
+                  <span>{c}</span>
+                </button>
+              ))}
+            </div>
+            {/* Language pills */}
+            <div className="inline-flex rounded-lg bg-theme-card/60 border border-theme-border p-0.5">
+              {(['en', 'es'] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLanguage(l)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    language === l
+                      ? 'bg-theme-accent/15 text-theme-accent shadow-sm'
+                      : 'text-theme-text-muted hover:text-theme-text'
+                  }`}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs - Main content area */}
       <div className="flex-1 px-4 py-3 pb-4" data-export-layout="expand">
