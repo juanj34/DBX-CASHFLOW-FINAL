@@ -123,12 +123,12 @@ const StrategyCreator: React.FC = () => {
         setNotes((quote.inputs as any)._notes);
       }
       initializedRef.current = true;
-      // Only show document if quote has meaningful data (basePrice > 0)
-      if (quoteId && quote.inputs.basePrice > 0) {
+      // Only show document if user has explicitly configured (saved from configurator)
+      if (quoteId && (quote.inputs as any)._configured) {
         setShowConfigurator(false);
         setHasConfigured(true);
-      } else if (quoteId) {
-        // Quote exists but has no data — open configurator automatically
+      } else {
+        // New or unconfigured quote — open configurator
         setShowConfigurator(true);
         setHasConfigured(false);
       }
@@ -194,7 +194,7 @@ const StrategyCreator: React.FC = () => {
   const handleSave = useCallback(async () => {
     if (!draftId) return;
 
-    const inputsToSave = { ...inputs, _notes: notes };
+    const inputsToSave = { ...inputs, _notes: notes, _configured: true };
     const result = await saveQuote(
       inputsToSave,
       buildClientUnitData(),

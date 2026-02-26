@@ -139,7 +139,11 @@ export const PaymentPlanStep: React.FC<Props> = ({ inputs, updateField, updateFi
   const installmentsTotal = allInstallments.reduce((s, m) => s + m.paymentPercent, 0);
   const totalAllocated = inputs.downpaymentPercent + installmentsTotal;
   const remaining = 100 - totalAllocated;
-  const isBalanced = Math.abs(remaining) < 0.5;
+  // Plan has explicit completion if any installment is marked isHandover or post-handover payments exist
+  const hasExplicitCompletion = allInstallments.some(m => m.isHandover) || (inputs as any).hasPostHandoverPlan;
+  // For standard plans: remaining is the implicit handover balance (valid as long as ≤100%)
+  // For explicit plans: everything must sum to ~100%
+  const isBalanced = hasExplicitCompletion ? Math.abs(remaining) < 0.5 : remaining >= -0.5;
 
   return (
     <div className="space-y-5">
@@ -392,15 +396,15 @@ export const PaymentPlanStep: React.FC<Props> = ({ inputs, updateField, updateFi
           </div>
           <div className="h-4 w-px bg-theme-border/50" />
           <div className="flex items-center gap-1.5 flex-1">
-            <div className={`w-2.5 h-2.5 rounded-sm ${remaining > 0.5 ? 'bg-theme-border/50' : 'bg-theme-positive/40'}`} />
-            <span className="text-theme-text-muted">Remaining</span>
-            <span className={`font-mono ml-auto ${remaining < -0.5 ? 'text-theme-negative' : remaining > 0.5 ? 'text-theme-text-muted' : 'text-theme-positive'}`}>
+            <div className={`w-2.5 h-2.5 rounded-sm ${remaining < -0.5 ? 'bg-theme-negative/40' : remaining > 0.5 && !hasExplicitCompletion ? 'bg-blue-400/40' : 'bg-theme-positive/40'}`} />
+            <span className="text-theme-text-muted">{hasExplicitCompletion ? 'Remaining' : 'Completion'}</span>
+            <span className={`font-mono ml-auto ${remaining < -0.5 ? 'text-theme-negative' : !hasExplicitCompletion && remaining > 0.5 ? 'text-blue-400' : 'text-theme-text'}`}>
               {remaining.toFixed(1)}%
             </span>
           </div>
           <div className="h-4 w-px bg-theme-border/50" />
           <span className={`font-mono font-semibold ${isBalanced ? 'text-theme-positive' : 'text-theme-negative'}`}>
-            {isBalanced ? '✓ 100%' : `${totalAllocated.toFixed(1)}%`}
+            {remaining < -0.5 ? `${totalAllocated.toFixed(1)}%` : '✓ 100%'}
           </span>
         </div>
       </div>
