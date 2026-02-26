@@ -1804,6 +1804,138 @@ const translations: Translations = {
   netProfitLabel: { en: 'Net Profit', es: 'Ganancia Neta' },
   trueProfitLabel: { en: 'True Profit', es: 'Ganancia Real' },
   annualizedLabel: { en: 'annualized', es: 'anualizado' },
+
+  // ========== Document / Dashboard View Translations ==========
+  // Title & fallbacks
+  docSubtitleFallback: { en: 'Investment Strategy', es: 'Estrategia de Inversión' },
+  docSubtitleFallbackDash: { en: 'Investment Analysis', es: 'Análisis de Inversión' },
+  docAddCompanyLogo: { en: '+ Add Company Logo', es: '+ Agregar Logo' },
+  docAddLogo: { en: '+ Logo', es: '+ Logo' },
+
+  // Header sections
+  docClientUnitInfo: { en: 'Client and Unit Information', es: 'Información del Cliente y Unidad' },
+  docClientUnitInfoShort: { en: 'Client & Unit Information', es: 'Cliente y Unidad' },
+  docSnapshot: { en: 'Snapshot', es: 'Resumen' },
+  docProjectedROI: { en: 'Projected ROI', es: 'ROI Proyectado' },
+
+  // Client info labels
+  docPropertyLabel: { en: 'Property', es: 'Propiedad' },
+  docClientLabel: { en: 'Client', es: 'Cliente' },
+  docUnitLabel: { en: 'Unit', es: 'Unidad' },
+  docPriceLabel: { en: 'Price', es: 'Precio' },
+  docConvertedLabel: { en: 'Converted', es: 'Convertido' },
+  docHandoverLabel: { en: 'Handover', es: 'Entrega' },
+
+  // Snapshot
+  docPaymentOnSPA: { en: 'Payment on SPA', es: 'Pago en SPA' },
+  docAdditionalDeposits: { en: 'Additional Deposits', es: 'Depósitos Adicionales' },
+  docPaymentOnHandover: { en: 'Payment on Handover', es: 'Pago en Entrega' },
+  docTotalEquityRequired: { en: 'Total Equity Required', es: 'Capital Total Requerido' },
+
+  // ROI mini-table
+  docNoExits: { en: 'No exits configured', es: 'Sin escenarios de salida' },
+  docNoExitScenarios: { en: 'No exit scenarios configured', es: 'Sin escenarios de salida configurados' },
+  docExitHeader: { en: 'Exit', es: 'Salida' },
+  docROEHeader: { en: 'ROE', es: 'ROE' },
+  docSalePriceHeader: { en: 'Sale Price', es: 'Precio de Venta' },
+
+  // Section A: Initial Cost
+  docSectionATitle: { en: 'Initial Cost', es: 'Costo Inicial' },
+  docDescriptionHeader: { en: 'Description', es: 'Descripción' },
+  docItemHeader: { en: 'Item', es: 'Concepto' },
+  docDetailHeader: { en: 'Detail', es: 'Detalle' },
+  docHoldingFee: { en: 'Holding Fee', es: 'Cuota de Reserva' },
+  docHoldingDesc: { en: 'Holding', es: 'Reserva' },
+  docEOIBooking: { en: 'EOI / Booking Deposit', es: 'EOI / Depósito de Reserva' },
+  docSPA: { en: 'Signed Purchase Agreement', es: 'Contrato de Compra Firmado' },
+  docSPAPayment: { en: 'SPA Payment', es: 'Pago SPA' },
+  docDLDFee: { en: 'Dubai Land Dept Fee', es: 'Tarifa Depto. Tierras Dubai' },
+  docDLDFeeShort: { en: 'DLD Fee', es: 'Tarifa DLD' },
+  docOqoodFee: { en: 'Oqood Fee', es: 'Tarifa Oqood' },
+  docAdminDesc: { en: 'Admin', es: 'Administración' },
+  docAdminFee: { en: 'Admin Fee', es: 'Tarifa Administrativa' },
+  docOfPrice: { en: 'of Price', es: 'del Precio' },
+  docCashToStart: { en: 'Cash to Start', es: 'Capital Inicial' },
+
+  // Section B: Milestone Event
+  docSectionBTitle: { en: 'Milestone Event', es: 'Hito de Pago' },
+  docMilestoneHeader: { en: 'Milestone', es: 'Hito' },
+  docWhenHeader: { en: 'When', es: 'Cuándo' },
+  docCompletionPayment: { en: 'Completion Payment', es: 'Pago de Finalización' },
+  docInstallment: { en: 'Installment', es: 'Cuota' },
+  docResaleBadge: { en: 'Resale', es: 'Reventa' },
+  docMortgageBadge: { en: 'Mortgage', es: 'Hipoteca' },
+  docHandoverSuffix: { en: 'Handover', es: 'Entrega' },
+  docPostHO: { en: 'Post-HO', es: 'Post-Entrega' },
+
+  // Section C: Projected Rental Income
+  docSectionCTitle: { en: 'Projected Rental Income', es: 'Ingreso Proyectado por Alquiler' },
+  docLabelHeader: { en: 'Label', es: 'Concepto' },
+  docMonthly: { en: 'Monthly', es: 'Mensual' },
+  docAnnual: { en: 'Annual', es: 'Anual' },
+  docGrossRentalIncome: { en: 'Gross Rental Income', es: 'Ingreso Bruto por Alquiler' },
+  docGrossRental: { en: 'Gross Rental', es: 'Renta Bruta' },
+  docServiceCharges: { en: '- Service Charges', es: '- Cargos de Servicio' },
+  docNetRentalIncome: { en: 'Net Rental Income', es: 'Ingreso Neto por Alquiler' },
+  docNetIncome: { en: 'Net Income', es: 'Ingreso Neto' },
+  docGrossYield: { en: 'Gross Yield', es: 'Rendimiento Bruto' },
+  docNetYield: { en: 'Net Yield', es: 'Rendimiento Neto' },
+
+  // Section D: Annual Net Cash Position
+  docSectionDTitle: { en: 'Annual Net Cash Position', es: 'Posición Neta Anual de Caja' },
+  docYrPrefix: { en: 'Yr', es: 'Año' },
+  docNetRent: { en: 'Net Rent', es: 'Renta Neta' },
+  docPropValue: { en: 'Prop. Value', es: 'Valor Prop.' },
+
+  // Section E: Exit Scenarios
+  docSectionETitle: { en: 'Exit Scenarios', es: 'Escenarios de Salida' },
+  docInvestedHeader: { en: 'Invested', es: 'Invertido' },
+  docExitPriceHeader: { en: 'Exit Price', es: 'Precio de Salida' },
+  docNetProfitHeader: { en: 'Net Profit', es: 'Ganancia Neta' },
+  docTimelineHeader: { en: 'Timeline', es: 'Plazo' },
+  docAppreciationHeader: { en: 'Appreciation', es: 'Apreciación' },
+  docProfitHeader: { en: 'Profit', es: 'Ganancia' },
+  docPreHandover: { en: 'Pre-Handover', es: 'Pre-Entrega' },
+  docHandoverExit: { en: 'Handover', es: 'Entrega' },
+  docHoldSuffix: { en: 'Hold', es: 'Retención' },
+  docBelowThreshold: { en: 'Below', es: 'Debajo de' },
+  docThresholdSuffix: { en: 'threshold', es: 'umbral' },
+  docThresholdNote: { en: 'advance required to meet developer minimum before resale. Invested amount includes the additional payment needed.', es: 'adelanto requerido para cumplir el mínimo del desarrollador antes de reventa. El monto invertido incluye el pago adicional necesario.' },
+
+  // Section F: Financing
+  docSectionFTitle: { en: 'Financing', es: 'Financiamiento' },
+  docLoanAmount: { en: 'Loan Amount', es: 'Monto del Préstamo' },
+  docMonthlyPaymentIns: { en: 'Monthly Payment (+ Insurance)', es: 'Pago Mensual (+ Seguro)' },
+  docNetMonthlyRent: { en: 'Net Monthly Rent', es: 'Renta Mensual Neta' },
+  docMonthlyCashflow: { en: 'Monthly Cashflow', es: 'Flujo de Caja Mensual' },
+  docRentCoverage: { en: 'Rent Coverage', es: 'Cobertura de Renta' },
+  docInterestRate: { en: 'Interest Rate', es: 'Tasa de Interés' },
+  docMonthlyPayment: { en: 'Monthly Payment', es: 'Pago Mensual' },
+
+  // Section G: Property Renders
+  docSectionGTitle: { en: 'Property Renders', es: 'Renders de la Propiedad' },
+  docBuildingFloorPlan: { en: 'Building & Floor Plan', es: 'Edificio y Plano' },
+  docBuildingRender: { en: 'Building Render', es: 'Render del Edificio' },
+  docFloorPlan: { en: 'Floor Plan', es: 'Plano de Planta' },
+
+  // Exit detail modal
+  docExitFullAnalysis: { en: 'Full Analysis', es: 'Análisis Completo' },
+  docExitPriceLabel: { en: 'Exit Price', es: 'Precio de Salida' },
+  docEntryCosts: { en: 'Entry Costs (DLD + Oqood)', es: 'Costos de Entrada (DLD + Oqood)' },
+  docAgentCommission: { en: 'Agent Commission', es: 'Comisión del Agente' },
+  docNOCFee: { en: 'NOC Fee', es: 'Tarifa NOC' },
+  docTotalROE: { en: 'Total ROE', es: 'ROE Total' },
+  docAdvanceRequired: { en: 'Advance Required', es: 'Adelanto Requerido' },
+  docThresholdNotReached: { en: "Payment plan hasn't reached the", es: 'El plan de pago no ha alcanzado el' },
+  docAdvanceOf: { en: 'Advance of', es: 'Adelanto de' },
+  docNeeded: { en: 'needed.', es: 'necesario.' },
+};
+
+// Standalone translate function for components that receive language as a prop
+export const translate = (key: string, lang: 'en' | 'es' = 'en'): string => {
+  const entry = translations[key];
+  if (!entry) return key;
+  return entry[lang] || entry.en || key;
 };
 
 interface LanguageContextType {

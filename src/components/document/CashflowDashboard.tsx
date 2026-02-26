@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { calculateExitScenario, ExitScenarioResult, isHandoverExit } from '@/components/roi/constructionProgress';
 import { DocumentControls, Currency } from './DocumentControls';
+import { translate } from '@/contexts/LanguageContext';
 
 interface ClientUnitData {
   developer?: string;
@@ -62,6 +63,9 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
   setLanguage,
   advisorInfo,
 }) => {
+  const lang = (language === 'es' ? 'es' : 'en') as 'en' | 'es';
+  const t = (key: string) => translate(key, lang);
+
   const { basePrice, totalMonths, yearlyProjections, holdAnalysis, totalEntryCosts } = calculations;
   const dldFee = basePrice * 0.04;
   const showCurrencyCol = currency !== 'AED';
@@ -80,11 +84,11 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
   // Exit label: check Pre-Handover before Handover (isHandoverExit has ±1 tolerance)
   const getExitLabel = (months: number) => {
-    if (months === totalMonths - 1) return 'Pre-Handover';
-    if (months === totalMonths || isHandoverExit(months, totalMonths)) return 'Handover';
+    if (months === totalMonths - 1) return t('docPreHandover');
+    if (months === totalMonths || isHandoverExit(months, totalMonths)) return t('docHandoverExit');
     if (months < totalMonths) return `${months} mo`;
     const yearsAfter = Math.round((months - totalMonths) / 12);
-    if (yearsAfter > 0) return `Yr ${yearsAfter} Hold`;
+    if (yearsAfter > 0) return `${t('docYrPrefix')} ${yearsAfter} ${t('docHoldSuffix')}`;
     return `+${months - totalMonths}m`;
   };
 
@@ -111,8 +115,8 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
       if (m.paymentPercent <= 0) return;
       cum += m.paymentPercent;
       const badges: string[] = [];
-      if (!resellShown && cum >= resellThreshold) { badges.push('Resale'); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push('Mortgage'); mortgageShown = true; }
+      if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
+      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
 
       let dateStr: string;
       if (m.type === 'time') {
@@ -128,10 +132,10 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
         const d = new Date(hoDate);
         d.setMonth(d.getMonth() + m.triggerValue);
-        dateStr = `${fmtDate(d)} Post-HO`;
+        dateStr = `${fmtDate(d)} ${t('docPostHO')}`;
       }
       rows.push({
-        label: m.label || `Installment ${i + 1}`,
+        label: m.label || `${t('docInstallment')} ${i + 1}`,
         percent: m.paymentPercent,
         amount: basePrice * m.paymentPercent / 100,
         date: dateStr,
@@ -143,13 +147,13 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
     if (handoverPercent > 0.5) {
       cum += handoverPercent;
       const badges: string[] = [];
-      if (!resellShown && cum >= resellThreshold) { badges.push('Resale'); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push('Mortgage'); mortgageShown = true; }
+      if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
+      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
       rows.push({
-        label: 'Completion Payment',
+        label: t('docCompletionPayment'),
         percent: Math.round(handoverPercent * 10) / 10,
         amount: basePrice * handoverPercent / 100,
-        date: `${shortDate(inputs.handoverMonth, inputs.handoverYear)} Handover`,
+        date: `${shortDate(inputs.handoverMonth, inputs.handoverYear)} ${t('docHandoverSuffix')}`,
         isCompletion: true,
         badges,
       });
@@ -203,7 +207,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
               data-export-hide
               title="Upload your logo in Account Settings"
             >
-              <span className="text-[9px] text-gray-400">+ Logo</span>
+              <span className="text-[9px] text-gray-400">{t('docAddLogo')}</span>
             </a>
           )}
         </div>
@@ -232,10 +236,10 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         <div className="w-px h-8 bg-gray-200" />
         <div>
           <h1 className="text-sm font-bold text-gray-900 tracking-wide font-display uppercase leading-tight">
-            Monthly Cashflow Statement
+            {t('defaultSnapshotTitle')}
           </h1>
           <p className="text-[9px] text-gray-500 font-display">
-            {clientInfo?.projectName || 'Investment Analysis'}
+            {clientInfo?.projectName || t('docSubtitleFallbackDash')}
           </p>
         </div>
         {/* Spacer */}
@@ -258,20 +262,20 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         {/* Left: Client & Unit Info */}
         <div className="p-2.5 border-r border-gray-200">
           <div className="bg-[#B3893A] px-2 py-1 mb-1.5 rounded-t-sm">
-            <span className="text-[9px] font-bold text-white uppercase tracking-wider">Client & Unit Information</span>
+            <span className="text-[9px] font-bold text-white uppercase tracking-wider">{t('docClientUnitInfoShort')}</span>
           </div>
           <table className="w-full">
             <tbody className="text-[10px]">
               {(clientInfo?.developer || clientInfo?.projectName) && (
-                <tr><td className="text-gray-500 font-medium pr-2 py-0.5">Property</td><td className="text-gray-900 font-medium">{[clientInfo?.developer, clientInfo?.projectName].filter(Boolean).join(' - ')}</td></tr>
+                <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docPropertyLabel')}</td><td className="text-gray-900 font-medium">{[clientInfo?.developer, clientInfo?.projectName].filter(Boolean).join(' - ')}</td></tr>
               )}
               {(clientInfo?.clientName || clientInfo?.clientCountry) && (
-                <tr><td className="text-gray-500 font-medium pr-2 py-0.5">Client</td><td className="text-gray-900 font-medium">{[clientInfo?.clientName, clientInfo?.clientCountry].filter(Boolean).join(' - ')}</td></tr>
+                <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docClientLabel')}</td><td className="text-gray-900 font-medium">{[clientInfo?.clientName, clientInfo?.clientCountry].filter(Boolean).join(' - ')}</td></tr>
               )}
-              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">Unit</td><td className="text-gray-900">{[clientInfo?.unitType || 'N/A', unitSqf > 0 ? `${n2s(unitSqf)} sqft / ${(unitSqf * SQF_TO_M2).toFixed(1)} m²` : null].filter(Boolean).join(' - ')}</td></tr>
-              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">Price</td><td className="text-gray-900 font-mono font-semibold">AED {n2s(basePrice)}</td></tr>
-              {showCurrencyCol && <tr><td className="text-gray-500 font-medium pr-2 py-0.5">Converted</td><td className="text-gray-900 font-mono">{currency} {cvf(basePrice)}</td></tr>}
-              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">Handover</td><td className="text-gray-900">{shortDate(inputs.handoverMonth, inputs.handoverYear)} ({totalMonths}mo)</td></tr>
+              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docUnitLabel')}</td><td className="text-gray-900">{[clientInfo?.unitType || 'N/A', unitSqf > 0 ? `${n2s(unitSqf)} sqft / ${(unitSqf * SQF_TO_M2).toFixed(1)} m²` : null].filter(Boolean).join(' - ')}</td></tr>
+              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docPriceLabel')}</td><td className="text-gray-900 font-mono font-semibold">AED {n2s(basePrice)}</td></tr>
+              {showCurrencyCol && <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docConvertedLabel')}</td><td className="text-gray-900 font-mono">{currency} {cvf(basePrice)}</td></tr>}
+              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docHandoverLabel')}</td><td className="text-gray-900">{shortDate(inputs.handoverMonth, inputs.handoverYear)} ({totalMonths}mo)</td></tr>
             </tbody>
           </table>
         </div>
@@ -280,25 +284,25 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         <div className="p-2.5 border-r border-gray-200 min-w-[280px]">
           <div className="rounded overflow-hidden border border-gray-200">
             <div className="bg-[#B3893A] px-2 py-1">
-              <span className="text-[9px] font-bold text-white uppercase tracking-wider">Snapshot</span>
+              <span className="text-[9px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
             </div>
             <div className="p-2">
               <table className="w-full text-[10px]">
                 <tbody>
                   <tr>
-                    <td className="text-gray-500 py-0.5">Payment on SPA</td>
+                    <td className="text-gray-500 py-0.5">{t('docPaymentOnSPA')}</td>
                     <td className="text-right font-mono text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)}</td>
                   </tr>
                   <tr>
-                    <td className="text-gray-500 py-0.5">Additional Deposits</td>
+                    <td className="text-gray-500 py-0.5">{t('docAdditionalDeposits')}</td>
                     <td className="text-right font-mono text-gray-900">{n2s(inputs.additionalPayments.reduce((s, p) => s + basePrice * p.paymentPercent / 100, 0))}</td>
                   </tr>
                   <tr>
-                    <td className="text-gray-500 py-0.5">Payment on Handover</td>
+                    <td className="text-gray-500 py-0.5">{t('docPaymentOnHandover')}</td>
                     <td className="text-right font-mono text-gray-900">{n2s(paymentRows.find(r => r.isCompletion)?.amount || 0)}</td>
                   </tr>
                   <tr className="border-t border-gray-200">
-                    <td className="text-[#8A6528] font-bold py-0.5">Total Equity Required</td>
+                    <td className="text-[#8A6528] font-bold py-0.5">{t('docTotalEquityRequired')}</td>
                     <td className="text-right font-mono text-[#8A6528] font-bold">{n2s(totalEquity)} AED</td>
                   </tr>
                 </tbody>
@@ -310,15 +314,15 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         {/* Right: Projected ROI */}
         <div className="p-2.5">
           <div className="bg-[#B3893A] px-2 py-1 mb-1.5 rounded-t-sm">
-            <span className="text-[9px] font-bold text-white uppercase tracking-wider">Projected ROI</span>
+            <span className="text-[9px] font-bold text-white uppercase tracking-wider">{t('docProjectedROI')}</span>
           </div>
           {exitResults.length > 0 ? (
             <table className="w-full text-[10px]">
               <thead>
                 <tr>
-                  <th className="py-0.5 px-1 text-[8px] font-semibold text-gray-500 uppercase tracking-wide text-left">Exit</th>
-                  <th className="py-0.5 px-1 text-[8px] font-semibold text-gray-500 uppercase tracking-wide text-right">ROE</th>
-                  <th className="py-0.5 px-1 text-[8px] font-semibold text-gray-500 uppercase tracking-wide text-right">Sale Price</th>
+                  <th className="py-0.5 px-1 text-[8px] font-semibold text-gray-500 uppercase tracking-wide text-left">{t('docExitHeader')}</th>
+                  <th className="py-0.5 px-1 text-[8px] font-semibold text-gray-500 uppercase tracking-wide text-right">{t('docROEHeader')}</th>
+                  <th className="py-0.5 px-1 text-[8px] font-semibold text-gray-500 uppercase tracking-wide text-right">{t('docSalePriceHeader')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,50 +345,50 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
               </tbody>
             </table>
           ) : (
-            <p className="text-[10px] text-gray-400 italic">No exit scenarios configured</p>
+            <p className="text-[10px] text-gray-400 italic">{t('docNoExitScenarios')}</p>
           )}
         </div>
       </div>
 
       {/* ========== SECTION A: Initial Cost ========== */}
-      {sectionBar('A', 'Initial Cost')}
+      {sectionBar('A', t('docSectionATitle'))}
       <div className="border-b border-gray-200 overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="bg-gray-900">
-              <th className={th + " text-left"}>Item</th>
-              <th className={th + " text-left"}>Detail</th>
+              <th className={th + " text-left"}>{t('docItemHeader')}</th>
+              <th className={th + " text-left"}>{t('docDetailHeader')}</th>
               <th className={th + " text-right"}>AED</th>
               {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
             </tr>
           </thead>
           <tbody>
             <tr className="border-t border-gray-100">
-              <td className={tc + " text-gray-900 font-medium"}>A1. Holding Fee</td>
-              <td className={tc + " text-gray-500"}>EOI / Booking Deposit</td>
+              <td className={tc + " text-gray-900 font-medium"}>A1. {t('docHoldingFee')}</td>
+              <td className={tc + " text-gray-500"}>{t('docEOIBooking')}</td>
               <td className={tc + " text-right font-mono text-gray-900"}>{n2s(inputs.eoiFee)}</td>
               {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(inputs.eoiFee)}</td>}
             </tr>
             <tr className="border-t border-gray-100">
-              <td className={tc + " text-gray-900 font-medium"}>A2. SPA Payment</td>
-              <td className={tc + " text-gray-500"}>{inputs.downpaymentPercent}% of Price</td>
+              <td className={tc + " text-gray-900 font-medium"}>A2. {t('docSPAPayment')}</td>
+              <td className={tc + " text-gray-500"}>{inputs.downpaymentPercent}% {t('docOfPrice')}</td>
               <td className={tc + " text-right font-mono text-gray-900"}>{n2s(basePrice * inputs.downpaymentPercent / 100)}</td>
               {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(basePrice * inputs.downpaymentPercent / 100)}</td>}
             </tr>
             <tr className="border-t border-gray-100">
-              <td className={tc + " text-gray-900 font-medium"}>A3. DLD Fee</td>
-              <td className={tc + " text-gray-500"}>4% of Price</td>
+              <td className={tc + " text-gray-900 font-medium"}>A3. {t('docDLDFeeShort')}</td>
+              <td className={tc + " text-gray-500"}>4% {t('docOfPrice')}</td>
               <td className={tc + " text-right font-mono text-gray-900"}>{n2s(dldFee)}</td>
               {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(dldFee)}</td>}
             </tr>
             <tr className="border-t border-gray-100">
-              <td className={tc + " text-gray-900 font-medium"}>A4. Oqood Fee</td>
-              <td className={tc + " text-gray-500"}>Admin Fee</td>
+              <td className={tc + " text-gray-900 font-medium"}>A4. {t('docOqoodFee')}</td>
+              <td className={tc + " text-gray-500"}>{t('docAdminFee')}</td>
               <td className={tc + " text-right font-mono text-gray-900"}>{n2s(inputs.oqoodFee)}</td>
               {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(inputs.oqoodFee)}</td>}
             </tr>
             <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-              <td className={tc + " font-bold text-[#8A6528]"} colSpan={2}>Cash to Start</td>
+              <td className={tc + " font-bold text-[#8A6528]"} colSpan={2}>{t('docCashToStart')}</td>
               <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{n2s(basePrice * inputs.downpaymentPercent / 100 + totalEntryCosts)}</td>
               {showCurrencyCol && <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{cvf(basePrice * inputs.downpaymentPercent / 100 + totalEntryCosts)}</td>}
             </tr>
@@ -393,13 +397,13 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
       </div>
 
       {/* ========== SECTION B: Milestone Event ========== */}
-      {sectionBar('B', 'Milestone Event')}
+      {sectionBar('B', t('docSectionBTitle'))}
       <div className="border-b border-gray-200 overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="bg-gray-900">
-              <th className={th + " text-left"}>Milestone</th>
-              <th className={th + " text-left"}>When</th>
+              <th className={th + " text-left"}>{t('docMilestoneHeader')}</th>
+              <th className={th + " text-left"}>{t('docWhenHeader')}</th>
               <th className={th + " text-right"}>%</th>
               <th className={th + " text-right"}>AED</th>
               {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
@@ -414,7 +418,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                     <span
                       key={badge}
                       className={`ml-1 inline-flex items-center text-[7px] px-1 rounded font-bold uppercase leading-none ${
-                        badge === 'Resale'
+                        badge === t('docResaleBadge')
                           ? 'bg-emerald-100 text-emerald-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}
@@ -430,7 +434,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
               </tr>
             ))}
             <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-              <td className={tc + " font-bold text-[#8A6528]"} colSpan={3}>Total Equity Required</td>
+              <td className={tc + " font-bold text-[#8A6528]"} colSpan={3}>{t('docTotalEquityRequired')}</td>
               <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{n2s(totalEquity)}</td>
               {showCurrencyCol && <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{cvf(totalEquity)}</td>}
             </tr>
@@ -443,46 +447,46 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
         {/* Section C: Rental Income — monthly AND yearly */}
         <div>
-          {sectionBar('C', 'Projected Rental Income')}
+          {sectionBar('C', t('docSectionCTitle'))}
           <div className="border-r border-b border-gray-200">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-900">
                   <th className={th + " text-left"}></th>
-                  <th className={th + " text-right"}>Monthly</th>
-                  <th className={th + " text-right"}>Annual</th>
-                  {showCurrencyCol && <th className={th + " text-right"}>Monthly {currency}</th>}
-                  {showCurrencyCol && <th className={th + " text-right"}>Annual {currency}</th>}
+                  <th className={th + " text-right"}>{t('docMonthly')}</th>
+                  <th className={th + " text-right"}>{t('docAnnual')}</th>
+                  {showCurrencyCol && <th className={th + " text-right"}>{t('docMonthly')} {currency}</th>}
+                  {showCurrencyCol && <th className={th + " text-right"}>{t('docAnnual')} {currency}</th>}
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-t border-gray-100">
-                  <td className={tc + " text-gray-500"}>Gross Rental</td>
+                  <td className={tc + " text-gray-500"}>{t('docGrossRental')}</td>
                   <td className={tc + " text-right font-mono text-gray-900"}>{n2s(grossMonthlyRent)}</td>
                   <td className={tc + " text-right font-mono text-gray-900"}>{n2s(grossAnnualRent)}</td>
                   {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(grossMonthlyRent)}</td>}
                   {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(grossAnnualRent)}</td>}
                 </tr>
                 <tr className="border-t border-gray-100">
-                  <td className={tc + " text-red-600"}>- Service Charges</td>
+                  <td className={tc + " text-red-600"}>{t('docServiceCharges')}</td>
                   <td className={tc + " text-right font-mono text-red-600"}>{n2s(monthlyServiceCharge)}</td>
                   <td className={tc + " text-right font-mono text-red-600"}>{n2s(annualServiceCharge)}</td>
                   {showCurrencyCol && <td className={tc + " text-right font-mono text-red-600/70"}>{cvf(monthlyServiceCharge)}</td>}
                   {showCurrencyCol && <td className={tc + " text-right font-mono text-red-600/70"}>{cvf(annualServiceCharge)}</td>}
                 </tr>
                 <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                  <td className={tc + " font-bold text-gray-900"}>Net Income</td>
+                  <td className={tc + " font-bold text-gray-900"}>{t('docNetIncome')}</td>
                   <td className={tc + " text-right font-bold text-emerald-600 font-mono"}>{n2s(netMonthlyIncome)}</td>
                   <td className={tc + " text-right font-bold text-emerald-600 font-mono"}>{n2s(netAnnualIncome)}</td>
                   {showCurrencyCol && <td className={tc + " text-right font-bold text-emerald-600 font-mono"}>{cvf(netMonthlyIncome)}</td>}
                   {showCurrencyCol && <td className={tc + " text-right font-bold text-emerald-600 font-mono"}>{cvf(netAnnualIncome)}</td>}
                 </tr>
                 <tr className="border-t border-gray-100 bg-emerald-50/50">
-                  <td className={tc + " text-emerald-700 font-semibold"}>Gross Yield</td>
+                  <td className={tc + " text-emerald-700 font-semibold"}>{t('docGrossYield')}</td>
                   <td className={tc + " text-right text-emerald-700 font-bold font-mono"} colSpan={showCurrencyCol ? 4 : 2}>{pct(grossYield)}</td>
                 </tr>
                 <tr className="border-t border-gray-100 bg-emerald-50/50">
-                  <td className={tc + " text-emerald-700 font-semibold"}>Net Yield</td>
+                  <td className={tc + " text-emerald-700 font-semibold"}>{t('docNetYield')}</td>
                   <td className={tc + " text-right text-emerald-700 font-bold font-mono"} colSpan={showCurrencyCol ? 4 : 2}>{pct(netYield)}</td>
                 </tr>
               </tbody>
@@ -492,7 +496,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
         {/* Section D: Annual Net Cash Position */}
         <div>
-          {sectionBar('D', 'Annual Net Cash Position')}
+          {sectionBar('D', t('docSectionDTitle'))}
           <div className="border-b border-gray-200 overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -505,7 +509,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
               </thead>
               <tbody>
                 <tr className="border-t border-gray-100">
-                  <td className={tc + " text-gray-500"}>Net Rent</td>
+                  <td className={tc + " text-gray-500"}>{t('docNetRent')}</td>
                   {rentalYears.slice(0, 10).map((yr) => (
                     <td key={yr.year} className={tc + " text-center text-emerald-600 font-mono"}>
                       {yr.netRent != null ? n2s(yr.netRent) : '—'}
@@ -513,7 +517,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                   ))}
                 </tr>
                 <tr className="border-t border-gray-100">
-                  <td className={tc + " text-gray-500"}>Prop. Value</td>
+                  <td className={tc + " text-gray-500"}>{t('docPropValue')}</td>
                   {rentalYears.slice(0, 10).map((yr) => (
                     <td key={yr.year} className={tc + " text-center text-gray-700 font-mono"}>
                       {n2s(yr.propertyValue)}
@@ -529,18 +533,18 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
       {/* ========== SECTION E: Exit Scenarios ========== */}
       {exitResults.length > 0 && (
         <>
-          {sectionBar('E', 'Exit Scenarios')}
+          {sectionBar('E', t('docSectionETitle'))}
           <div className="border-b border-gray-200 overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-900">
-                  <th className={th + " text-left"}>Exit</th>
-                  <th className={th + " text-right"}>Timeline</th>
-                  <th className={th + " text-right"}>Sale Price</th>
-                  <th className={th + " text-right"}>Appreciation</th>
-                  <th className={th + " text-right"}>Invested</th>
-                  <th className={th + " text-right"}>Profit</th>
-                  <th className={th + " text-right"}>ROE</th>
+                  <th className={th + " text-left"}>{t('docExitHeader')}</th>
+                  <th className={th + " text-right"}>{t('docTimelineHeader')}</th>
+                  <th className={th + " text-right"}>{t('docSalePriceHeader')}</th>
+                  <th className={th + " text-right"}>{t('docAppreciationHeader')}</th>
+                  <th className={th + " text-right"}>{t('docInvestedHeader')}</th>
+                  <th className={th + " text-right"}>{t('docProfitHeader')}</th>
+                  <th className={th + " text-right"}>{t('docROEHeader')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -578,21 +582,21 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
       {/* ========== SECTION F: Financing (if enabled) ========== */}
       {mortgageData?.enabled && (
         <>
-          {sectionBar('F', 'Financing')}
+          {sectionBar('F', t('docSectionFTitle'))}
           <div className="border-b border-gray-200">
             <table className="w-full">
               <tbody>
                 <tr className="border-t border-gray-100">
-                  <td className={tc + " text-gray-500"}>Loan Amount ({mortgageData.financingPercent}%)</td>
+                  <td className={tc + " text-gray-500"}>{t('docLoanAmount')} ({mortgageData.financingPercent}%)</td>
                   <td className={tc + " text-right font-mono text-gray-900"}>AED {n2s(mortgageData.loanAmount)}</td>
                   {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{currency} {cvf(mortgageData.loanAmount)}</td>}
                 </tr>
                 <tr className="border-t border-gray-100">
-                  <td className={tc + " text-gray-500"}>Interest Rate</td>
+                  <td className={tc + " text-gray-500"}>{t('docInterestRate')}</td>
                   <td className={tc + " text-right font-mono text-gray-900"} colSpan={showCurrencyCol ? 2 : 1}>{mortgageData.interestRate}% / {mortgageData.loanTermYears}yr</td>
                 </tr>
                 <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                  <td className={tc + " font-bold text-gray-900"}>Monthly Payment</td>
+                  <td className={tc + " font-bold text-gray-900"}>{t('docMonthlyPayment')}</td>
                   <td className={tc + " text-right font-bold text-red-600 font-mono"}>AED {n2s(mortgageData.monthlyPayment)}</td>
                   {showCurrencyCol && <td className={tc + " text-right font-bold text-red-600 font-mono"}>{currency} {cvf(mortgageData.monthlyPayment)}</td>}
                 </tr>

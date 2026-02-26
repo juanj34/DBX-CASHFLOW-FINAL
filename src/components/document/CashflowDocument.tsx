@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { calculateExitScenario, ExitScenarioResult, isHandoverExit } from '@/components/roi/constructionProgress';
-import { NoteCell } from './NoteCell';
 import { DocumentControls, Currency } from './DocumentControls';
 import { PropertyGrowthChart } from './PropertyGrowthChart';
 import { Info } from 'lucide-react';
+import { translate } from '@/contexts/LanguageContext';
 
 interface ClientUnitData {
   developer?: string;
@@ -69,6 +69,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
   advisorInfo,
 }) => {
   const [exitDetailModal, setExitDetailModal] = useState<number | null>(null);
+  const lang = (language === 'es' ? 'es' : 'en') as 'en' | 'es';
+  const t = (key: string) => translate(key, lang);
 
   const { basePrice, totalMonths, yearlyProjections, holdAnalysis, totalEntryCosts } = calculations;
   const dldFee = basePrice * 0.04;
@@ -94,11 +96,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   // Semantic exit label
   const getExitLabel = (months: number) => {
-    if (months === totalMonths - 1) return 'Pre-Handover';
-    if (isHandoverExit(months, totalMonths)) return 'Handover';
+    if (months === totalMonths - 1) return t('docPreHandover');
+    if (isHandoverExit(months, totalMonths)) return t('docHandoverExit');
     if (months < totalMonths) return `${months} mo`;
     const yearsAfter = Math.round((months - totalMonths) / 12);
-    if (yearsAfter > 0) return `Yr ${yearsAfter} Hold`;
+    if (yearsAfter > 0) return `${t('docYrPrefix')} ${yearsAfter} ${t('docHoldSuffix')}`;
     return `+${months - totalMonths}m`;
   };
 
@@ -130,7 +132,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
     if (m.type === 'post-handover') {
       const d = new Date(hoDate);
       d.setMonth(d.getMonth() + m.triggerValue);
-      return `${formatShortDate(d)} Post-HO`;
+      return `${formatShortDate(d)} ${t('docPostHO')}`;
     }
     return undefined;
   };
@@ -156,11 +158,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       if (m.paymentPercent <= 0) return;
       cum += m.paymentPercent;
       const badges: string[] = [];
-      if (!resellShown && cum >= resellThreshold) { badges.push('Resale'); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push('Mortgage'); mortgageShown = true; }
+      if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
+      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
 
       rows.push({
-        label: m.label || `${i + 1}${ordSuffix(i + 1)} Installment`,
+        label: m.label || `${i + 1}${lang === 'es' ? 'ª' : ordSuffix(i + 1)} ${t('docInstallment')}`,
         percent: m.paymentPercent,
         amount: basePrice * m.paymentPercent / 100,
         cumulative: cum,
@@ -174,17 +176,17 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
     if (handoverPercent > 0.5) {
       cum += handoverPercent;
       const badges: string[] = [];
-      if (!resellShown && cum >= resellThreshold) { badges.push('Resale'); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push('Mortgage'); mortgageShown = true; }
+      if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
+      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
       const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
       rows.push({
-        label: 'Completion Payment',
+        label: t('docCompletionPayment'),
         percent: Math.round(handoverPercent * 10) / 10,
         amount: basePrice * handoverPercent / 100,
         cumulative: cum,
         isHandover: true,
         badges,
-        dateStr: `${formatShortDate(hoDate)} Handover`,
+        dateStr: `${formatShortDate(hoDate)} ${t('docHandoverSuffix')}`,
       });
     }
 
@@ -210,21 +212,9 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden text-[11px] text-gray-900">
-      {/* ============ CONTROLS (not printed) ============ */}
-      {setCurrency && setLanguage && (
-        <div className="flex justify-end p-3 border-b border-gray-100 bg-gray-50 print:hidden">
-          <DocumentControls
-            currency={currency}
-            setCurrency={setCurrency}
-            language={language}
-            setLanguage={setLanguage}
-            exportMode={exportMode}
-          />
-        </div>
-      )}
-
-      {/* ============ LOGO + ADVISOR HEADER ============ */}
+      {/* ============ LOGO + ADVISOR + TITLE + CONTROLS BAR ============ */}
       <div className="px-4 pt-4 flex items-center gap-4">
+        {/* Logo */}
         <div className={!brokerLogoUrl ? 'print:hidden' : ''}>
           {brokerLogoUrl ? (
             <img
@@ -239,10 +229,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               data-export-hide
               title="Upload your logo in Account Settings"
             >
-              <span className="text-[10px] text-theme-text-muted">+ Add Company Logo</span>
+              <span className="text-[10px] text-theme-text-muted">{t('docAddCompanyLogo')}</span>
             </a>
           )}
         </div>
+        {/* Advisor */}
         {advisorInfo && (advisorInfo.name || advisorInfo.email) && (
           <>
             <div className="w-px h-10 bg-gray-200" />
@@ -264,6 +255,28 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
             </div>
           </>
         )}
+        {/* Title */}
+        <div className="w-px h-10 bg-gray-200" />
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 tracking-wide font-display uppercase leading-tight">
+            {t('defaultSnapshotTitle')}
+          </h1>
+          <p className="text-xs text-gray-500 font-display">
+            {clientInfo?.projectName || t('docSubtitleFallback')}
+          </p>
+        </div>
+        {/* Spacer */}
+        <div className="flex-1" />
+        {/* Controls */}
+        {setCurrency && setLanguage && (
+          <DocumentControls
+            currency={currency}
+            setCurrency={setCurrency}
+            language={language}
+            setLanguage={setLanguage}
+            exportMode={exportMode}
+          />
+        )}
       </div>
 
       {/* ============ HEADER — 3-column grid ============ */}
@@ -271,61 +284,77 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* Col 1: Client & Unit Info */}
         <div className="p-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Client and Unit Information</span>
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docClientUnitInfo')}</span>
           </div>
           <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
             <table className="w-full text-[10.5px]">
               <tbody>
-                {[
-                  { label: 'Developer', value: clientInfo?.developer },
-                  { label: 'Client Name', value: clientInfo?.clientName },
-                  { label: 'Client Country', value: clientInfo?.clientCountry },
-                  { label: 'Unit', value: (inputs as any)._clientInfo?.unit },
-                  { label: 'Size (sqft)', value: inputs.unitSizeSqf ? n2s(inputs.unitSizeSqf) : undefined },
-                  { label: 'Type', value: clientInfo?.unitType },
-                  { label: 'Purchase Price', value: `AED ${n2s(basePrice)}` },
-                  ...(showCurrencyCol ? [{ label: 'Converted', value: `${currency} ${cvf(basePrice)}` }] : []),
-                ].map((row) => (
-                  <tr key={row.label} className="border-b border-gray-100 last:border-b-0">
-                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{row.label}</td>
-                    <td className="py-[3px] text-gray-900 font-medium">{row.value || '—'}</td>
+                {(clientInfo?.developer || clientInfo?.projectName) && (
+                  <tr className="border-b border-gray-100">
+                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docPropertyLabel')}</td>
+                    <td className="py-[3px] text-gray-900 font-medium">{[clientInfo?.developer, clientInfo?.projectName].filter(Boolean).join(' \u2013 ')}</td>
                   </tr>
-                ))}
+                )}
+                {(clientInfo?.clientName || clientInfo?.clientCountry) && (
+                  <tr className="border-b border-gray-100">
+                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docClientLabel')}</td>
+                    <td className="py-[3px] text-gray-900 font-medium">{[clientInfo?.clientName, clientInfo?.clientCountry].filter(Boolean).join(' \u2013 ')}</td>
+                  </tr>
+                )}
+                <tr className="border-b border-gray-100">
+                  <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docUnitLabel')}</td>
+                  <td className="py-[3px] text-gray-900 font-medium">
+                    {[
+                      clientInfo?.unitType,
+                      inputs.unitSizeSqf ? `${n2s(inputs.unitSizeSqf)} sqft / ${(inputs.unitSizeSqf * 0.092903).toFixed(1)} m²` : null,
+                    ].filter(Boolean).join(' \u2013 ')}
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docPriceLabel')}</td>
+                  <td className="py-[3px] text-gray-900 font-mono font-semibold">AED {n2s(basePrice)}</td>
+                </tr>
+                {showCurrencyCol && (
+                  <tr className="border-b border-gray-100">
+                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docConvertedLabel')}</td>
+                    <td className="py-[3px] text-gray-900 font-mono">{currency} {cvf(basePrice)}</td>
+                  </tr>
+                )}
+                <tr className="last:border-b-0">
+                  <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docHandoverLabel')}</td>
+                  <td className="py-[3px] text-gray-900 font-medium">
+                    {new Date(inputs.handoverYear, inputs.handoverMonth - 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                    {' '}({totalMonths}mo)
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Col 2: Title + Snapshot */}
-        <div className="p-4 border-x border-gray-100 flex flex-col items-center">
-          <h1 className="font-display text-3xl font-bold text-gray-900 leading-tight mb-1 uppercase tracking-wide text-center">
-            Monthly Cashflow Statement
-          </h1>
-          <p className="font-display text-lg text-gray-500 mb-5 text-center">
-            {clientInfo?.projectName || 'Investment Strategy'}
-          </p>
-
-          <div className="w-full max-w-sm">
+        {/* Col 2: Snapshot */}
+        <div className="p-4 border-x border-gray-100">
+          <div className="w-full">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
-              <span className="text-[10px] font-bold text-white uppercase tracking-wider">Snapshot</span>
+              <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
             </div>
             <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
               <table className="w-full text-[10.5px]">
                 <tbody>
                   <tr>
-                    <td className="py-[3px] text-gray-500">Payment on SPA</td>
+                    <td className="py-[3px] text-gray-500">{t('docPaymentOnSPA')}</td>
                     <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED</td>
                   </tr>
                   <tr>
-                    <td className="py-[3px] text-gray-500">Additional Deposits</td>
+                    <td className="py-[3px] text-gray-500">{t('docAdditionalDeposits')}</td>
                     <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(additionalDeposits)} AED</td>
                   </tr>
                   <tr>
-                    <td className="py-[3px] text-gray-500">Payment on Handover</td>
+                    <td className="py-[3px] text-gray-500">{t('docPaymentOnHandover')}</td>
                     <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(handoverPayment)} AED</td>
                   </tr>
                   <tr className="border-t border-gray-200">
-                    <td className="py-[3px] font-bold text-gray-900">Total Equity Required</td>
+                    <td className="py-[3px] font-bold text-gray-900">{t('docTotalEquityRequired')}</td>
                     <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED</td>
                   </tr>
                 </tbody>
@@ -337,21 +366,21 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* Col 3: Projected ROI */}
         <div className="p-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Projected ROI</span>
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docProjectedROI')}</span>
           </div>
           <div className="border border-t-0 border-gray-200 rounded-b-md overflow-hidden">
             {exitResults.length === 0 && (
               <div className="p-4 text-center text-[10px] text-gray-400">
-                No exits configured
+                {t('docNoExits')}
               </div>
             )}
             {exitResults.length > 0 && (
               <table className="w-full text-[10.5px]">
                 <thead>
                   <tr className="bg-gray-900">
-                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-left">Exit</th>
-                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right">ROE</th>
-                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right">Sale Price</th>
+                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-left">{t('docExitHeader')}</th>
+                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right">{t('docROEHeader')}</th>
+                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right">{t('docSalePriceHeader')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -381,24 +410,23 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
         {/* ============ SECTION A: Initial Cost ============ */}
         <div>
-          <SectionHeader letter="A" title="Initial Cost" />
+          <SectionHeader letter="A" title={t('docSectionATitle')} />
           <div className="px-4">
             <div className="border border-gray-200 rounded-b-lg overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-900">
-                    <th className={TH_CLS + ' text-left'}>Description</th>
+                    <th className={TH_CLS + ' text-left'}>{t('docDescriptionHeader')}</th>
                     <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>AED</th>
                     {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
-                    <th className={TH_CLS + ' text-left ' + NOTES_W}>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    { num: 'A1', label: 'Holding Fee', desc: 'Holding', value: inputs.eoiFee, key: 'a-eoi' },
-                    { num: 'A2', label: 'Signed Purchase Agreement', desc: `${inputs.downpaymentPercent}% of Price`, value: basePrice * inputs.downpaymentPercent / 100, key: 'a-spa' },
-                    { num: 'A3', label: 'Dubai Land Dept Fee', desc: '4% of Price', value: dldFee, key: 'a-dld' },
-                    { num: 'A4', label: 'Oqood Fee', desc: 'Admin', value: inputs.oqoodFee, key: 'a-oqood' },
+                    { num: 'A1', label: t('docHoldingFee'), desc: t('docHoldingDesc'), value: inputs.eoiFee, key: 'a-eoi' },
+                    { num: 'A2', label: t('docSPA'), desc: `${inputs.downpaymentPercent}% ${t('docOfPrice')}`, value: basePrice * inputs.downpaymentPercent / 100, key: 'a-spa' },
+                    { num: 'A3', label: t('docDLDFee'), desc: `4% ${t('docOfPrice')}`, value: dldFee, key: 'a-dld' },
+                    { num: 'A4', label: t('docOqoodFee'), desc: t('docAdminDesc'), value: inputs.oqoodFee, key: 'a-oqood' },
                   ].map((row) => (
                     <tr key={row.key} className="border-t border-gray-100">
                       <td className={TD_CLS}>
@@ -408,13 +436,10 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                       </td>
                       <td className={TD_CLS + ' text-right font-mono text-gray-900'}>{n2s(row.value)}</td>
                       {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-gray-900'}>{cvf(row.value)}</td>}
-                      <td className={TD_CLS}>
-                        <NoteCell noteKey={row.key} notes={notes} onNotesChange={onNotesChange} exportMode={exportMode} />
-                      </td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                    <td className={TD_CLS + ' font-bold text-gray-900'}>Cash to Start</td>
+                    <td className={TD_CLS + ' font-bold text-gray-900'}>{t('docCashToStart')}</td>
                     <td className={TD_CLS + ' text-right font-mono font-bold text-gray-900'}>
                       {n2s(basePrice * inputs.downpaymentPercent / 100 + totalEntryCosts)}
                     </td>
@@ -423,7 +448,6 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                         {cvf(basePrice * inputs.downpaymentPercent / 100 + totalEntryCosts)}
                       </td>
                     )}
-                    <td className={TD_CLS} />
                   </tr>
                 </tbody>
               </table>
@@ -433,7 +457,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
         {/* ============ SECTION B: Milestone Event ============ */}
         <div>
-          <SectionHeader letter="B" title="Milestone Event" />
+          <SectionHeader letter="B" title={t('docSectionBTitle')} />
           <div className="px-4">
             {(() => {
               const colCount = paymentRows.length <= 12 ? 1 : paymentRows.length <= 24 ? 2 : 3;
@@ -454,12 +478,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-900">
-                      <th className={thCls + ' text-left'}>Description</th>
-                      <th className={thCls + ' text-left'}>When</th>
+                      <th className={thCls + ' text-left'}>{t('docDescriptionHeader')}</th>
+                      <th className={thCls + ' text-left'}>{t('docWhenHeader')}</th>
                       <th className={thCls + ' text-right w-[1%] whitespace-nowrap'}>%</th>
                       <th className={thCls + ' text-right w-[1%] whitespace-nowrap'}>AED</th>
                       {showCurrencyCol && !compact && <th className={thCls + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
-                      {!compact && <th className={thCls + ' text-left ' + NOTES_W}>Notes</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -476,7 +499,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                             <span
                               key={badge}
                               className={`ml-1.5 inline-flex items-center text-[7px] px-1 rounded font-bold uppercase leading-none ${
-                                badge === 'Resale'
+                                badge === t('docResaleBadge')
                                   ? 'bg-emerald-100 text-emerald-700'
                                   : 'bg-blue-100 text-blue-700'
                               }`}
@@ -493,21 +516,15 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                         <td className={tdCls + ' text-right font-mono text-gray-600'}>{row.percent}%</td>
                         <td className={tdCls + ' text-right font-mono text-gray-900'}>{n2s(row.amount)}</td>
                         {showCurrencyCol && !compact && <td className={tdCls + ' text-right font-mono text-gray-900'}>{cvf(row.amount)}</td>}
-                        {!compact && (
-                          <td className={tdCls + ' ' + NOTES_W}>
-                            <NoteCell noteKey={`b-milestone-${startIdx + i}`} notes={notes} onNotesChange={onNotesChange} exportMode={exportMode} />
-                          </td>
-                        )}
                       </tr>
                     ))}
                     {includeTotal && (
                       <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                        <td className={tdCls + ' font-bold text-[#8A6528]'}>Total Equity Required</td>
+                        <td className={tdCls + ' font-bold text-[#8A6528]'}>{t('docTotalEquityRequired')}</td>
                         <td className={tdCls} />
                         <td className={tdCls} />
                         <td className={tdCls + ' text-right font-mono font-bold text-[#8A6528]'}>{n2s(totalEquityRequired)}</td>
                         {showCurrencyCol && !compact && <td className={tdCls + ' text-right font-mono font-bold text-[#8A6528]'}>{cvf(totalEquityRequired)}</td>}
-                        {!compact && <td className={tdCls} />}
                       </tr>
                     )}
                   </tbody>
@@ -532,7 +549,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                       </div>
                       {/* Total row full-width for multi-col */}
                       <div className="border-t-2 border-gray-300 bg-[#B3893A]/5 flex items-center px-3 py-1.5">
-                        <span className="text-[11px] font-bold text-[#8A6528] flex-1">Total Equity Required</span>
+                        <span className="text-[11px] font-bold text-[#8A6528] flex-1">{t('docTotalEquityRequired')}</span>
                         <span className="text-[11px] font-mono font-bold text-[#8A6528]">{n2s(totalEquityRequired)} AED</span>
                       </div>
                     </>
@@ -547,22 +564,22 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
         {/* ============ SECTION C: Projected Rental Income ============ */}
         <div>
-          <SectionHeader letter="C" title="Projected Rental Income" />
+          <SectionHeader letter="C" title={t('docSectionCTitle')} />
           <div className="px-4">
             <div className="border border-gray-200 rounded-b-lg overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-900">
-                    <th className={TH_CLS + ' text-left'}>Label</th>
-                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Monthly AED</th>
-                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Annual AED</th>
-                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Monthly {currency}</th>}
-                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Annual {currency}</th>}
+                    <th className={TH_CLS + ' text-left'}>{t('docLabelHeader')}</th>
+                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docMonthly')} AED</th>
+                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docAnnual')} AED</th>
+                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docMonthly')} {currency}</th>}
+                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docAnnual')} {currency}</th>}
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-t border-gray-100">
-                    <td className={TD_CLS + ' text-gray-900 font-medium'}>Gross Rental Income</td>
+                    <td className={TD_CLS + ' text-gray-900 font-medium'}>{t('docGrossRentalIncome')}</td>
                     <td className={TD_CLS + ' text-right font-mono'}>{n2s(grossAnnualRent / 12)}</td>
                     <td className={TD_CLS + ' text-right font-mono'}>{n2s(grossAnnualRent)}</td>
                     {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono'}>{cvf(grossAnnualRent / 12)}</td>}
@@ -570,7 +587,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                   </tr>
                   <tr className="border-t border-gray-100">
                     <td className={TD_CLS}>
-                      <span className="text-red-600 font-medium">- Service Charges</span>
+                      <span className="text-red-600 font-medium">{t('docServiceCharges')}</span>
                     </td>
                     <td className={TD_CLS + ' text-right font-mono text-red-600'}>{n2s(annualServiceCharges / 12)}</td>
                     <td className={TD_CLS + ' text-right font-mono text-red-600'}>{n2s(annualServiceCharges)}</td>
@@ -578,7 +595,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-red-600'}>{cvf(annualServiceCharges)}</td>}
                   </tr>
                   <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                    <td className={TD_CLS + ' font-bold text-gray-900'}>Net Rental Income</td>
+                    <td className={TD_CLS + ' font-bold text-gray-900'}>{t('docNetRentalIncome')}</td>
                     <td className={TD_CLS + ' text-right font-mono font-bold text-emerald-600'}>{n2s(netAnnualRent / 12)}</td>
                     <td className={TD_CLS + ' text-right font-mono font-bold text-emerald-600'}>{n2s(netAnnualRent)}</td>
                     {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono font-bold text-emerald-600'}>{cvf(netAnnualRent / 12)}</td>}
@@ -586,7 +603,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                   </tr>
                   {/* Yield rows */}
                   <tr className="border-t border-gray-100">
-                    <td className={TD_CLS + ' font-bold text-gray-900'}>Gross Yield</td>
+                    <td className={TD_CLS + ' font-bold text-gray-900'}>{t('docGrossYield')}</td>
                     <td colSpan={showCurrencyCol ? 4 : 2} className={TD_CLS + ' text-right'}>
                       <span className="inline-flex items-center px-3 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold font-mono">
                         {grossYield.toFixed(1)}%
@@ -594,7 +611,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     </td>
                   </tr>
                   <tr className="border-t border-gray-100">
-                    <td className={TD_CLS + ' font-bold text-gray-900'}>Net Yield</td>
+                    <td className={TD_CLS + ' font-bold text-gray-900'}>{t('docNetYield')}</td>
                     <td colSpan={showCurrencyCol ? 4 : 2} className={TD_CLS + ' text-right'}>
                       <span className="inline-flex items-center px-3 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold font-mono">
                         {netYield.toFixed(1)}%
@@ -609,14 +626,14 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
         {/* ============ SECTION D: Annual Net Cash Position ============ */}
         <div>
-          <SectionHeader letter="D" title="Annual Net Cash Position" />
+          <SectionHeader letter="D" title={t('docSectionDTitle')} />
           <div className="px-4">
             <div className="border border-gray-200 rounded-b-lg overflow-hidden overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-900">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((yr) => (
-                      <th key={yr} className={TH_CLS + ' text-center text-[9px]'}>Yr {yr}</th>
+                      <th key={yr} className={TH_CLS + ' text-center text-[9px]'}>{t('docYrPrefix')} {yr}</th>
                     ))}
                   </tr>
                 </thead>
@@ -657,17 +674,17 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           const hasThresholdWarning = exitResults.some(sc => !sc.isThresholdMet);
           return (
             <div>
-              <SectionHeader letter="E" title="Exit Scenarios" />
+              <SectionHeader letter="E" title={t('docSectionETitle')} />
               <div className="px-4">
                 <div className="border border-gray-200 rounded-b-lg overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="bg-gray-900">
-                        <th className={TH_CLS + ' text-left'}>Exit</th>
-                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Invested</th>
-                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Exit Price</th>
-                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Net Profit</th>
-                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>ROE</th>
+                        <th className={TH_CLS + ' text-left'}>{t('docExitHeader')}</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docInvestedHeader')}</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docExitPriceHeader')}</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docNetProfitHeader')}</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docROEHeader')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -710,8 +727,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                   {/* Threshold footnote */}
                   {hasThresholdWarning && (
                     <div className="px-4 py-2 bg-[#B3893A]/5 border-t border-[#B3893A]/20 text-[10px] text-[#8A6528]">
-                      <span className="font-semibold">* Below {inputs.minimumExitThreshold}% threshold</span>
-                      {' — '}advance required to meet developer minimum before resale. Invested amount includes the additional payment needed.
+                      <span className="font-semibold">* {t('docBelowThreshold')} {inputs.minimumExitThreshold}% {t('docThresholdSuffix')}</span>
+                      {' — '}{t('docThresholdNote')}
                     </div>
                   )}
                 </div>
@@ -725,7 +742,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           <div>
             <SectionHeader
               letter="F"
-              title="Financing"
+              title={t('docSectionFTitle')}
               subtitle={`${mortgageData.financingPercent}% + ${mortgageData.loanTermYears}yr + ${mortgageData.interestRate}%`}
             />
             <div className="px-4">
@@ -733,16 +750,16 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 <table className="w-full">
                   <tbody>
                     {[
-                      { label: 'Loan Amount', value: `AED ${n2s(mortgageData.loanAmount)}`, cls: '' },
-                      { label: 'Monthly Payment (+ Insurance)', value: `AED ${n2s(mortgageData.monthlyPayment)}`, cls: '' },
-                      { label: 'Net Monthly Rent', value: `AED ${n2s(netMonthlyRent)}`, cls: '' },
+                      { label: t('docLoanAmount'), value: `AED ${n2s(mortgageData.loanAmount)}`, cls: '' },
+                      { label: t('docMonthlyPaymentIns'), value: `AED ${n2s(mortgageData.monthlyPayment)}`, cls: '' },
+                      { label: t('docNetMonthlyRent'), value: `AED ${n2s(netMonthlyRent)}`, cls: '' },
                       {
-                        label: 'Monthly Cashflow',
+                        label: t('docMonthlyCashflow'),
                         value: `${netMonthlyRent - mortgageData.monthlyPayment >= 0 ? '+' : ''} AED ${n2s(netMonthlyRent - mortgageData.monthlyPayment)}`,
                         cls: netMonthlyRent - mortgageData.monthlyPayment >= 0 ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
                       },
                       {
-                        label: 'Rent Coverage',
+                        label: t('docRentCoverage'),
                         value: `${mortgageData.monthlyPayment > 0 ? Math.round((netMonthlyRent / mortgageData.monthlyPayment) * 100) : 0}%`,
                         cls: netMonthlyRent >= mortgageData.monthlyPayment ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
                       },
@@ -764,12 +781,12 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* ============ SECTION G: Property Renders (conditional) ============ */}
         {((inputs as any)._buildingRenderUrl || (inputs as any)._floorplanUrl) && (
           <div>
-            <SectionHeader letter="G" title="Property Renders" subtitle="Building & Floor Plan" />
+            <SectionHeader letter="G" title={t('docSectionGTitle')} subtitle={t('docBuildingFloorPlan')} />
             <div className="px-4">
               <div className={`${(inputs as any)._buildingRenderUrl && (inputs as any)._floorplanUrl ? 'grid grid-cols-2 gap-4' : ''}`}>
                 {(inputs as any)._buildingRenderUrl && (
                   <div>
-                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mb-1">Building Render</p>
+                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('docBuildingRender')}</p>
                     <img
                       src={(inputs as any)._buildingRenderUrl}
                       alt="Building Render"
@@ -779,7 +796,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 )}
                 {(inputs as any)._floorplanUrl && (
                   <div>
-                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mb-1">Floor Plan</p>
+                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('docFloorPlan')}</p>
                     <img
                       src={(inputs as any)._floorplanUrl}
                       alt="Floor Plan"
@@ -805,7 +822,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           >
             <div className="flex items-center justify-between px-5 py-3 bg-[#B3893A]">
               <h3 className="font-display text-sm font-bold text-white">
-                Exit at {scenarioMonths[exitDetailModal]}m — Full Analysis
+                {t('docExitHeader')} {scenarioMonths[exitDetailModal]}m — {t('docExitFullAnalysis')}
               </h3>
               <button onClick={() => setExitDetailModal(null)} className="text-white/70 hover:text-white text-lg font-bold">&times;</button>
             </div>
@@ -814,17 +831,17 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 const sc = exitResults[exitDetailModal];
                 const d = getDisplay(sc);
                 const rows = [
-                  { label: 'Exit Price', value: `${currency} ${cvf(sc.exitPrice)}` },
-                  { label: 'Appreciation', value: `${currency} ${cvf(sc.appreciation)} (${sc.appreciationPercent.toFixed(1)}%)` },
-                  { label: 'Equity Deployed', value: `${currency} ${cvf(sc.equityDeployed)} (${sc.equityPercent.toFixed(0)}%)` },
-                  { label: 'Entry Costs (DLD + Oqood)', value: `${currency} ${cvf(sc.entryCosts)}` },
+                  { label: t('docExitPriceLabel'), value: `${currency} ${cvf(sc.exitPrice)}` },
+                  { label: t('docAppreciationHeader'), value: `${currency} ${cvf(sc.appreciation)} (${sc.appreciationPercent.toFixed(1)}%)` },
+                  { label: t('equityDeployedLabel'), value: `${currency} ${cvf(sc.equityDeployed)} (${sc.equityPercent.toFixed(0)}%)` },
+                  { label: t('docEntryCosts'), value: `${currency} ${cvf(sc.entryCosts)}` },
                   ...(sc.exitCosts > 0 ? [
-                    { label: 'Agent Commission', value: `${currency} ${cvf(sc.agentCommission)}` },
-                    { label: 'NOC Fee', value: `${currency} ${cvf(sc.nocFee)}` },
+                    { label: t('docAgentCommission'), value: `${currency} ${cvf(sc.agentCommission)}` },
+                    { label: t('docNOCFee'), value: `${currency} ${cvf(sc.nocFee)}` },
                   ] : []),
-                  { label: 'Total Capital', value: `${currency} ${cvf(sc.totalCapital)}`, accent: true },
-                  { label: 'Net Profit', value: `${d.profit >= 0 ? '+' : ''}${currency} ${cvf(d.profit)}`, positive: d.profit >= 0, negative: d.profit < 0 },
-                  { label: 'Total ROE', value: `${d.totalROE.toFixed(1)}%`, accent: true },
+                  { label: t('totalCapitalLabel'), value: `${currency} ${cvf(sc.totalCapital)}`, accent: true },
+                  { label: t('netProfitLabel'), value: `${d.profit >= 0 ? '+' : ''}${currency} ${cvf(d.profit)}`, positive: d.profit >= 0, negative: d.profit < 0 },
+                  { label: t('docTotalROE'), value: `${d.totalROE.toFixed(1)}%`, accent: true },
                 ];
                 return rows.map((r, j) => (
                   <div key={j} className="flex justify-between py-1.5 border-b border-gray-100 last:border-0">
@@ -839,11 +856,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200">
                   <div className="flex items-center gap-1.5 text-red-600 text-xs font-semibold mb-1">
                     <Info className="w-3.5 h-3.5" />
-                    Advance Required
+                    {t('docAdvanceRequired')}
                   </div>
                   <p className="text-[10px] text-gray-600">
-                    Payment plan hasn't reached the {inputs.minimumExitThreshold}% threshold.
-                    Advance of {currency} {cvf(exitResults[exitDetailModal].advanceRequired)} needed.
+                    {t('docThresholdNotReached')} {inputs.minimumExitThreshold}% {t('docThresholdSuffix')}.
+                    {t('docAdvanceOf')} {currency} {cvf(exitResults[exitDetailModal].advanceRequired)} {t('docNeeded')}
                   </p>
                 </div>
               )}
@@ -865,7 +882,6 @@ function ordSuffix(n: number): string {
 // ─── Shared constants ───────────────────────────────────────────────
 const TH_CLS = 'py-1.5 px-2 text-[9px] font-semibold text-white uppercase tracking-wide';
 const TD_CLS = 'py-1.5 px-2 text-[11px]';
-const NOTES_W = 'min-w-[140px]';
 
 // ─── Section header: gold bar with white text and circled letter badge ──
 const SectionHeader: React.FC<{ letter: string; title: string; subtitle?: string }> = ({ letter, title, subtitle }) => (
