@@ -122,6 +122,7 @@ export function applyExtractedPlan(
     postHandoverPayments,
     ...(plan.purchasePrice && { basePrice: plan.purchasePrice }),
     ...(plan.sizeSqFt && { unitSizeSqf: plan.sizeSqFt }),
+    ...(plan.oqoodFee != null && plan.oqoodFee > 0 && { oqoodFee: plan.oqoodFee }),
   };
 
   return { inputs, clientInfo };

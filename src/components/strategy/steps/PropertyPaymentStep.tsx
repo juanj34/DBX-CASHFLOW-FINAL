@@ -124,7 +124,7 @@ export const PropertyPaymentStep: React.FC<Props> = ({ inputs, updateField, upda
             <CountrySelect
               value={(inputs as any)._clients?.[0]?.country || ''}
               onValueChange={(v) => updateField('_clients' as any, [{ ...(inputs as any)._clients?.[0], country: v }])}
-              className="h-8 text-xs bg-theme-card border-theme-border"
+              className="w-full h-8 text-xs bg-theme-card border-theme-border"
             />
           </div>
         </div>

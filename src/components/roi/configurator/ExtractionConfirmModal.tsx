@@ -27,6 +27,7 @@ import {
   Banknote,
   ListChecks,
   ShieldCheck,
+  Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -104,12 +105,8 @@ export const ExtractionConfirmModal = ({
 
   useEffect(() => {
     if (data) {
-      // Strip handover milestones — the handover/completion payment is NOT an installment.
-      // It's the remaining balance calculated automatically as 100% - preHandoverPercent.
-      setEditedData({
-        ...data,
-        milestones: data.milestones.filter((m) => !m.isHandover),
-      });
+      // Keep all milestones including isHandover — the user can toggle which is completion
+      setEditedData({ ...data });
     }
   }, [data]);
 
@@ -166,10 +163,15 @@ export const ExtractionConfirmModal = ({
   };
 
   // ── Validation ──────────────────────────────────────────────────
+  const explicitHandover = useMemo(() => {
+    if (!editedData) return undefined;
+    return editedData.milestones.find((m) => m.isHandover);
+  }, [editedData]);
+
   const preHandoverMilestoneTotal = useMemo(() => {
     if (!editedData) return 0;
     return editedData.milestones
-      .filter((m) => m.type !== "post-handover")
+      .filter((m) => m.type !== "post-handover" && !m.isHandover)
       .reduce((sum, m) => sum + (m.paymentPercent || 0), 0);
   }, [editedData]);
 
@@ -185,31 +187,30 @@ export const ExtractionConfirmModal = ({
     return (editedData.downpaymentPercent || 0) + preHandoverMilestoneTotal;
   }, [editedData, preHandoverMilestoneTotal]);
 
-  // For standard plans: handover balance = 100% - preHandoverTotal (implicit)
+  // Handover balance: explicit isHandover milestone > onHandoverPercent > auto-calc
   const handoverBalance = useMemo(() => {
-    if (!editedData || editedData.hasPostHandover) return 0;
+    if (!editedData) return 0;
+    if (explicitHandover) return explicitHandover.paymentPercent || 0;
+    if (editedData.hasPostHandover) return editedData.onHandoverPercent || 0;
     return Math.max(0, 100 - preHandoverTotal);
-  }, [editedData, preHandoverTotal]);
+  }, [editedData, explicitHandover, preHandoverTotal]);
 
   const totalPercent = useMemo(() => {
     if (!editedData) return 0;
-    if (editedData.hasPostHandover) {
-      return (
-        preHandoverTotal +
-        (editedData.onHandoverPercent || 0) +
-        postHandoverMilestoneTotal
-      );
+    if (editedData.hasPostHandover || explicitHandover) {
+      return preHandoverTotal + handoverBalance + postHandoverMilestoneTotal;
     }
     // Standard plan: pre-handover + implicit handover balance always = 100%
     return preHandoverTotal + handoverBalance;
   }, [
     editedData,
+    explicitHandover,
     preHandoverTotal,
     handoverBalance,
     postHandoverMilestoneTotal,
   ]);
 
-  const isValidTotal = editedData?.hasPostHandover
+  const isValidTotal = (editedData?.hasPostHandover || explicitHandover)
     ? Math.abs(totalPercent - 100) < 0.5
     : preHandoverTotal > 0 && preHandoverTotal <= 100;
 
@@ -383,6 +384,14 @@ export const ExtractionConfirmModal = ({
                 updateField("purchasePrice", parseFloat(v) || 0)
               }
             />
+            <FieldInput
+              label="Oqood / Admin (AED)"
+              type="number"
+              value={editedData.oqoodFee?.toString() || ""}
+              onChange={(v) =>
+                updateField("oqoodFee", parseFloat(v) || 0)
+              }
+            />
           </div>
         </section>
 
@@ -508,11 +517,12 @@ export const ExtractionConfirmModal = ({
           ) : (
             <div className="space-y-1 mt-3">
               {/* Header */}
-              <div className="grid grid-cols-[90px_60px_60px_1fr_28px] gap-1.5 text-[10px] font-medium text-theme-text-muted uppercase tracking-wider px-1 pb-1 border-b border-theme-border/30">
+              <div className="grid grid-cols-[90px_60px_60px_1fr_28px_28px] gap-1.5 text-[10px] font-medium text-theme-text-muted uppercase tracking-wider px-1 pb-1 border-b border-theme-border/30">
                 <span>Type</span>
                 <span>Trigger</span>
                 <span>%</span>
                 <span>Label</span>
+                <span />
                 <span />
               </div>
 
@@ -521,7 +531,7 @@ export const ExtractionConfirmModal = ({
                 <div
                   key={i}
                   className={cn(
-                    "grid grid-cols-[90px_60px_60px_1fr_28px] gap-1.5 items-center rounded-lg px-1 py-1 transition-colors",
+                    "grid grid-cols-[90px_60px_60px_1fr_28px_28px] gap-1.5 items-center rounded-lg px-1 py-1 transition-colors",
                     m.type === "construction" && "bg-orange-500/8 border border-orange-500/15",
                     m.type === "post-handover" && "bg-theme-accent/8 border border-theme-accent/15",
                     m.type === "time" && "bg-theme-card/50 border border-theme-border/30"
@@ -589,6 +599,26 @@ export const ExtractionConfirmModal = ({
                   />
 
                   <button
+                    onClick={() => {
+                      if (!editedData) return;
+                      const updated = editedData.milestones.map((ms, j) => ({
+                        ...ms,
+                        isHandover: j === i ? !ms.isHandover : false,
+                      }));
+                      setEditedData({ ...editedData, milestones: updated });
+                    }}
+                    className={cn(
+                      "p-1 rounded transition-colors",
+                      m.isHandover
+                        ? "text-[#C9A04A] bg-[#C9A04A]/20 hover:bg-[#C9A04A]/30"
+                        : "text-theme-text-muted/40 hover:text-[#C9A04A] hover:bg-[#C9A04A]/10"
+                    )}
+                    title="Mark as completion/handover payment"
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
                     onClick={() => removeMilestone(i)}
                     className="p-1 rounded-md hover:bg-theme-negative/20 text-theme-text-muted hover:text-theme-negative transition-colors"
                   >
@@ -599,8 +629,8 @@ export const ExtractionConfirmModal = ({
             </div>
           )}
 
-          {/* Handover balance (standard plans only) */}
-          {editedData && !editedData.hasPostHandover && (
+          {/* Handover balance display */}
+          {editedData && !editedData.hasPostHandover && !explicitHandover && (
             <div className="mt-3 px-3 py-2.5 rounded-lg bg-blue-500/8 border border-blue-500/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-blue-400" />
@@ -611,6 +641,20 @@ export const ExtractionConfirmModal = ({
               </div>
               <span className="text-sm font-bold font-mono text-blue-400">
                 {handoverBalance.toFixed(1)}%
+              </span>
+            </div>
+          )}
+          {editedData && explicitHandover && (
+            <div className="mt-3 px-3 py-2.5 rounded-lg bg-[#C9A04A]/10 border border-[#C9A04A]/25 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Key className="w-3.5 h-3.5 text-[#C9A04A]" />
+                <span className="text-xs font-medium text-[#C9A04A]">
+                  Completion Payment
+                </span>
+                <span className="text-[10px] text-[#C9A04A]/60">(marked with key icon)</span>
+              </div>
+              <span className="text-sm font-bold font-mono text-[#C9A04A]">
+                {(explicitHandover.paymentPercent || 0).toFixed(1)}%
               </span>
             </div>
           )}

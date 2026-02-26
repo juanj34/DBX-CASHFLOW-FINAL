@@ -89,7 +89,7 @@ export const CountrySelect = ({ value, onValueChange, placeholder, className, di
           role="combobox"
           aria-expanded={open}
           disabled={disabled || isLoading}
-          className={cn("justify-between h-9 font-normal", className)}
+          className={cn("w-full justify-between h-9 font-normal", className)}
         >
           {isLoading ? (
             <span className="flex items-center gap-2 text-muted-foreground">

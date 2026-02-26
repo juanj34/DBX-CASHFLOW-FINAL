@@ -70,7 +70,6 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
   const dldFee = basePrice * 0.04;
   const showCurrencyCol = currency !== 'AED';
   const resellThreshold = (inputs as any).resellEligiblePercent ?? 30;
-  const mortgageThreshold = (inputs as any).mortgageEligiblePercent ?? 50;
   const cv = (aed: number) => currency === 'AED' ? aed : aed * rate;
   const cvf = (aed: number) => n2s(cv(aed));
 
@@ -105,61 +104,100 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
   // Section B: installments + completion only (downpayment is in Section A)
   const paymentRows = useMemo(() => {
-    const rows: { label: string; percent: number; amount: number; date: string; isCompletion?: boolean; badges: string[] }[] = [];
+    const rows: { label: string; percent: number; amount: number; date: string; isCompletion?: boolean; isPostHandover?: boolean; badges: string[] }[] = [];
     const bookDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
     let cum = inputs.downpaymentPercent;
     let resellShown = cum >= resellThreshold;
-    let mortgageShown = cum >= mortgageThreshold;
 
-    inputs.additionalPayments.forEach((m, i) => {
-      if (m.paymentPercent <= 0) return;
-      cum += m.paymentPercent;
-      const badges: string[] = [];
-      if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
-
-      let dateStr: string;
+    const getDateStr = (m: { type: string; triggerValue: number }) => {
       if (m.type === 'time') {
         const d = new Date(bookDate);
         d.setMonth(d.getMonth() + m.triggerValue);
-        dateStr = fmtDate(d);
+        return fmtDate(d);
       } else if (m.type === 'construction') {
         const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
         const totalMs = hoDate.getTime() - bookDate.getTime();
         const d = new Date(bookDate.getTime() + totalMs * (m.triggerValue / 100));
-        dateStr = `~${fmtDate(d)} (${m.triggerValue}%)`;
+        return `~${fmtDate(d)} (${m.triggerValue}%)`;
       } else {
         const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
         const d = new Date(hoDate);
         d.setMonth(d.getMonth() + m.triggerValue);
-        dateStr = `${fmtDate(d)} ${t('docPostHO')}`;
+        return `${fmtDate(d)} ${t('docPostHO')}`;
       }
+    };
+
+    // 1) Pre-handover installments (exclude completion)
+    const preHandover = inputs.additionalPayments.filter(m => !m.isHandover);
+    const handoverInstallment = inputs.additionalPayments.find(m => m.isHandover);
+    let idx = 0;
+
+    preHandover.forEach((m) => {
+      if (m.paymentPercent <= 0) return;
+      cum += m.paymentPercent;
+      idx++;
+      const badges: string[] = [];
+      if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
       rows.push({
-        label: m.label || `${t('docInstallment')} ${i + 1}`,
+        label: `${t('docInstallment')} ${idx}`,
         percent: m.paymentPercent,
         amount: basePrice * m.paymentPercent / 100,
-        date: dateStr,
+        date: getDateStr(m),
         badges,
       });
     });
 
-    const handoverPercent = 100 - inputs.downpaymentPercent - inputs.additionalPayments.reduce((s, p) => s + p.paymentPercent, 0);
-    if (handoverPercent > 0.5) {
-      cum += handoverPercent;
+    // 2) Completion row — 3-tier priority
+    let completionPercent: number;
+    if (handoverInstallment) {
+      completionPercent = handoverInstallment.paymentPercent;
+    } else if ((inputs as any).hasPostHandoverPlan && (inputs as any).onHandoverPercent > 0) {
+      completionPercent = (inputs as any).onHandoverPercent;
+    } else {
+      completionPercent = 100 - cum;
+    }
+    if (completionPercent > 0.5) {
+      cum += completionPercent;
       const badges: string[] = [];
       if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
       rows.push({
         label: t('docCompletionPayment'),
-        percent: Math.round(handoverPercent * 10) / 10,
-        amount: basePrice * handoverPercent / 100,
-        date: `${shortDate(inputs.handoverMonth, inputs.handoverYear)} ${t('docHandoverSuffix')}`,
+        percent: Math.round(completionPercent * 10) / 10,
+        amount: basePrice * completionPercent / 100,
+        date: handoverInstallment
+          ? getDateStr(handoverInstallment)
+          : `${shortDate(inputs.handoverMonth, inputs.handoverYear)} ${t('docHandoverSuffix')}`,
         isCompletion: true,
         badges,
       });
     }
+
+    // 3) Post-handover installments
+    const postPayments = (inputs as any).postHandoverPayments as typeof inputs.additionalPayments | undefined;
+    if ((inputs as any).hasPostHandoverPlan && postPayments?.length) {
+      const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
+      let postIdx = 0;
+      postPayments.forEach((m) => {
+        if (m.paymentPercent <= 0) return;
+        cum += m.paymentPercent;
+        postIdx++;
+        const badges: string[] = [];
+        if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
+        const d = new Date(hoDate);
+        d.setMonth(d.getMonth() + m.triggerValue);
+        rows.push({
+          label: `${t('docPostHO')} ${t('docInstallment')} ${postIdx}`,
+          percent: m.paymentPercent,
+          amount: basePrice * m.paymentPercent / 100,
+          date: `${fmtDate(d)} ${t('docPostHO')}`,
+          isPostHandover: true,
+          badges,
+        });
+      });
+    }
+
     return rows;
-  }, [inputs, basePrice, resellThreshold, mortgageThreshold]);
+  }, [inputs, basePrice, resellThreshold]);
 
   // Total Equity = property price + all entry costs
   const totalEquity = basePrice + totalEntryCosts;
@@ -401,49 +439,100 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
       {/* ========== SECTION B: Milestone Event ========== */}
       {sectionBar('B', t('docSectionBTitle'))}
-      <div className="border-b border-gray-200 overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-900">
-              <th className={th + " text-left"}>{t('docMilestoneHeader')}</th>
-              <th className={th + " text-left"}>{t('docWhenHeader')}</th>
-              <th className={th + " text-right"}>%</th>
-              <th className={th + " text-right"}>AED</th>
-              {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {paymentRows.map((row, i) => (
-              <tr key={i} className={`border-t border-gray-100 ${row.isCompletion ? 'bg-[#B3893A]/5' : ''}`}>
-                <td className={tc + (row.isCompletion ? ' text-[#8A6528] font-semibold' : ' text-gray-900 font-medium')}>
-                  {row.label}
-                  {row.badges.map((badge) => (
-                    <span
-                      key={badge}
-                      className={`ml-1 inline-flex items-center text-[7px] px-1 rounded font-bold uppercase leading-none ${
-                        badge === t('docResaleBadge')
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </td>
-                <td className={tc + " text-gray-700"}>{row.date}</td>
-                <td className={tc + " text-right text-gray-500 font-mono"}>{row.percent}%</td>
-                <td className={tc + " text-right font-mono text-gray-900"}>{n2s(row.amount)}</td>
-                {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(row.amount)}</td>}
-              </tr>
-            ))}
-            <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-              <td className={tc + " font-bold text-[#8A6528]"} colSpan={3}>{t('docTotalEquityRequired')}</td>
-              <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{n2s(totalEquity)}</td>
-              {showCurrencyCol && <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{cvf(totalEquity)}</td>}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {(() => {
+        // Continuous flow: all payments chained, split by row count only
+        const totalRows = paymentRows.length;
+        const colCount = totalRows <= 8 ? 1 : totalRows <= 16 ? 2 : 3;
+        const isMultiCol = colCount > 1;
+
+        // Compact cell styles for multi-col
+        const mth = isMultiCol ? "py-0.5 px-1.5 text-[7px] font-semibold text-white uppercase tracking-wide whitespace-nowrap" : th;
+        const mtc = isMultiCol ? "py-0.5 px-1.5 text-[9px] whitespace-nowrap" : tc;
+
+        const renderRow = (row: typeof paymentRows[0], i: number, compact: boolean) => (
+          <tr key={i} className={`border-t border-gray-100 ${row.isCompletion ? 'bg-[#B3893A]/5' : row.isPostHandover ? 'bg-indigo-50/50' : ''}`}>
+            <td className={(compact ? mtc : tc) + (row.isCompletion ? ' text-[#8A6528] font-semibold' : row.isPostHandover ? ' text-indigo-700 font-medium' : ' text-gray-900 font-medium')}>
+              {row.label}
+              {row.badges.map((badge) => (
+                <span key={badge} className="ml-1 inline-flex items-center text-[7px] px-1 rounded font-bold uppercase leading-none bg-emerald-100 text-emerald-700">{badge}</span>
+              ))}
+            </td>
+            <td className={(compact ? mtc : tc) + " text-gray-700"}>{row.date}</td>
+            <td className={(compact ? mtc : tc) + " text-right text-gray-500 font-mono"}>{row.percent}%</td>
+            <td className={(compact ? mtc : tc) + " text-right font-mono text-gray-900"}>
+              {n2s(row.amount)}
+              {compact && showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(row.amount)})</span>}
+            </td>
+            {!compact && showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(row.amount)}</td>}
+          </tr>
+        );
+
+        if (isMultiCol) {
+          const perCol = Math.ceil(totalRows / colCount);
+          const columns: typeof paymentRows[] = [];
+          for (let c = 0; c < colCount; c++) {
+            columns.push(paymentRows.slice(c * perCol, (c + 1) * perCol));
+          }
+          const gridCls = colCount === 2 ? 'grid-cols-2' : 'grid-cols-3';
+
+          return (
+            <div className="border-b border-gray-200">
+              <div className={`grid ${gridCls}`}>
+                {columns.map((colRows, colIdx) => (
+                  <div key={colIdx} className={colIdx > 0 ? 'border-l border-gray-200' : ''}>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-900">
+                          <th className={mth + " text-left"}>{t('docMilestoneHeader')}</th>
+                          <th className={mth + " text-left"}>{t('docWhenHeader')}</th>
+                          <th className={mth + " text-right"}>%</th>
+                          <th className={mth + " text-right"}>AED</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {colRows.map((row, i) => renderRow(row, i, true))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+              {/* Total row full-width */}
+              <div className="border-t-2 border-gray-300 bg-[#B3893A]/5 flex items-center px-2 py-1">
+                <span className={mtc + " font-bold text-[#8A6528] flex-1"}>{t('docTotalEquityRequired')}</span>
+                <span className={mtc + " font-bold font-mono text-[#8A6528]"}>
+                  AED {n2s(totalEquity)}
+                  {showCurrencyCol && <span className="text-[#8A6528]/60 ml-2">({currency} {cvf(totalEquity)})</span>}
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        // Single column
+        return (
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-900">
+                  <th className={th + " text-left"}>{t('docMilestoneHeader')}</th>
+                  <th className={th + " text-left"}>{t('docWhenHeader')}</th>
+                  <th className={th + " text-right"}>%</th>
+                  <th className={th + " text-right"}>AED</th>
+                  {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {paymentRows.map((row, i) => renderRow(row, i, false))}
+                <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
+                  <td className={tc + " font-bold text-[#8A6528]"} colSpan={3}>{t('docTotalEquityRequired')}</td>
+                  <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{n2s(totalEquity)}</td>
+                  {showCurrencyCol && <td className={tc + " text-right font-bold font-mono text-[#8A6528]"}>{cvf(totalEquity)}</td>}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
 
       {/* ========== SECTION C + D: Rental + Annual Cash Position (side by side) ========== */}
       <div className="grid grid-cols-[1fr_2fr] gap-0">

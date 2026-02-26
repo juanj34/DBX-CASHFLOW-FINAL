@@ -46,6 +46,10 @@ export const uploadResponseSchema = {
       type: "INTEGER",
       description: "Calendar year of expected handover. Extract from 'Expected Completion Q3 2028' → year 2028.",
     },
+    oqoodFee: {
+      type: "NUMBER",
+      description: "Oqood / admin registration fee in AED. Typically 5,000-5,250 for off-plan properties. Look for 'Oqood', 'Admin Fee', 'Registration Fee', or 'DLD Admin Fee' in the document. 0 if not found.",
+    },
     hasPostHandover: {
       type: "BOOLEAN",
       description: "true ONLY if payments exist AFTER the handover date (post-completion installments).",
@@ -126,5 +130,10 @@ CONSTRUCTION MILESTONES:
 - "Foundation" ≈ 10, "Superstructure" ≈ 50, "Topping out" ≈ 70
 
 UNIT TYPES: Studio→studio, 1BR→1br, 2BR→2br, 3BR→3br, 4BR→4br, Penthouse→penthouse, Townhouse→townhouse, Villa→villa, Commercial/Office/Retail→commercial
+
+OQOOD / ADMIN FEE:
+- Look for "Oqood", "Admin Fee", "Administration Fee", "DLD Admin Fee", or "Registration Fee"
+- Typically a fixed AED amount (5,000 or 5,250), NOT a percentage
+- If found, extract the AED amount. If not mentioned, set oqoodFee to 0.
 
 CURRENCY: Default AED for Dubai. Look for AED, $, €, £ symbols.`;

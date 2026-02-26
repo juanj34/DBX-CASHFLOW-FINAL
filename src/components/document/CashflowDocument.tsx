@@ -106,7 +106,6 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   // Payment plan rows for Section B
   const resellThreshold = (inputs as any).resellEligiblePercent ?? 30;
-  const mortgageThreshold = (inputs as any).mortgageEligiblePercent ?? 50;
 
   // Helper to format date
   const formatShortDate = (d: Date) => {
@@ -145,24 +144,26 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       amount: number;
       cumulative: number;
       isHandover?: boolean;
+      isPostHandover?: boolean;
       badges: string[];
       dateStr?: string;
     }[] = [];
-    // Start cumulative from downpayment (already paid in Section A)
     let cum = inputs.downpaymentPercent;
     let resellShown = cum >= resellThreshold;
-    let mortgageShown = cum >= mortgageThreshold;
 
-    // Additional payments (installments during construction)
-    inputs.additionalPayments.forEach((m, i) => {
+    // 1) Pre-handover installments (exclude any marked as completion)
+    const preHandover = inputs.additionalPayments.filter(m => !m.isHandover);
+    const handoverInstallment = inputs.additionalPayments.find(m => m.isHandover);
+    let idx = 0;
+
+    preHandover.forEach((m) => {
       if (m.paymentPercent <= 0) return;
       cum += m.paymentPercent;
+      idx++;
       const badges: string[] = [];
       if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
-
       rows.push({
-        label: m.label || `${i + 1}${lang === 'es' ? 'ª' : ordSuffix(i + 1)} ${t('docInstallment')}`,
+        label: `${idx}${lang === 'es' ? 'ª' : ordSuffix(idx)} ${t('docInstallment')}`,
         percent: m.paymentPercent,
         amount: basePrice * m.paymentPercent / 100,
         cumulative: cum,
@@ -171,27 +172,57 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       });
     });
 
-    // Handover balance
-    const handoverPercent = 100 - cum;
-    if (handoverPercent > 0.5) {
-      cum += handoverPercent;
+    // 2) Completion / Handover row — 3-tier priority
+    let completionPercent: number;
+    if (handoverInstallment) {
+      completionPercent = handoverInstallment.paymentPercent;
+    } else if ((inputs as any).hasPostHandoverPlan && (inputs as any).onHandoverPercent > 0) {
+      completionPercent = (inputs as any).onHandoverPercent;
+    } else {
+      completionPercent = 100 - cum;
+    }
+    if (completionPercent > 0.5) {
+      cum += completionPercent;
       const badges: string[] = [];
       if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
-      if (!mortgageShown && cum >= mortgageThreshold) { badges.push(t('docMortgageBadge')); mortgageShown = true; }
       const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
       rows.push({
         label: t('docCompletionPayment'),
-        percent: Math.round(handoverPercent * 10) / 10,
-        amount: basePrice * handoverPercent / 100,
+        percent: Math.round(completionPercent * 10) / 10,
+        amount: basePrice * completionPercent / 100,
         cumulative: cum,
         isHandover: true,
         badges,
-        dateStr: `${formatShortDate(hoDate)} ${t('docHandoverSuffix')}`,
+        dateStr: handoverInstallment
+          ? getPaymentDateStr(handoverInstallment)
+          : `${formatShortDate(hoDate)} ${t('docHandoverSuffix')}`,
+      });
+    }
+
+    // 3) Post-handover installments
+    const postPayments = (inputs as any).postHandoverPayments as typeof inputs.additionalPayments | undefined;
+    if ((inputs as any).hasPostHandoverPlan && postPayments?.length) {
+      let postIdx = 0;
+      postPayments.forEach((m) => {
+        if (m.paymentPercent <= 0) return;
+        cum += m.paymentPercent;
+        postIdx++;
+        const badges: string[] = [];
+        if (!resellShown && cum >= resellThreshold) { badges.push(t('docResaleBadge')); resellShown = true; }
+        rows.push({
+          label: `${postIdx}${lang === 'es' ? 'ª' : ordSuffix(postIdx)} ${t('docPostHO')} ${t('docInstallment')}`,
+          percent: m.paymentPercent,
+          amount: basePrice * m.paymentPercent / 100,
+          cumulative: cum,
+          isPostHandover: true,
+          badges,
+          dateStr: getPaymentDateStr(m),
+        });
       });
     }
 
     return rows;
-  }, [inputs, basePrice, resellThreshold, mortgageThreshold]);
+  }, [inputs, basePrice, resellThreshold]);
 
   // Rental calculations
   const grossAnnualRent = basePrice * (inputs.rentalYieldPercent / 100);
@@ -202,7 +233,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   // Snapshot calculations (paymentRows no longer has downpayment — it's all installments + completion)
   const additionalDeposits = paymentRows
-    .filter(r => !r.isHandover)
+    .filter(r => !r.isHandover && !r.isPostHandover)
     .reduce((sum, r) => sum + r.amount, 0);
   const handoverPayment = paymentRows.find(r => r.isHandover)?.amount || 0;
   const totalEquityRequired = basePrice + totalEntryCosts;
@@ -463,6 +494,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           <SectionHeader letter="B" title={t('docSectionBTitle')} />
           <div className="px-4">
             {(() => {
+              // Continuous flow: chain all payments, split by row count only
               const colCount = paymentRows.length <= 12 ? 1 : paymentRows.length <= 24 ? 2 : 3;
               const isMultiCol = colCount > 1;
               const thCls = isMultiCol ? 'py-1.5 px-2 text-[8px] font-semibold text-white uppercase tracking-wide' : TH_CLS;
@@ -492,10 +524,10 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     {rows.map((row, i) => (
                       <tr
                         key={startIdx + i}
-                        className={`border-t border-gray-100 ${row.isHandover ? 'bg-[#B3893A]/5' : ''}`}
+                        className={`border-t border-gray-100 ${row.isHandover ? 'bg-[#B3893A]/5' : row.isPostHandover ? 'bg-indigo-50/50' : ''}`}
                       >
                         <td className={tdCls}>
-                          <span className={`font-medium ${row.isHandover ? 'text-[#8A6528]' : 'text-gray-900'}`}>
+                          <span className={`font-medium ${row.isHandover ? 'text-[#8A6528]' : row.isPostHandover ? 'text-indigo-700' : 'text-gray-900'}`}>
                             {row.label}
                           </span>
                           {row.badges.map((badge) => (

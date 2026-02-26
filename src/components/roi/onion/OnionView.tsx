@@ -192,7 +192,6 @@ export const OnionView = ({
 
   // Eligibility milestones
   const resellThreshold = (inputs as any).resellEligiblePercent ?? 30;
-  const mortgageThreshold = (inputs as any).mortgageEligiblePercent ?? 50;
 
   // Only show secondary currency columns when a non-AED currency is selected
   const showSecondary = currency !== 'AED';
@@ -435,7 +434,6 @@ export const OnionView = ({
                 {(() => {
                   let cumPercent = dpPercent;
                   let resellShown = cumPercent >= resellThreshold;
-                  let mortgageShown = cumPercent >= mortgageThreshold;
                   const rows: React.ReactNode[] = [];
 
                   additionalPayments.forEach((p, i) => {
@@ -448,10 +446,6 @@ export const OnionView = ({
                     if (!resellShown && cumPercent >= resellThreshold) {
                       resellShown = true;
                       badges.push('Resale');
-                    }
-                    if (!mortgageShown && cumPercent >= mortgageThreshold) {
-                      mortgageShown = true;
-                      badges.push('Mortgage');
                     }
 
                     rows.push(

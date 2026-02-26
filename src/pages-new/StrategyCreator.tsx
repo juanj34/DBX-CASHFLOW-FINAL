@@ -45,7 +45,7 @@ const StrategyCreator: React.FC = () => {
   const [currency, setCurrency] = useState<Currency>('AED');
   const [language, setLanguage] = useState('en');
   const [showConfigurator, setShowConfigurator] = useState(false);
-  const [hasConfigured, setHasConfigured] = useState(!!quoteId);
+  const [hasConfigured, setHasConfigured] = useState(false);
   const [viewMode, setViewMode] = useState<'dashboard' | 'document'>('dashboard');
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(quoteId);
@@ -123,10 +123,14 @@ const StrategyCreator: React.FC = () => {
         setNotes((quote.inputs as any)._notes);
       }
       initializedRef.current = true;
-      // Don't auto-open modal for existing quotes with data
-      if (quoteId) {
+      // Only show document if quote has meaningful data (basePrice > 0)
+      if (quoteId && quote.inputs.basePrice > 0) {
         setShowConfigurator(false);
         setHasConfigured(true);
+      } else if (quoteId) {
+        // Quote exists but has no data — open configurator automatically
+        setShowConfigurator(true);
+        setHasConfigured(false);
       }
     }
   }, [quote, quoteId]);

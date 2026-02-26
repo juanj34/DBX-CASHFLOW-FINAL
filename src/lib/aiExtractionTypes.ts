@@ -29,6 +29,7 @@ export interface AIPaymentPlanResult {
   hasPostHandover: boolean;
   onHandoverPercent?: number;
   postHandoverPercent?: number;
+  oqoodFee?: number; // Admin/oqood fee in AED (typically 5,000–5,250)
 
   // Milestones (excludes downpayment at month 0; may include handover with isHandover flag for standard plans)
   milestones: AIExtractedMilestone[];
