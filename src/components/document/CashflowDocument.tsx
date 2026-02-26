@@ -94,8 +94,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   // Semantic exit label
   const getExitLabel = (months: number) => {
-    if (isHandoverExit(months, totalMonths)) return 'Handover';
     if (months === totalMonths - 1) return 'Pre-Handover';
+    if (isHandoverExit(months, totalMonths)) return 'Handover';
     if (months < totalMonths) return `${months} mo`;
     const yearsAfter = Math.round((months - totalMonths) / 12);
     if (yearsAfter > 0) return `Yr ${yearsAfter} Hold`;
@@ -106,35 +106,36 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
   const resellThreshold = (inputs as any).resellEligiblePercent ?? 30;
   const mortgageThreshold = (inputs as any).mortgageEligiblePercent ?? 50;
 
-  // Helper to compute payment date from milestone
-  const getPaymentDate = (m: { type: string; triggerValue: number }, bookingMonth: number, bookingYear: number, handoverMonth: number, handoverYear: number) => {
-    const bookDate = new Date(bookingYear, bookingMonth - 1);
-    const hoDate = new Date(handoverYear, handoverMonth - 1);
-
-    if (m.type === 'time') {
-      const d = new Date(bookDate);
-      d.setMonth(d.getMonth() + m.triggerValue);
-      return { date: d, detail: `Month ${m.triggerValue}` };
-    }
-    if (m.type === 'construction') {
-      // Estimate date based on construction progress %
-      const totalMs = hoDate.getTime() - bookDate.getTime();
-      const d = new Date(bookDate.getTime() + totalMs * (m.triggerValue / 100));
-      return { date: d, detail: `${m.triggerValue}% complete` };
-    }
-    if (m.type === 'post-handover') {
-      const d = new Date(hoDate);
-      d.setMonth(d.getMonth() + m.triggerValue);
-      return { date: d, detail: `HO +${m.triggerValue}mo` };
-    }
-    return null;
-  };
-
+  // Helper to format date
   const formatShortDate = (d: Date) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return `${months[d.getMonth()]} ${d.getFullYear()}`;
   };
 
+  // Compute payment date string from milestone (includes construction % inline)
+  const getPaymentDateStr = (m: { type: string; triggerValue: number }) => {
+    const bookDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+    const hoDate = new Date(inputs.handoverYear, inputs.handoverMonth - 1);
+
+    if (m.type === 'time') {
+      const d = new Date(bookDate);
+      d.setMonth(d.getMonth() + m.triggerValue);
+      return formatShortDate(d);
+    }
+    if (m.type === 'construction') {
+      const totalMs = hoDate.getTime() - bookDate.getTime();
+      const d = new Date(bookDate.getTime() + totalMs * (m.triggerValue / 100));
+      return `~${formatShortDate(d)} (${m.triggerValue}%)`;
+    }
+    if (m.type === 'post-handover') {
+      const d = new Date(hoDate);
+      d.setMonth(d.getMonth() + m.triggerValue);
+      return `${formatShortDate(d)} Post-HO`;
+    }
+    return undefined;
+  };
+
+  // Section B: installments + completion only (downpayment is in Section A)
   const paymentRows = useMemo(() => {
     const rows: {
       label: string;
@@ -144,31 +145,13 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       isHandover?: boolean;
       badges: string[];
       dateStr?: string;
-      dateDetail?: string;
     }[] = [];
-    let cum = 0;
-    let resellShown = false;
-    let mortgageShown = false;
+    // Start cumulative from downpayment (already paid in Section A)
+    let cum = inputs.downpaymentPercent;
+    let resellShown = cum >= resellThreshold;
+    let mortgageShown = cum >= mortgageThreshold;
 
-    // Booking date
-    const bookDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
-
-    // Downpayment
-    cum += inputs.downpaymentPercent;
-    const dpBadges: string[] = [];
-    if (!resellShown && cum >= resellThreshold) { dpBadges.push('Resale'); resellShown = true; }
-    if (!mortgageShown && cum >= mortgageThreshold) { dpBadges.push('Mortgage'); mortgageShown = true; }
-    rows.push({
-      label: 'Downpayment (Booking)',
-      percent: inputs.downpaymentPercent,
-      amount: basePrice * inputs.downpaymentPercent / 100,
-      cumulative: cum,
-      badges: dpBadges,
-      dateStr: formatShortDate(bookDate),
-      dateDetail: 'Booking',
-    });
-
-    // Additional payments
+    // Additional payments (installments during construction)
     inputs.additionalPayments.forEach((m, i) => {
       if (m.paymentPercent <= 0) return;
       cum += m.paymentPercent;
@@ -176,15 +159,13 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       if (!resellShown && cum >= resellThreshold) { badges.push('Resale'); resellShown = true; }
       if (!mortgageShown && cum >= mortgageThreshold) { badges.push('Mortgage'); mortgageShown = true; }
 
-      const dateInfo = getPaymentDate(m, inputs.bookingMonth, inputs.bookingYear, inputs.handoverMonth, inputs.handoverYear);
       rows.push({
         label: m.label || `${i + 1}${ordSuffix(i + 1)} Installment`,
         percent: m.paymentPercent,
         amount: basePrice * m.paymentPercent / 100,
         cumulative: cum,
         badges,
-        dateStr: dateInfo ? formatShortDate(dateInfo.date) : undefined,
-        dateDetail: dateInfo?.detail,
+        dateStr: getPaymentDateStr(m),
       });
     });
 
@@ -203,8 +184,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         cumulative: cum,
         isHandover: true,
         badges,
-        dateStr: formatShortDate(hoDate),
-        dateDetail: 'Handover',
+        dateStr: `${formatShortDate(hoDate)} Handover`,
       });
     }
 
@@ -218,11 +198,12 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
   const grossYield = inputs.rentalYieldPercent;
   const netYield = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
 
-  // Snapshot calculations
+  // Snapshot calculations (paymentRows no longer has downpayment — it's all installments + completion)
   const additionalDeposits = paymentRows
-    .filter(r => !r.isHandover && r.label !== 'Downpayment (Booking)')
+    .filter(r => !r.isHandover)
     .reduce((sum, r) => sum + r.amount, 0);
   const handoverPayment = paymentRows.find(r => r.isHandover)?.amount || 0;
+  const totalEquityRequired = basePrice + totalEntryCosts;
 
   // Mortgage
   const netMonthlyRent = netAnnualRent / 12;
@@ -243,7 +224,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       )}
 
       {/* ============ LOGO + ADVISOR HEADER ============ */}
-      <div className="px-5 pt-4 flex items-center gap-4">
+      <div className="px-4 pt-4 flex items-center gap-4">
         <div className={!brokerLogoUrl ? 'print:hidden' : ''}>
           {brokerLogoUrl ? (
             <img
@@ -286,9 +267,9 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       </div>
 
       {/* ============ HEADER — 3-column grid ============ */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 border-b border-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_minmax(0,300px)_1fr] gap-0 border-b border-gray-200">
         {/* Col 1: Client & Unit Info */}
-        <div className="p-5">
+        <div className="p-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">Client and Unit Information</span>
           </div>
@@ -316,8 +297,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         </div>
 
         {/* Col 2: Title + Snapshot */}
-        <div className="p-5 border-x border-gray-100 flex flex-col items-center">
-          <h1 className="font-display text-2xl font-bold text-gray-900 leading-tight mb-1 uppercase tracking-wide text-center">
+        <div className="p-4 border-x border-gray-100 flex flex-col items-center">
+          <h1 className="font-display text-3xl font-bold text-gray-900 leading-tight mb-1 uppercase tracking-wide text-center">
             Monthly Cashflow Statement
           </h1>
           <p className="font-display text-lg text-gray-500 mb-5 text-center">
@@ -345,7 +326,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="py-[3px] font-bold text-gray-900">Total Equity Required</td>
-                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(basePrice)} AED</td>
+                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED</td>
                   </tr>
                 </tbody>
               </table>
@@ -354,7 +335,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         </div>
 
         {/* Col 3: Projected ROI */}
-        <div className="p-5">
+        <div className="p-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">Projected ROI</span>
           </div>
@@ -396,21 +377,20 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
       </div>
 
       {/* ============ SECTIONS — generous spacing ============ */}
-      <div className="space-y-6 py-6">
+      <div className="space-y-5 py-5">
 
         {/* ============ SECTION A: Initial Cost ============ */}
         <div>
           <SectionHeader letter="A" title="Initial Cost" />
-          <div className="px-5">
+          <div className="px-4">
             <div className="border border-gray-200 rounded-b-lg overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-900">
-                    <th className={TH_CLS + ' text-left w-12'}>#</th>
                     <th className={TH_CLS + ' text-left'}>Description</th>
-                    <th className={TH_CLS + ' text-right'}>AED</th>
-                    {showCurrencyCol && <th className={TH_CLS + ' text-right'}>{currency}</th>}
-                    <th className={TH_CLS + ' text-left w-28'}>Notes</th>
+                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>AED</th>
+                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
+                    <th className={TH_CLS + ' text-left ' + NOTES_W}>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -421,8 +401,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     { num: 'A4', label: 'Oqood Fee', desc: 'Admin', value: inputs.oqoodFee, key: 'a-oqood' },
                   ].map((row) => (
                     <tr key={row.key} className="border-t border-gray-100">
-                      <td className={TD_CLS + ' text-gray-400 font-mono'}>{row.num}</td>
                       <td className={TD_CLS}>
+                        <span className="text-gray-400 font-mono text-[10px] mr-1.5">{row.num}.</span>
                         <span className="text-gray-900 font-medium">{row.label}</span>
                         <span className="text-gray-400 ml-2 text-[10px]">{row.desc}</span>
                       </td>
@@ -434,7 +414,6 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     </tr>
                   ))}
                   <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                    <td className={TD_CLS} />
                     <td className={TD_CLS + ' font-bold text-gray-900'}>Cash to Start</td>
                     <td className={TD_CLS + ' text-right font-mono font-bold text-gray-900'}>
                       {n2s(basePrice * inputs.downpaymentPercent / 100 + totalEntryCosts)}
@@ -455,12 +434,12 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* ============ SECTION B: Milestone Event ============ */}
         <div>
           <SectionHeader letter="B" title="Milestone Event" />
-          <div className="px-5">
+          <div className="px-4">
             {(() => {
               const colCount = paymentRows.length <= 12 ? 1 : paymentRows.length <= 24 ? 2 : 3;
               const isMultiCol = colCount > 1;
               const thCls = isMultiCol ? 'py-1.5 px-2 text-[8px] font-semibold text-white uppercase tracking-wide' : TH_CLS;
-              const tdCls = isMultiCol ? 'py-1 px-2 text-[10px]' : TD_CLS;
+              const tdCls = isMultiCol ? 'py-1.5 px-2 text-[10px]' : TD_CLS;
 
               // Split rows into columns
               const columns: typeof paymentRows[] = [];
@@ -471,16 +450,16 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 }
               }
 
-              const renderTable = (rows: typeof paymentRows, startIdx: number, compact: boolean) => (
+              const renderTable = (rows: typeof paymentRows, startIdx: number, compact: boolean, includeTotal: boolean) => (
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-900">
                       <th className={thCls + ' text-left'}>Description</th>
-                      <th className={thCls + ' text-left w-16'}>When</th>
-                      <th className={thCls + ' text-right w-10'}>%</th>
-                      <th className={thCls + ' text-right'}>AED</th>
-                      {showCurrencyCol && !compact && <th className={thCls + ' text-right'}>{currency}</th>}
-                      {!compact && <th className={thCls + ' text-left w-24'}>Notes</th>}
+                      <th className={thCls + ' text-left'}>When</th>
+                      <th className={thCls + ' text-right w-[1%] whitespace-nowrap'}>%</th>
+                      <th className={thCls + ' text-right w-[1%] whitespace-nowrap'}>AED</th>
+                      {showCurrencyCol && !compact && <th className={thCls + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
+                      {!compact && <th className={thCls + ' text-left ' + NOTES_W}>Notes</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -496,7 +475,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                           {row.badges.map((badge) => (
                             <span
                               key={badge}
-                              className={`ml-1 inline-flex text-[7px] px-1 py-0.5 rounded font-bold uppercase ${
+                              className={`ml-1.5 inline-flex items-center text-[7px] px-1 rounded font-bold uppercase leading-none ${
                                 badge === 'Resale'
                                   ? 'bg-emerald-100 text-emerald-700'
                                   : 'bg-blue-100 text-blue-700'
@@ -506,24 +485,31 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                             </span>
                           ))}
                         </td>
-                        <td className={tdCls}>
+                        <td className={tdCls + ' whitespace-nowrap'}>
                           {row.dateStr && (
-                            <span className="text-gray-800 font-medium">{row.dateStr}</span>
-                          )}
-                          {row.dateDetail && !compact && (
-                            <span className="text-[8px] text-gray-400 ml-1">{row.dateDetail}</span>
+                            <span className="text-gray-700 font-medium">{row.dateStr}</span>
                           )}
                         </td>
                         <td className={tdCls + ' text-right font-mono text-gray-600'}>{row.percent}%</td>
                         <td className={tdCls + ' text-right font-mono text-gray-900'}>{n2s(row.amount)}</td>
                         {showCurrencyCol && !compact && <td className={tdCls + ' text-right font-mono text-gray-900'}>{cvf(row.amount)}</td>}
                         {!compact && (
-                          <td className={tdCls}>
+                          <td className={tdCls + ' ' + NOTES_W}>
                             <NoteCell noteKey={`b-milestone-${startIdx + i}`} notes={notes} onNotesChange={onNotesChange} exportMode={exportMode} />
                           </td>
                         )}
                       </tr>
                     ))}
+                    {includeTotal && (
+                      <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
+                        <td className={tdCls + ' font-bold text-[#8A6528]'}>Total Equity Required</td>
+                        <td className={tdCls} />
+                        <td className={tdCls} />
+                        <td className={tdCls + ' text-right font-mono font-bold text-[#8A6528]'}>{n2s(totalEquityRequired)}</td>
+                        {showCurrencyCol && !compact && <td className={tdCls + ' text-right font-mono font-bold text-[#8A6528]'}>{cvf(totalEquityRequired)}</td>}
+                        {!compact && <td className={tdCls} />}
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               );
@@ -531,35 +517,28 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               return (
                 <div className="border border-gray-200 rounded-b-lg overflow-hidden">
                   {isMultiCol ? (
-                    <div className={`grid ${colCount === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                      {columns.map((colRows, colIdx) => (
-                        <div key={colIdx} className={colIdx > 0 ? 'border-l border-gray-200' : ''}>
-                          {renderTable(
-                            colRows,
-                            colIdx * Math.ceil(paymentRows.length / colCount),
-                            true,
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <>
+                      <div className={`grid ${colCount === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                        {columns.map((colRows, colIdx) => (
+                          <div key={colIdx} className={colIdx > 0 ? 'border-l border-gray-200' : ''}>
+                            {renderTable(
+                              colRows,
+                              colIdx * Math.ceil(paymentRows.length / colCount),
+                              true,
+                              false,
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Total row full-width for multi-col */}
+                      <div className="border-t-2 border-gray-300 bg-[#B3893A]/5 flex items-center px-3 py-1.5">
+                        <span className="text-[11px] font-bold text-[#8A6528] flex-1">Total Equity Required</span>
+                        <span className="text-[11px] font-mono font-bold text-[#8A6528]">{n2s(totalEquityRequired)} AED</span>
+                      </div>
+                    </>
                   ) : (
-                    renderTable(paymentRows, 0, false)
+                    renderTable(paymentRows, 0, false, true)
                   )}
-                  {/* Total row — always full width */}
-                  <table className="w-full">
-                    <tbody>
-                      <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
-                        <td className={TD_CLS + ' font-bold text-[#8A6528]'}>Total Equity Required</td>
-                        <td className={TD_CLS} />
-                        <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>100%</td>
-                        <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>{n2s(basePrice)}</td>
-                        {showCurrencyCol && (
-                          <td className={TD_CLS + ' text-right font-mono font-bold text-[#8A6528]'}>{cvf(basePrice)}</td>
-                        )}
-                        <td className={TD_CLS} />
-                      </tr>
-                    </tbody>
-                  </table>
                 </div>
               );
             })()}
@@ -569,16 +548,16 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* ============ SECTION C: Projected Rental Income ============ */}
         <div>
           <SectionHeader letter="C" title="Projected Rental Income" />
-          <div className="px-5">
+          <div className="px-4">
             <div className="border border-gray-200 rounded-b-lg overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-900">
                     <th className={TH_CLS + ' text-left'}>Label</th>
-                    <th className={TH_CLS + ' text-right'}>Monthly AED</th>
-                    <th className={TH_CLS + ' text-right'}>Annual AED</th>
-                    {showCurrencyCol && <th className={TH_CLS + ' text-right'}>Monthly {currency}</th>}
-                    {showCurrencyCol && <th className={TH_CLS + ' text-right'}>Annual {currency}</th>}
+                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Monthly AED</th>
+                    <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Annual AED</th>
+                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Monthly {currency}</th>}
+                    {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Annual {currency}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -598,7 +577,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-red-600'}>{cvf(annualServiceCharges / 12)}</td>}
                     {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-red-600'}>{cvf(annualServiceCharges)}</td>}
                   </tr>
-                  <tr className="border-t-2 border-gray-300 bg-gray-50">
+                  <tr className="border-t-2 border-gray-300 bg-[#B3893A]/5">
                     <td className={TD_CLS + ' font-bold text-gray-900'}>Net Rental Income</td>
                     <td className={TD_CLS + ' text-right font-mono font-bold text-emerald-600'}>{n2s(netAnnualRent / 12)}</td>
                     <td className={TD_CLS + ' text-right font-mono font-bold text-emerald-600'}>{n2s(netAnnualRent)}</td>
@@ -631,7 +610,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* ============ SECTION D: Annual Net Cash Position ============ */}
         <div>
           <SectionHeader letter="D" title="Annual Net Cash Position" />
-          <div className="px-5">
+          <div className="px-4">
             <div className="border border-gray-200 rounded-b-lg overflow-hidden overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -679,16 +658,16 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           return (
             <div>
               <SectionHeader letter="E" title="Exit Scenarios" />
-              <div className="px-5">
+              <div className="px-4">
                 <div className="border border-gray-200 rounded-b-lg overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="bg-gray-900">
                         <th className={TH_CLS + ' text-left'}>Exit</th>
-                        <th className={TH_CLS + ' text-right'}>Invested</th>
-                        <th className={TH_CLS + ' text-right'}>Exit Price</th>
-                        <th className={TH_CLS + ' text-right'}>Net Profit</th>
-                        <th className={TH_CLS + ' text-right'}>ROE</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Invested</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Exit Price</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>Net Profit</th>
+                        <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>ROE</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -749,7 +728,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               title="Financing"
               subtitle={`${mortgageData.financingPercent}% + ${mortgageData.loanTermYears}yr + ${mortgageData.interestRate}%`}
             />
-            <div className="px-5">
+            <div className="px-4">
               <div className="border border-gray-200 rounded-b-lg overflow-hidden">
                 <table className="w-full">
                   <tbody>
@@ -782,16 +761,33 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           </div>
         )}
 
-        {/* ============ SECTION G: Floor Plan (conditional) ============ */}
-        {(inputs as any)._floorplanUrl && (
+        {/* ============ SECTION G: Property Renders (conditional) ============ */}
+        {((inputs as any)._buildingRenderUrl || (inputs as any)._floorplanUrl) && (
           <div>
-            <SectionHeader letter="G" title="Floor Plan" subtitle="Unit Layout" />
-            <div className="px-5">
-              <img
-                src={(inputs as any)._floorplanUrl}
-                alt="Floor Plan"
-                className="w-full max-h-[500px] object-contain rounded-lg border border-gray-200"
-              />
+            <SectionHeader letter="G" title="Property Renders" subtitle="Building & Floor Plan" />
+            <div className="px-4">
+              <div className={`${(inputs as any)._buildingRenderUrl && (inputs as any)._floorplanUrl ? 'grid grid-cols-2 gap-4' : ''}`}>
+                {(inputs as any)._buildingRenderUrl && (
+                  <div>
+                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mb-1">Building Render</p>
+                    <img
+                      src={(inputs as any)._buildingRenderUrl}
+                      alt="Building Render"
+                      className="w-full max-h-[400px] object-contain rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+                {(inputs as any)._floorplanUrl && (
+                  <div>
+                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mb-1">Floor Plan</p>
+                    <img
+                      src={(inputs as any)._floorplanUrl}
+                      alt="Floor Plan"
+                      className="w-full max-h-[400px] object-contain rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -867,12 +863,13 @@ function ordSuffix(n: number): string {
 }
 
 // ─── Shared constants ───────────────────────────────────────────────
-const TH_CLS = 'py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide';
-const TD_CLS = 'py-1 px-3 text-[11px]';
+const TH_CLS = 'py-1.5 px-2 text-[9px] font-semibold text-white uppercase tracking-wide';
+const TD_CLS = 'py-1.5 px-2 text-[11px]';
+const NOTES_W = 'min-w-[140px]';
 
 // ─── Section header: gold bar with white text and circled letter badge ──
 const SectionHeader: React.FC<{ letter: string; title: string; subtitle?: string }> = ({ letter, title, subtitle }) => (
-  <div className="mx-5 flex items-center gap-3 px-4 py-2.5 bg-[#B3893A] rounded-t-lg">
+  <div className="mx-4 flex items-center gap-3 px-3 py-2 bg-[#B3893A] rounded-t-lg">
     <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold">{letter}</span>
     <span className="text-[11px] font-bold text-white uppercase tracking-wider">{title}</span>
     {subtitle && (

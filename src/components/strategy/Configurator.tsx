@@ -5,6 +5,7 @@ import { PaymentPlanStep } from './steps/PaymentPlanStep';
 import { GrowthExitsStep } from './steps/GrowthExitsStep';
 import { RentalStep } from './steps/RentalStep';
 import { MortgageStep } from './steps/MortgageStep';
+import { CGISStep } from './steps/CGISStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { Check } from 'lucide-react';
 import { PaymentPlanDropZone } from '@/components/roi/configurator/PaymentPlanDropZone';
@@ -27,7 +28,8 @@ const STEPS = [
   { id: 3, label: 'Growth & Exits' },
   { id: 4, label: 'Rental' },
   { id: 5, label: 'Mortgage' },
-  { id: 6, label: 'Review' },
+  { id: 6, label: 'CGIS' },
+  { id: 7, label: 'Review' },
 ];
 
 export const Configurator: React.FC<ConfiguratorProps> = ({
@@ -226,10 +228,15 @@ export const Configurator: React.FC<ConfiguratorProps> = ({
           />
         )}
         {step === 6 && (
+          <CGISStep
+            inputs={inputs}
+            updateField={updateField}
+          />
+        )}
+        {step === 7 && (
           <ReviewStep
             inputs={inputs}
             onSave={onSave}
-            onShare={onShare}
             isSaving={isSaving}
           />
         )}

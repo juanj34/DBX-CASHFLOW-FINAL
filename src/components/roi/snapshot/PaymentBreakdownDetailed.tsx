@@ -262,12 +262,10 @@ export const PaymentBreakdownDetailed = ({
             {/* Construction installments */}
             {sortedPayments.map((payment, idx) => {
               const amount = basePrice * (payment.paymentPercent / 100);
-              const triggerLabel = payment.type === 'time'
-                ? `${payment.triggerValue} ${t('monthsAfterBookingLabel')}`
-                : `${payment.triggerValue}% ${t('onProjectCompletion')}`;
+              const constructionPeriod = (handoverYear - bookingYear) * 12 + (handoverMonth - bookingMonth);
               const dateEstimate = payment.type === 'time'
                 ? estimateDate(payment.triggerValue)
-                : '';
+                : '~' + estimateDate(Math.round((payment.triggerValue / 100) * constructionPeriod));
 
               return (
                 <div key={payment.id || idx} className="flex items-center justify-between py-1.5">
@@ -276,8 +274,7 @@ export const PaymentBreakdownDetailed = ({
                       {t('installmentWithNumber')} {idx + 1} ({payment.paymentPercent}%)
                     </span>
                     <span className="text-[10px] text-theme-text-muted">
-                      {triggerLabel}
-                      {dateEstimate && ` · ${t('estimatedLabel')}: ${dateEstimate}`}
+                      {dateEstimate}
                     </span>
                   </div>
                   <div className="text-right">

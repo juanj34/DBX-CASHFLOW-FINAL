@@ -310,38 +310,26 @@ export const CompactPaymentTable = ({
   // Calculate months from booking to handover for post-handover date calculations
   const handoverMonthsFromBooking = (handoverYear - bookingYear) * 12 + (handoverMonth - bookingMonth);
 
-  const getPaymentLabel = (payment: PaymentMilestone): string => {
-    if (payment.type === 'time') {
-      return `Month ${payment.triggerValue}`;
-    }
-    if (payment.type === 'construction') {
-      return `${payment.triggerValue}% Built`;
-    }
-    if (payment.type === 'post-handover') {
-      return `+${payment.triggerValue}mo`;
-    }
-    return payment.label || 'Payment';
-  };
-
-  // Check if payment is construction-based (needs S-curve disclaimer)
-  const isConstructionPayment = (payment: PaymentMilestone): boolean => {
-    return payment.type === 'construction';
-  };
-
+  // Returns date string for any payment type
   const getPaymentDate = (payment: PaymentMilestone): string => {
     if (payment.type === 'time') {
       return estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language);
     }
     if (payment.type === 'post-handover') {
-      // Convert relative months after handover to absolute months from booking
       const absoluteMonth = handoverMonthsFromBooking + payment.triggerValue;
       return estimateDateFromMonths(absoluteMonth, bookingMonth, bookingYear, language);
     }
-    // Construction payments: no date shown (percentage-based, not time-based)
     if (payment.type === 'construction') {
-      return '';
+      const totalConstructionMonths = (handoverYear - bookingYear) * 12 + (handoverMonth - bookingMonth);
+      const estMonths = Math.round((payment.triggerValue / 100) * totalConstructionMonths);
+      return '~' + estimateDateFromMonths(estMonths, bookingMonth, bookingYear, language);
     }
     return '';
+  };
+
+  // Check if payment is construction-based (needs S-curve disclaimer)
+  const isConstructionPayment = (payment: PaymentMilestone): boolean => {
+    return payment.type === 'construction';
   };
 
   // Dual currency helpers
@@ -531,7 +519,7 @@ export const CompactPaymentTable = ({
                 const renderPaymentRow = (payment: PaymentMilestone, index: number, originalIndex: number) => {
                   const amount = basePrice * (payment.paymentPercent / 100);
                   const dateStr = getPaymentDate(payment);
-                  const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
+                  const labelWithDate = dateStr || payment.label || 'Payment';
                   
                   // Check for handover indicators - highlight payments in handover quarter
                   // BUT NOT for post-handover plans, which have an explicit handover section

@@ -130,11 +130,11 @@ export const PaymentHorizontalTimeline = ({
       
       if (isTimeBased) {
         monthsFromBooking = payment.triggerValue;
-        label = `M${payment.triggerValue}`;
+        label = estimateDateFromMonths(monthsFromBooking);
         isEstimate = false;
       } else {
         monthsFromBooking = constructionToMonth(payment.triggerValue, totalMonths);
-        label = `${payment.triggerValue}%`;
+        label = '~' + estimateDateFromMonths(monthsFromBooking);
         isEstimate = true;
       }
       
@@ -373,13 +373,13 @@ export const PaymentHorizontalTimeline = ({
                           {payment.label}
                         </div>
                         <div className="text-[9px] text-slate-500 mt-0.5">
-                          {payment.isEstimate ? '~' : ''}{payment.date}
+                          {payment.percent}%
                         </div>
                       </div>
                     ) : (
                       <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
                         <div className="text-[9px] text-slate-500 mb-0.5">
-                          {payment.isEstimate ? '~' : ''}{payment.date}
+                          {payment.percent}%
                         </div>
                         <div className={`text-[10px] font-semibold ${textColor}`}>
                           {payment.label}

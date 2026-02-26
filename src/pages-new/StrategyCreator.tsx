@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageShell } from '@/components/layout-new/PageShell';
 import { Navbar } from '@/components/layout-new/Navbar';
 import { Configurator } from '@/components/strategy/Configurator';
 import { CashflowDocument } from '@/components/document/CashflowDocument';
+import { CashflowDashboard } from '@/components/document/CashflowDashboard';
+import { LoadQuoteModal } from '@/components/strategy/LoadQuoteModal';
 import { OIInputs, useOICalculations } from '@/components/roi/useOICalculations';
 import { Currency } from '@/components/roi/currencyUtils';
 import { useCashflowQuote } from '@/hooks/useCashflowQuote';
@@ -14,11 +16,13 @@ import { DEFAULT_MORTGAGE_INPUTS, MortgageInputs } from '@/components/roi/useMor
 import { useClientExport } from '@/hooks/useClientExport';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Settings2, ChevronLeft, X, Plus, Download, FileImage, FileText } from 'lucide-react';
+import { Settings2, ChevronLeft, X, Plus, Download, FileImage, FileText, FolderOpen, LayoutDashboard, FileSpreadsheet } from 'lucide-react';
 
 const StrategyCreator: React.FC = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isFresh = searchParams.get('fresh') === 'true';
   const { toast } = useToast();
 
   // Data persistence
@@ -31,6 +35,7 @@ const StrategyCreator: React.FC = () => {
     scheduleAutoSave,
     generateShareToken,
     getOrCreateWorkingDraft,
+    createFreshDraft,
     promoteWorkingDraft,
   } = useCashflowQuote(quoteId);
 
@@ -39,8 +44,10 @@ const StrategyCreator: React.FC = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [currency, setCurrency] = useState<Currency>('AED');
   const [language, setLanguage] = useState('en');
-  const [showConfigurator, setShowConfigurator] = useState(!quoteId);
+  const [showConfigurator, setShowConfigurator] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(!!quoteId);
+  const [viewMode, setViewMode] = useState<'dashboard' | 'document'>('dashboard');
+  const [showLoadModal, setShowLoadModal] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(quoteId);
   const { profile } = useProfile();
   const brokerLogoUrl = profile?.avatar_url || undefined;
@@ -92,14 +99,21 @@ const StrategyCreator: React.FC = () => {
 
     let cancelled = false;
     const init = async () => {
-      const id = await getOrCreateWorkingDraft();
+      // If ?fresh=true, atomically delete old draft + create new one
+      const id = isFresh
+        ? await createFreshDraft()
+        : await getOrCreateWorkingDraft();
       if (!cancelled && id) {
         setDraftId(id);
+        // Replace URL to remove ?fresh param and set the new draft ID
+        if (isFresh) {
+          navigate(`/strategy/${id}`, { replace: true });
+        }
       }
     };
     init();
     return () => { cancelled = true; };
-  }, [quoteId, getOrCreateWorkingDraft]);
+  }, [quoteId, getOrCreateWorkingDraft, createFreshDraft, isFresh, navigate]);
 
   // Sync inputs from loaded quote
   useEffect(() => {
@@ -215,50 +229,45 @@ const StrategyCreator: React.FC = () => {
   }, [draftId, handleSave, generateShareToken, toast]);
 
   // Export document as PDF or PNG
-  const handleExport = useCallback(async (format: 'pdf' | 'png') => {
+  const handleExport = useCallback(async (format: 'pdf' | 'png', targetView?: 'dashboard' | 'document') => {
     setShowExportMenu(false);
+
+    // If exporting a different view than currently shown, switch to it first
+    const originalView = viewMode;
+    if (targetView && targetView !== viewMode) {
+      setViewMode(targetView);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     setExportMode(true);
     // Wait for exportMode to apply (hides interactive controls)
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const success = await exportView({
-      format,
-      viewName: 'cashflow-statement',
-    });
+    const viewName = (targetView || viewMode) === 'dashboard' ? 'cashflow-dashboard' : 'cashflow-statement';
+    const success = await exportView({ format, viewName });
 
     setExportMode(false);
 
+    // Restore original view if we switched
+    if (targetView && targetView !== originalView) {
+      setViewMode(originalView);
+    }
+
     if (success) {
-      toast({ title: `${format.toUpperCase()} exported`, description: `Your cashflow statement has been downloaded.` });
+      toast({ title: `${format.toUpperCase()} exported`, description: `Your ${viewName.replace('-', ' ')} has been downloaded.` });
     } else {
       toast({ title: 'Export failed', description: 'Could not generate the file. Please try again.' });
     }
-  }, [exportView, toast]);
+  }, [exportView, toast, viewMode]);
 
-  // Loading state
-  if (quoteLoading && quoteId) {
-    return (
-      <PageShell>
-        <Navbar />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#C9A04A] to-[#B3893A] animate-pulse" />
-            <div className="mt-4 h-1.5 w-32 bg-theme-border rounded-full overflow-hidden">
-              <div className="h-full w-1/2 bg-gradient-to-r from-[#C9A04A] to-[#B3893A] rounded-full animate-shimmer" />
-            </div>
-            <p className="text-sm text-theme-text-muted mt-4">Loading strategy...</p>
-          </div>
-        </main>
-      </PageShell>
-    );
-  }
+  const isLoading = quoteLoading && !!quoteId;
 
   return (
     <PageShell>
       <Navbar />
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className={`mx-auto px-4 sm:px-6 lg:px-8 py-6 ${viewMode === 'dashboard' ? 'max-w-full' : 'max-w-[1440px]'}`}>
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/dashboard')}
@@ -273,22 +282,57 @@ const StrategyCreator: React.FC = () => {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Save status */}
             {lastSaved && (
-              <span className="text-[10px] text-theme-text-muted font-mono">
+              <span className="text-[10px] text-theme-text-muted font-mono mr-1">
                 Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
             {saving && (
-              <span className="text-[10px] text-theme-accent font-mono animate-pulse">
+              <span className="text-[10px] text-theme-accent font-mono animate-pulse mr-1">
                 Saving...
               </span>
             )}
 
+            {/* View Toggle */}
+            <div className="flex items-center rounded-lg border border-theme-border overflow-hidden">
+              <button
+                onClick={() => setViewMode('dashboard')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === 'dashboard'
+                    ? 'bg-theme-accent text-white'
+                    : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-bg'
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => setViewMode('document')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-theme-border ${
+                  viewMode === 'document'
+                    ? 'bg-theme-accent text-white'
+                    : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-bg'
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Document
+              </button>
+            </div>
+
+            {/* Load button */}
+            <button
+              onClick={() => setShowLoadModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-theme-border text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              Load
+            </button>
+
             {/* New Quote button */}
             <button
-              onClick={() => navigate('/strategy/new')}
+              onClick={() => navigate('/strategy/new?fresh=true')}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-theme-border text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -308,20 +352,36 @@ const StrategyCreator: React.FC = () => {
               {showExportMenu && !exporting && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg border border-theme-border bg-theme-card shadow-xl overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 z-50 w-52 rounded-lg border border-theme-border bg-theme-card shadow-xl overflow-hidden">
+                    <div className="px-3 py-1.5 text-[10px] text-theme-text-muted uppercase tracking-wide border-b border-theme-border/50">Dashboard View</div>
                     <button
-                      onClick={() => handleExport('pdf')}
-                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-theme-text hover:bg-theme-bg transition-colors"
+                      onClick={() => handleExport('pdf', 'dashboard')}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-theme-text hover:bg-theme-bg transition-colors"
                     >
                       <FileText className="w-4 h-4 text-theme-text-muted" />
-                      Download PDF
+                      PDF
                     </button>
                     <button
-                      onClick={() => handleExport('png')}
-                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-theme-text hover:bg-theme-bg transition-colors border-t border-theme-border/50"
+                      onClick={() => handleExport('png', 'dashboard')}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-theme-text hover:bg-theme-bg transition-colors"
                     >
                       <FileImage className="w-4 h-4 text-theme-text-muted" />
-                      Download PNG
+                      PNG
+                    </button>
+                    <div className="px-3 py-1.5 text-[10px] text-theme-text-muted uppercase tracking-wide border-t border-b border-theme-border/50">Document View</div>
+                    <button
+                      onClick={() => handleExport('pdf', 'document')}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-theme-text hover:bg-theme-bg transition-colors"
+                    >
+                      <FileText className="w-4 h-4 text-theme-text-muted" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => handleExport('png', 'document')}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-theme-text hover:bg-theme-bg transition-colors"
+                    >
+                      <FileImage className="w-4 h-4 text-theme-text-muted" />
+                      PNG
                     </button>
                   </div>
                 </>
@@ -339,39 +399,108 @@ const StrategyCreator: React.FC = () => {
           </div>
         </div>
 
-        {/* Full-width Document or Empty State */}
-        {hasConfigured ? (
+        {/* Content Area */}
+        {isLoading ? (
+          /* Skeleton loading state — top bar stays visible */
+          <div className="w-full animate-pulse space-y-0">
+            {/* 3-column header skeleton */}
+            <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border border-theme-border/30 rounded-t">
+              <div className="p-3 space-y-2">
+                <div className="h-3 w-32 bg-theme-border/40 rounded" />
+                <div className="h-2 w-24 bg-theme-border/20 rounded" />
+                <div className="h-2 w-28 bg-theme-border/20 rounded" />
+                <div className="h-2 w-20 bg-theme-border/20 rounded" />
+                <div className="h-2 w-36 bg-theme-border/20 rounded" />
+              </div>
+              <div className="p-3 border-x border-theme-border/30 min-w-[240px]">
+                <div className="h-4 w-40 bg-[#C9A04A]/20 rounded mx-auto mb-3" />
+                <div className="space-y-2">
+                  <div className="h-2 w-full bg-theme-border/20 rounded" />
+                  <div className="h-2 w-full bg-theme-border/20 rounded" />
+                  <div className="h-3 w-full bg-cyan-500/10 rounded" />
+                </div>
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="h-3 w-24 bg-theme-border/40 rounded" />
+                <div className="h-2 w-full bg-theme-border/20 rounded" />
+                <div className="h-2 w-full bg-theme-border/20 rounded" />
+              </div>
+            </div>
+            {/* Section bars skeleton */}
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i}>
+                <div className="h-5 bg-[#C9A04A]/15 rounded-none" />
+                <div className="border-x border-b border-theme-border/20 space-y-1 p-2">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="h-3 bg-theme-border/10 rounded w-full" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : hasConfigured ? (
           <div ref={documentRef}>
-            <CashflowDocument
-              inputs={inputs}
-              calculations={calculations}
-              clientInfo={clientInfo}
-              exitScenarios={inputs._exitScenarios}
-              currency={currency}
-              rate={rate}
-              language={language}
-              exportMode={exportMode}
-              notes={notes}
-              onNotesChange={setNotes}
-              setCurrency={setCurrency}
-              setLanguage={setLanguage}
-              mortgageData={mortgageData}
-              brokerLogoUrl={brokerLogoUrl}
-              advisorInfo={{
-                name: profile?.full_name || undefined,
-                email: profile?.business_email || undefined,
-                photoUrl: profile?.avatar_url || undefined,
-                phone: profile?.whatsapp_number ? `${profile?.whatsapp_country_code || '+971'}${profile?.whatsapp_number}` : undefined,
-              }}
-            />
+            {viewMode === 'dashboard' ? (
+              <CashflowDashboard
+                inputs={inputs}
+                calculations={calculations}
+                clientInfo={clientInfo}
+                exitScenarios={inputs._exitScenarios}
+                currency={currency}
+                rate={rate}
+                language={language}
+                exportMode={exportMode}
+                mortgageData={mortgageData}
+                brokerLogoUrl={brokerLogoUrl}
+                setCurrency={setCurrency}
+                setLanguage={setLanguage}
+                advisorInfo={{
+                  name: profile?.full_name || undefined,
+                  email: profile?.business_email || undefined,
+                  photoUrl: profile?.profile_photo_url || undefined,
+                  phone: profile?.whatsapp_number
+                    ? (profile.whatsapp_number.startsWith('+')
+                      ? profile.whatsapp_number
+                      : `${profile?.whatsapp_country_code || '+971'}${profile.whatsapp_number}`)
+                    : undefined,
+                }}
+              />
+            ) : (
+              <CashflowDocument
+                inputs={inputs}
+                calculations={calculations}
+                clientInfo={clientInfo}
+                exitScenarios={inputs._exitScenarios}
+                currency={currency}
+                rate={rate}
+                language={language}
+                exportMode={exportMode}
+                notes={notes}
+                onNotesChange={setNotes}
+                setCurrency={setCurrency}
+                setLanguage={setLanguage}
+                mortgageData={mortgageData}
+                brokerLogoUrl={brokerLogoUrl}
+                advisorInfo={{
+                  name: profile?.full_name || undefined,
+                  email: profile?.business_email || undefined,
+                  photoUrl: profile?.profile_photo_url || undefined,
+                  phone: profile?.whatsapp_number
+                    ? (profile.whatsapp_number.startsWith('+')
+                      ? profile.whatsapp_number
+                      : `${profile?.whatsapp_country_code || '+971'}${profile.whatsapp_number}`)
+                    : undefined,
+                }}
+              />
+            )}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-md flex flex-col items-center justify-center py-24 px-8 text-center">
+          <div className="bg-theme-card rounded-xl border border-theme-border shadow-md flex flex-col items-center justify-center py-24 px-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#C9A04A]/10 to-[#B3893A]/10 border border-[#C9A04A]/20 flex items-center justify-center mb-6">
               <FileText className="w-7 h-7 text-[#C9A04A]" />
             </div>
-            <h2 className="font-display text-xl text-gray-900 mb-2">No Strategy Configured</h2>
-            <p className="text-sm text-gray-500 max-w-md mb-8">
+            <h2 className="font-display text-xl text-theme-text mb-2">No Strategy Configured</h2>
+            <p className="text-sm text-theme-text-muted max-w-md mb-8">
               Configure your property details, payment plan, and growth assumptions to generate a cashflow statement.
             </p>
             <button
@@ -408,6 +537,13 @@ const StrategyCreator: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Load Quote Modal */}
+      <LoadQuoteModal
+        open={showLoadModal}
+        onOpenChange={setShowLoadModal}
+        onSelect={(id) => navigate(`/strategy/${id}`)}
+      />
     </PageShell>
   );
 };

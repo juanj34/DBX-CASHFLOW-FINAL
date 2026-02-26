@@ -181,22 +181,20 @@ export const ClientPaymentSheet = ({
                   const paymentAmount = basePrice * payment.paymentPercent / 100;
                   const clientPaymentAmount = paymentAmount * sharePercent / 100;
                   const isTimeBased = payment.type === 'time';
-                  const triggerLabel = isTimeBased
-                    ? `M${payment.triggerValue}`
-                    : `${payment.triggerValue}%`;
-                  const dateStr = isTimeBased 
+                  const dateStr = isTimeBased
                     ? estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language)
-                    : null;
-                  
+                    : (() => {
+                        const totalConstructionMonths = (inputs.handoverYear - bookingYear) * 12 + (inputs.handoverMonth - bookingMonth);
+                        const estMonths = Math.round((payment.triggerValue / 100) * totalConstructionMonths);
+                        return '~' + estimateDateFromMonths(estMonths, bookingMonth, bookingYear, language);
+                      })();
+
                   return (
                     <div key={payment.id} className="flex justify-between items-center text-xs">
                       <div className="flex items-center gap-1">
                         <span className="text-theme-text-muted">
-                          {payment.paymentPercent}% @ {triggerLabel}
+                          {payment.paymentPercent}% · {dateStr}
                         </span>
-                        {dateStr && (
-                          <span className="text-[10px] text-theme-text-muted">({dateStr})</span>
-                        )}
                       </div>
                       <span className="text-theme-text font-mono">{formatCurrency(clientPaymentAmount, currency, rate)}</span>
                     </div>

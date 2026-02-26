@@ -8,15 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { User, TrendingUp, Save, LogOut, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { User, TrendingUp, Save, LogOut, Image as ImageIcon, Upload, X, Camera } from 'lucide-react';
 
 const Account: React.FC = () => {
-  const { profile, loading, updateProfile } = useProfile();
+  const { profile, loading, updateProfile, updateProfilePhoto } = useProfile();
   const { signOut } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Local form state
   const [fullName, setFullName] = useState('');
@@ -74,6 +76,43 @@ const Account: React.FC = () => {
   const handleRemoveLogo = async () => {
     await updateProfile({ avatar_url: null });
     toast({ title: 'Logo removed' });
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!profile) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please upload an image file', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Max 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const fileName = `${profile.id}/photo_${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('profile-avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-avatars')
+        .getPublicUrl(fileName);
+
+      await updateProfilePhoto(publicUrl);
+      toast({ title: 'Profile photo uploaded' });
+    } catch (error: any) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    }
+    setUploadingPhoto(false);
+  };
+
+  const handleRemovePhoto = async () => {
+    await updateProfilePhoto(null);
+    toast({ title: 'Profile photo removed' });
   };
 
   const handleSave = async () => {
@@ -174,6 +213,68 @@ const Account: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleLogoUpload(file);
+                  e.target.value = '';
+                }}
+                className="hidden"
+              />
+            </div>
+          </section>
+
+          {/* Profile Photo Section */}
+          <section className="rounded-xl border border-theme-border bg-theme-card overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-theme-border bg-theme-card-alt">
+              <Camera className="w-4 h-4 text-theme-accent" />
+              <h2 className="text-sm font-semibold text-theme-text">Profile Photo</h2>
+            </div>
+            <div className="p-5">
+              <p className="text-xs text-theme-text-muted mb-3">
+                Your photo appears next to your name on cashflow documents.
+              </p>
+              {profile?.profile_photo_url ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full border border-theme-border bg-theme-bg overflow-hidden flex-shrink-0">
+                    <img src={profile.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-theme-border text-theme-text hover:bg-theme-bg transition-colors"
+                    >
+                      <Upload className="w-3 h-3" />
+                      Replace
+                    </button>
+                    <button
+                      onClick={handleRemovePhoto}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-theme-negative hover:bg-theme-negative/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => photoInputRef.current?.click()}
+                  className="h-[80px] w-full rounded-xl border-2 border-dashed border-theme-border hover:border-theme-accent/40 hover:bg-theme-accent/5 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  {uploadingPhoto ? (
+                    <div className="w-5 h-5 border-2 border-theme-accent border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Camera className="w-5 h-5 text-theme-text-muted" />
+                      <span className="text-xs text-theme-text-muted">Click to upload photo (PNG, JPG, max 2MB)</span>
+                    </>
+                  )}
+                </div>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePhotoUpload(file);
                   e.target.value = '';
                 }}
                 className="hidden"

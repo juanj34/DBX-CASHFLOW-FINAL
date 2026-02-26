@@ -264,13 +264,16 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                     {sortedAdditionalPayments.map((payment, index) => {
                       const amount = basePrice * payment.paymentPercent / 100;
                       const isTimeBased = payment.type === 'time';
-                      const triggerLabel = isTimeBased
-                        ? `${t('milestone')} M${payment.triggerValue}`
-                        : `${payment.triggerValue}% ${t('constructionPercent')}`;
-                      
-                      const dateStr = isTimeBased 
-                        ? estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language)
-                        : null;
+
+                      // Calculate date for all payment types
+                      let dateStr: string | null = null;
+                      if (isTimeBased) {
+                        dateStr = estimateDateFromMonths(payment.triggerValue, bookingMonth, bookingYear, language);
+                      } else {
+                        // Construction-linked: estimate based on % of construction period
+                        const estMonths = Math.round((payment.triggerValue / 100) * totalMonths);
+                        dateStr = '~' + estimateDateFromMonths(estMonths, bookingMonth, bookingYear, language);
+                      }
                       
                       // Check if this payment falls in or after handover
                       const monthsFromBooking = isTimeBased 
@@ -315,11 +318,8 @@ export const PaymentBreakdown = ({ inputs, currency, totalMonths, rate, unitSize
                                 <Building2 className="w-3 h-3 text-theme-text-muted flex-shrink-0" />
                               )}
                               <span className="text-sm text-theme-text-muted truncate">
-                                {payment.paymentPercent}% @ {triggerLabel}
+                                {payment.paymentPercent}% · {dateStr}
                               </span>
-                              {dateStr && (
-                                <span className="text-xs text-theme-text-muted flex-shrink-0">({dateStr})</span>
-                              )}
                               {inHandoverQuarter && (
                                 <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-500/30 whitespace-nowrap flex items-center gap-0.5">
                                   <Key className="w-2.5 h-2.5" />

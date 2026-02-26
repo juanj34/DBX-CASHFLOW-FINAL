@@ -37,7 +37,7 @@ export const NoteCell: React.FC<NoteCellProps> = ({
         onNotesChange?.({ ...notes, [noteKey]: e.target.value });
       }}
       placeholder="Note..."
-      className={`w-full text-[10px] bg-transparent border-none outline-none text-theme-text-muted placeholder:text-theme-text-muted/30 focus:text-theme-text ${className}`}
+      className={`w-full h-5 text-[10px] bg-transparent border-none outline-none text-theme-text-muted placeholder:text-theme-text-muted/30 focus:text-theme-text ${className}`}
     />
   );
 };

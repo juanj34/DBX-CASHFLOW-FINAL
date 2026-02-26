@@ -8,13 +8,13 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth-new/ProtectedRoute";
 
-// Eagerly load landing (first paint) and auth
+// Eagerly load landing (first paint), auth, and strategy (core page)
 import Landing from "./pages-new/Landing";
 import Auth from "./pages-new/Auth";
+import StrategyCreator from "./pages-new/StrategyCreator";
 
-// Lazy-load all other routes for code splitting
+// Lazy-load secondary routes for code splitting
 const Dashboard = lazy(() => import("./pages-new/Dashboard"));
-const StrategyCreator = lazy(() => import("./pages-new/StrategyCreator"));
 const SharedView = lazy(() => import("./pages-new/SharedView"));
 const Account = lazy(() => import("./pages-new/Account"));
 

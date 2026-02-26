@@ -6,6 +6,7 @@ export interface Profile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  profile_photo_url: string | null;
   business_email: string | null;
   whatsapp_number: string | null;
   whatsapp_country_code: string | null;
@@ -56,7 +57,10 @@ export const useProfile = () => {
         .single();
 
       if (!error && data) {
-        setProfile(data);
+        setProfile({
+          ...data,
+          profile_photo_url: (user.user_metadata?.profile_photo_url as string) || null,
+        });
       }
       setLoading(false);
     };
@@ -85,5 +89,15 @@ export const useProfile = () => {
     return { error };
   };
 
-  return { profile, loading, updateProfile };
+  const updateProfilePhoto = async (url: string | null) => {
+    const { error } = await supabase.auth.updateUser({
+      data: { profile_photo_url: url },
+    });
+    if (!error) {
+      setProfile(prev => prev ? { ...prev, profile_photo_url: url } : null);
+    }
+    return { error };
+  };
+
+  return { profile, loading, updateProfile, updateProfilePhoto };
 };

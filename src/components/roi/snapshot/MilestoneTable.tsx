@@ -48,10 +48,17 @@ export const MilestoneTable = ({
     let monthFromBooking: number | undefined;
     
     if (m.type === 'time') {
-      description = `${m.paymentPercent}% @ ${m.triggerValue} months`;
+      const bookDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      bookDate.setMonth(bookDate.getMonth() + m.triggerValue);
+      const dateStr = bookDate.toLocaleDateString('en', { month: 'short', year: 'numeric' });
+      description = `${m.paymentPercent}% · ${dateStr}`;
       monthFromBooking = m.triggerValue;
     } else {
-      description = `${m.paymentPercent}% @ ${m.triggerValue}% construction`;
+      const bookDate = new Date(inputs.bookingYear, inputs.bookingMonth - 1);
+      const estMonths = Math.round((m.triggerValue / 100) * totalMonths);
+      bookDate.setMonth(bookDate.getMonth() + estMonths);
+      const dateStr = bookDate.toLocaleDateString('en', { month: 'short', year: 'numeric' });
+      description = `${m.paymentPercent}% · ~${dateStr} (${m.triggerValue}%)`;
     }
     
     // Find if any exit matches this milestone
@@ -84,9 +91,9 @@ export const MilestoneTable = ({
     exitMatch: exitScenarios.includes(totalMonths) ? totalMonths : null,
   });
   
-  // Calculate totals
+  // Calculate totals: property price + all entry costs (DLD + Oqood + Holding Fee)
   const installmentsTotal = rows.reduce((sum, r) => sum + r.value, 0);
-  const totalEquity = downpayment + installmentsTotal + (inputs.oqoodFee + basePrice * 0.04); // Include entry costs
+  const totalEquity = downpayment + installmentsTotal + (inputs.oqoodFee + basePrice * 0.04 + (inputs.eoiFee || 0));
   
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">

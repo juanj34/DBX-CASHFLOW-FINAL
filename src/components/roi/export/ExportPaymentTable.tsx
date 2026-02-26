@@ -139,10 +139,9 @@ export const ExportPaymentTable = ({
     ? entryTotal + journeyTotal + handoverAmount + postHandoverTotal
     : entryTotal + journeyTotal + handoverAmount;
 
+  // Label is just the date now
   const getPaymentLabel = (payment: PaymentMilestone): string => {
-    if (payment.type === 'time') return `${language === 'es' ? 'Mes' : 'Month'} ${payment.triggerValue}`;
-    if (payment.type === 'construction') return `${payment.triggerValue}% ${language === 'es' ? 'Construido' : 'Built'}`;
-    return payment.label || (language === 'es' ? 'Pago' : 'Payment');
+    return getPaymentDate(payment) || payment.label || (language === 'es' ? 'Pago' : 'Payment');
   };
   
   const getPaymentDate = (payment: PaymentMilestone): string => {
@@ -151,7 +150,7 @@ export const ExportPaymentTable = ({
     }
     if (payment.type === 'construction') {
       const monthsForPercent = Math.round((payment.triggerValue / 100) * totalMonths);
-      return estimateDateFromMonths(monthsForPercent, bookingMonth, bookingYear, language);
+      return '~' + estimateDateFromMonths(monthsForPercent, bookingMonth, bookingYear, language);
     }
     return '';
   };
@@ -310,7 +309,7 @@ export const ExportPaymentTable = ({
             {sortedPayments.map((payment, index) => {
               const amount = basePrice * (payment.paymentPercent / 100);
               const dateStr = getPaymentDate(payment);
-              const labelWithDate = dateStr ? `${getPaymentLabel(payment)} (${dateStr})` : getPaymentLabel(payment);
+              const labelWithDate = dateStr || getPaymentLabel(payment);
               
               return (
                 <div key={index} style={rowStyle}>

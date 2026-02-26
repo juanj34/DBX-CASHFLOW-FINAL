@@ -15,7 +15,7 @@ interface QuoteRow {
   developer: string | null;
   client_name: string | null;
   status: string | null;
-  inputs: any;
+  basePrice: number | null;
   share_token: string | null;
   updated_at: string;
   created_at: string;
@@ -42,7 +42,7 @@ const Dashboard: React.FC = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('cashflow_quotes')
-      .select('id, title, project_name, developer, client_name, status, inputs, share_token, updated_at, created_at')
+      .select('id, title, project_name, developer, client_name, status, share_token, updated_at, created_at, inputs->basePrice')
       .eq('broker_id', user!.id)
       .neq('status', 'working_draft')
       .order('updated_at', { ascending: false });
@@ -55,13 +55,8 @@ const Dashboard: React.FC = () => {
     setLoading(false);
   };
 
-  const handleNewStrategy = async () => {
-    await supabase
-      .from('cashflow_quotes')
-      .delete()
-      .eq('broker_id', user!.id)
-      .eq('status', 'working_draft');
-    navigate('/strategy/new');
+  const handleNewStrategy = () => {
+    navigate('/strategy/new?fresh=true');
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -89,9 +84,11 @@ const Dashboard: React.FC = () => {
     toast.success('Share link copied');
   };
 
-  const getBasePrice = (inputs: any): number | null => {
-    if (!inputs) return null;
-    return typeof inputs === 'object' ? inputs.basePrice : null;
+  const getBasePrice = (row: QuoteRow): number | null => {
+    // basePrice comes from the PostgREST JSON accessor `inputs->basePrice`
+    const val = row.basePrice;
+    if (val == null) return null;
+    return typeof val === 'number' ? val : Number(val) || null;
   };
 
   const formatPrice = (price: number) => {
@@ -136,7 +133,7 @@ const Dashboard: React.FC = () => {
         case 'project_name': aVal = (a.project_name || '').toLowerCase(); bVal = (b.project_name || '').toLowerCase(); break;
         case 'client_name': aVal = (a.client_name || '').toLowerCase(); bVal = (b.client_name || '').toLowerCase(); break;
         case 'developer': aVal = (a.developer || '').toLowerCase(); bVal = (b.developer || '').toLowerCase(); break;
-        case 'price': aVal = getBasePrice(a.inputs) || 0; bVal = getBasePrice(b.inputs) || 0; break;
+        case 'price': aVal = getBasePrice(a) || 0; bVal = getBasePrice(b) || 0; break;
         case 'updated_at': aVal = new Date(a.updated_at).getTime(); bVal = new Date(b.updated_at).getTime(); break;
       }
       if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
@@ -231,7 +228,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody>
                 {filteredAndSorted.map((q) => {
-                  const price = getBasePrice(q.inputs);
+                  const price = getBasePrice(q);
                   return (
                     <tr
                       key={q.id}

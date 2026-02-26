@@ -113,6 +113,7 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
 
   // Descriptive label for exit chips
   const getExitLabel = (month: number) => {
+    if (month === totalMonths - 1) return 'Pre-Handover';
     if (month === totalMonths) return 'Handover';
     if (month < totalMonths) {
       return month < 12 ? `Month ${month}` : `${(month / 12).toFixed(month % 12 === 0 ? 0 : 1)}yr`;
@@ -159,27 +160,20 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
           Choose when to analyze selling. Handover at month <span className="font-mono text-theme-accent">{totalMonths}</span>.
         </p>
 
-        {/* During Construction */}
-        {preConstructionPresets.length > 0 && (
-          <div className="mb-3">
-            <span className="text-[10px] text-theme-text-muted uppercase tracking-wider font-medium block mb-1.5">During Construction</span>
-            <div className="flex flex-wrap gap-1.5">
+        {/* All presets in one compact row */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          {preConstructionPresets.length > 0 && (
+            <>
+              <span className="text-[9px] text-theme-text-muted uppercase tracking-wider font-medium">Construction</span>
               {preConstructionPresets.map(p => presetBtn(p.month, p.label))}
-            </div>
-          </div>
-        )}
-
-        {/* Handover */}
-        <div className="mb-3">
-          {presetBtn(totalMonths, `Handover (M${totalMonths})`, true)}
-        </div>
-
-        {/* After Handover */}
-        <div className="mb-3">
-          <span className="text-[10px] text-theme-text-muted uppercase tracking-wider font-medium block mb-1.5">After Handover</span>
-          <div className="flex flex-wrap gap-1.5">
-            {postConstructionPresets.map(p => presetBtn(p.month, p.label))}
-          </div>
+              <div className="w-px h-5 bg-theme-border mx-0.5" />
+            </>
+          )}
+          {presetBtn(totalMonths - 1, 'Pre-HO')}
+          {presetBtn(totalMonths, 'Handover', true)}
+          <div className="w-px h-5 bg-theme-border mx-0.5" />
+          <span className="text-[9px] text-theme-text-muted uppercase tracking-wider font-medium">Post-HO</span>
+          {postConstructionPresets.map(p => presetBtn(p.month, p.label))}
         </div>
 
         {/* Custom exit — inline */}
@@ -251,25 +245,29 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
           Annual property value growth. Monthly compounding applied.
         </p>
 
-        <div className="p-4 rounded-xl border border-theme-border bg-theme-card space-y-5">
-          {/* Construction Appreciation */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <Label className="text-sm text-theme-text">During Construction</Label>
-                <p className="text-[10px] text-theme-text-muted">
-                  {constructionYears} year{constructionYears !== 1 ? 's' : ''} to handover
-                </p>
+        <div className="p-3 rounded-xl border border-theme-border bg-theme-card space-y-3">
+          <div className={isYearByYear ? 'space-y-3' : 'grid grid-cols-2 gap-3'}>
+            {/* Construction Appreciation */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <Label className="text-xs text-theme-text">During Construction</Label>
+                  <p className="text-[9px] text-theme-text-muted">{constructionYears}yr to handover</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isYearByYear && (
+                    <span className="font-mono text-base text-theme-accent font-semibold">
+                      {constructionAppreciation}%
+                    </span>
+                  )}
+                  <Switch
+                    checked={isYearByYear}
+                    onCheckedChange={toggleYearByYear}
+                  />
+                </div>
               </div>
-              {!isYearByYear && (
-                <span className="font-mono text-lg text-theme-accent font-semibold">
-                  {constructionAppreciation}%
-                </span>
-              )}
-            </div>
 
-            {!isYearByYear && (
-              <>
+              {!isYearByYear && (
                 <Slider
                   value={[constructionAppreciation]}
                   onValueChange={([v]) => updateField('constructionAppreciation', v)}
@@ -278,77 +276,54 @@ export const GrowthExitsStep: React.FC<Props> = ({ inputs, updateField, updateFi
                   step={0.5}
                   className="roi-slider-lime"
                 />
-                <div className="flex justify-between text-[10px] text-theme-text-muted mt-1">
-                  <span>0%</span>
-                  <span>25%</span>
+              )}
+
+              {isYearByYear && inputs.constructionSchedule && (
+                <div className="mt-2 space-y-1.5">
+                  {Array.from({ length: constructionYears }, (_, i) => {
+                    const rate = inputs.constructionSchedule?.[i] ?? constructionAppreciation;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-[10px] font-medium text-theme-text-muted w-8 shrink-0">
+                          Yr {i + 1}
+                        </span>
+                        <Slider
+                          value={[rate]}
+                          onValueChange={([v]) => updateScheduleYear(i, v)}
+                          min={0}
+                          max={25}
+                          step={0.5}
+                          className="roi-slider-lime flex-1"
+                        />
+                        <span className="font-mono text-xs text-theme-accent font-semibold w-8 text-right">
+                          {rate}%
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              </>
-            )}
+              )}
+            </div>
 
-            {/* Year-by-year toggle */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-theme-border/50">
-              <div>
-                <span className="text-xs font-medium text-theme-text">Per-year rates</span>
-                <p className="text-[10px] text-theme-text-muted">Set declining appreciation year by year</p>
+            {/* Post-construction */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <Label className="text-xs text-theme-text">After Handover</Label>
+                  <p className="text-[9px] text-theme-text-muted">Ongoing growth</p>
+                </div>
+                <span className="font-mono text-base text-theme-accent font-semibold">
+                  {postConstructionAppreciation}%
+                </span>
               </div>
-              <Switch
-                checked={isYearByYear}
-                onCheckedChange={toggleYearByYear}
+              <Slider
+                value={[postConstructionAppreciation]}
+                onValueChange={([v]) => updateField('postConstructionAppreciation' as any, v)}
+                min={0}
+                max={20}
+                step={0.5}
+                className="roi-slider-lime"
               />
-            </div>
-
-            {isYearByYear && inputs.constructionSchedule && (
-              <div className="mt-3 space-y-2">
-                {Array.from({ length: constructionYears }, (_, i) => {
-                  const rate = inputs.constructionSchedule?.[i] ?? constructionAppreciation;
-                  return (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-theme-text-muted w-10 shrink-0">
-                        Yr {i + 1}
-                      </span>
-                      <Slider
-                        value={[rate]}
-                        onValueChange={([v]) => updateScheduleYear(i, v)}
-                        min={0}
-                        max={25}
-                        step={0.5}
-                        className="roi-slider-lime flex-1"
-                      />
-                      <span className="font-mono text-sm text-theme-accent font-semibold w-10 text-right">
-                        {rate}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-theme-border/50" />
-
-          {/* Post-construction */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <Label className="text-sm text-theme-text">After Handover</Label>
-                <p className="text-[10px] text-theme-text-muted">Ongoing appreciation</p>
-              </div>
-              <span className="font-mono text-lg text-theme-accent font-semibold">
-                {postConstructionAppreciation}%
-              </span>
-            </div>
-            <Slider
-              value={[postConstructionAppreciation]}
-              onValueChange={([v]) => updateField('postConstructionAppreciation' as any, v)}
-              min={0}
-              max={20}
-              step={0.5}
-              className="roi-slider-lime"
-            />
-            <div className="flex justify-between text-[10px] text-theme-text-muted mt-1">
-              <span>0%</span>
-              <span>20%</span>
             </div>
           </div>
         </div>

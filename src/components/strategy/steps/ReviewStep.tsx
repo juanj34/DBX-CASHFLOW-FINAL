@@ -1,15 +1,12 @@
 import React from 'react';
 import { OIInputs } from '@/components/roi/useOICalculations';
-import { Share2 } from 'lucide-react';
-
 interface Props {
   inputs: OIInputs;
   onSave: () => void;
-  onShare: () => void;
   isSaving?: boolean;
 }
 
-export const ReviewStep: React.FC<Props> = ({ inputs, onShare }) => {
+export const ReviewStep: React.FC<Props> = ({ inputs }) => {
   const formatAED = (v: number) => {
     return new Intl.NumberFormat('en-AE', { style: 'decimal', maximumFractionDigits: 0 }).format(v);
   };
@@ -46,20 +43,11 @@ export const ReviewStep: React.FC<Props> = ({ inputs, onShare }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-display text-lg text-theme-text mb-1">Strategy Summary</h3>
-          <p className="text-xs text-theme-text-muted">
-            Review your inputs. The cashflow document updates live.
-          </p>
-        </div>
-        <button
-          onClick={onShare}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-theme-border text-theme-text hover:bg-theme-card transition-colors"
-        >
-          <Share2 className="w-4 h-4" />
-          Share
-        </button>
+      <div>
+        <h3 className="font-display text-lg text-theme-text mb-1">Strategy Summary</h3>
+        <p className="text-xs text-theme-text-muted">
+          Review your inputs. The cashflow document updates live.
+        </p>
       </div>
 
       {/* Summary table */}

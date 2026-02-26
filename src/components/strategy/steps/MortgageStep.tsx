@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { OIInputs } from '@/components/roi/useOICalculations';
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from '@/components/roi/useMortgageCalculations';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
-import { Home, ChevronDown, ChevronUp, Settings, BadgeCheck, X, Image as ImageIcon } from 'lucide-react';
+import { Home, ChevronDown, ChevronUp, Settings, BadgeCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -20,7 +20,6 @@ const n2s = (n: number) => new Intl.NumberFormat('en-AE', { maximumFractionDigit
 
 export const MortgageStep: React.FC<Props> = ({ inputs, updateField }) => {
   const [showAdvanced, setShowAdvanced] = React.useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mortgageInputs: MortgageInputs = (inputs as any)._mortgageInputs || DEFAULT_MORTGAGE_INPUTS;
 
@@ -51,23 +50,6 @@ export const MortgageStep: React.FC<Props> = ({ inputs, updateField }) => {
   const yearlyPayment = monthlyPayment * 12;
   const isRecommendedRate = mortgageInputs.interestRate >= 4.5 && mortgageInputs.interestRate <= 5.5;
 
-  const floorplanUrl = (inputs as any)._floorplanUrl as string | undefined;
-
-  const handleFloorplanFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      updateField('_floorplanUrl' as any, e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  }, [updateField]);
-
-  const handleFloorplanDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files.length > 0) handleFloorplanFile(files[0]);
-  }, [handleFloorplanFile]);
 
   return (
     <div className="space-y-3">
@@ -236,44 +218,6 @@ export const MortgageStep: React.FC<Props> = ({ inputs, updateField }) => {
         </>
       )}
 
-      {/* Floor Plan Upload */}
-      <div className="pt-1">
-        <h3 className="text-xs font-semibold text-theme-text mb-1.5 flex items-center gap-1.5">
-          <ImageIcon className="w-3.5 h-3.5 text-theme-accent" />
-          Floor Plan
-        </h3>
-        {floorplanUrl ? (
-          <div className="relative rounded-xl border border-theme-border overflow-hidden">
-            <img src={floorplanUrl} alt="Floor Plan" className="w-full max-h-[180px] object-contain bg-theme-bg" />
-            <button
-              onClick={() => updateField('_floorplanUrl' as any, undefined)}
-              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        ) : (
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleFloorplanDrop}
-            className="flex flex-col items-center justify-center gap-1.5 py-5 rounded-xl border-2 border-dashed border-theme-border hover:border-theme-accent/30 cursor-pointer transition-colors"
-          >
-            <ImageIcon className="w-6 h-6 text-theme-text-muted" />
-            <p className="text-[10px] text-theme-text-muted">Drop image or click to upload</p>
-          </div>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const files = e.target.files;
-            if (files && files.length > 0) handleFloorplanFile(files[0]);
-          }}
-          className="hidden"
-        />
-      </div>
     </div>
   );
 };
