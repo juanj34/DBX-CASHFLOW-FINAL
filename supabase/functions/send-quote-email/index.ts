@@ -21,29 +21,28 @@ interface QuoteEmailRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-quote-email function called");
-  
-  // Handle CORS preflight requests
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { 
-      clientName, 
-      clientEmail, 
-      projectName, 
-      unitType, 
-      quoteUrl, 
+    const {
+      clientName,
+      clientEmail,
+      projectName,
+      unitType,
+      quoteUrl,
       advisorName,
-      advisorEmail 
+      advisorEmail,
     }: QuoteEmailRequest = await req.json();
 
     console.log(`Sending quote email to ${clientEmail} for project ${projectName}`);
 
     const emailResponse = await resend.emails.send({
-      from: "InvestDubai <onboarding@resend.dev>",
+      from: "Dubai Invest Pro <onboarding@resend.dev>",
       to: [clientEmail],
-      subject: `Your Investment Analysis for ${projectName}`,
+      subject: `Investment Analysis — ${projectName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -51,65 +50,89 @@ const handler = async (req: Request): Promise<Response> => {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f5f0eb;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
             <!-- Header -->
             <tr>
-              <td style="background: linear-gradient(135deg, #1a1f2e 0%, #2a3142 100%); padding: 40px 30px; text-align: center;">
-                <h1 style="color: #CCFF00; margin: 0; font-size: 28px; font-weight: bold;">InvestDubai</h1>
-                <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px; opacity: 0.8;">Investment Analysis Platform</p>
-              </td>
-            </tr>
-            
-            <!-- Main Content -->
-            <tr>
-              <td style="padding: 40px 30px;">
-                <h2 style="color: #1a1f2e; margin: 0 0 20px 0; font-size: 24px;">Hello ${clientName},</h2>
-                
-                <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                  Your personalized investment analysis for <strong style="color: #1a1f2e;">${projectName}</strong> is ready!
-                </p>
-                
-                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 8px; margin: 20px 0;">
+              <td style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 48px 40px; text-align: center; border-radius: 12px 12px 0 0;">
+                <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                   <tr>
-                    <td style="padding: 20px;">
-                      <p style="color: #1a1f2e; font-size: 14px; margin: 0 0 10px 0;"><strong>Project:</strong> ${projectName}</p>
-                      <p style="color: #1a1f2e; font-size: 14px; margin: 0 0 10px 0;"><strong>Unit Type:</strong> ${unitType}</p>
-                      <p style="color: #1a1f2e; font-size: 14px; margin: 0;"><strong>Your Advisor:</strong> ${advisorName}</p>
+                    <td style="width: 44px; height: 44px; background: linear-gradient(135deg, #C9A04A, #B3893A); border-radius: 10px; text-align: center; vertical-align: middle;">
+                      <span style="color: #ffffff; font-size: 20px; font-weight: bold; line-height: 44px;">D</span>
+                    </td>
+                    <td style="padding-left: 14px;">
+                      <span style="color: #F5F0EB; font-size: 22px; font-weight: 600; letter-spacing: -0.5px;">Dubai Invest Pro</span>
                     </td>
                   </tr>
                 </table>
-                
-                <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                  This comprehensive analysis includes projected returns, payment schedules, and exit strategies tailored to your investment goals.
+                <p style="color: #A8A29E; margin: 14px 0 0 0; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;">Investment Analysis</p>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="background-color: #ffffff; padding: 44px 40px;">
+                <h2 style="color: #1C1917; margin: 0 0 8px 0; font-size: 22px; font-weight: 600;">Hello ${clientName},</h2>
+                <p style="color: #78716C; font-size: 15px; line-height: 1.7; margin: 0 0 28px 0;">
+                  Your investment analysis for <strong style="color: #1C1917;">${projectName}</strong> is ready for review.
                 </p>
-                
-                <!-- CTA Button -->
+
+                <!-- Details Card -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px;">
+                  <tr>
+                    <td style="padding: 20px; background-color: #FAFAF9; border-left: 3px solid #C9A04A; border-radius: 6px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="padding-bottom: 8px;">
+                            <span style="color: #A8A29E; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Project</span><br>
+                            <span style="color: #1C1917; font-size: 14px; font-weight: 500;">${projectName}</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 8px;">
+                            <span style="color: #A8A29E; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Unit Type</span><br>
+                            <span style="color: #1C1917; font-size: 14px; font-weight: 500;">${unitType}</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <span style="color: #A8A29E; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Prepared by</span><br>
+                            <span style="color: #1C1917; font-size: 14px; font-weight: 500;">${advisorName}</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="color: #78716C; font-size: 14px; line-height: 1.7; margin: 0 0 28px 0;">
+                  This analysis includes projected returns, payment schedules, and exit strategies tailored to your investment profile.
+                </p>
+
+                <!-- CTA -->
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="text-align: center;">
-                      <a href="${quoteUrl}" style="display: inline-block; background-color: #CCFF00; color: #1a1f2e; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                      <a href="${quoteUrl}" style="display: inline-block; background: linear-gradient(135deg, #C9A04A, #B3893A); color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
                         View Your Analysis
                       </a>
                     </td>
                   </tr>
                 </table>
-                
-                <p style="color: #999999; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0; text-align: center;">
-                  If the button doesn't work, copy and paste this link into your browser:<br>
-                  <a href="${quoteUrl}" style="color: #CCFF00; word-break: break-all;">${quoteUrl}</a>
+
+                <p style="color: #A8A29E; font-size: 12px; line-height: 1.6; margin: 24px 0 0 0; text-align: center;">
+                  If the button doesn't work, copy this link:<br>
+                  <a href="${quoteUrl}" style="color: #C9A04A; word-break: break-all; font-size: 11px;">${quoteUrl}</a>
                 </p>
               </td>
             </tr>
-            
+
             <!-- Footer -->
             <tr>
-              <td style="background-color: #1a1f2e; padding: 30px; text-align: center;">
-                <p style="color: #ffffff; font-size: 14px; margin: 0 0 10px 0;">
-                  Questions? Contact your advisor: ${advisorEmail || advisorName}
-                </p>
-                <p style="color: #888888; font-size: 12px; margin: 0;">
-                  © ${new Date().getFullYear()} InvestDubai. All rights reserved.
+              <td style="background-color: #1C1917; padding: 28px 40px; text-align: center; border-radius: 0 0 12px 12px;">
+                ${advisorEmail ? `<p style="color: #A8A29E; font-size: 13px; margin: 0 0 8px 0;">Questions? Contact ${advisorName}: <a href="mailto:${advisorEmail}" style="color: #C9A04A; text-decoration: none;">${advisorEmail}</a></p>` : `<p style="color: #A8A29E; font-size: 13px; margin: 0 0 8px 0;">Questions? Contact your advisor: ${advisorName}</p>`}
+                <p style="color: #78716C; font-size: 11px; margin: 0;">
+                  &copy; ${new Date().getFullYear()} Dubai Invest Pro. All rights reserved.
                 </p>
               </td>
             </tr>

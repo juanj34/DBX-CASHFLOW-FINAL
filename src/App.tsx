@@ -17,6 +17,8 @@ import StrategyCreator from "./pages-new/StrategyCreator";
 const Dashboard = lazy(() => import("./pages-new/Dashboard"));
 const SharedView = lazy(() => import("./pages-new/SharedView"));
 const Account = lazy(() => import("./pages-new/Account"));
+const ResetPassword = lazy(() => import("./pages-new/ResetPassword"));
+const AuthCallback = lazy(() => import("./pages-new/AuthCallback"));
 
 const LazyFallback = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-theme-bg">
@@ -53,6 +55,8 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/view/:shareToken" element={<SharedView />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
 
                   {/* Protected */}
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

@@ -9,6 +9,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const SITE_URL = "https://dubai-invest-pro.vercel.app";
+
 interface WelcomeEmailRequest {
   userName: string;
   userEmail: string;
@@ -17,7 +19,6 @@ interface WelcomeEmailRequest {
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-welcome-email function called");
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,9 +29,9 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending welcome email to ${userEmail}`);
 
     const emailResponse = await resend.emails.send({
-      from: "InvestDubai <onboarding@resend.dev>",
+      from: "Dubai Invest Pro <onboarding@resend.dev>",
       to: [userEmail],
-      subject: "Welcome to InvestDubai - Your Investment Journey Begins!",
+      subject: "Welcome to Dubai Invest Pro",
       html: `
         <!DOCTYPE html>
         <html>
@@ -38,86 +39,62 @@ const handler = async (req: Request): Promise<Response> => {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f5f0eb;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
             <!-- Header -->
             <tr>
-              <td style="background: linear-gradient(135deg, #1a1f2e 0%, #2a3142 100%); padding: 40px 30px; text-align: center;">
-                <h1 style="color: #CCFF00; margin: 0; font-size: 28px; font-weight: bold;">InvestDubai</h1>
-                <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px; opacity: 0.8;">Investment Analysis Platform</p>
+              <td style="background: linear-gradient(135deg, #1C1917 0%, #292524 100%); padding: 48px 40px; text-align: center; border-radius: 12px 12px 0 0;">
+                <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                  <tr>
+                    <td style="width: 44px; height: 44px; background: linear-gradient(135deg, #C9A04A, #B3893A); border-radius: 10px; text-align: center; vertical-align: middle;">
+                      <span style="color: #ffffff; font-size: 20px; font-weight: bold; line-height: 44px;">D</span>
+                    </td>
+                    <td style="padding-left: 14px;">
+                      <span style="color: #F5F0EB; font-size: 22px; font-weight: 600; letter-spacing: -0.5px;">Dubai Invest Pro</span>
+                    </td>
+                  </tr>
+                </table>
+                <p style="color: #A8A29E; margin: 14px 0 0 0; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;">Investment Strategy Platform</p>
               </td>
             </tr>
 
-            <!-- Welcome Message -->
+            <!-- Body -->
             <tr>
-              <td style="padding: 40px 30px;">
-                <h2 style="color: #1a1f2e; margin: 0 0 20px 0; font-size: 24px;">Welcome, ${userName || 'Investor'}!</h2>
-
-                <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                  Thank you for joining InvestDubai. You now have access to our comprehensive real estate investment analysis tools.
+              <td style="background-color: #ffffff; padding: 44px 40px;">
+                <h2 style="color: #1C1917; margin: 0 0 8px 0; font-size: 24px; font-weight: 600;">Welcome, ${userName || "Investor"}.</h2>
+                <p style="color: #78716C; font-size: 15px; line-height: 1.7; margin: 0 0 28px 0;">
+                  Your account is ready. You now have access to professional-grade tools for Dubai real estate investment analysis.
                 </p>
 
-                <h3 style="color: #1a1f2e; margin: 20px 0 15px 0; font-size: 18px;">What you can do:</h3>
-
-                <table width="100%" cellpadding="0" cellspacing="0">
+                <!-- Feature Cards -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px;">
                   <tr>
-                    <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
-                      <table>
-                        <tr>
-                          <td style="vertical-align: top; padding-right: 15px;">
-                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">📊</span>
-                          </td>
-                          <td>
-                            <strong style="color: #1a1f2e; font-size: 16px;">Cashflow Generator</strong>
-                            <p style="color: #666666; font-size: 14px; margin: 5px 0 0 0;">Create detailed investment projections and ROI analysis</p>
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding: 16px 18px; background-color: #FAFAF9; border-left: 3px solid #C9A04A; border-radius: 6px;">
+                      <strong style="color: #1C1917; font-size: 14px;">Cashflow Generator</strong>
+                      <p style="color: #78716C; font-size: 13px; margin: 4px 0 0 0; line-height: 1.5;">Create detailed investment projections with payment schedules, appreciation modeling, and exit analysis.</p>
                     </td>
                   </tr>
-                  <tr><td style="height: 10px;"></td></tr>
+                  <tr><td style="height: 8px;"></td></tr>
                   <tr>
-                    <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
-                      <table>
-                        <tr>
-                          <td style="vertical-align: top; padding-right: 15px;">
-                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">📈</span>
-                          </td>
-                          <td>
-                            <strong style="color: #1a1f2e; font-size: 16px;">Investment Analysis</strong>
-                            <p style="color: #666666; font-size: 14px; margin: 5px 0 0 0;">Deep-dive into ROI, exits, mortgage coverage, and scenario modeling</p>
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding: 16px 18px; background-color: #FAFAF9; border-left: 3px solid #C9A04A; border-radius: 6px;">
+                      <strong style="color: #1C1917; font-size: 14px;">Client Sharing</strong>
+                      <p style="color: #78716C; font-size: 13px; margin: 4px 0 0 0; line-height: 1.5;">Generate branded investment reports and share them with clients via secure links.</p>
                     </td>
                   </tr>
-                  <tr><td style="height: 10px;"></td></tr>
+                  <tr><td style="height: 8px;"></td></tr>
                   <tr>
-                    <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
-                      <table>
-                        <tr>
-                          <td style="vertical-align: top; padding-right: 15px;">
-                            <span style="display: inline-block; width: 40px; height: 40px; background-color: #CCFF00; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px;">⚖️</span>
-                          </td>
-                          <td>
-                            <strong style="color: #1a1f2e; font-size: 16px;">Quote Comparison</strong>
-                            <p style="color: #666666; font-size: 14px; margin: 5px 0 0 0;">Compare multiple investments side by side</p>
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding: 16px 18px; background-color: #FAFAF9; border-left: 3px solid #C9A04A; border-radius: 6px;">
+                      <strong style="color: #1C1917; font-size: 14px;">AI Payment Plan Extraction</strong>
+                      <p style="color: #78716C; font-size: 13px; margin: 4px 0 0 0; line-height: 1.5;">Upload developer payment plans and let AI extract the details automatically.</p>
                     </td>
                   </tr>
                 </table>
 
-                <p style="color: #666666; font-size: 16px; line-height: 1.6; margin: 30px 0;">
-                  Ready to start analyzing your first investment?
-                </p>
-
-                <!-- CTA Button -->
+                <!-- CTA -->
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="text-align: center;">
-                      <a href="https://wfihvfnanvkvezdrnrgp.lovableproject.com/home" style="display: inline-block; background-color: #CCFF00; color: #1a1f2e; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    <td style="text-align: center; padding-top: 8px;">
+                      <a href="${SITE_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #C9A04A, #B3893A); color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
                         Go to Dashboard
                       </a>
                     </td>
@@ -128,9 +105,10 @@ const handler = async (req: Request): Promise<Response> => {
 
             <!-- Footer -->
             <tr>
-              <td style="background-color: #1a1f2e; padding: 30px; text-align: center;">
-                <p style="color: #888888; font-size: 12px; margin: 0;">
-                  &copy; ${new Date().getFullYear()} InvestDubai. All rights reserved.
+              <td style="background-color: #1C1917; padding: 28px 40px; text-align: center; border-radius: 0 0 12px 12px;">
+                <p style="color: #78716C; font-size: 11px; margin: 0; line-height: 1.6;">
+                  &copy; ${new Date().getFullYear()} Dubai Invest Pro. All rights reserved.<br>
+                  Professional tools for Dubai real estate investment analysis.
                 </p>
               </td>
             </tr>
