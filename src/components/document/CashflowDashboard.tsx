@@ -261,7 +261,8 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
         {/* Left: Client & Unit Info */}
         <div className="p-2.5 border-r border-gray-200">
-          <div className="bg-[#B3893A] px-2 py-1 mb-1.5 rounded-t-sm">
+          <div className="flex items-center gap-1.5 bg-[#B3893A] px-2 py-1 mb-1.5 rounded-t-sm">
+            <svg className="w-3 h-3 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M9 8h1m-1 4h1m4-4h1m-1 4h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
             <span className="text-[9px] font-bold text-white uppercase tracking-wider">{t('docClientUnitInfoShort')}</span>
           </div>
           <table className="w-full">
@@ -283,7 +284,8 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         {/* Center: Snapshot */}
         <div className="p-2.5 border-r border-gray-200 min-w-[280px]">
           <div className="rounded overflow-hidden border border-gray-200">
-            <div className="bg-[#B3893A] px-2 py-1">
+            <div className="flex items-center gap-1.5 bg-[#B3893A] px-2 py-1">
+              <svg className="w-3 h-3 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               <span className="text-[9px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
             </div>
             <div className="p-2">
@@ -313,7 +315,8 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
         {/* Right: Projected ROI */}
         <div className="p-2.5">
-          <div className="bg-[#B3893A] px-2 py-1 mb-1.5 rounded-t-sm">
+          <div className="flex items-center gap-1.5 bg-[#B3893A] px-2 py-1 mb-1.5 rounded-t-sm">
+            <svg className="w-3 h-3 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             <span className="text-[9px] font-bold text-white uppercase tracking-wider">{t('docProjectedROI')}</span>
           </div>
           {exitResults.length > 0 ? (

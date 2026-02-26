@@ -284,6 +284,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* Col 1: Client & Unit Info */}
         <div className="p-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
+            <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M9 8h1m-1 4h1m4-4h1m-1 4h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docClientUnitInfo')}</span>
           </div>
           <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
@@ -336,6 +337,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         <div className="p-4 border-x border-gray-100">
           <div className="w-full">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
+              <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
             </div>
             <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
@@ -366,6 +368,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         {/* Col 3: Projected ROI */}
         <div className="p-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
+            <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docProjectedROI')}</span>
           </div>
           <div className="border border-t-0 border-gray-200 rounded-b-md overflow-hidden">
@@ -394,7 +397,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                             {d.totalROE.toFixed(1)}%
                           </span>
                         </td>
-                        <td className="py-1.5 px-3 text-right font-mono font-medium text-gray-900">AED {n2s(sc.exitPrice)}</td>
+                        <td className="py-1.5 px-3 text-right font-mono font-medium text-gray-900 whitespace-nowrap">AED {n2s(sc.exitPrice)}</td>
                       </tr>
                     );
                   })}
@@ -710,7 +713,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                             <td className={TD_CLS + ' text-right font-mono text-gray-700'}>
                               {n2s(sc.totalCapital)}{!sc.isThresholdMet && '*'}
                             </td>
-                            <td className={TD_CLS + ' text-right font-mono font-medium text-gray-900'}>AED {n2s(sc.exitPrice)}</td>
+                            <td className={TD_CLS + ' text-right font-mono font-medium text-gray-900 whitespace-nowrap'}>AED {n2s(sc.exitPrice)}</td>
                             <td className={`${TD_CLS} text-right font-mono font-semibold ${d.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                               {d.profit >= 0 ? '+' : ''}{n2s(Math.abs(d.profit))}
                             </td>
