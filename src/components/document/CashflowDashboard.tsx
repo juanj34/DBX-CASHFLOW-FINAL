@@ -331,19 +331,19 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                 <tbody>
                   <tr>
                     <td className="text-gray-500 py-0.5">{t('docPaymentOnSPA')}</td>
-                    <td className="text-right font-mono text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)}</td>
+                    <td className="text-right font-mono text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
                   </tr>
                   <tr>
                     <td className="text-gray-500 py-0.5">{t('docAdditionalDeposits')}</td>
-                    <td className="text-right font-mono text-gray-900">{n2s(inputs.additionalPayments.reduce((s, p) => s + basePrice * p.paymentPercent / 100, 0))}</td>
+                    <td className="text-right font-mono text-gray-900">{n2s(inputs.additionalPayments.reduce((s, p) => s + basePrice * p.paymentPercent / 100, 0))}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(inputs.additionalPayments.reduce((s, p) => s + basePrice * p.paymentPercent / 100, 0))})</span>}</td>
                   </tr>
                   <tr>
                     <td className="text-gray-500 py-0.5">{t('docPaymentOnHandover')}</td>
-                    <td className="text-right font-mono text-gray-900">{n2s(paymentRows.find(r => r.isCompletion)?.amount || 0)}</td>
+                    <td className="text-right font-mono text-gray-900">{n2s(paymentRows.find(r => r.isCompletion)?.amount || 0)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(paymentRows.find(r => r.isCompletion)?.amount || 0)})</span>}</td>
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="text-[#8A6528] font-bold py-0.5">{t('docTotalEquityRequired')}</td>
-                    <td className="text-right font-mono text-[#8A6528] font-bold">{n2s(totalEquity)} AED</td>
+                    <td className="text-right font-mono text-[#8A6528] font-bold">{n2s(totalEquity)} AED{showCurrencyCol && <span className="text-[#8A6528]/60 ml-1">({currency} {cvf(totalEquity)})</span>}</td>
                   </tr>
                 </tbody>
               </table>
@@ -379,7 +379,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                       <td className={`py-0.5 px-1 text-right font-mono font-bold text-[10px] ${d.totalROE >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {pct(d.totalROE)}
                       </td>
-                      <td className="py-0.5 px-1 text-right font-mono text-gray-900 text-[10px]">AED {n2s(sc.exitPrice)}</td>
+                      <td className="py-0.5 px-1 text-right font-mono text-gray-900 text-[10px]">AED {n2s(sc.exitPrice)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.exitPrice)})</span>}</td>
                     </tr>
                   );
                 })}
@@ -605,6 +605,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                   {rentalYears.slice(0, 10).map((yr) => (
                     <td key={yr.year} className={tc + " text-center text-emerald-600 font-mono"}>
                       {yr.netRent != null ? n2s(yr.netRent) : '—'}
+                      {showCurrencyCol && yr.netRent != null && <div className="text-gray-400 text-[8px]">{cvf(yr.netRent)}</div>}
                     </td>
                   ))}
                 </tr>
@@ -613,6 +614,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                   {rentalYears.slice(0, 10).map((yr) => (
                     <td key={yr.year} className={tc + " text-center text-gray-700 font-mono"}>
                       {n2s(yr.propertyValue)}
+                      {showCurrencyCol && <div className="text-gray-400 text-[8px]">{cvf(yr.propertyValue)}</div>}
                     </td>
                   ))}
                 </tr>
@@ -649,13 +651,13 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                         {getExitLabel(months)}
                       </td>
                       <td className={tc + " text-right text-gray-500 font-mono"}>{months}mo</td>
-                      <td className={tc + " text-right font-mono text-gray-900"}>{n2s(sc.exitPrice)}</td>
+                      <td className={tc + " text-right font-mono text-gray-900"}>{n2s(sc.exitPrice)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.exitPrice)})</span>}</td>
                       <td className={tc + " text-right font-mono " + (sc.appreciationPercent >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                         {pct(sc.appreciationPercent)}
                       </td>
-                      <td className={tc + " text-right font-mono text-gray-700"}>{n2s(sc.totalCapital)}</td>
+                      <td className={tc + " text-right font-mono text-gray-700"}>{n2s(sc.totalCapital)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.totalCapital)})</span>}</td>
                       <td className={tc + " text-right font-mono font-bold " + (d.profit >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                        {d.profit >= 0 ? '+' : ''}{n2s(d.profit)}
+                        {d.profit >= 0 ? '+' : ''}{n2s(d.profit)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(Math.abs(d.profit))})</span>}
                       </td>
                       <td className={tc + " text-right"}>
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold font-mono ${d.totalROE >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>

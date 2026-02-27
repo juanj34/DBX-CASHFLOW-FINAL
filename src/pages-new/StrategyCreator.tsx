@@ -105,7 +105,7 @@ const StrategyCreator: React.FC = () => {
         : await getOrCreateWorkingDraft();
       if (!cancelled && id) {
         setDraftId(id);
-        // Replace URL to remove ?fresh param and set the new draft ID
+        setShowConfigurator(true); // Open configurator immediately for new drafts
         if (isFresh) {
           navigate(`/strategy/${id}`, { replace: true });
         }
@@ -264,7 +264,7 @@ const StrategyCreator: React.FC = () => {
     }
   }, [exportView, toast, viewMode]);
 
-  const isLoading = quoteLoading && !!quoteId;
+  const isLoading = (quoteLoading && !!quoteId) || (!hasConfigured && !showConfigurator && !!draftId);
 
   return (
     <PageShell>
@@ -521,14 +521,8 @@ const StrategyCreator: React.FC = () => {
       {/* Configurator Modal */}
       <Dialog open={showConfigurator} onOpenChange={setShowConfigurator}>
         <DialogContent className="max-w-4xl h-[85vh] p-0 gap-0 border-theme-border bg-theme-card flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-3 border-b border-theme-border shrink-0">
+          <div className="px-6 py-3 border-b border-theme-border shrink-0">
             <h2 className="font-display text-base text-theme-text">Configure Strategy</h2>
-            <button
-              onClick={() => setShowConfigurator(false)}
-              className="p-1.5 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
           <div className="flex-1 px-6 py-4 overflow-hidden flex flex-col min-h-0">
             <Configurator

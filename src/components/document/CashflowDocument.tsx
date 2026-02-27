@@ -376,19 +376,19 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 <tbody>
                   <tr>
                     <td className="py-[3px] text-gray-500">{t('docPaymentOnSPA')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED</td>
+                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
                   </tr>
                   <tr>
                     <td className="py-[3px] text-gray-500">{t('docAdditionalDeposits')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(additionalDeposits)} AED</td>
+                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(additionalDeposits)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(additionalDeposits)})</span>}</td>
                   </tr>
                   <tr>
                     <td className="py-[3px] text-gray-500">{t('docPaymentOnHandover')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(handoverPayment)} AED</td>
+                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(handoverPayment)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(handoverPayment)})</span>}</td>
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="py-[3px] font-bold text-gray-900">{t('docTotalEquityRequired')}</td>
-                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED</td>
+                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({currency} {cvf(totalEquityRequired)})</span>}</td>
                   </tr>
                 </tbody>
               </table>
@@ -428,7 +428,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                             {d.totalROE.toFixed(1)}%
                           </span>
                         </td>
-                        <td className="py-1.5 px-3 text-right font-mono font-medium text-gray-900 whitespace-nowrap">AED {n2s(sc.exitPrice)}</td>
+                        <td className="py-1.5 px-3 text-right font-mono font-medium text-gray-900 whitespace-nowrap">AED {n2s(sc.exitPrice)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.exitPrice)})</span>}</td>
                       </tr>
                     );
                   })}
@@ -585,7 +585,10 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                       {/* Total row full-width for multi-col */}
                       <div className="border-t-2 border-gray-300 bg-[#B3893A]/5 flex items-center px-3 py-1.5">
                         <span className="text-[11px] font-bold text-[#8A6528] flex-1">{t('docTotalEquityRequired')}</span>
-                        <span className="text-[11px] font-mono font-bold text-[#8A6528]">{n2s(totalEquityRequired)} AED</span>
+                        <span className="text-[11px] font-mono font-bold text-[#8A6528]">
+                          {n2s(totalEquityRequired)} AED
+                          {showCurrencyCol && <span className="text-[#8A6528]/60 ml-2">({currency} {cvf(totalEquityRequired)})</span>}
+                        </span>
                       </div>
                     </>
                   ) : (
@@ -685,6 +688,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                           }`}
                         >
                           {value !== 0 ? n2sShort(value) : '—'}
+                          {showCurrencyCol && value !== 0 && <div className="text-gray-400 text-[8px]">{n2sShort(cv(value))}</div>}
                         </td>
                       );
                     })}
@@ -743,11 +747,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                               )}
                             </td>
                             <td className={TD_CLS + ' text-right font-mono text-gray-700'}>
-                              {n2s(sc.totalCapital)}{!sc.isThresholdMet && '*'}
+                              {n2s(sc.totalCapital)}{!sc.isThresholdMet && '*'}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.totalCapital)})</span>}
                             </td>
-                            <td className={TD_CLS + ' text-right font-mono font-medium text-gray-900 whitespace-nowrap'}>AED {n2s(sc.exitPrice)}</td>
+                            <td className={TD_CLS + ' text-right font-mono font-medium text-gray-900 whitespace-nowrap'}>AED {n2s(sc.exitPrice)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.exitPrice)})</span>}</td>
                             <td className={`${TD_CLS} text-right font-mono font-semibold ${d.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                              {d.profit >= 0 ? '+' : ''}{n2s(Math.abs(d.profit))}
+                              {d.profit >= 0 ? '+' : ''}{n2s(Math.abs(d.profit))}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(Math.abs(d.profit))})</span>}
                             </td>
                             <td className={TD_CLS + ' text-right'}>
                               <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono">
@@ -785,24 +789,26 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 <table className="w-full">
                   <tbody>
                     {[
-                      { label: t('docLoanAmount'), value: `AED ${n2s(mortgageData.loanAmount)}`, cls: '' },
-                      { label: t('docMonthlyPaymentIns'), value: `AED ${n2s(mortgageData.monthlyPayment)}`, cls: '' },
-                      { label: t('docNetMonthlyRent'), value: `AED ${n2s(netMonthlyRent)}`, cls: '' },
+                      { label: t('docLoanAmount'), value: `AED ${n2s(mortgageData.loanAmount)}`, converted: cvf(mortgageData.loanAmount), cls: '' },
+                      { label: t('docMonthlyPaymentIns'), value: `AED ${n2s(mortgageData.monthlyPayment)}`, converted: cvf(mortgageData.monthlyPayment), cls: '' },
+                      { label: t('docNetMonthlyRent'), value: `AED ${n2s(netMonthlyRent)}`, converted: cvf(netMonthlyRent), cls: '' },
                       {
                         label: t('docMonthlyCashflow'),
                         value: `${netMonthlyRent - mortgageData.monthlyPayment >= 0 ? '+' : ''} AED ${n2s(netMonthlyRent - mortgageData.monthlyPayment)}`,
+                        converted: cvf(Math.abs(netMonthlyRent - mortgageData.monthlyPayment)),
                         cls: netMonthlyRent - mortgageData.monthlyPayment >= 0 ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
                       },
                       {
                         label: t('docRentCoverage'),
                         value: `${mortgageData.monthlyPayment > 0 ? Math.round((netMonthlyRent / mortgageData.monthlyPayment) * 100) : 0}%`,
+                        converted: null,
                         cls: netMonthlyRent >= mortgageData.monthlyPayment ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
                       },
                     ].map((row, i) => (
                       <tr key={i} className="border-t border-gray-100 first:border-t-0">
                         <td className={TD_CLS + ' text-gray-700 font-medium'}>{row.label}</td>
                         <td className={`${TD_CLS} text-right font-mono ${row.cls || 'text-gray-900'}`}>
-                          {row.value}
+                          {row.value}{showCurrencyCol && row.converted && <span className="text-gray-400 ml-1">({row.converted})</span>}
                         </td>
                       </tr>
                     ))}
