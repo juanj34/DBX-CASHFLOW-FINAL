@@ -5,6 +5,7 @@ import { Navbar } from '@/components/layout-new/Navbar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, FileText, Trash2, Share2, ExternalLink, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
@@ -181,11 +182,7 @@ const Dashboard: React.FC = () => {
 
         {/* Table */}
         {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-14 rounded-lg border border-theme-border bg-theme-card animate-pulse" />
-            ))}
-          </div>
+          <BrandedLoader />
         ) : quotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-2xl bg-theme-card border border-theme-border flex items-center justify-center mb-4">

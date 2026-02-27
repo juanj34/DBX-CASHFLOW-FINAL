@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { PageShell } from '@/components/layout-new/PageShell';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from 'lucide-react';
 
-const SITE_URL = 'https://dubai-invest-pro.vercel.app';
+const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
 
 type AuthMode = 'login' | 'signup' | 'forgot';
 
@@ -21,13 +21,15 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = (location.state as any)?.from?.pathname || '/dashboard';
 
   // Redirect if already logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/dashboard', { replace: true });
+      if (session) navigate(redirectTo, { replace: true });
     });
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +37,7 @@ const Auth: React.FC = () => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate('/dashboard');
+      navigate(redirectTo);
     } catch (err: any) {
       toast.error(err.message || 'Login failed');
     } finally {
@@ -45,8 +47,8 @@ const Auth: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
       return;
     }
     setLoading(true);
@@ -92,7 +94,7 @@ const Auth: React.FC = () => {
   const handleGoogleAuth = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${SITE_URL}/dashboard` },
+      options: { redirectTo: `${SITE_URL}/auth/callback` },
     });
     if (error) toast.error(error.message);
   };
@@ -280,7 +282,7 @@ const Auth: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      minLength={6}
+                      minLength={8}
                       className="bg-theme-card border-theme-border text-theme-text placeholder:text-theme-text-muted/50 focus:border-theme-accent focus:ring-theme-accent/20 pr-10"
                     />
                     <button

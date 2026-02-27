@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 
 /**
  * Handles Supabase auth callbacks (email confirmation, password reset links).
@@ -48,14 +49,7 @@ const AuthCallback: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  return (
-    <div className="min-h-screen bg-theme-bg flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 animate-pulse" />
-        <p className="text-sm text-theme-text-muted mt-2">Verifying...</p>
-      </div>
-    </div>
-  );
+  return <BrandedLoader fullScreen message="Verifying..." />;
 };
 
 export default AuthCallback;

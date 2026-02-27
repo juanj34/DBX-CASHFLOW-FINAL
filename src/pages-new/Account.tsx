@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { User, TrendingUp, Save, LogOut, Image as ImageIcon, Upload, X, Camera } from 'lucide-react';
+import { User, TrendingUp, Save, LogOut, Image as ImageIcon, Upload, X, Camera, Lock, Eye, EyeOff } from 'lucide-react';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 
 const Account: React.FC = () => {
   const { profile, loading, updateProfile, updateProfilePhoto } = useProfile();
@@ -26,6 +27,12 @@ const Account: React.FC = () => {
   const [whatsapp, setWhatsapp] = useState('');
   const [constructionAppr, setConstructionAppr] = useState(12);
   const [postConstructionAppr, setPostConstructionAppr] = useState(6);
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Initialize from profile
   useEffect(() => {
@@ -134,15 +141,34 @@ const Account: React.FC = () => {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (newPassword.length < 8) {
+      toast({ title: 'Password must be at least 8 characters', variant: 'destructive' });
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast({ title: 'Passwords do not match', variant: 'destructive' });
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast({ title: 'Password updated successfully' });
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      toast({ title: 'Failed to update password', description: err.message, variant: 'destructive' });
+    }
+    setChangingPassword(false);
+  };
+
   if (loading) {
     return (
       <PageShell>
         <Navbar />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#C9A04A] to-[#B3893A] animate-pulse" />
-            <p className="text-sm text-theme-text-muted mt-4">Loading profile...</p>
-          </div>
+          <BrandedLoader message="Loading profile..." />
         </main>
       </PageShell>
     );
@@ -324,6 +350,59 @@ const Account: React.FC = () => {
                   className="bg-theme-bg border-theme-border text-theme-text text-sm"
                 />
               </div>
+            </div>
+          </section>
+
+          {/* Security / Change Password */}
+          <section className="rounded-xl border border-theme-border bg-theme-card overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-theme-border bg-theme-card-alt">
+              <Lock className="w-4 h-4 text-theme-accent" />
+              <h2 className="text-sm font-semibold text-theme-text">Security</h2>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-theme-text-muted">
+                Update your password. Must be at least 8 characters.
+              </p>
+              <div>
+                <Label className="text-xs text-theme-text-muted mb-1.5">New Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min. 8 characters"
+                    className="bg-theme-bg border-theme-border text-theme-text text-sm pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-theme-text transition-colors"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-theme-text-muted mb-1.5">Confirm New Password</Label>
+                <Input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Repeat password"
+                  className="bg-theme-bg border-theme-border text-theme-text text-sm"
+                />
+                {confirmNewPassword && newPassword !== confirmNewPassword && (
+                  <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+                )}
+              </div>
+              <button
+                onClick={handleChangePassword}
+                disabled={changingPassword || newPassword.length < 8 || newPassword !== confirmNewPassword}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-theme-card border border-theme-border text-theme-text hover:bg-theme-bg disabled:opacity-50 transition-colors"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                {changingPassword ? 'Updating...' : 'Update Password'}
+              </button>
             </div>
           </section>
 

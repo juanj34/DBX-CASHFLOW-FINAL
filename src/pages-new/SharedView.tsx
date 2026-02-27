@@ -9,6 +9,7 @@ import { migrateInputs } from '@/components/roi/inputMigration';
 import { useClientExport } from '@/hooks/useClientExport';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, Download } from 'lucide-react';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 
 const SharedView: React.FC = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -95,13 +96,7 @@ const SharedView: React.FC = () => {
     return (
       <PageShell>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#C9A04A] to-[#B3893A] animate-pulse" />
-            <div className="mt-4 h-1.5 w-32 bg-theme-border rounded-full overflow-hidden">
-              <div className="h-full w-1/2 bg-gradient-to-r from-[#C9A04A] to-[#B3893A] rounded-full animate-shimmer" />
-            </div>
-            <p className="text-sm text-theme-text-muted mt-4">Loading strategy...</p>
-          </div>
+          <BrandedLoader message="Loading strategy..." />
         </main>
       </PageShell>
     );

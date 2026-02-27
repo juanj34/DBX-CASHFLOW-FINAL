@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth-new/ProtectedRoute";
+import { BrandedLoader } from "@/components/ui/branded-loader";
 
 // Eagerly load landing (first paint), auth, and strategy (core page)
 import Landing from "./pages-new/Landing";
@@ -20,14 +21,7 @@ const Account = lazy(() => import("./pages-new/Account"));
 const ResetPassword = lazy(() => import("./pages-new/ResetPassword"));
 const AuthCallback = lazy(() => import("./pages-new/AuthCallback"));
 
-const LazyFallback = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-theme-bg">
-    <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-400 to-amber-600 animate-pulse" />
-    <div className="mt-4 h-1.5 w-32 bg-theme-border rounded-full overflow-hidden">
-      <div className="h-full w-1/2 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full animate-shimmer" />
-    </div>
-  </div>
-);
+const LazyFallback = () => <BrandedLoader fullScreen />;
 
 const NotFound = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-theme-bg px-4 text-center">
