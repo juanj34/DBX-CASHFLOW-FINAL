@@ -343,7 +343,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="text-[#8A6528] font-bold py-0.5">{t('docTotalEquityRequired')}</td>
-                    <td className="text-right font-mono text-[#8A6528] font-bold">{n2s(totalEquity)} AED{showCurrencyCol && <span className="text-[#8A6528]/60 ml-1">({currency} {cvf(totalEquity)})</span>}</td>
+                    <td className="text-right font-mono text-[#8A6528] font-bold">{n2s(totalEquity)} AED{showCurrencyCol && <span className="text-[#8A6528]/60 ml-1">({cvf(totalEquity)})</span>}</td>
                   </tr>
                 </tbody>
               </table>
@@ -635,9 +635,12 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                   <th className={th + " text-left"}>{t('docExitHeader')}</th>
                   <th className={th + " text-right"}>{t('docTimelineHeader')}</th>
                   <th className={th + " text-right"}>{t('docSalePriceHeader')}</th>
+                  {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
                   <th className={th + " text-right"}>{t('docAppreciationHeader')}</th>
                   <th className={th + " text-right"}>{t('docInvestedHeader')}</th>
+                  {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
                   <th className={th + " text-right"}>{t('docProfitHeader')}</th>
+                  {showCurrencyCol && <th className={th + " text-right"}>{currency}</th>}
                   <th className={th + " text-right"}>{t('docROEHeader')}</th>
                 </tr>
               </thead>
@@ -651,14 +654,17 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                         {getExitLabel(months)}
                       </td>
                       <td className={tc + " text-right text-gray-500 font-mono"}>{months}mo</td>
-                      <td className={tc + " text-right font-mono text-gray-900"}>{n2s(sc.exitPrice)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.exitPrice)})</span>}</td>
+                      <td className={tc + " text-right font-mono text-gray-900"}>{n2s(sc.exitPrice)}</td>
+                      {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(sc.exitPrice)}</td>}
                       <td className={tc + " text-right font-mono " + (sc.appreciationPercent >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                         {pct(sc.appreciationPercent)}
                       </td>
-                      <td className={tc + " text-right font-mono text-gray-700"}>{n2s(sc.totalCapital)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.totalCapital)})</span>}</td>
+                      <td className={tc + " text-right font-mono text-gray-700"}>{n2s(sc.totalCapital)}</td>
+                      {showCurrencyCol && <td className={tc + " text-right font-mono text-gray-500"}>{cvf(sc.totalCapital)}</td>}
                       <td className={tc + " text-right font-mono font-bold " + (d.profit >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                        {d.profit >= 0 ? '+' : ''}{n2s(d.profit)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(Math.abs(d.profit))})</span>}
+                        {d.profit >= 0 ? '+' : ''}{n2s(d.profit)}
                       </td>
+                      {showCurrencyCol && <td className={`${tc} text-right font-mono ${d.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{cvf(Math.abs(d.profit))}</td>}
                       <td className={tc + " text-right"}>
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold font-mono ${d.totalROE >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                           {pct(d.totalROE)}

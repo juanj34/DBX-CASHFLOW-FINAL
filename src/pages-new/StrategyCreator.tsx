@@ -269,7 +269,7 @@ const StrategyCreator: React.FC = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className={`mx-auto px-4 sm:px-6 lg:px-8 py-6 ${viewMode === 'dashboard' ? 'max-w-full' : 'max-w-[1440px]'}`}>
+      <main className={"max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6"}>
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">

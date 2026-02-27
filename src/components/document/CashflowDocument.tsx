@@ -388,7 +388,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="py-[3px] font-bold text-gray-900">{t('docTotalEquityRequired')}</td>
-                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({currency} {cvf(totalEquityRequired)})</span>}</td>
+                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({cvf(totalEquityRequired)})</span>}</td>
                   </tr>
                 </tbody>
               </table>
@@ -587,7 +587,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                         <span className="text-[11px] font-bold text-[#8A6528] flex-1">{t('docTotalEquityRequired')}</span>
                         <span className="text-[11px] font-mono font-bold text-[#8A6528]">
                           {n2s(totalEquityRequired)} AED
-                          {showCurrencyCol && <span className="text-[#8A6528]/60 ml-2">({currency} {cvf(totalEquityRequired)})</span>}
+                          {showCurrencyCol && <span className="text-[#8A6528]/60 ml-2">({cvf(totalEquityRequired)})</span>}
                         </span>
                       </div>
                     </>
@@ -721,8 +721,11 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                       <tr className="bg-gray-900">
                         <th className={TH_CLS + ' text-left'}>{t('docExitHeader')}</th>
                         <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docInvestedHeader')}</th>
+                        {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
                         <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docExitPriceHeader')}</th>
+                        {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
                         <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docNetProfitHeader')}</th>
+                        {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
                         <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{t('docROEHeader')}</th>
                       </tr>
                     </thead>
@@ -747,12 +750,15 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                               )}
                             </td>
                             <td className={TD_CLS + ' text-right font-mono text-gray-700'}>
-                              {n2s(sc.totalCapital)}{!sc.isThresholdMet && '*'}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.totalCapital)})</span>}
+                              {n2s(sc.totalCapital)}{!sc.isThresholdMet && '*'}
                             </td>
-                            <td className={TD_CLS + ' text-right font-mono font-medium text-gray-900 whitespace-nowrap'}>AED {n2s(sc.exitPrice)}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(sc.exitPrice)})</span>}</td>
+                            {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-gray-500'}>{cvf(sc.totalCapital)}</td>}
+                            <td className={TD_CLS + ' text-right font-mono font-medium text-gray-900 whitespace-nowrap'}>{n2s(sc.exitPrice)}</td>
+                            {showCurrencyCol && <td className={TD_CLS + ' text-right font-mono text-gray-500'}>{cvf(sc.exitPrice)}</td>}
                             <td className={`${TD_CLS} text-right font-mono font-semibold ${d.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                              {d.profit >= 0 ? '+' : ''}{n2s(Math.abs(d.profit))}{showCurrencyCol && <span className="text-gray-400 ml-1">({cvf(Math.abs(d.profit))})</span>}
+                              {d.profit >= 0 ? '+' : ''}{n2s(Math.abs(d.profit))}
                             </td>
+                            {showCurrencyCol && <td className={`${TD_CLS} text-right font-mono ${d.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{cvf(Math.abs(d.profit))}</td>}
                             <td className={TD_CLS + ' text-right'}>
                               <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono">
                                 {d.totalROE.toFixed(1)}%
@@ -787,31 +793,42 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
             <div className="px-4">
               <div className="border border-gray-200 rounded-b-lg overflow-hidden">
                 <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-900">
+                      <th className={TH_CLS + ' text-left'}>{t('docLabelHeader')}</th>
+                      <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>AED</th>
+                      {showCurrencyCol && <th className={TH_CLS + ' text-right w-[1%] whitespace-nowrap'}>{currency}</th>}
+                    </tr>
+                  </thead>
                   <tbody>
-                    {[
-                      { label: t('docLoanAmount'), value: `AED ${n2s(mortgageData.loanAmount)}`, converted: cvf(mortgageData.loanAmount), cls: '' },
-                      { label: t('docMonthlyPaymentIns'), value: `AED ${n2s(mortgageData.monthlyPayment)}`, converted: cvf(mortgageData.monthlyPayment), cls: '' },
-                      { label: t('docNetMonthlyRent'), value: `AED ${n2s(netMonthlyRent)}`, converted: cvf(netMonthlyRent), cls: '' },
-                      {
-                        label: t('docMonthlyCashflow'),
-                        value: `${netMonthlyRent - mortgageData.monthlyPayment >= 0 ? '+' : ''} AED ${n2s(netMonthlyRent - mortgageData.monthlyPayment)}`,
-                        converted: cvf(Math.abs(netMonthlyRent - mortgageData.monthlyPayment)),
-                        cls: netMonthlyRent - mortgageData.monthlyPayment >= 0 ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
-                      },
-                      {
-                        label: t('docRentCoverage'),
-                        value: `${mortgageData.monthlyPayment > 0 ? Math.round((netMonthlyRent / mortgageData.monthlyPayment) * 100) : 0}%`,
-                        converted: null,
-                        cls: netMonthlyRent >= mortgageData.monthlyPayment ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
-                      },
-                    ].map((row, i) => (
-                      <tr key={i} className="border-t border-gray-100 first:border-t-0">
-                        <td className={TD_CLS + ' text-gray-700 font-medium'}>{row.label}</td>
-                        <td className={`${TD_CLS} text-right font-mono ${row.cls || 'text-gray-900'}`}>
-                          {row.value}{showCurrencyCol && row.converted && <span className="text-gray-400 ml-1">({row.converted})</span>}
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const cashflow = netMonthlyRent - mortgageData.monthlyPayment;
+                      const cashflowPositive = cashflow >= 0;
+                      const rows = [
+                        { label: t('docLoanAmount'), value: n2s(mortgageData.loanAmount), converted: cvf(mortgageData.loanAmount), cls: '' },
+                        { label: t('docMonthlyPaymentIns'), value: n2s(mortgageData.monthlyPayment), converted: cvf(mortgageData.monthlyPayment), cls: '' },
+                        { label: t('docNetMonthlyRent'), value: n2s(netMonthlyRent), converted: cvf(netMonthlyRent), cls: '' },
+                        {
+                          label: t('docMonthlyCashflow'),
+                          value: `${cashflowPositive ? '+' : ''}${n2s(cashflow)}`,
+                          converted: cvf(Math.abs(cashflow)),
+                          cls: cashflowPositive ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
+                        },
+                        {
+                          label: t('docRentCoverage'),
+                          value: `${mortgageData.monthlyPayment > 0 ? Math.round((netMonthlyRent / mortgageData.monthlyPayment) * 100) : 0}%`,
+                          converted: null,
+                          cls: netMonthlyRent >= mortgageData.monthlyPayment ? 'text-emerald-600 bg-emerald-50/50 font-bold' : 'text-red-600 bg-red-50/50 font-bold',
+                        },
+                      ];
+                      return rows.map((row, i) => (
+                        <tr key={i} className="border-t border-gray-100 first:border-t-0">
+                          <td className={TD_CLS + ' text-gray-700 font-medium'}>{row.label}</td>
+                          <td className={`${TD_CLS} text-right font-mono ${row.cls || 'text-gray-900'}`}>{row.value}</td>
+                          {showCurrencyCol && <td className={`${TD_CLS} text-right font-mono ${row.cls || 'text-gray-500'}`}>{row.converted || ''}</td>}
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
