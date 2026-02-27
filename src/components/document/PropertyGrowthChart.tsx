@@ -1,6 +1,7 @@
 import React from 'react';
 import { OIYearlyProjection } from '@/components/roi/useOICalculations';
 import { ExitScenarioResult } from '@/components/roi/constructionProgress';
+import { translate } from '@/contexts/LanguageContext';
 
 interface PropertyGrowthChartProps {
   yearlyProjections: OIYearlyProjection[];
@@ -8,6 +9,7 @@ interface PropertyGrowthChartProps {
   exitResults: ExitScenarioResult[];
   scenarioMonths: number[];
   totalMonths: number;
+  language?: string;
 }
 
 const n2sShort = (n: number) => {
@@ -22,7 +24,10 @@ export const PropertyGrowthChart: React.FC<PropertyGrowthChartProps> = ({
   exitResults,
   scenarioMonths,
   totalMonths,
+  language = 'en',
 }) => {
+  const lang = (language === 'es' ? 'es' : 'en') as 'en' | 'es';
+  const t = (key: string) => translate(key, lang);
   // Cap chart at handover + 2 years (not 10 years)
   const handoverYear = Math.ceil(totalMonths / 12);
   const maxYear = Math.min(handoverYear + 2, 10, yearlyProjections.length);
@@ -87,7 +92,7 @@ export const PropertyGrowthChart: React.FC<PropertyGrowthChartProps> = ({
 
   return (
     <div className="mt-4 mb-2">
-      <p className="text-xs font-semibold text-gray-700 mb-3">Property Value Over Time</p>
+      <p className="text-xs font-semibold text-gray-700 mb-3">{t('docChartTitle')}</p>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: '300px' }}>
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -127,7 +132,7 @@ export const PropertyGrowthChart: React.FC<PropertyGrowthChartProps> = ({
               x={xScale(handoverYearFrac)} y={padTop - 10} textAnchor="middle"
               fill="hsl(34 55% 38%)" fontSize="10" fontFamily="DM Sans, sans-serif" fontWeight="600"
             >
-              Handover
+              {t('docChartHandover')}
             </text>
           </g>
         )}
@@ -165,7 +170,7 @@ export const PropertyGrowthChart: React.FC<PropertyGrowthChartProps> = ({
             key={p.year} x={xScale(p.year)} y={padTop + chartH + 22} textAnchor="middle"
             fill="hsl(215 16% 47%)" fontSize="11" fontFamily="DM Sans, sans-serif"
           >
-            {p.year === 0 ? 'Now' : `Yr ${p.year}`}
+            {p.year === 0 ? t('docChartNow') : `${t('docChartYr')} ${p.year}`}
           </text>
         ))}
 

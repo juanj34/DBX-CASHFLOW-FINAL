@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { calculateExitScenario, ExitScenarioResult, isHandoverExit } from '@/components/roi/constructionProgress';
 import { DocumentControls, Currency } from './DocumentControls';
@@ -71,14 +71,55 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
   const dldFee = basePrice * 0.04;
   const showCurrencyCol = currency !== 'AED';
   const [selectedPayments, setSelectedPayments] = useState<Set<number>>(new Set());
-  const togglePayment = (idx: number) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<number | null>(null);
+  const dragMovedRef = useRef(false);
+  const rowClickedRef = useRef(false);
+
+  const handleRowMouseDown = (gIdx: number) => {
     if (exportMode) return;
-    setSelectedPayments(prev => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
+    rowClickedRef.current = true;
+    setIsDragging(true);
+    dragStartRef.current = gIdx;
+    dragMovedRef.current = false;
   };
+
+  const handleRowMouseEnter = (gIdx: number) => {
+    if (!isDragging || dragStartRef.current === null) return;
+    if (gIdx !== dragStartRef.current) dragMovedRef.current = true;
+    const start = Math.min(dragStartRef.current, gIdx);
+    const end = Math.max(dragStartRef.current, gIdx);
+    const range = new Set<number>();
+    for (let i = start; i <= end; i++) range.add(i);
+    setSelectedPayments(range);
+  };
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDragging && !dragMovedRef.current && dragStartRef.current !== null) {
+        const idx = dragStartRef.current;
+        setSelectedPayments(prev => {
+          const next = new Set(prev);
+          next.has(idx) ? next.delete(idx) : next.add(idx);
+          return next;
+        });
+      }
+      setIsDragging(false);
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [isDragging]);
+
+  // Click outside payment rows → clear selection
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (rowClickedRef.current) { rowClickedRef.current = false; return; }
+      if (selectedPayments.size > 0) setSelectedPayments(new Set());
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedPayments.size]);
+
   const resellThreshold = (inputs as any).resellEligiblePercent ?? 30;
   const cv = (aed: number) => currency === 'AED' ? aed : aed * rate;
   const cvf = (aed: number) => n2s(cv(aed));
@@ -110,8 +151,10 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
 
   // Date helper
   const fmtDate = (d: Date) => {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+    const monthsEN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthsES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const m = (lang === 'es' ? monthsES : monthsEN)[d.getMonth()];
+    return `${m} ${d.getFullYear()}`;
   };
 
   // Section B: installments + completion only (downpayment is in Section A)
@@ -178,7 +221,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
         amount: basePrice * completionPercent / 100,
         date: handoverInstallment
           ? getDateStr(handoverInstallment)
-          : `${shortDate(inputs.handoverMonth, inputs.handoverYear)} ${t('docHandoverSuffix')}`,
+          : `${fmtDate(new Date(inputs.handoverYear, inputs.handoverMonth - 1))} ${t('docHandoverSuffix')}`,
         isCompletion: true,
         badges,
       });
@@ -209,7 +252,15 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
     }
 
     return rows;
-  }, [inputs, basePrice, resellThreshold]);
+  }, [inputs, basePrice, resellThreshold, lang]);
+
+  // Selected payments sum
+  const selectedSum = useMemo(() => {
+    if (selectedPayments.size === 0) return 0;
+    return paymentRows
+      .filter((_, i) => selectedPayments.has(i))
+      .reduce((s, r) => s + r.amount, 0);
+  }, [selectedPayments, paymentRows]);
 
   // Total Equity = property price + all entry costs
   const totalEquity = basePrice + totalEntryCosts;
@@ -326,7 +377,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
               <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docUnitLabel')}</td><td className="text-gray-900">{[clientInfo?.unitType || 'N/A', unitSqf > 0 ? `${n2s(unitSqf)} sqft / ${(unitSqf * SQF_TO_M2).toFixed(1)} m²` : null].filter(Boolean).join(' - ')}</td></tr>
               <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docPriceLabel')}</td><td className="text-gray-900 font-mono font-semibold">AED {n2s(basePrice)}</td></tr>
               {showCurrencyCol && <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docConvertedLabel')}</td><td className="text-gray-900 font-mono">{csym} {cvf(basePrice)}</td></tr>}
-              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docHandoverLabel')}</td><td className="text-gray-900">{shortDate(inputs.handoverMonth, inputs.handoverYear)} ({totalMonths}mo)</td></tr>
+              <tr><td className="text-gray-500 font-medium pr-2 py-0.5">{t('docHandoverLabel')}</td><td className="text-gray-900">{fmtDate(new Date(inputs.handoverYear, inputs.handoverMonth - 1))} ({totalMonths}mo)</td></tr>
             </tbody>
           </table>
         </div>
@@ -466,10 +517,12 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
           return (
           <tr
             key={gIdx}
-            onClick={() => togglePayment(gIdx)}
-            className={`border-t border-gray-100 ${!exportMode ? 'cursor-pointer' : ''} ${
+            onMouseDown={(e) => { e.preventDefault(); handleRowMouseDown(gIdx); }}
+            onMouseEnter={() => handleRowMouseEnter(gIdx)}
+            style={!exportMode ? { userSelect: 'none' } : undefined}
+            className={`border-t border-gray-100 transition-colors ${!exportMode ? 'cursor-pointer hover:bg-amber-50/60' : ''} ${
               isSelected
-                ? 'ring-2 ring-inset ring-[#B3893A]/40 bg-[#B3893A]/10'
+                ? 'bg-[#B3893A]/20 outline outline-2 outline-[#B3893A]/50 -outline-offset-2'
                 : row.isCompletion ? 'bg-[#B3893A]/5' : row.isPostHandover ? 'bg-indigo-50/50' : ''
             }`}
           >
@@ -556,30 +609,7 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
           </div>
         );
       })()}
-      {/* Selection summary bar */}
-      {selectedPayments.size > 0 && !exportMode && (() => {
-        const selectedSum = paymentRows
-          .filter((_, i) => selectedPayments.has(i))
-          .reduce((s, r) => s + r.amount, 0);
-        return (
-          <div className="mx-0 flex items-center gap-2 px-2 py-1 bg-[#B3893A]/10 border-b border-[#B3893A]/30 text-[10px]">
-            <span className="text-[#8A6528] font-semibold">
-              {selectedPayments.size} selected
-            </span>
-            <span className="flex-1" />
-            <span className="font-mono font-bold text-[#8A6528]">
-              AED {n2s(selectedSum)}
-              {showCurrencyCol && <span className="text-[#8A6528]/60 ml-1">({csym} {cvf(selectedSum)})</span>}
-            </span>
-            <button
-              onClick={() => setSelectedPayments(new Set())}
-              className="text-[9px] text-gray-400 hover:text-gray-600 transition-colors ml-1"
-            >
-              &times;
-            </button>
-          </div>
-        );
-      })()}
+      {/* Floating selection summary — rendered at component root */}
 
       {/* ========== SECTION C + D: Rental + Annual Cash Position (side by side) ========== */}
       <div className="grid grid-cols-[1fr_2fr] gap-0">
@@ -751,6 +781,33 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
             </table>
           </div>
         </>
+      )}
+
+      {/* Floating selection summary bar */}
+      {selectedPayments.size > 0 && !exportMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-sm border-2 border-[#B3893A]/50 shadow-lg shadow-black/10 text-[12px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span className="text-[#8A6528] font-bold">
+            {selectedPayments.size} {t('docSelected')}
+          </span>
+          <span className="w-px h-4 bg-[#B3893A]/30" />
+          <span className="font-mono font-bold text-gray-900">
+            AED {n2s(selectedSum)}
+          </span>
+          {showCurrencyCol && (
+            <>
+              <span className="w-px h-4 bg-[#B3893A]/30" />
+              <span className="font-mono font-bold text-[#8A6528]/70">
+                {csym} {cvf(selectedSum)}
+              </span>
+            </>
+          )}
+          <button
+            onClick={() => setSelectedPayments(new Set())}
+            className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-sm leading-none"
+          >
+            &times;
+          </button>
+        </div>
       )}
     </div>
   );

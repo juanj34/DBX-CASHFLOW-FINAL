@@ -46,11 +46,20 @@ const StrategyCreator: React.FC = () => {
   const [language, setLanguage] = useState('en');
   const [showConfigurator, setShowConfigurator] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
-  const [viewMode, setViewMode] = useState<'dashboard' | 'document'>('dashboard');
+  const [viewMode, setViewMode] = useState<'dashboard' | 'document'>(() => {
+    const saved = localStorage.getItem('strategy-view-mode');
+    return saved === 'document' ? 'document' : 'dashboard';
+  });
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(quoteId);
   const { profile } = useProfile();
   const brokerLogoUrl = profile?.avatar_url || undefined;
+
+  // Persist view mode preference
+  const switchViewMode = useCallback((mode: 'dashboard' | 'document') => {
+    setViewMode(mode);
+    localStorage.setItem('strategy-view-mode', mode);
+  }, []);
 
   // Exchange rate
   const { rate } = useExchangeRate(currency);
@@ -123,8 +132,10 @@ const StrategyCreator: React.FC = () => {
         setNotes((quote.inputs as any)._notes);
       }
       initializedRef.current = true;
-      // Only show document if user has explicitly configured (saved from configurator)
-      if (quoteId && (quote.inputs as any)._configured) {
+      // Show document if quote has been configured or has meaningful data (legacy quotes)
+      const isConfigured = (quote.inputs as any)._configured
+        || (quoteId && quote.status !== 'working_draft' && quote.inputs.basePrice > 0);
+      if (isConfigured) {
         setShowConfigurator(false);
         setHasConfigured(true);
       } else {
@@ -302,7 +313,7 @@ const StrategyCreator: React.FC = () => {
             {/* View Toggle */}
             <div className="flex items-center rounded-lg border border-theme-border overflow-hidden">
               <button
-                onClick={() => setViewMode('dashboard')}
+                onClick={() => switchViewMode('dashboard')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
                   viewMode === 'dashboard'
                     ? 'bg-theme-accent text-white'
@@ -313,7 +324,7 @@ const StrategyCreator: React.FC = () => {
                 Dashboard
               </button>
               <button
-                onClick={() => setViewMode('document')}
+                onClick={() => switchViewMode('document')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-theme-border ${
                   viewMode === 'document'
                     ? 'bg-theme-accent text-white'

@@ -98,6 +98,10 @@ export const useCashflowQuote = (quoteId?: string) => {
           if (!error && data) {
             // Migrate inputs when loading from database
             const migratedInputs = migrateInputs(data.inputs as unknown as Partial<OIInputs>);
+            // Merge column-level unit size for legacy quotes where it's not in the inputs JSON
+            if (data.unit_size_sqf && !migratedInputs.unitSizeSqf) {
+              migratedInputs.unitSizeSqf = data.unit_size_sqf;
+            }
             setQuote({
               ...data,
               inputs: migratedInputs,

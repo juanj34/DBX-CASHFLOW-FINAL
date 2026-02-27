@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { OIInputs, OICalculations } from '@/components/roi/useOICalculations';
 import { calculateExitScenario, ExitScenarioResult, isHandoverExit } from '@/components/roi/constructionProgress';
 import { DocumentControls, Currency } from './DocumentControls';
@@ -71,14 +71,55 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 }) => {
   const [exitDetailModal, setExitDetailModal] = useState<number | null>(null);
   const [selectedPayments, setSelectedPayments] = useState<Set<number>>(new Set());
-  const togglePayment = (idx: number) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<number | null>(null);
+  const dragMovedRef = useRef(false);
+  const rowClickedRef = useRef(false);
+
+  const handleRowMouseDown = (gIdx: number) => {
     if (exportMode) return;
-    setSelectedPayments(prev => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
+    rowClickedRef.current = true;
+    setIsDragging(true);
+    dragStartRef.current = gIdx;
+    dragMovedRef.current = false;
   };
+
+  const handleRowMouseEnter = (gIdx: number) => {
+    if (!isDragging || dragStartRef.current === null) return;
+    if (gIdx !== dragStartRef.current) dragMovedRef.current = true;
+    const start = Math.min(dragStartRef.current, gIdx);
+    const end = Math.max(dragStartRef.current, gIdx);
+    const range = new Set<number>();
+    for (let i = start; i <= end; i++) range.add(i);
+    setSelectedPayments(range);
+  };
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDragging && !dragMovedRef.current && dragStartRef.current !== null) {
+        const idx = dragStartRef.current;
+        setSelectedPayments(prev => {
+          const next = new Set(prev);
+          next.has(idx) ? next.delete(idx) : next.add(idx);
+          return next;
+        });
+      }
+      setIsDragging(false);
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [isDragging]);
+
+  // Click outside payment rows → clear selection
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (rowClickedRef.current) { rowClickedRef.current = false; return; }
+      if (selectedPayments.size > 0) setSelectedPayments(new Set());
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedPayments.size]);
+
   const lang = (language === 'es' ? 'es' : 'en') as 'en' | 'es';
   const t = (key: string) => translate(key, lang);
 
@@ -121,8 +162,10 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   // Helper to format date
   const formatShortDate = (d: Date) => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+    const monthsEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthsES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const m = (lang === 'es' ? monthsES : monthsEN)[d.getMonth()];
+    return `${m} ${d.getFullYear()}`;
   };
 
   // Compute payment date string from milestone (includes construction % inline)
@@ -234,11 +277,20 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
     }
 
     return rows;
-  }, [inputs, basePrice, resellThreshold]);
+  }, [inputs, basePrice, resellThreshold, lang]);
+
+  // Selected payments sum
+  const selectedSum = useMemo(() => {
+    if (selectedPayments.size === 0) return 0;
+    return paymentRows
+      .filter((_, i) => selectedPayments.has(i))
+      .reduce((s, r) => s + r.amount, 0);
+  }, [selectedPayments, paymentRows]);
 
   // Rental calculations
   const grossAnnualRent = basePrice * (inputs.rentalYieldPercent / 100);
-  const annualServiceCharges = (inputs.unitSizeSqf || 0) * (inputs.serviceChargePerSqft || 18);
+  const unitSqf = clientInfo?.unitSize || inputs.unitSizeSqf || 0;
+  const annualServiceCharges = unitSqf * (inputs.serviceChargePerSqft || 18);
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
   const grossYield = inputs.rentalYieldPercent;
   const netYield = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
@@ -254,7 +306,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
   const netMonthlyRent = netAnnualRent / 12;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden text-[11px] text-gray-900">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden text-[11px] text-gray-900 max-w-[800px] mx-auto">
       {/* ============ LOGO + ADVISOR + TITLE + CONTROLS BAR ============ */}
       <div className="px-4 pt-4 flex items-center gap-4">
         {/* Logo */}
@@ -384,23 +436,23 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
             </div>
             <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
-              <table className="w-full text-[10.5px]">
+              <table className="w-full text-[9.5px]">
                 <tbody>
                   <tr>
-                    <td className="py-[3px] text-gray-500">{t('docPaymentOnSPA')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
+                    <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnSPA')}</td>
+                    <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
                   </tr>
                   <tr>
-                    <td className="py-[3px] text-gray-500">{t('docAdditionalDeposits')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(additionalDeposits)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(additionalDeposits)})</span>}</td>
+                    <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docAdditionalDeposits')}</td>
+                    <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(additionalDeposits)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(additionalDeposits)})</span>}</td>
                   </tr>
                   <tr>
-                    <td className="py-[3px] text-gray-500">{t('docPaymentOnHandover')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900">{n2s(handoverPayment)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(handoverPayment)})</span>}</td>
+                    <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnHandover')}</td>
+                    <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(handoverPayment)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(handoverPayment)})</span>}</td>
                   </tr>
                   <tr className="border-t border-gray-200">
-                    <td className="py-[3px] font-bold text-gray-900">{t('docTotalEquityRequired')}</td>
-                    <td className="py-[3px] text-right font-mono font-bold text-gray-900">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({csym} {cvf(totalEquityRequired)})</span>}</td>
+                    <td className="py-[3px] font-bold text-gray-900 whitespace-nowrap">{t('docTotalEquityRequired')}</td>
+                    <td className="py-[3px] text-right font-mono font-bold text-gray-900 whitespace-nowrap">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({csym} {cvf(totalEquityRequired)})</span>}</td>
                   </tr>
                 </tbody>
               </table>
@@ -421,12 +473,12 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               </div>
             )}
             {exitResults.length > 0 && (
-              <table className="w-full text-[10.5px]">
+              <table className="w-full text-[9.5px]">
                 <thead>
                   <tr className="bg-gray-900">
-                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-left">{t('docExitHeader')}</th>
-                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right">{t('docROEHeader')}</th>
-                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right">{t('docSalePriceHeader')}</th>
+                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-left whitespace-nowrap">{t('docExitHeader')}</th>
+                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right whitespace-nowrap">{t('docROEHeader')}</th>
+                    <th className="py-1.5 px-3 text-[9px] font-semibold text-white uppercase tracking-wide text-right whitespace-nowrap">{t('docSalePriceHeader')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -434,8 +486,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                     const d = getDisplay(sc);
                     return (
                       <tr key={i} className="border-t border-gray-100">
-                        <td className="py-1.5 px-3 text-gray-700 font-medium">{getExitLabel(scenarioMonths[i])}</td>
-                        <td className="py-1.5 px-3 text-right">
+                        <td className="py-1.5 px-3 text-gray-700 font-medium whitespace-nowrap">{getExitLabel(scenarioMonths[i])}</td>
+                        <td className="py-1.5 px-3 text-right whitespace-nowrap">
                           <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono">
                             {d.totalROE.toFixed(1)}%
                           </span>
@@ -507,10 +559,10 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           <div className="px-4">
             {(() => {
               // Continuous flow: chain all payments, split by row count only
-              const colCount = paymentRows.length <= 12 ? 1 : paymentRows.length <= 24 ? 2 : 3;
+              const colCount = paymentRows.length <= 12 ? 1 : 2;
               const isMultiCol = colCount > 1;
-              const thCls = isMultiCol ? 'py-1.5 px-2 text-[8px] font-semibold text-white uppercase tracking-wide' : TH_CLS;
-              const tdCls = isMultiCol ? 'py-1.5 px-2 text-[10px]' : TD_CLS;
+              const thCls = isMultiCol ? 'py-1.5 px-2 text-[8px] font-semibold text-white uppercase tracking-wide whitespace-nowrap' : TH_CLS;
+              const tdCls = isMultiCol ? 'py-1.5 px-2 text-[10px] whitespace-nowrap' : TD_CLS;
 
               // Split rows into columns
               const columns: typeof paymentRows[] = [];
@@ -539,10 +591,12 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                       return (
                       <tr
                         key={gIdx}
-                        onClick={() => togglePayment(gIdx)}
-                        className={`border-t border-gray-100 ${!exportMode ? 'cursor-pointer' : ''} ${
+                        onMouseDown={(e) => { e.preventDefault(); handleRowMouseDown(gIdx); }}
+                        onMouseEnter={() => handleRowMouseEnter(gIdx)}
+                        style={!exportMode ? { userSelect: 'none' } : undefined}
+                        className={`border-t border-gray-100 transition-colors ${!exportMode ? 'cursor-pointer hover:bg-amber-50/60' : ''} ${
                           isSelected
-                            ? 'ring-2 ring-inset ring-[#B3893A]/40 bg-[#B3893A]/10'
+                            ? 'bg-[#B3893A]/20 outline outline-2 outline-[#B3893A]/50 -outline-offset-2'
                             : row.isHandover ? 'bg-[#B3893A]/5' : row.isPostHandover ? 'bg-indigo-50/50' : ''
                         }`}
                       >
@@ -606,7 +660,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                       {/* Total row full-width for multi-col */}
                       <div className="border-t-2 border-gray-300 bg-[#B3893A]/5 flex items-center px-3 py-1.5">
                         <span className="text-[11px] font-bold text-[#8A6528] flex-1">{t('docTotalEquityRequired')}</span>
-                        <span className="text-[11px] font-mono font-bold text-[#8A6528]">
+                        <span className="text-[11px] font-mono font-bold text-[#8A6528] whitespace-nowrap">
                           {n2s(totalEquityRequired)} AED
                           {showCurrencyCol && <span className="text-[#8A6528]/60 ml-2">({csym} {cvf(totalEquityRequired)})</span>}
                         </span>
@@ -618,30 +672,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
                 </div>
               );
             })()}
-            {/* Selection summary bar */}
-            {selectedPayments.size > 0 && !exportMode && (() => {
-              const selectedSum = paymentRows
-                .filter((_, i) => selectedPayments.has(i))
-                .reduce((s, r) => s + r.amount, 0);
-              return (
-                <div className="mt-1 flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[#B3893A]/10 border border-[#B3893A]/30 text-[11px]">
-                  <span className="text-[#8A6528] font-semibold">
-                    {selectedPayments.size} selected
-                  </span>
-                  <span className="flex-1" />
-                  <span className="font-mono font-bold text-[#8A6528]">
-                    AED {n2s(selectedSum)}
-                    {showCurrencyCol && <span className="text-[#8A6528]/60 ml-1">({csym} {cvf(selectedSum)})</span>}
-                  </span>
-                  <button
-                    onClick={() => setSelectedPayments(new Set())}
-                    className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors ml-1"
-                  >
-                    &times;
-                  </button>
-                </div>
-              );
-            })()}
+            {/* Floating selection summary — rendered at component root */}
           </div>
         </div>
 
@@ -749,6 +780,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               exitResults={exitResults}
               scenarioMonths={scenarioMonths}
               totalMonths={totalMonths}
+              language={language}
             />
           </div>
         </div>
@@ -971,6 +1003,33 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
           </div>
         </div>
       )}
+
+      {/* Floating selection summary bar */}
+      {selectedPayments.size > 0 && !exportMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-sm border-2 border-[#B3893A]/50 shadow-lg shadow-black/10 text-[12px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span className="text-[#8A6528] font-bold">
+            {selectedPayments.size} {t('docSelected')}
+          </span>
+          <span className="w-px h-4 bg-[#B3893A]/30" />
+          <span className="font-mono font-bold text-gray-900">
+            AED {n2s(selectedSum)}
+          </span>
+          {showCurrencyCol && (
+            <>
+              <span className="w-px h-4 bg-[#B3893A]/30" />
+              <span className="font-mono font-bold text-[#8A6528]/70">
+                {csym} {cvf(selectedSum)}
+              </span>
+            </>
+          )}
+          <button
+            onClick={() => setSelectedPayments(new Set())}
+            className="ml-1 w-5 h-5 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-sm leading-none"
+          >
+            &times;
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -983,8 +1042,8 @@ function ordSuffix(n: number): string {
 }
 
 // ─── Shared constants ───────────────────────────────────────────────
-const TH_CLS = 'py-1.5 px-2 text-[9px] font-semibold text-white uppercase tracking-wide';
-const TD_CLS = 'py-1.5 px-2 text-[11px]';
+const TH_CLS = 'py-1.5 px-2 text-[9px] font-semibold text-white uppercase tracking-wide whitespace-nowrap';
+const TD_CLS = 'py-1.5 px-2 text-[11px] whitespace-nowrap';
 
 // ─── Section header: gold bar with white text and circled letter badge ──
 const SectionHeader: React.FC<{ letter: string; title: string; subtitle?: string }> = ({ letter, title, subtitle }) => (

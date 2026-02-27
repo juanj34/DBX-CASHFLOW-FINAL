@@ -113,7 +113,7 @@ export const LoadQuoteModal: React.FC<LoadQuoteModalProps> = ({ open, onOpenChan
                     <span className="text-sm font-medium text-theme-text truncate">
                       {q.project_name || q.title || 'Untitled'}
                     </span>
-                    {q.status && q.status !== 'working_draft' && (
+                    {q.status && q.status !== 'working_draft' && q.status !== 'draft' && (
                       <span className={cn(
                         'text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide',
                         statusColors[q.status] || 'bg-slate-500/20 text-slate-400'

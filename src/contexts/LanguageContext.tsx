@@ -1929,6 +1929,15 @@ const translations: Translations = {
   docThresholdNotReached: { en: "Payment plan hasn't reached the", es: 'El plan de pago no ha alcanzado el' },
   docAdvanceOf: { en: 'Advance of', es: 'Adelanto de' },
   docNeeded: { en: 'needed.', es: 'necesario.' },
+
+  // Chart
+  docChartTitle: { en: 'Property Value Over Time', es: 'Valor de la Propiedad en el Tiempo' },
+  docChartHandover: { en: 'Handover', es: 'Entrega' },
+  docChartNow: { en: 'Now', es: 'Ahora' },
+  docChartYr: { en: 'Yr', es: 'Año' },
+
+  // Selection summary
+  docSelected: { en: 'selected', es: 'seleccionados' },
 };
 
 // Standalone translate function for components that receive language as a prop
