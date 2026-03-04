@@ -71,7 +71,7 @@ const SharedView: React.FC = () => {
           clientCountry: data.client_country || '',
           unit: (migrated as any)._clientInfo?.unit || data.unit || '',
           unitType: (migrated as any)._clientInfo?.unitType || data.unit_type || '',
-          unitSize: migrated.unitSizeSqf || data.unit_size_sqf || 0,
+          unitSize: migrated.unitSizeSqf || (migrated as any)._clientInfo?.unitSizeSqf || data.unit_size_sqf || 0,
         });
 
         // Track view

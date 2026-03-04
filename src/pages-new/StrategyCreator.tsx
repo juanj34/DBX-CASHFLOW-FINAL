@@ -161,7 +161,7 @@ const StrategyCreator: React.FC = () => {
     clientCountry: (inputs as any)._clients?.[0]?.country || '',
     brokerName: (inputs as any)._clientInfo?.brokerName || '',
     unitType: (inputs as any)._clientInfo?.unitType || '',
-    unitSize: inputs.unitSizeSqf || 0,
+    unitSize: inputs.unitSizeSqf || (inputs as any)._clientInfo?.unitSizeSqf || 0,
   };
 
   // Build ClientUnitData for save hook

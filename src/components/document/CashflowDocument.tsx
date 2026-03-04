@@ -289,7 +289,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
 
   // Rental calculations
   const grossAnnualRent = basePrice * (inputs.rentalYieldPercent / 100);
-  const unitSqf = clientInfo?.unitSize || inputs.unitSizeSqf || 0;
+  const unitSqf = clientInfo?.unitSize || inputs.unitSizeSqf || (inputs as any)?._clientInfo?.unitSizeSqf || 0;
   const annualServiceCharges = unitSqf * (inputs.serviceChargePerSqft || 18);
   const netAnnualRent = grossAnnualRent - annualServiceCharges;
   const grossYield = inputs.rentalYieldPercent;

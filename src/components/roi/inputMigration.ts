@@ -155,6 +155,12 @@ export function migrateInputs(saved: Partial<OIInputs> | null | undefined): OIIn
     merged.valueDifferentiators = [];
   }
 
+  // Populate top-level unitSizeSqf from _clientInfo if missing
+  // (old configurator stored size only inside _clientInfo, not at the top level)
+  if (!merged.unitSizeSqf && (merged as any)._clientInfo?.unitSizeSqf) {
+    merged.unitSizeSqf = (merged as any)._clientInfo.unitSizeSqf;
+  }
+
   // Ensure constructionSchedule is valid if present
   if (merged.constructionSchedule && !Array.isArray(merged.constructionSchedule)) {
     merged.constructionSchedule = undefined;
