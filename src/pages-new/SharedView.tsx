@@ -26,12 +26,14 @@ const SharedView: React.FC = () => {
   const { exporting, exportView } = useClientExport({
     contentRef: documentRef,
     projectName: clientInfo?.projectName || 'investment',
+    clientName: clientInfo?.clientName || '',
+    unit: clientInfo?.unit || '',
   });
 
   const handleExportPDF = useCallback(async () => {
     setExportMode(true);
     await new Promise(resolve => setTimeout(resolve, 200));
-    await exportView({ format: 'pdf', viewName: 'cashflow-statement' });
+    await exportView({ format: 'pdf', viewName: 'cashflow-statement', targetWidth: 1123 });
     setExportMode(false);
   }, [exportView]);
 
@@ -67,6 +69,7 @@ const SharedView: React.FC = () => {
           projectName: (migrated as any)._clientInfo?.projectName || data.project_name || '',
           clientName: (migrated as any)._clients?.[0]?.name || data.client_name || '',
           clientCountry: data.client_country || '',
+          unit: (migrated as any)._clientInfo?.unit || data.unit || '',
           unitType: (migrated as any)._clientInfo?.unitType || data.unit_type || '',
           unitSize: migrated.unitSizeSqf || data.unit_size_sqf || 0,
         });
@@ -146,7 +149,7 @@ const SharedView: React.FC = () => {
       </header>
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div ref={documentRef}>
+        <div ref={documentRef} data-export-container>
           <CashflowDocument
             inputs={inputs}
             calculations={calculations}

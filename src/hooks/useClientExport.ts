@@ -1,31 +1,62 @@
 import { useCallback, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { toast } from '@/hooks/use-toast';
 
 type FormatType = 'png' | 'pdf';
 
 interface UseClientExportProps {
   contentRef: React.RefObject<HTMLElement>;
   projectName?: string;
+  clientName?: string;
+  unit?: string;
 }
 
 interface ExportOptions {
   format: FormatType;
   viewName: string;
+  targetWidth?: number;
 }
 
-export const useClientExport = ({ contentRef, projectName }: UseClientExportProps) => {
+/** Remove characters illegal in Windows/macOS filenames, collapse whitespace. */
+function sanitizeFilename(str: string): string {
+  return str.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Build a descriptive export filename.
+ * Pattern: "{ClientName} - {ProjectName} Unit {Unit} - {ViewLabel}.ext"
+ */
+function buildFilename(
+  parts: { clientName?: string; projectName?: string; unit?: string },
+  viewName: string,
+  extension: string,
+): string {
+  const segments: string[] = [];
+
+  if (parts.clientName) segments.push(parts.clientName);
+
+  let projectSegment = parts.projectName || 'Investment';
+  if (parts.unit) projectSegment += ` Unit ${parts.unit}`;
+  segments.push(projectSegment);
+
+  // "cashflow-statement" → "Cashflow Statement"
+  const humanView = viewName
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+  segments.push(humanView);
+
+  return `${sanitizeFilename(segments.join(' - '))}.${extension}`;
+}
+
+export const useClientExport = ({ contentRef, projectName, clientName, unit }: UseClientExportProps) => {
   const [exporting, setExporting] = useState(false);
 
   const getBackgroundColor = useCallback((element: HTMLElement): string => {
     const computedBg = getComputedStyle(element).backgroundColor;
-    // Check if transparent (rgba with 0 alpha or 'transparent')
     if (computedBg === 'transparent' || computedBg === 'rgba(0, 0, 0, 0)') {
-      // Fallback to body background
       const bodyBg = getComputedStyle(document.body).backgroundColor;
       if (bodyBg === 'transparent' || bodyBg === 'rgba(0, 0, 0, 0)') {
-        // Ultimate fallback - use a neutral color based on theme
         return document.documentElement.classList.contains('dark') ? '#0a0a0a' : '#ffffff';
       }
       return bodyBg;
@@ -33,56 +64,49 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
     return computedBg;
   }, []);
 
-  const captureElement = useCallback(async (): Promise<HTMLCanvasElement | null> => {
+  const captureElement = useCallback(async (targetWidth?: number): Promise<HTMLCanvasElement | null> => {
     if (!contentRef.current) {
       console.error('Content ref is not available');
       return null;
     }
 
-    // Add export mode class to hide sidebar/nav and force auto height
     document.body.classList.add('export-mode');
 
-    // Scroll to top for consistent capture starting point
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
     }
 
-    // Wait for fonts to be fully loaded (prevents text baseline shifts)
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
 
-    // Wait for CSS to apply and layout to reflow (300ms for complex layouts)
     await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Force a reflow to ensure layout updates
+
     if (contentRef.current) {
       void contentRef.current.offsetHeight;
     }
 
-    // Get deterministic background color
     const backgroundColor = getBackgroundColor(contentRef.current);
+    const captureWidth = targetWidth || contentRef.current.scrollWidth;
 
     try {
       const canvas = await html2canvas(contentRef.current, {
-        scale: 2, // 2x resolution for high quality
-        useCORS: true, // Allow cross-origin images
-        backgroundColor, // Use computed theme background (no transparency artifacts)
-        logging: false, // Disable console logs
-        allowTaint: false, // Prevent tainted canvas issues
+        scale: 2,
+        useCORS: true,
+        backgroundColor,
+        logging: false,
+        allowTaint: false,
         scrollX: 0,
         scrollY: 0,
-        x: 0, // Start capture at element's left edge
-        y: 0, // Start capture at element's top edge
-        width: contentRef.current.scrollWidth,
+        x: 0,
+        y: 0,
+        width: captureWidth,
         height: contentRef.current.scrollHeight,
-        windowWidth: contentRef.current.scrollWidth,
+        windowWidth: captureWidth,
         windowHeight: contentRef.current.scrollHeight,
-        // Freeze animations/transforms in the cloned DOM to prevent text baseline drift
         onclone: (clonedDoc) => {
           const style = clonedDoc.createElement('style');
-          style.innerHTML = `
-            /* Freeze all animations and transitions */
+          let css = `
             *, *::before, *::after {
               animation: none !important;
               animation-delay: 0s !important;
@@ -92,9 +116,6 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
               transition-duration: 0s !important;
               caret-color: transparent !important;
             }
-            
-            /* Neutralize transforms on elements that might have scale/translate */
-            /* This prevents text baseline drift caused by sub-pixel transforms */
             [style*="transform"],
             [class*="motion"],
             [data-framer-name],
@@ -102,17 +123,30 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
               transform: none !important;
             }
           `;
+
+          // When a target width is set, constrain the export container
+          if (targetWidth) {
+            css += `
+              [data-export-container] {
+                max-width: ${targetWidth}px !important;
+                width: ${targetWidth}px !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              [data-export-container] > div {
+                max-width: none !important;
+              }
+            `;
+          }
+
+          style.innerHTML = css;
           clonedDoc.head.appendChild(style);
-          
-          // Additionally, iterate through elements and remove inline transforms
-          // that might cause text baseline issues
+
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((el) => {
             if (el instanceof HTMLElement) {
               const computedTransform = getComputedStyle(el).transform;
-              // Only reset transforms that are not 'none' and contain scale/matrix
               if (computedTransform && computedTransform !== 'none') {
-                // Check if it's a subtle scale (like scale(1.00001)) which causes text drift
                 if (computedTransform.includes('matrix') || computedTransform.includes('scale')) {
                   el.style.transform = 'none';
                 }
@@ -127,7 +161,6 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
       console.error('html2canvas error:', error);
       return null;
     } finally {
-      // Remove export mode class to restore UI
       document.body.classList.remove('export-mode');
     }
   }, [contentRef, getBackgroundColor]);
@@ -143,14 +176,14 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
     URL.revokeObjectURL(url);
   }, []);
 
-  const exportImage = useCallback(async (viewName: string): Promise<boolean> => {
-    const canvas = await captureElement();
+  const exportImage = useCallback(async (viewName: string, targetWidth?: number): Promise<boolean> => {
+    const canvas = await captureElement(targetWidth);
     if (!canvas) return false;
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
         if (blob) {
-          const filename = `${projectName || 'investment'}-${viewName}.png`;
+          const filename = buildFilename({ clientName, projectName, unit }, viewName, 'png');
           downloadBlob(blob, filename);
           resolve(true);
         } else {
@@ -158,54 +191,89 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
         }
       }, 'image/png', 1.0);
     });
-  }, [captureElement, projectName, downloadBlob]);
+  }, [captureElement, clientName, projectName, unit, downloadBlob]);
 
-  const exportPdf = useCallback(async (viewName: string): Promise<boolean> => {
-    const canvas = await captureElement();
+  const exportPdf = useCallback(async (viewName: string, targetWidth?: number): Promise<boolean> => {
+    const canvas = await captureElement(targetWidth);
     if (!canvas) return false;
 
     try {
-      // Use JPEG for PDF - much smaller file size (85% quality)
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      
-      // Calculate dimensions - maintain aspect ratio
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      
-      // Create PDF with custom dimensions matching the content
-      // Convert pixels to mm (1 inch = 96 pixels, 1 inch = 25.4 mm)
+      // A4 landscape dimensions in mm
+      const A4_W = 297;
+      const A4_H = 210;
+      const MARGIN = 10;
+      const printW = A4_W - 2 * MARGIN;
+      const printH = A4_H - 2 * MARGIN;
+
+      // Source dimensions at actual pixels (canvas is 2x from html2canvas scale)
       const pxToMm = 25.4 / 96;
-      const pdfWidth = (imgWidth / 2) * pxToMm; // Divide by 2 because we used scale: 2
-      const pdfHeight = (imgHeight / 2) * pxToMm;
-      
-      const orientation = pdfWidth > pdfHeight ? 'landscape' : 'portrait';
-      
+      const contentWMm = (canvas.width / 2) * pxToMm;
+      const contentHMm = (canvas.height / 2) * pxToMm;
+
+      // Scale to fit printable width (never upscale)
+      const scale = Math.min(printW / contentWMm, 1);
+      const imgW = contentWMm * scale;
+      const imgH = contentHMm * scale;
+
       const pdf = new jsPDF({
-        orientation,
+        orientation: 'landscape',
         unit: 'mm',
-        format: [pdfWidth, pdfHeight],
+        format: 'a4',
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      
-      const filename = `${projectName || 'investment'}-${viewName}.pdf`;
+      if (imgH <= printH) {
+        // Single page — center horizontally
+        const xOff = MARGIN + (printW - imgW) / 2;
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.90),
+          'JPEG', xOff, MARGIN, imgW, imgH,
+        );
+      } else {
+        // Multi-page: slice the canvas into page-height chunks
+        const pageContentHMm = printH / scale;
+        const pageContentHPx = (pageContentHMm / pxToMm) * 2; // canvas pixels (2x)
+        const totalPages = Math.ceil(canvas.height / pageContentHPx);
+
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) pdf.addPage('a4', 'landscape');
+
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          const sliceH = Math.min(pageContentHPx, canvas.height - page * pageContentHPx);
+          sliceCanvas.height = sliceH;
+          const ctx = sliceCanvas.getContext('2d')!;
+          ctx.drawImage(
+            canvas,
+            0, page * pageContentHPx,
+            canvas.width, sliceH,
+            0, 0,
+            canvas.width, sliceH,
+          );
+
+          const sliceImgH = (sliceH / 2) * pxToMm * scale;
+          const xOff = MARGIN + (printW - imgW) / 2;
+          pdf.addImage(
+            sliceCanvas.toDataURL('image/jpeg', 0.90),
+            'JPEG', xOff, MARGIN, imgW, sliceImgH,
+          );
+        }
+      }
+
+      const filename = buildFilename({ clientName, projectName, unit }, viewName, 'pdf');
       pdf.save(filename);
-      
       return true;
     } catch (error) {
       console.error('PDF generation error:', error);
       return false;
     }
-  }, [captureElement, projectName]);
+  }, [captureElement, clientName, projectName, unit]);
 
-  const exportView = useCallback(async ({ format, viewName }: ExportOptions): Promise<boolean> => {
+  const exportView = useCallback(async ({ format, viewName, targetWidth }: ExportOptions): Promise<boolean> => {
     setExporting(true);
-    
     try {
-      const success = format === 'pdf' 
-        ? await exportPdf(viewName)
-        : await exportImage(viewName);
-      
+      const success = format === 'pdf'
+        ? await exportPdf(viewName, targetWidth)
+        : await exportImage(viewName, targetWidth);
       return success;
     } finally {
       setExporting(false);
@@ -218,29 +286,23 @@ export const useClientExport = ({ contentRef, projectName }: UseClientExportProp
     onViewChange: (view: 'cashflow' | 'snapshot') => void
   ): Promise<{ cashflowSuccess: boolean; snapshotSuccess: boolean }> => {
     setExporting(true);
-    
     try {
-      // Export current view first
       const firstView = currentView;
       const secondView = currentView === 'cashflow' ? 'snapshot' : 'cashflow';
-      
+
       const firstSuccess = format === 'pdf'
         ? await exportPdf(firstView)
         : await exportImage(firstView);
-      
-      // Switch to other view
+
       onViewChange(secondView);
-      
-      // Wait for React to render the new view
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const secondSuccess = format === 'pdf'
         ? await exportPdf(secondView)
         : await exportImage(secondView);
-      
-      // Switch back to original view
+
       onViewChange(currentView);
-      
+
       return {
         cashflowSuccess: currentView === 'cashflow' ? firstSuccess : secondSuccess,
         snapshotSuccess: currentView === 'snapshot' ? firstSuccess : secondSuccess,

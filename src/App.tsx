@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth-new/ProtectedRoute";
@@ -31,6 +31,11 @@ const NotFound = () => (
     <a href="/" className="text-sm text-theme-accent hover:underline">Back to Home</a>
   </div>
 );
+
+const LegacyCashflowRedirect = () => {
+  const { quoteId } = useParams();
+  return <Navigate to={quoteId ? `/strategy/${quoteId}` : "/strategy/new"} replace />;
+};
 
 const queryClient = new QueryClient();
 
@@ -61,7 +66,7 @@ function App() {
                   {/* Legacy redirects */}
                   <Route path="/home" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/cashflow-generator" element={<Navigate to="/strategy/new" replace />} />
-                  <Route path="/cashflow/:quoteId" element={<Navigate to="/strategy/new" replace />} />
+                  <Route path="/cashflow/:quoteId" element={<LegacyCashflowRedirect />} />
                   <Route path="/my-quotes" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/account-settings" element={<Navigate to="/account" replace />} />
                   <Route path="/map-config" element={<Navigate to="/dashboard" replace />} />

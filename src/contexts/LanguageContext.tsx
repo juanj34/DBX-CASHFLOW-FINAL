@@ -1825,6 +1825,7 @@ const translations: Translations = {
   docPriceLabel: { en: 'Price', es: 'Precio' },
   docConvertedLabel: { en: 'Converted', es: 'Convertido' },
   docHandoverLabel: { en: 'Handover', es: 'Entrega' },
+  docDownpaymentLabel: { en: 'Down Payment', es: 'Enganche' },
 
   // Snapshot
   docPaymentOnSPA: { en: 'Payment on SPA', es: 'Pago en SPA' },

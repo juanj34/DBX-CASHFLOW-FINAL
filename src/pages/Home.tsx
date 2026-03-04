@@ -69,6 +69,8 @@ const Home = () => {
   const { profile, loading } = useProfile();
   const { t } = useLanguage();
   const [quotes, setQuotes] = useState<QuoteWithDetails[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(true);
+  const [quotesError, setQuotesError] = useState(false);
   const [dateFilter, setDateFilter] = useState<'week' | 'month' | '30days' | 'all'>('30days');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -278,33 +280,62 @@ const Home = () => {
   };
 
   useEffect(() => {
-    checkAuth();
-    loadQuotes();
+    let cancelled = false;
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+      if (!cancelled) {
+        await fetchQuotes(session.user.id, cancelled);
+      }
+    };
+
+    init();
+    return () => { cancelled = true; };
   }, []);
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/login");
+  const fetchQuotes = async (userId: string, cancelled = false) => {
+    setQuotesLoading(true);
+    setQuotesError(false);
+
+    try {
+      const { data, error } = await supabase
+        .from("cashflow_quotes")
+        .select("id, client_name, client_email, project_name, developer, created_at, status, sold_at, share_token, inputs")
+        .eq("broker_id", userId)
+        .in("status", ["presented", "negotiating"])
+        .or('is_archived.is.null,is_archived.eq.false')
+        .order("updated_at", { ascending: false })
+        .limit(20);
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Failed to load quotes:", error);
+        setQuotesError(true);
+        toast.error("Failed to load strategies");
+      } else {
+        setQuotes((data || []) as QuoteWithDetails[]);
+      }
+    } catch (err) {
+      if (cancelled) return;
+      console.error("Failed to load quotes:", err);
+      setQuotesError(true);
+      toast.error("Failed to load strategies");
+    } finally {
+      if (!cancelled) {
+        setQuotesLoading(false);
+      }
     }
   };
 
-  const loadQuotes = async () => {
+  const retryLoadQuotes = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    // Only load active quotes (presented, negotiating) - not drafts or sold
-    const { data, error } = await supabase
-      .from("cashflow_quotes")
-      .select("id, client_name, client_email, project_name, developer, created_at, status, sold_at, share_token, inputs")
-      .eq("broker_id", session.user.id)
-      .in("status", ["presented", "negotiating"])
-      .or('is_archived.is.null,is_archived.eq.false')
-      .order("updated_at", { ascending: false })
-      .limit(20);
-
-    if (data) {
-      setQuotes(data as QuoteWithDetails[]);
+    if (session) {
+      await fetchQuotes(session.user.id);
     }
   };
 
@@ -589,13 +620,29 @@ const Home = () => {
             </div>
           </div>
           
-          {sortedQuotes.length > 0 ? (
+          {quotesLoading ? (
+            <div className="p-8 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-theme-accent" />
+            </div>
+          ) : quotesError ? (
+            <div className="p-8 text-center text-theme-text-muted">
+              <p className="mb-3">{t("noOpportunities")}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={retryLoadQuotes}
+                className="border-theme-border text-theme-text-muted hover:text-theme-text"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : sortedQuotes.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-theme-border hover:bg-transparent">
                     <TableHead className="text-theme-text-muted font-medium">{t("clientProject")}</TableHead>
-                    <TableHead 
+                    <TableHead
                       className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
                       onClick={() => handleSort('value')}
                     >
@@ -604,7 +651,7 @@ const Home = () => {
                         {getSortIcon('value')}
                       </div>
                     </TableHead>
-                    <TableHead 
+                    <TableHead
                       className="text-theme-text-muted font-medium hidden md:table-cell cursor-pointer hover:text-theme-text"
                       onClick={() => handleSort('developer')}
                     >
@@ -614,7 +661,7 @@ const Home = () => {
                       </div>
                     </TableHead>
                     <TableHead className="text-theme-text-muted font-medium hidden lg:table-cell">{t("zone")}</TableHead>
-                    <TableHead 
+                    <TableHead
                       className="text-theme-text-muted font-medium cursor-pointer hover:text-theme-text"
                       onClick={() => handleSort('status')}
                     >
@@ -635,7 +682,7 @@ const Home = () => {
                         <TableCell>
                           <div 
                             className="cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => navigate(`/cashflow/${quote.id}`)}
+                            onClick={() => navigate(`/strategy/${quote.id}`)}
                           >
                             <p className="font-medium text-theme-text hover:text-theme-accent transition-colors">
                               {quote.client_name || t('homeUnnamedClient')}
@@ -689,7 +736,7 @@ const Home = () => {
                                     className="h-8 w-8 text-theme-text-muted hover:text-theme-accent hover:bg-theme-accent/10"
                                     onClick={(e) => {
                                       e.preventDefault();
-                                      navigate(`/cashflow/${quote.id}`);
+                                      navigate(`/strategy/${quote.id}`);
                                     }}
                                   >
                                     <Edit className="w-4 h-4" />

@@ -306,7 +306,9 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
   const netMonthlyRent = netAnnualRent / 12;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden text-[11px] text-gray-900 max-w-[800px] mx-auto">
+    <div className={`bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden text-[11px] text-gray-900 mx-auto ${
+      exportMode ? 'max-w-none' : 'max-w-[1120px]'
+    }`}>
       {/* ============ LOGO + ADVISOR + TITLE + CONTROLS BAR ============ */}
       <div className="px-4 pt-4 flex items-center gap-4">
         {/* Logo */}
@@ -374,94 +376,90 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
         )}
       </div>
 
-      {/* ============ HEADER — 3-column grid ============ */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_minmax(0,300px)_1fr] gap-0 border-b border-gray-200">
-        {/* Col 1: Client & Unit Info */}
-        <div className="p-4">
+      {/* ============ HEADER ROW 1: Client & Unit Info (full width) ============ */}
+      <div className="px-4 pt-3">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
+          <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M9 8h1m-1 4h1m4-4h1m-1 4h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
+          <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docClientUnitInfo')}</span>
+        </div>
+        <div className="border border-t-0 border-gray-200 rounded-b-md px-3 py-2">
+          <div className="grid grid-cols-3 gap-x-6 gap-y-1.5 text-[10.5px]">
+            {(clientInfo?.developer || clientInfo?.projectName) && (
+              <div>
+                <span className="text-gray-400 text-[9px] uppercase tracking-wide">{t('docPropertyLabel')}</span>
+                <p className="text-gray-900 font-medium whitespace-nowrap">{[clientInfo?.developer, clientInfo?.projectName].filter(Boolean).join(' \u2013 ')}</p>
+              </div>
+            )}
+            {(clientInfo?.clientName || clientInfo?.clientCountry) && (
+              <div>
+                <span className="text-gray-400 text-[9px] uppercase tracking-wide">{t('docClientLabel')}</span>
+                <p className="text-gray-900 font-medium whitespace-nowrap">{[clientInfo?.clientName, clientInfo?.clientCountry].filter(Boolean).join(' \u2013 ')}</p>
+              </div>
+            )}
+            <div>
+              <span className="text-gray-400 text-[9px] uppercase tracking-wide">{t('docUnitLabel')}</span>
+              <p className="text-gray-900 font-medium whitespace-nowrap">
+                {[
+                  clientInfo?.unitType,
+                  inputs.unitSizeSqf ? `${n2s(inputs.unitSizeSqf)} sqft / ${(inputs.unitSizeSqf * 0.092903).toFixed(1)} m²` : null,
+                ].filter(Boolean).join(' \u2013 ')}
+              </p>
+            </div>
+            <div>
+              <span className="text-gray-400 text-[9px] uppercase tracking-wide">{t('docPriceLabel')}</span>
+              <p className="text-gray-900 font-mono font-semibold whitespace-nowrap">
+                AED {n2s(basePrice)}{showCurrencyCol && <span className="text-gray-400 font-normal ml-1">({csym} {cvf(basePrice)})</span>}
+              </p>
+            </div>
+            <div>
+              <span className="text-gray-400 text-[9px] uppercase tracking-wide">{t('docHandoverLabel')}</span>
+              <p className="text-gray-900 font-medium whitespace-nowrap">
+                {new Date(inputs.handoverYear, inputs.handoverMonth - 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                {' '}({totalMonths}mo)
+              </p>
+            </div>
+            <div>
+              <span className="text-gray-400 text-[9px] uppercase tracking-wide">{t('docDownpaymentLabel')}</span>
+              <p className="text-gray-900 font-mono font-medium whitespace-nowrap">{inputs.downpaymentPercent}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============ HEADER ROW 2: Snapshot + Projected ROI (2 columns) ============ */}
+      <div className="grid grid-cols-2 gap-4 px-4 py-3 border-b border-gray-200">
+        {/* Snapshot */}
+        <div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
-            <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M9 8h1m-1 4h1m4-4h1m-1 4h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docClientUnitInfo')}</span>
+            <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
           </div>
           <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
-            <table className="w-full text-[10.5px]">
+            <table className="w-full text-[9.5px]">
               <tbody>
-                {(clientInfo?.developer || clientInfo?.projectName) && (
-                  <tr className="border-b border-gray-100">
-                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docPropertyLabel')}</td>
-                    <td className="py-[3px] text-gray-900 font-medium">{[clientInfo?.developer, clientInfo?.projectName].filter(Boolean).join(' \u2013 ')}</td>
-                  </tr>
-                )}
-                {(clientInfo?.clientName || clientInfo?.clientCountry) && (
-                  <tr className="border-b border-gray-100">
-                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docClientLabel')}</td>
-                    <td className="py-[3px] text-gray-900 font-medium">{[clientInfo?.clientName, clientInfo?.clientCountry].filter(Boolean).join(' \u2013 ')}</td>
-                  </tr>
-                )}
-                <tr className="border-b border-gray-100">
-                  <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docUnitLabel')}</td>
-                  <td className="py-[3px] text-gray-900 font-medium">
-                    {[
-                      clientInfo?.unitType,
-                      inputs.unitSizeSqf ? `${n2s(inputs.unitSizeSqf)} sqft / ${(inputs.unitSizeSqf * 0.092903).toFixed(1)} m²` : null,
-                    ].filter(Boolean).join(' \u2013 ')}
-                  </td>
+                <tr>
+                  <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnSPA')}</td>
+                  <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
                 </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docPriceLabel')}</td>
-                  <td className="py-[3px] text-gray-900 font-mono font-semibold">AED {n2s(basePrice)}</td>
+                <tr>
+                  <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docAdditionalDeposits')}</td>
+                  <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(additionalDeposits)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(additionalDeposits)})</span>}</td>
                 </tr>
-                {showCurrencyCol && (
-                  <tr className="border-b border-gray-100">
-                    <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docConvertedLabel')}</td>
-                    <td className="py-[3px] text-gray-900 font-mono">{csym} {cvf(basePrice)}</td>
-                  </tr>
-                )}
-                <tr className="last:border-b-0">
-                  <td className="py-[3px] pr-4 text-gray-500 font-medium whitespace-nowrap">{t('docHandoverLabel')}</td>
-                  <td className="py-[3px] text-gray-900 font-medium">
-                    {new Date(inputs.handoverYear, inputs.handoverMonth - 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
-                    {' '}({totalMonths}mo)
-                  </td>
+                <tr>
+                  <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnHandover')}</td>
+                  <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(handoverPayment)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(handoverPayment)})</span>}</td>
+                </tr>
+                <tr className="border-t border-gray-200">
+                  <td className="py-[3px] font-bold text-gray-900 whitespace-nowrap">{t('docTotalEquityRequired')}</td>
+                  <td className="py-[3px] text-right font-mono font-bold text-gray-900 whitespace-nowrap">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({csym} {cvf(totalEquityRequired)})</span>}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Col 2: Snapshot */}
-        <div className="p-4 border-x border-gray-100">
-          <div className="w-full">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
-              <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docSnapshot')}</span>
-            </div>
-            <div className="border border-t-0 border-gray-200 rounded-b-md p-3">
-              <table className="w-full text-[9.5px]">
-                <tbody>
-                  <tr>
-                    <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnSPA')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docAdditionalDeposits')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(additionalDeposits)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(additionalDeposits)})</span>}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnHandover')}</td>
-                    <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(handoverPayment)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(handoverPayment)})</span>}</td>
-                  </tr>
-                  <tr className="border-t border-gray-200">
-                    <td className="py-[3px] font-bold text-gray-900 whitespace-nowrap">{t('docTotalEquityRequired')}</td>
-                    <td className="py-[3px] text-right font-mono font-bold text-gray-900 whitespace-nowrap">{n2s(totalEquityRequired)} AED{showCurrencyCol && <span className="text-gray-400/60 ml-1">({csym} {cvf(totalEquityRequired)})</span>}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Col 3: Projected ROI */}
-        <div className="p-4">
+        {/* Projected ROI */}
+        <div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#B3893A] rounded-t-md">
             <svg className="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('docProjectedROI')}</span>

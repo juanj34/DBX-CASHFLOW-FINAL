@@ -74,6 +74,8 @@ const StrategyCreator: React.FC = () => {
   const { exporting, exportView } = useClientExport({
     contentRef: documentRef,
     projectName: (inputs as any)._clientInfo?.projectName || 'investment',
+    clientName: (inputs as any)._clients?.[0]?.name || '',
+    unit: (inputs as any)._clientInfo?.unit || '',
   });
 
   // Run calculations
@@ -258,8 +260,10 @@ const StrategyCreator: React.FC = () => {
     // Wait for exportMode to apply (hides interactive controls)
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const viewName = (targetView || viewMode) === 'dashboard' ? 'cashflow-dashboard' : 'cashflow-statement';
-    const success = await exportView({ format, viewName });
+    const currentExportView = targetView || viewMode;
+    const viewName = currentExportView === 'dashboard' ? 'cashflow-dashboard' : 'cashflow-statement';
+    const targetWidth = currentExportView === 'document' ? 1123 : undefined;
+    const success = await exportView({ format, viewName, targetWidth });
 
     setExportMode(false);
 
@@ -454,7 +458,7 @@ const StrategyCreator: React.FC = () => {
             ))}
           </div>
         ) : hasConfigured ? (
-          <div ref={documentRef}>
+          <div ref={documentRef} data-export-container>
             {viewMode === 'dashboard' ? (
               <CashflowDashboard
                 inputs={inputs}

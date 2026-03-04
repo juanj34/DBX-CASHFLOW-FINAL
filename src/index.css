@@ -426,6 +426,12 @@ body.export-mode .dashboard-main-content {
   padding: 0 !important;
 }
 
+body.export-mode main {
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 body.export-mode {
   overflow: visible !important;
 }

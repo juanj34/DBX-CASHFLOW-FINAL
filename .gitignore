@@ -24,3 +24,12 @@ dist-ssr
 *.sw?
 .theme-backup/
 .vercel
+
+# Secrets & local config
+.env
+.mcp.json
+
+# Dev-only directories
+examples/
+oneshot/
+scripts/
