@@ -71,24 +71,42 @@ export function applyExtractedPlan(
     handoverYear = plan.handoverYear;
   }
 
+  // Compute months from booking to handover — needed to convert construction
+  // milestones (which use % as triggerValue) to month-based triggerValues.
+  const handoverMonthsFromBooking = (handoverYear - bookingDate.year) * 12
+    + (handoverMonth - bookingDate.month);
+
   // Safety net: detect completion payments that slipped through as milestones.
-  // If onHandoverPercent is 0 or very low but a milestone has a completion-like label
-  // or is a large outlier, move it to onHandoverPercent.
   let effectiveOnHandoverPercent = plan.onHandoverPercent || 0;
   const milestones = [...plan.milestones];
 
   if (effectiveOnHandoverPercent < 5) {
-    const completionIdx = milestones.findIndex(m => {
+    // Strategy 1: label-based detection
+    let completionIdx = milestones.findIndex(m => {
       if (m.type === 'post-handover') return false;
       const label = (m.label || '').toLowerCase();
-      const isCompletionLabel =
+      return (
         label.includes('completion') ||
         label.includes('handover') ||
         label.includes('balance') ||
-        label.includes('remaining');
-      const isConstruction100 = m.type === 'construction' && m.triggerValue >= 95;
-      return (isCompletionLabel && m.paymentPercent >= 20) || isConstruction100;
+        label.includes('remaining')
+      ) && m.paymentPercent >= 20;
     });
+
+    // Strategy 2: statistical outlier (e.g., 70% among [2.5, 2.5, 2.5, 2.5])
+    if (completionIdx === -1 && milestones.length >= 2) {
+      const indexed = milestones
+        .map((m, i) => ({ pct: m.paymentPercent, idx: i, type: m.type }))
+        .filter(m => m.type !== 'post-handover');
+      if (indexed.length >= 2) {
+        const sorted = [...indexed].sort((a, b) => b.pct - a.pct);
+        const largest = sorted[0];
+        const median = sorted[Math.floor(sorted.length / 2)].pct;
+        if (largest.pct >= 30 && median > 0 && largest.pct >= median * 3) {
+          completionIdx = largest.idx;
+        }
+      }
+    }
 
     if (completionIdx !== -1) {
       effectiveOnHandoverPercent += milestones[completionIdx].paymentPercent;
@@ -104,18 +122,30 @@ export function applyExtractedPlan(
   const preHandoverPercent = plan.downpaymentPercent + preHandoverMilestones.reduce((s, m) => s + m.paymentPercent, 0);
 
   // Additional payments (pre-handover milestones, excluding downpayment)
-  // Include isHandover milestones with flag preserved — the new PaymentPlanStep
-  // shows all installments in one flat list and splits them on save.
+  // CRITICAL: Convert construction milestones from % to months-from-booking.
+  // Construction milestones use completion % as triggerValue (e.g., 50 = 50% built),
+  // but the PaymentPlanStep sorts/classifies ALL milestones by triggerValue as months.
+  // Without conversion, a "50% construction" milestone (triggerValue=50) would appear
+  // AFTER a completion at month 29, causing it to be misclassified as post-handover.
   const additionalPayments: PaymentMilestone[] = milestones
     .filter(m => m.type !== 'post-handover')
-    .map((m, idx) => ({
-      id: `ai-${Date.now()}-${idx}`,
-      type: m.type === 'construction' ? 'construction' as const : 'time' as const,
-      triggerValue: m.triggerValue,
-      paymentPercent: m.paymentPercent,
-      label: cleanLabel(m.label),
-      ...(m.isHandover && { isHandover: true }),
-    }));
+    .map((m, idx) => {
+      let triggerValue = m.triggerValue;
+
+      // Convert construction % → estimated months from booking
+      if (m.type === 'construction' && handoverMonthsFromBooking > 0) {
+        triggerValue = Math.max(1, Math.round((m.triggerValue / 100) * handoverMonthsFromBooking));
+      }
+
+      return {
+        id: `ai-${Date.now()}-${idx}`,
+        type: 'time' as const, // normalize all to time-based
+        triggerValue,
+        paymentPercent: m.paymentPercent,
+        label: cleanLabel(m.label),
+        ...(m.isHandover && { isHandover: true }),
+      };
+    });
 
   // Post-handover payments (triggerValue is already relative months after handover)
   const postHandoverPayments: PaymentMilestone[] = plan.hasPostHandover
