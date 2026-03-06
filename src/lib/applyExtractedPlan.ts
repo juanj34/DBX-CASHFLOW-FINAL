@@ -71,8 +71,34 @@ export function applyExtractedPlan(
     handoverYear = plan.handoverYear;
   }
 
+  // Safety net: detect completion payments that slipped through as milestones.
+  // If onHandoverPercent is 0 or very low but a milestone has a completion-like label
+  // or is a large outlier, move it to onHandoverPercent.
+  let effectiveOnHandoverPercent = plan.onHandoverPercent || 0;
+  const milestones = [...plan.milestones];
+
+  if (effectiveOnHandoverPercent < 5) {
+    const completionIdx = milestones.findIndex(m => {
+      if (m.type === 'post-handover') return false;
+      const label = (m.label || '').toLowerCase();
+      const isCompletionLabel =
+        label.includes('completion') ||
+        label.includes('handover') ||
+        label.includes('balance') ||
+        label.includes('remaining');
+      const isConstruction100 = m.type === 'construction' && m.triggerValue >= 95;
+      return (isCompletionLabel && m.paymentPercent >= 20) || isConstruction100;
+    });
+
+    if (completionIdx !== -1) {
+      effectiveOnHandoverPercent += milestones[completionIdx].paymentPercent;
+      milestones.splice(completionIdx, 1);
+      console.warn('[applyExtractedPlan] Moved completion payment from milestones to onHandoverPercent');
+    }
+  }
+
   // Pre-handover percent: sum of downpayment + construction milestones (excludes handover and post-handover)
-  const preHandoverMilestones = plan.milestones.filter(m =>
+  const preHandoverMilestones = milestones.filter(m =>
     (m.type === 'time' || m.type === 'construction') && !m.isHandover
   );
   const preHandoverPercent = plan.downpaymentPercent + preHandoverMilestones.reduce((s, m) => s + m.paymentPercent, 0);
@@ -80,7 +106,7 @@ export function applyExtractedPlan(
   // Additional payments (pre-handover milestones, excluding downpayment)
   // Include isHandover milestones with flag preserved — the new PaymentPlanStep
   // shows all installments in one flat list and splits them on save.
-  const additionalPayments: PaymentMilestone[] = plan.milestones
+  const additionalPayments: PaymentMilestone[] = milestones
     .filter(m => m.type !== 'post-handover')
     .map((m, idx) => ({
       id: `ai-${Date.now()}-${idx}`,
@@ -93,7 +119,7 @@ export function applyExtractedPlan(
 
   // Post-handover payments (triggerValue is already relative months after handover)
   const postHandoverPayments: PaymentMilestone[] = plan.hasPostHandover
-    ? plan.milestones
+    ? milestones
         .filter(m => m.type === 'post-handover')
         .map((m, idx) => ({
           id: `ai-post-${Date.now()}-${idx}`,
@@ -117,7 +143,7 @@ export function applyExtractedPlan(
     handoverMonth,
     handoverYear,
     hasPostHandoverPlan: plan.hasPostHandover,
-    onHandoverPercent: plan.onHandoverPercent || 0,
+    onHandoverPercent: effectiveOnHandoverPercent,
     postHandoverPercent,
     postHandoverPayments,
     ...(plan.purchasePrice && { basePrice: plan.purchasePrice }),

@@ -100,10 +100,44 @@ serve(async (req) => {
 
     const data = result.data as any;
 
-    // Post-processing: strip any milestones that leaked with isHandover
-    // (safety net — the schema no longer includes isHandover but older cached responses might)
-    if (data.milestones) {
+    // Post-processing: detect completion/handover payments hiding in milestones.
+    // Gemini often includes "Payment On Completion" as a regular milestone because
+    // it appears in the same document section as installments.
+    if (data.milestones && data.milestones.length > 0) {
+      // Strip any milestones with explicit isHandover flag (safety net)
       data.milestones = data.milestones.filter((m: any) => !m.isHandover);
+
+      // Detect completion payment by label or by being a large outlier
+      const completionIdx = data.milestones.findIndex((m: any) => {
+        const label = (m.label || "").toLowerCase();
+        const isCompletionLabel =
+          label.includes("completion") ||
+          label.includes("handover") ||
+          label.includes("upon completion") ||
+          label.includes("on completion") ||
+          label.includes("balance") ||
+          label.includes("remaining");
+        // A construction milestone at 100% is always the completion
+        const isConstruction100 =
+          m.type === "construction" && m.triggerValue >= 95;
+        // A very large payment (>= 30%) with a completion-like label
+        return (isCompletionLabel && m.paymentPercent >= 20) || isConstruction100;
+      });
+
+      if (completionIdx !== -1) {
+        const completionMilestone = data.milestones[completionIdx];
+        // Move it to onHandoverPercent (additive in case there's already a value)
+        data.onHandoverPercent =
+          (data.onHandoverPercent || 0) + completionMilestone.paymentPercent;
+        data.milestones.splice(completionIdx, 1);
+        data.warnings = data.warnings || [];
+        data.warnings.push(
+          `Moved "${completionMilestone.label || "completion"}" (${completionMilestone.paymentPercent}%) from installments to completion payment.`
+        );
+        console.log(
+          `Post-processing: moved ${completionMilestone.paymentPercent}% completion from milestones to onHandoverPercent`
+        );
+      }
     }
 
     // Validate: downpayment + milestones + onHandoverPercent = 100%

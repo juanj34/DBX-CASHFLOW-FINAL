@@ -60,7 +60,7 @@ export const uploadResponseSchema = {
     },
     milestones: {
       type: "ARRAY",
-      description: "ONLY intermediate installments — pre-handover and post-handover. NEVER include the downpayment (Month 0) or the handover payment here. Those go in downpaymentPercent and onHandoverPercent respectively.",
+      description: "ONLY intermediate installments — pre-handover and post-handover. NEVER include the downpayment (Month 0) or the completion/handover payment here. Those go in downpaymentPercent and onHandoverPercent respectively. 'Payment On Completion' or 'Balance on Handover' is NOT a milestone — it is the completion payment (onHandoverPercent).",
       items: {
         type: "OBJECT",
         properties: {
@@ -109,6 +109,10 @@ CRITICAL RULES:
 3. The downpayment is ONLY in downpaymentPercent. The handover payment is ONLY in onHandoverPercent. Milestones contain ONLY the installments in between.
 4. For standard plans (no post-handover): hasPostHandover=false, onHandoverPercent = remaining balance after downpayment + installments.
 5. For post-handover plans: hasPostHandover=true, include post-handover installments in milestones with type "post-handover" and triggerValue = months AFTER handover (1, 2, 3...).
+6. CRITICAL — "Payment On Completion", "Balance on Handover", "Remaining Balance", or any large final payment (typically 40-80%) is the COMPLETION payment. It goes in onHandoverPercent, NEVER in milestones[]. Even if the document lists it in the same section as installments.
+   Example: A plan with 20% downpayment, 4x 2.5% installments, and 70% on completion →
+   downpaymentPercent=20, milestones=[4 installments totaling 10%], onHandoverPercent=70.
+   The 70% is NOT an installment — it is the completion/handover payment.
 
 HANDOVER DATE — ALWAYS EXTRACT:
 - Look for: "Expected Completion", "Handover Date", "Estimated Completion", "Target Delivery"
