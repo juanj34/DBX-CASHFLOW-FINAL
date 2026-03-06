@@ -205,7 +205,13 @@ const StrategyCreator: React.FC = () => {
 
   // Explicit save
   const handleSave = useCallback(async () => {
-    if (!draftId) return;
+    // Offline/no-Supabase mode: just close configurator and show document
+    if (!draftId) {
+      setShowConfigurator(false);
+      setHasConfigured(true);
+      toast({ title: 'Strategy ready', description: 'Showing cashflow document (not saved — no database connection).' });
+      return;
+    }
 
     const inputsToSave = { ...inputs, _notes: notes, _configured: true };
     const result = await saveQuote(

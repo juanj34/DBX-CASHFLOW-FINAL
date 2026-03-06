@@ -1886,6 +1886,8 @@ const translations: Translations = {
   docSectionDTitle: { en: 'Annual Net Cash Position', es: 'Posición Neta Anual de Caja' },
   docYrPrefix: { en: 'Yr', es: 'Año' },
   docNetRent: { en: 'Net Rent', es: 'Renta Neta' },
+  docMortgagePayment: { en: 'Mortgage', es: 'Hipoteca' },
+  docNetCashflow: { en: 'Net Cashflow', es: 'Flujo Neto' },
   docPropValue: { en: 'Prop. Value', es: 'Valor Prop.' },
 
   // Section E: Exit Scenarios

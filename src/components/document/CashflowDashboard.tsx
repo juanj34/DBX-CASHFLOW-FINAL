@@ -686,6 +686,36 @@ export const CashflowDashboard: React.FC<CashflowDashboardProps> = ({
                     </td>
                   ))}
                 </tr>
+                {mortgageData?.enabled && (
+                  <tr className="border-t border-gray-100">
+                    <td className={tc + " text-gray-500"}>{t('docMortgagePayment')}</td>
+                    {rentalYears.slice(0, 10).map((yr) => {
+                      const annualMortgage = mortgageData.monthlyPayment * 12;
+                      return (
+                        <td key={yr.year} className={tc + " text-center text-red-500 font-mono"}>
+                          -{n2s(annualMortgage)}
+                          {showCurrencyCol && <div className="text-gray-400 text-[8px]">-{cvf(annualMortgage)}</div>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
+                {mortgageData?.enabled && (
+                  <tr className="border-t-2 border-gray-300 bg-gray-50">
+                    <td className={tc + " font-bold text-gray-900"}>{t('docNetCashflow')}</td>
+                    {rentalYears.slice(0, 10).map((yr) => {
+                      const annualMortgage = mortgageData.monthlyPayment * 12;
+                      const netRent = yr.netRent ?? 0;
+                      const cashflow = netRent - annualMortgage;
+                      return (
+                        <td key={yr.year} className={`${tc} text-center font-mono font-bold ${cashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {cashflow >= 0 ? '+' : ''}{n2s(cashflow)}
+                          {showCurrencyCol && <div className="text-gray-400 text-[8px]">{cvf(cashflow)}</div>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )}
                 <tr className="border-t border-gray-100">
                   <td className={tc + " text-gray-500"}>{t('docPropValue')}</td>
                   {rentalYears.slice(0, 10).map((yr) => (

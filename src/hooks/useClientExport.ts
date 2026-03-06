@@ -90,6 +90,9 @@ export const useClientExport = ({ contentRef, projectName, clientName, unit }: U
     const captureWidth = targetWidth || contentRef.current.scrollWidth;
 
     try {
+      // When targetWidth differs from current width, the cloned DOM reflows
+      // and may become taller. We must NOT lock the height to the original
+      // element — let html2canvas measure the cloned content instead.
       const canvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
@@ -101,10 +104,8 @@ export const useClientExport = ({ contentRef, projectName, clientName, unit }: U
         x: 0,
         y: 0,
         width: captureWidth,
-        height: contentRef.current.scrollHeight,
         windowWidth: captureWidth,
-        windowHeight: contentRef.current.scrollHeight,
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc, clonedEl) => {
           const style = clonedDoc.createElement('style');
           let css = `
             *, *::before, *::after {
@@ -139,8 +140,20 @@ export const useClientExport = ({ contentRef, projectName, clientName, unit }: U
             `;
           }
 
+          // Ensure the cloned element can expand to its full height
+          css += `
+            body, html {
+              height: auto !important;
+              overflow: visible !important;
+            }
+          `;
+
           style.innerHTML = css;
           clonedDoc.head.appendChild(style);
+
+          // Force the cloned element to be fully expanded
+          clonedEl.style.overflow = 'visible';
+          clonedEl.style.height = 'auto';
 
           const allElements = clonedDoc.querySelectorAll('*');
           allElements.forEach((el) => {

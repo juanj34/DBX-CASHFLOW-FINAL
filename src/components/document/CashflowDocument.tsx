@@ -296,6 +296,8 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
   const netYield = basePrice > 0 ? (netAnnualRent / basePrice) * 100 : 0;
 
   // Snapshot calculations (paymentRows no longer has downpayment — it's all installments + completion)
+  const downpaymentAmount = basePrice * inputs.downpaymentPercent / 100;
+  const paymentOnSPA = downpaymentAmount + dldFee + inputs.oqoodFee - inputs.eoiFee;
   const additionalDeposits = paymentRows
     .filter(r => !r.isHandover && !r.isPostHandover)
     .reduce((sum, r) => sum + r.amount, 0);
@@ -439,7 +441,7 @@ export const CashflowDocument: React.FC<CashflowDocumentProps> = ({
               <tbody>
                 <tr>
                   <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docPaymentOnSPA')}</td>
-                  <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(basePrice * inputs.downpaymentPercent / 100)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(basePrice * inputs.downpaymentPercent / 100)})</span>}</td>
+                  <td className="py-[3px] text-right font-mono font-medium text-gray-900 whitespace-nowrap">{n2s(paymentOnSPA)} AED{showCurrencyCol && <span className="text-gray-400 ml-1">({csym} {cvf(paymentOnSPA)})</span>}</td>
                 </tr>
                 <tr>
                   <td className="py-[3px] text-gray-500 whitespace-nowrap">{t('docAdditionalDeposits')}</td>
