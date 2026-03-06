@@ -39,10 +39,12 @@ export const PaymentPlanStep: React.FC<Props> = ({ inputs, updateField, updateFi
       type: 'time' as const,
     }));
 
-    // Add completion installment if onHandoverPercent > 0 and not already in list
+    // For POST-HANDOVER plans only: add explicit completion row to separate pre/post.
+    // For standard plans the completion is the implicit remainder — NOT an installment.
+    const isPostHandoverPlan = (inputs as any).hasPostHandoverPlan || false;
     const onHO = (inputs as any).onHandoverPercent || 0;
     const hasCompletionInList = pre.some(m => m.isHandover) || post.some(m => m.isHandover);
-    const completion: PaymentMilestone[] = (onHO > 0 && !hasCompletionInList) ? [{
+    const completion: PaymentMilestone[] = (isPostHandoverPlan && onHO > 0 && !hasCompletionInList) ? [{
       id: 'completion-auto',
       type: 'time' as const,
       triggerValue: handoverMonths,
@@ -52,7 +54,7 @@ export const PaymentPlanStep: React.FC<Props> = ({ inputs, updateField, updateFi
     }] : [];
 
     return [...pre, ...completion, ...post].sort((a, b) => a.triggerValue - b.triggerValue);
-  }, [inputs.additionalPayments, (inputs as any).postHandoverPayments, (inputs as any).onHandoverPercent, handoverMonths]);
+  }, [inputs.additionalPayments, (inputs as any).postHandoverPayments, (inputs as any).onHandoverPercent, (inputs as any).hasPostHandoverPlan, handoverMonths]);
 
   // ── Sync flat list back to engine format ──
   const syncToEngine = useCallback((installments: PaymentMilestone[]) => {
@@ -70,11 +72,19 @@ export const PaymentPlanStep: React.FC<Props> = ({ inputs, updateField, updateFi
     }));
 
     const preTotal = preHandover.reduce((s, m) => s + m.paymentPercent, 0);
+    const postTotal = postHandoverPayments.reduce((s, m) => s + m.paymentPercent, 0);
+
+    // For standard plans (no explicit completion row), onHandoverPercent is the
+    // implicit remainder: 100% - downpayment - installments - postHandover.
+    // For post-handover plans with an explicit completion row, use its value.
+    const onHandoverPercent = completion
+      ? completion.paymentPercent
+      : Math.max(0, 100 - inputs.downpaymentPercent - preTotal - postTotal);
 
     updateFields({
       additionalPayments: preHandover,
       hasPostHandoverPlan: postHandoverPayments.length > 0,
-      onHandoverPercent: completion?.paymentPercent || 0,
+      onHandoverPercent,
       postHandoverPayments,
       preHandoverPercent: inputs.downpaymentPercent + preTotal,
     } as any);
